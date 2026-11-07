@@ -13,6 +13,7 @@ import {
   encodeWasmColumns,
   encodeWasmDashboardPlan,
   encodeWasmTickBatch,
+  encodeTemporalScene,
   hydrateWasmPainter,
   layoutWasmCose,
   planWasmDashboardResources,
@@ -2276,6 +2277,75 @@ async function run() {
   polarTickHost.remove();
 
   const fromHex = (value) => Uint8Array.from(value.match(/../g) ?? [], (pair) => Number.parseInt(pair, 16));
+  foundationStage = "six temporal families through packaged Worker and existing painter";
+  const catalogOracle = await (await fetch("/tests/fixtures/temporal/catalog-six-families.json")).json();
+  if (catalogOracle.schema !== "xyg.temporal-catalog-native-oracle/v1" || catalogOracle.cases.length !== 6) throw Error("temporal oracle fixture is incomplete");
+  const temporalCatalogProof = [];
+  const temporalExtremeProof = [];
+  const catalogWorker = createXygWasmWorker({workerUrl:"/packages/xy-client/dist/wasm-worker.js", wasm:wasmModule, maxArenaBytes:16*1024*1024});
+  const digest = async bytes => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), b=>b.toString(16).padStart(2,"0")).join("");
+  await catalogWorker.ready;
+  try {
+    for (const oracle of catalogOracle.cases) {
+      const lo = 9223372036854775707n;
+      const request = encodeTemporalScene({kind:oracle.kind,rows:[[lo+1n,lo+4n,1,18446744073709551615n],[lo+5n,null,2,42n]],domain:[lo,lo+10n],timezone:"UTC",title:"LF\nCRLF\r\n"});
+      if (await digest(request) !== oracle.requestSha256) throw Error(`temporal browser framing differs from native: ${oracle.kind}`);
+      const scene = await catalogWorker.temporalSceneCompile(request).result;
+      const sceneSha256 = await digest(scene);
+      if (scene.byteLength !== oracle.sceneBytes || sceneSha256 !== oracle.sceneSha256) throw Error(`temporal Worker Scene differs from native: ${oracle.kind}`);
+      const host = document.body.appendChild(document.createElement("div"));
+      let view;
+      try {
+        view = await renderWasmScene({el:host,scene,worker:catalogWorker,transfer:false});
+        view._drawNow();
+        const ids = view.gpuTraces.flatMap((trace,i)=>Array.from({length:trace._sceneIds.lo.length},(_,r)=>view.sceneStableId(i,r)?.toString()));
+        if (!ids.includes("18446744073709551615")) throw Error(`temporal painter lost exact source identity: ${oracle.kind}`);
+        const pixels = view.canvas.getContext("2d").getImageData(0,0,view.canvas.width,view.canvas.height).data;
+        let ink = 0;
+        for (let i=0;i<pixels.length;i+=4) if (pixels[i]===31 && pixels[i+1]===119 && pixels[i+2]===180 && pixels[i+3]>0) ink++;
+        if (!ink) throw Error(`temporal ${oracle.kind} has no source-colored painted marks`);
+        temporalCatalogProof.push({kind:oracle.kind,sceneSha256,sceneBytes:scene.byteLength,sourceIds:ids,sourceColorPixels:ink});
+      } finally { view?.destroy();host.remove(); }
+    }
+    for (const extent of [1e308, Number.MAX_VALUE]) {
+      const request = encodeTemporalScene({kind:"scatter",rows:[[-1n,null,-extent,1n],[0n,null,0,2n],[1n,null,extent,3n]],domain:[-2n,8n],timezone:"UTC",width:900,height:420});
+      const scene = await catalogWorker.temporalSceneCompile(request).result;
+      const host = document.body.appendChild(document.createElement("div"));
+      let view;
+      try {
+        view = await renderWasmScene({el:host,scene,worker:catalogWorker,transfer:false});
+        view._drawNow();
+        const ids = view.gpuTraces.flatMap((trace,i)=>Array.from({length:trace._sceneIds.lo.length},(_,r)=>view.sceneStableId(i,r)?.toString()));
+        if (ids.join(",") !== "1,2,3") throw Error("finite extreme projection lost source identities");
+        const canvas=view.canvas, pixels=canvas.getContext("2d").getImageData(0,0,canvas.width,canvas.height).data;
+        const expectedCenters=[[146.1,372],[227.2,210],[308.3,48]];
+        const ink=expectedCenters.map(([x,y])=>{
+          let count=0;
+          for(let dy=-4;dy<=4;dy++) for(let dx=-4;dx<=4;dx++) {
+            // ChartView's paint canvas excludes Scene's left/top chrome.
+            const px=Math.round((x+dx-65)*canvas.width/811),py=Math.round((y+dy-48)*canvas.height/324);
+            const at=(py*canvas.width+px)*4;
+            if(pixels[at]===31 && pixels[at+1]===119 && pixels[at+2]===180 && pixels[at+3]>0) count++;
+          }
+          return count;
+        });
+        if (ink.some(count=>count===0)) {
+          const rows=[];
+          for(let y=0;y<canvas.height;y++) {
+            let count=0;
+            for(let x=0;x<canvas.width;x++) {
+              const at=(y*canvas.width+x)*4;
+              if(pixels[at]===31 && pixels[at+1]===119 && pixels[at+2]===180 && pixels[at+3]>0) count++;
+            }
+            if(count) rows.push([y,count]);
+          }
+          throw Error(`finite temporal extremes did not paint at three distinct expected positions: ${JSON.stringify({ink,canvas:[canvas.width,canvas.height],rows})}`);
+        }
+        temporalExtremeProof.push({extent:String(extent),sourceIds:ids,expectedCenters,sourceColorPixels:ink,sceneSha256:await digest(scene)});
+      } finally { view?.destroy();host.remove(); }
+    }
+  } finally { await catalogWorker.dispose(); }
+  console.log("PASS six temporal catalog Worker/native Scene oracles, painted source pixels, exact u64 metadata and disposal");
   const fixtureWorker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js",
     wasm: wasmModule,
@@ -4883,7 +4953,7 @@ async function run() {
   } catch (error) {
     if (!(error instanceof TypeError)) throw error;
   }
-  return { ok: true, densityPolicy, densityNoRefinement, temporalControllerProof };
+  return { ok: true, densityPolicy, densityNoRefinement, temporalControllerProof, temporalCatalogProof, temporalExtremeProof };
 }
 
 globalThis.__xygWasmFoundation = run().catch((error) => ({

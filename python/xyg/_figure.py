@@ -9,7 +9,7 @@ work is forbidden on the client).
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import Any, Optional, TypeAlias, Union
+from typing import TYPE_CHECKING, Any, Optional, TypeAlias, Union
 
 import numpy as np
 
@@ -52,6 +52,9 @@ from ._annotations import AnnotationsMixin
 from ._payload import PayloadMixin
 from ._trace import Trace
 from .columns import ColumnStore, ColumnStoreCheckpoint
+
+if TYPE_CHECKING:
+    from .components import TemporalChart
 
 # Tier/tuning constants live in config.py (shared with interaction/export/
 # _payload); several are re-exported here — this module is their historic
@@ -112,6 +115,8 @@ class Selection:
 class Figure(AnnotationsMixin, PayloadMixin):
     """Build with `line()` / `scatter()`, display with `show()` (notebook) or
     `to_html()` (standalone file, no kernel round-trips)."""
+
+    _temporal_composition: TemporalChart
 
     def __init__(
         self,

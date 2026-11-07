@@ -159,3 +159,8 @@ replace rectangle-derived coordinate mapping; closed roots do not certify
 transform absence. This is a body/behavior provenance refresh, not an accepted
 freeze or broader S5b/M4/#36/#108 acceptance. See the
 [native input receipt](../performance/graph-s5b-pointer-native-input-repair-2026-11-04/README.md).
+
+The #46 partial candidate adds experimental temporal composition declarations
+and exact XYTM framing/compiler boundaries. Its preparation snapshot has689
+explicit review gaps. This is not a release freeze or catalog acceptance;
+[limitations and package blocker](../design/temporal-catalog.md) remain open.

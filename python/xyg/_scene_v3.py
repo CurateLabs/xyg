@@ -215,6 +215,9 @@ def figure_scene(
     y2_chrome: Y2Chrome | None = None,
 ) -> bytes:
     """Compile migrated cartesian marks plus x/y axes to Scene v12."""
+    temporal = getattr(figure, "_temporal_composition", None)
+    if temporal is not None:
+        return temporal._compile_temporal(width, height)
     annotations = list(getattr(figure, "annotations", None) or [])
     colorbar_unsupported = False
     try:

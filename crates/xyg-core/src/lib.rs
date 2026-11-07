@@ -203,7 +203,7 @@ pub use graphforge_session_ffi::*;
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 401;
+pub const ABI_VERSION: u32 = 402;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -33195,4 +33195,19 @@ mod chunked_chart_publication_tests {
         drop(store);
         std::fs::remove_file(path).unwrap();
     }
+}
+
+/// Compile an exact XYTM temporal composition into the canonical Scene.
+/// # Safety
+/// Input and output describe nonoverlapping readable/writable byte regions.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_scene_compile(request: *const u8, request_len: usize, budget: usize, out: *mut u8, cap: usize, out_length: *mut usize) -> i32 {
+    ffi_guard(-1, || {
+        if request.is_null() || out_length.is_null() || (out.is_null() && cap != 0) {return -1;}
+        if request_len>budget || budget>xyg_engine::temporal_scene::MAX_BYTES {return -11;}
+        let result=match xyg_engine::temporal_scene::compile(std::slice::from_raw_parts(request,request_len),budget){Ok(v)=>v,Err(e)=>return e as i32};
+        if !out.is_null() && cap<result.len(){return -9;}
+        if !out.is_null(){std::ptr::copy_nonoverlapping(result.as_ptr(),out,result.len());}
+        *out_length=result.len();0
+    })
 }

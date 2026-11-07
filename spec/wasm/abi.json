@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "abi_version": 35,
+  "abi_version": 36,
   "scene_version": 34,
   "painter_version": 17,
   "painter_header_bytes": 420,
@@ -527,6 +527,16 @@
         "u32"
       ],
       "result": "u32"
+    },
+    {
+          "name": "xyg_wasm_temporal_scene_compile",
+          "params": [
+                "u32",
+                "u32",
+                "usize",
+                "usize"
+          ],
+          "result": "i32"
     }
   ],
   "graph": {

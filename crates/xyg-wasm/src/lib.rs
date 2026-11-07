@@ -23,7 +23,7 @@ mod typed_series_abi_generated;
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, PainterRejection, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 35;
+pub const WASM_ABI_VERSION: u32 = 36;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -1859,6 +1859,20 @@ pub extern "C" fn xyg_wasm_last_scene_records(handle: u32) -> usize {
 #[no_mangle]
 pub extern "C" fn xyg_wasm_last_scene_styles(handle: u32) -> usize {
     with_instance_mut(handle, |instance| instance.last_scene_styles).unwrap_or(0)
+}
+
+/// Compile an exact packed temporal composition through the shared Scene engine.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_temporal_scene_compile(
+    handle: u32,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_ordinary_instance_mut(handle, |instance| {
+        geo::execute_temporal_scene(instance, sequence, offset, length)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
 }
 
 #[cfg(test)]

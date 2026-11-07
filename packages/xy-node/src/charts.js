@@ -1,10 +1,12 @@
+import {temporalSceneCompile} from "./temporal-scene.js";
 /**
  * Chart convenience constructors — all dual-host mark families.
  * Thin wrappers over mark composers + the minimal Node Figure.
  */
 
 import { figure } from "./figure.js";
-import { applyGraphHomeView } from "./scene.js";
+import { applyGraphHomeView, sceneBrowserPainter } from "./scene.js";
+import { temporalSceneSize } from "./temporal-scene-framing.js";
 import { attachScatter } from "./marks/scatter.js";
 import { attachLine } from "./marks/line.js";
 import { attachHistogram } from "./marks/histogram.js";
@@ -612,4 +614,16 @@ export class GeoChart {
 export function geoChart(...children) {
   const options = children.pop();
   return new GeoChart(children, options);
+}
+
+
+/** Exact temporal rows lower through the same canonical Scene engine. */
+export function temporalChart(kind, rows, opts) {
+  const count=rows.length;
+  temporalSceneSize(count, opts.timezone, opts.title);
+  const fig=figure({width:opts.width,height:opts.height,title:opts.title});
+  const source=Array.from({length:count},(_,i)=>Object.freeze([...rows[i]]));
+  fig._temporalCompile=(width=fig.width,height=fig.height)=>temporalSceneCompile({...opts,kind,rows:source,width,height});
+  fig._temporalPainter=()=>sceneBrowserPainter(fig.toScene());
+  return fig;
 }

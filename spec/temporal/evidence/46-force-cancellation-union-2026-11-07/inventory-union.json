@@ -1,0 +1,10 @@
+{
+  "contractSha256": "69e183687fe25678082e175297b35150df83ade0f75c3dd1305ee0309368bb1a",
+  "finalGaps": 691,
+  "parentGaps": [
+    691,
+    686
+  ],
+  "preparationOnly": true,
+  "reviewedCatalogContractExact": true
+}

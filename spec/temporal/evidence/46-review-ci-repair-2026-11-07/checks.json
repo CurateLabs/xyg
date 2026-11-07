@@ -1,0 +1,777 @@
+{
+  "archives": {
+    "before-constructor-0.log.gz": {
+      "bytes": 66,
+      "rawBytes": 113,
+      "rawSha256": "1dbd7f612d3c9a14c7bf047fc3bf5b6c1a1b43f560c79f78f93c1a29728a75f0",
+      "sha256": "5bdd52349a95e4808cbb2259b999961df849a3ce0e3bdaf2fdcb6256413a412b"
+    },
+    "before-constructor-exact-0.log.gz": {
+      "bytes": 3147,
+      "rawBytes": 40129,
+      "rawSha256": "8ba08e9feabe10a8f4084b051ae5146536c07be59acf69eb8c774285145b3fe5",
+      "sha256": "35ef5b77eceff368a8831d2fc10eb3906bc2259af0ed21e16f1eaf64b349d7ac"
+    },
+    "before-constructor-selected-0.log.gz": {
+      "bytes": 1152,
+      "rawBytes": 6579,
+      "rawSha256": "554a110b12be9deb5ea737b42528186d506def74c9e8f77445f853c8252b5a6e",
+      "sha256": "ea31bf5b12c816dc07b9a11d0765b4624f5e36f1eac08fefafd69de4f66b6f01"
+    },
+    "before-finite-0.log.gz": {
+      "bytes": 1228,
+      "rawBytes": 12502,
+      "rawSha256": "0c8a96bc95d07d2df9c2469df842869d50c4d191db2ca5c78ce7bbd9c25e9eca",
+      "sha256": "4949f87f110d9429beec28fdd30907cc03dd374f75f53a077f2b4537c458394e"
+    },
+    "before-public-reproduction-complete.log.gz": {
+      "bytes": 262,
+      "rawBytes": 721,
+      "rawSha256": "a015b248bbfb347d61408637e288bca7eb43e923a1605667aaa215d35a27584e",
+      "sha256": "e6bafce2249ca044a27a2826ba9f47df2e7477e77fd7000664282dca5e83b532"
+    },
+    "before-public-reproduction.log.gz": {
+      "bytes": 508,
+      "rawBytes": 1909,
+      "rawSha256": "812608c575f570dd76f198897de1ea4e8fbe91ffdb22db2b5bdbb29c94f83125",
+      "sha256": "9e67598e189bd70f8f2984328811d721115e6151faf47b92a8e3de605ff8721c"
+    },
+    "before-wasm-0.log.gz": {
+      "bytes": 313,
+      "rawBytes": 400,
+      "rawSha256": "ffe6944f58057b715c12f2830e1c4e75f0af93f4518510d36396d1942c4c5ae6",
+      "sha256": "fe087531e50ed589c41ab2a23dfc2d63f983dae64a4f2748ed435fb103f3c393"
+    },
+    "browser-0.log.gz": {
+      "bytes": 121,
+      "rawBytes": 114,
+      "rawSha256": "2f8cc8d6c8bf927f6c1e699ec454ee2f7a50d61905b6b9000c0018997471e0f6",
+      "sha256": "e8d35775eb0c0312fea93869a318313393713ea01c6ff7f8829dfe42f6c85192"
+    },
+    "browser-1.log.gz": {
+      "bytes": 280,
+      "rawBytes": 478,
+      "rawSha256": "c4b33b2ed77e9a99027273cb5d339e7816420545836c81e7a7139245ba8c6a4d",
+      "sha256": "402708aead939842441c033e0344dfeae9f81de305c51d876bc85c010eb3483d"
+    },
+    "browser-diagnostic-0.log.gz": {
+      "bytes": 364,
+      "rawBytes": 613,
+      "rawSha256": "293557221be4c15e410c6ca8dcc8b56acebc55e10a5886146c9501ced67d406e",
+      "sha256": "f4e4f8c3512d003d66025b86969436c0b0ca9caab70b8c8afdbdf32efe5f9702"
+    },
+    "browser-final-0.log.gz": {
+      "bytes": 121,
+      "rawBytes": 114,
+      "rawSha256": "2f8cc8d6c8bf927f6c1e699ec454ee2f7a50d61905b6b9000c0018997471e0f6",
+      "sha256": "e8d35775eb0c0312fea93869a318313393713ea01c6ff7f8829dfe42f6c85192"
+    },
+    "browser-final-1.log.gz": {
+      "bytes": 1220,
+      "rawBytes": 3998,
+      "rawSha256": "4264eb306f743252e99dc4b9b4fbe92c30bba08fcd6d709feb5f3a96d037127d",
+      "sha256": "6db65c2db47038ee5485a0cac8de0e877c7c56ee30d1bab1f003311994b82157"
+    },
+    "build-0.log.gz": {
+      "bytes": 267,
+      "rawBytes": 597,
+      "rawSha256": "050864500cac64211256b1a2fa121a7f1facdd0d0f67301367908f4a452508f1",
+      "sha256": "ddb086090e9096f6b05bc2c0e7357cce7f29d957306fff5579e30a3cd1bbb15d"
+    },
+    "ci-0.log.gz": {
+      "bytes": 413,
+      "rawBytes": 1786,
+      "rawSha256": "7122751b912b536649a2a2acc86e187f624f2e6f167cd731d0041b02c2e50eca",
+      "sha256": "5230b24bbce11168e99ed338487b4d65e23f997d17da3597469517429589350f"
+    },
+    "client-0.log.gz": {
+      "bytes": 1056,
+      "rawBytes": 5448,
+      "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+      "sha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c"
+    },
+    "clippy-0.log.gz": {
+      "bytes": 565,
+      "rawBytes": 1555,
+      "rawSha256": "fea8f0357274738fc97d8c14cd7ff233f2db5e6f3cad4aa6b97bbe995b57e918",
+      "sha256": "d47ad9b4afb2e3bc1d3e1ec21f9a030a57d0119c7f6d92088ffa14d4d31a99c3"
+    },
+    "contracts-0.log.gz": {
+      "bytes": 170,
+      "rawBytes": 253,
+      "rawSha256": "0201fc33815c8c041dcc0962be03f867180c208eea66f9d965cf66b9c85e7981",
+      "sha256": "d4e75ba90b3dc1a6d7824ffa22f5962ef938a3420eb62912620fc29f4422b16f"
+    },
+    "contracts-1.log.gz": {
+      "bytes": 62,
+      "rawBytes": 42,
+      "rawSha256": "acfed2fdfbc7ada31c682fcd109e358354a2237f293d717f41bf85a9c5fe5dd5",
+      "sha256": "dca9cc208c9be513adb61c8564af72afbdc007f1aa2786d98e4146188eb45392"
+    },
+    "contracts-2.log.gz": {
+      "bytes": 20,
+      "rawBytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "contracts-3.log.gz": {
+      "bytes": 72,
+      "rawBytes": 52,
+      "rawSha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306",
+      "sha256": "135de4fa46245b623c5d8acfa3e621c9374a4c0229b173222340fff45c526965"
+    },
+    "contracts-4.log.gz": {
+      "bytes": 101,
+      "rawBytes": 97,
+      "rawSha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c",
+      "sha256": "061e29d38894e10e9f9982462538fadbdf9051697515ec1315b4fc2b4d20e9f2"
+    },
+    "core-final-0.log.gz": {
+      "bytes": 51,
+      "rawBytes": 98,
+      "rawSha256": "7b250f88b42211589717e3548646056eb8cf1771ab1ad4fd75a8fb469061a2e7",
+      "sha256": "28cff889906bb232ff716954748c9708e94ab2eef4ac51573d636a3e7137eec8"
+    },
+    "floor-0.log.gz": {
+      "bytes": 85,
+      "rawBytes": 352,
+      "rawSha256": "1c197f8bedd7fedfac3125296361929c438352009c559bf423c603ec36f93711",
+      "sha256": "d3733a41910d3eccdc16f050c674f8d68b26d8b20af1cce82ef5b20966856481"
+    },
+    "focused-0.log.gz": {
+      "bytes": 52,
+      "rawBytes": 99,
+      "rawSha256": "79223640a57980e5ff2be169f19889a082f9853bc0c86902948569fd6fe9da13",
+      "sha256": "58f990543cc0c3157d0aec8374442fab2654ac1c2628945c8da2632c2ca6a2c3"
+    },
+    "focused-1.log.gz": {
+      "bytes": 862,
+      "rawBytes": 2469,
+      "rawSha256": "220f28dbc8f435f91ea508f276e300f3fa16a85fb1b46b78c23bda6ffe8396b4",
+      "sha256": "22f0653a1fa442bfed2e2fb71f19b6207d3ccd83bf4187874739488bb85041ad"
+    },
+    "focused-2.log.gz": {
+      "bytes": 470,
+      "rawBytes": 1211,
+      "rawSha256": "e6e71bfc01ce688b4798e5db8a158ad1df23f69002aa0bd5be24bd336b682c8e",
+      "sha256": "eb9d8a5be99371ec7f1a39cd302924ab4298c54719b73a41b976c4104c9538c0"
+    },
+    "gates-0.log.gz": {
+      "bytes": 72,
+      "rawBytes": 240,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "sha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "gates-1.log.gz": {
+      "bytes": 39,
+      "rawBytes": 19,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "gates-2.log.gz": {
+      "bytes": 49,
+      "rawBytes": 29,
+      "rawSha256": "fc0bbac019440dc0d592ea23f64391a7684b4d8f1ada394542e6e6b48ca737f2",
+      "sha256": "ea4d38ff3514b03e89c7dbfb6ac1c63ed7bfb4f90cefd1a0a79e5feb101abd14"
+    },
+    "hosted-floor.log.gz": {
+      "bytes": 22410,
+      "rawBytes": 107307,
+      "rawSha256": "c2a525cd06328076fe2809327e5ccdc2c0316325cd1ab9926758bfa4736c8acf",
+      "sha256": "566fcb0039d6cbccca78db1485094a564239ad349cfedd436190fbacfc79fa58"
+    },
+    "hosted-test.log.gz": {
+      "bytes": 75805,
+      "rawBytes": 355542,
+      "rawSha256": "af4a0579f5da33c64ba387f9e32cba756864990ab65f03ec8af182aa7bba4ffd",
+      "sha256": "eb917dc7eaffcd8740f202200a01fbf895ce1d49f998717b68ff7efe04af317c"
+    },
+    "node-final.log.gz": {
+      "bytes": 466,
+      "rawBytes": 1475,
+      "rawSha256": "634cd7fa2fc5591b79024bf9a6b4f3f01c869be90267ba7f5160c9f2ef298cba",
+      "sha256": "7636a445d335c6b4a5a11bce0e2f4748516421a8f8e1fb40c9f4a302f5bc49e6"
+    },
+    "node-full-0.log.gz": {
+      "bytes": 38521,
+      "rawBytes": 230193,
+      "rawSha256": "5959037934a52f44e05ba7784cca41768ade823798093bbd0103feb49f893e80",
+      "sha256": "ea82dec0c5bafaad72e5456eed3afe8f51b29e89a4c8d27ca33da106959a0cd4"
+    },
+    "qualification-0.log.gz": {
+      "bytes": 102,
+      "rawBytes": 90,
+      "rawSha256": "6ccb3a32713cc80d2557a34a01af8a28403de24b10ee8215220067ae9051c187",
+      "sha256": "b38e078fefbbb6c31d23a62fae1a828c9df656ea4f234a468e85e00c26e44f49"
+    },
+    "qualification-final-0.log.gz": {
+      "bytes": 1317,
+      "rawBytes": 3787,
+      "rawSha256": "10c2a728afb610a02b4061bdd9038ae07b1101fc0dd497a9a9975e4b9adc89df",
+      "sha256": "deb2cad48844572098f24de88ef6639c30f6205a0535070ed591234ca92133d2"
+    },
+    "wasm-0.log.gz": {
+      "bytes": 980,
+      "rawBytes": 3663,
+      "rawSha256": "1011d6c04f39423efa43d63b905c0418fec3fd4740488c64932abffbd266efdf",
+      "sha256": "543bc4ac4327de6606536473e7eca18fcce482ea8028cd8eb81b40c3a475c8fd"
+    },
+    "wasm-1.log.gz": {
+      "bytes": 201,
+      "rawBytes": 493,
+      "rawSha256": "3b5c12e37dcc94954db88d69d55fed9208708221565707b2695122deab8431b8",
+      "sha256": "7841501d73c25b18ae200b295908c24f388d154721ef54c53dcc1be2ac72c435"
+    }
+  },
+  "artifacts": {
+    "index.js": {
+      "archive": "index.js.gz",
+      "archiveSha256": "713b71d766a0abc1a710e1ff0cd6aa4c912490be8ae310c167ff6b0fddf4d3eb",
+      "bytes": 811254,
+      "sha256": "97bba01b30a55af015d297a6e1cc0e2c85ae456269224e215ac9af0efad4c77c"
+    },
+    "libxyg_core.so": {
+      "archive": "libxyg_core.so.gz",
+      "archiveSha256": "de5473c150bb248c55a395c2b46181b965c0176df795da569bc6a41a8a968781",
+      "bytes": 6160312,
+      "sha256": "a1b3739da693ad61bc04d3ed20a0bce774593274ffb459b65c6d7e330e2fbde8"
+    },
+    "standalone.js": {
+      "archive": "standalone.js.gz",
+      "archiveSha256": "264392c86e9c4cbbe22b8aaa671c07f60c968d248ebde06b3c4e725216bccb36",
+      "bytes": 811282,
+      "sha256": "537943e8ffb08f663ffc0d26fa85a246bf43d403a2ee537c67db990ea083f223"
+    },
+    "wasm-inline-worker.js": {
+      "archive": "wasm-inline-worker.js.gz",
+      "archiveSha256": "16da7d8a164b7f8ad62ce18a997ad8b8f963a5b903af44fcc7944a2e694da7d5",
+      "bytes": 19195,
+      "sha256": "c7f6a97870efc807019fe7bfcfc13fe9afec905b897628edf9497b67cccebb18"
+    },
+    "wasm-worker.js": {
+      "archive": "wasm-worker.js.gz",
+      "archiveSha256": "5053925cd0b46262150d408000a079831a83b246e2f16baa44c5a24813702d06",
+      "bytes": 57009,
+      "sha256": "d2108715d8cb31bfdf1034a4653758af94748fcd37722af5d28e0f67d3f4f5ec"
+    },
+    "xyg-wasm-inline.js": {
+      "archive": "xyg-wasm-inline.js.gz",
+      "archiveSha256": "b0fd9ab06c20146659c0e6ebde874607565db457ccbdc80374ee723ff4e28f84",
+      "bytes": 2534436,
+      "sha256": "ee662e04073c4bd9f6eee7c66e0518040d7a77f5114f81ee71911076ff70f0f2"
+    },
+    "xyg-wasm.manifest.json": {
+      "archive": "xyg-wasm.manifest.json.gz",
+      "archiveSha256": "1f6efa2b524810f8e0ab05549619b1bbe3966929e2c2bbcf7d0fb791156d35b1",
+      "bytes": 226,
+      "sha256": "d0e02ba34f525e8f80e2219aa4f753a67dd1255ebc7300ac152a6a3e4fe73bbf"
+    },
+    "xyg-wasm.wasm": {
+      "archive": "xyg-wasm.wasm.gz",
+      "archiveSha256": "dfb4692f4b3b62c926b21a8734009abb80acfad646a4b0797aaa0f5d4f8c491f",
+      "bytes": 1886288,
+      "sha256": "9a4d066a94836b84560f9f53d55d25794269f12392ee069971ca0cc8efeeaeb9"
+    }
+  },
+  "beforeControlDisposition": "4 finite Python failures; 3 selected exact-parent public constructor failures; original shipping WASM fails new finite parity assertions. Initial before-constructor path loaded current source via conftest and receives no credit; whole-file old-source run also hit missing client assets.",
+  "developmentFailures": [
+    "Local runner SyntaxError executed no tests",
+    "New Node pixel expectation initially used Python default height; explicit same dimensions corrected it",
+    "New browser oracle initially treated plot canvas as full viewport; corrected deterministic Scene margin transform, retaining three distinct colored-region assertions",
+    "ty check exposed missing internal Figure annotation; type-only declaration fixes it"
+  ],
+  "freshCommandResults": {
+    "before-constructor-exact-results.json": [
+      {
+        "command": [
+          "uv",
+          "run",
+          "pytest",
+          "-o",
+          "pythonpath=",
+          "-q",
+          "target/task-tmp/catalog-review-and-ci-repair/test_public_constructor_negative.py",
+          "-k",
+          "public_constructor"
+        ],
+        "exit": 1,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/before-constructor-exact-0.log",
+        "seconds": 8.762089014053345
+      }
+    ],
+    "before-constructor-results.json": [
+      {
+        "command": [
+          "uv",
+          "run",
+          "pytest",
+          "-o",
+          "pythonpath=",
+          "-q",
+          "tests/test_temporal_catalog.py",
+          "-k",
+          "public_constructor"
+        ],
+        "exit": 0,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/before-constructor-0.log",
+        "seconds": 5.234687805175781
+      }
+    ],
+    "before-constructor-selected-results.json": [
+      {
+        "command": [
+          "uv",
+          "run",
+          "pytest",
+          "-o",
+          "pythonpath=",
+          "-q",
+          "target/task-tmp/catalog-review-and-ci-repair/test_catalog_old_source.py",
+          "-k",
+          "public_constructor"
+        ],
+        "exit": 1,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/before-constructor-selected-0.log",
+        "seconds": 1.2274110317230225
+      }
+    ],
+    "before-finite-results.json": [
+      {
+        "command": [
+          "uv",
+          "run",
+          "pytest",
+          "-q",
+          "tests/test_temporal_catalog.py",
+          "-k",
+          "extreme_finite"
+        ],
+        "exit": 1,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/before-finite-0.log",
+        "seconds": 2.0079538822174072
+      }
+    ],
+    "before-wasm-results.json": [
+      {
+        "command": [
+          "node",
+          "scripts/temporal_catalog_wasm_parity.mjs",
+          "target/task-tmp/catalog-review-and-ci-repair/before/xyg-wasm.wasm"
+        ],
+        "exit": 1,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/before-wasm-0.log",
+        "seconds": 0.11499738693237305
+      }
+    ],
+    "browser-diagnostic-results.json": [
+      {
+        "command": [
+          "node",
+          "scripts/wasm_foundation_smoke.mjs"
+        ],
+        "exit": 1,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/browser-diagnostic-0.log",
+        "seconds": 4.867155313491821
+      }
+    ],
+    "browser-final-results.json": [
+      {
+        "command": [
+          "node",
+          "scripts/temporal_catalog_wasm_parity.mjs",
+          "packages/xy-client/dist/xyg-wasm.wasm"
+        ],
+        "exit": 0,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/browser-final-0.log",
+        "seconds": 0.11893963813781738
+      },
+      {
+        "command": [
+          "node",
+          "scripts/wasm_foundation_smoke.mjs"
+        ],
+        "exit": 0,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/browser-final-1.log",
+        "seconds": 52.413880825042725
+      }
+    ],
+    "browser-results.json": [
+      {
+        "command": [
+          "node",
+          "scripts/temporal_catalog_wasm_parity.mjs",
+          "packages/xy-client/dist/xyg-wasm.wasm"
+        ],
+        "exit": 0,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/browser-0.log",
+        "seconds": 0.4189307689666748
+      },
+      {
+        "command": [
+          "node",
+          "scripts/wasm_foundation_smoke.mjs",
+          "--report",
+          "target/task-tmp/catalog-review-and-ci-repair/foundation.json"
+        ],
+        "exit": 1,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/browser-1.log",
+        "seconds": 6.1493237018585205
+      }
+    ],
+    "build-results.json": [
+      {
+        "command": [
+          "cargo",
+          "build",
+          "--release",
+          "--target-dir",
+          "target/catalog-review-repair",
+          "-j",
+          "2"
+        ],
+        "exit": 0,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/build-0.log",
+        "seconds": 151.52404117584229
+      }
+    ],
+    "ci-results.json": [
+      {
+        "command": [
+          "make",
+          "check-ci"
+        ],
+        "exit": 0,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/ci-0.log",
+        "seconds": 406.31583285331726
+      }
+    ],
+    "client-results.json": [
+      {
+        "command": [
+          "node",
+          "js/build.mjs"
+        ],
+        "exit": 0,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/client-0.log",
+        "seconds": 4.724533557891846
+      }
+    ],
+    "clippy-results.json": [
+      {
+        "command": [
+          "cargo",
+          "clippy",
+          "--workspace",
+          "--all-targets",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "exit": 0,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/clippy-0.log",
+        "seconds": 46.61478543281555
+      }
+    ],
+    "contracts-results.json": [
+      {
+        "command": [
+          "uv",
+          "run",
+          "ty",
+          "check"
+        ],
+        "exit": 1,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/contracts-0.log",
+        "seconds": 3.0221354961395264
+      },
+      {
+        "command": [
+          "python3",
+          "scripts/gen_abi_manifest.py",
+          "--check"
+        ],
+        "exit": 0,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/contracts-1.log",
+        "seconds": 1.9189307689666748
+      },
+      {
+        "command": [
+          "python3",
+          "scripts/gen_wasm_abi.py",
+          "--check"
+        ],
+        "exit": 0,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/contracts-2.log",
+        "seconds": 0.0733635425567627
+      },
+      {
+        "command": [
+          "python3",
+          "scripts/abi_smoke.py"
+        ],
+        "exit": 0,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/contracts-3.log",
+        "seconds": 0.16368937492370605
+      },
+      {
+        "command": [
+          "uv",
+          "run",
+          "python",
+          "scripts/check_release_inventory.py"
+        ],
+        "exit": 0,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/contracts-4.log",
+        "seconds": 4.2892091274261475
+      }
+    ],
+    "core-final-results.json": [
+      {
+        "command": [
+          "uv",
+          "run",
+          "pytest",
+          "-q",
+          "tests/test_graphforge_contract_corpus.py"
+        ],
+        "exit": 0,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/core-final-0.log",
+        "seconds": 1.1118159294128418
+      }
+    ],
+    "floor-results.json": [
+      {
+        "command": [
+          "/home/ubuntu/.t3/worktrees/xyg/t3-150befc0/.venv/bin/python",
+          "-m",
+          "pytest",
+          "-o",
+          "pythonpath=",
+          "-q",
+          "tests/test_temporal_catalog.py",
+          "tests/test_check_typing.py",
+          "tests/test_stage_node_packages.py",
+          "tests/test_stale_names.py"
+        ],
+        "exit": 0,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/floor-0.log",
+        "seconds": 222.61072707176208
+      }
+    ],
+    "focused-results.json": [
+      {
+        "command": [
+          "uv",
+          "run",
+          "pytest",
+          "-q",
+          "tests/test_temporal_catalog.py",
+          "tests/test_check_typing.py",
+          "tests/test_stage_node_packages.py"
+        ],
+        "exit": 0,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/focused-0.log",
+        "seconds": 9.14507508277893
+      },
+      {
+        "command": [
+          "node",
+          "--test",
+          "packages/xy-node/test/temporal-catalog.test.mjs"
+        ],
+        "exit": 1,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/focused-1.log",
+        "seconds": 1.2034311294555664
+      },
+      {
+        "command": [
+          "cargo",
+          "test",
+          "-p",
+          "xyg-engine",
+          "temporal_scene",
+          "--",
+          "--nocapture"
+        ],
+        "exit": 0,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/focused-2.log",
+        "seconds": 30.099889993667603
+      }
+    ],
+    "gates-results.json": [
+      {
+        "command": [
+          "uv",
+          "run",
+          "--with",
+          "pre-commit",
+          "pre-commit",
+          "run",
+          "--all-files"
+        ],
+        "exit": 0,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/gates-0.log",
+        "seconds": 3.823878765106201
+      },
+      {
+        "command": [
+          "uv",
+          "run",
+          "ruff",
+          "check",
+          "."
+        ],
+        "exit": 0,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/gates-1.log",
+        "seconds": 0.19362616539001465
+      },
+      {
+        "command": [
+          "uv",
+          "run",
+          "ruff",
+          "format",
+          "--check",
+          "."
+        ],
+        "exit": 0,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/gates-2.log",
+        "seconds": 0.08617138862609863
+      }
+    ],
+    "node-final-results.json": {
+      "command": [
+        "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin/node",
+        "--test",
+        "packages/xy-node/test/temporal-catalog.test.mjs"
+      ],
+      "exit": 0,
+      "seconds": 1.3339524269104004
+    },
+    "node-full-results.json": [
+      {
+        "command": [
+          "npm",
+          "test",
+          "--prefix",
+          "packages/xy-node"
+        ],
+        "exit": 0,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/node-full-0.log",
+        "seconds": 29.654541969299316
+      }
+    ],
+    "qualification-final-results.json": [
+      {
+        "command": [
+          "uv",
+          "run",
+          "pytest",
+          "-q",
+          "tests/test_graphforge_contract_corpus.py",
+          "tests/test_release_inventory.py",
+          "tests/test_verify_ownership.py",
+          "tests/test_temporal_catalog.py",
+          "tests/test_temporal_catalog_geo_integration.py",
+          "tests/test_html_transport.py",
+          "tests/test_static_document_contract.py",
+          "tests/test_cross_host_abi_transition.py"
+        ],
+        "exit": 1,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/qualification-final-0.log",
+        "seconds": 42.034313440322876
+      }
+    ],
+    "qualification-results.json": [
+      {
+        "command": [
+          "uv",
+          "run",
+          "pytest",
+          "-q",
+          "tests/test_graphforge_contract_corpus.py",
+          "tests/test_release_inventory.py",
+          "tests/test_ownership_audit.py",
+          "tests/test_temporal_catalog.py",
+          "tests/test_temporal_catalog_geo_integration.py",
+          "tests/test_html_transport.py",
+          "tests/test_static_document_contract.py",
+          "tests/test_cross_host_abi_transition.py"
+        ],
+        "exit": 4,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/qualification-0.log",
+        "seconds": 0.5361015796661377
+      }
+    ],
+    "wasm-results.json": [
+      {
+        "command": [
+          "cargo",
+          "build",
+          "-p",
+          "xyg-wasm",
+          "--release",
+          "--target",
+          "wasm32-unknown-unknown",
+          "-j",
+          "2"
+        ],
+        "exit": 0,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/wasm-0.log",
+        "seconds": 84.56761121749878
+      },
+      {
+        "command": [
+          "node",
+          "js/package-wasm.mjs"
+        ],
+        "exit": 0,
+        "log": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/wasm-1.log",
+        "seconds": 55.7552444934845
+      }
+    ]
+  },
+  "historicalReceiptsUnchanged": true,
+  "hostedCi": "Original hosted failures retained; new head not pushed",
+  "independentReview": "Pending completed exact final-diff review",
+  "nativeAbi": 402,
+  "nativeSymbolsUnchanged": true,
+  "parent": "b8000a60900d4685969a6d68f55324e561199df5",
+  "qualificationDisposition": "Final bounded batch:133 pass/1 missing-LF-pin failure; all7 Core/real-CRLF tests reran successfully after exact source LF pins. Initial collection named a nonexistent ownership test and receives no credit.",
+  "remainingAcceptance": "Full #46/M5/M4-7 remains open; no issue closure, release, paid platform or comparative performance claim",
+  "rustProducerInputs": 246,
+  "schemaVersion": 1,
+  "scope": "PR1115 P2 finite projection/public pre-copy admission and hosted CI repair",
+  "sourceBindings": {
+    "current": 304,
+    "historical": 66,
+    "sha256": "6ffb73cc5204c1c525eb9e095c86ddba6be1b5b96891c497f34996e5479291ea"
+  },
+  "sourcePatchSha256": "5aff6b9cb8190aae8bb6c3c89dc4a874d495ccb281272e9141417abc1778688e",
+  "stagedFinalGates": {
+    "staged-format.log": {
+      "archiveSha256": "ea4d38ff3514b03e89c7dbfb6ac1c63ed7bfb4f90cefd1a0a79e5feb101abd14",
+      "exit": 0,
+      "sha256": "fc0bbac019440dc0d592ea23f64391a7684b4d8f1ada394542e6e6b48ca737f2"
+    },
+    "staged-hooks.log": {
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "exit": 0,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "staged-ruff.log": {
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "exit": 0,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    }
+  },
+  "wasmAbi": 36,
+  "wasmRequiredExportsUnchanged": true,
+  "wasmSize": {
+    "gzip6": 771742,
+    "gzip6sha256": "6ca3362ff19fd64d87d5e358fac0ac1a2d120f0015aa12a7964f12de547931a6",
+    "node": "v22.23.4",
+    "raw": 1886288,
+    "sha256": "9a4d066a94836b84560f9f53d55d25794269f12392ee069971ca0cc8efeeaeb9"
+  }
+}
