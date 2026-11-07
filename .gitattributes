@@ -135,3 +135,8 @@ tests/test_cross_host_abi_transition.py text eol=lf
 tests/test_graph_session_python_transport.py text eol=lf
 spec/design/graph-session-python-transport.md text eol=lf
 tests/fixtures/*_cross_host.json text eol=lf
+
+# Current notebook verifier ABI correction evidence.
+spec/performance/pr1110-notebook-abi-2026-11-07/*.json text eol=lf
+spec/performance/pr1110-notebook-abi-2026-11-07/*.md text eol=lf
+spec/performance/pr1110-notebook-abi-2026-11-07/*.gz -text

@@ -1,0 +1,70 @@
+{
+  "parent": "53b6114773c5c5c21cb7c4e315bd4ac2cff33e0b",
+  "currentBindingsSha256": "20af1c294085f69eef85ca201881152a9e4ecc4fdaaf2babe3f5bac7edc6fef6",
+  "logs": {
+    "before.log": {
+      "archive": "spec/performance/pr1110-notebook-abi-2026-11-07/before.log.gz",
+      "archiveSha256": "dd1b3778dceaf9090954eec11d32ec29a710ac14949af9ff993b6a1c60867d74",
+      "rawSha256": "bb4506ade5acdbfb5abe5a650204d56b651406ef63ed343527478c557d3cff39"
+    },
+    "after.log": {
+      "archive": "spec/performance/pr1110-notebook-abi-2026-11-07/after.log.gz",
+      "archiveSha256": "1b5876660f05201ed95aa742feaad51ce4a9b40450a89c0c792fafeb04096d14",
+      "rawSha256": "8a0083ab43cb0f83117637cfeef43d13eaa95c5dd16bd8b35d4cf08da8ffa754"
+    },
+    "hosted-report.json": {
+      "archive": "spec/performance/pr1110-notebook-abi-2026-11-07/hosted-report.json.gz",
+      "archiveSha256": "0193d533d98fdf64352b4ba529520fd38c111044cce5ed95a1079264dd9885bf",
+      "rawSha256": "d937566de2d020c9c569e7516c24f6b4184f9110731342814e1e0754618e3827"
+    },
+    "pytest.log": {
+      "archive": "spec/performance/pr1110-notebook-abi-2026-11-07/pytest.log.gz",
+      "archiveSha256": "199b2b4ef3518fe4a569c24a85df899ef9aabfaf349512a1cd787c497e1677cc",
+      "rawSha256": "02ed8e1e76fcc08841c8a64d7de9f598943332ed8e64566de0a8e5905b4edfff"
+    },
+    "metadata.log": {
+      "archive": "spec/performance/pr1110-notebook-abi-2026-11-07/metadata.log.gz",
+      "archiveSha256": "6c62e84e07628a6cc5dc52821ce050042036c4d25a85c0fcb463394c6bae41c4",
+      "rawSha256": "4c972ad6701d1c25fb09775b235b8ef35d87b44de744ba3a73f67b1bc6adbf27"
+    },
+    "hooks": {
+      "archive": "spec/performance/pr1110-notebook-abi-2026-11-07/hooks.log.gz",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "exit": 0
+    },
+    "ruff": {
+      "archive": "spec/performance/pr1110-notebook-abi-2026-11-07/ruff.log.gz",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "exit": 0
+    },
+    "format": {
+      "archive": "spec/performance/pr1110-notebook-abi-2026-11-07/format.log.gz",
+      "archiveSha256": "4431b3457e40a51416b413ff4a6fbd1c215a6fda4b83698ee84321270b829bc6",
+      "rawSha256": "a36db4b65ebb65eae3421e27e0165b35f14b0f0a2331509733b518869c1b5219",
+      "exit": 0
+    }
+  },
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6137112,
+      "sha256": "7a513d1f98212a39e50132ba3b24dc83a76af0d9192635eab248fa3816fc898b"
+    },
+    "/home/ubuntu/.t3/worktrees/xyg/t3-f7cba839/packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1927032,
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1"
+    }
+  },
+  "results": {
+    "beforeHostedReplay": "rejected selected native library evidence because literal399",
+    "afterHostedReplay": "pass under generatedABI401",
+    "notebookModule": 31,
+    "notebookCoreInventory": 64
+  },
+  "environment": {
+    "python": "3.11.17",
+    "native": "explicit existing ABI401 library, no rebuild",
+    "hostedReport": "retained CI run42347220512, not a fresh notebook execution"
+  }
+}

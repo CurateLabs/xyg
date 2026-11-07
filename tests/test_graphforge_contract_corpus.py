@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-CURRENT_BINDINGS = Path("spec/performance/pr1110-abi-fixtures-2026-11-07/current-bindings.json")
+CURRENT_BINDINGS = Path("spec/performance/pr1110-notebook-abi-2026-11-07/current-bindings.json")
 
 
 def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> None:

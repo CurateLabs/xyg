@@ -9,8 +9,12 @@ import uuid
 from itertools import pairwise
 from pathlib import Path
 
+ABI_VERSION = json.loads(
+    (Path(__file__).resolve().parents[1] / "spec/abi/xyg-abi.json").read_text()
+)["abi_version"]
 
-def verify(report):
+
+def verify(report, *, expected_abi: int = ABI_VERSION):
     errors = []
     if report.get("ok") is not True or report.get("external"):
         errors.append("notebook journey must succeed without external data requests")
@@ -92,7 +96,8 @@ def verify(report):
         errors.append("new stationary exact kernel pointer callback after baseline required")
     native = kernel.get("native", {})
     if (
-        native.get("abi") != 399
+        type(native.get("abi")) is not int
+        or native.get("abi") != expected_abi
         or len(native.get("sha256", "")) != 64
         or native.get("sha256") != report.get("expectedNativeHash")
     ):
