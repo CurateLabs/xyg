@@ -2158,7 +2158,7 @@ ladder acceptance for #1015/#36/#35 remains open.
 
 ## Ordinary linked filtering checkpoint (#112)
 
-Native ABI 402 and WASM ABI 36 share XYFC/XYFR v1 through the Rust
+Native ABI 403 and WASM ABI 37 share XYFC/XYFR v1 through the Rust
 `FilterTierCSession`; Python `Chart.filter_session`, Node chart `filterSession`,
 and browser `createWasmFilterSession` frame that same protocol. Full packets,
 exact counts, refusal paths, and canonical u64 membership pages are compared
@@ -2169,3 +2169,8 @@ five-view pointer/keyboard parity and context/append/rebuild/publication failure
 are exercised. Automatic notebook/native-host transport, assistive hardware,
 nonlinear/large-offset compatibility and massive performance remain open. The [normative subset and remaining work](filter-tier-c.md)
 include synchronous Worker cancellation limits and logical memory accounting.
+## Temporal catalog candidate (#46)
+
+[Temporal catalog](temporal-catalog.md) records the exact XYTM framing and
+bounded Python/Node Figure and browser WASM entry points. Package size, full
+parity and accessible controller journeys remain release blockers.

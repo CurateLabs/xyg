@@ -17,6 +17,13 @@ unsupported boundaries (including rich/wrapped/custom typography) are
 specified in the repository's Scene IR contract, not inferred from a slot's
 renderer support here.
 
+An experimental temporal catalog supports UTC event, interval, Gantt,
+line, bar and scatter compositions through the same Rust Scene painter.
+It currently admits a bounded direct tier with uniform RGBA/stroke inputs;
+the style tables do not imply full temporal customization, live controls,
+streaming, timezones, accessibility or massive-scale qualification.
+See the [scoped contract and evidence](https://github.com/CurateLabs/xyg/blob/main/spec/design/temporal-catalog.md).
+
 - **11** mark style properties across **21** mark kinds, drawn by all three renderers.
 - **48** stable chrome slots for CSS and Tailwind in the browser.
 - **1** way to add a mark kind XYG does not ship, without forking it.

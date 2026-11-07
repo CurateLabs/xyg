@@ -1,0 +1,124 @@
+# Temporal composition catalog (#46 candidate)
+
+Status: **partial implementation; not release ready and not issue completion**.
+The accepted foundations remain [temporal columns](temporal.md) and
+[controller](temporal-controller.md). This candidate introduces one Rust
+`temporal_scene` compiler that lowers six families onto the existing Scene
+Scatter, Polyline and Rect records. It adds no renderer.
+
+Python authoring is `xyg.temporal_chart(kind, rows, domain=(lo, hi),
+timezone="UTC")`, where kind is event, interval, gantt, line, bar or scatter,
+and each row is `(start_us, end_us, value_or_lane, stable_u64_id)`.
+`Chart.figure().to_scene()`, SVG/PNG and offline HTML use the normal
+Figure/StaticDocument/Scene/painter consumers. Node `temporalChart` returns
+an ordinary Figure; browser `encodeTemporalScene` plus
+`worker.temporalSceneCompile` produces the same Scene bytes. No publication
+or whole-catalog qualification is implied by these declarations.
+
+## Exactness and framing
+
+XYTM version 1 is a 128-byte little-endian header followed immediately by
+UTF-8 timezone, title, and 40-byte source rows. Header: magic at 0, u32
+version/kind/row-count at 4/8/12, f64 width/height at 16/24, i64 UTC-microsecond
+range-start/range-end/cursor at 32/40/48, u32 zone/title byte counts at 56/60,
+u32 retained source precision at 64; 68..72 reserved; RGBA8 fill/stroke at
+72/76, f64 stroke width at 80, and 88..128 reserved zero. Row: i64 start/end
+at 0/8, f64 numeric value at 16, u64 identity at 24, u8 start/end validity at
+32/33, six reserved zero bytes. Source units are already normalized UTC
+microseconds; precision records original units, not a request to scale again.
+Python rejects timestamp floats; JavaScript requires bigint. Membership uses
+exact integer comparisons. Projection subtracts an i128 origin before a
+float ratio. Full-width signed extremes therefore cannot overflow subtraction.
+Scene IDs retain literal application identities; duplicate source IDs refuse.
+
+Range membership is half-open. Null instants omit; null interval starts/ends
+are unbounded. Reversed finite intervals refuse before publishing any output.
+Source rows are copied into immutable Python tuples/Node frozen row snapshots.
+Line timestamps must be ascending; null rows break runs. No source sort,
+decimation or identity conversion occurs in a host.
+
+Tick policy is integer microsecond ticks below 28 days and Gregorian first-of-
+month ticks above it. Month indices advance through the civil calendar, not
+30-day durations. UTC labels include six fractional digits. Display timezone
+capability is currently **UTC only**: every other zone refuses explicitly.
+DST normalization remains the canonical column-ingress contract; this compiler
+does not implement an IANA database or infer local/UTC semantics.
+
+## Budgets and presentation limits
+
+Request/operation cap is 64 MiB. Python, Node and browser framing check the
+encoded request size before copying rows; this is a transport limit, not a
+host-side row/LOD decision. Rust admits rows at most four times viewport width,
+viewport 160..16384 by 120..16384 CSS pixels. Admission estimates source and
+Scene scratch before variable allocation; over-budget input refuses. This is
+an explicit direct tier, **not dense temporal LOD**. Interval/Gantt use authored
+numeric lanes and constant 8px height; temporal bars use 6px width. Uniform
+RGBA8 and stroke width plus title are supported. General CSS, category labels,
+legends, authored axes/annotations and style channels are not yet integrated.
+Controller snapshots supply Python compile range/cursor; exports freeze the
+range and cursor in the Scene axis annotation. Browser timing, brush/group
+binding, cursor marks, append/update transactions, cancellation, revisioned
+membership, keyboard journeys and virtualized tables remain unimplemented.
+
+## Evidence and remaining acceptance
+
+`tests/test_temporal_catalog.py`, Node `test/temporal-catalog.test.mjs`, and
+`scripts/temporal_catalog_browser_smoke.mjs` exercise public exports.
+The original candidate WASM package failed the unchanged gzip cap: 793095 bytes
+versus 786432 (6663 bytes over). Optimized raw bytes are1942827 versus the
+requested1927168 cap (15659 bytes over); SHA256 is
+`18337bf17ea649bba23e99a8f045917cf85addc05575780f55ca7cac0b1dce4d`. The earlier candidate measured792737. Actual
+native/raw-WASM six-family Scene bytes match, including LF/CRLF title inputs;
+that original capture claims no packaged browser-WASM pass. The first attempt also hit errno -122 under /tmp; the retry
+used TMPDIR=/var/tmp. Neither failure is counted as a pass.
+
+The subsequent wasm32-only inlining qualification retains O3, native flags,
+toolchain, optimizer, exports, request/output contracts, guards and package
+limits. Threshold 50 packages at 1886204 raw / 771728 Node 22 gzip6 bytes,
+below the unchanged 1927168 / 786432 limits. The original failure and bytes
+remain in the historical receipt; the successor evidence is
+[`46-inline50`](../temporal/evidence/46-inline50/README.md). All 69 export
+names/kinds are identical. Same-source ABBA profiles retain complete byte
+equality for admitted 100/10k/100k operations, and the same 100k interaction
+resource refusal. Samples include slower cases and concurrent VM work; they
+do not establish a latency or competitor win.
+
+The existing full foundation CI command additionally exercises all six
+families through the packaged public Worker, compares each binary request
+and complete Scene against native SHA256 oracles, then uses the existing
+ChartView painter. It requires actual source-colored pixels and exact u64
+identity metadata before disposal. This proves bounded rendering and metadata,
+not a trusted pointer pick or accessible interactive temporal controller.
+
+The new native compile symbol uses generated ABI402. All ten current shared
+fixtures are regenerated with their official producers; complete ABI401
+predecessors and the earlier ABI399 chain remain preserved in
+[`46-abi402`](../temporal/evidence/46-abi402/README.md). Only ABI metadata
+changes; all product packet bytes and cases remain identical. Historical
+transition checks use the preserved bytes, and current wrong-version checks
+derive from the generated ABI rather than treating 402 as permanently wrong.
+
+Python temporal standalone HTML uses the ordinary custom-CSS breakout rejection,
+bundled-JavaScript script-data escaping, escaped title and offline CSP helpers.
+It rejects unsafe CSS before writing an artifact. Native static exports compile
+the Scene at the resolved export width/height in both Python and Node, then
+frame that same size in the ordinary StaticDocument. Export overrides do not
+mutate the authored Figure or future default-size Scenes.
+
+All #46 acceptance remains open beyond the bounded public path: screen-bounded
+LOD with complete membership/provenance, full host/WASM byte oracles, shared
+controller and transport-neutral channel integration, exact live picks,
+frozen state versus later updates, stale/cancel/disposal transactions,
+keyboard/focus/reduced-motion/live summary/table journeys, complete
+customization, DST/precision integration, competitor comparisons, small through
+massive/five-view resource and latency evidence, notebooks/applications/VS Code.
+No 100M-row, 50FPS, cross-platform or competitor lead is asserted.
+
+## Shared filtering/catalog ABI integration
+
+The combined source preserves the complete filter/catalog export union under
+native ABI403 and WASM37. The original402/36 candidate and its historical
+fixtures remain intact; current fixtures are officially regenerated with only
+ABI metadata changed. XYTM v1/XYFC v1 and existing Scene/painter contracts,
+request/operation caps, runtime limits and packaging gates remain unchanged.
+No issue or milestone completion follows from this integration.

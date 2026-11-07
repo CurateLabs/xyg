@@ -1,0 +1,103 @@
+{
+  "tests/fixtures/animation_emit_cross_host.json": {
+    "command": [
+      "node",
+      "packages/xy-node/scripts/animation_emit_cross_host.mjs"
+    ],
+    "newAbi": 403,
+    "parentAbi": 402,
+    "parentSha256": "ca35000536aeffdf4089b2957afc5176913ec0c50d7c3c3f746f619e288ef658"
+  },
+  "tests/fixtures/default_styled_emit_cross_host.json": {
+    "command": [
+      "node",
+      "packages/xy-node/scripts/default_styled_emit_cross_host.mjs"
+    ],
+    "newAbi": 403,
+    "parentAbi": 402,
+    "parentSha256": "c9ef952a669032493ba8ca8c26f45db61517527c27507fa4d7146c9315b43ce4"
+  },
+  "tests/fixtures/density_emit_cross_host.json": {
+    "command": [
+      "node",
+      "packages/xy-node/scripts/density_emit_cross_host.mjs"
+    ],
+    "newAbi": 403,
+    "parentAbi": 402,
+    "parentSha256": "3ba0fe7ac14d2fe38cb003b2229804e9031a29ffd951027f0f528cb5603ee936"
+  },
+  "tests/fixtures/force_emit_cross_host.json": {
+    "command": [
+      "node",
+      "packages/xy-node/scripts/force_emit_cross_host.mjs"
+    ],
+    "newAbi": 403,
+    "parentAbi": 402,
+    "parentSha256": "66f988aeb9c361dd6207ac53bc82d516c1c40e79a566cc69aac4549257d890df"
+  },
+  "tests/fixtures/geo_cross_host.json": {
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "packages/xy-node/test/fixtures/write_geo_cross_host_fixtures.py"
+    ],
+    "newAbi": 403,
+    "parentAbi": 402,
+    "parentSha256": "b2a9f58ac66d0ac9b9def3d167521affbfe43535e1cd22dcba01a6ae3e4403ed"
+  },
+  "tests/fixtures/payload_attach_cross_host.json": {
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "packages/xy-node/test/fixtures/write_payload_attach_cross_host_fixtures.py"
+    ],
+    "newAbi": 403,
+    "parentAbi": 402,
+    "parentSha256": "c058b47617f0cc2a1ca5729bcfc7e020014ff03685b4720c1ec490ecf0bed97e"
+  },
+  "tests/fixtures/payload_chrome_cross_host.json": {
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "packages/xy-node/test/fixtures/write_payload_chrome_cross_host_fixtures.py"
+    ],
+    "newAbi": 403,
+    "parentAbi": 402,
+    "parentSha256": "5e63dddcc8a761afe99dbb5f8e4feef236abbe7f87774aab8cd3afb864b4ea03"
+  },
+  "tests/fixtures/payload_cross_host.json": {
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "packages/xy-node/test/fixtures/write_payload_cross_host_fixtures.py"
+    ],
+    "newAbi": 403,
+    "parentAbi": 402,
+    "parentSha256": "80c85e82df33d1465520113cd84ace15ea9f93c7e167c9834d14cf9fdd3bf221"
+  },
+  "tests/fixtures/series_palette_cross_host.json": {
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "tests/test_series_palette_cross_host.py",
+      "--write"
+    ],
+    "newAbi": 403,
+    "parentAbi": 402,
+    "parentSha256": "a6e4fdf32b85c0a981acb50f1a600cbe1fb5ed6b20a74aa449affc63601cc9eb"
+  },
+  "tests/fixtures/tooltip_len_emit_cross_host.json": {
+    "command": [
+      "node",
+      "packages/xy-node/scripts/tooltip_len_emit_cross_host.mjs"
+    ],
+    "newAbi": 403,
+    "parentAbi": 402,
+    "parentSha256": "56d74362b2533ab2bb0c2228c3aaf94444d4480238e4addaafd063d4ebf060f6"
+  }
+}

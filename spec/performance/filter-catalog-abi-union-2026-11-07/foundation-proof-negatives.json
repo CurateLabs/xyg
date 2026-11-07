@@ -1,0 +1,18 @@
+{
+  "realReportAccepted": true,
+  "exactShippingHarnessBlock": true,
+  "rejected": [
+    "missing-filter",
+    "nonindexed-filter",
+    "missing-catalog",
+    "nonarray-catalog",
+    "missing-event",
+    "missing-interval",
+    "missing-gantt",
+    "missing-line",
+    "missing-bar",
+    "missing-scatter",
+    "duplicated-family"
+  ],
+  "focusedDensityScopeRetained": true
+}

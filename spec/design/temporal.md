@@ -107,3 +107,7 @@ Python and Node must produce byte-identical `values`, `validity`, `timezone`,
 `precision`, and interval membership for the same Arrow-like fixtures, including
 sub-millisecond micros that are not exactly representable as f64 milliseconds,
 pre-epoch values, nulls, DST gap/fold outcomes, and reversed-interval failures.
+
+The partial #46 [temporal catalog candidate](temporal-catalog.md) lowers exact
+UTC inputs into the existing Scene. Its direct-tier, timezone, interaction and
+packaging limitations are explicit; it does not complete the temporal catalog.

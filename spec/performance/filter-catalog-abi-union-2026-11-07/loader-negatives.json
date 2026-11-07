@@ -1,0 +1,64 @@
+[
+  {
+    "parent": "filter",
+    "host": "python",
+    "nativeSha256": "347ca67b5eb09aed8b8f6d6578f1f21913c195ab197ce70a68ba6a2e1dac35f6",
+    "nativeAbi": 402,
+    "wrapperAbi": 403,
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "-c",
+      "import xyg._native"
+    ],
+    "exitCode": 1,
+    "rejectedBeforeGeneratedBinding": true
+  },
+  {
+    "parent": "filter",
+    "host": "node",
+    "nativeSha256": "347ca67b5eb09aed8b8f6d6578f1f21913c195ab197ce70a68ba6a2e1dac35f6",
+    "nativeAbi": 402,
+    "wrapperAbi": 403,
+    "command": [
+      "node",
+      "--input-type=module",
+      "-e",
+      "try{await import('./packages/xy-node/src/native.js');throw Error('unexpected success');}catch(e){console.log(JSON.stringify({code:e.code,message:e.message,expected:e.expected,actual:e.actual}));if(!e.message.includes('wrapper expects 403, library reports 402'))process.exit(2);process.exit(1);}"
+    ],
+    "exitCode": 1,
+    "rejectedBeforeGeneratedBinding": true
+  },
+  {
+    "parent": "catalog",
+    "host": "python",
+    "nativeSha256": "8f1b7a544bdefab946099fbeab11e658e73c1262381113637baa7e131c561aa5",
+    "nativeAbi": 402,
+    "wrapperAbi": 403,
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "-c",
+      "import xyg._native"
+    ],
+    "exitCode": 1,
+    "rejectedBeforeGeneratedBinding": true
+  },
+  {
+    "parent": "catalog",
+    "host": "node",
+    "nativeSha256": "8f1b7a544bdefab946099fbeab11e658e73c1262381113637baa7e131c561aa5",
+    "nativeAbi": 402,
+    "wrapperAbi": 403,
+    "command": [
+      "node",
+      "--input-type=module",
+      "-e",
+      "try{await import('./packages/xy-node/src/native.js');throw Error('unexpected success');}catch(e){console.log(JSON.stringify({code:e.code,message:e.message,expected:e.expected,actual:e.actual}));if(!e.message.includes('wrapper expects 403, library reports 402'))process.exit(2);process.exit(1);}"
+    ],
+    "exitCode": 1,
+    "rejectedBeforeGeneratedBinding": true
+  }
+]

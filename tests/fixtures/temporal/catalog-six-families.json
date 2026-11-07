@@ -1,0 +1,43 @@
+{
+  "schema": "xyg.temporal-catalog-native-oracle/v1",
+  "source": "Rust ABI402 temporal_scene at 1e585261d40d3113d7f41e7b739cd5b254cc7723; exact same native bytes retained by inline-only repair",
+  "nativeSha256": "8f1b7a544bdefab946099fbeab11e658e73c1262381113637baa7e131c561aa5",
+  "cases": [
+    {
+      "kind": "event",
+      "requestSha256": "c9a1bf82341177f7c5a7425603939d5a35a112c9dd36ba05fa2fdf3f1bfc9d22",
+      "sceneSha256": "f7d513b3aa6c31229c67e369da4120841834d10c8dcab69141eae1ff810c15b4",
+      "sceneBytes": 902
+    },
+    {
+      "kind": "interval",
+      "requestSha256": "d962c225084943bca8dcedfa2db15bfd2b86f3442b67226a0d8add360ac0e5e3",
+      "sceneSha256": "0c35ca8fc13e2c158a36712be85d22f46e9b0049e840f2bbcbc588ab893c694b",
+      "sceneBytes": 902
+    },
+    {
+      "kind": "gantt",
+      "requestSha256": "8d411c74c571351d578fbcf53c9825d79b10233d5d45e5531b591c4720386bed",
+      "sceneSha256": "0c35ca8fc13e2c158a36712be85d22f46e9b0049e840f2bbcbc588ab893c694b",
+      "sceneBytes": 902
+    },
+    {
+      "kind": "line",
+      "requestSha256": "0d7a1130d0ab9ea87e0c173f032436d358c81f5decf3b9a05f218b5fc599b3b1",
+      "sceneSha256": "edb369bca8146fa6950ac8846f09881fc11916727b0c624d349081455e2d82d6",
+      "sceneBytes": 902
+    },
+    {
+      "kind": "bar",
+      "requestSha256": "916325e9effa62e608ae01ef1285f4b105d9df13521c73845942ab5611fe5056",
+      "sceneSha256": "d083d3e8167a0325d43d1aebbfe34d197984374afad7944c82b7e1bc3c7563f4",
+      "sceneBytes": 902
+    },
+    {
+      "kind": "scatter",
+      "requestSha256": "1476863488b95b7936c43776fc8268caa2421eebe3cfda0c7d38662ff1e94b2b",
+      "sceneSha256": "f7d513b3aa6c31229c67e369da4120841834d10c8dcab69141eae1ff810c15b4",
+      "sceneBytes": 902
+    }
+  ]
+}

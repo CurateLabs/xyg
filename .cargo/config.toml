@@ -1,6 +1,6 @@
-# Keep the safe engine at O3. Bound inlining for the direct-browser artifact;
-# same-source correctness/ABBA evidence: spec/benchmarks/wasm-geographic-profile-local.json
-# and spec/performance/filter-tier-c-programmatic-2026-11-07/.
-# This target-specific setting never affects the native cdylib.
+# Native release stays O3. The single browser module uses O2 and
+# bounded LLVM inlining; no feature/export/cap/runtime-limit reduction.
+# Shared-source filter/catalog packaging and runtime qualification is recorded
+# in spec/performance/filter-catalog-abi-union-2026-11-07/.
 [target.wasm32-unknown-unknown]
-rustflags = ["-C", "llvm-args=--inline-threshold=50"]
+rustflags = ["-C", "llvm-args=--inline-threshold=50", "-C", "opt-level=2"]

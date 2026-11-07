@@ -1,0 +1,2470 @@
+{
+  "schema": "xyg-combined-filter-catalog-profile-v1",
+  "environment": {
+    "node": "v22.23.4",
+    "cpu": "Intel(R) Xeon(R) CPU E3-1270 v6 @ 3.80GHz",
+    "platform": "linux",
+    "arch": "x64"
+  },
+  "artifacts": {
+    "A": {
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/filter-catalog-union/wasm-o3-inline50.wasm",
+      "sha256": "a7406e2df38dd96ca8066c0905b0cdad98bdaa4a0afd18c0c4a2d6eea013a59b",
+      "bytes": 1927322,
+      "exports": [
+        {
+          "name": "memory",
+          "kind": "memory"
+        },
+        {
+          "name": "xyg_wasm_abi_version",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_aggregate_bin2d",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_aggregate_step",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_aggregate_stream_begin",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_aggregate_stream_finish",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_aggregate_stream_push",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_arena_high_water",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_arena_len",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_arena_ptr",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_arena_resize",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_cancel",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_compound_transition",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_copy_bytes_hi",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_copy_bytes_lo",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_copy_count",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_dashboard_plan",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_default_palette_rgba8",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_default_palette_rows",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_default_palette_version",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_density_first_paint_plan",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_filter_execute",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_catalog_compile",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_column_ingest",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_frame_prepare",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_scale_execute",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_scale_read",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_scene_compile",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_snapshot_execute",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_snapshot_read",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_tile_execute",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_tile_frame_prepare",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_tile_read",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_transport_acquire",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_viewport_execute",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_graph_begin",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_graph_step",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_graphforge_compose",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_graphforge_composition_version",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_graphforge_session_close",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_graphforge_session_interact",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_graphforge_session_open",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_graphforge_session_render",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_graphforge_session_update",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_instance_dispose",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_instance_new",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_last_error_len",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_last_error_ptr",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_last_scene_records",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_last_scene_styles",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_max_arena_bytes",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_output_len",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_output_ptr",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_scene_compile",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_scene_compile_begin",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_scene_compile_phase",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_scene_compile_prepare",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_scene_compile_records_processed",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_scene_compile_step",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_scene_prepare",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_scene_prepare_annotations",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_scene_validate",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_scene_version",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_temporal_execute",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_temporal_graph_execute",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_temporal_scene_compile",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_ticks_resolve",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_metadata_version",
+          "kind": "function"
+        },
+        {
+          "name": "__data_end",
+          "kind": "global"
+        },
+        {
+          "name": "__heap_base",
+          "kind": "global"
+        }
+      ]
+    },
+    "B": {
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/packages/xy-client/dist/xyg-wasm.wasm",
+      "sha256": "8217a9ec41d2de69ff30e1ec4193f8564483afcddd4fb33af13eede725bbf3d1",
+      "bytes": 1871162,
+      "exports": [
+        {
+          "name": "memory",
+          "kind": "memory"
+        },
+        {
+          "name": "xyg_wasm_abi_version",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_aggregate_bin2d",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_aggregate_step",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_aggregate_stream_begin",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_aggregate_stream_finish",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_aggregate_stream_push",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_arena_high_water",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_arena_len",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_arena_ptr",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_arena_resize",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_cancel",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_compound_transition",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_copy_bytes_hi",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_copy_bytes_lo",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_copy_count",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_dashboard_plan",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_default_palette_rgba8",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_default_palette_rows",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_default_palette_version",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_density_first_paint_plan",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_filter_execute",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_catalog_compile",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_column_ingest",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_frame_prepare",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_scale_execute",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_scale_read",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_scene_compile",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_snapshot_execute",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_snapshot_read",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_tile_execute",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_tile_frame_prepare",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_tile_read",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_transport_acquire",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_viewport_execute",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_graph_begin",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_graph_step",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_graphforge_compose",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_graphforge_composition_version",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_graphforge_session_close",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_graphforge_session_interact",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_graphforge_session_open",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_graphforge_session_render",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_graphforge_session_update",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_instance_dispose",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_instance_new",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_last_error_len",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_last_error_ptr",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_last_scene_records",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_last_scene_styles",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_max_arena_bytes",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_output_len",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_output_ptr",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_scene_compile",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_scene_compile_begin",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_scene_compile_phase",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_scene_compile_prepare",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_scene_compile_records_processed",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_scene_compile_step",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_scene_prepare",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_scene_prepare_annotations",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_scene_validate",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_scene_version",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_temporal_execute",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_temporal_graph_execute",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_temporal_scene_compile",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_ticks_resolve",
+          "kind": "function"
+        },
+        {
+          "name": "xyg_wasm_geo_metadata_version",
+          "kind": "function"
+        },
+        {
+          "name": "__data_end",
+          "kind": "global"
+        },
+        {
+          "name": "__heap_base",
+          "kind": "global"
+        }
+      ]
+    }
+  },
+  "measurements": [
+    {
+      "name": "filter-session",
+      "count": 47,
+      "fixtureSha256": "0bbd8c9cec08f3b0041c9c558af96d241a5907d277979e638273bf14a8747cb0",
+      "outputBytes": 14338,
+      "outputSha256": "f6afc77588a7e89f533fd8e01985bcd1459d0caf78688a043736c5d194e29ff6",
+      "completeBytesEqual": true,
+      "medianA": 0.7260674999999992,
+      "medianB": 0.6926825000000036,
+      "ratio": 0.9540194265684725,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.3825750000000028
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.39494600000000446
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.7858930000000157
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.848462000000012
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.887867
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.8087249999999813
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 2.003489000000002
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.7902640000000076
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.6618709999999908
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 1.7813859999999977
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.5994719999999916
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.6446129999999926
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 2.025880000000001
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.5646069999999952
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.5519700000000114
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.5407020000000102
+        }
+      ]
+    },
+    {
+      "name": "filter-density",
+      "count": 57,
+      "fixtureSha256": "c94c47569acd18b9d3a924fc807204eca5ea19d465e471fb4e323ef12be871ee",
+      "outputBytes": 60348,
+      "outputSha256": "4ea8d53c332cdb2bc2566be89ddd7b6d899c7073233ed70b401ec6bd3574c252",
+      "completeBytesEqual": true,
+      "medianA": 1.1238509999999877,
+      "medianB": 1.154776499999997,
+      "ratio": 1.027517437809825,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 1.2510349999999733
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 1.230872000000005
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 1.2114970000000085
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 1.1913409999999942
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 1.1455189999999789
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 1.193037000000004
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 1.881463999999994
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 1.8084399999999903
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 1.0742500000000064
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 1.1088309999999808
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 1.11651599999999
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 1.1021829999999966
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.6863639999999975
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.698204000000004
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.8417239999999993
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 1.0091819999999814
+        }
+      ]
+    },
+    {
+      "name": "temporal-event",
+      "count": 100,
+      "requestBytes": 4159,
+      "requestSha256": "13bf7d44b0887e9488aa7838ef485aafd1a63f5d9795374b4d76a49a495a29c2",
+      "outputBytes": 6346,
+      "outputSha256": "abc264412d3a840698e4616b89d53d8c9b45e4e4c7decf4ccbd2617adedfaefb",
+      "completeBytesEqual": true,
+      "medianA": 0.0700714999999974,
+      "medianB": 0.07904449999999485,
+      "ratio": 1.128054915336446,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.07495099999999866
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.0883619999999894
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.0932149999999865
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.07996199999999476
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.06775899999999524
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.07198199999999133
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.06818200000000729
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.06795599999998103
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.0661450000000059
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.07786999999999011
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.07113999999998555
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.07218700000001377
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.06574200000000019
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.0802189999999996
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.08117500000000177
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.0911130000000071
+        }
+      ]
+    },
+    {
+      "name": "temporal-interval",
+      "count": 100,
+      "requestBytes": 4159,
+      "requestSha256": "d4fd29dcd2179bb753005412e2cf13ec0045b45c6645d52147c151d0926bd70e",
+      "outputBytes": 6346,
+      "outputSha256": "75438f2d6ba814f983ff0f67803ab2f53cabb6a22824c235c22b5dcc12867df9",
+      "completeBytesEqual": true,
+      "medianA": 0.12649749999999926,
+      "medianB": 0.13164849999999717,
+      "ratio": 1.0407201723354054,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.12771699999998987
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.13247000000001208
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.13723199999998315
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.1297490000000039
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.14092600000000743
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.13385600000000863
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.12650999999999613
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.12527800000000866
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.12142500000001633
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.12718300000000227
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.1230160000000069
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.14228100000002541
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.12204599999998322
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.13299099999997566
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.13082699999998226
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.12188599999998928
+        }
+      ]
+    },
+    {
+      "name": "temporal-gantt",
+      "count": 100,
+      "requestBytes": 4159,
+      "requestSha256": "51ecac958d51f2b841b73e48edc028b09658eb59e3e2c29ae6af8173a7723523",
+      "outputBytes": 6346,
+      "outputSha256": "75438f2d6ba814f983ff0f67803ab2f53cabb6a22824c235c22b5dcc12867df9",
+      "completeBytesEqual": true,
+      "medianA": 0.12772449999999935,
+      "medianB": 0.13167950000000417,
+      "ratio": 1.0309650850072214,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.1314570000000117
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.12223999999997659
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.12292600000000675
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.1280710000000056
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.12636000000000536
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.15429000000000315
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.13033699999999726
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.12982800000000339
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.12539899999998738
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.13302200000001108
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.12105099999999425
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.1273779999999931
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.12291299999998273
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 3.2156169999999804
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.1362150000000213
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.15613300000001118
+        }
+      ]
+    },
+    {
+      "name": "temporal-line",
+      "count": 100,
+      "requestBytes": 4159,
+      "requestSha256": "aabad2c727b4703e9f91b595569d2052f9901f05c5670cde8dff8caf5c3a6983",
+      "outputBytes": 6346,
+      "outputSha256": "d2adf734de210f301f56d2864fddeb7f33997f79f09106d2953551e43d9905cd",
+      "completeBytesEqual": true,
+      "medianA": 0.11522649999999146,
+      "medianB": 0.11715599999998005,
+      "ratio": 1.0167452799485253,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.13778899999999794
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.11859699999999407
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.10490899999999215
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.10452599999999279
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.10492199999998775
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.11866100000000301
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.11310100000000034
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.11467799999999784
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.10707700000000386
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 3.191429999999997
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.12601100000000542
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.14517799999998715
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.11665200000004461
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.11571499999996604
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.11184699999995473
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.11577499999998508
+        }
+      ]
+    },
+    {
+      "name": "temporal-bar",
+      "count": 100,
+      "requestBytes": 4159,
+      "requestSha256": "00d9bae7f926eb2b91d67701876e9db8fad8d6f03e31f9dac3c2e6f77c871ce2",
+      "outputBytes": 6346,
+      "outputSha256": "357f332528d9e199fa8339df9b1e59e3f802b38b6c6a18495970994f33ed82c5",
+      "completeBytesEqual": true,
+      "medianA": 0.1287640000000181,
+      "medianB": 0.13405550000001654,
+      "ratio": 1.041094560591452,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.12912000000000035
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.13449000000002798
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.1271319999999605
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.12840800000003583
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.1224470000000224
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 2.259241999999972
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.14143599999999878
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.15983599999998432
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.12792300000000978
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.13996100000002798
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.12976599999996097
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.13118300000002137
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.12583799999998746
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.1336210000000051
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.1298569999999586
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.13399700000002213
+        }
+      ]
+    },
+    {
+      "name": "temporal-scatter",
+      "count": 100,
+      "requestBytes": 4159,
+      "requestSha256": "a716b8db9fe1413c09288ac1e3a581ca357ec97e10331dcbf89c9baabd5b8055",
+      "outputBytes": 6346,
+      "outputSha256": "abc264412d3a840698e4616b89d53d8c9b45e4e4c7decf4ccbd2617adedfaefb",
+      "completeBytesEqual": true,
+      "medianA": 0.11771600000000149,
+      "medianB": 0.12713250000001608,
+      "ratio": 1.0799933738830276,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.12892499999998108
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.12799499999999853
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.1128620000000069
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.12038400000000138
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.11188100000003942
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.12627000000003363
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.14202500000004648
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.12268100000000004
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.11659399999996367
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.13099100000005137
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.11774399999995921
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.11617999999998574
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.10984999999999445
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.12389400000000705
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.12887499999999363
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.1188380000000393
+        }
+      ]
+    },
+    {
+      "name": "temporal-event",
+      "count": 1000,
+      "requestBytes": 40159,
+      "requestSha256": "4a05e5b64732598d00c659265cc64fbb0cf9c223e7530dc5906283961c183dfe",
+      "outputBytes": 56747,
+      "outputSha256": "a30ac6bf917c49cc02b94c0e8086a87d07b4290068afba60fb53ad799a496102",
+      "completeBytesEqual": true,
+      "medianA": 0.9436294999999859,
+      "medianB": 0.7396459999999934,
+      "ratio": 0.7838309421229459,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 1.0389410000000225
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 1.1077869999999734
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.9714000000000169
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.9767209999999977
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.9477410000000077
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 1.015164000000027
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.9993509999999901
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.9395179999999641
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.9126440000000002
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.4677050000000236
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.4446980000000167
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.984751000000017
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.6200059999999894
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.5078919999999698
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.49635799999998653
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.5005419999999958
+        }
+      ]
+    },
+    {
+      "name": "temporal-interval",
+      "count": 1000,
+      "requestBytes": 40159,
+      "requestSha256": "f54cede0bc61c4b48cc944e378f81906fe3f891019eced9aff9936397627cbf2",
+      "outputBytes": 56747,
+      "outputSha256": "20a8663f5da5404243c565d9c0ae7c8ed070e9df7ab1fb57116a9e1f185b8db1",
+      "completeBytesEqual": true,
+      "medianA": 0.5698575000000119,
+      "medianB": 0.5627475000000004,
+      "ratio": 0.9875231965886009,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.5481059999999616
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.6208169999999882
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.5634150000000204
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.5763370000000236
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.534039000000007
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.5595749999999953
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.5620799999999804
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.5770909999999958
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.5633780000000002
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.9585250000000087
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.5373299999999972
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.6747349999999983
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 1.6260409999999865
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.6049550000000181
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.5616239999999948
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.498504999999966
+        }
+      ]
+    },
+    {
+      "name": "temporal-gantt",
+      "count": 1000,
+      "requestBytes": 40159,
+      "requestSha256": "b1eb13220d00a02b8ed0c5b58c5f98d8f41c67b02cfefd46de4aaa62a49e3052",
+      "outputBytes": 56747,
+      "outputSha256": "20a8663f5da5404243c565d9c0ae7c8ed070e9df7ab1fb57116a9e1f185b8db1",
+      "completeBytesEqual": true,
+      "medianA": 0.4578705000000127,
+      "medianB": 0.5056285000000287,
+      "ratio": 1.104304601410256,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.4609940000000279
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.504335000000026
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.46052499999996144
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.4975469999999973
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.45474699999999757
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.5366440000000239
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.5069220000000314
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.5060589999999934
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.4524069999999938
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.5194920000000138
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.4647110000000225
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.5020449999999528
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.43725699999998824
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.5098489999999742
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.4674219999999991
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.44835199999999986
+        }
+      ]
+    },
+    {
+      "name": "temporal-line",
+      "count": 1000,
+      "requestBytes": 40159,
+      "requestSha256": "b61d473b1f59b0f98d0da48a214863f9006f14b6224504f0770307ecca463f68",
+      "outputBytes": 56747,
+      "outputSha256": "c82f4f5abe5deff0cdf16fa07c23575447dd8af50da0c701e61470f12a6ed08e",
+      "completeBytesEqual": true,
+      "medianA": 0.395103000000006,
+      "medianB": 0.407264500000025,
+      "ratio": 1.0307805812661985,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.40148099999998976
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.4107609999999795
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.40601600000002236
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.39037400000000844
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.3838039999999978
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.4103189999999586
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.3949010000000044
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.3924599999999714
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.39193199999999706
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.40851300000002766
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.39731199999999944
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.39774600000004057
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.3984270000000265
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.40595000000001846
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.45905399999998053
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.4498570000000086
+        }
+      ]
+    },
+    {
+      "name": "temporal-bar",
+      "count": 1000,
+      "requestBytes": 40159,
+      "requestSha256": "eda2bbfc98f82f981543f9fedc3cbb3cbccf524c87f289c6d67a214e63ebe08d",
+      "outputBytes": 56747,
+      "outputSha256": "de3ce5e68218188ef856455ef4a4ddb19682488805fc4c9a298ca40c06bb9205",
+      "completeBytesEqual": true,
+      "medianA": 0.24981650000000855,
+      "medianB": 0.25403799999998,
+      "ratio": 1.0168984034280013,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.27003899999999703
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.2797459999999887
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.27392400000002226
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 2.5681490000000053
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.5088729999999941
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.267674999999997
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.25451299999997445
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.25215400000001864
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.24354800000003252
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.2490460000000212
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.25356299999998555
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.24747899999999845
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.24261000000001332
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.2452470000000062
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.25059299999998075
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.24421600000005128
+        }
+      ]
+    },
+    {
+      "name": "temporal-scatter",
+      "count": 1000,
+      "requestBytes": 40159,
+      "requestSha256": "04869f0da9715a15f47fac5d2609588b2e320c0a86debeb208348d04f0b8b10a",
+      "outputBytes": 56747,
+      "outputSha256": "a30ac6bf917c49cc02b94c0e8086a87d07b4290068afba60fb53ad799a496102",
+      "completeBytesEqual": true,
+      "medianA": 0.21549350000003642,
+      "medianB": 0.22857150000001525,
+      "ratio": 1.0606886054566687,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.21030300000001034
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.21258100000000013
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.23691000000002305
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.2814559999999915
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.3766960000000381
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.4163819999999987
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.24627900000001546
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.22413399999999228
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.2108920000000012
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.22946999999999207
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.2110890000000154
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.21091100000001006
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.21905200000003333
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.22767300000003843
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.21011100000004035
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.2119350000000395
+        }
+      ]
+    },
+    {
+      "name": "temporal-event",
+      "count": 4000,
+      "requestBytes": 160159,
+      "requestSha256": "0765a2f8a74061dd63ce6614e1be7d2e7c2ab959008b787547079915eb7f4aff",
+      "outputBytes": 224747,
+      "outputSha256": "091bce750dc51314a66cdc07a0fcb6af59c670d963b4bd60ab6413668b63a884",
+      "completeBytesEqual": true,
+      "medianA": 0.8765004999999917,
+      "medianB": 0.8872460000000046,
+      "ratio": 1.012259548055036,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.8019729999999754
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.8223969999999667
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.7993339999999876
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.90448200000003
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.8764810000000125
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.9021400000000313
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.8841729999999757
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.8765199999999709
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.8714160000000106
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.9035820000000285
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.8903190000000336
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.8939579999999978
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.8685590000000047
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.9052869999999871
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.8826850000000377
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.908427999999958
+        }
+      ]
+    },
+    {
+      "name": "temporal-interval",
+      "count": 4000,
+      "requestBytes": 160159,
+      "requestSha256": "78e95c94d8896ade435ddeca37410c4c3f27f24a50bdb5ce0b690747b5b07b3b",
+      "outputBytes": 224747,
+      "outputSha256": "ca6ceaa96080b009bc1022895a73c3799c6ab4cd8d9530c35f52e2167b92d0cb",
+      "completeBytesEqual": true,
+      "medianA": 1.0204484999999863,
+      "medianB": 1.0047324999999887,
+      "ratio": 0.9845989288043465,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.9973510000000374
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 1.0002549999999815
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.989214000000004
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 1.005899999999997
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.9863339999999994
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 1.012878999999998
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 1.0005570000000148
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 1.039071999999976
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 1.1229099999999903
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 1.0329800000000091
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 1.0084719999999834
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 1.0349969999999757
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.9884869999999637
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 1.0267729999999915
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 1.000992999999994
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 1.042997000000014
+        }
+      ]
+    },
+    {
+      "name": "temporal-gantt",
+      "count": 4000,
+      "requestBytes": 160159,
+      "requestSha256": "586bda3b93ab98c2d55599f01803f934681a2326b534ac2def94c54d302f07ca",
+      "outputBytes": 224747,
+      "outputSha256": "ca6ceaa96080b009bc1022895a73c3799c6ab4cd8d9530c35f52e2167b92d0cb",
+      "completeBytesEqual": true,
+      "medianA": 1.0035775000000058,
+      "medianB": 1.0067200000000014,
+      "ratio": 1.0031312977821798,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 1.0457629999999654
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 1.0083099999999945
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.9981829999999832
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 1.0132790000000114
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.9998699999999872
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 1.0259619999999927
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 1.037177999999983
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 1.0104969999999867
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.9818150000000401
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 1.0136850000000095
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.9944479999999771
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 1.0064100000000167
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.9837029999999913
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 1.0051300000000083
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.9819219999999973
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 1.0007449999999949
+        }
+      ]
+    },
+    {
+      "name": "temporal-line",
+      "count": 4000,
+      "requestBytes": 160159,
+      "requestSha256": "ea24b8986ef5b53a0c9251b272278925e5782050c4c5f0cd2d0cfe0a49232d78",
+      "outputBytes": 224747,
+      "outputSha256": "ed08358ef5744e615eaa0859b35e1ac191771aece6ce1220a873a96ab4342d2f",
+      "completeBytesEqual": true,
+      "medianA": 0.8778764999999851,
+      "medianB": 0.8913340000000005,
+      "ratio": 1.0153296050184915,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.876733999999999
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.8957130000000006
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.8801250000000209
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.8767569999999978
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.8537769999999796
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.891239999999982
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.868712999999957
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.8789959999999724
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.8560519999999769
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.8949670000000083
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.8662820000000124
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.8880900000000338
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.8857929999999783
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.9028230000000121
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.891428000000019
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.8968590000000063
+        }
+      ]
+    },
+    {
+      "name": "temporal-bar",
+      "count": 4000,
+      "requestBytes": 160159,
+      "requestSha256": "99c758303442137ade50077243be9619162b3dbd9971fd1616dc63c3fd7a6b4d",
+      "outputBytes": 224747,
+      "outputSha256": "c74aac905a1dcefb5802714cf1fff1c7dab22cc886b5a25011317e16ef6e7b45",
+      "completeBytesEqual": true,
+      "medianA": 1.0411175000000128,
+      "medianB": 1.0309504999999888,
+      "ratio": 0.9902345316450604,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 1.0237899999999627
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 1.0255649999999719
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 1.0120239999999967
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 1.0220809999999574
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 1.0015129999999886
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 1.0363360000000057
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 1.0097810000000322
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 1.0352270000000203
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 1.114877999999976
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 1.0399850000000015
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 1.023535000000038
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 1.0470080000000053
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 1.1788609999999835
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 1.0885889999999563
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 1.1140509999999608
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 1.615981999999974
+        }
+      ]
+    },
+    {
+      "name": "temporal-scatter",
+      "count": 4000,
+      "requestBytes": 160159,
+      "requestSha256": "803bd491c31741495fbf8cfac71df329a0e994328ca30b96d5e94696fed248b3",
+      "outputBytes": 224747,
+      "outputSha256": "091bce750dc51314a66cdc07a0fcb6af59c670d963b4bd60ab6413668b63a884",
+      "completeBytesEqual": true,
+      "medianA": 0.8013190000000066,
+      "medianB": 0.8024270000000229,
+      "ratio": 1.0013827202400247,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.7959529999999972
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.807501000000002
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "msPerWholeOperation": 0.7958100000000172
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "msPerWholeOperation": 0.8273229999999785
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.7774259999999913
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.8235300000000052
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "msPerWholeOperation": 0.7973530000000437
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "msPerWholeOperation": 0.8077879999999595
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.7809830000000488
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.8260920000000169
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "msPerWholeOperation": 0.7881549999999606
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "msPerWholeOperation": 0.8066850000000159
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.7833610000000135
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.8168239999999969
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "msPerWholeOperation": 0.795265000000029
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "msPerWholeOperation": 0.8072109999999952
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Shared VM uncontrolled local diagnostic; not browser latency or a competitor win.",
+    "Whole filter corpus operations include creation, all packets, byte copying, assertions and disposal; temporal operations include creation, compile, copies and disposal.",
+    "All slower cases retained; no timing pass threshold."
+  ]
+}

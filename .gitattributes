@@ -455,6 +455,50 @@ spec/performance/public10k-temporal-chunked-union-2026-11-07/*.json text eol=lf
 spec/performance/public10k-temporal-chunked-union-2026-11-07/*.md text eol=lf
 spec/performance/public10k-temporal-chunked-union-2026-11-07/*.gz -text
 spec/performance/public10k-temporal-chunked-union-2026-11-07/*.png -text
+
+# Temporal catalog compiler/profile and successor source qualification.
+.cargo/config.toml text eol=lf
+crates/xyg-engine/src/lib.rs text eol=lf
+crates/xyg-engine/src/temporal_scene.rs text eol=lf
+crates/xyg-wasm/src/geo.rs text eol=lf
+crates/xyg-wasm/src/lib.rs text eol=lf
+examples/temporal/catalog.py text eol=lf
+packages/xy-node/package.json text eol=lf
+python/xyg/__init__.py text eol=lf
+python/xyg/_figure_export.py text eol=lf
+python/xyg/_scene_v3.py text eol=lf
+python/xyg/_static_document.py text eol=lf
+python/xyg/_temporal_scene.py text eol=lf
+spec/design/temporal-catalog.md text eol=lf
+spec/design/temporal.md text eol=lf
+spec/design/wire-protocol.md text eol=lf
+spec/releases/api-inventory.md text eol=lf
+spec/temporal/evidence/46/receipt.json text eol=lf
+spec/wasm/abi.json text eol=lf
+tests/fixtures/temporal/catalog-six-families.json text eol=lf
+tests/test_temporal_catalog.py text eol=lf
+spec/temporal/evidence/46-inline50/*.json text eol=lf
+spec/temporal/evidence/46-inline50/*.md text eol=lf
+spec/temporal/evidence/46-inline50/*.gz -text
+
+# Temporal catalog append-only ABI401 to402 fixture transition.
+spec/temporal/evidence/46-abi402/*.json text eol=lf
+spec/temporal/evidence/46-abi402/*.md text eol=lf
+spec/temporal/evidence/46-abi402/*.py text eol=lf
+spec/temporal/evidence/46-abi402/*.gz -text
+spec/temporal/evidence/46-abi402/abi401-predecessor/*.json text eol=lf
+tests/test_cross_host_abi_transition.py text eol=lf
+packages/xy-node/test/fixtures/write_geo_cross_host_fixtures.py text eol=lf
+packages/xy-node/test/fixtures/write_payload_attach_cross_host_fixtures.py text eol=lf
+packages/xy-node/test/fixtures/write_payload_chrome_cross_host_fixtures.py text eol=lf
+packages/xy-node/test/fixtures/write_payload_cross_host_fixtures.py text eol=lf
+tests/test_series_palette_cross_host.py text eol=lf
+
+# Catalog HTML escaping and export-size correction evidence.
+spec/temporal/evidence/46-export-repair/*.json text eol=lf
+spec/temporal/evidence/46-export-repair/*.md text eol=lf
+spec/temporal/evidence/46-export-repair/*.gz -text
+spec/temporal/evidence/46-export-repair/*.png -text
 # Combined native geographic and queued M7 evidence.
 spec/performance/geo-native-queued-m7-union-2026-11-07/*.json text eol=lf
 spec/performance/geo-native-queued-m7-union-2026-11-07/*.md text eol=lf
@@ -667,6 +711,13 @@ tests/fixtures/payload_cross_host.json text eol=lf
 tests/fixtures/series_palette_cross_host.json text eol=lf
 tests/fixtures/tooltip_len_emit_cross_host.json text eol=lf
 spec/performance/geo-native-queued-m7-union-2026-11-07/*.txt text eol=lf
+
+# Catalog plus accepted native geographic main qualification.
+spec/temporal/evidence/46-native-main-integration-2026-11-07/*.json text eol=lf
+spec/temporal/evidence/46-native-main-integration-2026-11-07/*.md text eol=lf
+spec/temporal/evidence/46-native-main-integration-2026-11-07/*.gz -text
+spec/temporal/evidence/46-native-main-integration-2026-11-07/*.png -text
+tests/test_temporal_catalog_geo_integration.py text eol=lf
 spec/performance/public10k-native-main-integration-2026-11-07/*.json text eol=lf
 spec/performance/public10k-native-main-integration-2026-11-07/README.md text eol=lf
 spec/performance/public10k-native-main-integration-2026-11-07/*.gz -text
@@ -686,3 +737,19 @@ spec/performance/filter-graph-native-union-2026-11-07/*.json text eol=lf
 spec/performance/filter-graph-native-union-2026-11-07/*.md text eol=lf
 spec/performance/filter-graph-native-union-2026-11-07/*.gz -text
 spec/performance/filter-graph-native-union-2026-11-07/*.png -text
+spec/temporal/evidence/46-force-cancellation-union-2026-11-07/*.json text eol=lf
+spec/temporal/evidence/46-force-cancellation-union-2026-11-07/README.md text eol=lf
+spec/temporal/evidence/46-force-cancellation-union-2026-11-07/*.gz -text
+spec/temporal/evidence/46-force-cancellation-union-2026-11-07/*.png -text
+
+# Unified filter/catalog ABI evidence; historical fixtures remain immutable.
+spec/performance/filter-catalog-abi-union-2026-11-07/*.json text eol=lf
+spec/performance/filter-catalog-abi-union-2026-11-07/*.md text eol=lf
+spec/performance/filter-catalog-abi-union-2026-11-07/abi401-predecessor/*.json text eol=lf
+spec/performance/filter-catalog-abi-union-2026-11-07/abi402-predecessor/*.json text eol=lf
+spec/performance/filter-catalog-abi-union-2026-11-07/*.gz -text
+spec/performance/filter-catalog-abi-union-2026-11-07/procedures/*.gz -text
+spec/performance/filter-catalog-abi-union-2026-11-07/*.png -text
+
+# Internal temporal composition reference participates in current provenance.
+python/xyg/_figure.py text eol=lf

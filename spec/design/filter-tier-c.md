@@ -4,7 +4,7 @@ This is a **bounded linked-density checkpoint of #112**, not completion of #112 
 milestones 4–7. Rust `FilterTierCSession` is called through ordinary Python
 `Chart.filter_session`, Node chart `filterSession`, and browser
 `createWasmFilterSession` on a dedicated ordinary Worker. They expose the same
-XYFC/XYFR v1 protocol through native ABI 402 and WASM ABI 36. The opt-in
+XYFC/XYFR v1 protocol through native ABI 403 and WASM ABI 37. The opt-in
 `attachFilterDashboard` binds existing composed ChartViews to the same session
 and ordinary density painter. No second renderer, chart-building surface,
 GPU allocator, or host-side predicate policy is added.
@@ -204,7 +204,7 @@ HoloViews/hvPlot, or emerging libraries is claimed.
 ## Linked density extension (opcodes 10–15)
 
 Existing v1 opcodes and historical packets are unchanged. No exported ABI
-signature changes; native ABI 402 and WASM ABI 36 remain current. Older v1
+signature changes; native ABI 403 and WASM ABI 37 remain current. Older v1
 implementations refuse the new opcodes. Successful paint replies set u32 flags
 at XYFR offset 12 to 1; older decoders reject the additional payload length.
 Unknown opcode/flag combinations fail before consuming request watermarks.

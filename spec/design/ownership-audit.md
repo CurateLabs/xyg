@@ -1378,6 +1378,11 @@ These additions use the existing ownership policies without adding a host policy
 
 | `crates/xyg-engine/src/filter_tier_c_linked.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `js/src/49_filter_dashboard.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
+| `crates/xyg-engine/src/temporal_scene.rs` | Rust safe engine | rust-engine | keep-rust |
+| `js/src/75_temporal_scene.ts` | Browser adapter | browser-wasm-adapter | implement-rust-wasm |
+| `packages/xy-node/src/temporal-scene-framing.js` | Node host | node-host | keep-host |
+| `packages/xy-node/src/temporal-scene.js` | Node host | node-host | keep-host |
+| `python/xyg/_temporal_scene.py` | Python host | python-host | keep-host |
 | `python/xyg/_geo_temporal.py` | Python host | `python-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-temporal.js` | Node host | `node-host` | `keep-host` | — |
 
@@ -1501,3 +1506,7 @@ policy is migrated to hosts and no renderer or GPU ledger is introduced.
 Linked density additions use the same ownership boundary: Rust owns the exact
 count/paint protocol, and the shared client owns DOM input and ordinary GPU
 trace lifecycle. The two files are classified in the file ledger above.
+The partial temporal catalog owns exact membership/ticks/geometry in
+`xyg-engine::temporal_scene`; Python, Node and browser framing modules only
+pack source rows and call that compiler. See temporal-catalog.md for unshipped
+interaction, dense-LOD and packaging requirements.

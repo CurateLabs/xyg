@@ -1,0 +1,1633 @@
+{
+  "archives": {
+    "abi-final.log": {
+      "bytes": 62,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/abi-final.log.gz",
+      "rawBytes": 42,
+      "rawSha256": "066d9f50b25f44955bcd6f0a52325d7f897972c9e32659fa5c3dde200b267d39",
+      "sha256": "87a2cd81d4c2ad9b5794988cd6d4d64aa56cb40a2e4408d3d2ad0eb067bf9465"
+    },
+    "abi-generated.log": {
+      "bytes": 62,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/abi-generated.log.gz",
+      "rawBytes": 42,
+      "rawSha256": "066d9f50b25f44955bcd6f0a52325d7f897972c9e32659fa5c3dde200b267d39",
+      "sha256": "87a2cd81d4c2ad9b5794988cd6d4d64aa56cb40a2e4408d3d2ad0eb067bf9465"
+    },
+    "abi-smoke.log": {
+      "bytes": 72,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/abi-smoke.log.gz",
+      "rawBytes": 52,
+      "rawSha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306",
+      "sha256": "135de4fa46245b623c5d8acfa3e621c9374a4c0229b173222340fff45c526965"
+    },
+    "assemble-first.py": {
+      "bytes": 3967,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/procedures/assemble-first.py.gz",
+      "rawBytes": 10459,
+      "rawSha256": "423fb500351007de1c74924f268778792ae5ae3f9628a2286d5d5c96fd160511",
+      "sha256": "ae505a0b95fb6fcac2772c0a1c6a736c79ad31781e52a83c2cc5a59dbe686962"
+    },
+    "assemble.py": {
+      "bytes": 4208,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/procedures/assemble.py.gz",
+      "rawBytes": 11405,
+      "rawSha256": "3a4e4feb4d44b8c3087baa31b56e22dec06595cea7537696f5e9b5f96f19e353",
+      "sha256": "75e055dc9106bdbbe896664ce1369e53471f5e017b294f23c8b45bcf6a21cb73"
+    },
+    "assets.log": {
+      "bytes": 104,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/assets.log.gz",
+      "rawBytes": 88,
+      "rawSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+      "sha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730"
+    },
+    "capability-final.log": {
+      "bytes": 49,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/capability-final.log.gz",
+      "rawBytes": 29,
+      "rawSha256": "42b8d4d87753f9103ac02d0b33f9a3c6f6e68193684dd88198095d247c8e7392",
+      "sha256": "b767dcba961ec36088a4508e2fc578c781b10bfd553f305c9afc72fb495506b6"
+    },
+    "catalog-bar.html": {
+      "bytes": 238566,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/catalog-bar.html.gz",
+      "rawBytes": 830870,
+      "rawSha256": "951efc9c9734af70e9861196076aaf2dfbbaefc057c4ea9a4852e77de3f57a8c",
+      "sha256": "2c104d0979e5e1b4205d9f0ec3bc8525763ac6eb7fec17da4160a8ffef9ef907"
+    },
+    "catalog-event.html": {
+      "bytes": 238586,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/catalog-event.html.gz",
+      "rawBytes": 830934,
+      "rawSha256": "272c2dcf71c27fbb3bf3121a82528ea72ae143fa30b6e12a528ab872a112c4bd",
+      "sha256": "777b4c065c0886548e2fc6ce9d5423ced66452c08669054ef847610236d2504f"
+    },
+    "catalog-gantt.html": {
+      "bytes": 238565,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/catalog-gantt.html.gz",
+      "rawBytes": 830870,
+      "rawSha256": "d486d635c95f26c78ada952c864427e417734fc30e3db2c3a447a94a6240f280",
+      "sha256": "23aa6d526994f17f1ec99dcf8c7db672679df40991364ef4bb6cef2d26d61173"
+    },
+    "catalog-html.log": {
+      "bytes": 93,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/catalog-html.log.gz",
+      "rawBytes": 80,
+      "rawSha256": "15a794f2d56204278afa379f7ff049d805b2c58a7ce70cdd69dec4cc50ae42cc",
+      "sha256": "5c53c25fe6128d1606e68830695b03c0aacda5c084068c6415063d8fedbe940c"
+    },
+    "catalog-html.py": {
+      "bytes": 462,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/procedures/catalog-html.py.gz",
+      "rawBytes": 736,
+      "rawSha256": "1fab744299af4a003255114788b5299e64433733200b482598d40a366ff1a6fb",
+      "sha256": "84ac642534f52f611ca855347d1f8a22ccd016fe9f317891db0a8205374e3955"
+    },
+    "catalog-interval.html": {
+      "bytes": 238565,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/catalog-interval.html.gz",
+      "rawBytes": 830870,
+      "rawSha256": "d486d635c95f26c78ada952c864427e417734fc30e3db2c3a447a94a6240f280",
+      "sha256": "23aa6d526994f17f1ec99dcf8c7db672679df40991364ef4bb6cef2d26d61173"
+    },
+    "catalog-line.html": {
+      "bytes": 238545,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/catalog-line.html.gz",
+      "rawBytes": 830850,
+      "rawSha256": "f5c65660eb22cc83e74d80eb99351f8551448150e9f43d7fe417922044d5e81c",
+      "sha256": "843f3771e35f3ad3e3ff9c78bcb3bfa70e1d72879dacacb25252b460ffc8fe6f"
+    },
+    "catalog-offline-browser.log": {
+      "bytes": 100,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/catalog-offline-browser.log.gz",
+      "rawBytes": 90,
+      "rawSha256": "5b80388155ab819e291d7624eea0810b8d2ca29530fa2a084a8afec72dc13d67",
+      "sha256": "6dfe3dd1c9b1ae72e72570732e0547a797942d1dcdac7889f5db401ab045dc9d"
+    },
+    "catalog-scatter.html": {
+      "bytes": 238586,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/catalog-scatter.html.gz",
+      "rawBytes": 830934,
+      "rawSha256": "272c2dcf71c27fbb3bf3121a82528ea72ae143fa30b6e12a528ab872a112c4bd",
+      "sha256": "777b4c065c0886548e2fc6ce9d5423ced66452c08669054ef847610236d2504f"
+    },
+    "ci-final.log": {
+      "bytes": 413,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/ci-final.log.gz",
+      "rawBytes": 1786,
+      "rawSha256": "44e1325cc027608ae8367893e85ef791967f4ea4eb4563fd7f37cc4fa17a0af7",
+      "sha256": "7ff44f937b5c537e22ff3c952ee1361afd06821fc751f8279b92758b7d54a7e6"
+    },
+    "client-build.log": {
+      "bytes": 1056,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/client-build.log.gz",
+      "rawBytes": 5448,
+      "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+      "sha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c"
+    },
+    "clippy.log": {
+      "bytes": 158,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/clippy.log.gz",
+      "rawBytes": 167,
+      "rawSha256": "c55ae769f126bc5ea47d007d2a23084b3dd4930bdfdc6da923b54d5fed1d86f2",
+      "sha256": "88788cf2803c69e2355f59e9e7c2c8e34a6ed44a5a9ab6e289f70b9a19cd7943"
+    },
+    "core-final-350.log": {
+      "bytes": 51,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/core-final-350.log.gz",
+      "rawBytes": 98,
+      "rawSha256": "68f91d007f9e55d5f1848b1c8bc90de5788ef77fadebb3ff5b1638e361b7fe3b",
+      "sha256": "034443a661eef5299673f26a8c0e59fd4ba2203053098be5b97102a4230fa493"
+    },
+    "core-inventory.log": {
+      "bytes": 52,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/core-inventory.log.gz",
+      "rawBytes": 99,
+      "rawSha256": "e877dd25208e0f08b6b686a9d68cc7d70f2a0970100b5e5432ea09cd46c88d60",
+      "sha256": "95244a209fbdf0a4c269f76f4bdaf02aada8e3d6231221d55b9e60efb3ad16c1"
+    },
+    "core-sealed-350.log": {
+      "bytes": 84,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/core-sealed-350.log.gz",
+      "rawBytes": 158,
+      "rawSha256": "b1adfbb6b2704066d749c4e70eaaeaded1885f896ea8a0ddac096f055a0b7a7c",
+      "sha256": "3263ea7b975f3ea918317827e310f8bc5a06369daea7b4abeed0f3d4ff249bf9"
+    },
+    "figure-chromium-after-field.log": {
+      "bytes": 49,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/figure-chromium-after-field.log.gz",
+      "rawBytes": 98,
+      "rawSha256": "4cb2b9f0c1151489875fd4a76fef26a1f5228882a90bd884fbd7c13517a3c377",
+      "sha256": "b03c121695b5a60fd706c8a4c4a09384eed153e379e144e8eb891620a08c6d04"
+    },
+    "figure-type-proof.py": {
+      "bytes": 881,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/procedures/figure-type-proof.py.gz",
+      "rawBytes": 1863,
+      "rawSha256": "ab71ca4dd4b16ea06603810f6974fa0b8ef6df70d38254dd8c5865ef9d92550a",
+      "sha256": "c22303752cb96091d00a8affcce4c7f59ecace757d01f52e3fa9350dd3d64379"
+    },
+    "filter-browser.log": {
+      "bytes": 628,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/filter-browser.log.gz",
+      "rawBytes": 1408,
+      "rawSha256": "d0761a15cbcaec93c9c0826a74afa2099fe63f36750cbfc8cf1f94e5067ad5d2",
+      "sha256": "0f24878fc0a6277168f3f60cf6e57db9b7d48dca13a0da583de0f4b9f3e4fa44"
+    },
+    "final-contracts.py": {
+      "bytes": 780,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/procedures/final-contracts.py.gz",
+      "rawBytes": 1649,
+      "rawSha256": "52ac6d4bdae2f1f716a023018756a23ec57a13275456784e622fbbf4a0e830a7",
+      "sha256": "e03f7e99047df36e997d5e6a3b16635df3d679d69d58403524f96f8535035ead"
+    },
+    "fixture-0.log": {
+      "bytes": 846,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/fixture-0.log.gz",
+      "rawBytes": 6929,
+      "rawSha256": "bc45da6840b599454c18c7452c5cc45176213c22b0fe08db8957978aebdf7964",
+      "sha256": "b6738d9eb14f9911a2a777dfb34703402197698d3b1b4d2dbfcf148c80fd2614"
+    },
+    "fixture-1.log": {
+      "bytes": 613,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/fixture-1.log.gz",
+      "rawBytes": 3673,
+      "rawSha256": "87359a9af9105e278e9252544de04bb4cf049ab68d73542bb8e958ce33763820",
+      "sha256": "5a382dc21cace7984be605d97527ae0a16959012c30ddab682f14691553c9de2"
+    },
+    "fixture-2.log": {
+      "bytes": 1286,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/fixture-2.log.gz",
+      "rawBytes": 12841,
+      "rawSha256": "d5fc33f56c3445e4834d4795b9eeace52a333b68895e597cbf58fc6c39e42071",
+      "sha256": "611931a283c48cc8df8e7e18d3749be1f881a35190a553ad38f8d1e79ef94d49"
+    },
+    "fixture-3.log": {
+      "bytes": 315,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/fixture-3.log.gz",
+      "rawBytes": 641,
+      "rawSha256": "4be406b9275f8dadf5e1809fceac699d96912a24a8883e2c2df2553b9d18bef0",
+      "sha256": "87c4cee225d0ccb6f2c8d15ec09cabab8ed82cb6ee27acea2d640c43d7707fc1"
+    },
+    "fixture-4.log": {
+      "bytes": 72,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/fixture-4.log.gz",
+      "rawBytes": 52,
+      "rawSha256": "b386c3eee49ec67d5666f473df09f412e47ed202cae3e8cd45270ac77687eb0b",
+      "sha256": "cfbe870f4d1595f1e24db25d672d0580799b6076def568bf2f1c4fe89c5814b8"
+    },
+    "fixture-5.log": {
+      "bytes": 104,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/fixture-5.log.gz",
+      "rawBytes": 95,
+      "rawSha256": "12e8428d9acafa014015920e0948a08a4b54d40e0d9d103d30c5048a43a3a68d",
+      "sha256": "98c2c1940a8333575b437380e1e4d76d437b951afd181a923ff98b566885067c"
+    },
+    "fixture-6.log": {
+      "bytes": 104,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/fixture-6.log.gz",
+      "rawBytes": 95,
+      "rawSha256": "097d6d79eb8b680dd2e632e2f26dd05c9671a7cb56191848f92f8b9b2e7f2141",
+      "sha256": "3c40444e97811978159d3e73f168ea56963c447f7407e696643b3c9f07063e86"
+    },
+    "fixture-7.log": {
+      "bytes": 291,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/fixture-7.log.gz",
+      "rawBytes": 439,
+      "rawSha256": "1b7eb1675dbd21a084cfcd9eb8cd90a676dd92145229245a060c829698b37e86",
+      "sha256": "2352c2c552f10f5972f41973148e57a8ff349ee8dceba1f02546cb971c908e6f"
+    },
+    "fixture-8.log": {
+      "bytes": 105,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/fixture-8.log.gz",
+      "rawBytes": 95,
+      "rawSha256": "6bbcec4453be58ef0e624d4342e912c9f18b05f4edc8fefed2d0ced66bd5f03e",
+      "sha256": "0b14d1bd09ae56e86dc68a915a892e9edd4e9596898b4190d6b4bff663e19007"
+    },
+    "fixture-9.log": {
+      "bytes": 567,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/fixture-9.log.gz",
+      "rawBytes": 2187,
+      "rawSha256": "479f7e7501b03578d4ebb0b77f19c343b3890c9691b9a73bdabbf0ea41132f58",
+      "sha256": "bcd77554bf39ae4c48e959fd5ef0b7afa590cc3b5643dcad1e5ec62f41e9684f"
+    },
+    "fixture-output-animation_emit_cross_host.log": {
+      "bytes": 228,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/fixture-output-animation_emit_cross_host.log.gz",
+      "rawBytes": 1380,
+      "rawSha256": "92c7bd3394ecc281615c331ef0214fde7063d4f31a5713c3132e87aa686193fb",
+      "sha256": "650746b17a5f1a13007ca199d87d3ac395d4897369ab3796a1f9c0934fe81a87"
+    },
+    "fixture-output-default_styled_emit_cross_host.log": {
+      "bytes": 230,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/fixture-output-default_styled_emit_cross_host.log.gz",
+      "rawBytes": 1816,
+      "rawSha256": "591827fcb4c1d5a34af5fa3036cb2051a1e93f39286f7c75613d4352d53e564c",
+      "sha256": "47de0d81aa519a041fc85f9e6a281030d52d9293030996c224bc78e696cd087b"
+    },
+    "fixture-output-density_emit_cross_host.log": {
+      "bytes": 20,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/fixture-output-density_emit_cross_host.log.gz",
+      "rawBytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "fixture-output-force_emit_cross_host.log": {
+      "bytes": 20,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/fixture-output-force_emit_cross_host.log.gz",
+      "rawBytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "fixture-output-tooltip_len_emit_cross_host.log": {
+      "bytes": 218,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/fixture-output-tooltip_len_emit_cross_host.log.gz",
+      "rawBytes": 508,
+      "rawSha256": "c8d6d2b9486cfa1560d1b58b0c8839bcfdf85d93228a12932b0911cc68831a60",
+      "sha256": "ff81e0898dade239c00151869aa6e6e7fc2b93bfc06e17d5cdc251ac07e0b845"
+    },
+    "floor-final.log": {
+      "bytes": 42,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/floor-final.log.gz",
+      "rawBytes": 22,
+      "rawSha256": "b74c6582357e4cc55f2da8b24b4db3eba9c166d307177c0acd0a422cdcbd8551",
+      "sha256": "4652456836415472c91bf0db9100a6d492591d06ecd7fde0f5832056a1f73ebf"
+    },
+    "foundation-final.log": {
+      "bytes": 1286,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/foundation-final.log.gz",
+      "rawBytes": 4120,
+      "rawSha256": "1a5c79bd9b8cb8dc52302c6b352cd131a44ecc1885f93547c6b089c9d2f406d8",
+      "sha256": "f3ecc81d9009e5f8ff9906071e6eab5a4df462ef8307fdf066992d6b4a803f44"
+    },
+    "foundation-proof-negatives.log": {
+      "bytes": 101,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/foundation-proof-negatives.log.gz",
+      "rawBytes": 105,
+      "rawSha256": "75a007bfb5ba6f796d2097fc2f3b7002cb0090210454c41b5faaf816a20e6d40",
+      "sha256": "023142370ad5b8a093ff74d8382ba61d069c33a03472a753674223622f6d6b56"
+    },
+    "foundation-proof-negatives.mjs": {
+      "bytes": 780,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/procedures/foundation-proof-negatives.mjs.gz",
+      "rawBytes": 1564,
+      "rawSha256": "e51db19fc93e1a74e29f4ae6eaac179f25d4786d0e444d9062e72b785f2adda5",
+      "sha256": "bf161a6d969210caa5d45543104f7b4b5e4010eb628c51476cb976377aeb9254"
+    },
+    "foundation.log": {
+      "bytes": 1198,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/foundation.log.gz",
+      "rawBytes": 3984,
+      "rawSha256": "59dbd62ce02b3933834ca9d0c07620a8575894999db392e07966677edf02ffd3",
+      "sha256": "719e56c02f39f06683584ec6e5945ea950bc0971d9567829615ef6e76d4fa3b8"
+    },
+    "gates.py": {
+      "bytes": 532,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/procedures/gates.py.gz",
+      "rawBytes": 924,
+      "rawSha256": "c7f29c2ab1fe30d138944aee95b03bbe66176cab686164e52e19e20c05cbceb2",
+      "sha256": "2b20f444ee0d09a3c1f6fe6f7bc29a21bc33b3c1248e11e751a78b7da9458a48"
+    },
+    "hooks-commit.log": {
+      "bytes": 72,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/hooks-commit.log.gz",
+      "rawBytes": 240,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "sha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "hooks-final.log": {
+      "bytes": 109,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/hooks-final.log.gz",
+      "rawBytes": 300,
+      "rawSha256": "5dcb7207e8c4b0af3659373363f3e519b3b91d38774da9dfc4e16938aac1552a",
+      "sha256": "194c6043191aacb09c726cb7870f8d0af3df3cb4802154afa151133cf0aff457"
+    },
+    "inventory-final-write.log": {
+      "bytes": 99,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/inventory-final-write.log.gz",
+      "rawBytes": 89,
+      "rawSha256": "cd975729990937c1b50b0dcb92208fc69c6ee6bdcc541598bd86dfdced8fbdaa",
+      "sha256": "f3234950aee909195aa83047720aa3c2f9946da3637bad04d080d3e6193b3f4a"
+    },
+    "inventory-write.log": {
+      "bytes": 133,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/inventory-write.log.gz",
+      "rawBytes": 149,
+      "rawSha256": "2c1850ab5faa27cdd004c60d9ce488caa1badb3af96a7b3e13601a6514803fde",
+      "sha256": "d21b47157076d51e6e1a98a91fa53f91ecf2f73d915752f7e9de6eed6ce0b229"
+    },
+    "linked-filter.png.requests.bin": {
+      "bytes": 848,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/linked-filter.png.requests.bin.gz",
+      "rawBytes": 16884,
+      "rawSha256": "a1947057b3116230b2a5aab557cc5de1175e68854ec20d8d08d92d78777dbc82",
+      "sha256": "10e1b8f1c9bafcaf179bfa91af088d91c3cf0c824d9cd7fbd81d36f9b2bd4551"
+    },
+    "loader-negative-catalog-node.log": {
+      "bytes": 199,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/loader-negative-catalog-node.log.gz",
+      "rawBytes": 241,
+      "rawSha256": "fec93986d18f706b779831986668f4b5a49b2ba453e0d060d5f36e2fa09201ef",
+      "sha256": "74b6a448bd20c3cfef30579c4cc19bf8973c2d7fa8a6bca32dc22a0b5c9458e7"
+    },
+    "loader-negative-catalog-python.log": {
+      "bytes": 305,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/loader-negative-catalog-python.log.gz",
+      "rawBytes": 513,
+      "rawSha256": "a94184ec2d37443d0a34b0f1396542b24081e9e5dc7be25b7d5383f2a4098d81",
+      "sha256": "53124d8d708b82ef25da8486d48770ab5a1acfdff24205ddefa39a77954d8916"
+    },
+    "loader-negative-filter-node.log": {
+      "bytes": 199,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/loader-negative-filter-node.log.gz",
+      "rawBytes": 241,
+      "rawSha256": "fec93986d18f706b779831986668f4b5a49b2ba453e0d060d5f36e2fa09201ef",
+      "sha256": "74b6a448bd20c3cfef30579c4cc19bf8973c2d7fa8a6bca32dc22a0b5c9458e7"
+    },
+    "loader-negative-filter-python.log": {
+      "bytes": 327,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/loader-negative-filter-python.log.gz",
+      "rawBytes": 572,
+      "rawSha256": "3c29cc90d8cdd287bf0ee81ee9d46aa496beef9ef8b4f29d62d8e3126d4b8b0a",
+      "sha256": "d2d89bc713698a875a5ad4a22f5e48e3b3fec5019b199d0eb84c0deca00871a8"
+    },
+    "loader-negatives.py": {
+      "bytes": 1107,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/procedures/loader-negatives.py.gz",
+      "rawBytes": 1977,
+      "rawSha256": "f8b7483b08e12baf59e28b8d4afb51346b9d4803f46806b96a6cd62503f6e3b6",
+      "sha256": "aaca2e79e6a6ae28588efbd337a7035683b5401666fdcaa5ba9d756746e7acf6"
+    },
+    "naming-after-notes.log": {
+      "bytes": 114,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/naming-after-notes.log.gz",
+      "rawBytes": 331,
+      "rawSha256": "be3954e127bf086265b8f6b2243115a2be4468ffdb76ddf98725e8f0c84975d8",
+      "sha256": "c477b6f04189a5419807494c73d45205e353ff38b2528c1aeb603253a2438a4f"
+    },
+    "naming-final.log": {
+      "bytes": 505,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/naming-final.log.gz",
+      "rawBytes": 1184,
+      "rawSha256": "1b07cee031f4aeb1d9eec86e9103df189b00652c81298b9b278e6f6304a591df",
+      "sha256": "ab6e3a6dbada25bb805667384d30a9e171092c59767f0598fa8d83ee606863ea"
+    },
+    "native-build.log": {
+      "bytes": 172,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/native-build.log.gz",
+      "rawBytes": 337,
+      "rawSha256": "5171e9aaca3c55b9eed277bed75f59877f2be96d3eff31d85bc38ba2bc5ca0fc",
+      "sha256": "0b4afcf23281a0b2ea12b41ab4307bc22819903fc1397b909092432df57aeb40"
+    },
+    "node-full.log": {
+      "bytes": 38883,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/node-full.log.gz",
+      "rawBytes": 232499,
+      "rawSha256": "3d4da9e3aba6115478a69649ea5de5d6dd01fec00a57309c3b870d5ea04a049c",
+      "sha256": "effd5f188435f743f3c99a21d6455e38ad1734b7970b3b4128098cabdcc508c1"
+    },
+    "parent-seam-first-helper.log": {
+      "bytes": 277,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/parent-seam-first-helper.log.gz",
+      "rawBytes": 409,
+      "rawSha256": "a744b54b6e332ad51423dc1fd57a8a2b50e9761ffb89a4a908c1b7c7bfd1541a",
+      "sha256": "23958a596922c7f3f7bb141ff11fd332204db4bea48f884756dcd3aae55c2e8a"
+    },
+    "profile-abba.log": {
+      "bytes": 590,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/profile-abba.log.gz",
+      "rawBytes": 2212,
+      "rawSha256": "31db2dc100efa61b3f0a86a10a7f92260ee477aedef88dd0e45a4299beda8e03",
+      "sha256": "f3cf0671399fb8664973ad50da89d4bac7fc92e5e32f519dd5157a2c9d7600ae"
+    },
+    "profile-new-paths.log": {
+      "bytes": 342,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/profile-new-paths.log.gz",
+      "rawBytes": 891,
+      "rawSha256": "a7983faefeafeaeefc07fb46996597d4b2d02f23818145b0058cc9850bafbe54",
+      "sha256": "0e0282b2a6177646f3a3e1134a15215bb6786471161f2c460bca2b82dba4a6df"
+    },
+    "profile-new-paths.mjs": {
+      "bytes": 2126,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/procedures/profile-new-paths.mjs.gz",
+      "rawBytes": 5012,
+      "rawSha256": "b417403b8f6ef60c0eb4a77ca5f63e744ae030a8a821cfa969804f25e791d955",
+      "sha256": "61cd5dfdb834c5b5bd1dbf6dcd316a6b9504b6a6621d7bce55cd182c0ca5b84d"
+    },
+    "public10k-final.log": {
+      "bytes": 182,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/public10k-final.log.gz",
+      "rawBytes": 293,
+      "rawSha256": "9504f682bea23919bfbc3913c6a4fd6411cfc35a4c1b22a692ed226f95f5a7e8",
+      "sha256": "24238ffba6de8089070467464aeef744fd6d4e4ef0063742438726783c5084f2"
+    },
+    "public10k-replay-final.log": {
+      "bytes": 129,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/public10k-replay-final.log.gz",
+      "rawBytes": 206,
+      "rawSha256": "ca6da8d85c0cf5b43e97d0b09aea12fc6ff3d991b393520b0b768a5a35f55191",
+      "sha256": "2280ea642e2b9a7fbd9501f3d8c27d04ec67860b744eb3c1974b6889456cff20"
+    },
+    "public10k.json": {
+      "bytes": 121783,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/public10k.json.gz",
+      "rawBytes": 1319199,
+      "rawSha256": "ebd2542d6fbbe739e9d4f919c20b0aa9f6bb7031cf3ec3f731527cf003019347",
+      "sha256": "efb1af4cda31c5e14287fc4de0cee5d3a1ba2d7be327cd3425abb7e9b9a992a6"
+    },
+    "python-after-field.log": {
+      "bytes": 90,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/python-after-field.log.gz",
+      "rawBytes": 352,
+      "rawSha256": "8bded9383dd441d85773993179e7b10f2cfddb3c68e2deda8eca68b500f99b04",
+      "sha256": "5643e1b00157f27534b7a20e79611f2b1ee19f6d690965db54f6e90ab422b01c"
+    },
+    "python-host.log": {
+      "bytes": 392,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/python-host.log.gz",
+      "rawBytes": 997,
+      "rawSha256": "29804dbfd6d235718b2b17b91c1ca1ecc270c21bfebdd1d2ace2b166287dcadd",
+      "sha256": "d80a89bfa28bf1feb535559b5169a8b324626ca64f871203a6b2561848568874"
+    },
+    "python311-final.log": {
+      "bytes": 60,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/python311-final.log.gz",
+      "rawBytes": 179,
+      "rawSha256": "a5f1395fa8ca690ce906d6dab9d36e1ff163d253436638abd77958a3d647d73b",
+      "sha256": "2bb585743eaff2a48f1fd1928acc8382af44e6406707efa86ff4008afc4e47c9"
+    },
+    "resolve.py": {
+      "bytes": 1464,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/procedures/resolve.py.gz",
+      "rawBytes": 3524,
+      "rawSha256": "f755b86200f34387ec27e71fe66b8f134ef751f8993eaf4d7b8712e70a48227c",
+      "sha256": "37a95c1dbe95e5e182ca32f0939fb803dcbef75d92894872ce65d1f81b1a24eb"
+    },
+    "ruff-check-commit.log": {
+      "bytes": 39,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/ruff-check-commit.log.gz",
+      "rawBytes": 19,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "ruff-check-final.log": {
+      "bytes": 39,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/ruff-check-final.log.gz",
+      "rawBytes": 19,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "ruff-format-commit.log": {
+      "bytes": 49,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/ruff-format-commit.log.gz",
+      "rawBytes": 29,
+      "rawSha256": "e72065a95dad998703d396618a95726582a8db8947e5a3c13e4cc0dfa46ddb1f",
+      "sha256": "22e2bab1c709cab8cb4223dc675bf811e961c990919ad621d26d8a87f46f558f"
+    },
+    "ruff-format-final.log": {
+      "bytes": 49,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/ruff-format-final.log.gz",
+      "rawBytes": 29,
+      "rawSha256": "e72065a95dad998703d396618a95726582a8db8947e5a3c13e4cc0dfa46ddb1f",
+      "sha256": "22e2bab1c709cab8cb4223dc675bf811e961c990919ad621d26d8a87f46f558f"
+    },
+    "run.py": {
+      "bytes": 1551,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/procedures/run.py.gz",
+      "rawBytes": 4072,
+      "rawSha256": "a0fe8e44e17149f61a4fa3b16a243f9a09515fe08319dfacb3067c1ce0fa2b0b",
+      "sha256": "4f1317c6517716c8308cb8731fd35065c78a309f1bf8fa2a98ed1fcc34903a20"
+    },
+    "rust-filter.log": {
+      "bytes": 476,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/rust-filter.log.gz",
+      "rawBytes": 1019,
+      "rawSha256": "4cc05c690a03d1412e2ba37e056f37ad5c523dc10a2989293dbbee3380b9d2f8",
+      "sha256": "8f915bd137178fe948b47d3b9b1f131583fa2db0a7a670dad33aae3c277547d8"
+    },
+    "rust-temporal.log": {
+      "bytes": 265,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/rust-temporal.log.gz",
+      "rawBytes": 390,
+      "rawSha256": "d6a255f9a1e4a777aa2289e3023f2d8cb7656c228efe1f54be0255d0d8031a21",
+      "sha256": "b280dda484daba920d36ec79482ac83d59e2576b20602f8449b41db92087c374"
+    },
+    "seal.py": {
+      "bytes": 1919,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/procedures/seal.py.gz",
+      "rawBytes": 4653,
+      "rawSha256": "6eae13ca89c72c301a8f0975f620c7d366d61d0fd993a071f6cb41e7f1deff82",
+      "sha256": "434148b206700a170b81718f854368dbe13543e8b83478c87f68379c20ad3c5a"
+    },
+    "source-final.log": {
+      "bytes": 69,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/source-final.log.gz",
+      "rawBytes": 261,
+      "rawSha256": "2fd91abeba3ece678a069b721ca4019079aea44a8595566e1eb1a18388494626",
+      "sha256": "930675bf548600607a106c237a56a78becd467fc7d5802496bc03386ac528813"
+    },
+    "temporal-packet-parity.log": {
+      "bytes": 105,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/temporal-packet-parity.log.gz",
+      "rawBytes": 88,
+      "rawSha256": "f9f5d80c85cb9f0dfa62090a656c60d1b9c187c2c774ca29b91fe41cde8cd90e",
+      "sha256": "56d92b6c86c04b2552cd051f1dd9e766fdc7acbc5e8bec0fa9a4ee247273f941"
+    },
+    "transition-core.log": {
+      "bytes": 60,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/transition-core.log.gz",
+      "rawBytes": 179,
+      "rawSha256": "9eb40bc52b72cc631c97b7d07e18e2157cf08a92fc25acda0e2f1602a3f1d0c5",
+      "sha256": "46684ebe9a28ea37c763f43a6d67b2ec2ef89d58379e6f4bb93fd6c33e604263"
+    },
+    "types-after-field.log": {
+      "bytes": 39,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/types-after-field.log.gz",
+      "rawBytes": 19,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "types-before-field.log": {
+      "bytes": 170,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/types-before-field.log.gz",
+      "rawBytes": 253,
+      "rawSha256": "587360e564135931f26c1434ee9fd57a8eec5d388ed8bed7c740cd1f7e041447",
+      "sha256": "d5fda613af9ddb582e64ea8a2de5de2799d136c75d3fb0c034983b218e70f026"
+    },
+    "types-final.log": {
+      "bytes": 39,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/types-final.log.gz",
+      "rawBytes": 19,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "wasm-abi-final.log": {
+      "bytes": 20,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/wasm-abi-final.log.gz",
+      "rawBytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "wasm-generate.log": {
+      "bytes": 20,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/wasm-generate.log.gz",
+      "rawBytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "wasm-generated.log": {
+      "bytes": 20,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/wasm-generated.log.gz",
+      "rawBytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "wasm-loader-negatives.log": {
+      "bytes": 103,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/wasm-loader-negatives.log.gz",
+      "rawBytes": 87,
+      "rawSha256": "8bfc4b326c743827e1a977d0bce2b52d261865e081c5e54f62918dd895bc888b",
+      "sha256": "60350f1ccb9eb444b4e12291c18983ec0a9cab58bae8c84e83cc02ca2beed834"
+    },
+    "wasm-loader-negatives.mjs": {
+      "bytes": 1432,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/procedures/wasm-loader-negatives.mjs.gz",
+      "rawBytes": 2818,
+      "rawSha256": "a0eb481f5412328bfcfa8ed90e6e5d3d5a15275abbe64b0a0f5dbf5fabb5fb79",
+      "sha256": "0a300f61be9cbd4671cf98ceaeac29204e3f6682f4eea4e8a35d1f7249084590"
+    },
+    "wasm-o2-inline50-build.log": {
+      "bytes": 980,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/wasm-o2-inline50-build.log.gz",
+      "rawBytes": 3663,
+      "rawSha256": "f59c3c46025ac696c8fc91805a99a74f9514fe5dc7447aca2b55bf21009910d2",
+      "sha256": "94f8428f0084c008e2e0af6a86d3df0b18e598529f45a12855f30bc416c66330"
+    },
+    "wasm-o2-inline50-package.log": {
+      "bytes": 201,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/wasm-o2-inline50-package.log.gz",
+      "rawBytes": 493,
+      "rawSha256": "d5a7ed6ddf82e93777c24d1041899e10525e1f8974db5d8c7a4ae4cdcaf8204d",
+      "sha256": "563cc9e3668fad336427bc3073208f88a4323513b29551b1c2975d6fcabc5846"
+    },
+    "wasm-o2-inline50-size.log": {
+      "bytes": 124,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/wasm-o2-inline50-size.log.gz",
+      "rawBytes": 125,
+      "rawSha256": "f9a5c79213c8eda7211f0a9445929c82b9de9c1a43d2383a42714c629660da08",
+      "sha256": "65ca33d4df1ce80ec88384243de2dd2c5dc0ddabf2bed01dbda503fc9ad0dc4d"
+    },
+    "wasm-o3-build.log": {
+      "bytes": 979,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/wasm-o3-build.log.gz",
+      "rawBytes": 3663,
+      "rawSha256": "092235911fdfbee17f64394012a6dd86fdf0f3f5037cb66f5939c4584555c2bc",
+      "sha256": "73aab78fc782b75438127c281e9d216d7bc9fad43d17c98c4fe7fe3e6a1a0c78"
+    },
+    "wasm-o3-inline40-build.log": {
+      "bytes": 979,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/wasm-o3-inline40-build.log.gz",
+      "rawBytes": 3663,
+      "rawSha256": "092235911fdfbee17f64394012a6dd86fdf0f3f5037cb66f5939c4584555c2bc",
+      "sha256": "73aab78fc782b75438127c281e9d216d7bc9fad43d17c98c4fe7fe3e6a1a0c78"
+    },
+    "wasm-o3-inline40-package.log": {
+      "bytes": 368,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/wasm-o3-inline40-package.log.gz",
+      "rawBytes": 673,
+      "rawSha256": "4ebd3192d099f73a45baad542d5e1cf93536bef1e3e15774b2ab88a0aed5f4ed",
+      "sha256": "2fc98c1228cd2f4f66c10ab3e54a126f30c8c0bc83053fa8a27181e41b9e741b"
+    },
+    "wasm-o3-inline40.raw.wasm": {
+      "bytes": 803501,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/wasm-o3-inline40.raw.wasm.gz",
+      "rawBytes": 2141944,
+      "rawSha256": "26383414aad8db0fb9a33e10d51fb420e78cecbd296046246ceac95b3b53de06",
+      "sha256": "519aba20b0da3a3a9c0929244853c4bb31ab35c904a8f2e410ef39c57014fcda"
+    },
+    "wasm-o3-inline50-size-quota-failed.log": {
+      "bytes": 415,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/wasm-o3-inline50-size-quota-failed.log.gz",
+      "rawBytes": 691,
+      "rawSha256": "10484b8153cd3015d7f59ae48476deec8f494bb17a6a1926c1661de44bb9fcc6",
+      "sha256": "630d32dec775932a34118f194e903f53832a39c369f085b2e70c63a9a0b5a348"
+    },
+    "wasm-o3-inline50-size.log": {
+      "bytes": 239,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/wasm-o3-inline50-size.log.gz",
+      "rawBytes": 354,
+      "rawSha256": "7aa3d8c2135995be09f75f06905da5aedf707b038366cf5d2129e993d1b7c9b0",
+      "sha256": "42c4fdbfe4570ad22713f276df620b60b4dc5ea4e62c49fc44cced1e6999b85a"
+    },
+    "wasm-o3-inline50.raw.wasm": {
+      "bytes": 799654,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/wasm-o3-inline50.raw.wasm.gz",
+      "rawBytes": 2125227,
+      "rawSha256": "4aa85dc27961e246a2f5336486e70e93a12a88088df347f54bb20fbf49e90f78",
+      "sha256": "a32f1aed5ef1d1a3f7c52e7f014872c40da21dee0d246c5edf844f93550d2477"
+    },
+    "wasm-o3-inline50.wasm": {
+      "bytes": 784029,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/wasm-o3-inline50.wasm.gz",
+      "rawBytes": 1927322,
+      "rawSha256": "a7406e2df38dd96ca8066c0905b0cdad98bdaa4a0afd18c0c4a2d6eea013a59b",
+      "sha256": "d6e99cc2b166af0b17ef906fe67741b835e72fb7e188c784faf719bfba81ff12"
+    },
+    "wasm-o3-package.log": {
+      "bytes": 367,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/wasm-o3-package.log.gz",
+      "rawBytes": 673,
+      "rawSha256": "393ade0d51355c2aeffbb6d082c8d653ea15928cc79dfc29d9689c315c4f93c8",
+      "sha256": "c3ec7a5952ddc4b319f76897edf444c0be85c018ef564e94f7d04a73956bfff7"
+    },
+    "wasm-tests.log": {
+      "bytes": 2125,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/wasm-tests.log.gz",
+      "rawBytes": 6645,
+      "rawSha256": "4c7c3ce5f3f3a64680cd7e9cf3046ab2d03f37c9db0b609420e54a2419fa30a6",
+      "sha256": "643b51b71df0a417ba9c4e403261f5cdf4979f7f13e08aa43d943db96d9c9f7a"
+    },
+    "write_node_fixtures.py": {
+      "bytes": 984,
+      "file": "spec/performance/filter-catalog-abi-union-2026-11-07/procedures/write_node_fixtures.py.gz",
+      "rawBytes": 1993,
+      "rawSha256": "d2c94306905015a7109c27965b16303faa4f9ef8c7f868a36044979bcb213a1a",
+      "sha256": "949bb75599d17a315e9d5194cf977bc3b6604081384b145e0c39130526ea63b9"
+    }
+  },
+  "artifacts": {
+    "packages/xy-client/dist/index.js": {
+      "bytes": 828802,
+      "sha256": "250706e8bc8c85607ff0f42c33e38081687963118637a8a2b80fcfb5bcb916d1"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 828823,
+      "sha256": "508328554dde334571ce79ffd79c2b7f38ddd2adae2c0d57ac488f3214d0d67c"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 57317,
+      "sha256": "26d6835131f17990779c0384bb42b7898414fbd8311648b3c403ca15dd9ead3b"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2514439,
+      "sha256": "e00f77ac9d5a23bab4a6a71666849f3f0f96341f1af449deda9be3020b6f2abc"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "f9cc5cf4a2ced8d08e6fcf04207a146aa3e24c88b02306b0497de45756755f9a"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1871162,
+      "sha256": "8217a9ec41d2de69ff30e1ec4193f8564483afcddd4fb33af13eede725bbf3d1"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 828802,
+      "sha256": "250706e8bc8c85607ff0f42c33e38081687963118637a8a2b80fcfb5bcb916d1"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 828823,
+      "sha256": "508328554dde334571ce79ffd79c2b7f38ddd2adae2c0d57ac488f3214d0d67c"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "bytes": 57317,
+      "sha256": "26d6835131f17990779c0384bb42b7898414fbd8311648b3c403ca15dd9ead3b"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "bytes": 2514439,
+      "sha256": "e00f77ac9d5a23bab4a6a71666849f3f0f96341f1af449deda9be3020b6f2abc"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "f9cc5cf4a2ced8d08e6fcf04207a146aa3e24c88b02306b0497de45756755f9a"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1871162,
+      "sha256": "8217a9ec41d2de69ff30e1ec4193f8564483afcddd4fb33af13eede725bbf3d1"
+    },
+    "target/release/libxyg_core.so": {
+      "bytes": 6234104,
+      "sha256": "ed21f677c9e474814e408f534893befc4e53f0ab05bb40ae82c54ace0cff74ff"
+    }
+  },
+  "captures": {
+    "catalog-bar.png": {
+      "bytes": 24664,
+      "sha256": "16e82daafa5750695836c37dc6413d77567df45b4cc18fb885c723b969c86269"
+    },
+    "catalog-event.png": {
+      "bytes": 24821,
+      "sha256": "cf83388b5810cc10e99d574de77ada8867002ac8ca26e9edb5a12db2fedd8201"
+    },
+    "catalog-gantt.png": {
+      "bytes": 24728,
+      "sha256": "8d6046a62f5bab3a33df856ea11668d14f60bc51b07213e1e0f4dcacde27d0fe"
+    },
+    "catalog-interval.png": {
+      "bytes": 24728,
+      "sha256": "8d6046a62f5bab3a33df856ea11668d14f60bc51b07213e1e0f4dcacde27d0fe"
+    },
+    "catalog-line.png": {
+      "bytes": 27216,
+      "sha256": "95b4c92be0c53b174090f191066e1d65cb03aa7862f6a60e2cc420ba7bb8b36e"
+    },
+    "catalog-scatter.png": {
+      "bytes": 24821,
+      "sha256": "cf83388b5810cc10e99d574de77ada8867002ac8ca26e9edb5a12db2fedd8201"
+    },
+    "foundation.json.esm-malformed-inline-artifact.png": {
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    "foundation.json.esm-missing-inline-artifact.png": {
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    "foundation.json.esm-missing-retained-source.png": {
+      "bytes": 11315,
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+    },
+    "foundation.json.iife-malformed-inline-artifact.png": {
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    "foundation.json.iife-missing-inline-artifact.png": {
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    "foundation.json.iife-missing-retained-source.png": {
+      "bytes": 11315,
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+    },
+    "foundation.json.retained-temporal.json.boundary.png": {
+      "bytes": 44546,
+      "sha256": "e47464cd85a30210f9cbe6ec12af0aee391c3aa8ec4c01afdc2b814b823a7d6d"
+    },
+    "foundation.json.retained-temporal.json.initial.png": {
+      "bytes": 44231,
+      "sha256": "a03d81a62746e81bbc035d278d5ebc73be03be673f7fee0a4e3a9ca31fa0eceb"
+    },
+    "linked-filter.png": {
+      "bytes": 37630,
+      "sha256": "c48c85076ce9bc19bfa5cdd712e86016fad4c7e2201e9ea19e120c6896f433cd"
+    },
+    "linked-filter.png.indexed.png": {
+      "bytes": 34706,
+      "sha256": "de87a57085d2543e07f7ea78554ed5ca3bdcec62645d1eb7ac00d797c0a0cdc1"
+    },
+    "public10k.json.7101.final.png": {
+      "bytes": 8122,
+      "sha256": "e7f41105975657ce7808cfc1e67d233683a28f388b43db42cfdb9c3e5723b1b3"
+    },
+    "public10k.json.7101.initial.png": {
+      "bytes": 12258,
+      "sha256": "3efa8ea35d7493873f7e1b3ef40579afb78e5923eca4f3c82799c3ec9b1d8c80"
+    },
+    "public10k.json.7101.intermediate.png": {
+      "bytes": 9222,
+      "sha256": "3c6cc5531407af64bdd3250acdf0a9f497c53b90a89ee0208f5b301522f68dc2"
+    },
+    "public10k.json.7102.final.png": {
+      "bytes": 8695,
+      "sha256": "4453d9610a62a79b6a900bf2a3d67145ea2e95cf799286690cff9365a63ff06b"
+    },
+    "public10k.json.7102.initial.png": {
+      "bytes": 16340,
+      "sha256": "d378702d8644f2616909d71978479b0b684f4477871e68316d5c9280d88a52e9"
+    },
+    "public10k.json.7102.intermediate.png": {
+      "bytes": 9175,
+      "sha256": "86b4b1cb20b0aa65ade77479d6b17599e09123b660ceb57eae6bbd0054f4f5db"
+    },
+    "scheduling.json.7101.final.png": {
+      "bytes": 9218,
+      "sha256": "ab52f8b21edf99ed47d8d8e117e859f52e75bcd9e776b944bab01bb73e811225"
+    },
+    "scheduling.json.7101.initial.png": {
+      "bytes": 16340,
+      "sha256": "d378702d8644f2616909d71978479b0b684f4477871e68316d5c9280d88a52e9"
+    },
+    "scheduling.json.7101.intermediate.png": {
+      "bytes": 9720,
+      "sha256": "92bd17cb68576bb1d9f3e9a52b2d3881992ce731034891e38156d27287b29c90"
+    },
+    "scheduling.json.7102.final.png": {
+      "bytes": 8695,
+      "sha256": "4453d9610a62a79b6a900bf2a3d67145ea2e95cf799286690cff9365a63ff06b"
+    },
+    "scheduling.json.7102.initial.png": {
+      "bytes": 16340,
+      "sha256": "d378702d8644f2616909d71978479b0b684f4477871e68316d5c9280d88a52e9"
+    },
+    "scheduling.json.7102.intermediate.png": {
+      "bytes": 9175,
+      "sha256": "86b4b1cb20b0aa65ade77479d6b17599e09123b660ceb57eae6bbd0054f4f5db"
+    }
+  },
+  "commands": {
+    "abi-final.exit.json": {
+      "command": [
+        "python3",
+        "scripts/gen_abi_manifest.py",
+        "--check"
+      ],
+      "elapsedSeconds": 1.930890406947583,
+      "exitCode": 0
+    },
+    "abi-generated.exit.json": {
+      "command": [
+        "python3",
+        "scripts/gen_abi_manifest.py",
+        "--check"
+      ],
+      "elapsedSeconds": 2.0362367210909724,
+      "exitCode": 0
+    },
+    "abi-smoke.exit.json": {
+      "command": [
+        "python3",
+        "scripts/abi_smoke.py"
+      ],
+      "elapsedSeconds": 0.23024102998897433,
+      "exitCode": 0
+    },
+    "assets.exit.json": {
+      "command": [
+        "python3",
+        "scripts/verify_wasm_assets.py"
+      ],
+      "elapsedSeconds": 0.29525863705202937,
+      "exitCode": 0
+    },
+    "capability-final.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_capability_matrix.py",
+        "--check"
+      ],
+      "elapsedSeconds": 0.26050123618915677,
+      "exitCode": 0
+    },
+    "ci-final.exit.json": {
+      "command": [
+        "make",
+        "check-ci"
+      ],
+      "elapsedSeconds": 416.0147949689999,
+      "exitCode": 0
+    },
+    "client-build.exit.json": {
+      "command": [
+        "node",
+        "js/build.mjs"
+      ],
+      "elapsedSeconds": 2.2460217853076756,
+      "exitCode": 0
+    },
+    "clippy.exit.json": {
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "xyg-engine",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "elapsedSeconds": 26.76654829038307,
+      "exitCode": 0
+    },
+    "core-inventory.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_release_inventory.py",
+        "tests/test_verify_ownership.py"
+      ],
+      "elapsedSeconds": 9.330609225202352,
+      "exitCode": 0
+    },
+    "filter-browser.exit.json": {
+      "command": [
+        "node",
+        "scripts/filter_tier_c_conformance.mjs",
+        "--capture",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/filter-catalog-union/linked-filter.png",
+        "--report",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/filter-catalog-union/linked-filter.json"
+      ],
+      "elapsedSeconds": 6.235738189890981,
+      "exitCode": 0
+    },
+    "fixture-0.exit.json": {
+      "command": [
+        "node",
+        "packages/xy-node/scripts/animation_emit_cross_host.mjs"
+      ],
+      "elapsedSeconds": 0.41384211322292686,
+      "exitCode": 0
+    },
+    "fixture-1.exit.json": {
+      "command": [
+        "node",
+        "packages/xy-node/scripts/default_styled_emit_cross_host.mjs"
+      ],
+      "elapsedSeconds": 0.24131799908354878,
+      "exitCode": 0
+    },
+    "fixture-2.exit.json": {
+      "command": [
+        "node",
+        "packages/xy-node/scripts/density_emit_cross_host.mjs"
+      ],
+      "elapsedSeconds": 0.27071988210082054,
+      "exitCode": 0
+    },
+    "fixture-3.exit.json": {
+      "command": [
+        "node",
+        "packages/xy-node/scripts/force_emit_cross_host.mjs"
+      ],
+      "elapsedSeconds": 0.18205821933224797,
+      "exitCode": 0
+    },
+    "fixture-4.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "packages/xy-node/test/fixtures/write_geo_cross_host_fixtures.py"
+      ],
+      "elapsedSeconds": 1.494598949328065,
+      "exitCode": 0
+    },
+    "fixture-5.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "packages/xy-node/test/fixtures/write_payload_attach_cross_host_fixtures.py"
+      ],
+      "elapsedSeconds": 0.31924073258414865,
+      "exitCode": 0
+    },
+    "fixture-6.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "packages/xy-node/test/fixtures/write_payload_chrome_cross_host_fixtures.py"
+      ],
+      "elapsedSeconds": 0.259192090947181,
+      "exitCode": 0
+    },
+    "fixture-7.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "packages/xy-node/test/fixtures/write_payload_cross_host_fixtures.py"
+      ],
+      "elapsedSeconds": 0.2358787446282804,
+      "exitCode": 0
+    },
+    "fixture-8.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "tests/test_series_palette_cross_host.py",
+        "--write"
+      ],
+      "elapsedSeconds": 0.4346221489831805,
+      "exitCode": 0
+    },
+    "fixture-9.exit.json": {
+      "command": [
+        "node",
+        "packages/xy-node/scripts/tooltip_len_emit_cross_host.mjs"
+      ],
+      "elapsedSeconds": 0.19234482059255242,
+      "exitCode": 0
+    },
+    "fixture-output-animation_emit_cross_host.exit.json": {
+      "command": [
+        "node",
+        "packages/xy-node/scripts/animation_emit_cross_host.mjs"
+      ],
+      "elapsedSeconds": 0.42134498432278633,
+      "exitCode": 0,
+      "fixture": "tests/fixtures/animation_emit_cross_host.json",
+      "outputSha256": "125a57ad4765356e555d4083ec89565805df9a99d378e4e78005b8f9f5ac4339",
+      "stdoutDisposition": "complete producer stdout, separately captured from stderr"
+    },
+    "fixture-output-default_styled_emit_cross_host.exit.json": {
+      "command": [
+        "node",
+        "packages/xy-node/scripts/default_styled_emit_cross_host.mjs"
+      ],
+      "elapsedSeconds": 0.21582429530099034,
+      "exitCode": 0,
+      "fixture": "tests/fixtures/default_styled_emit_cross_host.json",
+      "outputSha256": "c6f6c400f85c4b0c733654a277058b69159069a21d15891904cb99489e227b44",
+      "stdoutDisposition": "complete producer stdout, separately captured from stderr"
+    },
+    "fixture-output-density_emit_cross_host.exit.json": {
+      "command": [
+        "node",
+        "packages/xy-node/scripts/density_emit_cross_host.mjs"
+      ],
+      "elapsedSeconds": 0.26736873760819435,
+      "exitCode": 0,
+      "fixture": "tests/fixtures/density_emit_cross_host.json",
+      "outputSha256": "d5fc33f56c3445e4834d4795b9eeace52a333b68895e597cbf58fc6c39e42071",
+      "stdoutDisposition": "complete producer stdout, separately captured from stderr"
+    },
+    "fixture-output-force_emit_cross_host.exit.json": {
+      "command": [
+        "node",
+        "packages/xy-node/scripts/force_emit_cross_host.mjs"
+      ],
+      "elapsedSeconds": 0.20743262814357877,
+      "exitCode": 0,
+      "fixture": "tests/fixtures/force_emit_cross_host.json",
+      "outputSha256": "4be406b9275f8dadf5e1809fceac699d96912a24a8883e2c2df2553b9d18bef0",
+      "stdoutDisposition": "complete producer stdout, separately captured from stderr"
+    },
+    "fixture-output-tooltip_len_emit_cross_host.exit.json": {
+      "command": [
+        "node",
+        "packages/xy-node/scripts/tooltip_len_emit_cross_host.mjs"
+      ],
+      "elapsedSeconds": 0.3160744062624872,
+      "exitCode": 0,
+      "fixture": "tests/fixtures/tooltip_len_emit_cross_host.json",
+      "outputSha256": "50739ff23a7b751ccbac0f84f86acbed134e0279972188d4fa78f4d4cf16bd67",
+      "stdoutDisposition": "complete producer stdout, separately captured from stderr"
+    },
+    "floor-final.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_python_floor.py"
+      ],
+      "elapsedSeconds": 2.414884415920824,
+      "exitCode": 0
+    },
+    "foundation-final.exit.json": {
+      "command": [
+        "node",
+        "scripts/wasm_foundation_smoke.mjs"
+      ],
+      "elapsedSeconds": 55.81986858416349,
+      "exitCode": 0
+    },
+    "foundation.exit.json": {
+      "command": [
+        "node",
+        "scripts/wasm_foundation_smoke.mjs"
+      ],
+      "elapsedSeconds": 66.97069904208183,
+      "exitCode": 0
+    },
+    "hooks-commit.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "elapsedSeconds": 1.6239890176802874,
+      "exitCode": 0
+    },
+    "hooks-final.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "elapsedSeconds": 3.9232929777354,
+      "exitCode": 0
+    },
+    "inventory-write.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_release_inventory.py",
+        "--write"
+      ],
+      "elapsedSeconds": 8.861577014438808,
+      "exitCode": 0
+    },
+    "naming-final.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_stale_names.py"
+      ],
+      "elapsedSeconds": 114.8150499179028,
+      "exitCode": 1
+    },
+    "native-build.exit.json": {
+      "command": [
+        "cargo",
+        "build",
+        "--release"
+      ],
+      "elapsedSeconds": 140.28152068285272,
+      "exitCode": 0
+    },
+    "node-full.exit.json": {
+      "command": [
+        "npm",
+        "test",
+        "--prefix",
+        "packages/xy-node"
+      ],
+      "elapsedSeconds": 27.022366345860064,
+      "exitCode": 0
+    },
+    "profile-abba.exit.json": {
+      "command": [
+        "node",
+        "benchmarks/bench_wasm_profiles.mjs",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/filter-catalog-union/wasm-o3-inline50.wasm",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/packages/xy-client/dist/xyg-wasm.wasm",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/filter-catalog-union/profile-inputs",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/filter-catalog-union/profile-abba.json"
+      ],
+      "elapsedSeconds": 20.072676606010646,
+      "exitCode": 0
+    },
+    "public10k-final.exit.json": {
+      "command": [
+        "node",
+        "scripts/graph_session_public10k_smoke.mjs"
+      ],
+      "elapsedSeconds": 27.61550411488861,
+      "exitCode": 0
+    },
+    "public10k-replay-final.exit.json": {
+      "command": [
+        "node",
+        "scripts/graph_session_public10k_replay.mjs",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/filter-catalog-union/public10k.json"
+      ],
+      "elapsedSeconds": 9.821808610577136,
+      "exitCode": 0
+    },
+    "python-host.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_filter_tier_c.py",
+        "tests/test_filter_tier_c_density.py",
+        "tests/test_temporal_catalog.py",
+        "tests/test_temporal_catalog_geo_integration.py",
+        "tests/test_geo_temporal_binding.py",
+        "tests/test_temporal_controller.py",
+        "tests/test_cross_host_abi_transition.py",
+        "tests/test_chunked_columns.py"
+      ],
+      "elapsedSeconds": 13.044852678198367,
+      "exitCode": 0
+    },
+    "ruff-check-commit.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "elapsedSeconds": 0.15970053197816014,
+      "exitCode": 0
+    },
+    "ruff-check-final.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "elapsedSeconds": 0.6846925280988216,
+      "exitCode": 0
+    },
+    "ruff-format-commit.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "elapsedSeconds": 0.04397859796881676,
+      "exitCode": 0
+    },
+    "ruff-format-final.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "elapsedSeconds": 0.06819042889401317,
+      "exitCode": 0
+    },
+    "rust-filter.exit.json": {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "xyg-engine",
+        "filter_tier_c",
+        "--lib"
+      ],
+      "elapsedSeconds": 39.94783627614379,
+      "exitCode": 0
+    },
+    "rust-temporal.exit.json": {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "xyg-engine",
+        "temporal_scene",
+        "--lib"
+      ],
+      "elapsedSeconds": 1.1217653048224747,
+      "exitCode": 0
+    },
+    "source-final.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_release_inventory.py",
+        "tests/test_verify_ownership.py",
+        "tests/test_cross_host_abi_transition.py",
+        "tests/test_gen_wasm_abi.py",
+        "tests/test_verify_wasm_assets.py"
+      ],
+      "elapsedSeconds": 13.933950379956514,
+      "exitCode": 0
+    },
+    "temporal-packet-parity.exit.json": {
+      "command": [
+        "node",
+        "scripts/temporal_catalog_wasm_parity.mjs",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/packages/xy-client/dist/xyg-wasm.wasm"
+      ],
+      "elapsedSeconds": 0.1643403028137982,
+      "exitCode": 0
+    },
+    "types-before-field.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "ty",
+        "check"
+      ],
+      "elapsedSeconds": 1.9434394598938525,
+      "exitCode": 1
+    },
+    "types-final.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "ty",
+        "check"
+      ],
+      "elapsedSeconds": 2.430612911004573,
+      "exitCode": 0
+    },
+    "wasm-abi-final.exit.json": {
+      "command": [
+        "python3",
+        "scripts/gen_wasm_abi.py",
+        "--check"
+      ],
+      "elapsedSeconds": 0.07712217094376683,
+      "exitCode": 0
+    },
+    "wasm-generated.exit.json": {
+      "command": [
+        "python3",
+        "scripts/gen_wasm_abi.py",
+        "--check"
+      ],
+      "elapsedSeconds": 0.06800581607967615,
+      "exitCode": 0
+    },
+    "wasm-o2-inline50-build.exit.json": {
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "xyg-wasm",
+        "--release",
+        "--target",
+        "wasm32-unknown-unknown"
+      ],
+      "elapsedSeconds": 65.49049011198804,
+      "exitCode": 0
+    },
+    "wasm-o2-inline50-package.exit.json": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs"
+      ],
+      "elapsedSeconds": 42.78894434124231,
+      "exitCode": 0
+    },
+    "wasm-o3-build.exit.json": {
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "xyg-wasm",
+        "--release",
+        "--target",
+        "wasm32-unknown-unknown"
+      ],
+      "elapsedSeconds": 68.7089415169321,
+      "exitCode": 0
+    },
+    "wasm-o3-inline40-build.exit.json": {
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "xyg-wasm",
+        "--release",
+        "--target",
+        "wasm32-unknown-unknown"
+      ],
+      "elapsedSeconds": 68.42190073803067,
+      "exitCode": 0
+    },
+    "wasm-o3-inline40-package.exit.json": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs"
+      ],
+      "elapsedSeconds": 43.758343789260834,
+      "exitCode": 1
+    },
+    "wasm-o3-package.exit.json": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs"
+      ],
+      "elapsedSeconds": 44.346903294790536,
+      "exitCode": 1
+    },
+    "wasm-tests.exit.json": {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "xyg-wasm",
+        "--lib"
+      ],
+      "elapsedSeconds": 29.076968676876277,
+      "exitCode": 0
+    }
+  },
+  "declarationManifests": {
+    "abi402-source-fixtures.json": "51a52f70f365cb50e60cfe811f09edbd89554105477da029d1c9f7a1b52047d9",
+    "abi402-transition.json": "0dcd3b0520c54b76246fbd93851148095cec10a1c86aa245f15f83c10f204b8d",
+    "figure-type-proof.json": "c39b63128d00548bcf88c5886bd3ff73797ecadb0deeb1e6a348aa6469b36a6f",
+    "fixture-transition.json": "f2e9bb5f3cac2dd33dd0b7a6b7e64a20b420b8713380ed9f51e5c93879cffb57",
+    "native-symbol-union.json": "089dde88c2713728d550c1e82fad0bef354ca3d3301aa0fe9835040bc2cecc82",
+    "union-seams.json": "2aac0ff537f4211cd3aaa96f7d44b58b617dfb2457f12bef2345eda0980ff44d",
+    "wasm-export-union.json": "fa537ce0c2f76c768051c3ac7a9a0fce7a30f7a3b54a8ef47b74ffc0dcefe0db"
+  },
+  "freshResults": {
+    "abiSmoke": 673,
+    "ciContracts": 775,
+    "coreInventoryOwnership": 42,
+    "engineFilter": 7,
+    "engineTemporal": 2,
+    "finalCore350Sources": 7,
+    "finalSourceContracts": 181,
+    "namingAfterLocalNotes": 155,
+    "nodeExistingSkips": 2,
+    "nodePassed": 1112,
+    "postTypePythonBrowserDiscoverySkip": 1,
+    "postTypePythonPassed": 276,
+    "previouslySkippedFigureChromiumCase": 1,
+    "public10kPeerPainted": 59,
+    "public10kPrimaryPainted": 60,
+    "public10kReplayPeer": 60,
+    "public10kReplayPrimary": 63,
+    "python311Final": 89,
+    "pythonAffected": 194,
+    "wasmHost": 76
+  },
+  "limitations": [
+    "Combined current source has not yet received its independent final diff review or hosted CI.",
+    "Source build checks remain separate from historical producer evidence; no new milestone acceptance claim.",
+    "Shared-VM ABBA contains slower cases; no performance win claimed.",
+    "Old fixture/provenance/tool setup failures and initial O3/50 and O3/40 package refusals remain preserved.",
+    "Original 10k missing-reply collection failure remains unresolved; no reliability claim.",
+    "New mounted M6 correction, GPU integration, keyboard continuation and frozen export candidate are not part of these two parents."
+  ],
+  "limits": {
+    "node22Gzip6": 786432,
+    "rawWasm": 1927168
+  },
+  "nativeAbi": 403,
+  "parents": [
+    "c90fcd3047e4cac69c307ffe1f27c37c4d69c0f8",
+    "b8000a60900d4685969a6d68f55324e561199df5"
+  ],
+  "protection": {
+    "bytes": 593774,
+    "file": "spec/performance/filter-catalog-abi-union-2026-11-07/parent-protection.json.gz",
+    "rawBytes": 10037479,
+    "rawSha256": "716c08d798a30aea56d47ba574b39c97bd56d6b3eeaa5460a8c5357ae5dbf62d",
+    "sha256": "466ab3810d97b3e647d196e2593050aaaed098e3777286cb56214dac3ae1aceb"
+  },
+  "reports": {
+    "foundation-proof-negatives.json": {
+      "bytes": 376,
+      "sha256": "bbb92185a603a9004a6b4725955df75fdf5adb411fb1aeb4cc6a095b4780cece"
+    },
+    "foundation.json": {
+      "bytes": 27370,
+      "sha256": "353f217284ca9c984175ebe69ba73a600a9a78078a658cd3268d45296a02a1dc"
+    },
+    "foundation.json.retained-temporal.json": {
+      "bytes": 102509,
+      "sha256": "175f134b0810aecd61ff81402d4312ed53a28cb6bf0b38813c72701a2b702660"
+    },
+    "linked-filter.json": {
+      "bytes": 2395,
+      "sha256": "f95fcd7f2405947b676e820ec422764f014782f32d5c22f680b2ca98a6cd450d"
+    },
+    "loader-negatives.json": {
+      "bytes": 1973,
+      "sha256": "8b6c5cfa2105d75d8463add0e70780320f43f8010ba59e0e613b13eef5780998"
+    },
+    "profile-abba.json": {
+      "bytes": 37751,
+      "sha256": "4a8ad159ebcf523a038c5a225acc88c7981841b1c2ccd41cf8c139110c4eda79"
+    },
+    "profile-new-paths.json": {
+      "bytes": 61986,
+      "sha256": "9bf457e7fa44d3f5c4087853d1af13b5061b8bb163727e3aa1e193fa942de6b1"
+    },
+    "scheduling.json": {
+      "bytes": 233985,
+      "sha256": "001f47760954957059dfacca4cef227cf6cb7fab6a0deffe0c352aa71b75a9ee"
+    },
+    "wasm-loader-negatives.json": {
+      "bytes": 908,
+      "sha256": "8717d636fa1b1802ce4c8fa121589e71011b69872d8eb3fab78d0cb19344aeaf"
+    },
+    "wasm-o3-inline40-source.json": {
+      "bytes": 697,
+      "sha256": "1ad485980ccce9dc757a7eb4bf372de60d904f0eaa3ce3128ed8141389523820"
+    },
+    "wasm-o3-inline50-source.json": {
+      "bytes": 783,
+      "sha256": "380907e640e4c0f3beaa92c8a2a670f305d7c4f3f6720041ec84c1fd3b565e04"
+    }
+  },
+  "rustInputs": {
+    "count": 248,
+    "sha256": "7f635af1389f711846d480595d51e2327950629e971803d7d7f902c4a3352c0d"
+  },
+  "schema": "xyg.filter-catalog-union-evidence/v1",
+  "setupFailures": {
+    "firstFoundationReport": "Log-only pass: wrapper selected unrecognized XYG_WASM_REPORT; final material guard/report change reran full foundation with correct variable.",
+    "initialWholeClassAstComparator": {
+      "exitCode": 1,
+      "log": "parent-seam-first-helper.log"
+    },
+    "namingBeforeLocalWorksheetCorrection": {
+      "exitCode": 1,
+      "failed": 1,
+      "log": "naming-final.log",
+      "passed": 154,
+      "scope": "Four historical references in untracked TASKS.md; checker and exemptions unchanged."
+    },
+    "typeDeclarationBeforeCorrection": {
+      "exitCode": 1,
+      "log": "types-before-field.log"
+    }
+  },
+  "sourceBindings": {
+    "current": 350,
+    "file": "spec/performance/filter-catalog-abi-union-2026-11-07/current-bindings.json",
+    "historical": 71,
+    "sha256": "ab823604a47d100ca61abe81afa3cda29d63a2956e622c28a8ef64ba16b10849"
+  },
+  "wasmAbi": 37
+}

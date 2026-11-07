@@ -1,0 +1,370 @@
+{
+  "acceptedMainAtPreparation": "43c35f67b95ae4e78e3e96f200a0e6be8642199c",
+  "captures": {
+    "foundation.json.esm-malformed-inline-artifact.png": {
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    "foundation.json.esm-missing-inline-artifact.png": {
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    "foundation.json.esm-missing-retained-source.png": {
+      "bytes": 11315,
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+    },
+    "foundation.json.gz": {
+      "archiveSha256": "a5455d139c2173cf8e8e34766f9538b3148834a1597b5dbee0fa79f3e96547ef",
+      "rawBytes": 27210,
+      "rawSha256": "fb4f5471d140be3a8739ffacec5ada55e10e021a73c051f6c32310e35cfaaf4b"
+    },
+    "foundation.json.iife-malformed-inline-artifact.png": {
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    "foundation.json.iife-missing-inline-artifact.png": {
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    "foundation.json.iife-missing-retained-source.png": {
+      "bytes": 11315,
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+    },
+    "foundation.json.retained-temporal.json.boundary.png": {
+      "bytes": 44546,
+      "sha256": "e47464cd85a30210f9cbe6ec12af0aee391c3aa8ec4c01afdc2b814b823a7d6d"
+    },
+    "foundation.json.retained-temporal.json.gz": {
+      "archiveSha256": "3ad8e3a30932ab9d370cd664e28a388a0adbc240486728e24f21d1e7da02c2ab",
+      "rawBytes": 102509,
+      "rawSha256": "61b1b7e0739349ff834b7ab06e4a1cba45da181f4c7c8bc3aed7c7e4a3037c30"
+    },
+    "foundation.json.retained-temporal.json.initial.png": {
+      "bytes": 44231,
+      "sha256": "a03d81a62746e81bbc035d278d5ebc73be03be673f7fee0a4e3a9ca31fa0eceb"
+    },
+    "foundation.json.retained-temporal.json.wire.json.gz": {
+      "archiveSha256": "66c278077fcc737b99160d78ac4792169de7f2518aeed479b54aa461b09335b3",
+      "rawBytes": 3121604,
+      "rawSha256": "57709233f2fd5280cb0c7eb6873a36667c267c7e2c1fba7e87c79604c334b60c"
+    }
+  },
+  "environment": {
+    "chromium": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "nativeSelection": "explicit source-matching ABI402 checkout/target/release/libxyg_core.so",
+    "node": "22.23.4",
+    "python": "3.11.17 via explicit producer-independent interpreter",
+    "tmpdir": "/var/tmp",
+    "wasm": {
+      "gzip6CapBytes": 786432,
+      "node22Gzip6Bytes": 771728,
+      "rawBytes": 1886204,
+      "rawCapBytes": 1927168
+    }
+  },
+  "limits": [
+    "Graph dependency not presumed accepted main.",
+    "Parent product approvals inherited only after exact byte checks.",
+    "No new Rust build, public10k or scale evidence is claimed.",
+    "Full issue/milestone acceptance, current-head CI and merge queue remain open.",
+    "Final nonrecursive hook receipts supplied separately after committed evidence."
+  ],
+  "logs": {
+    "abi.log.gz": {
+      "archiveSha256": "135de4fa46245b623c5d8acfa3e621c9374a4c0229b173222340fff45c526965",
+      "command": [
+        "python3",
+        "scripts/abi_smoke.py"
+      ],
+      "elapsedSeconds": 0.19729969277977943,
+      "env": {
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/python:/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/tests",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/release/libxyg_core.so",
+        "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "exit": 0,
+      "rawBytes": 52,
+      "rawSha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306"
+    },
+    "core-final.log.gz": {
+      "archiveSha256": "8ec408783606ecf8bb645c484ac49f60f055d39b4c67f2d0426b2fd420994add",
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_release_inventory.py"
+      ],
+      "elapsedSeconds": 11.59902906510979,
+      "env": {
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/python:/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/tests",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/release/libxyg_core.so",
+        "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "exit": 0,
+      "rawBytes": 99,
+      "rawSha256": "dd5a4896f81b8ec2acbe2532b4eda25f19ecc051b84d724de2f8febcacdd87c7"
+    },
+    "format.log.gz": {
+      "archiveSha256": "ea4d38ff3514b03e89c7dbfb6ac1c63ed7bfb4f90cefd1a0a79e5feb101abd14",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "elapsedSeconds": 0.041054902132600546,
+      "env": {
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/python:/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/tests",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/release/libxyg_core.so",
+        "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "exit": 0,
+      "rawBytes": 29,
+      "rawSha256": "fc0bbac019440dc0d592ea23f64391a7684b4d8f1ada394542e6e6b48ca737f2"
+    },
+    "foundation.log.gz": {
+      "archiveSha256": "194752e371c1e97cdf2252e910ec1b00cb0c043e071e3747e3098aa54e5b57bb",
+      "command": [
+        "env",
+        "XYG_WASM_FOUNDATION_REPORT=target/task-tmp/catalog-force-union/foundation.json",
+        "node",
+        "scripts/wasm_foundation_smoke.mjs"
+      ],
+      "elapsedSeconds": 54.49035240476951,
+      "env": {
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/python:/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/tests",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/release/libxyg_core.so",
+        "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "exit": 0,
+      "rawBytes": 3985,
+      "rawSha256": "f2a03513a0352aea1ae68e8936f44dd50f670e8b43df74310a2ab3673532e32e"
+    },
+    "hooks.log.gz": {
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "elapsedSeconds": 2.4855163251049817,
+      "env": {
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/python:/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/tests",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/release/libxyg_core.so",
+        "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "exit": 0,
+      "rawBytes": 240,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "inventory-write.log.gz": {
+      "archiveSha256": "038402288234ed7497105243ad5a909df530f6cd7578b97bcf9b5dc5e9f6429e",
+      "rawBytes": 89,
+      "rawSha256": "1cd55c3bb9d5323f1c4c6d8482411a9b9d6954629324348497df0789cd958482",
+      "status": "auxiliary output; shell exit not inferred"
+    },
+    "js-build.log.gz": {
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "command": [
+        "node",
+        "js/build.mjs"
+      ],
+      "elapsedSeconds": 2.3775271521881223,
+      "env": {
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/python:/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/tests",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/release/libxyg_core.so",
+        "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "exit": 0,
+      "rawBytes": 5448,
+      "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "metadata.log.gz": {
+      "archiveSha256": "36517011f17334c91b6dfdbb188e4da257c0a031731d4bb18afb0bd43e8b980d",
+      "command": [
+        "python3",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/public10k-native-main/metadata.py"
+      ],
+      "elapsedSeconds": 27.253390165045857,
+      "env": {
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/python:/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/tests",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/release/libxyg_core.so",
+        "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "exit": 0,
+      "rawBytes": 1259,
+      "rawSha256": "bb51579415fa66ca66e20cb324426128a74df9e46523524eb950a8fd7c81b442"
+    },
+    "node-full.log.gz": {
+      "archiveSha256": "5e1514cea5bfa4422c0a44f6f0a37cfc37d1f121bbdd2eea14635cb18266eb82",
+      "command": [
+        "npm",
+        "test",
+        "--prefix",
+        "packages/xy-node"
+      ],
+      "elapsedSeconds": 30.126517763826996,
+      "env": {
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/python:/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/tests",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/release/libxyg_core.so",
+        "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "exit": 0,
+      "rawBytes": 229719,
+      "rawSha256": "da09f4ddf9c4358c79d8436baa719f7d3299dc6603243a652e6544195718b78d"
+    },
+    "protection-final.log.gz": {
+      "archiveSha256": "2a32aa31845274ae8f9505543ebb4d08b7ae446221ed4bb48151ee6a7c05ef5f",
+      "rawBytes": 153,
+      "rawSha256": "50b34bcb57832b626471948aabd48b3005007d0d837b160ba154f76e1178e50d",
+      "status": "auxiliary output; shell exit not inferred"
+    },
+    "protection.log.gz": {
+      "archiveSha256": "3a2148385ad9f451d50e3016504d591da5bad069328665b1cac051f0a6578783",
+      "exit": 1,
+      "qualification": "initial comparator refused known reviewed-parent superset; no source mutation",
+      "rawBytes": 281,
+      "rawSha256": "b346177d29e5d1b230a8fdce73be1be1dad376312c40d944f35cf109606f70b9"
+    },
+    "python311.log.gz": {
+      "archiveSha256": "97126f16c2fe053bce0552492f7e1fa59a2619b56cc95e86230663ef1d206673",
+      "command": [
+        "/home/ubuntu/.t3/worktrees/xyg/t3-150befc0/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_temporal_catalog.py",
+        "tests/test_temporal_catalog_geo_integration.py",
+        "tests/test_geo_temporal_binding.py",
+        "tests/test_temporal_controller.py",
+        "tests/test_html_transport.py",
+        "tests/test_static_document_contract.py",
+        "tests/test_cross_host_abi_transition.py",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_release_inventory.py",
+        "tests/test_capability_registry.py"
+      ],
+      "elapsedSeconds": 56.33966698311269,
+      "env": {
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/python:/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/tests",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/release/libxyg_core.so",
+        "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "exit": 0,
+      "rawBytes": 261,
+      "rawSha256": "fc7034ccb4ba186225f6238aa27bbdf6aac53f2d0f33a5f82410716ebf92a299"
+    },
+    "ruff.log.gz": {
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "elapsedSeconds": 0.12262432230636477,
+      "env": {
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/python:/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/tests",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/release/libxyg_core.so",
+        "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "exit": 0,
+      "rawBytes": 19,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "size.log.gz": {
+      "archiveSha256": "04220204645b0318cc89d82e49a9e0aaef561af7ad48ae3fb44d9424b8d3e547",
+      "rawBytes": 49,
+      "rawSha256": "7ad62f8820a6192e063d3b06fb13a36a2499a792d5dcf75ca6c26ee71d9646a5",
+      "status": "auxiliary output; shell exit not inferred"
+    }
+  },
+  "orderedParents": [
+    "fc7ef7edf16acfa3c0dd751e91289b2a0d4767c1",
+    "0a85b8da98ceb5dd0f2ef308f51c85a46f22460e"
+  ],
+  "protectedParentPaths": 16235,
+  "reviewStatus": "final combined-head independent review pending",
+  "reviewedSuperset": {
+    "spec/design/graphforge-node-scheduling.md": {
+      "parent": "0a85b8da98ceb5dd0f2ef308f51c85a46f22460e",
+      "sha256": "f4b8bd1df704f868742b563d2209b6d7c92d00ebe250170ffc2a8dac8abebe76"
+    }
+  },
+  "runtimeArtifacts": {
+    "packages/xy-client/dist/index.js": {
+      "bytes": 811086,
+      "sha256": "874f33341eb35aae25457c3b6d9ec4557fa2388d6d8a8d0d073ff740fe2ed554"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 811114,
+      "sha256": "ac4cd2c574e831ee9914b86c54795504614a242220f6f3f128df9675388c4114"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 57009,
+      "sha256": "d2108715d8cb31bfdf1034a4653758af94748fcd37722af5d28e0f67d3f4f5ec"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2534324,
+      "sha256": "87319e942f9d9ba3f4c4963b999b519dfce7d12a74f6df893f065f583dc0673f"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1886204,
+      "sha256": "82e32ff4c9d67433d1af4c54b6643c130fcfc49951b78b77fc0df5af81922169"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 811086,
+      "sha256": "874f33341eb35aae25457c3b6d9ec4557fa2388d6d8a8d0d073ff740fe2ed554"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 811114,
+      "sha256": "ac4cd2c574e831ee9914b86c54795504614a242220f6f3f128df9675388c4114"
+    },
+    "target/release/libxyg_core.so": {
+      "bytes": 6160104,
+      "sha256": "8f1b7a544bdefab946099fbeab11e658e73c1262381113637baa7e131c561aa5"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 2079999,
+      "sha256": "16a0d50339342c833a934c57a6fafac756a491e3588f7d6fdcfb95330e270777"
+    }
+  },
+  "schema": "xyg.temporal-catalog-force-union/v1",
+  "sourceSha256": {
+    "spec/temporal/evidence/46-force-cancellation-union-2026-11-07/README.md": "c3fcb4b39559711969a7d12e44d48b3cf1f8542bbccbac095ff1aeb5527e4b48",
+    "spec/temporal/evidence/46-force-cancellation-union-2026-11-07/current-bindings.json": "e50f8b33b20894e1e5aebc28774233623bd6e8b5415007f715b3f06a56a27951",
+    "spec/temporal/evidence/46-force-cancellation-union-2026-11-07/inventory-union.json": "d1bda62a40987385befd154e27a4d6ccf63f3f28d484993d41e6ffd1cdf825f4",
+    "spec/temporal/evidence/46-force-cancellation-union-2026-11-07/producer-inputs.json": "c41c89fb89c19c5785ab803a0ef1d7754b0e1a0c74899341c03e2c59721d0bb5",
+    "spec/temporal/evidence/46-force-cancellation-union-2026-11-07/protection.json": "935eceb7593f49128871c3bb898c687704efbf5e1e7d7ed0164c13e318eab17b",
+    "spec/temporal/evidence/46-force-cancellation-union-2026-11-07/test-union.json": "cb89ff58c0ad4e78d54cead43cfdebaebb6e56670d89c85e0f4aa194c7692b1f"
+  }
+}

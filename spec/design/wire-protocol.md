@@ -584,3 +584,9 @@ transactions. Selected counts remain u64; derived f32/RGBA paint uses the
 existing density texture path. Pointer and keyboard edits share these packets.
 Automatic native-host/widget channel binding and massive qualification remain
 open; the bounded browser binding uses a dedicated ordinary Worker.
+### Temporal composition authoring candidate
+
+[XYTM v1](temporal-catalog.md#exactness-and-framing) carries raw i64 times/u64
+identities and u8 validity into Rust. Only derived ordinary Scene/painter
+geometry uses floating coordinates. This is authoring ingress, not a new live
+message or a temporal JSON-number protocol.

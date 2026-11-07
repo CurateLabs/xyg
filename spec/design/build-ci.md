@@ -84,6 +84,27 @@ implementations and thresholds are unchanged.
 
 ## Packaged WASM assets (#1005, dossier §33)
 
+The combined filtering/temporal-catalog source uses native ABI403 and WASM37.
+Its wasm32-only Cargo configuration uses `opt-level=2` with LLVM inlining
+threshold 50; native release optimization remains O3. The single module keeps
+the complete parent export union, optimizer passes and unchanged 1927168 raw /
+786432 Node22 gzip6 byte limits. O3/50 exceeded both limits for this combined
+source; O3/40 also failed gzip. Their bytes and failures remain in
+[the integration evidence](../performance/filter-catalog-abi-union-2026-11-07/README.md).
+Same-source ABBA diagnostics retain complete admitted-output equality and
+slower cases. This compiler choice establishes package admission and the
+recorded bounded functional paths, not a latency or competitor win. Historical
+O3 receipts describe their historical sources and are not rewritten.
+
+The full source foundation also validates the six-family temporal catalog
+through the packaged Worker and existing ChartView painter. It compares
+requests and complete Scenes with the native hashes in
+`tests/fixtures/temporal/catalog-six-families.json`, checks actual source-color
+pixels and exact u64 identity metadata, and disposes each view. The ordinary
+Node catalog tests independently bind that fixture to the native compiler.
+This bounded proof adds no job or timing gate and does not qualify temporal
+controller interaction, accessibility, dense LOD or massive-scale behavior.
+
 Main run 38640943006 failed `Benchmark methodology suites` with
 `FileNotFoundError: packaged WASM tick assets missing: xyg-wasm.wasm`: the job built the
 client but nothing in its dependency graph produced the generated WASM assets, and the

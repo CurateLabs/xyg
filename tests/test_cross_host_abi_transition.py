@@ -13,7 +13,7 @@ from xyg._abi_generated import ABI_VERSION
 
 ROOT = Path(__file__).resolve().parents[1]
 RECEIPT = ROOT / "spec/performance/pr1110-abi-fixtures-2026-11-07"
-CURRENT_RECEIPT = ROOT / "spec/performance/filter-tier-c-programmatic-2026-11-07"
+CURRENT_RECEIPT = ROOT / "spec/performance/filter-catalog-abi-union-2026-11-07"
 TRANSITION = json.loads((RECEIPT / "fixture-transition.json").read_text())
 
 
@@ -78,4 +78,16 @@ def test_append_only_401_to_current_transition(path: str) -> None:
     assert hashlib.sha256(predecessor).hexdigest() == transition["predecessorSha256"]
     assert hashlib.sha256(current).hexdigest() == transition["currentSha256"]
     assert json.loads(predecessor)["abi_version"] == 401
+    assert json.loads(current) == dict(json.loads(predecessor), abi_version=ABI_VERSION)
+
+
+@pytest.mark.parametrize("path", TRANSITION)
+def test_complete_402_parent_packets_survive_unified_abi(path: str) -> None:
+    transition = json.loads((CURRENT_RECEIPT / "abi402-transition.json").read_text())[path]
+    predecessor = (CURRENT_RECEIPT / "abi402-predecessor" / Path(path).name).read_bytes()
+    current = (ROOT / path).read_bytes()
+    assert hashlib.sha256(predecessor).hexdigest() == transition["predecessorSha256"]
+    assert hashlib.sha256(current).hexdigest() == transition["currentSha256"]
+    assert json.loads(predecessor)["abi_version"] == 402
+    assert transition["currentAbi"] == ABI_VERSION
     assert json.loads(current) == dict(json.loads(predecessor), abi_version=ABI_VERSION)

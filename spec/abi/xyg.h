@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 402
-#define XYG_ABI_SIGNATURE_SHA256 "f5a10817bcc9cf94d22ef3560be143bce5f96e6e09a7065652c16a5d25667c00"
+#define XYG_ABI_VERSION 403
+#define XYG_ABI_SIGNATURE_SHA256 "8b949b60b0a4e44baac735efa66af867f73273b539e94ac86935d8c99f9a3850"
 
 #ifdef __cplusplus
 extern "C" {
@@ -539,6 +539,7 @@ int32_t xyg_temporal_interval_index_create(const void * descriptor, uint64_t * o
 int32_t xyg_temporal_interval_index_destroy(uint64_t handle);
 int32_t xyg_temporal_interval_index_len(uint64_t handle, uint64_t * out_len);
 int32_t xyg_temporal_interval_visibility_at(uint64_t handle, int64_t instant_micros, uint8_t * out_visibility, uint64_t capacity, uint64_t budget, const uint32_t * cancel_flag);
+int32_t xyg_temporal_scene_compile(const uint8_t * request, size_t request_len, size_t budget, uint8_t * out, size_t cap, size_t * out_length);
 uint64_t xyg_temporal_selection_limit();
 size_t xyg_text_block_measure(const uint8_t * text, size_t text_len, double font_size, double line_height, double max_width, double * out_metrics, uint32_t * out_line_lens, size_t line_cap, uint8_t * out_lines, size_t lines_cap);
 size_t xyg_text_block_rotated_extent(double width, double height, double angle_degrees, double * out_x, double * out_y);
