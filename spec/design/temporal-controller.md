@@ -241,3 +241,5 @@ set until the terminal notification pass drains. Observer-triggered destruction
 does not admit new subscriptions for the dying handle; a refused binding rolls
 back its source registration. Observer callbacks and rejected promises remain
 isolated, and do not delay native commands on asynchronous completion.
+
+Python controller closure retains subscriptions until its captured terminal snapshot drains, including closure from within an observer. The public native handle is cleared before terminal callbacks so nested close is idempotent and new commands cannot revive terminal state. Automatic bindings receive terminal delivery and release their private owners and registrations; independently retained caller frames survive.

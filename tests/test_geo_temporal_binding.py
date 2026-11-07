@@ -641,3 +641,72 @@ def test_terminal_cancelled_pump_cannot_block_private_frame_cleanup(cancelled_ca
             controller.close()
 
     asyncio.run(run())
+
+
+@pytest.mark.parametrize("nested_terminal_close", [False, True])
+def test_reentrant_controller_close_delivers_terminal_and_releases_binding(nested_terminal_close):
+    async def journey():
+        from xyg._geo_temporal import _BINDINGS
+
+        manifest, chunk = fixture_manifest()
+        source = xyg.RetainedGeoSource(manifest, lambda _: chunk, budget=BUDGET)
+        controller = xyg.TemporalController(instance_id=88, domain=(-10, 10))
+        q = query(source.info)
+        q.update(time_revision=0, camera_revision=0)
+        chart = xyg.geo_chart(
+            xyg.geo_layer(
+                "points", source=source, layer_id=U64, query=q, sequence=1, style=style()
+            ),
+            camera=q["camera"],
+        )
+        terminal = []
+
+        def close_from_notification(state):
+            if not state["disposed"] or nested_terminal_close:
+                controller.close()
+
+        stop = controller.subscribe_state(close_from_notification)
+        stop_terminal = controller.subscribe_state(lambda state: terminal.append(state["disposed"]))
+        binding = chart.bind_temporal(controller)
+        lease = replacement = other = None
+        try:
+            await binding.when_idle()
+            _, lease = await binding.snapshot()
+            controller.set_cursor(3)
+            await asyncio.sleep(0)
+            assert binding._closed
+            await binding._closing
+            assert binding._frame is None
+            assert source not in _BINDINGS
+            assert terminal[-1] is True
+            assert not controller._observers
+            assert lease.data.identity["time"]["instant"] == -10
+            other = xyg.TemporalController(instance_id=89, domain=(-10, 10))
+            rebound = xyg.geo_chart(
+                xyg.geo_layer(
+                    "points",
+                    source=source,
+                    layer_id=U64,
+                    query=q,
+                    sequence=binding._sequence + 1,
+                    style=style(),
+                ),
+                camera=q["camera"],
+            )
+            replacement = rebound.bind_temporal(other)
+            await replacement.when_idle()
+            assert replacement.error is None
+        finally:
+            stop()
+            stop_terminal()
+            if replacement is not None:
+                await replacement.aclose()
+            await binding.aclose()
+            if lease is not None:
+                lease.close()
+            if other is not None:
+                other.close()
+            controller.close()
+            source.close()
+
+    asyncio.run(journey())

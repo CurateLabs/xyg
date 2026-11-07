@@ -107,6 +107,12 @@ class TemporalController:
                                     result.close()
                     except Exception:
                         pass
+                    if self._pending_state is not None and self._pending_state["disposed"]:
+                        # A callback closed the controller; terminal delivery
+                        # supersedes the remainder of this nonterminal snapshot.
+                        break
+                if state["disposed"]:
+                    self._observers.clear()
         finally:
             self._notifying = False
 
@@ -186,13 +192,17 @@ class TemporalController:
 
     def close(self) -> None:
         """Release the native handle; idempotent."""
-        if self._handle is not None:
-            state = self.state
-            state["disposed"] = True
-            self._publish(state)
-            self._observers.clear()
+        if self._handle is None:
+            return
+        state = self.state
         handle, self._handle = self._handle, None
-        if handle is not None:
+        state["disposed"] = True
+        try:
+            # Keep observers until the captured terminal snapshot drains, even
+            # when close is invoked from an observer in the active publisher.
+            # Clear the public handle first to make nested close idempotent.
+            self._publish(state)
+        finally:
             _native.temporal_controller_destroy(handle)
 
     def __enter__(self) -> Self:
