@@ -467,7 +467,8 @@ def test_indexed_composition_private_frames_preserve_default_publication(indexed
     asyncio.run(run())
 
 
-def test_reader_cancelled_error_keeps_snapshot_and_allows_cleanup():
+@pytest.mark.parametrize("asynchronous", [False, True])
+def test_reader_cancelled_error_keeps_snapshot_and_allows_cleanup(asynchronous):
     from contextlib import suppress
 
     from xyg._geo_temporal import _BINDINGS
@@ -476,12 +477,19 @@ def test_reader_cancelled_error_keeps_snapshot_and_allows_cleanup():
         manifest, chunk = fixture_manifest()
         cancel = False
 
-        async def reader(_):
+        def read(_):
             if cancel:
                 raise asyncio.CancelledError
             return chunk
 
-        source = await xyg.RetainedGeoSource.create_async(manifest, reader, budget=BUDGET)
+        async def reader(request):
+            return read(request)
+
+        source = (
+            await xyg.RetainedGeoSource.create_async(manifest, reader, budget=BUDGET)
+            if asynchronous
+            else xyg.RetainedGeoSource(manifest, read, budget=BUDGET)
+        )
         controller = xyg.TemporalController(instance_id=31, domain=(-10, 10))
         q = query(source.info)
         q.update(time_revision=0, camera_revision=0)
@@ -724,3 +732,167 @@ def test_reentrant_controller_close_delivers_terminal_and_releases_binding(
             source.close()
 
     asyncio.run(journey())
+
+
+@pytest.mark.parametrize(
+    "pump_cancels, prior_caller_cancel, cancel_close",
+    [(1, False, False), (2, False, False), (1, True, False), (2, True, False), (1, False, True)],
+)
+def test_sync_worker_candidate_is_drained_before_cancelled_binding_close(
+    monkeypatch, pump_cancels, prior_caller_cancel, cancel_close
+):
+    import threading
+
+    from xyg._geo_temporal import _BINDINGS
+    from xyg.components import GeoChart
+
+    async def journey():
+        manifest, chunk = fixture_manifest()
+        entered, release, finished = threading.Event(), threading.Event(), threading.Event()
+        blocked = False
+        produced = []
+
+        def reader(_):
+            if blocked:
+                entered.set()
+                if not release.wait(5):
+                    raise TimeoutError("test worker was not released")
+            return chunk
+
+        source = xyg.RetainedGeoSource(manifest, reader, budget=BUDGET)
+        controller = xyg.TemporalController(instance_id=92, domain=(-10, 10))
+        q = query(source.info)
+        q.update(time_revision=0, camera_revision=0)
+        chart = xyg.geo_chart(
+            xyg.geo_layer(
+                "points", source=source, layer_id=U64, query=q, sequence=1, style=style()
+            ),
+            camera=q["camera"],
+        )
+        binding = chart.bind_temporal(controller)
+        lease = closing = None
+        try:
+            _, lease = await binding.snapshot()
+            original = GeoChart.compile
+
+            def tracked(candidate_chart, **kwargs):
+                try:
+                    frame = original(candidate_chart, **kwargs)
+                    produced.append(frame)
+                    return frame
+                finally:
+                    finished.set()
+
+            monkeypatch.setattr(GeoChart, "compile", tracked)
+            blocked = True
+            controller.set_cursor(3)
+            assert await asyncio.to_thread(entered.wait, 5)
+            job = binding._task
+            for _ in range(pump_cancels):
+                job.cancel()
+                await asyncio.sleep(0)
+            close_entered = asyncio.Event()
+
+            async def cleanup():
+                if prior_caller_cancel:
+                    asyncio.current_task().cancel()
+                    with pytest.raises(asyncio.CancelledError):
+                        await asyncio.sleep(0)
+                close_entered.set()
+                await binding.aclose()
+
+            closing = asyncio.create_task(cleanup())
+            await close_entered.wait()
+            if cancel_close:
+                closing.cancel()
+            await asyncio.sleep(0)
+            assert not closing.done(), "cleanup must own the still-running synchronous worker"
+            release.set()
+            if cancel_close:
+                with pytest.raises(asyncio.CancelledError):
+                    await closing
+            else:
+                await closing
+            assert job.cancelled()
+            assert len(produced) == 1
+            assert produced[0]._closed, "unpublished worker result must be released"
+            assert binding._frame is None
+            assert source not in _BINDINGS
+            assert lease.data.record(0)["feature_id"] == U64
+        finally:
+            release.set()
+            if blocked:
+                assert await asyncio.to_thread(finished.wait, 5)
+            if closing is not None:
+                await asyncio.gather(closing, return_exceptions=True)
+            await binding.aclose()
+            for frame in produced:
+                frame.close()
+            if lease is not None:
+                lease.close()
+            controller.close()
+            source.close()
+
+    asyncio.run(journey())
+
+
+def test_loop_shutdown_releases_unpublished_sync_worker_candidate(monkeypatch):
+    import threading
+
+    from xyg.components import GeoChart
+
+    manifest, chunk = fixture_manifest()
+    entered, release = threading.Event(), threading.Event()
+    produced = []
+    blocked = False
+    original = GeoChart.compile
+
+    def reader(_):
+        if blocked:
+            entered.set()
+            if not release.wait(5):
+                raise TimeoutError("shutdown test worker was not released")
+        return chunk
+
+    def tracked(candidate_chart, **kwargs):
+        frame = original(candidate_chart, **kwargs)
+        produced.append(frame)
+        return frame
+
+    monkeypatch.setattr(GeoChart, "compile", tracked)
+    source = xyg.RetainedGeoSource(manifest, reader, budget=BUDGET)
+    controller = xyg.TemporalController(instance_id=93, domain=(-10, 10), cursor=3)
+    binding = timer = None
+
+    async def start():
+        nonlocal timer, binding, blocked
+        blocked = True
+        q = query(source.info)
+        q.update(time_revision=0, camera_revision=0)
+        chart = xyg.geo_chart(
+            xyg.geo_layer(
+                "points", source=source, layer_id=U64, query=q, sequence=1, style=style()
+            ),
+            camera=q["camera"],
+        )
+        binding = chart.bind_temporal(controller)
+        assert await asyncio.to_thread(entered.wait, 5)
+        # asyncio.run now cancels pending jobs while the native reader finishes.
+        timer = threading.Timer(0.05, release.set)
+        timer.start()
+        return binding
+
+    try:
+        binding = asyncio.run(start())
+        assert len(produced) == 1
+        assert produced[0]._closed, "loop shutdown must not orphan the executor's returned frame"
+    finally:
+        release.set()
+        if timer is not None:
+            timer.join()
+        if binding is not None:
+            asyncio.run(binding.aclose())
+        for frame in produced:
+            frame.close()
+        controller.close()
+        source.close()

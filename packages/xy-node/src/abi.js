@@ -1166,7 +1166,8 @@ export function temporalCoordinateDeliver(event) {
     BigInt(selection.length),
     u32Ptr(applied),
   ));
-  for (const handle of temporalObservers.keys()) publishTemporalState(handle);
+  // Subscription changes during delivery cannot extend the current recipient set.
+  for (const handle of [...temporalObservers.keys()]) publishTemporalState(handle);
   return applied[0];
 }
 

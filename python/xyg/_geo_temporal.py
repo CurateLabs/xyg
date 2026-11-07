@@ -4,7 +4,10 @@ import asyncio
 from collections.abc import Mapping
 from copy import deepcopy
 from dataclasses import replace
+from functools import partial
 from weakref import WeakKeyDictionary
+
+from ._geoscale import _settle
 
 _BINDINGS = WeakKeyDictionary()
 _MAX = (1 << 64) - 1
@@ -126,6 +129,7 @@ class GeoTemporalBinding:
             async with self._lock:
                 candidate = None
                 cancellation = self._source._cancel_generation
+                synchronous = self._source._bridge is None
                 try:
                     if self._retiring is not None:
                         await self._retiring.aclose()
@@ -150,8 +154,18 @@ class GeoTemporalBinding:
                         },
                     )
                     chart = replace(self._template, layers=(layer,), camera=query["camera"])
-                    if self._source._bridge is None:
-                        candidate = await asyncio.to_thread(chart.compile, _publish=False)
+                    if synchronous:
+                        # A plain Future is not cancelled by loop shutdown's
+                        # task sweep. Keep ownership until the worker settles.
+                        worker = self._loop.run_in_executor(
+                            None, partial(chart.compile, _publish=False)
+                        )
+                        candidate, interrupted = await _settle(worker)
+                        if interrupted:
+                            self._retiring = candidate
+                            await self._retiring.aclose()
+                            self._retiring = None
+                            raise asyncio.CancelledError
                     else:
                         candidate = await chart.compile_async(_publish=False)
                     if self._closed or generation != self._generation:
@@ -172,7 +186,7 @@ class GeoTemporalBinding:
                         # Acknowledge only source-owned task.cancel() requests.
                         # Other task cancellation (for example loop shutdown) is
                         # still terminal; reader-raised cancellation has no count.
-                        owned = self._source._cancel_generation - cancellation
+                        owned = 0 if synchronous else self._source._cancel_generation - cancellation
                         for _ in range(min(owned, task.cancelling())):
                             task.uncancel()
                         if task.cancelling():
@@ -229,10 +243,19 @@ class GeoTemporalBinding:
     async def aclose(self):
         """Drain admitted reads and release private frame; caller leases survive."""
         self._detach()
-        # A cancelled, terminal child has no work left to drain. In particular,
-        # cleanup inside a caller's CancelledError handler must remain usable.
-        if self._task is None or not self._task.cancelled():
-            await self.when_idle()
+        waiter = asyncio.current_task()
+        cancellation = 0 if waiter is None else waiter.cancelling()
+        interrupted = False
+        job = self._task
+        if job is not None:
+            try:
+                _, interrupted = await _settle(job)
+            except asyncio.CancelledError:
+                if not job.cancelled():
+                    raise
+                # Child cancellation is terminal work completion. A new caller
+                # cancellation remains observable after private-owner teardown.
+                interrupted = waiter is not None and waiter.cancelling() > cancellation
         async with self._lock:
             if self._retiring is not None:
                 await self._retiring.aclose()
@@ -242,3 +265,5 @@ class GeoTemporalBinding:
                 self._frame = None
             if _BINDINGS.get(self._source) is self:
                 del _BINDINGS[self._source]
+        if interrupted:
+            raise asyncio.CancelledError

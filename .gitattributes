@@ -193,3 +193,10 @@ spec/performance/geo-controller-reentrant-close-2026-11-07/*.gz -text
 spec/performance/geo-terminal-pass-delivery-2026-11-07/*.json text eol=lf
 spec/performance/geo-terminal-pass-delivery-2026-11-07/*.md text eol=lf
 spec/performance/geo-terminal-pass-delivery-2026-11-07/*.gz -text
+
+# Geographic executor ownership and captured coordination review evidence.
+spec/performance/geo-worker-ownership-2026-11-07/*.json text eol=lf
+spec/performance/geo-worker-ownership-2026-11-07/*.md text eol=lf
+spec/performance/geo-worker-ownership-2026-11-07/*.gz -text
+tests/test_geoscale.py text eol=lf
+python/xyg/_geoscale.py text eol=lf

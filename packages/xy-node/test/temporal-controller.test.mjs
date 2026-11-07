@@ -20,6 +20,7 @@ import {
   temporalControllerSetReducedMotion,
   temporalControllerSetSelection,
   temporalControllerState,
+  temporalControllerSubscribeState,
   temporalControllerStep,
   temporalControllerTick,
   temporalCoordinateDeliver,
@@ -234,4 +235,33 @@ test("host rejects every temporal scalar before native coercion", () => {
   } finally {
     temporalControllerDestroy(handle);
   }
+});
+
+
+test("coordination captures observer handles before callbacks renew subscriptions", () => {
+  const a=make(301n,71n),b=make(302n,71n);let calls=0,stop=()=>{};
+  const observe=()=>{
+    calls++;stop();
+    // Bound the original live-Map failure instead of hanging this test forever.
+    if(calls<4)stop=temporalControllerSubscribeState(b,observe);
+  };
+  try {
+    temporalControllerSetCursor(a,200_000n);const event=temporalControllerPollEvent(a);
+    stop=temporalControllerSubscribeState(b,observe);
+    assert.equal(temporalCoordinateDeliver(event),1);
+    assert.equal(calls,1,"one coordinated mutation notifies each original handle once");
+    assert.equal(temporalControllerState(b).cursor,200_000n);
+  } finally {stop();temporalControllerDestroy(a);temporalControllerDestroy(b);}
+});
+
+test("coordination does not notify a handle subscribed during the current delivery", () => {
+  const a=make(303n,72n),b=make(304n,72n),c=make(305n,72n);let observed=0,stopC=()=>{};
+  let stopB=()=>{};
+  try {
+    temporalControllerSetCursor(a,200_000n);const event=temporalControllerPollEvent(a);
+    stopB=temporalControllerSubscribeState(b,()=>{stopC=temporalControllerSubscribeState(c,()=>observed++);});
+    assert.equal(temporalCoordinateDeliver(event),2);
+    assert.equal(observed,0,"new subscriptions observe future notifications");
+    assert.equal(temporalControllerState(c).cursor,200_000n);
+  } finally {stopB();stopC();temporalControllerDestroy(a);temporalControllerDestroy(b);temporalControllerDestroy(c);}
 });
