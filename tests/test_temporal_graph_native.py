@@ -112,3 +112,44 @@ def test_temporal_graph_plane_mapping_is_strict() -> None:
                 "timezone": 1,
             },
         )
+
+
+def test_assertion_history_shared_browser_fixture() -> None:
+    import json
+    from pathlib import Path
+
+    fixture = json.loads(
+        (Path(__file__).parent / "fixtures/temporal/assertion-history.json").read_text()
+    )
+    planes = {}
+    for name in ["node", "edge"]:
+        for field, suffix in [
+            ("valid_from", "ValidFrom"),
+            ("valid_to", "ValidTo"),
+            ("event_at", "EventAt"),
+        ]:
+            values = fixture.get(name + suffix)
+            if values is not None:
+                planes[name + "_" + field] = (
+                    np.asarray(values, dtype=np.int64),
+                    np.ones(len(values), dtype=np.uint8),
+                )
+    with xyg.TemporalGraph(
+        node_ids=_ids(*fixture["nodes"]),
+        edge_ids=_ids(*fixture["edges"]),
+        source_ids=_ids(*fixture["sources"]),
+        target_ids=_ids(*fixture["targets"]),
+        **planes,
+    ) as graph:
+        graph.set_selection(nodes=_ids(2), edges=_ids(11))
+        graph.set_focus("node", bytes([2]) * 16)
+        graph.set_pinned(_ids(2))
+        for revision, expected in enumerate(fixture["frames"], 1):
+            frame = graph.frame(
+                revision=revision, cursor=expected["cursor"], range=tuple(expected["range"])
+            )
+            assert frame["node_visibility"].tolist() == expected["nodes"]
+            assert frame["edge_visibility"].tolist() == expected["edges"]
+            assert frame["selected_node_ids"].tolist() == _ids(2).tolist()
+            assert frame["pinned_node_ids"].tolist() == _ids(2).tolist()
+            assert frame["focused"] == {"kind": "node", "id": bytes([2]) * 16}

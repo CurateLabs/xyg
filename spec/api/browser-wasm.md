@@ -454,3 +454,11 @@ lack a report. Absent/false retains legacy semantics. See
 [the controller contract](../design/graph-interaction.md#bounded-public-browser-continuation-35-release-108-preparation)
 for scheduling, limits, failure and disposal. No new method or ABI is added.
 This does not close #35/#1015/#36 or waive any #108 publication acceptance.
+
+`XygWasmTemporalGraph.attachController(controller, options)` automatically feeds
+Rust controller snapshots into temporal membership and Rust CoSE. Supply an
+explicit work `budget`, optional `layout`, and optional `onFrame`/`onError`.
+The returned binding has `whenIdle()`, defensive `snapshot()`, and asynchronous
+`dispose()`. Use separate Workers for controller and graph. This bounded
+coordinator does not yet connect the retained `attachWasmGraphSession` painter;
+see [temporal graph contracts](../design/temporal-graph.md).

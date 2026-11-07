@@ -180,3 +180,39 @@ The supported application matrix is defined by
 [application-consumers.md](application-consumers.md); obsolete Reflex wording in
 #46/#50 does not restore the retired adapter or waive the remaining supported
 host, accessibility, export and scale requirements.
+
+## Automatic browser controller coordinator (bounded #45 slice)
+
+`XygWasmTemporalGraph.attachController(controller, {budget, layout, onFrame,
+onError})` subscribes to complete Rust controller snapshots and schedules the
+initial time automatically. Scrub, range/window recentering, step, playback and
+received coordination snapshots share one active frame/layout and one pending
+latest time intent. A received event can change time without changing the local
+controller revision; the coordinator issues its own strictly increasing graph
+revision. Identical canonical time snapshots do not restart layout. A newer
+intent cancels active CoSE and suppresses old frame/checkpoint publication.
+`whenIdle()` observes completion; it is not a user frame pump. `snapshot()` and
+observer values are defensive copies of the last completed membership/layout.
+Failure keeps that result; the next controller notification can retry a failed
+time. Observer errors do not corrupt the accepted result. Binding disposal
+unsubscribes immediately, suppresses late publication and drains active work;
+controller and Worker ownership stay with the caller. Graph/controller disposal
+also detaches the binding. Do not mix manual frame submissions with a binding.
+
+This is a coordinator API, **not retained graph composition attachment**. The
+existing `attachWasmGraphSession` claims its Worker and blocks foreign temporal
+commands. Its public surface provides only ready/snapshot/refreshRender/dispose;
+its internal byte encoder omits Rust operation 18 (bind temporal). A narrow
+serialized temporal-create/bind/frame/render hook in that attachment is a
+cross-lane dependency. This slice does not duplicate the painter or bypass its
+exclusive Worker admission. Browser selected/focused/pinned state through that
+retained journey, temporal-before-pick/paint, and cancellation of retained layout
+remain unproved. The native shared assertion-history fixture proves persistent
+UUID state; it does not stand in for browser interaction proof. No timezone setter
+exists on this UTC-microsecond controller; timezone/export presentation remains
+outside this slice. Aggregate/export/scale and comparative performance gates
+remain open. No competitor performance lead is claimed.
+
+The existing full strict-CSP foundation command executes the automatic Worker
+journey and exact seven-frame assertion-validity/event-history fixture shared
+with `tests/test_temporal_graph_native.py`. This adds no separate CI gate.
