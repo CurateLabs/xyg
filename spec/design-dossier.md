@@ -496,8 +496,8 @@ including additional metadata/output memory and cooperative cancellation. Python
 `ChunkedColumns` are thin, behavior-identical hosts. The artifact is local/offline;
 no network lookup is attempted. This is the ordered/time-series half of Tier 3 and
 does **not** complete this paragraph: remote HTTP range sources, direct-browser WASM
-staging, unordered spatial artifacts, and chart-lifecycle overview/refinement wiring
-remain tracked by #110.
+staging, unordered spatial artifacts, and automatic gesture-driven chart refinement
+remain tracked by #110. Native Python and Node now expose `ChunkedColumns.chart`: no range composes the precomputed overview; an explicit range composes an exact snapshot through bounded Rust-selected pages after complete canonical-byte admission. This programmatic navigation slice retains source row IDs and I/O provenance and uses the existing composition renderer. It does not establish larger-than-RAM first paint or a live viewport callback bridge.
 
 *"Chunks intersecting the viewport" requires an index — arbitrary row groups don't
 know what they intersect.* Two cases: **(a) ordered/1-D data** (time series — the

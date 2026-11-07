@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from scripts.classify_release_surface import classify
 from scripts.verify_ci_workflow import validate_workflow
-from scripts.verify_graph_notebook_report import verify
+from scripts.verify_graph_notebook_report import ABI_VERSION, verify
 
 
 def green():
@@ -19,7 +19,7 @@ def green():
         "finalPointerVerified": True,
         "finalPointer": {"before": 2, "after": 3, "id": "node-0", "expectedId": "node-0"},
         "kernel": {
-            "native": {"abi": 399, "sha256": "c" * 64},
+            "native": {"abi": ABI_VERSION, "sha256": "c" * 64},
             "otherClicks": 0,
             "clicks": [{}, {}],
             "hovers": 1,
@@ -152,7 +152,7 @@ def test_legacy_row_selection_report_still_uses_original_contract():
 
 def test_retained_legacy_notebook_capture_still_passes():
     path = Path("spec/performance/graph-widget-pr1100-repair-2026-11-06/notebook.json")
-    assert not verify(json.loads(path.read_text()))
+    assert not verify(json.loads(path.read_text()), expected_abi=399)
 
 
 @pytest.mark.parametrize(
@@ -161,4 +161,22 @@ def test_retained_legacy_notebook_capture_still_passes():
 def test_prior_identity_captures_do_not_claim_complete_uuid_request_proof(name):
     path = Path("spec/performance/graph-notebook-identity-2026-11-06") / f"{name}.json.gz"
     report = json.loads(gzip.decompress(path.read_bytes()))
-    assert any("requires its UUID selection request" in error for error in verify(report))
+    assert any(
+        "requires its UUID selection request" in error for error in verify(report, expected_abi=399)
+    )
+
+
+@pytest.mark.parametrize(
+    "abi", [ABI_VERSION - 1, ABI_VERSION + 1, float(ABI_VERSION), str(ABI_VERSION), True]
+)
+def test_live_notebook_requires_exact_generated_native_abi(abi):
+    report = green()
+    report["kernel"]["native"]["abi"] = abi
+    assert "selected native library evidence required" in verify(report)
+
+
+def test_historical_native_abi_requires_an_explicit_artifact_contract():
+    report = green()
+    report["kernel"]["native"]["abi"] = 399
+    assert verify(report)
+    assert not verify(report, expected_abi=399)

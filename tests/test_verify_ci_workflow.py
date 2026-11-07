@@ -5595,3 +5595,21 @@ def test_colored_hardware_environment_ignores_unrelated_comparison_stacks(ceilin
     _, evidence = run("colored-browser-hardware", "ignored,comparison,arms")
     assert state["imports"] == ["numpy"]
     assert evidence["arms"] == ["xy"] and set(evidence["packages"]) == {"numpy"}
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        'export XYG_TEST_CHROMIUM="$XYG_CHROMIUM"',
+        "export XY_REQUIRE_BROWSER=1",
+    ],
+)
+def test_chunked_chart_rendering_cannot_be_disabled_in_ci(tmp_path: Path, command: str) -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text()
+    prefix, step = workflow.split("      - name: Python tests (native core)", 1)
+    assert f"          {command}\n" in step
+    step = step.replace(f"          {command}\n", "", 1)
+    path = tmp_path / "ci.yml"
+    path.write_text(prefix + "      - name: Python tests (native core)" + step)
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+    assert any("required chunked chart rendered snapshots" in error for error in errors)

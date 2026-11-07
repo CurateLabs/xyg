@@ -439,6 +439,7 @@ jobs:
           # Chromium is installed here, so a probe that cannot launch it is a
           # defect: fail rather than skip, so the browser layer cannot pass by
           # absence. (A crash or non-zero exit already fails unconditionally.)
+          export XYG_TEST_CHROMIUM="$XYG_CHROMIUM"
           export XY_REQUIRE_BROWSER=1
           .venv/bin/pytest -q
 

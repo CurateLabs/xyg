@@ -19420,7 +19420,7 @@ def chunked_columns_rows(handle: int) -> int:
 
 
 def chunked_columns_overview(
-    handle: int, max_points: int
+    handle: int, max_points: int, *, generation: int | None = None
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict[str, int]]:
     if (
         not isinstance(max_points, int)
@@ -19431,29 +19431,28 @@ def chunked_columns_overview(
     rows = np.empty(max_points, dtype=np.uint64)
     x = np.empty(max_points, dtype=np.float64)
     y = np.empty(max_points, dtype=np.float64)
-    stats = (ctypes.c_uint64 * 2)()
-    written = int(
-        _lib.xyg_chunked_columns_overview(
-            handle,
-            max_points,
-            rows.ctypes.data,
-            x.ctypes.data,
-            y.ctypes.data,
-            stats,
+    stats = (ctypes.c_uint64 * (2 if generation is None else 4))()
+    outputs = (rows.ctypes.data, x.ctypes.data, y.ctypes.data, stats)
+    if generation is None:
+        written = int(_lib.xyg_chunked_columns_overview(handle, max_points, *outputs))
+        offset = 0
+    else:
+        written = int(
+            _lib.xyg_chunked_columns_chart_overview(handle, max_points, generation, *outputs)
         )
-    )
+        if written == _USIZE_MAX and stats[3] == 5:
+            raise ValueError("chunked-column overview chart failed: cancelled by newer viewport")
+        offset = 1
     if written == _USIZE_MAX:
         raise ValueError("chunked-column overview read failed: invalid or stale request")
-    return (
-        rows[:written],
-        x[:written],
-        y[:written],
-        {
-            "available_points": int(stats[0]),
-            "source_rows": int(stats[1]),
-            "detail_rows_read": 0,
-        },
-    )
+    provenance = {
+        "available_points": int(stats[offset]),
+        "source_rows": int(stats[offset + 1]),
+        "detail_rows_read": 0,
+    }
+    if generation is not None:
+        provenance["generation"] = int(stats[0])
+    return rows[:written], x[:written], y[:written], provenance
 
 
 def chunked_columns_cancel_before(handle: int, generation: int) -> None:
@@ -19526,6 +19525,77 @@ def chunked_columns_read(
         )
     )
     return x[:written], y[:written], provenance
+
+
+def chunked_columns_chart(
+    handle: int,
+    x_range: tuple[float, float],
+    y_range: tuple[float, float] | None,
+    *,
+    budget_bytes: int,
+    page_bytes: int,
+    generation: int,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict[str, int]]:
+    if not isinstance(budget_bytes, int) or isinstance(budget_bytes, bool) or budget_bytes < 16:
+        raise ValueError("chunked-column read budget must be at least 16 bytes")
+    if budget_bytes >= 1 << 64:
+        raise ValueError("chunked-column read budget must be smaller than 2^64 bytes")
+    if (
+        not isinstance(generation, int)
+        or isinstance(generation, bool)
+        or not 0 <= generation < (1 << 64)
+    ):
+        raise ValueError("chunked-column generation must be an integer in [0, 2^64)")
+    if (
+        not isinstance(page_bytes, int)
+        or isinstance(page_bytes, bool)
+        or not 16 <= page_bytes <= budget_bytes
+    ):
+        raise ValueError("page_bytes must be an integer in [16, budget_bytes]")
+    capacity = int(budget_bytes) // 16
+    row_ids = np.empty(capacity, dtype=np.uint64)
+    x = np.empty(capacity, dtype=np.float64)
+    y = np.empty(capacity, dtype=np.float64)
+    stats = (ctypes.c_uint64 * 6)()
+    yr = y_range or (0.0, 0.0)
+    written = int(
+        _lib.xyg_chunked_columns_chart(
+            handle,
+            *x_range,
+            *yr,
+            int(y_range is not None),
+            budget_bytes,
+            generation,
+            page_bytes,
+            row_ids.ctypes.data,
+            x.ctypes.data,
+            y.ctypes.data,
+            capacity,
+            stats,
+        )
+    )
+    if written == _USIZE_MAX:
+        if int(stats[5]) == 4 and stats[4]:
+            raise ValueError(
+                f"chunked-column viewport read needs {int(stats[4])} bytes, "
+                f"exceeding the {int(stats[3])}-byte read budget"
+            )
+        reason = {
+            1: "I/O failure",
+            2: "corrupt artifact",
+            3: "invalid viewport bounds",
+            5: "cancelled by newer viewport",
+            6: "output capacity too small",
+        }.get(int(stats[5]), "invalid request")
+        raise ValueError(f"chunked-column viewport read failed: {reason}")
+    provenance = dict(
+        zip(
+            ("generation", "first_chunk", "chunks_considered", "chunks_read", "bytes_read"),
+            (int(stats[i]) for i in range(5)),
+            strict=True,
+        )
+    )
+    return row_ids[:written], x[:written], y[:written], provenance
 
 
 def chunked_columns_read_page(
