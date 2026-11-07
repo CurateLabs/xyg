@@ -1,0 +1,136 @@
+TAP version 13
+# Subtest: DIAGNOSTIC R2 full native/WASM receipt bytes: Direct
+not ok 1 - DIAGNOSTIC R2 full native/WASM receipt bytes: Direct
+  ---
+  duration_ms: 6.776449
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/test/graph-picked-receipt-parity.test.mjs:26:31'
+  failureType: 'testCodeFailure'
+  error: 'byte length of BigUint64Array should be a multiple of 8'
+  code: 'ERR_TEST_FAILURE'
+  name: 'RangeError'
+  stack: |-
+    new BigUint64Array (<anonymous>)
+    unpackLittleEndian (file:///home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/src/graphforge-container.js:38:34)
+    decodeContainer (file:///home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/src/graphforge-container.js:181:33)
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/test/graph-picked-receipt-parity.test.mjs:32:15)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: DIAGNOSTIC R2 full native/WASM receipt bytes: Aggregate-singletons
+not ok 2 - DIAGNOSTIC R2 full native/WASM receipt bytes: Aggregate-singletons
+  ---
+  duration_ms: 6.945484
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/test/graph-picked-receipt-parity.test.mjs:26:31'
+  failureType: 'testCodeFailure'
+  error: 'byte length of BigUint64Array should be a multiple of 8'
+  code: 'ERR_TEST_FAILURE'
+  name: 'RangeError'
+  stack: |-
+    new BigUint64Array (<anonymous>)
+    unpackLittleEndian (file:///home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/src/graphforge-container.js:38:34)
+    decodeContainer (file:///home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/src/graphforge-container.js:181:33)
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/test/graph-picked-receipt-parity.test.mjs:32:15)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: DIAGNOSTIC R2 full native/WASM receipt bytes: EdgeSample
+not ok 3 - DIAGNOSTIC R2 full native/WASM receipt bytes: EdgeSample
+  ---
+  duration_ms: 5.128464
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/test/graph-picked-receipt-parity.test.mjs:26:31'
+  failureType: 'testCodeFailure'
+  error: 'byte length of BigUint64Array should be a multiple of 8'
+  code: 'ERR_TEST_FAILURE'
+  name: 'RangeError'
+  stack: |-
+    new BigUint64Array (<anonymous>)
+    unpackLittleEndian (file:///home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/src/graphforge-container.js:38:34)
+    decodeContainer (file:///home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/src/graphforge-container.js:181:33)
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/test/graph-picked-receipt-parity.test.mjs:32:15)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: DIAGNOSTIC R2 full native/WASM receipt bytes: collapsed-representative-source-index-2
+not ok 4 - DIAGNOSTIC R2 full native/WASM receipt bytes: collapsed-representative-source-index-2
+  ---
+  duration_ms: 4.955264
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/test/graph-picked-receipt-parity.test.mjs:26:31'
+  failureType: 'testCodeFailure'
+  error: 'byte length of BigUint64Array should be a multiple of 8'
+  code: 'ERR_TEST_FAILURE'
+  name: 'RangeError'
+  stack: |-
+    new BigUint64Array (<anonymous>)
+    unpackLittleEndian (file:///home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/src/graphforge-container.js:38:34)
+    decodeContainer (file:///home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/src/graphforge-container.js:181:33)
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/test/graph-picked-receipt-parity.test.mjs:32:15)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: DIAGNOSTIC R2 full native/WASM receipt bytes: parallel-loop-derived-0
+not ok 5 - DIAGNOSTIC R2 full native/WASM receipt bytes: parallel-loop-derived-0
+  ---
+  duration_ms: 5.122296
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/test/graph-picked-receipt-parity.test.mjs:26:31'
+  failureType: 'testCodeFailure'
+  error: 'byte length of BigUint64Array should be a multiple of 8'
+  code: 'ERR_TEST_FAILURE'
+  name: 'RangeError'
+  stack: |-
+    new BigUint64Array (<anonymous>)
+    unpackLittleEndian (file:///home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/src/graphforge-container.js:38:34)
+    decodeContainer (file:///home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/src/graphforge-container.js:181:33)
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/test/graph-picked-receipt-parity.test.mjs:32:15)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: DIAGNOSTIC R2 full native/WASM receipt bytes: parallel-loop-derived-1
+not ok 6 - DIAGNOSTIC R2 full native/WASM receipt bytes: parallel-loop-derived-1
+  ---
+  duration_ms: 5.070257
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/test/graph-picked-receipt-parity.test.mjs:26:31'
+  failureType: 'testCodeFailure'
+  error: 'byte length of BigUint64Array should be a multiple of 8'
+  code: 'ERR_TEST_FAILURE'
+  name: 'RangeError'
+  stack: |-
+    new BigUint64Array (<anonymous>)
+    unpackLittleEndian (file:///home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/src/graphforge-container.js:38:34)
+    decodeContainer (file:///home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/src/graphforge-container.js:181:33)
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/test/graph-picked-receipt-parity.test.mjs:32:15)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: DIAGNOSTIC R2 full native/WASM receipt bytes: parallel-loop-derived-2
+not ok 7 - DIAGNOSTIC R2 full native/WASM receipt bytes: parallel-loop-derived-2
+  ---
+  duration_ms: 4.477675
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/test/graph-picked-receipt-parity.test.mjs:26:31'
+  failureType: 'testCodeFailure'
+  error: 'byte length of BigUint64Array should be a multiple of 8'
+  code: 'ERR_TEST_FAILURE'
+  name: 'RangeError'
+  stack: |-
+    new BigUint64Array (<anonymous>)
+    unpackLittleEndian (file:///home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/src/graphforge-container.js:38:34)
+    decodeContainer (file:///home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/src/graphforge-container.js:181:33)
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-node/test/graph-picked-receipt-parity.test.mjs:32:15)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 0
+# fail 7
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 171.617263

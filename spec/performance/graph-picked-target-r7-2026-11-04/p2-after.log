@@ -1,0 +1,2 @@
+[{'name': 'XYG_PRODUCTION_UNDER_TESTS', 'visibility': 'public-operator', 'status': 'unclassified', 'lookups': [{'source': 'crates/xyg-engine/src/live.rs', 'expression': 'pub fn enabled() { std::env::var("XYG_PRODUCTION_UNDER_TESTS"); }', 'default': 'see Rust expression'}, {'source': 'crates/xyg-engine/src/tests/mod.rs', 'expression': 'pub fn enabled() { std::env::var("XYG_PRODUCTION_UNDER_TESTS"); }', 'default': 'see Rust expression'}]}]
+paths: ['crates/xyg-engine/src/live.rs', 'crates/xyg-engine/src/tests/mod.rs']

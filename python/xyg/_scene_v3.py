@@ -363,6 +363,7 @@ def _public_scene_or_reason(
     height: int | None = None,
     y2_chrome: Y2Chrome | None = None,
     format: str | None = None,
+    margins: tuple[float, float, float, float] | None = None,
 ) -> tuple[str | None, bytes | None]:
     """Compile the public Scene once, or return the support diagnostic.
 
@@ -376,7 +377,9 @@ def _public_scene_or_reason(
     if reason:
         return reason, None
     try:
-        scene = figure_scene(figure, width=width, height=height, y2_chrome=y2_chrome)
+        scene = figure_scene(
+            figure, width=width, height=height, y2_chrome=y2_chrome, margins=margins
+        )
     except UnsupportedSceneV3 as unsupported:
         if str(unsupported) == "invalid canonical scene plot layout":
             return "XYG_SCENE_UNSUPPORTED_VIEWPORT", None

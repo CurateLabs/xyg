@@ -51,7 +51,6 @@ def test_legend_label_list_labels_existing_lines():
     _png(fig)
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_legend_handles_labels_form_relabels_handles():
     x = np.linspace(0, 10, 20)
     fig, ax = plt.subplots()
@@ -83,6 +82,7 @@ def test_legend_scatter_entry_renders_marker_glyph():
     x = np.arange(10)
     fig, ax = plt.subplots()
     ax.scatter(x, np.sin(x), marker="^", label="pts")
+    ax.legend()
     svg = _svg(fig)
     assert ">pts</text>" in svg
     # A triangle marker glyph is a path, not a filled rectangle swatch.
@@ -92,19 +92,20 @@ def test_legend_scatter_entry_renders_marker_glyph():
 # -- defect 3: frameon=False drops the legend box ---------------------------
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_legend_frameon_false_removes_frame_in_static_export():
     x = np.linspace(0, 10, 20)
     fig, ax = plt.subplots()
     ax.plot(x, np.sin(x), label="s")
+    ax.legend()
     with_frame = _svg(fig)
-    assert "rgba(128,128,128,0.08)" in with_frame
+    assert 'data-xy-static-legend=""' in with_frame
+    assert 'fill="rgba(255,255,255,0.800000)"' in with_frame
 
     fig2, ax2 = plt.subplots()
     ax2.plot(x, np.sin(x), label="s")
     ax2.legend(frameon=False)
     no_frame = _svg(fig2)
-    assert "rgba(128,128,128,0.08)" not in no_frame
+    assert 'fill="rgba(255,255,255,0.800000)"' not in no_frame
     assert ">s</text>" in no_frame
 
 
@@ -168,7 +169,6 @@ def test_new_symbols_are_valid_scatter_symbols():
 # -- defect 6: scatter alpha survives a color/colormap encoding -------------
 
 
-@pytest.mark.xfail(reason="XYST static route gap; tracked in #889.", strict=False)
 def test_scatter_alpha_applied_with_colormap_encoding():
     rng = np.random.default_rng(0)
     n = 50
@@ -185,7 +185,13 @@ def test_scatter_alpha_applied_with_colormap_encoding():
     assert entry["kwargs"]["opacity"] == pytest.approx(0.3)
     svg = _svg(fig)
     # Face and edge each receive collection alpha so their overlap darkens.
-    assert '<g fill-opacity="0.3" stroke-opacity="0.3">' in svg
+    from xml.etree import ElementTree as ET
+
+    points = ET.fromstring(svg).findall(".//{*}circle")
+    assert len(points) == n
+    for point in points:
+        assert float(point.attrib["fill-opacity"]) == pytest.approx(0.3)
+        assert float(point.attrib["stroke-opacity"]) == pytest.approx(0.3)
     _png(fig)
 
 

@@ -1,0 +1,24 @@
+{
+  "base": "01f1072985b891d75015290999381f66d901d049",
+  "reviewed_ancestor": "eb9ea4c78a5acec192cd6fd98d9edb86fa3ae48c",
+  "changed_paths": [
+    "crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs",
+    "scripts/check_release_inventory.py",
+    "spec/design/ownership-audit.json",
+    "spec/design/ownership-audit.md",
+    "spec/releases/0.6.0-api-inventory.json",
+    "spec/releases/api-inventory.md",
+    "tests/test_release_inventory.py"
+  ],
+  "source_sha256": {
+    "crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs": "6af79ea2ed5edcb6ec6b3fe63d7d25f02f9b03af24ca5cb6f086a9cfe9e6fb62",
+    "scripts/check_release_inventory.py": "0dff7c2746dd1c8068d61230eb190b83a6d95389bcca0a2988d606fc0993b994",
+    "spec/design/ownership-audit.json": "f5f7d1317863bda0cd92becad40639e6c3a4f316a4cbeaa4fadd79eecac7c0fc",
+    "spec/design/ownership-audit.md": "f5a4639da1243f62b6e99c1b977a7f5ce445d270bb7175401cbc159fd6c382a6",
+    "spec/releases/0.6.0-api-inventory.json": "ce3bba32ce58889dd7b80c26636b61cace9271ebfa04a38fef94005c85054e5b",
+    "spec/releases/api-inventory.md": "ba791cc3fb21c60dbda419f6c9cc870eb701b15b839d10d68958789d04dd94cb",
+    "tests/test_release_inventory.py": "094d37c819a2e21cdaccaf9251c45f653fd0ae1261f3b3e9a4ab901360f161cb"
+  },
+  "nonreceipt_vs_01f107_sha256": "f7a8875137ea1337093c5ce967a464b39c185e40db1d7c4386e2d7be2b251c28",
+  "nonreceipt_vs_eb9_sha256": "61ea77bca32e221073a2edbc2ed3b40d567bd2cc88584373074938ba4b10e0df"
+}

@@ -1,0 +1,6 @@
+{
+  "pythonTestRuntime": "3.12.15",
+  "pythonTestExecutable": "/home/ubuntu/.t3/worktrees/xyg/t3-b946596d/.venv/bin/python",
+  "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+  "clarification": "manifest.json environment.python is the receipt-producing system interpreter; Python tests and tooling ran through uv with the runtime recorded here. Prior receipt bytes are preserved."
+}

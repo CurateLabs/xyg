@@ -1,0 +1,30 @@
+{
+  "argv": [
+    "python3",
+    "-c",
+    "import json,platform,subprocess; from pathlib import Path; native=json.loads(Path(\"spec/abi/xyg-abi.json\").read_text()); wasm=json.loads(Path(\"spec/wasm/abi.json\").read_text()); print(json.dumps({\"platform\":platform.platform(),\"python\":platform.python_version(),\"base\":subprocess.check_output([\"git\",\"rev-parse\",\"HEAD\"],text=True).strip(),\"branch\":subprocess.check_output([\"git\",\"branch\",\"--show-current\"],text=True).strip(),\"rustc\":subprocess.check_output([\"rustc\",\"-Vv\"],text=True),\"cargo\":subprocess.check_output([\"cargo\",\"-V\"],text=True).strip(),\"node\":subprocess.check_output([\"node\",\"--version\"],text=True).strip(),\"uv\":subprocess.check_output([\"uv\",\"--version\"],text=True).strip(),\"binaryen\":json.loads(Path(\"node_modules/binaryen/package.json\").read_text())[\"version\"],\"cargo_config\":Path(\".cargo/config.toml\").read_text(),\"profile\":Path(\"Cargo.toml\").read_text(),\"native_abi\":native[\"abi_version\"],\"native_symbols\":len(native[\"symbols\"]),\"wasm_abi\":wasm[\"abi_version\"],\"scene\":wasm[\"scene_version\"],\"painter\":wasm[\"painter_version\"]},indent=2))"
+  ],
+  "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-12512ccd",
+  "started": "2026-11-04T04:29:47.599307+00:00",
+  "finished": "2026-11-04T04:29:47.726205+00:00",
+  "elapsed_seconds": 0.126898,
+  "exit": 0,
+  "environment": {
+    "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+    "XYG_NATIVE_LIB": null,
+    "XYG_CHROMIUM": null,
+    "CHROMIUM": null,
+    "XYG_GRAPH_SESSION_REPORT": null,
+    "XYG_GRAPH_SESSION_SCREENSHOT": null,
+    "XYG_WASM_FOUNDATION_REPORT": null,
+    "XYG_WASM_FOUNDATION_ONLY": null,
+    "XYG_SESSION_WASM": null,
+    "XYG_BROWSER_DIST": null,
+    "CARGO_TARGET_DIR": null,
+    "RUSTFLAGS": null,
+    "CARGO_ENCODED_RUSTFLAGS": null,
+    "UV_PROJECT_ENVIRONMENT": null,
+    "PYTHONPATH": null
+  },
+  "log_sha256": "50c24cf13d30e89d51ce6fb58bba439e39cef8b8b4b933236d55446051980357"
+}

@@ -1,0 +1,180 @@
+   Compiling xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/crates/xyg-engine)
+error[E0616]: field `last_sequence` of struct `interaction::wire::WireSession` is private
+  --> crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs:34:11
+   |
+34 |         s.last_sequence,
+   |           ^^^^^^^^^^^^^ private field
+
+error[E0616]: field `session` of struct `interaction::wire::WireSession` is private
+  --> crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs:35:11
+   |
+35 |         s.session.selection().unwrap(),
+   |           ^^^^^^^ private field
+   |
+help: a method `session` also exists, call it with parentheses
+   |
+35 |         s.session().selection().unwrap(),
+   |                  ++
+
+error[E0616]: field `session` of struct `interaction::wire::WireSession` is private
+  --> crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs:36:11
+   |
+36 |         s.session.focus().unwrap(),
+   |           ^^^^^^^ private field
+   |
+help: a method `session` also exists, call it with parentheses
+   |
+36 |         s.session().focus().unwrap(),
+   |                  ++
+
+error[E0616]: field `session` of struct `interaction::wire::WireSession` is private
+  --> crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs:37:11
+   |
+37 |         s.session.hover.clone(),
+   |           ^^^^^^^ private field
+   |
+help: a method `session` also exists, call it with parentheses
+   |
+37 |         s.session().hover.clone(),
+   |                  ++
+
+error[E0616]: field `session` of struct `interaction::wire::WireSession` is private
+  --> crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs:38:11
+   |
+38 |         s.session.last_op.clone(),
+   |           ^^^^^^^ private field
+   |
+help: a method `session` also exists, call it with parentheses
+   |
+38 |         s.session().last_op.clone(),
+   |                  ++
+
+error[E0616]: field `session` of struct `interaction::wire::WireSession` is private
+  --> crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs:39:11
+   |
+39 |         s.session.published().cloned(),
+   |           ^^^^^^^ private field
+   |
+help: a method `session` also exists, call it with parentheses
+   |
+39 |         s.session().published().cloned(),
+   |                  ++
+
+error[E0616]: field `session` of struct `interaction::wire::WireSession` is private
+  --> crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs:40:11
+   |
+40 |         s.session.pending_outbound().cloned(),
+   |           ^^^^^^^ private field
+   |
+help: a method `session` also exists, call it with parentheses
+   |
+40 |         s.session().pending_outbound().cloned(),
+   |                  ++
+
+error[E0616]: field `last_sequence` of struct `interaction::wire::WireSession` is private
+  --> crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs:45:11
+   |
+45 |         s.last_sequence,
+   |           ^^^^^^^^^^^^^ private field
+
+error[E0616]: field `session` of struct `interaction::wire::WireSession` is private
+  --> crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs:46:11
+   |
+46 |         s.session.selection().unwrap(),
+   |           ^^^^^^^ private field
+   |
+help: a method `session` also exists, call it with parentheses
+   |
+46 |         s.session().selection().unwrap(),
+   |                  ++
+
+error[E0616]: field `session` of struct `interaction::wire::WireSession` is private
+  --> crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs:47:11
+   |
+47 |         s.session.focus().unwrap(),
+   |           ^^^^^^^ private field
+   |
+help: a method `session` also exists, call it with parentheses
+   |
+47 |         s.session().focus().unwrap(),
+   |                  ++
+
+error[E0616]: field `session` of struct `interaction::wire::WireSession` is private
+  --> crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs:48:11
+   |
+48 |         s.session.hover.clone(),
+   |           ^^^^^^^ private field
+   |
+help: a method `session` also exists, call it with parentheses
+   |
+48 |         s.session().hover.clone(),
+   |                  ++
+
+error[E0616]: field `session` of struct `interaction::wire::WireSession` is private
+  --> crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs:49:11
+   |
+49 |         s.session.last_op.clone(),
+   |           ^^^^^^^ private field
+   |
+help: a method `session` also exists, call it with parentheses
+   |
+49 |         s.session().last_op.clone(),
+   |                  ++
+
+error[E0616]: field `session` of struct `interaction::wire::WireSession` is private
+  --> crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs:50:11
+   |
+50 |         s.session.published().cloned(),
+   |           ^^^^^^^ private field
+   |
+help: a method `session` also exists, call it with parentheses
+   |
+50 |         s.session().published().cloned(),
+   |                  ++
+
+error[E0616]: field `session` of struct `interaction::wire::WireSession` is private
+  --> crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs:51:11
+   |
+51 |         s.session.pending_outbound().cloned(),
+   |           ^^^^^^^ private field
+   |
+help: a method `session` also exists, call it with parentheses
+   |
+51 |         s.session().pending_outbound().cloned(),
+   |                  ++
+
+error[E0616]: field `session` of struct `interaction::wire::WireSession` is private
+  --> crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs:82:19
+   |
+82 |         let r = s.session.published().unwrap();
+   |                   ^^^^^^^ private field
+   |
+help: a method `session` also exists, call it with parentheses
+   |
+82 |         let r = s.session().published().unwrap();
+   |                          ++
+
+error[E0616]: field `session` of struct `interaction::wire::WireSession` is private
+   --> crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs:153:19
+    |
+153 |         assert!(s.session.hover.nodes.is_empty());
+    |                   ^^^^^^^ private field
+    |
+help: a method `session` also exists, call it with parentheses
+    |
+153 |         assert!(s.session().hover.nodes.is_empty());
+    |                          ++
+
+error[E0616]: field `session` of struct `interaction::wire::WireSession` is private
+   --> crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs:154:22
+    |
+154 |         assert_eq!(s.session.selection().unwrap().len(), 2);
+    |                      ^^^^^^^ private field
+    |
+help: a method `session` also exists, call it with parentheses
+    |
+154 |         assert_eq!(s.session().selection().unwrap().len(), 2);
+    |                             ++
+
+For more information about this error, try `rustc --explain E0616`.
+error: could not compile `xyg-engine` (lib test) due to 17 previous errors

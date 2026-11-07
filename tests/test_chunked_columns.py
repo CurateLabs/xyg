@@ -136,3 +136,45 @@ def test_pages_report_budget_cancel_and_host_bounds(tmp_path):
             next(columns.pages((0.0, 7.0), page_bytes=1 << 64, generation=4))
         with pytest.raises(ValueError, match=r"generation.*\[0, 2\^64\)"):
             next(columns.pages((0.0, 7.0), page_bytes=64, generation=True))
+
+
+@pytest.mark.parametrize("paged", [False, True])
+def test_fetched_detail_corruption_is_rejected_by_native_reader(tmp_path, paged):
+    path = tmp_path / "corrupt-detail.xygc"
+    _artifact(path, [(float(i), float(i)) for i in range(8)])
+    with ChunkedColumns(path) as columns:
+        # Mutate the already-open source, preserving length and metadata.
+        with path.open("r+b") as source:
+            source.seek(64 + 48 * 2 + 16 + 8)
+            source.write(struct.pack("<d", 99.0))
+        with pytest.raises(ValueError, match="corrupt artifact"):
+            if paged:
+                next(columns.pages((0.0, 7.0), page_bytes=64, generation=1))
+            else:
+                columns.read((0.0, 7.0), budget_bytes=128, generation=1)
+
+
+def test_empty_range_cannot_publish_an_old_generation(tmp_path):
+    path = tmp_path / "empty-stale.xygc"
+    _artifact(path, [(float(i), float(i)) for i in range(8)])
+    with ChunkedColumns(path) as columns:
+        columns.cancel_before(3)
+        with pytest.raises(ValueError, match="cancelled by newer viewport"):
+            columns.read((20.0, 30.0), budget_bytes=128, generation=2)
+
+
+def test_resident_overlap_reuses_native_chunks_across_read_modes(tmp_path):
+    path = tmp_path / "reuse.xygc"
+    rows = [(float(i), float(i % 3)) for i in range(20)]
+    _artifact(path, rows)
+    with ChunkedColumns(path) as columns:
+        columns.read((0.0, 7.0), budget_bytes=192, generation=1)
+        x, y, stats = columns.read((4.0, 11.0), budget_bytes=192, generation=2)
+        assert list(zip(x, y, strict=True)) == rows[4:12]
+        assert stats["chunks_read"] == 1
+        assert stats["bytes_read"] == 64
+        pages = list(columns.pages((4.0, 11.0), page_bytes=192, generation=3))
+        assert len(pages) == 1
+        assert pages[0][2]["bytes_read"] == 0
+        with pytest.raises(ValueError, match="needs 128 bytes"):
+            columns.read((4.0, 11.0), budget_bytes=64, generation=4)

@@ -1,0 +1,134 @@
+{
+  "abi.command.json": {
+    "exit": 0,
+    "log_sha256": "9e6b288fcb04d188754d9994cdd1e74a253efa2b3f8f2e62a3dae37611f054ed"
+  },
+  "browser-session.command.json": {
+    "exit": 0,
+    "log_sha256": "c5ebe42011de98f6bd6fd6b6dea0bc76a1c53cb466342c87d767c1b0c4b4655f"
+  },
+  "capability.command.json": {
+    "exit": 0,
+    "log_sha256": "42b8d4d87753f9103ac02d0b33f9a3c6f6e68193684dd88198095d247c8e7392"
+  },
+  "ci-contracts.command.json": {
+    "exit": 0,
+    "log_sha256": "269111d1258118a0dda2f08ce914598572979b0dd235395f4bab0c7f170b9f83"
+  },
+  "client-build.command.json": {
+    "exit": 0,
+    "log_sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+  },
+  "clippy.command.json": {
+    "exit": 0,
+    "log_sha256": "d9fcb7a9e4751cbedd77d2540f0badf4f71ecb5d9c199cd6819b6ff9afb38c10"
+  },
+  "exact-wire-migration.command.json": {
+    "exit": 0,
+    "log_sha256": "7fca62d66dd5b9f1d3983fc7a9052a98dcab41051ebd8ed421d690918ce4fd13"
+  },
+  "final-hooks.command.json": {
+    "exit": 0,
+    "log_sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+  },
+  "final-ruff-check.command.json": {
+    "exit": 0,
+    "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  "final-ruff-format.command.json": {
+    "exit": 0,
+    "log_sha256": "c0366d7a10e593c3a33ee511f5d6890d6ae40c609fbe803855727e1b1b34c57d"
+  },
+  "inline-file.command.json": {
+    "exit": 0,
+    "log_sha256": "3d112246e026a2a49601f74c5b3e61c88920228ab5edbc6584b81b627067ecb5"
+  },
+  "integration-python.command.json": {
+    "exit": 0,
+    "log_sha256": "4297b090427f4f5e4c5a15abb93b42ad65acfcf72bea91f7fa54cdda627554be"
+  },
+  "inventory-check.command.json": {
+    "exit": 0,
+    "log_sha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c"
+  },
+  "inventory-regenerate.command.json": {
+    "exit": 0,
+    "log_sha256": "4ca8047382029cc6877337002694d1d92024329a5dc830334e8379f4ab8c70c9"
+  },
+  "metadata-tests.command.json": {
+    "exit": 0,
+    "log_sha256": "b1d358e790d2eb322a4a0d2e5c7c858a856ab73a0ebda47e22cc6783d1bcbbe2"
+  },
+  "naming.command.json": {
+    "exit": 0,
+    "log_sha256": "1003caaf3711434f9f15fab5a76f470c95cf9f63df4d3b732b9e7fb3016ed840"
+  },
+  "native-backend.command.json": {
+    "exit": 0,
+    "log_sha256": "c54b6fd77bc699a17876ed9b46dcf770b66d0bd01380e25cd620ec82adf9c736"
+  },
+  "native-build.command.json": {
+    "exit": 0,
+    "log_sha256": "ef32112684ec6ce17347d0c74b5faa42c254dab5728ee8cb59ac67e72f5641c1"
+  },
+  "node-scene.command.json": {
+    "exit": 0,
+    "log_sha256": "fd0df30ab6a0da0bd54e96173270269985cbffdc2b794439e9b6fb02fd9f275f"
+  },
+  "npm-node.command.json": {
+    "exit": 0,
+    "log_sha256": "1e7e4edf4814231f058f39f62c107fa2073dca8deda952d598e066780b4982bd"
+  },
+  "npm-root.command.json": {
+    "exit": 0,
+    "log_sha256": "30f93900401f83801a790a2d609f85b4d1be643c942cc67c162a1c0c1342ac9e"
+  },
+  "ownership.command.json": {
+    "exit": 0,
+    "log_sha256": "c5aa14def5ab71ddcf818ef1a32f3a6098225fd9f656c72112000270853b6133"
+  },
+  "paired-assets.command.json": {
+    "exit": 0,
+    "log_sha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef"
+  },
+  "protection-final.command.json": {
+    "exit": 0,
+    "log_sha256": "079cbc79d3bb975c45483a3196582832dcc1327f471c6870c88870505dfb0988"
+  },
+  "protection.command.json": {
+    "exit": 0,
+    "log_sha256": "4bb577b9b00b1d91c646e6551d137f43fd1d66431f5517738beb8d5ddb4f836d"
+  },
+  "rust-tests.command.json": {
+    "exit": 0,
+    "log_sha256": "b39a356c26685d0c77637a30babb981293dc459a90c252430d252bc535778742"
+  },
+  "shipping-contracts.command.json": {
+    "exit": 0,
+    "log_sha256": "588303581c3fa1350ebb17cba9795be8df4a807908bdcd4d3534f60bb6330bb6"
+  },
+  "typecheck.command.json": {
+    "exit": 0,
+    "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  "uv-sync.command.json": {
+    "exit": 0,
+    "log_sha256": "66afaecba5ceaf81f9352d1e2814d10ae5c94538addae6a6cbd7585ce8b9c264"
+  },
+  "wasm-abi.command.json": {
+    "exit": 0,
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "wasm-build.command.json": {
+    "exit": 0,
+    "log_sha256": "6df057ec5ddbe68bd2d6fee4d9fc0549bd22a98939b834bb9a577681e6b264ba"
+  },
+  "wasm-foundation.command.json": {
+    "exit": 0,
+    "log_sha256": "a2bad2ff6df11fa7600daa9367d17385ef2f91b8bcd99195798cdcd83e4befbe"
+  },
+  "wasm-package.command.json": {
+    "exit": 0,
+    "log_sha256": "50c44a4d28ff4eeb12a99456856ca30c10c7e8691c3c9980f36a5409c91d90a5"
+  }
+}

@@ -1,0 +1,3 @@
+100644 bc2e4f775936fb556f82c535dd49d3a9cf0bdb6d 1	spec/releases/0.6.0-api-inventory.json
+100644 22ab71cf1985957018f3a3437cbff9ad7f76c15d 2	spec/releases/0.6.0-api-inventory.json
+100644 a75e0ac90471fa903339a1d89ed9cbeb6632abe9 3	spec/releases/0.6.0-api-inventory.json

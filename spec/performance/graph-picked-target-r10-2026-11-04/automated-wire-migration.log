@@ -1,0 +1,60 @@
+TAP version 13
+# Subtest: fresh actual browser goldens preserve every old raw section and add only exact query receipts
+ok 1 - fresh actual browser goldens preserve every old raw section and add only exact query receipts
+  ---
+  duration_ms: 47.816745
+  type: 'test'
+  ...
+# Subtest: standalone temporal owners keep frame and replacement staging at the default arena
+ok 2 - standalone temporal owners keep frame and replacement staging at the default arena
+  ---
+  duration_ms: 52.818555
+  type: 'test'
+  ...
+# Subtest: actual native ABI and real WASM replay one GraphSession byte contract
+ok 3 - actual native ABI and real WASM replay one GraphSession byte contract
+  ---
+  duration_ms: 135.830525
+  type: 'test'
+  ...
+# {"node":"v22.23.4","module":"/home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/packages/xy-client/dist/xyg-wasm.wasm","bytes":1926555,"sha256":"e3ef33b58820675f4c201a2b81ad23b3665090442210aa22fcee28a269884a96","nativeLibrary":"/home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/target/release/libxyg_core.so","nativeSha256":"0deea9029e4a328dc15aa2d86873a203f12b8911e1c89c274f14270b31a3f880","diagnosticModule":false}
+# Subtest: actual boundaries retain all 20000 changed refs while requests stay capped at 10000
+ok 4 - actual boundaries retain all 20000 changed refs while requests stay capped at 10000
+  ---
+  duration_ms: 657.656967
+  type: 'test'
+  ...
+# Subtest: real native/WASM binding shares temporal frames and revokes replaced owners
+ok 5 - real native/WASM binding shares temporal frames and revokes replaced owners
+  ---
+  duration_ms: 40.887027
+  type: 'test'
+  ...
+# Subtest: exact reader UTF-8 identities and resolved paint replay at unchanged default 16MiB
+ok 6 - exact reader UTF-8 identities and resolved paint replay at unchanged default 16MiB
+  ---
+  duration_ms: 93.470397
+  type: 'test'
+  ...
+# Subtest: real native/WASM resolved routes, heads, frames and aggregate singleton sections
+ok 7 - real native/WASM resolved routes, heads, frames and aggregate singleton sections
+  ---
+  duration_ms: 22.24442
+  type: 'test'
+  ...
+# Subtest: captured primary-click OPEN/Render/SelectAt requests replay full native/WASM XYGR bytes
+ok 8 - captured primary-click OPEN/Render/SelectAt requests replay full native/WASM XYGR bytes
+  ---
+  duration_ms: 32.553989
+  type: 'test'
+  ...
+# {"capture":"/home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/spec/performance/graph-picked-target-r6-2026-11-04/captured-requests.json.gz","requests":19,"selectAt":17,"bytesCompared":"complete XYGR including GPU, selection, provenance and focus"}
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1203.976263

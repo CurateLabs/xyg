@@ -1,0 +1,74 @@
+{
+  ".cargo/config.toml": {
+    "r4": "42b84200f224d50f75a72aa8e05b14e0a8ef4bc4cdb19c9181aa21f49b2e6d92",
+    "actual": "42b84200f224d50f75a72aa8e05b14e0a8ef4bc4cdb19c9181aa21f49b2e6d92"
+  },
+  "Cargo.lock": {
+    "r4": "b521317a3cee01d9e04f40fd97e2c7638d648f57052a42078dcb7c8593a4433a",
+    "actual": "b521317a3cee01d9e04f40fd97e2c7638d648f57052a42078dcb7c8593a4433a"
+  },
+  "Cargo.toml": {
+    "r4": "469da24983e563789e5f6d2590cfa23017ffc381a7f99a498ceb62caae3a210f",
+    "actual": "469da24983e563789e5f6d2590cfa23017ffc381a7f99a498ceb62caae3a210f"
+  },
+  "crates/xyg-engine/src/graphforge/interaction.rs": {
+    "r4": "7308227670b594e777d069015b2da63f4c473a4f25574d7ad2cdcdf1575fe503",
+    "actual": "7308227670b594e777d069015b2da63f4c473a4f25574d7ad2cdcdf1575fe503"
+  },
+  "crates/xyg-engine/src/graphforge/interaction/pick.rs": {
+    "r4": "a5e6dd1561206614af01722285f55d9c42b00fab8f4c8e295df7fc676985920d",
+    "actual": "a5e6dd1561206614af01722285f55d9c42b00fab8f4c8e295df7fc676985920d"
+  },
+  "crates/xyg-engine/src/graphforge/interaction/tests/wire.rs": {
+    "r4": "2f9001f3457ef0b8117044b1a4c1d031f4c6984b2af87a4fa203c578e80c4e59",
+    "actual": "2f9001f3457ef0b8117044b1a4c1d031f4c6984b2af87a4fa203c578e80c4e59"
+  },
+  "crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs": {
+    "r4": "6e2d0bc97158546a16e8b298e4181d9a7c4ea25180f29d7f178ef2f17860ee15",
+    "actual": "6e2d0bc97158546a16e8b298e4181d9a7c4ea25180f29d7f178ef2f17860ee15"
+  },
+  "crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs": {
+    "r4": "e2ab7148fa0727204917426ccd8b3b911c9fb8ba1536652e5873802cab1ec36a",
+    "actual": "e2ab7148fa0727204917426ccd8b3b911c9fb8ba1536652e5873802cab1ec36a"
+  },
+  "crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_probe.rs": {
+    "r4": "e866ce2f93add0933610a66507846e09a7b2accd1e7c0d1191dc0d071ffb0091",
+    "actual": "e866ce2f93add0933610a66507846e09a7b2accd1e7c0d1191dc0d071ffb0091"
+  },
+  "crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs": {
+    "r4": "e23bfb1292b06c1c1291bf3a46b3fd7098cd63dfdc87fa041560b3398874b811",
+    "actual": "e23bfb1292b06c1c1291bf3a46b3fd7098cd63dfdc87fa041560b3398874b811"
+  },
+  "crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs": {
+    "r4": "0e3086946f9fa541762da75b3d1163e6363d132b277da6f2fb3b0a2a8e8c53a0",
+    "actual": "0e3086946f9fa541762da75b3d1163e6363d132b277da6f2fb3b0a2a8e8c53a0"
+  },
+  "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+    "r4": "b63629aefa8c7043fa5e5400c67394060d6cb1bb1acb7d807b7d97cfd9e8f6d6",
+    "actual": "b63629aefa8c7043fa5e5400c67394060d6cb1bb1acb7d807b7d97cfd9e8f6d6"
+  },
+  "js/optimize-wasm.mjs": {
+    "r4": "c9cf5458bebced72e5478d6a681c8df2a9ee3668273bad5c4f5d860d6c7f4658",
+    "actual": "c9cf5458bebced72e5478d6a681c8df2a9ee3668273bad5c4f5d860d6c7f4658"
+  },
+  "package-lock.json": {
+    "r4": "8d8fd757c65329343e3e212f540bf6dfd5a7950b3af321787a649b94ab15a5d8",
+    "actual": "8d8fd757c65329343e3e212f540bf6dfd5a7950b3af321787a649b94ab15a5d8"
+  },
+  "package.json": {
+    "r4": "7069837445cf48dd6ec668baa9cb41916cfddd48d2a917ef564b4db1b3f3b870",
+    "actual": "7069837445cf48dd6ec668baa9cb41916cfddd48d2a917ef564b4db1b3f3b870"
+  },
+  "rust-toolchain.toml": {
+    "r4": "e59c5da37d1f9f4e0f815bc188cb6056fc7410c9cdaa9673c2d44da557c75d12",
+    "actual": "e59c5da37d1f9f4e0f815bc188cb6056fc7410c9cdaa9673c2d44da557c75d12"
+  },
+  "spec/abi/xyg-abi.json": {
+    "r4": "8c8392feab94c798fad38eb7890269b6b2846598c9930e4315160cf990591298",
+    "actual": "8c8392feab94c798fad38eb7890269b6b2846598c9930e4315160cf990591298"
+  },
+  "spec/wasm/abi.json": {
+    "r4": "cb9dedf0a57cfa93682a86f08d5f4d8483810352b491ed46a0acd0c3c976cc77",
+    "actual": "cb9dedf0a57cfa93682a86f08d5f4d8483810352b491ed46a0acd0c3c976cc77"
+  }
+}

@@ -90,3 +90,14 @@ out-of-box anchors, clamping, every truncated prefix, inactive bytes, browser
 paint/font rejection, and unsupported symbols. Host cutover must additionally
 exercise this query through both generated ABI bindings and pin identical
 decorations and native outputs; unit tests alone do not prove that cutover.
+
+### Authored item preservation (#889)
+
+Explicit legend item lists are literal authoring facts. Python and Node forward
+those items, including relabelled names and styles, to the same XYDL query;
+they do not replace an authored list with items reconstructed from trace names.
+An explicitly empty list remains empty. The Rust registry's
+`document_legend_relabel` and `document_legend_frameless` witnesses compare
+canonical Scene/XYST and all five exports, including actual legend content and
+transparent frame paint. Non-circle scatter swatches retain their documented
+`XYG_STATIC_UNSUPPORTED_FIGURE_LEGEND_STYLE` rejection.

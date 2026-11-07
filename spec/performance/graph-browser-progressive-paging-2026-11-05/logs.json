@@ -1,0 +1,22 @@
+{
+  "default-arena-refusal.log.gz": {
+    "raw_sha256": "5cdfb5fdef1dc1dac04e7cafcdcc63b8c767cf2c52b904ceb198b91e886f632f",
+    "archive_sha256": "aafecc58e7c3894c44fad48173b74689c7e6929b2fb1e8d4b67cacb5b97bd8fe"
+  },
+  "initial-pass.log.gz": {
+    "raw_sha256": "a486a0a3e29d26b4414eeea00e261f4d0a91d18f930fcb8f8e5d4f16bc594b24",
+    "archive_sha256": "c773dd47ac9c4884ffb43c6b6b1b49d6c719d9c92a284cfd3b129ef8ef87660a"
+  },
+  "progressive.log.gz": {
+    "raw_sha256": "a486a0a3e29d26b4414eeea00e261f4d0a91d18f930fcb8f8e5d4f16bc594b24",
+    "archive_sha256": "c773dd47ac9c4884ffb43c6b6b1b49d6c719d9c92a284cfd3b129ef8ef87660a"
+  },
+  "row-identity-pass.log.gz": {
+    "raw_sha256": "a486a0a3e29d26b4414eeea00e261f4d0a91d18f930fcb8f8e5d4f16bc594b24",
+    "archive_sha256": "c773dd47ac9c4884ffb43c6b6b1b49d6c719d9c92a284cfd3b129ef8ef87660a"
+  },
+  "wire-gpu.log.gz": {
+    "raw_sha256": "18a80bea31ee4bc43041f1dbfb77548ff0864a71ffcd51cfd4b74c235cb6d5e0",
+    "archive_sha256": "3ed7e05bfb7d85a3b06b9cc0937a7fe4fbb705abfac820711a4d4caaf96d0062"
+  }
+}

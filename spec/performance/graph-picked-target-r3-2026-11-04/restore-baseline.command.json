@@ -1,0 +1,30 @@
+{
+  "argv": [
+    "python3",
+    "-c",
+    "import hashlib,json,subprocess; from pathlib import Path; receipt=Path(\"spec/performance/graph-picked-target-r3-2026-11-04\"); m=json.loads((receipt/\"source-inputs.json\").read_text()); paths=m[\"changed_paths\"]; tracked=set(subprocess.check_output([\"git\",\"ls-files\"],text=True).splitlines()); assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==m[\"input_sha256\"][p] for p in paths); subprocess.run([\"git\",\"restore\",\"--worktree\",\"--\",*[p for p in paths if p in tracked]],check=True); [Path(p).unlink() for p in paths if p not in tracked]; subprocess.run([\"git\",\"diff\",\"--exit-code\",\"HEAD\"],check=True); subprocess.run([\"git\",\"apply\",\"--check\",str(receipt/\"full-nonreceipt.patch\")],check=True); status=subprocess.check_output([\"git\",\"status\",\"--short\"],text=True); print(\"HEAD:\",subprocess.check_output([\"git\",\"rev-parse\",\"HEAD\"],text=True).strip()); print(\"Tracked source/spec baseline restored; saved R3 patch applies cleanly.\"); print(status); (receipt/\"baseline-status.txt\").write_text(status)"
+  ],
+  "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-12512ccd",
+  "started": "2026-11-04T04:49:36.754320+00:00",
+  "finished": "2026-11-04T04:49:36.912940+00:00",
+  "elapsed_seconds": 0.15862,
+  "exit": 0,
+  "environment": {
+    "PATH": "/home/ubuntu/.local/bin:/home/ubuntu/.codex/packages/standalone/releases/0.163.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06O0TWT:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+    "XYG_NATIVE_LIB": null,
+    "XYG_CHROMIUM": null,
+    "CHROMIUM": null,
+    "XYG_GRAPH_SESSION_REPORT": null,
+    "XYG_GRAPH_SESSION_SCREENSHOT": null,
+    "XYG_WASM_FOUNDATION_REPORT": null,
+    "XYG_WASM_FOUNDATION_ONLY": null,
+    "XYG_SESSION_WASM": null,
+    "XYG_BROWSER_DIST": null,
+    "CARGO_TARGET_DIR": null,
+    "RUSTFLAGS": null,
+    "CARGO_ENCODED_RUSTFLAGS": null,
+    "UV_PROJECT_ENVIRONMENT": null,
+    "PYTHONPATH": null
+  },
+  "log_sha256": "63253eb71647a8853dd348a3f7df287d654da06118009889d7965f208985440b"
+}

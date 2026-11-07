@@ -1,0 +1,7 @@
+pyplot: 1135 passed, 163 skipped, 40 xfailed, 1 warning in 25.87s
+polar: 118 passed, 31 xfailed, 2 warnings in 2.94s
+registry: 34 passed in 7.92s
+annotation/chrome: 16 passed in 0.57s
+dense 8x8 grid: 1 passed in 1.08s
+host parity: host-parity landing gates: OK; 1089 cross-host tests passed
+rust registry: 4 passed

@@ -33,8 +33,8 @@ Worker.prototype.postMessage = function(message, transfer) {
       if (state.inject === "stale") { words.setUint32(0, words.getUint32(0, true) + 1, true); state.inject = null; }
       if (state.inject === "refuse-clear" && words.getUint32(4, true) === 4) { h.setBigUint64(0, h.getBigUint64(0, true) + 1n, true); state.inject = null; }
       if (state.inject === "wrong-instance") { h.setBigUint64(0, h.getBigUint64(0, true) + 1n, true); state.inject = null; }
-      state.commands.push({ type: message.type, requestId: message.requestId, sequence: message.sequence, lifetime: message.lifetime, instanceId: h.getBigUint64(0, true), opSeq: h.getBigUint64(16, true), revision: words.getUint32(0, true), operation: words.getUint32(4, true), bytes: new Uint8Array(message.request).slice() });
-    } else state.commands.push({ type: message.type, requestId: message.requestId, sequence: message.sequence, lifetime: message.lifetime });
+      state.commands.push({ owner:this.__graphOwner, at: performance.now(), type: message.type, requestId: message.requestId, sequence: message.sequence, lifetime: message.lifetime, instanceId: h.getBigUint64(0, true), opSeq: h.getBigUint64(16, true), revision: words.getUint32(0, true), operation: words.getUint32(4, true), bytes: new Uint8Array(message.request).slice() });
+    } else state.commands.push({ owner:this.__graphOwner, at: performance.now(), type: message.type, requestId: message.requestId, sequence: message.sequence, lifetime: message.lifetime });
   }
   if (["budget-reply","cap-reply"].includes(state.inject) && message.type === "graph.session.interact") {
     const code=state.inject==='cap-reply'?'GF_INTERACTION_SELECTION_TOO_LARGE':'GF_INTERACTION_BUDGET', status=state.inject==='cap-reply'?-8:-4;
@@ -51,9 +51,9 @@ HTMLCanvasElement.prototype.getContext = function(kind, ...args) {
   return gl;
 };
 const bytes = async (name) => new Uint8Array(await (await fetch(`/tests/fixtures/graphforge/results/${name}.arrow`)).arrayBuffer());
-const makeWorker = (wasm = "/packages/xy-client/dist/xyg-wasm.wasm") => {
-  const worker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm });
-  const actual = worker.worker, deliver = actual.onmessage;
+const makeWorker = (wasm = "/packages/xy-client/dist/xyg-wasm.wasm", maxArenaBytes) => {
+  const worker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm, maxArenaBytes });
+  const actual = worker.worker, deliver = actual.onmessage; actual.__graphOwner = state.nextOwner = (state.nextOwner ?? 0)+1;
   actual.onmessage = event => {
     const value = event.data.value;
     if (value?.bytes instanceof ArrayBuffer && value.bytes.byteLength) {
@@ -68,7 +68,7 @@ const makeWorker = (wasm = "/packages/xy-client/dist/xyg-wasm.wasm") => {
         state.inject = null;
       }
       if (state.inject === "wrong-lifetime") { value.lifetime++; state.inject = null; }
-      state.replies.push({ requestId: event.data.requestId, bytes: new Uint8Array(value.bytes).slice(), lifetime: value.lifetime, sequence: value.sequence });
+      state.replies.push({ owner:actual.__graphOwner, requestId: event.data.requestId, bytes: new Uint8Array(value.bytes).slice(), lifetime: value.lifetime, sequence: value.sequence });
       if (state.hold) { state.held.push(() => deliver(event)); return; }
     }
     deliver(event);
@@ -297,4 +297,23 @@ state.closedPoint = ({kind,tag='div',named=true,nested=false}) => {
   const chain=[];for(let el=c;el;){const st=getComputedStyle(el);chain.push({tag:el.tagName,transform:st.transform,rotate:st.rotate,offsetPath:st.offsetPath,slot:el.assignedSlot?.tagName??null});const root=el.getRootNode();el=el.assignedSlot??el.parentElement??(root instanceof ShadowRoot?root.host:null);}
   const rect=probe.getBoundingClientRect(),client=[rect.x,rect.y],st=getComputedStyle(wrapper);
   return {kind,tag,named,nested,fragment:new URL(link.href).hash,css,client,hit:document.elementFromPoint(...client)?.tagName,chain,zoom:c.currentCSSZoom,canvasStyleZoom:getComputedStyle(c).zoom,dpr:devicePixelRatio,wrapper:{transform:st.transform,rotate:st.rotate,offsetPath:st.offsetPath,zoom:st.zoom}};
+};
+
+// Real public progressive attachment; no held replies or layout callback hooks.
+state.progressiveFixture = async (count, id, load = {}, arena = count===1000 ? 384*1024*1024 : undefined) => {
+  const f = (name, dtype, values) => ({name, dtype:DTYPE[dtype], values});
+  const nodes = new Uint8Array(count*16), edges = new Uint8Array(count*16);
+  for (let i=0;i<count;i++) { new DataView(nodes.buffer).setUint32(i*16,i+1,true); new DataView(edges.buffer).setUint32(i*16,i+10001,true); }
+  const document = encodeContainer('XYGF', [f('status','u32',[0]),f('kind','utf8','graph'),f('composition.version','u32',[2]),f('node.uuid','uuid',nodes),f('edge.uuid','uuid',edges),f('edge.derived','u8',Array(count).fill(0)),f('edge.layer','u32',Array(count).fill(0xffffffff)),f('edge.order','i64',Array(count).fill(-1n)),f('edge.path','u64',Array(count).fill(0xffffffffffffffffn)),f('edge.source','u64',Array.from({length:count},(_,i)=>BigInt(i))),f('edge.target','u64',Array.from({length:count},(_,i)=>BigInt((i+1)%count))),f('graph.directed','u8',[0])]);
+  const worker=makeWorker(undefined, arena); await worker.ready;
+  const el=container(), p={id,el,worker,frames:[],errors:[],beats:0,document,load:{progressive:true,...load},camera:[count===1000?.25:25,count===1000?.25:25,320,160,640,320,1]};
+  state.progressives ??= []; state.progressives.push(p);
+  el.addEventListener('xy:graph-render',e=>p.frames.push({at:performance.now(),revision:e.detail.revision,progress:e.detail.relayout,pixels:state.pixel(el).filter((v,i)=>i%4===3&&v>0).length}));
+  for(const kind of ['error','stale']) el.addEventListener(`xy:graph-${kind}`,e=>p.errors.push(e.detail));
+  p.heartbeats=[]; p.trusted=[];
+  el.addEventListener('keydown',e=>{if(e.isTrusted)p.trusted.push({key:e.key,at:performance.now(),progress:p.handle.snapshot()?.relayout,prevented:e.defaultPrevented});});
+  p.timer=setInterval(()=>{p.beats++;p.heartbeats.push(performance.now());},5);
+  p.handle=state.attach({el,worker,instanceId:id,document,load:p.load,camera:p.camera});
+  try { await p.handle.ready; } catch(error) { clearInterval(p.timer); await p.handle.dispose(); await worker.dispose(); el.remove(); throw error; }
+  return {revision:p.handle.snapshot().revision,progress:p.handle.snapshot().relayout};
 };

@@ -56,7 +56,7 @@ def raise_trace_attach(error: _native.SceneTraceAttachError, figure: Any) -> NoR
         raise UnsupportedSceneV3("Scene v12 heatmap grid must match rows x cols") from error
     if error.code == -9:
         raise UnsupportedSceneV3(
-            "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
+            "XYG_SCENE_UNSUPPORTED_NONFINITE_COORDINATES: Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
         ) from error
     if error.code == -10:
         raise UnsupportedSceneV3("Scene heatmap RGBA plane must match rows x cols") from error
@@ -79,7 +79,7 @@ def raise_trace_attach(error: _native.SceneTraceAttachError, figure: Any) -> NoR
 def raise_trace_rows(error: _native.SceneTraceRowsError) -> NoReturn:
     if error.code == -5:
         raise UnsupportedSceneV3(
-            "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
+            "XYG_SCENE_UNSUPPORTED_NONFINITE_COORDINATES: Scene v12 does not yet encode missing-data breaks or nonfinite coordinates"
         ) from error
     if error.code == -6:
         raise UnsupportedSceneV3("Scene v12 does not support product kind") from error

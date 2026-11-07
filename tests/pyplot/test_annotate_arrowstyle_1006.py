@@ -126,7 +126,7 @@ def test_common_arrowstyles_map_onto_the_scene_vocabulary(arrowstyle, vertices, 
         (dict(arrowstyle="<|-"), "XYG_SCENE_UNSUPPORTED_ARROW_STYLE"),
         (
             dict(arrowstyle="->", connectionstyle="arc3,rad=0.3"),
-            "Scene arrow style does not encode",
+            "XYG_SCENE_UNSUPPORTED_ANNOTATION_STYLE: arrow unsupported keys curve",
         ),
     ],
 )
@@ -147,7 +147,8 @@ def test_unmapped_arrowstyle_names_fail_closed_at_static_admission(arrowstyle) -
     try:
         fig = _annotated(dict(arrowstyle=arrowstyle))
         with pytest.raises(
-            UnsupportedStaticExport, match=r"Scene arrow style does not encode.*arrowstyle"
+            UnsupportedStaticExport,
+            match=r"XYG_SCENE_UNSUPPORTED_ANNOTATION_STYLE: arrow unsupported keys arrowstyle$",
         ):
             _svg(fig)
     finally:
@@ -182,7 +183,8 @@ def test_arrowstyle_options_fail_closed_at_static_admission(name, options) -> No
     try:
         fig = _annotated(dict(arrowstyle=arrowstyle))
         with pytest.raises(
-            UnsupportedStaticExport, match=r"Scene arrow style does not encode.*arrowstyle"
+            UnsupportedStaticExport,
+            match=r"XYG_SCENE_UNSUPPORTED_ANNOTATION_STYLE: arrow unsupported keys arrowstyle$",
         ):
             _svg(fig)
     finally:
