@@ -1,0 +1,17 @@
+{
+  "js/src/41_gpu_storage.ts": "0ca851f29ef80a6919d7476d7cd5f21290b03cb9a8029016b3b10c30fbbd2a3f",
+  "js/src/42_glhost.ts": "a3ec6aba4cb074f65fb5f99e2f60139c2d9371a9207a184e8adb467fea6b3c05",
+  "js/src/48_wasm_scene.ts": "8141a21f116163c67f37c1205c3bbaa6f98678606a1084b852a08b1d9d045fcd",
+  "js/src/49_wasm_dashboard.ts": "71d6e1881ffc8964908a284ba2e9f0d5e67e16fe29351d14a8297268b0be8bad",
+  "js/src/50_chartview.ts": "c10d7e07b97978a504ac913f1d7e2c5ca4bee8accc5e36bb983f55074fad731c",
+  "js/src/54_kernel.ts": "081aef18ff0c0381bff2103b7e54a3df219eb5266d0af626344c705a85e90bad",
+  "js/src/63_graph_gpu.ts": "d3038cc62b21b51b90704826338601bc4e2fd2d73e8dbdaa0bccd7553b37e745",
+  "scripts/dashboard_gpu_smoke.mjs": "3a55d4ac54bf83a3a9d41d5edd82f8c2abe7666556299f54ad79a2c8df4d3bd4",
+  "tests/browser/dashboard_gpu_page.mjs": "8b866ac648527cf487a90587870f9aa04f9460ccfbe1dfe671a27187280bb434",
+  "tests/browser/wasm_foundation_page.mjs": "336670da6d2169f840fcf4227843f75d0e969cda74badfaee2a6fef8933dc01d",
+  "tests/test_shared_glhost.py": "2b9676ad6caf6470e1287db7184245521b06dee6898ac67ebbd182e788d8df8c",
+  "packages/xy-client/dist/index.js": "ca12fb891e56174c26f8923e05b4843b9cad610381eda265bc9423d3483bedbf",
+  "packages/xy-client/dist/standalone.js": "0a352de759530f454eeabad59f34a91c01967673973526961d13aef2954b7573",
+  "packages/xy-client/dist/xyg-wasm.wasm": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1",
+  "target/release/libxyg_core.so": "09b2571980a8c1d97ac4478fc51b346fb9356d07916bc8b38e84c072b531b895"
+}

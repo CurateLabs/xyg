@@ -456,13 +456,7 @@ export function hydrateWasmPainter(
     painterBytes: prepared.painter.byteLength,
     wasmMemoryBytes: prepared.memoryBytes,
   };
-  for (const trace of view.gpuTraces) {
-    const ids = trace.trace.scene_ids;
-    trace._sceneIds = {
-      lo: view._columnView(compiled.payload, compiled.spec.columns[ids.lo]),
-      hi: view._columnView(compiled.payload, compiled.spec.columns[ids.hi]),
-    };
-  }
+  view._restoreSceneIds();
   (view as any).sceneStableId = (traceIndex: number, rowIndex: number) => {
     const ids = view.gpuTraces[traceIndex]?._sceneIds;
     if (!ids || !Number.isInteger(rowIndex) || rowIndex < 0 || rowIndex >= ids.lo.length) return null;

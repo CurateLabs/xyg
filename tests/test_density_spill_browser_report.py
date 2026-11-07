@@ -147,8 +147,39 @@ def test_mutations_are_rejected(pair, path, replacement):
     value = report = copy.deepcopy(browser)
     for part in path[:-1]:
         value = value[part]
+    if path == ("authority_context", "GITHUB_REF"):
+        # The real fixture inherits local, PR, main or merge-group context.
+        # Mutate its actual value rather than assuming it is never main.
+        replacement = "refs/heads/negative-control/" + str(value[path[-1]])
+    assert value[path[-1]] != replacement, (path, "mutation must change the fixture")
     value[path[-1]] = replacement
     assert verify.validate(report, host, environ={}), path
+
+
+@pytest.mark.parametrize(
+    ("event", "ref"),
+    [
+        (None, None),
+        ("pull_request", "refs/pull/1114/merge"),
+        ("push", "refs/heads/main"),
+        ("merge_group", "refs/heads/gh-readonly-queue/main/pr-1114-control"),
+    ],
+)
+def test_reference_mutation_rejects_each_context(pair, event, ref):
+    # Simulated contexts over an actual bounded report, never hosted acceptance.
+    browser, host_bytes = copy.deepcopy(pair)
+    host = json.loads(host_bytes)
+    for report in (browser, host):
+        report["authority_context"].update(GITHUB_EVENT_NAME=event, GITHUB_REF=ref)
+    host_bytes = json.dumps(host).encode()
+    browser["host_report_sha256"] = verify.sha(host_bytes)
+    assert verify.validate(browser, host_bytes, environ={}) == []
+    replacement = "refs/heads/negative-control/" + str(ref)
+    assert browser["authority_context"]["GITHUB_REF"] != replacement
+    browser["authority_context"]["GITHUB_REF"] = replacement
+    assert verify.validate(browser, host_bytes, environ={}) == [
+        "companion differs from actual host authority_context"
+    ]
 
 
 def test_browser_artifact_content_is_verified(pair):
@@ -287,6 +318,8 @@ def test_browser_launch_failure_fails_invocation_and_cleans(tmp_path):
     browser = json.loads((tmp_path / "browser.json").read_bytes())
     assert result.returncode == 1 and browser["status"] == host["status"] == "failed"
     assert "Chromium exited" in host["failure"]
+    assert b"density harness failed:" in result.stderr
+    assert str(tmp_path / "host.json").encode() in result.stderr
     assert all(
         host["cleanup"][k]
         for k in (

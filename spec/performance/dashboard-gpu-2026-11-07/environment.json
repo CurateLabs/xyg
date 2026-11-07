@@ -1,0 +1,8 @@
+{
+  "base": "084b3c1b7c393e135476aab9610bf8334767b2ac",
+  "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+  "python": "3.12.15",
+  "rust": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "chrome": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+  "TMPDIR": "/home/ubuntu/xgpu-tmp"
+}

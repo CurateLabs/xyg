@@ -1,3 +1,4 @@
+import { GPUAdmissionPending } from "./41_gpu_storage";
 import { payloadBuffers } from "./00_header";
 import { buildLutData } from "./10_colormaps";
 import { parseColor } from "./20_theme";
@@ -404,7 +405,7 @@ Object.assign(ChartView.prototype, {
     // context is lost. The restore path rebuilds every affected GPU object
     // from this latest payload; attempting partial uploads to a dead context
     // would only create handles that must immediately be discarded.
-    if (this._glLost || !this.gl) return;
+    if (this._glLost || !this.gl || (this._glHost && !this._glHost.clientAdmitted(this))) return;
     const texSeen = new Set();
     for (const id of msg.affected || []) {
       const i = this.gpuTraces.findIndex((g) => g.trace.id === id);
@@ -419,6 +420,7 @@ Object.assign(ChartView.prototype, {
     }
     // Rebuilt entries lost their transient legend-toggle fields; re-apply
     // from the view-held state (interaction spec §10).
+    this._restoreSceneIds();
     this._reapplyLegendVisibility();
     this._updatePickable();
     this._scheduleAppendRefine(this.view, atHome);
@@ -662,7 +664,7 @@ Object.assign(ChartView.prototype, {
   _onKernelMsg(msg, buffers) {
     if (this._destroyed) return;
     if (!msg) return;
-    if (this._glLost && msg.type !== "append" && msg.type !== "pick_result") return;
+    if ((this._glLost || (this._glHost && !this._glHost.clientAdmitted(this))) && msg.type !== "append" && msg.type !== "pick_result") return;
     if (msg.type === "tier_update") {
       if (msg.seq !== this.seq) return;
       for (const upd of msg.traces) {
@@ -943,3 +945,14 @@ Object.assign(ChartView.prototype, {
     return this._viewInside({ x0: xRange[0], x1: xRange[1], y0: yRange[0], y1: yRange[1] });
   },
 });
+
+// Storage admission can defer a derived upload after append has committed its
+// canonical payload. The queued host eviction quiesces old replies and the
+// existing restore path rebuilds the complete latest scene, never a prefix.
+for (const name of ["_applyAppend", "_onKernelMsg"] as const) {
+  const apply = ChartView.prototype[name];
+  ChartView.prototype[name] = function (...args) {
+    try { return apply.apply(this, args); }
+    catch (error) { if (!(error instanceof GPUAdmissionPending)) throw error; }
+  };
+}

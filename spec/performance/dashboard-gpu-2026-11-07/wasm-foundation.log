@@ -1,0 +1,110 @@
+direct-browser density policy [{"point_count":1000000,"tier":"density","n_marks":196608,"pyramid_eligible":false,"wasm_eligible":true,"attach_sample":true,"ship_wasm_source":false,"canonical_f64_bytes":0,"total_bytes_max":266240},{"point_count":100000000,"tier":"density","n_marks":196608,"pyramid_eligible":true,"wasm_eligible":false,"attach_sample":true,"ship_wasm_source":false,"canonical_f64_bytes":0,"total_bytes_max":266240}]
+TAP version 13
+# Subtest: exact host pan persists through a later continuation
+ok 1 - exact host pan persists through a later continuation
+  ---
+  duration_ms: 2.355367
+  type: 'test'
+  ...
+# Subtest: reject no-op camera
+ok 2 - reject no-op camera
+  ---
+  duration_ms: 1.256209
+  type: 'test'
+  ...
+# Subtest: reject wrong translation
+ok 3 - reject wrong translation
+  ---
+  duration_ms: 0.368736
+  type: 'test'
+  ...
+# Subtest: reject corrupt component
+ok 4 - reject corrupt component
+  ---
+  duration_ms: 0.343371
+  type: 'test'
+  ...
+# Subtest: reject changed scale
+ok 5 - reject changed scale
+  ---
+  duration_ms: 0.233039
+  type: 'test'
+  ...
+# Subtest: reject untrusted callback
+ok 6 - reject untrusted callback
+  ---
+  duration_ms: 0.168965
+  type: 'test'
+  ...
+# Subtest: reject terminal callback
+ok 7 - reject terminal callback
+  ---
+  duration_ms: 0.229663
+  type: 'test'
+  ...
+# Subtest: reject no later continuation
+ok 8 - reject no later continuation
+  ---
+  duration_ms: 0.171219
+  type: 'test'
+  ...
+# Subtest: reject same-step reset before valid continuation
+ok 9 - reject same-step reset before valid continuation
+  ---
+  duration_ms: 0.624249
+  type: 'test'
+  ...
+# Subtest: reject regressed-step reset before valid continuation
+ok 10 - reject regressed-step reset before valid continuation
+  ---
+  duration_ms: 0.531656
+  type: 'test'
+  ...
+# Subtest: reject equal-clock reset before valid continuation
+ok 11 - reject equal-clock reset before valid continuation
+  ---
+  duration_ms: 0.377921
+  type: 'test'
+  ...
+# Subtest: reject invalid reply ordinal
+ok 12 - reject invalid reply ordinal
+  ---
+  duration_ms: 0.160945
+  type: 'test'
+  ...
+# Subtest: reject fractional reply ordinal
+ok 13 - reject fractional reply ordinal
+  ---
+  duration_ms: 0.138737
+  type: 'test'
+  ...
+# Subtest: reject missing reply ordinal
+ok 14 - reject missing reply ordinal
+  ---
+  duration_ms: 0.818553
+  type: 'test'
+  ...
+# Subtest: reject late camera reset
+ok 15 - reject late camera reset
+  ---
+  duration_ms: 0.194938
+  type: 'test'
+  ...
+# Subtest: reject final camera reset
+ok 16 - reject final camera reset
+  ---
+  duration_ms: 0.228215
+  type: 'test'
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 16
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 70.695049
+PASS public-resource-refusals-unchanged-arenas
+PASS public-1k-unheld-pick-camera-isolation-cleanup
+strict-CSP local-only WASM worker lifecycle smoke passed (source dist)

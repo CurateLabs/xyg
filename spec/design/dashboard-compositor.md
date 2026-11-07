@@ -46,18 +46,53 @@ figures as logical allocation diagnostics.
 
 ## Applied shared-context admission
 
-The first applied resource class is each shared-host chart's lazily rebuilt
-RGBA8 picking attachment. The browser reports its exact requested backing
-bytes (`width * height * 4`), visibility, interaction activity, and monotonic
-last-use value to the Rust `XYDP` planner. Last use advances on active picking
-and hover/interaction independently of visibility observation, so using one of
-two already-visible charts makes that chart the more recent admission candidate.
-A returned `ChartView` exposes
-`applyDashboardResourceBudget(worker, budgetBytes)`; its underlying
-`applyWasmDashboardResourceBudget` boundary applies Rust's retain bits to all registered clients on that `GLHost` and
-returns frozen logical `beforeBytes`/`afterBytes` diagnostics. An evicted pick
-texture and framebuffer are deleted immediately; the next pick recreates them
-from the unchanged canonical Scene while preserving source identity.
+All shared ChartView and retained graph painter buffer/texture storage goes
+through the host's object-identity ledger. It records requested buffer capacity
+(including stream reallocation), RGBA8/R8 density and tile textures, integer
+graph references, LUTs and picking. Aliases do not create allocations. Zero-byte
+object counts include client programs, VAOs and FBOs; shader driver storage is
+opaque. Shared quad storage and the grow-only RGBA canvas backing are charged
+once to the host. Depth and stencil backing are disabled. Physical VRAM,
+implementation padding, driver retirement and Canvas2D presentation storage are
+not measured by this GPU logical-storage budget.
+
+`applyDashboardResourceBudget(worker, budgetBytes, perChartBudgetBytes?)` and
+`watchDashboardResourceBudget` apply hierarchical whole-chart admission using
+the existing Rust XYDP planner. Where a per-chart cap is tighter than the
+available global capacity, Rust first admits each whole chart against that cap,
+then ranks eligible charts against the remaining global capacity. TypeScript
+only maps these decisions back to the original exact snapshot.
+
+Activation freezes allocation growth synchronously before sending a plan.
+Allocations made before opt-in are reported in `beforeBytes`; activation is not
+retroactive hard-budget compliance. After successful application, reservations
+plus the shared backing fit the global budget. Each storage request must fit
+its chart reservation **before** WebGL sees it, conservatively reserving both
+old and new stores during replacement. Larger demand is reported for a fresh
+Rust plan and the chart is suspended. This prevents unbounded allocation while
+the worker is delayed. A budget below existing grow-only shared backing fails
+explicitly. A larger host backing requires enough budget for that backing plus
+all outstanding chart reservations before canvas growth can occur.
+
+Eviction quiesces the existing context-loss lifecycle, deletes all client
+objects (including unpublished partial builds), and retains canonical payload,
+view and accessible DOM. The Canvas2D picture remains until a complete fresh
+paint. Shared views preserve a Canvas2D stand-in before eviction or context
+loss, and only a successful full rebuild retires it; a larger append whose
+first reservation is insufficient keeps that last accepted picture throughout
+failed readmission attempts. The original shared Canvas2D surface remains
+visible and keyboard-focusable below the pointer-transparent stand-in. This
+preserves the saved picture even if custom CSS gives the input canvas an opaque
+background, without removing the chart's input target. Suspended
+charts cannot return stale picks. Active
+use updates Rust's recency input even while suspended, including retained-graph
+paint requests before the host checks their current admission. Retention reuses the existing restore
+lifecycle and schedules the current view again. Desired capacity is a
+conservative high-water reservation until chart removal; it is deliberately
+distinct from resident bytes. `storageSnapshot()` exposes resident requested
+storage, object counts, shared bytes and context count, with opaque driver bytes
+explicitly unknown. The registry protocol is v2 because old duplicate bundles
+cannot satisfy this storage contract.
 
 Planning is asynchronous, so application is conditional on an exact host
 snapshot. Membership, byte size, visibility, interaction, or last-use drift
@@ -113,15 +148,43 @@ nor predicts retain bits, and every mutation still passes through the exact
 snapshot check and Rust-returned residency vector. Invalid budgets fail before
 a listener is installed; disposal removes the listener and prevents later
 plans. The explicit one-shot application remains available for hosts that own
-their scheduling.
+their scheduling. Context loss clears invalid GPU objects and measurements,
+but preserves the Rust-approved byte reservations for surviving clients.
+Rebuilding the same resource set therefore works without a watcher or a second
+admission call. Larger payloads still require fresh Rust admission; keeping a
+reservation does not permit growth beyond its recorded limit.
 
 ## Current slice and remaining closure
 
-The delivered foundation establishes the safe Rust policy, direct-WASM packed
-boundary, explicit and opt-in automatically coordinated application to shared
-pick resources, and one shared frame queue for multi-chart WebGL execution. It
-does not yet claim a public default budget setting, native
-Python/Node orchestration, or the 30-chart acceptance evidence. Those remain
-required before #111 can close: complete buffer/texture accounting, context-loss recovery, rapid
-mount/unmount and leak coverage, per-chart accessibility/focus verification,
-and Chromium/WebKit dashboard reports.
+The GPU spine now applies whole-chart eviction and pre-allocation capacity
+reservations, rather than pick-only eviction. The focused hosted 32-chart
+pressure test is `scripts/dashboard_gpu_smoke.mjs`; it checks an independent
+GL-facing allocation oracle, hidden yield, active rebuild, refused capacity,
+per-chart caps, context loss and teardown. Existing fixed-capacity RGBA and DPR
+RGB/alpha assertions remain unchanged.
+
+Issue #111 remains open: native CPU/source/WASM accounting and hierarchical
+budgets, default budget selection, supported host parity and WebKit evidence,
+representative mixed-scale/LOD/tile/graph/selection/ARIA pressure journeys and
+interaction latency are not established by the small scatter pressure probe.
+The issue's historical Reflex requirement conflicts with the current supported
+consumer contract; it does not authorize a Reflex product surface. No competitor
+performance win or full milestone closure is claimed.
+
+
+### Admission ownership and watcher cancellation
+
+Each accepted global/per-chart budget request captures one host admission
+identity. Every Rust reply, retry and residency mutation validates that identity.
+A superseded request rejects with `xy: dashboard admission was superseded` and
+cannot restore its old budgets. Watchers retain the identity of their original
+budget intent across automatic passes. A later request supersedes that watcher
+and removes its subscription after rejection.
+
+Watcher disposal immediately cancels its pending coordinator work. After each
+asynchronous Rust stage, cancellation is checked before further commands or
+residency application. A delayed reply cannot evict or rebuild charts after
+disposal. Existing and future work uses the most recent admitted budget intent.
+The normal 32-chart allocation oracle covers held real-WASM replies, different
+global budgets, per-chart zero caps, cancelled per-chart plans and superseded
+watcher notifications.

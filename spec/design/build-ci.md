@@ -186,6 +186,10 @@ fixture. This extends the existing gate, without adding a workflow/job or
 changing package/runtime budgets. Staged-package and density-only foundation
 runs keep their stated scope. Complete fixture retained native/WASM byte parity
 runs in the existing `graph-session-wire.test.mjs` command.
+The same retained branch verifies actual dashboard GPU eviction, refusal retaining
+the accepted temporal camera/revision/pixels, and recovery of camera and Rust
+membership after readmission. Its document-wide budget is applied after the
+other temporal fixtures so those fixtures retain their original environment.
 
 The full source-checkout `node scripts/wasm_foundation_smoke.mjs` command also
 executes the bounded public browser graph scheduling regression via
