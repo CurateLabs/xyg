@@ -1,0 +1,103 @@
+{
+  "reviewedParent": "58ed99e499f385a19c8125b0af215a50913bcb9b",
+  "reviewComment": "https://github.com/CurateLabs/xyg/pull/1109#discussion_r4500181568",
+  "sourceSha256": {
+    "scripts/graph_session_controller_wasm_smoke.mjs": "244a927e23681bfc2ca6b5add6c295b83fcebaed2dd5103eeb3a48522188075f",
+    "scripts/verify_graph_progressive_camera.mjs": "995173453edaa6e47871e1be76c87774fa6105d5c4ba02890c8137d21270e666",
+    "js/test/graph-progressive-camera.test.mjs": "6d31295711b224081d6111276be2573b908557189d3d0bfd98736beb4f270142",
+    "tests/browser/graph_session_controller_page.mjs": "dfbf21ac796977e134e032b734b8eca6a3558ab233633c48c218ac38a5c49bae",
+    "spec/performance/graph-scheduling-worker-order-2026-11-07/README.md": "83d5df35a183a6339d445c87a20afe05b7606918d8448bc83b71fb8a366904bf"
+  },
+  "artifacts": {
+    "packages/xy-client/dist/index.js": {
+      "bytes": 804132,
+      "sha256": "09144e0e40a7c278a7a103a96bdde3b7ae73e3d71b3fdf367a1353ddbad1b80d"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 56051,
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1927032,
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "303b39e33590f6b2dd65aefeaefd1714088414cb515a0817c6d3fa04c7489d3e"
+    }
+  },
+  "logs": {
+    "before": {
+      "argv": [
+        "node",
+        "scripts/graph_session_controller_wasm_smoke.mjs"
+      ],
+      "exitCode": 1,
+      "rawSha256": "3c2cfa5cefe82b5444188073634395ad95c3dac659d53e43a7f5c6e42acf9901",
+      "archiveSha256": "59dafb0c6059c48e252c93b5b58f40250a305cd81bf284cb6ab9fbee1972b935",
+      "environmentOverrides": {
+        "XYG_GRAPH_SCHEDULING_ONLY": "1"
+      }
+    },
+    "after": {
+      "argv": [
+        "node",
+        "scripts/graph_session_controller_wasm_smoke.mjs"
+      ],
+      "exitCode": 0,
+      "rawSha256": "977eec4f13ec9622d4192c4742d52219b8bcf602793008771c30c16a5cc84238",
+      "archiveSha256": "808ec90984496ab85d3b92be5172a384543a028f30644a3fbfb4b760d9ca834b",
+      "environmentOverrides": {
+        "XYG_GRAPH_SCHEDULING_ONLY": "1",
+        "XYG_GRAPH_SESSION_REPORT": "target/task-tmp/m4-worker-order/report.json"
+      }
+    },
+    "camera-units": {
+      "argv": [
+        "node",
+        "--test",
+        "js/test/graph-progressive-camera.test.mjs"
+      ],
+      "exitCode": 0,
+      "rawSha256": "65b712dcd06e3e9dc37368755f3f2f726b11773399633eb62b762ebd9aba8316",
+      "archiveSha256": "5c1a873dc5a96b390eda84d843f109d435b1ea5033e64d2cca0efb9fb9fe879f"
+    },
+    "foundation": {
+      "argv": [
+        "node",
+        "scripts/wasm_foundation_smoke.mjs"
+      ],
+      "exitCode": 0,
+      "rawSha256": "73ab0ea2b66eb9d2a0ab49f38b223829ba0b6262bfbc5eb9f282465baf7306a6",
+      "archiveSha256": "d2fafbde25762ee8a76e565d60bff03f94be6aad6f6a86b490b9d405d62d2ff0"
+    }
+  },
+  "captures": {
+    "report.json.7101.intermediate.png": {
+      "sha256": "92bd17cb68576bb1d9f3e9a52b2d3881992ce731034891e38156d27287b29c90"
+    },
+    "report.json": {
+      "rawSha256": "1236024ddf0496414cc119d859a75f08c3f41eeb5dbd77f7d107df8f32f2f8f2",
+      "archiveSha256": "99eae29a1ba82b18ec3d7b9befc8ed397fbedb4a0c548778a9c72bb7d3b082bb"
+    },
+    "report.json.7101.final.png": {
+      "sha256": "ab52f8b21edf99ed47d8d8e117e859f52e75bcd9e776b944bab01bb73e811225"
+    },
+    "report.json.7101.initial.png": {
+      "sha256": "d378702d8644f2616909d71978479b0b684f4477871e68316d5c9280d88a52e9"
+    },
+    "report.json.7102.final.png": {
+      "sha256": "4453d9610a62a79b6a900bf2a3d67145ea2e95cf799286690cff9365a63ff06b"
+    },
+    "report.json.7102.intermediate.png": {
+      "sha256": "86b4b1cb20b0aa65ade77479d6b17599e09123b660ceb57eae6bbd0054f4f5db"
+    },
+    "report.json.7102.initial.png": {
+      "sha256": "d378702d8644f2616909d71978479b0b684f4477871e68316d5c9280d88a52e9"
+    }
+  },
+  "environment": {
+    "node": "v22.23.4",
+    "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+  }
+}

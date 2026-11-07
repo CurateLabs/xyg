@@ -1,0 +1,59 @@
+{
+  "reviewedParent": "13b2a5be351e8ff5f191e8f65e8289c36847f186",
+  "sourceSha256": {
+    "scripts/verify_graph_progressive_camera.mjs": "995173453edaa6e47871e1be76c87774fa6105d5c4ba02890c8137d21270e666",
+    "js/test/graph-progressive-camera.test.mjs": "6d31295711b224081d6111276be2573b908557189d3d0bfd98736beb4f270142",
+    "scripts/graph_session_controller_wasm_smoke.mjs": "58b05ba5505cebe479fa9c0b9e26a8628f66fa13f74be42b9c4321de955032e6",
+    "spec/performance/graph-camera-retention-all-frames-2026-11-07/README.md": "6c8faa113214d3188da6e2e634062f1e10ada185b9b05619e1ee8cf5a11b2633"
+  },
+  "artifacts": {
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "sha256": "dbae96bb9f476d5368a9ca966e554d2dea36df7bb8ff739a5d3e712e9aefa41d",
+      "bytes": 2124856
+    },
+    "packages/xy-client/dist/index.js": {
+      "sha256": "09144e0e40a7c278a7a103a96bdde3b7ae73e3d71b3fdf367a1353ddbad1b80d",
+      "bytes": 804132
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+      "bytes": 56051
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1",
+      "bytes": 1927032
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "sha256": "303b39e33590f6b2dd65aefeaefd1714088414cb515a0817c6d3fa04c7489d3e",
+      "bytes": 226
+    }
+  },
+  "logs": {
+    "unit-final": {
+      "command": "node --test js/test/graph-progressive-camera.test.mjs",
+      "exitCode": 0,
+      "rawSha256": "e7af314ed3a4705845ed10d851098b9d323a9475be81c63521935d68495369e2",
+      "archiveSha256": "8fffef76117cc6397110cd5ecee6390a33914b730986a730022421134ae68c78"
+    },
+    "foundation-final": {
+      "command": "XYG_GRAPH_SCHEDULING_REPORT=target/task-tmp/scheduling-all-frames/report-final.json node scripts/wasm_foundation_smoke.mjs",
+      "exitCode": 0,
+      "rawSha256": "9794b511547b3e92186ee7a1c94c915d801598a75e23f655377741876973911a",
+      "archiveSha256": "8c891239da2dc968c0daa460207f73002aef6263217040a2129a9ec9a70b9e53"
+    }
+  },
+  "report": {
+    "rawSha256": "4cc6523b4e3b175ec095f5b0a61e153b2a3ee3d826f7c8a7406ad4ac97fa6ace",
+    "archiveSha256": "bc07a3a37a0edff5c348fe477bd4cb0928f1707c618503164d774fe6c57a37a9"
+  },
+  "captures": {
+    "report-final.json.7102.final.png": "4453d9610a62a79b6a900bf2a3d67145ea2e95cf799286690cff9365a63ff06b",
+    "report-final.json.7102.initial.png": "d378702d8644f2616909d71978479b0b684f4477871e68316d5c9280d88a52e9",
+    "report-final.json.7101.initial.png": "d378702d8644f2616909d71978479b0b684f4477871e68316d5c9280d88a52e9",
+    "report-final.json.7101.final.png": "44f583e3919388f6f5862b6d7c89234a36ae0ccce0acd7b185b3675c3bf18c3c",
+    "report-final.json.7102.intermediate.png": "86b4b1cb20b0aa65ade77479d6b17599e09123b660ceb57eae6bbd0054f4f5db",
+    "report-final.json.7101.intermediate.png": "537a6dfafbf78bfed38eb069fef836a0f44e694d6324045aa07beeda854b0497"
+  },
+  "node": "v22.23.4",
+  "limits": "Host-button route, two explicit384MiB 1k views; no scope expansion. Hook logs ignored."
+}

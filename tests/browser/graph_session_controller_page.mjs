@@ -305,11 +305,22 @@ state.progressiveFixture = async (count, id, load = {}, arena = count===1000 ? 3
   const nodes = new Uint8Array(count*16), edges = new Uint8Array(count*16);
   for (let i=0;i<count;i++) { new DataView(nodes.buffer).setUint32(i*16,i+1,true); new DataView(edges.buffer).setUint32(i*16,i+10001,true); }
   const document = encodeContainer('XYGF', [f('status','u32',[0]),f('kind','utf8','graph'),f('composition.version','u32',[2]),f('node.uuid','uuid',nodes),f('edge.uuid','uuid',edges),f('edge.derived','u8',Array(count).fill(0)),f('edge.layer','u32',Array(count).fill(0xffffffff)),f('edge.order','i64',Array(count).fill(-1n)),f('edge.path','u64',Array(count).fill(0xffffffffffffffffn)),f('edge.source','u64',Array.from({length:count},(_,i)=>BigInt(i))),f('edge.target','u64',Array.from({length:count},(_,i)=>BigInt((i+1)%count))),f('graph.directed','u8',[0])]);
-  const worker=makeWorker(undefined, arena); await worker.ready;
-  const el=container(), p={id,el,worker,frames:[],errors:[],beats:0,document,load:{progressive:true,...load},camera:[count===1000?.25:25,count===1000?.25:25,320,160,640,320,1]};
+  const started=performance.now();const worker=makeWorker(undefined, arena); await worker.ready;const workerReady=performance.now();
+  const el=container(), p={id,el,worker,started,workerReady,frames:[],errors:[],beats:0,document,load:{progressive:true,...load},camera:[count===1000?.25:25,count===1000?.25:25,320,160,640,320,1]};
   state.progressives ??= []; state.progressives.push(p);
-  el.addEventListener('xy:graph-render',e=>p.frames.push({at:performance.now(),revision:e.detail.revision,progress:e.detail.relayout,pixels:state.pixel(el).filter((v,i)=>i%4===3&&v>0).length}));
+  el.addEventListener('xy:graph-render',e=>p.frames.push({at:performance.now(),revision:e.detail.revision,progress:e.detail.relayout,camera:[...e.detail.camera],pixels:state.pixel(el).filter((v,i)=>i%4===3&&v>0).length}));
   for(const kind of ['error','stale']) el.addEventListener(`xy:graph-${kind}`,e=>p.errors.push(e.detail));
+  p.painted=[]; p.clicks=[]; p.captures={};
+  el.addEventListener('xy:graph-render',()=>requestAnimationFrame(()=>{
+    if(!el.isConnected||!p.handle?.snapshot())return;
+    const pixels=state.pixel(el);let hash=2166136261,nonzero=0;
+    for(let i=0;i<pixels.length;i++){hash=Math.imul(hash^pixels[i],16777619)>>>0;if(i%4===3&&pixels[i]>0)nonzero++;}
+    const progress=p.handle.snapshot().relayout;
+    p.painted.push({at:performance.now(),progress,hash,pixels:nonzero});
+    const stage=progress?.done?'final':BigInt(progress?.steps??0)>=100n?'intermediate':'initial';
+    if(!p.captures[stage])p.captures[stage]=el.querySelector('canvas').toDataURL('image/png');
+  }));
+  el.addEventListener('click',e=>{if(e.isTrusted&&e.target.tagName==='CANVAS')p.clicks.push({at:performance.now(),trusted:e.isTrusted,prevented:e.defaultPrevented,progress:p.handle.snapshot()?.relayout});});
   p.heartbeats=[]; p.trusted=[];
   el.addEventListener('keydown',e=>{if(e.isTrusted)p.trusted.push({key:e.key,at:performance.now(),progress:p.handle.snapshot()?.relayout,prevented:e.defaultPrevented});});
   p.timer=setInterval(()=>{p.beats++;p.heartbeats.push(performance.now());},5);
