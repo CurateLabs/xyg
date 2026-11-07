@@ -1,0 +1,421 @@
+{
+  "environment": "README reproduction block; early runs used the explicitly pinned native405 and Python 3.11 paths; final runs use this checkout fresh native and uv Python environment",
+  "commands": [
+    {
+      "log": "logs/bound-provenance.log.gz",
+      "command": "python -m pytest tests/test_chunked_live.py -q",
+      "exit": 1
+    },
+    {
+      "log": "logs/browser.log.gz",
+      "command": "python -m pytest tests/test_chunked_live.py -q",
+      "exit": 1
+    },
+    {
+      "log": "logs/browser2.log.gz",
+      "command": "python -m pytest tests/test_chunked_live.py -q",
+      "exit": 1
+    },
+    {
+      "log": "logs/browser3.log.gz",
+      "command": "python -m pytest tests/test_chunked_live.py -q",
+      "exit": 1
+    },
+    {
+      "log": "logs/browser4.log.gz",
+      "command": "python -m pytest tests/test_chunked_live.py -q",
+      "exit": 0
+    },
+    {
+      "log": "logs/build-final.log.gz",
+      "command": "node js/build.mjs",
+      "exit": 0
+    },
+    {
+      "log": "logs/build.log.gz",
+      "command": "node js/build.mjs",
+      "exit": 0
+    },
+    {
+      "log": "logs/build2.log.gz",
+      "command": "node js/build.mjs",
+      "exit": 0
+    },
+    {
+      "log": "logs/build3.log.gz",
+      "command": "node js/build.mjs",
+      "exit": 0
+    },
+    {
+      "log": "logs/build4.log.gz",
+      "command": "node js/build.mjs",
+      "exit": 0
+    },
+    {
+      "log": "logs/build5.log.gz",
+      "command": "node js/build.mjs",
+      "exit": 0
+    },
+    {
+      "log": "logs/build6.log.gz",
+      "command": "node js/build.mjs",
+      "exit": 0
+    },
+    {
+      "log": "logs/causal-final.log.gz",
+      "command": "python -m pytest tests/test_chunked_live.py -q",
+      "exit": 0
+    },
+    {
+      "log": "logs/default-overview-final.log.gz",
+      "command": "python -m pytest tests/test_chunked_live.py -q",
+      "exit": 1
+    },
+    {
+      "log": "logs/delivery-final.log.gz",
+      "command": "python -m pytest tests/test_chunked_live.py -q",
+      "exit": 0
+    },
+    {
+      "log": "logs/final-causal.log.gz",
+      "command": "python -m pytest tests/test_chunked_live.py -q",
+      "exit": 0
+    },
+    {
+      "log": "logs/final-focused.log.gz",
+      "command": "python -m pytest tests/test_chunked_live.py -q",
+      "exit": 0
+    },
+    {
+      "log": "logs/focused.log.gz",
+      "command": "python -m pytest tests/test_chunked_live.py tests/test_chunked_columns.py -q",
+      "exit": 2
+    },
+    {
+      "log": "logs/focused2.log.gz",
+      "command": "python -m pytest tests/test_chunked_live.py tests/test_chunked_columns.py -q",
+      "exit": 2
+    },
+    {
+      "log": "logs/focused3.log.gz",
+      "command": "python -m pytest tests/test_chunked_live.py -q",
+      "exit": 0
+    },
+    {
+      "log": "logs/format-commit.log.gz",
+      "command": "uv run ruff format --check .",
+      "exit": 0
+    },
+    {
+      "log": "logs/format-final.log.gz",
+      "command": "uv run ruff format --check .",
+      "exit": 0
+    },
+    {
+      "log": "logs/format-final2.log.gz",
+      "command": "uv run ruff format --check .",
+      "exit": 0
+    },
+    {
+      "log": "logs/format-full-initial.log.gz",
+      "command": "uv run ruff format --check .",
+      "exit": 1
+    },
+    {
+      "log": "logs/format.log.gz",
+      "command": "uv run ruff format (changed Python files)",
+      "exit": 0
+    },
+    {
+      "log": "logs/format10.log.gz",
+      "command": "uv run ruff format (changed Python files)",
+      "exit": 0
+    },
+    {
+      "log": "logs/format11.log.gz",
+      "command": "uv run ruff format (changed Python files)",
+      "exit": 0
+    },
+    {
+      "log": "logs/format12.log.gz",
+      "command": "uv run ruff format (changed Python files)",
+      "exit": 0
+    },
+    {
+      "log": "logs/format2.log.gz",
+      "command": "uv run ruff format (changed Python files)",
+      "exit": 0
+    },
+    {
+      "log": "logs/format3.log.gz",
+      "command": "uv run ruff format (changed Python files)",
+      "exit": 0
+    },
+    {
+      "log": "logs/format4.log.gz",
+      "command": "uv run ruff format (changed Python files)",
+      "exit": 0
+    },
+    {
+      "log": "logs/format5.log.gz",
+      "command": "uv run ruff format (changed Python files)",
+      "exit": 0
+    },
+    {
+      "log": "logs/format6.log.gz",
+      "command": "uv run ruff format (changed Python files)",
+      "exit": 0
+    },
+    {
+      "log": "logs/format7.log.gz",
+      "command": "uv run ruff format (changed Python files)",
+      "exit": 0
+    },
+    {
+      "log": "logs/format8.log.gz",
+      "command": "uv run ruff format (changed Python files)",
+      "exit": 0
+    },
+    {
+      "log": "logs/format9.log.gz",
+      "command": "uv run ruff format (changed Python files)",
+      "exit": 0
+    },
+    {
+      "log": "logs/hooks-final.log.gz",
+      "command": "uv run --with pre-commit pre-commit run --all-files",
+      "exit": 0
+    },
+    {
+      "log": "logs/hooks1.log.gz",
+      "command": "uv run --with pre-commit pre-commit run --all-files",
+      "exit": 0
+    },
+    {
+      "log": "logs/inventory-final.log.gz",
+      "command": "uv run python scripts/check_release_inventory.py --write",
+      "exit": 0
+    },
+    {
+      "log": "logs/inventory-final2.log.gz",
+      "command": "uv run python scripts/check_release_inventory.py --write",
+      "exit": 0
+    },
+    {
+      "log": "logs/inventory-last.log.gz",
+      "command": "uv run python scripts/check_release_inventory.py --write",
+      "exit": 0
+    },
+    {
+      "log": "logs/inventory.log.gz",
+      "command": "uv run python scripts/check_release_inventory.py --write",
+      "exit": 0
+    },
+    {
+      "log": "logs/inventory2.log.gz",
+      "command": "uv run python scripts/check_release_inventory.py --write",
+      "exit": 0
+    },
+    {
+      "log": "logs/native-build.log.gz",
+      "command": "cargo build --release -p xyg-core",
+      "exit": 0
+    },
+    {
+      "log": "logs/negative-positive.log.gz",
+      "command": "python -m pytest tests/test_chunked_live.py -q",
+      "exit": 0
+    },
+    {
+      "log": "logs/node-final.log.gz",
+      "command": "node --test packages/xy-node/test/chunked-live.test.mjs",
+      "exit": 0
+    },
+    {
+      "log": "logs/node-lifetime.log.gz",
+      "command": "node --test packages/xy-node/test/chunked-live.test.mjs",
+      "exit": 0
+    },
+    {
+      "log": "logs/node-proof-final.log.gz",
+      "command": "node --test packages/xy-node/test/chunked-live.test.mjs",
+      "exit": 0
+    },
+    {
+      "log": "logs/node.log.gz",
+      "command": "node --test packages/xy-node/test/chunked-live.test.mjs",
+      "exit": 0
+    },
+    {
+      "log": "logs/node6.log.gz",
+      "command": "node --test packages/xy-node/test/chunked-live.test.mjs",
+      "exit": 0
+    },
+    {
+      "log": "logs/npm-node.log.gz",
+      "command": "npm ci --prefix packages/xy-node",
+      "exit": 0
+    },
+    {
+      "log": "logs/npm.log.gz",
+      "command": "npm ci",
+      "exit": 0
+    },
+    {
+      "log": "logs/overview2048.log.gz",
+      "command": "python -m pytest tests/test_chunked_live.py -q",
+      "exit": 0
+    },
+    {
+      "log": "logs/pick-callbacks.log.gz",
+      "command": "python -m pytest tests/test_chunked_live.py -q",
+      "exit": 1
+    },
+    {
+      "log": "logs/pick-debug.log.gz",
+      "command": "python -m pytest tests/test_chunked_live.py -q -s (Python browser variant only)",
+      "exit": 1
+    },
+    {
+      "log": "logs/picks-final.log.gz",
+      "command": "python -m pytest tests/test_chunked_live.py -q",
+      "exit": 1
+    },
+    {
+      "log": "logs/picks2.log.gz",
+      "command": "python -m pytest tests/test_chunked_live.py -q",
+      "exit": 1
+    },
+    {
+      "log": "logs/playwright-install.log.gz",
+      "command": "uv pip install --python /home/ubuntu/.t3/worktrees/xyg/t3-150befc0/.venv/bin/python --target target/task-tmp/python-tools playwright",
+      "exit": 0
+    },
+    {
+      "log": "logs/playwright-lock.log.gz",
+      "command": "uv add --group dev 'playwright==1.61.1'",
+      "exit": 1
+    },
+    {
+      "log": "logs/playwright-lock2.log.gz",
+      "command": "uv add --group dev 'playwright==1.61.0'",
+      "exit": 0
+    },
+    {
+      "log": "logs/proof-final.log.gz",
+      "command": "python -m pytest tests/test_chunked_live.py -q",
+      "exit": 0
+    },
+    {
+      "log": "logs/pytest.log.gz",
+      "command": "python -m pytest tests/test_chunked_live.py -q",
+      "exit": 1
+    },
+    {
+      "log": "logs/pytest2.log.gz",
+      "command": "python -m pytest tests/test_chunked_live.py tests/test_chunked_columns.py -q",
+      "exit": 1
+    },
+    {
+      "log": "logs/python-regressions-final.log.gz",
+      "command": "uv run pytest tests/test_channel.py tests/test_widget.py tests/test_public_api.py tests/test_release_inventory.py tests/test_chunked_columns.py -q",
+      "exit": 0
+    },
+    {
+      "log": "logs/regressions-final.log.gz",
+      "command": "uv run pytest tests/test_channel.py tests/test_widget.py tests/test_public_api.py tests/test_release_inventory.py tests/test_chunked_columns.py -q",
+      "exit": 0
+    },
+    {
+      "log": "logs/regressions.log.gz",
+      "command": "uv run pytest tests/test_channel.py tests/test_widget.py tests/test_public_api.py tests/test_release_inventory.py tests/test_chunked_columns.py -q",
+      "exit": 0
+    },
+    {
+      "log": "logs/ruff-commit.log.gz",
+      "command": "uv run ruff check .",
+      "exit": 0
+    },
+    {
+      "log": "logs/ruff-final.log.gz",
+      "command": "uv run ruff check .",
+      "exit": 0
+    },
+    {
+      "log": "logs/ruff-final2.log.gz",
+      "command": "uv run ruff check .",
+      "exit": 0
+    },
+    {
+      "log": "logs/ruff-fix.log.gz",
+      "command": "uv run ruff check . --fix (focused changed Python files)",
+      "exit": 0
+    },
+    {
+      "log": "logs/ruff-full-initial.log.gz",
+      "command": "uv run ruff check .",
+      "exit": 0
+    },
+    {
+      "log": "logs/uv-sync.log.gz",
+      "command": "uv sync --python /home/ubuntu/.t3/worktrees/xyg/t3-150befc0/.venv/bin/python --group dev",
+      "exit": 0
+    },
+    {
+      "log": "logs/actual-provenance-final.log.gz",
+      "command": "uv run pytest tests/test_chunked_live.py -q",
+      "exit": 0
+    },
+    {
+      "log": "logs/build-hover.log.gz",
+      "command": "node js/build.mjs",
+      "exit": 0
+    },
+    {
+      "log": "logs/format-staged.log.gz",
+      "command": "full-worktree Ruff / pre-commit as named in log",
+      "exit": 0
+    },
+    {
+      "log": "logs/format13.log.gz",
+      "command": "full-worktree Ruff / pre-commit as named in log",
+      "exit": 0
+    },
+    {
+      "log": "logs/hooks-staged.log.gz",
+      "command": "full-worktree Ruff / pre-commit as named in log",
+      "exit": 0
+    },
+    {
+      "log": "logs/hover-regression-final.log.gz",
+      "command": "uv run pytest tests/test_chunked_live.py -q",
+      "exit": 0
+    },
+    {
+      "log": "logs/inventory-commit.log.gz",
+      "command": "uv run python scripts/check_release_inventory.py --write",
+      "exit": 0
+    },
+    {
+      "log": "logs/ruff-staged.log.gz",
+      "command": "full-worktree Ruff / pre-commit as named in log",
+      "exit": 0
+    },
+    {
+      "log": "logs/hooks-delivery.log.gz",
+      "command": "uv run --with pre-commit pre-commit run --all-files",
+      "exit": 0
+    },
+    {
+      "log": "logs/ruff-delivery.log.gz",
+      "command": "uv run ruff check .",
+      "exit": 0
+    },
+    {
+      "log": "logs/format-delivery.log.gz",
+      "command": "uv run ruff format --check .",
+      "exit": 0
+    }
+  ],
+  "inspection_failures": "Read-only rg/ls/sed against guessed missing paths returned 1/2; two malformed orchestration JavaScript snippets failed parsing before execution. No mutations. Shell source edits and fixture/evidence writes succeeded. Tool session exits are retained separately."
+}

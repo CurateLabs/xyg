@@ -287,3 +287,6 @@ selecting and closing each port separately can return the same port repeatedly.
 This is not an exclusive lease through packaging and process startup: an external
 process can still race later binding, which remains a failing startup. No browser
 assertion, timeout, host-isolation check or release gate is relaxed.
+
+Native chunked-chart viewport continuation and its remaining acceptance are specified
+in [the local native viewport contract](chunked-native-viewport.md).

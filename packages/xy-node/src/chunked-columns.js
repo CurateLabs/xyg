@@ -1,3 +1,4 @@
+import { ChunkedLiveHost } from "./chunked-live.js";
 import { scatterChart } from "./charts.js";
 /** Thin Node host for Rust-owned ordered Tier-3 XYGC range reads. */
 import {
@@ -95,6 +96,11 @@ export class ChunkedColumns {
     const chart = scatterChart(result.x, result.y);
     chart.sourceRowIds = result.rowIds;
     chart.sourceProvenance = {...result.provenance, path: this.path};
+    chart.liveHost = (send) => {
+      const source = new ChunkedColumns(this.path);
+      try { return new ChunkedLiveHost(source, chart, {budgetBytes,pageBytes,generation}, send); }
+      catch (error) { source.close(); throw error; }
+    };
     return chart;
   }
   cancelBefore(generation) {

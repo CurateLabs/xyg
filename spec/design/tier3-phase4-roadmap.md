@@ -404,3 +404,6 @@ receipt is `spec/performance/chunked-chart-snapshots-2026-11-07/README.md`.
 No larger-than-RAM, automatic live refinement, browser/WASM orchestration,
 competitive performance, remote-source or full #110/#109/#113 acceptance claim
 follows from this bounded snapshot integration.
+
+Native chunked-chart viewport continuation and its remaining acceptance are specified
+in [the local native viewport contract](chunked-native-viewport.md).

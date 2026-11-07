@@ -181,6 +181,18 @@ def _selection_reply(
                 "truncated": ids_truncated or rows_truncated,
             }
         )
+        source_ids = getattr(fig, "_chunked_row_ids", None)
+        if source_ids is not None:
+            # Exact u64 identities travel as binary, never JSON number lists.
+            message["canonical_row_ids"] = []
+            message["source_row_ids"] = []
+            for tid, indices in selected.items():
+                if tid == 0:
+                    exact = source_ids[indices]
+                    message["source_row_ids"].append(
+                        {"trace": tid, "buffer": len(out), "length": len(exact), "dtype": "u64"}
+                    )
+                    out.append(exact.tobytes())
         if kind == "box":
             message["bounds"] = dict(brush)
         elif kind == "lasso":
@@ -274,6 +286,12 @@ def handle_message(
             )
         except (KeyError, TypeError, ValueError, IndexError):
             return None
+        return None
+    if (
+        hasattr(fig, "_chunked_generation")
+        and kind in ("pick", "click", "select", "select_polygon", "select_clear")
+        and content.get("chunked_frame") != fig._chunked_generation
+    ):
         return None
     if kind == "pick":
         # Hover/click drill: exact f64 row from canonical (§16/§17). The

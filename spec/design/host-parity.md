@@ -2186,3 +2186,6 @@ provenance and full-artifact consistency. Native SVG/PNG/HTML and browser
 Scene/XYPB/SVG/HTML/PNG share these paths under the unchanged single-module
 package caps. PNG is byte-identical through the shared Rust raster/encoder. See [the versioned frozen contract](temporal-graph-frozen.md).
 Historical ABI402/403 acquisition/native receipts remain immutable.
+
+Native chunked-chart viewport continuation and its remaining acceptance are specified
+in [the local native viewport contract](chunked-native-viewport.md).

@@ -590,3 +590,6 @@ open; the bounded browser binding uses a dedicated ordinary Worker.
 identities and u8 validity into Rust. Only derived ordinary Scene/painter
 geometry uses floating coordinates. This is authoring ingress, not a new live
 message or a temporal JSON-number protocol.
+
+Native chunked-chart viewport continuation and its remaining acceptance are specified
+in [the local native viewport contract](chunked-native-viewport.md).

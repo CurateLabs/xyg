@@ -1,5 +1,5 @@
 import { GPUAdmissionPending } from "./41_gpu_storage";
-import { payloadBuffers } from "./00_header";
+import { payloadBuffers, payloadCoherent } from "./00_header";
 import { buildLutData } from "./10_colormaps";
 import { parseColor } from "./20_theme";
 import {
@@ -347,6 +347,47 @@ Object.assign(ChartView.prototype, {
   // changed. An affected direct scatter/line whose encoding is unchanged
   // updates GPU buffers in place with a tail-only upload; everything else
   // rebuilds. Payloads may use split or legacy packed layout.
+  // XYGC replacements retain the camera, original home, and history verbatim.
+  _applyChunkedFrame(msg, buffers) {
+    const spec = msg.spec;
+    if (!spec?.chunked || !payloadCoherent(spec, buffers)) return false;
+    const payload = payloadBuffers(spec, spec.buffer_layout === "split" ? buffers : buffers[0]);
+    const next = [];
+    const previousSpec = this.spec;
+    try {
+      this.spec = spec;
+      if (!this._glLost && this.gl) {
+        for (const trace of spec.traces) next.push(this._buildTrace(payload, trace));
+      }
+    } catch (error) {
+      const seen = new Set();
+      for (const trace of next) this._destroyTraceResources(trace, seen);
+      this._dispatchChartEvent("chunked_error", {message: String(error)});
+      return false;
+    } finally {
+      this.spec = previousSpec;
+    }
+    // Hover targets retain the old trace object. Retire them before deleting
+    // its buffers so a pending draw cannot dereference a freed pick anchor.
+    this._hideTooltip();
+    this._hoverTarget = null;
+    this._hoverId = -1;
+    this._lastHoverXY = null;
+    this._a11yKeyboardReadout = null;
+    const seen = new Set();
+    for (const trace of this.gpuTraces) this._destroyTraceResources(trace, seen);
+    this.spec = spec;
+    this._payload = payload;
+    this.gpuTraces = next;
+    this._pickSeq = (this._pickSeq || 0) + 1;
+    this._restoreSceneIds();
+    this._reapplyLegendVisibility();
+    this._updatePickable();
+    this.draw();
+    this._dispatchChartEvent("chunked_frame", {frame: spec.chunked.frame, view: this._eventView("refine")});
+    return true;
+  },
+
   _applyAppend(msg, buffers) {
     if (this._filterDashboard) { this._filterDashboard.invalidateSource(); return; }
     const spec = msg.spec;
@@ -672,6 +713,7 @@ Object.assign(ChartView.prototype, {
     if (this._destroyed) return;
     if (!msg) return;
     if ((this._glLost || (this._glHost && !this._glHost.clientAdmitted(this))) && msg.type !== "append" && msg.type !== "pick_result") return;
+    if (msg.chunked_frame !== undefined && msg.chunked_frame !== this.spec.chunked?.frame) return;
     if (msg.type === "tier_update") {
       if (msg.seq !== this.seq) return;
       for (const upd of msg.traces) {

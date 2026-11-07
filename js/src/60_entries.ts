@@ -124,8 +124,18 @@ export function render({ model, el }) {
   if (spec?.graph_host === true) return renderGraphHost({model,el,attachTicks:attachHostWasmTicks});
   if (spec?.geo_host === true) return renderGeoHost({model,el});
   const buffer = payloadBuffers(spec, model.get("buffers"));
+  const chunkedEpoch = String(model._xygChunkedMountEpoch = (model._xygChunkedMountEpoch || 0) + 1);
+  const chunkedMount = spec.chunked ? Array.from(crypto.getRandomValues(new Uint32Array(4))).join("-") : null;
+  let chunkedIntent = 0n;
+  let chunkedFrame = spec.chunked?.frame;
   const comm = {
-    send: (msg, buffers = []) => model.send(msg, {}, buffers),
+    send: (msg, buffers = []) => {
+      if (chunkedMount) {
+        msg = {...msg, mount: chunkedMount, chunked_frame: chunkedFrame};
+        if (msg.type === "view_change") msg.chunked_intent = String(++chunkedIntent);
+      }
+      model.send(msg, {}, buffers);
+    },
     // Read the live spec: appends re-sync it, and the transport flag must
     // survive them (it is re-applied kernel-side on every append).
     wantsViewChange: () => model.get("spec")?.interaction?._transport_view_change === true,
@@ -136,6 +146,25 @@ export function render({ model, el }) {
     },
   };
   const view = new ChartView(el, spec, buffer, comm);
+  if (chunkedMount) {
+    model.send({type: "chunked_mount", mount: chunkedMount, mount_epoch: chunkedEpoch}, {}, []);
+    const onChunkedFrame = (msg, buffers) => {
+      if (msg?.type !== "chunked_frame" || msg.mount !== chunkedMount) return;
+      const reject = () => model.send({type: "chunked_rejected", mount: chunkedMount,
+        intent: msg.intent, frame: msg.spec?.chunked?.frame}, {}, []);
+      if (msg.intent !== String(chunkedIntent)) { reject(); return; }
+      if (view._applyChunkedFrame(msg, buffers)) {
+        chunkedFrame = msg.spec.chunked.frame;
+        model.send({type: "chunked_painted", mount: chunkedMount,
+          intent: msg.intent, frame: chunkedFrame}, {}, []);
+      } else reject();
+    };
+    model.on("msg:custom", onChunkedFrame);
+    view._chunkedCleanup = () => {
+      model.off?.("msg:custom", onChunkedFrame);
+      model.send({type: "chunked_unmount", mount: chunkedMount}, {}, []);
+    };
+  }
   attachHostWasmTicks(view, spec);
   // Streaming append rides the spec+buffers trait update itself (§29): one
   // comm message per tick that doubles as notebook-reopen state. A fresh
@@ -165,6 +194,7 @@ export function render({ model, el }) {
   return () => {
     model.off?.("change:spec", onAppendState);
     model.off?.("change:buffers", onAppendState);
+    view._chunkedCleanup?.();
     view.destroy();
   };
 }
