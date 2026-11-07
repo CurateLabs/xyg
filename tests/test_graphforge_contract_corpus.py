@@ -12,7 +12,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 CURRENT_BINDINGS = Path(
-    "spec/performance/geo-native-temporal-binding-2026-11-06/current-bindings.json"
+    "spec/performance/geo-native-binding-lifecycle-2026-11-07/current-bindings.json"
 )
 
 

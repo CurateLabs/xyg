@@ -63,3 +63,18 @@ test('public aggregate binding returns exact native paged membership',async()=>{
   console.log(JSON.stringify({rows:n,elapsedMs:performance.now()-start,processMemory:process.memoryUsage(),chunkBytes:chunk.byteLength,packetBytes:frame.data.packet.byteLength}));
  }finally{await page?.dispose();await frame?.dispose();await binding.dispose();temporalControllerDestroy(h);await source.dispose();}
 });
+
+test('old unsubscribe cannot remove a resubscribed observer set',()=>{
+ const h=temporalControllerCreate({instanceId:23n,domainStart:-10n,domainEnd:10n,cursor:0n,window:0n,step:1n});
+ try{
+  const seen=[];
+  const old=temporalControllerSubscribeState(h,()=>assert.fail('old observer invoked'));
+  old();
+  const current=temporalControllerSubscribeState(h,s=>seen.push(s.cursor));
+  old();
+  temporalControllerSetCursor(h,3n);
+  assert.deepEqual(seen,[3n]);
+  current();current();temporalControllerSetCursor(h,4n);
+  assert.deepEqual(seen,[3n]);
+ }finally{temporalControllerDestroy(h);}
+});

@@ -449,6 +449,7 @@ class RetainedGeoSource:
 
     async def acancel(self):
         if self._active is not None and self._active is not asyncio.current_task():
+            self._cancel_generation += 1
             self._active.cancel()
         if not self._closed:
             await self._bridge.execute(
@@ -517,6 +518,7 @@ class RetainedGeoSource:
             return
         active = self._active
         if active is not None and active is not asyncio.current_task():
+            self._cancel_generation += 1
             active.cancel()
             with suppress(BaseException):
                 await g._settle(active)

@@ -17,7 +17,7 @@ class GeoTemporalBinding:
 
         if mode not in ("cursor", "range"):
             raise ValueError("mode must be cursor or range")
-        asyncio.get_running_loop()
+        self._loop = asyncio.get_running_loop()
         layer = chart._retained_layer()
         if layer is None or type(layer.source) is not RetainedGeoSource or chart.tile_session:
             raise ValueError("temporal binding requires one canonical retained points composition")
@@ -47,6 +47,19 @@ class GeoTemporalBinding:
         self._accept(controller.state)
 
     def _accept(self, state):
+        # Native controller notifications run on the mutating thread. Only the
+        # binding's owning loop may update intent or create coroutine tasks.
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop is not self._loop:
+            try:
+                self._loop.call_soon_threadsafe(self._accept, deepcopy(state))
+            except RuntimeError:
+                if not self._loop.is_closed():
+                    raise
+            return
         if self._closed:
             return
         if state["disposed"]:
@@ -78,6 +91,7 @@ class GeoTemporalBinding:
             generation = self._generation
             async with self._lock:
                 candidate = None
+                cancellation = self._source._cancel_generation
                 try:
                     if self._retiring is not None:
                         await self._retiring.aclose()
@@ -118,6 +132,16 @@ class GeoTemporalBinding:
                             self._retiring = old
                             await self._retiring.aclose()
                             self._retiring = None
+                except asyncio.CancelledError:
+                    if self._source._cancel_generation == cancellation:
+                        raise
+                    # Source cancellation is an operation failure, not cancellation
+                    # of callers waiting on this pump. Keep the last accepted lease.
+                    self.error = RuntimeError("geographic source read cancelled")
+                    if self._source._disposal is not None:
+                        self._detach()
+                        if _BINDINGS.get(self._source) is self:
+                            del _BINDINGS[self._source]
                 except Exception as error:
                     self.error = error.with_traceback(None)
             if generation == self._generation:

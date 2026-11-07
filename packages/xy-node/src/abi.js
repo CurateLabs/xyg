@@ -986,7 +986,13 @@ export function temporalControllerSubscribeState(handle, observer) {
   let observers = temporalObservers.get(handle);
   if(!observers) temporalObservers.set(handle, observers = new Set());
   observers.add(observer);
-  return () => { observers.delete(observer); if(!observers.size)temporalObservers.delete(handle); };
+  let subscribed = true;
+  return () => {
+    if(!subscribed)return;
+    subscribed = false;
+    observers.delete(observer);
+    if(!observers.size && temporalObservers.get(handle) === observers)temporalObservers.delete(handle);
+  };
 }
 function publishTemporalState(handle, disposed = false) {
   if(!temporalObservers.has(handle))return;

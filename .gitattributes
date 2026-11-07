@@ -76,3 +76,8 @@ packages/xy-node/src/index.js text eol=lf
 packages/xy-node/package.json text eol=lf
 tests/test_geo_temporal_binding.py text eol=lf
 packages/xy-node/test/geo-temporal-binding.test.mjs text eol=lf
+
+# Native binding lifecycle correction receipts.
+spec/performance/geo-native-binding-lifecycle-2026-11-07/*.json text eol=lf
+spec/performance/geo-native-binding-lifecycle-2026-11-07/*.md text eol=lf
+spec/performance/geo-native-binding-lifecycle-2026-11-07/*.gz -text

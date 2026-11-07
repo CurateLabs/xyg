@@ -257,7 +257,13 @@ sequence ownership; independently constructed sources can run concurrently.
 `when_idle` / `whenIdle` drains latest work. `aclose` / `dispose` unsubscribes,
 suppresses pending publication, drains admitted reads, and releases private
 owners. Controller disposal also initiates this cleanup; explicit binding cleanup
-awaits it. Independent snapshots survive either controller or binding disposal.
+awaits it. Independent snapshots survive either controller or binding disposal. Python controller notifications arriving from another thread dispatch to the
+binding's creating event loop before changing desired state or creating tasks.
+Source-initiated cancellation settles as a binding operation error and preserves
+the accepted snapshot; explicit binding cleanup still releases its private owner
+and source registration. Cancelling a caller waiting for idle does not cancel the
+admitted pump. Native Node unsubscribe closures are idempotent and cannot remove
+a later observer set for the same controller handle.
 The source remains caller-owned. Source disposal can make future queries fail
 without invalidating accepted snapshots. Static/batch compilation stays synchronous.
 Python sync readers run in a worker thread so the notebook event loop can accept

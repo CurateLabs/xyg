@@ -278,3 +278,121 @@ def test_concurrent_sources_and_controller_dispose_during_pending_read():
                 controller.close()
 
     asyncio.run(run())
+
+
+@pytest.mark.parametrize("action", ["close", "cancel"])
+def test_source_cancellation_preserves_snapshot_and_releases_binding(action):
+    from xyg._geo_temporal import _BINDINGS
+
+    async def run():
+        manifest, chunk = fixture_manifest()
+        entered, release = asyncio.Event(), asyncio.Event()
+        block = False
+
+        async def reader(_):
+            if block:
+                entered.set()
+                await release.wait()
+            return chunk
+
+        source = await xyg.RetainedGeoSource.create_async(manifest, reader, budget=BUDGET)
+        controller = xyg.TemporalController(instance_id=11, domain=(-10, 10))
+        q = query(source.info)
+        q.update(time_revision=0, camera_revision=0)
+        chart = xyg.geo_chart(
+            xyg.geo_layer(
+                "points", source=source, layer_id=U64, query=q, sequence=1, style=style()
+            ),
+            camera=q["camera"],
+        )
+        binding = chart.bind_temporal(controller)
+        leases = []
+        try:
+            await binding.when_idle()
+            _, first = await binding.snapshot()
+            leases.append(first)
+            block = True
+            controller.set_cursor(1)
+            await asyncio.wait_for(entered.wait(), 5)
+            waiter = asyncio.create_task(binding.when_idle())
+            await asyncio.sleep(0)
+            waiter.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await waiter
+            assert not binding._task.done()
+            closing = asyncio.create_task(
+                source.aclose() if action == "close" else source.acancel()
+            )
+
+            # Readers may drain after cancellation; acknowledge their exact read
+            # before expecting source disposal or binding settlement to finish.
+            async def cancelled():
+                while not binding._task.cancelling():
+                    await asyncio.sleep(0)
+
+            await asyncio.wait_for(cancelled(), 5)
+            release.set()
+            await closing
+            await binding.when_idle()
+            assert isinstance(binding.error, RuntimeError)
+            _, retained = await binding.snapshot()
+            leases.append(retained)
+            assert retained.data.identity == first.data.identity
+            if action == "cancel":
+                block = False
+                controller.set_cursor(2)
+                await binding.when_idle()
+                assert binding.error is None
+                _, latest = await binding.snapshot()
+                leases.append(latest)
+                assert latest.data.identity["time"]["instant"] == 2
+            await binding.aclose()
+            await binding.aclose()
+            assert source not in _BINDINGS
+            assert binding._frame is None
+            assert first.data.record(0)["feature_id"] == U64
+        finally:
+            release.set()
+            await binding.aclose()
+            for lease in leases:
+                await lease.aclose()
+            await source.aclose()
+            controller.close()
+
+    asyncio.run(run())
+
+
+def test_foreign_thread_controller_updates_and_disposal_use_owner_loop():
+    async def run():
+        manifest, chunk = fixture_manifest()
+        source = xyg.RetainedGeoSource(manifest, lambda _: chunk, budget=BUDGET)
+        controller = xyg.TemporalController(instance_id=12, domain=(-10, 10))
+        q = query(source.info)
+        q.update(time_revision=0, camera_revision=0)
+        chart = xyg.geo_chart(
+            xyg.geo_layer(
+                "points", source=source, layer_id=U64, query=q, sequence=1, style=style()
+            ),
+            camera=q["camera"],
+        )
+        binding = chart.bind_temporal(controller)
+        lease = None
+        try:
+            await binding.when_idle()
+            await asyncio.to_thread(controller.set_cursor, 3)
+            await binding.when_idle()
+            assert binding.error is None
+            _, lease = await binding.snapshot()
+            assert lease.data.identity["time"]["instant"] == 3
+            await asyncio.to_thread(controller.dispose)
+            await binding.aclose()
+            assert binding._frame is None
+            assert lease.data.record(0)["feature_id"] == U64
+        finally:
+            await binding.aclose()
+            if lease is not None:
+                await lease.aclose()
+            await source.aclose()
+            controller.close()
+
+    asyncio.run(run())
