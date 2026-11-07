@@ -65,15 +65,15 @@ export class FrozenTemporalGraph {
     if (handle!=null) check(xyTemporalGraphFrozenDestroy(handle));
   }
 }
-export function freezeTemporalGraph(handle, {revision, timezone, window = null, sessionHandle = 0n, renderRevision = 0, budgetBytes = MAX_PEAK}) {
+export function freezeTemporalGraph(handle, {revision, timezone, window: timeWindow = null, sessionHandle = 0n, renderRevision = 0, budgetBytes = MAX_PEAK}) {
   if (typeof timezone !== 'string') throw new TypeError('timezone must be a string');
   const zone = new TextEncoder().encode(timezone);
   if (zone.length > 128) throw new TemporalGraphError(-4);
-  if (window !== null && (!Array.isArray(window) || window.length !== 2)) throw new TypeError('window must be null or [start,end]');
+  if (timeWindow !== null && (!Array.isArray(timeWindow) || timeWindow.length !== 2)) throw new TypeError('window must be null or [start,end]');
   if (!Number.isInteger(renderRevision) || renderRevision < 0 || renderRevision > 0xffffffff) throw new TypeError('renderRevision must fit u32');
   const out = new BigUint64Array(1);
-  check(xyTemporalGraphFreeze(handle, scalar(revision,'revision'), window===null?0:1,
-    window===null?0n:scalar(window[0],'window start',true), window===null?0n:scalar(window[1],'window end',true),
+  check(xyTemporalGraphFreeze(handle, scalar(revision,'revision'), timeWindow===null?0:1,
+    timeWindow===null?0n:scalar(timeWindow[0],'window start',true), timeWindow===null?0n:scalar(timeWindow[1],'window end',true),
     ptr(zone),BigInt(zone.length),scalar(sessionHandle,'sessionHandle'),renderRevision,scalar(budgetBytes,'budgetBytes'),u64ptr(out)));
   return new FrozenTemporalGraph(issued,out[0]);
 }

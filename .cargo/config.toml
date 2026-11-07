@@ -1,8 +1,12 @@
 # Native release stays O3. The single browser module uses O2 and
 # bounded LLVM inlining; no feature/export/cap/runtime-limit reduction.
+# Keep names only through optimization for deterministic function grouping;
+# the pinned packaging pipeline strips them from the final module.
 # Shared-source filter/catalog packaging and runtime qualification is recorded
 # in spec/performance/filter-catalog-abi-union-2026-11-07/.
 # Same-source output/runtime/packaging evidence is append-only in
 # spec/performance/temporal-worker-export-2026-11-07/.
+# Combined ABI405 layout qualification is recorded in
+# spec/performance/combined-wasm-layout-2026-11-07/.
 [target.wasm32-unknown-unknown]
-rustflags = ["-C", "llvm-args=--inline-threshold=50", "-C", "opt-level=2"]
+rustflags = ["-C", "llvm-args=--inline-threshold=0", "-C", "opt-level=2", "-C", "strip=none"]

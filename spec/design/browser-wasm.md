@@ -1856,7 +1856,7 @@ package cap, layout/pick authority or runtime arena limit changes.
 
 ### Frozen graph single-module profile (WASM36)
 
-The target-only `.cargo/config.toml` selects Rust `opt-level=2` and LLVM inline
+The WASM36 qualification used target-only Rust `opt-level=2` and LLVM inline
 threshold50 for the single browser module. Native release remains O3. Fat LTO,
 one codegen unit, stripping, pinned Binaryen132 `-O3 --all-features`, exports,
 validation, 16/384-MiB runtime bounds, deadlines and the 1,927,168 raw / 786,432
@@ -1891,9 +1891,30 @@ native404 fixture bytes remain append-only predecessors; only top-level ABI
 metadata may change when the normal fixture generators run. New adapters reject
 older incompatible native/Worker ABIs rather than silently dropping a feature.
 
-The target compiler settings, native optimization, renderer, shared raster/PNG
-implementation and single-module size caps remain unchanged. Standalone parent
+At the initial combined source checkpoint, the target compiler settings, native
+optimization, renderer, shared raster/PNG implementation and single-module size
+caps were unchanged. Standalone parent
 measurements do not qualify the combination; fresh combined native/WASM builds,
 package-size checks, cross-host packets, Scene/painter exports and actual Worker
 journeys are required. Integration evidence is retained in
 [the combined receipt](../performance/frozen-combined-module-2026-11-07/README.md).
+
+### Combined module function layout (WASM38)
+
+The wasm32 producer uses O2 with LLVM inlining threshold 0 and retains compiler
+function names until the pinned Binaryen132 `-O3 --all-features` pass completes.
+It then orders functions by name and strips debug/name sections. This supersedes
+the historical threshold50/early-stripping setting for this combined module;
+native O3 and stripping, Rust1.96, fat LTO, codegen1, dependencies, public
+declarations, validation, runtime budgets and packaging limits remain unchanged.
+The final single module has all 68 function exports, no imports, and measures
+1,897,244 raw /784,226 Node22 gzip6 bytes against 1,927,168 /786,432 caps.
+
+The [layout qualification receipt](../performance/combined-wasm-layout-2026-11-07/README.md)
+preserves the over-cap baseline and compiler/layout attribution separately.
+Same-source admitted outputs match; runtime samples include slower cases and
+do not establish a speed or competitor win. A selective projection hint and
+error-copy outlining were not retained. No optional module, second renderer,
+missing export, validator bypass or larger allowance supplies the size fit.
+Matching producer paths and affected browser/native/WASM journeys remain the
+required evidence; package fit alone does not close any milestone or issue.
