@@ -9,6 +9,7 @@ try {
   await page.goto(pathToFileURL(`${process.argv[2]}/${kind}.html`).href);
   await page.waitForFunction(()=>window.temporalView?.gpuTraces?.length>0);
   assert.deepEqual(errors,[]);
+  assert.equal(await page.evaluate(()=>[globalThis.__cssInjected,globalThis.__titleInjected,globalThis.__bundleInjected].some(Boolean)),false);
   assert.equal(await page.evaluate(()=>window.temporalView.sceneStableId(0,0).toString()),'18446744073709551615');
   await page.screenshot({path:`${process.argv[2]}/${kind}.png`});
   await page.evaluate(()=>window.temporalView.destroy());await page.close();

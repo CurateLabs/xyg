@@ -233,3 +233,9 @@ packages/xy-node/test/fixtures/write_payload_attach_cross_host_fixtures.py text 
 packages/xy-node/test/fixtures/write_payload_chrome_cross_host_fixtures.py text eol=lf
 packages/xy-node/test/fixtures/write_payload_cross_host_fixtures.py text eol=lf
 tests/test_series_palette_cross_host.py text eol=lf
+
+# Catalog HTML escaping and export-size correction evidence.
+spec/temporal/evidence/46-export-repair/*.json text eol=lf
+spec/temporal/evidence/46-export-repair/*.md text eol=lf
+spec/temporal/evidence/46-export-repair/*.gz -text
+spec/temporal/evidence/46-export-repair/*.png -text

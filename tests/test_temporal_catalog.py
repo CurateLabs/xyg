@@ -1,6 +1,7 @@
 """Public exact temporal catalog regressions; no host timestamp float ingress."""
 
 import struct
+from html.parser import HTMLParser
 
 import pytest
 
@@ -83,3 +84,50 @@ def test_controller_snapshot_export_is_frozen():
         assert chart.to_svg() != before
         assert chart.to_svg() == chart.to_svg()
         assert chart.rows == ((-1, None, 1, 42),)
+
+
+@pytest.mark.parametrize(
+    "css",
+    [
+        "</style><script>globalThis.__cssInjected=1</script><style>",
+        "< /StYlE >",
+        "<!--hidden",
+    ],
+)
+def test_temporal_html_rejects_style_breakout_before_writing(css, tmp_path):
+    chart = xyg.temporal_chart("event", [(1, None, 1, 42)], domain=(0, 10), timezone="UTC")
+    path = tmp_path / "temporal.html"
+    with pytest.raises(ValueError, match="custom_css must not contain"):
+        chart.to_html(path, custom_css=css)
+    assert not path.exists()
+
+
+def test_temporal_html_uses_standalone_script_and_style_safeguards(monkeypatch):
+    from xyg import export
+
+    class Scripts(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.count = 0
+
+        def handle_starttag(self, tag, attrs):
+            self.count += tag == "script"
+
+    source = 'globalThis.__embedded="</script><script>globalThis.__injected=1</script>";'
+    monkeypatch.setattr(export, "_bundled_js", lambda _: source)
+    title = "</title><script>globalThis.__titleInjected=1</script>"
+    chart = xyg.temporal_chart(
+        "event", [(1, None, 1, 42)], domain=(0, 10), timezone="UTC", title=title
+    )
+    css = "#chart { background: #123456; }"
+    html = chart.to_html(custom_css=css)
+    parsed = Scripts()
+    parsed.feed(html)
+    assert parsed.count == 2  # Bundled code plus the ordinary painter bootstrap.
+    assert export._javascript_for_inline_script(source) in html
+    assert export._custom_css_block(css) in html
+    assert title not in html
+    assert "&lt;/title&gt;&lt;script&gt;" in html
+    assert f'content="{export._standalone_csp(wasm_ticks=False, density=False)}"' in html
+    with pytest.raises(TypeError, match="custom_css must be a string"):
+        chart.to_html(custom_css=123)

@@ -618,6 +618,6 @@ export function geoChart(...children) {
 export function temporalChart(kind, rows, opts) {
   const fig=figure({width:opts.width,height:opts.height,title:opts.title});
   const source=rows.map(row=>Object.freeze([...row]));
-  fig._temporalCompile=()=>temporalSceneCompile({...opts,kind,rows:source,width:fig.width,height:fig.height});
+  fig._temporalCompile=(width=fig.width,height=fig.height)=>temporalSceneCompile({...opts,kind,rows:source,width,height});
   return fig;
 }

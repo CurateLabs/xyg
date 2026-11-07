@@ -23,3 +23,20 @@ for(const kind of ['event','interval','gantt','line','bar','scatter'])test(`publ
  assert.equal(scene.length,retained.sceneBytes);
  assert.equal(digest(scene),retained.sceneSha256);
 });
+
+test('temporal static exports compile the requested size without mutating authoring',()=>{
+ for(const kind of ['event','interval','gantt','line','bar','scatter']){
+  const chart=temporalChart(kind,[[1n,4n,1,42n],[5n,8n,2,43n]],{domain:[0n,10n],timezone:'UTC'});
+  const original=Buffer.from(chart.toScene());
+  const authored=[chart.width,chart.height];
+  for(const [width,height] of [[450,210],[1200,600]]){
+   const svg=Buffer.from(chart.toSvg({width,height})).toString();
+   assert.match(svg,new RegExp('width="'+width+'"'));
+   assert.match(svg,new RegExp('height="'+height+'"'));
+   const png=Buffer.from(chart.toPng({width,height,scale:1}));
+   assert.equal(png.readUInt32BE(16),width);assert.equal(png.readUInt32BE(20),height);
+   assert.deepEqual([chart.width,chart.height],authored);
+   assert.deepEqual(Buffer.from(chart.toScene()),original);
+  }
+ }
+});

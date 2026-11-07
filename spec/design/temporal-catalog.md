@@ -96,6 +96,13 @@ changes; all product packet bytes and cases remain identical. Historical
 transition checks use the preserved bytes, and current wrong-version checks
 derive from the generated ABI rather than treating 402 as permanently wrong.
 
+Python temporal standalone HTML uses the ordinary custom-CSS breakout rejection,
+bundled-JavaScript script-data escaping, escaped title and offline CSP helpers.
+It rejects unsafe CSS before writing an artifact. Native static exports compile
+the Scene at the resolved export width/height in both Python and Node, then
+frame that same size in the ordinary StaticDocument. Export overrides do not
+mutate the authored Figure or future default-size Scenes.
+
 All #46 acceptance remains open beyond the bounded public path: screen-bounded
 LOD with complete membership/provenance, full host/WASM byte oracles, shared
 controller and transport-neutral channel integration, exact live picks,

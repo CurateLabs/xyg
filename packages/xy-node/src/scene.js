@@ -3406,7 +3406,7 @@ export function figureStaticDocument(figure, {
       throw new RangeError(`${label} must be a positive integer pixel count`);
     }
   }
-  if (figure._temporalCompile) return staticDocumentEncode({panels:[{scene:figure._temporalCompile(),x:0,y:0,width:documentWidth,height:documentHeight}],width:documentWidth,height:documentHeight,background,optimizePng});
+  if (figure._temporalCompile) return staticDocumentEncode({panels:[{scene:figure._temporalCompile(documentWidth,documentHeight),x:0,y:0,width:documentWidth,height:documentHeight}],width:documentWidth,height:documentHeight,background,optimizePng});
   const rootStyle = { ...(figure.style ?? {}) };
   const chrome = resolveStaticChromeStyle({
     hasTitle: Boolean(figure.title),

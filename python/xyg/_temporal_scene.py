@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import ctypes
+import html as _html
 import struct
 
 from . import _native, export
@@ -94,11 +95,16 @@ def compile_request(packet, budget):
 
 
 def html(figure, path=None, *, custom_css=None):
+    css = export._custom_css_block(custom_css)
+    script = export._javascript_for_inline_script(export._bundled_js("standalone"))
+    csp = export._standalone_csp(wasm_ticks=False, density=False)
+    title = _html.escape(figure.title or "xy")
     scene = figure.to_scene()
     painter = base64.b64encode(_native.scene_browser_painter(scene)).decode("ascii")
-    script = export._bundled_js("standalone")
     # Existing painter hydration and ChartView; no temporal geometry in the host.
-    document = f'''<!doctype html><html><head><meta charset="utf-8"><style>{custom_css or ""}</style></head><body><div id="chart"></div><script>{script}</script><script>
+    document = f'''<!doctype html><html><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="{csp}">
+<title>{title}</title>{css}</head><body><div id="chart"></div><script>{script}</script><script>
 const b=Uint8Array.from(atob("{painter}"), c=>c.charCodeAt(0));
 window.temporalView=xy.hydrateWasmPainter(document.getElementById('chart'), {{painter:b.buffer,memoryBytes:0}});
 </script></body></html>'''
