@@ -7,7 +7,7 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import * as native from "../src/native.js";
-import { graphProjectionCreate, graphProjectionDestroy, temporalGraphCreate, temporalGraphDestroy, temporalGraphFrame } from "../src/abi.js";
+import { graphProjectionCreate, graphProjectionDestroy, temporalColumnCreate, temporalColumnDestroy, temporalGraphCreate, temporalGraphDestroy, temporalGraphFrame } from "../src/abi.js";
 import { composeGraphForgeRequest, encodeGraphForgeRequest } from "../src/graphforge.js";
 import { DTYPE, decodeContainer, encodeContainer } from "../src/graphforge-container.js";
 
@@ -692,5 +692,44 @@ test("captured primary-click OPEN/Render/SelectAt requests replay full native/WA
   } finally {
     if(opened) { assert.equal(native.xyGraphforgeSessionDestroy(handle[0]),0); assert.equal(x.xyg_wasm_graphforge_session_close(wasm),0); }
     assert.equal(x.xyg_wasm_instance_dispose(wasm),0);
+  }
+});
+
+
+test("shared assertion-history retained renders preserve exact native/WASM bytes and UUID state", async () => {
+  const history=JSON.parse(fs.readFileSync(path.join(ROOT,"tests/fixtures/temporal/assertion-history.json")));
+  const ids=values=>Uint8Array.from(values.flatMap(v=>Array(16).fill(v)));
+  const nodes=ids(history.nodes),edges=ids(history.edges),sources=ids(history.sources),targets=ids(history.targets);
+  const document=encodeContainer("XYGF",[field("status","u32",[0]),field("kind","utf8","graph"),field("composition.version","u32",[2]),field("node.uuid","uuid",nodes),field("edge.uuid","uuid",edges),field("edge.derived","u8",[0,0]),field("edge.layer","u32",[0xffffffff,0xffffffff]),field("edge.order","i64",[-1n,-1n]),field("edge.path","u64",[0xffffffffffffffffn,0xffffffffffffffffn]),field("edge.source","u64",[0n,0n]),field("edge.target","u64",[1n,2n]),field("graph.directed","u8",[1])]);
+  const projection=graphProjectionCreate({nodeIds:nodes,edgeIds:edges,sourceIds:sources,targetIds:targets});
+  const names=["nodeValidFrom","nodeValidTo","nodeEventAt","edgeValidFrom","edgeValidTo","edgeEventAt"], columns={};
+  let owner=null,pair=null;
+  try {
+    for(const name of names)if(history[name])columns[name]=temporalColumnCreate({values:BigInt64Array.from(history[name],BigInt),validity:new Uint8Array(history[name].length).fill(1),timezone:"UTC"});
+    owner=temporalGraphCreate({projectionHandle:projection,...columns});
+    const {instance}=await WebAssembly.instantiate(fs.readFileSync(WASM),{}),x=instance.exports;
+    pair=openPair(x,{document,load:[field("document.bytes","bytes",document),field("load.x.f64","f64",[100,300,500]),field("load.y.f64","f64",[160,160,160])]},960n,0n);
+    const create=new Uint8Array(32+nodes.length+3*edges.length+names.reduce((n,k)=>n+(history[k]?.length??0)*9,0)),v=new DataView(create.buffer);
+    create.set(Buffer.from("XYTG"));[1,32,1,59,3,2,0].forEach((word,i)=>v.setUint32(4+i*4,word,true));
+    let at=32;for(const plane of [nodes,edges,sources,targets]){create.set(plane,at);at+=plane.length;}
+    for(const name of names)if(history[name]){for(const time of history[name]){v.setBigInt64(at,BigInt(time),true);at+=8;}create.fill(1,at,at+history[name].length);at+=history[name].length;}
+    assert.equal(wasmCall(x,pair.wasm,"xyg_wasm_temporal_graph_execute",create).status,0);
+    pair.run(18,[field("temporal.u64","u64",[1n])],{},[field("temporal.u64","u64",[owner])]);
+    const node=refs([{kind:0,uuid:nodes.subarray(16,32)}]);
+    pair.run(11,[field("refs.bytes","bytes",node)]);pair.run(6,[field("refs.bytes","bytes",node)]);pair.run(13,[field("refs.bytes","bytes",node)],{5:1});
+    let revision=0n;
+    for(const expected of [...history.frames,{cursor:10,range:[0,40],nodes:[1,1,0],edges:[1,0]}]){
+      revision++;
+      temporalGraphFrame(owner,{revision,cursor:BigInt(expected.cursor),range:expected.range.map(BigInt),budget:14n});
+      const frame=new Uint8Array(56),f=new DataView(frame.buffer);frame.set(Buffer.from("XYTG"));[1,56,2].forEach((word,i)=>f.setUint32(4+i*4,word,true));f.setBigUint64(16,revision,true);[expected.cursor,...expected.range].forEach((time,i)=>f.setBigInt64(24+i*8,BigInt(time),true));f.setBigUint64(48,14n,true);
+      assert.equal(wasmCall(x,pair.wasm,"xyg_wasm_temporal_graph_execute",frame).status,0);
+      const rendered=pair.run(21);
+      assert.deepEqual([...value(rendered,"render.node_members.u64")],expected.nodes.flatMap((v,i)=>v?[BigInt(i)]:[]));
+      assert.deepEqual([...value(rendered,"render.edge_members.u64")],expected.edges.flatMap((v,i)=>v?[BigInt(i)]:[]));
+      assert.equal(value(rendered,"selection.indices.u64")[0],1n);
+      if(expected.nodes[1])assert.equal(value(rendered,"focus.action.u32")[4],1,"same focused UUID remains pinned after re-entry");
+    }
+  } finally {
+    pair?.close();if(owner!==null)temporalGraphDestroy(owner);for(const h of Object.values(columns))temporalColumnDestroy(h);graphProjectionDestroy(projection);
   }
 });

@@ -3160,6 +3160,55 @@ async function run() {
   }
   await temporalGraphWorker.dispose();
 
+  const temporalControllerProof = [];
+  {
+  // Automatic controller binding: real Rust validity/history, no application frame pump.
+  const history = await fetch("/tests/fixtures/temporal/assertion-history.json").then(r => r.json());
+  const historyWorker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 1024 * 1024 });
+  const clockWorker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm: wasmModule, maxArenaBytes: 1024 * 1024 });
+  const historyBinding = { nodeIds: uuidBytes(...history.nodes), edgeIds: uuidBytes(...history.edges), sourceIds: uuidBytes(...history.sources), targetIds: uuidBytes(...history.targets) };
+  for (const name of ["nodeValidFrom", "nodeValidTo", "edgeValidFrom", "edgeValidTo", "edgeEventAt"]) historyBinding[name] = { values: BigInt64Array.from(history[name], BigInt), validity: new Uint8Array(history[name].length).fill(1) };
+  const originalHistory = JSON.stringify(history);
+  const historyGraph = await XygWasmTemporalGraph.create(historyWorker, historyBinding);
+  const clock = await XygWasmTemporalController.create(clockWorker, { instanceId: 901n, groupId: 902n, domain: [0n, 40n], cursor: 9n, step: 1n });
+  const bindingErrors = [], published = [];
+  const automatic = historyGraph.attachController(clock, { budget: 14n, layout: { totalSteps: 17, seed: 9n }, onFrame(result) { published.push(result.frame.cursor); result.frame.nodeVisibility.fill(99); }, onError: e => bindingErrors.push(String(e)) });
+  await automatic.whenIdle();
+  for (const expected of history.frames) {
+    await clock.setCursor(BigInt(expected.cursor));
+    await clock.setRange(...expected.range.map(BigInt));
+    await automatic.whenIdle();
+    const result = automatic.snapshot();
+    temporalControllerProof.push({cursor: String(result?.frame.cursor), range: result?.frame.range.map(String), nodes: Array.from(result?.frame.nodeVisibility ?? []), edges: Array.from(result?.frame.edgeVisibility ?? [])});
+    if (!result || result.frame.range.map(String).join() !== expected.range.map(String).join() || result.frame.nodeVisibility.join() !== expected.nodes.join() || result.frame.edgeVisibility.join() !== expected.edges.join() || result.layout.x.length !== expected.nodes.filter(Boolean).length) throw Error(`automatic history boundary membership/layout mismatch: ${JSON.stringify({expected, proof: temporalControllerProof, errors: bindingErrors})}`);
+  }
+  await clock.setRange(0n, 40n);
+  await Promise.all([clock.setCursor(10n), clock.setCursor(19n), clock.setCursor(20n)]);
+  await automatic.whenIdle();
+  if (automatic.snapshot().frame.cursor !== 20n) throw Error("automatic latest scrub lost intent");
+  await clock.setCursor(19n); await clock.step(); await clock.play(); await clock.pause();
+  await automatic.whenIdle();
+  if (clock.state.playing || automatic.snapshot().frame.cursor !== clock.state.cursor) throw Error("automatic step/play/pause lost final cursor");
+  // Remote apply does not increment local revision; the bridge must still run.
+  await clock.applyEvent({ groupId: 902n, sourceInstance: 903n, revision: 1n, rangeStart: 0n, rangeEnd: 40n, cursor: 10n, window: 40n, selection: [] });
+  await automatic.whenIdle();
+  if (automatic.snapshot().frame.cursor !== 10n) throw Error("remote controller snapshot was ignored");
+  if (JSON.stringify(history) !== originalHistory || bindingErrors.length) throw Error(`history mutated or binding errors: ${bindingErrors}`);
+  const retained = automatic.snapshot(); retained.frame.nodeVisibility.fill(77);
+  if (automatic.snapshot().frame.nodeVisibility[0] !== 1) throw Error("snapshot mutated bridge cache");
+  const beforeClose = published.length;
+  await clock.setCursor(20n); await automatic.dispose();
+  await clock.setCursor(10n); await automatic.whenIdle();
+  if (published.length !== beforeClose) throw Error("binding disposal published stale frame");
+  const recovered = historyGraph.attachController(clock, { budget: 14n, layout: { totalSteps: 17 }, onError: e => bindingErrors.push(String(e)) });
+  await recovered.whenIdle();
+  const good = recovered.snapshot();
+  await historyWorker.dispose();
+  await clock.setCursor(20n); await recovered.whenIdle();
+  if (bindingErrors.length !== 1 || recovered.snapshot().frame.revision !== good.frame.revision) throw Error("failed Worker replaced last good automatic frame");
+  await recovered.dispose(); historyGraph.dispose(); await clock.dispose(); await clockWorker.dispose();
+  }
+
   const canonical = canonicalSceneV9();
   const transferred = canonical.buffer;
   const valid = await worker.validateScene(transferred, { sequence: 10 }).result;
@@ -4850,7 +4899,7 @@ async function run() {
   } catch (error) {
     if (!(error instanceof TypeError)) throw error;
   }
-  return { ok: true, densityPolicy, densityNoRefinement };
+  return { ok: true, densityPolicy, densityNoRefinement, temporalControllerProof };
 }
 
 globalThis.__xygWasmFoundation = run().catch((error) => ({

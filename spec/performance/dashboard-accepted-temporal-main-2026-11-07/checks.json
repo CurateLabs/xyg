@@ -1,0 +1,235 @@
+{
+  "parents": {
+    "gpuCandidate": "4834a4d9192252d764a7dacf21fd8ac0eaa4b773",
+    "acceptedMain": "ae104cf35316e10e56e345c225acef2604e487a1"
+  },
+  "commands": {
+    "build": "node js/build.mjs",
+    "python": "uv run pytest tests/test_shared_glhost.py tests/test_graphforge_contract_corpus.py tests/test_release_inventory.py -q",
+    "wire": "node --test packages/xy-node/test/graph-session-wire.test.mjs",
+    "assets": "python3 scripts/verify_wasm_assets.py",
+    "foundation": "node scripts/wasm_foundation_smoke.mjs",
+    "temporal-ordered": "XYG_GRAPH_TEMPORAL_ONLY=1 node scripts/graph_session_controller_wasm_smoke.mjs",
+    "hooks": "uv run --with pre-commit pre-commit run --all-files",
+    "ruff": "uv run ruff check .",
+    "format": "uv run ruff format --check .",
+    "final-bindings": "uv run pytest tests/test_graphforge_contract_corpus.py -q"
+  },
+  "environment": {
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "python": "Python 3.12.15",
+    "chromium": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "nativeSelection": "/home/ubuntu/.t3/worktrees/xyg/t3-6e94436c/target/release/libxyg_core.so",
+    "TMPDIR": "/home/ubuntu/.t3tmp/1111"
+  },
+  "logs": {
+    "build.log.gz": {
+      "exit": 0,
+      "rawBytes": 5448,
+      "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c"
+    },
+    "temporal-coupled.log.gz": {
+      "exit": 1,
+      "rawBytes": 590,
+      "rawSha256": "202c6995ae32dcf572db923a591ef7475da8870b3fce88b2460acd50960488cd",
+      "archiveSha256": "c99448c38cc77b4d5e7ef23b88c477cb02f068c60032361b413ed996cb5498c4"
+    },
+    "temporal-diagnostic.log.gz": {
+      "exit": 1,
+      "rawBytes": 818,
+      "rawSha256": "64eaf6395d1983dd3040628e26cc40cca09c8af5b9324204c0978d97586114b9",
+      "archiveSha256": "a5cbb43c20f8f8c2fed6977cd681821e0600e9c639cc653005b303e6248a39ae"
+    },
+    "temporal-final.log.gz": {
+      "exit": 1,
+      "rawBytes": 1190,
+      "rawSha256": "446e9bb764287a8f399c8b8d42e14c93ebf13e90cb4b569d4965bbab9e5ce29e",
+      "archiveSha256": "2a3cb2d2d36c0f2f64f78c2ee058424601115cff221f19e1016e7d56d6dbf34a"
+    },
+    "temporal-ordered.log.gz": {
+      "exit": 0,
+      "rawBytes": 1035,
+      "rawSha256": "1862dda8347363365c50ecf2fc757a2451317bab9f3572b0324a230a30e5780e",
+      "archiveSha256": "3e4c830532d9fbc48a7d5f452d72e78e91a8c1788cab1d7f172df5973b085cd6"
+    },
+    "python.log.gz": {
+      "exit": 0,
+      "rawBytes": 110,
+      "rawSha256": "702305e3f6b8f37f8f99ad7d7c0d264ee8999b2805bbe254dee2f0a779d40ab9",
+      "archiveSha256": "667b2a84f22859f4e86fd7d007516e24aef4bfdcf8bbd9b3d2f685986ccf2e25"
+    },
+    "wire.log.gz": {
+      "exit": 0,
+      "rawBytes": 2640,
+      "rawSha256": "2b095e00e52de1da431eff64d5b771fca2298d08a934931fecfeabc3f30b6153",
+      "archiveSha256": "464b49725c4ca176f0ac4f24cbc48c6f14e84e1c812e62c508ea69caf79542d0"
+    },
+    "assets.log.gz": {
+      "exit": 0,
+      "rawBytes": 88,
+      "rawSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+      "archiveSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730"
+    },
+    "foundation.log.gz": {
+      "exit": 0,
+      "rawBytes": 4044,
+      "rawSha256": "78c1b1b31980d831a3901d7303349ecf39a7b5d9af11b8cede45dcba1ecd762c",
+      "archiveSha256": "3cc104bc91c6d428a791da176fe4b8b2779d75c4700c5e34d6ff7332b5e7240d"
+    },
+    "wasm-size.log.gz": {
+      "exit": 0,
+      "rawBytes": 139,
+      "rawSha256": "3d96b1e558fdf3b047f15da3a30f387be0605574708245baeef1a5928cfd0e96",
+      "archiveSha256": "13a15fe511a72173c71b031dc258935d636312c5a11426c29fccc3cb6e242fe4"
+    },
+    "hooks.log.gz": {
+      "exit": 0,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "rawBytes": 240,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "ruff.log.gz": {
+      "exit": 0,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "rawBytes": 19,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "format.log.gz": {
+      "exit": 0,
+      "rawSha256": "c08417703e235fbcd31aab1bd271c50f17753bb4753bfc0f65bcf7b8139f4bfa",
+      "rawBytes": 29,
+      "archiveSha256": "835bc8532114b6a7e9f391e3929452866c2a68c7909bda183e373cc290b3dac9"
+    },
+    "final-bindings.log.gz": {
+      "exit": 0,
+      "rawSha256": "249ca8fdf681c33584279a87fb3692a6b68c84a91b27ffd14f141a2f0a36836b",
+      "rawBytes": 98,
+      "archiveSha256": "37a602b31e30a9b2bd6b8dce04fb087264a426974f4c2f1d6e077dc230868d0c"
+    }
+  },
+  "artifacts": {
+    "packages/xy-client/dist/index.js": {
+      "bytes": 816577,
+      "sha256": "57acb9abedb7d42c1e4c5442f7bf93cd69721bb84aecfa159ad1c6b72cd8672a"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 816597,
+      "sha256": "a16587a57eac46605dc2cbc6ad7be461e60d93edddb3f10f39428fe8e224b130"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 56634,
+      "sha256": "cc65e16ea9d59dcee9a339ff7ead857c71c8507771e5cddc24ab2cd090ffd555"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1927032,
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 816577,
+      "sha256": "57acb9abedb7d42c1e4c5442f7bf93cd69721bb84aecfa159ad1c6b72cd8672a"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 816597,
+      "sha256": "a16587a57eac46605dc2cbc6ad7be461e60d93edddb3f10f39428fe8e224b130"
+    },
+    "target/release/libxyg_core.so": {
+      "bytes": 6127864,
+      "sha256": "09b2571980a8c1d97ac4478fc51b346fb9356d07916bc8b38e84c072b531b895"
+    }
+  },
+  "currentSources": {
+    ".gitattributes": "368eaa73349f5870230bfae972976c58069a2d638e51ecbaaf0328af9ee34f87",
+    ".github/workflows/ci.yml": "281b58be7f0bf65a2a03de177ebb622220e351e0118a0308262f8f2d56822cec",
+    "docs/styling/capabilities.md": "6de7c42317f3d469479ffd656650331e689b0d3ba5c7d1ea40b71a58143a209b",
+    "js/src/50_chartview.ts": "c10d7e07b97978a504ac913f1d7e2c5ca4bee8accc5e36bb983f55074fad731c",
+    "js/src/66_graph_host.ts": "287f8e775bfd349538da3803625d92f7e410a190959af1735d4731253214973a",
+    "js/test/graph-host-transport.test.mjs": "9180d55118ef630d34fc77d9244d3055f19d47318228d24bf51e0a152a0ece0d",
+    "python/xyg/_graph_widget.py": "e4eb1d50295ae702a9d3f8cad4be720afbcaab93e8e312653b03ec9d166630e6",
+    "python/xyg/_graph_widget_identity.py": "e5c57ee3dbe0b1f5fb429fd7cc0ac0bc9435c4e84d46c94c84c5d7c2ef43298b",
+    "python/xyg/_graphforge.py": "fd4119bd8e912445cd0d22b9e0dfd993b5c7c50327f9719bbcb33f1c2ee7cb41",
+    "python/xyg/components.py": "677358ebbc85a357697ee807bf638e6902a9c2d9dfafd743be0122d836221bdb",
+    "scripts/gen_capability_matrix.py": "3695944f261eb410a81fa543babbdfce477d1f74ca4401dbb509cb69dd4419fa",
+    "scripts/gen_graphforge_rc7_result_fixtures.cjs": "14122498a63020f291e1f8428fb842d0cb153e9241fd3bad874812b87cfcded2",
+    "scripts/graph_notebook_progressive_smoke.mjs": "cb123f159532bb7f025e8be286956d9ca28ccc88dbfea3d05fb6d0970a6ba5ed",
+    "scripts/verify_ci_workflow.py": "0468f973bf1c5c58de99729f6e59fca6cbe1de8f267f2d808be4fb974d56f7d7",
+    "scripts/verify_graph_notebook_report.py": "aa4d8a07fa9280b72a0ce0494689840dff16cbdc853c08823803c172194be48a",
+    "spec/api/capability-matrix.md": "35c6fa09fa9715dd9b5a0924f4a4c3f4990be2b53e5e76f40edb63385dc17a49",
+    "spec/api/graphforge-integration.md": "1289bc6ce0cf66e05eaae26d46dffbe716ba94a221736703e30c3627b4358b62",
+    "spec/design/graph-session-python-transport.md": "97116bbde5ac735fd09556561ad7c4ae3903687983ce504495a5c1382f26a34f",
+    "spec/design/host-parity.md": "4282bd78cde2a697ec8989ab70f8a73638d98da43e2969490b7550224cbf9f1b",
+    "spec/design/ownership-audit.json": "b7b4facf8e79b6c030893dbea4b6c28c6ed766a8ba1f80a64d34071b4c474d30",
+    "spec/design/ownership-audit.md": "355249f1d861c22b6c2b26e5d70484d8dec3bcc2c5f4f22d6c67ca0949505123",
+    "spec/performance/graph-notebook-identity-2026-11-06/README.md": "dd6ef2cbb074060809ba8be87cbe1243e47a3c6166d0873ecaf7301fccbc2134",
+    "spec/performance/graph-widget-pr1100-repair-2026-11-06/README.md": "8502882466e46105892c00e493c348f1386ad0ca7722464d4244cd0318bb0094",
+    "spec/performance/graph-widget-progressive-r3-2026-11-06/README.md": "24b9053e9c5ba418cbda455326bfca8db6896cdb8a44f0721549b1513c7a921c",
+    "spec/performance/graph-widget-review-repair-2026-11-06/README.md": "c0ad9f01568bb8d422efb5e41897ef7f970e0ba199579a3db10efccb5a2868e3",
+    "tests/notebook_graph_progressive.ipynb": "d64b9198eab2269f25c6550e715790e35372b84a8a906670cd506affb4756fed",
+    "tests/test_graph_notebook_report.py": "f1f8ed5deac6549051334ab7f25e0fb82a9b80e97ff01734f75c1810a0c74726",
+    "tests/test_graph_widget.py": "7f0b90f4e61b7eea6a86d2052619536a4066fe5170046613a6f5258fd0a6509d",
+    "tests/test_graphforge_contract_corpus.py": "3ba460610a0154216e7b83d730f5f03e3e45955d0ecf0e8fd410a7b2bb5b789c",
+    "spec/performance/graph-notebook-identity-ownership-2026-11-06/README.md": "99d5c6d0202eb6e58308e38c9405d0d7830c596c520decb98f32732a76b0a4eb",
+    "spec/performance/graph-notebook-identity-report-2026-11-06/README.md": "dfadb140fed17d203f8042c1c1d5198459bb30e92d352c17b127664c0502a3fe",
+    "spec/performance/graph-notebook-identity-limits-2026-11-06/README.md": "6ec04708df74445a9b825bacb7b17874a1d0579b41e1318707044c2f00f1f4ee",
+    "spec/performance/graph-notebook-identity-order-2026-11-06/README.md": "37e506da0d2d16aa258713841ccffb5924604b5afa14dbe4e7b668af4e0eae0b",
+    "js/src/41_gpu_storage.ts": "0ca851f29ef80a6919d7476d7cd5f21290b03cb9a8029016b3b10c30fbbd2a3f",
+    "js/src/42_glhost.ts": "51e0c28ee69f74d2c7052f3abc372841d81a728d0528bcfc4c6cc40e2251435c",
+    "js/src/48_wasm_scene.ts": "8141a21f116163c67f37c1205c3bbaa6f98678606a1084b852a08b1d9d045fcd",
+    "js/src/49_wasm_dashboard.ts": "93f34d4bd8883b905190520fd7cb62aedee8d0ea7f78daa88b0e495b81ac764b",
+    "js/src/54_kernel.ts": "081aef18ff0c0381bff2103b7e54a3df219eb5266d0af626344c705a85e90bad",
+    "js/src/63_graph_gpu.ts": "d3038cc62b21b51b90704826338601bc4e2fd2d73e8dbdaa0bccd7553b37e745",
+    "scripts/dashboard_gpu_smoke.mjs": "83c1848d95e7a56a33f89f20dd4a29988ae2082d06359d50eef616df36c2ef43",
+    "tests/test_shared_glhost.py": "095de4761ec0aeda7c44665e2970f8c3e07ed60fc070f00bae0545bdf41f1676",
+    "spec/performance/dashboard-gpu-parent-repair-2026-11-07/README.md": "094e40298ca93a9eb0b6c54459b14992c956a701b889b296f6564a04356bdb45",
+    "spec/design/dashboard-compositor.md": "45baf4ccb705d7d4b5eb936684e47f622237db091d8ed8c5c66f133f5f13aaa4",
+    "tests/browser/dashboard_gpu_page.mjs": "f38a9532dc72760e5db43322f97d838e077a48bb5bb009d496cbaa0afb4f26e1",
+    "spec/performance/dashboard-admission-races-2026-11-07/README.md": "3d52d8d9cb1383bbe035ca0245c09962a6e7e98757bcd25572c96e7c9fdc3862",
+    "tests/browser/wasm_foundation_page.mjs": "69c9c7bfe3224c2feea67a41ee0308f48b8aa6558683269214e07445581ebe51",
+    "js/src/63_graph_controller.ts": "e373d73de39c5eaae0f6dcf8eb6f4ce01cff23500ca988ebc8937086cde3a238",
+    "scripts/graph_session_controller_wasm_smoke.mjs": "a2af28e14bfb1754698ab01ba8efa8372a718b686f649b5f0dea0e404e7b54bc",
+    "spec/design/temporal-graph.md": "0677e2062f0861c51ba7ef41129adf0dc16a1f60de80717a1538731badda1f52",
+    "spec/releases/0.6.0-api-inventory.json": "fcc524f70bcecd67f9357ed2f4b2d0d5954848184a875e5f704eb255e3c10ff2",
+    "spec/performance/temporal-retained-terminal-idle-2026-11-07/README.md": "ccfe5c2be52c84bb9d529ef449e859e3388457cba624ea4b7641ff4084e30e70",
+    "spec/performance/temporal-worker-lifetime-2026-11-07/README.md": "45f0daaeb1cfbf25fa693f6f9bd1e3064ad8cee1fccd4fcca6911456bd635b26",
+    "js/src/47_wasm.ts": "93b3ab20a9d684105bc82d7c0a94b64e989106afe2ad2b38dd1b9fcac34adaab",
+    "spec/performance/temporal-graph-main-integration-2026-11-07/README.md": "e0385ebaea76370b37f79fd8c98566bf4dafa4782e9b1091c56d2b81760d672c",
+    "scripts/wasm_foundation_smoke.mjs": "126df608e6e69030d00ff8d8981a052ec0ee0ad6cc4075566fd3ec265c976c4f",
+    "scripts/verify_graph_progressive_camera.mjs": "995173453edaa6e47871e1be76c87774fa6105d5c4ba02890c8137d21270e666",
+    "tests/browser/graph_session_controller_page.mjs": "7d599b06215e0252e1bfeec1bd868d0cf595845f1fa79302d9244649bea709ae",
+    "js/test/graph-progressive-camera.test.mjs": "6d31295711b224081d6111276be2573b908557189d3d0bfd98736beb4f270142",
+    "spec/design/build-ci.md": "830bf1c0c718251df9110883545d057d820690bccd5f8728000b7af1709c916e",
+    "spec/design/graph-interaction.md": "c9f7596b5e108f0ac22edf23b1e9ecd5cda66b6ee482475649e602b6137ac549",
+    "spec/performance/dashboard-accepted-temporal-main-2026-11-07/README.md": "d4108ca549df1c4f49e2404b420ae68e3ae8d6da69135ef94912781a5e0f52ea",
+    "spec/performance/dashboard-accepted-temporal-main-2026-11-07/current-bindings.json": "61d22c160aa741c54f90dd45c8cf4dc7db770e067a70e4ccc1d99104cd201c35"
+  },
+  "captures": {
+    "gpu-report.json": "a81655ab30aede6bde43732a87a7b9be192851dd2a7c77db087a71204e7af2b7",
+    "foundation.json.esm-missing-inline-artifact.png": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+    "gpu-restored.png": "3292f54683d32a03b622b16a02be2e9af63e5a564f2ec5c666f8c45c019619e6",
+    "foundation.json.iife-malformed-inline-artifact.png": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+    "foundation.json.retained-temporal.json.wire.json.gz": "b377366adc728fb4f577e1ce4aa7fef99da15b6b1a4ccca28fb2bec7bea9fd24",
+    "foundation.json.iife-missing-inline-artifact.png": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+    "foundation.json.iife-missing-retained-source.png": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66",
+    "foundation.json.esm-missing-retained-source.png": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66",
+    "foundation.json.retained-temporal.json.initial.png": "a03d81a62746e81bbc035d278d5ebc73be03be673f7fee0a4e3a9ca31fa0eceb",
+    "foundation.json.retained-temporal.json.gz": "0062818cb4aa41f196fe2a16ecd13ed48aed62e1fe7bda1c263e32798c102db8",
+    "producer-inputs.json": "f671683a1e6568a7ce97058ca8cdeb4d15162a277d20e2fc4aafd2b690600891",
+    "temporal-report.json.boundary.png": "e47464cd85a30210f9cbe6ec12af0aee391c3aa8ec4c01afdc2b814b823a7d6d",
+    "foundation.json.retained-temporal.json.boundary.png": "e47464cd85a30210f9cbe6ec12af0aee391c3aa8ec4c01afdc2b814b823a7d6d",
+    "temporal-report.json.initial.png": "a03d81a62746e81bbc035d278d5ebc73be03be673f7fee0a4e3a9ca31fa0eceb",
+    "foundation.json.gz": "e1ef3d86b42a4c7c5adc748c443968e2c7c00ee5695d3ad61b0818d52f1f60a0",
+    "temporal-report.json.wire.json.gz": "80255f4461c75fe7bc10ea75243128092732b7776205dec248abe9d2e66abe63",
+    "parent-protection.json.gz": "acf83fef4d9259060919b94019b49bfe494b725a4b4e52cdec7dd423e7c04f92",
+    "temporal-report.json.gz": "73a274770770a6a71aed5ac181c8cb07d399a4038174424b794a965cfbcf5b60",
+    "foundation.json.esm-malformed-inline-artifact.png": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+    "gpu-pressure.png": "57a1829a85af7545680a0b2d2cc734ff7d845f6ec57cc539ca21374334a7f4ef"
+  },
+  "limits": [
+    "Reused unchanged Rust/native/WASM after source and digest verification; no rebuild or broad suite.",
+    "Initial temporal-coupled and temporal-diagnostic failures were incorrect test error expectations, with state/pixels unchanged.",
+    "Initial temporal-final run passed the new case then failed from retained document budget in the next fixture. Final ordering isolates the budget.",
+    "Logical GPU cap excludes driver VRAM, Canvas2D, CPU/source/WASM ownership.",
+    "Full #111, milestones 4-7, host/scale/accessibility/latency/competitor acceptance remain open."
+  ],
+  "finalGateRecording": "Archived all-file gates precede log binding additions; the same gates are rerun immediately before commit with ignored final-gate logs. No production changes occur between these runs."
+}

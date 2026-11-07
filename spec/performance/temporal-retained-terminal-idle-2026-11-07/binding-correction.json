@@ -1,0 +1,17 @@
+{
+  "priorReceipt": "spec/performance/graph-notebook-identity-order-2026-11-06/current-bindings.json",
+  "changes": {
+    "scripts/gen_capability_matrix.py": {
+      "historicalSha256": "76420acb6fc8e8595633ab14bc31b74c91a53d59ff1d58965beff31224aaf449",
+      "currentSha256": "3695944f261eb410a81fa543babbdfce477d1f74ca4401dbb509cb69dd4419fa"
+    },
+    "spec/api/capability-matrix.md": {
+      "historicalSha256": "3b49461330891f4ce60388b7e83cb3a8c4409aaef971fd2cd3a822d8fe1afbf2",
+      "currentSha256": "35c6fa09fa9715dd9b5a0924f4a4c3f4990be2b53e5e76f40edb63385dc17a49"
+    },
+    "spec/design/ownership-audit.md": {
+      "historicalSha256": "e1d2214d84302662571ddef856a1a5ae8e3f5df165a239da97fa805f94d44722",
+      "currentSha256": "81debdab58b65e8c258a62a683ce5e8d314de50088723532cbca77353cc58396"
+    }
+  }
+}

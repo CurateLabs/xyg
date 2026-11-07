@@ -1,3 +1,4 @@
+import type { XygTemporalState, XygWasmTemporalController } from "./49_wasm_temporal";
 import type { XygWasmTask, XygWasmWorker } from "./47_wasm";
 import type { XygWasmGraphCheckpoint, XygWasmGraphRequest } from "./49_wasm_graph";
 import { layoutWasmCose } from "./49_wasm_graph";
@@ -22,6 +23,12 @@ export interface XygWasmTemporalGraphFrame {
   nodeVisibility: Uint8Array; edgeVisibility: Uint8Array;
   visibleNodeIds: Uint8Array; visibleEdgeIds: Uint8Array;
   sources: BigUint64Array; targets: BigUint64Array;
+}
+
+export interface XygTemporalGraphControllerBinding {
+  whenIdle(): Promise<void>;
+  snapshot(): { frame: XygWasmTemporalGraphFrame; layout: XygWasmGraphCheckpoint } | null;
+  dispose(): Promise<void>;
 }
 
 function header(op: number, headerBytes: number, bytes: number) { const out = new ArrayBuffer(bytes); const v = new DataView(out); MAGIC.split("").forEach((c, i) => v.setUint8(i, c.charCodeAt(0))); v.setUint32(4, VERSION, true); v.setUint32(8, headerBytes, true); v.setUint32(12, op, true); return v; }
@@ -65,6 +72,7 @@ export class XygWasmTemporalGraph {
   private revision = 0n;
   private requestedRevision = 0n;
   private attempt: object | null = null;
+  private detachController: (() => void) | null = null;
   private constructor(private readonly worker: XygWasmWorker) {}
   static async create(worker: XygWasmWorker, binding: XygWasmTemporalGraphBinding) { await worker.temporalGraphCommand(encodeWasmTemporalGraphCreate(binding)); return new XygWasmTemporalGraph(worker); }
   async frame(options: { revision: bigint; cursor: bigint; range: readonly [bigint, bigint]; budget: bigint }) {
@@ -112,5 +120,65 @@ export class XygWasmTemporalGraph {
       return { frame, layout: result };
     } finally { if (this.layout === task) this.layout = null; }
   }
-  dispose() { if (this.disposed) return; this.disposed = true; this.layout?.cancel(); this.layout = null; }
+  /** Automatically consume complete controller snapshots, including received events.
+   * Owns the binding only; controller and Worker lifetimes remain with the caller.
+   * This coordinator does not attach the retained graph painter (see #45).
+   */
+  attachController(controller: XygWasmTemporalController, options: {
+    budget: bigint;
+    layout?: Omit<XygWasmGraphRequest, "sources" | "targets" | "nNodes">;
+    onFrame?: (result: { frame: XygWasmTemporalGraphFrame; layout: XygWasmGraphCheckpoint }) => void;
+    onError?: (error: unknown) => void;
+  }): XygTemporalGraphControllerBinding {
+    if (this.disposed || this.detachController) throw new Error("Temporal graph is disposed or already bound");
+    const budget = options.budget, layout = structuredClone(options.layout);
+    const onFrame = options.onFrame, onError = options.onError;
+    type Result = { frame: XygWasmTemporalGraphFrame; layout: XygWasmGraphCheckpoint };
+    let attached = true, intent = 0, pending: XygTemporalState | null = null;
+    let running: Promise<void> = Promise.resolve(), pumping = false;
+    let last: Result | null = null, key: string | null = null;
+    const report = (error: unknown) => { try { onError?.(error); } catch { /* observer isolation */ } };
+    const cancel = () => { this.attempt = null; this.layout?.cancel(); this.layout = null; };
+    const detach = () => {
+      if (!attached) return;
+      attached = false; intent++; pending = null; unsubscribe(); cancel();
+      if (this.detachController === detach) this.detachController = null;
+    };
+    const accept = (state: XygTemporalState) => {
+      if (!attached) return;
+      if (state.disposed) { detach(); return; }
+      // Compare canonical time, not local controller revisions: applyEvent does
+      // not advance the receiver's revision. Window policy already ran in Rust.
+      const nextKey = `${state.cursor}/${state.rangeStart}/${state.rangeEnd}/${state.window}`;
+      if (key === nextKey) return;
+      key = nextKey; pending = state; intent++; cancel();
+      if (pumping) return;
+      pumping = true;
+      running = Promise.resolve().then(async () => {
+        try {
+          while (attached && pending) {
+            const state = pending, current = intent; pending = null;
+            try {
+              const result = await this.frameAndLayout({ revision: this.requestedRevision + 1n,
+                cursor: state.cursor, range: [state.rangeStart, state.rangeEnd], budget, layout });
+              if (!attached || current !== intent) continue;
+              last = structuredClone(result);
+              try { onFrame?.(structuredClone(result)); } catch (error) { report(error); }
+            } catch (error) {
+              if (attached && current === intent) { key = null; report(error); }
+            }
+          }
+        } finally { pumping = false; }
+      });
+    };
+    const unsubscribe = controller.subscribeState(accept);
+    this.detachController = detach;
+    accept(controller.state);
+    return Object.freeze({
+      whenIdle: () => running,
+      snapshot: () => last === null ? null : structuredClone(last),
+      dispose: () => { detach(); return running; },
+    });
+  }
+  dispose() { if (this.disposed) return; this.disposed = true; this.detachController?.(); this.layout?.cancel(); this.layout = null; }
 }
