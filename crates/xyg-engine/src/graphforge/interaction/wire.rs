@@ -583,6 +583,26 @@ impl std::fmt::Debug for WireSession {
     }
 }
 impl WireSession {
+    /// Borrow only an actually published frame from this exact temporal owner.
+    /// The native caller holds session -> temporal locks in that order.
+    pub fn frozen_publication(&self, owner: usize, handle: TemporalHandle, frame_revision: u64, render_revision: u32) -> Result<crate::temporal_graph_frozen::Publication<'_>> {
+        match &self.session.slot {
+            StateSlot::Bound { host, handle: bound } if *bound == handle && host.owner_identity() == owner => {},
+            _ => return Err(InteractionStatus::Invalid),
+        }
+        let render = self.session.published().ok_or(InteractionStatus::Stale)?;
+        if self.session.seen_temporal != frame_revision || render.revision != render_revision { return Err(InteractionStatus::Stale); }
+        let c = gf(Container::decode(&self.last_reply, RESULT_MAGIC))?;
+        let h = gf(c.get("header.u32",0).ok_or(InteractionStatus::Stale)?.as_u32("header.u32"))?;
+        if h.first().copied()!=Some(render_revision) { return Err(InteractionStatus::Stale); }
+        let mut authority=None;
+        if let StateSlot::Bound {host,handle}=&self.session.slot {
+            host.with_graph(*handle,&mut |g| { if g.applied_revision()==frame_revision { authority=Some(g.instance_token()); } });
+        }
+        let graph_token=authority.ok_or(InteractionStatus::Stale)?;
+        let c=self.session.camera.ok_or(InteractionStatus::Invalid)?;
+        Ok(crate::temporal_graph_frozen::Publication { resident_bytes:self.retained_budget(), graph_token, temporal_revision:frame_revision, camera:[c.scale_x,c.scale_y,c.offset_x,c.offset_y,c.viewport_width,c.viewport_height,c.dpr], document: &self.document, reply: &self.last_reply, instance: self.session.instance_id, revision: render_revision })
+    }
     pub fn session(&self) -> &GraphSession {
         &self.session
     }

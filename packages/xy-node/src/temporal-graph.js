@@ -1,3 +1,4 @@
+import { freezeTemporalGraph } from "./temporal-graph-frozen.js";
 import {
   graphProjectionCreate,
   graphProjectionDestroy,
@@ -101,6 +102,10 @@ export class TemporalGraph {
 
   snapshot() {
     return temporalGraphSnapshot(this.#openHandle());
+  }
+
+  freeze(options) {
+    return freezeTemporalGraph(this.#openHandle(), options);
   }
 
   cancel() {

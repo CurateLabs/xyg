@@ -203,7 +203,7 @@ pub use graphforge_session_ffi::*;
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 401;
+pub const ABI_VERSION: u32 = 402;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -33196,3 +33196,5 @@ mod chunked_chart_publication_tests {
         std::fs::remove_file(path).unwrap();
     }
 }
+
+mod temporal_graph_frozen_ffi;

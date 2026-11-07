@@ -1423,3 +1423,13 @@ layout is unfinished, with two isolated public attachments. The host pan button
 calls `refreshRender(camera)`; this supplies no canvas pan gesture or additional
 keyboard/focus acceptance. Explicit 384 MiB arenas and the default-arena refusal
 are disclosed. Full #36 scale and host semantics remain open.
+
+### Native frozen-publication borrowing
+
+The [native immutable temporal checkpoint](temporal-graph-frozen.md) borrows a
+WireSession's actual latest complete publication while holding the existing
+session lock. It checks the exact bound owner, accepted frame/render revisions,
+explicit camera and source token before the temporal acquisition gate. Existing
+XYGI/XYGR packet bytes and command behavior are unchanged. Snapshot acquisition
+adds the session's retained memory charge to its own peak admission. This is an
+export input seam, not a second publisher, renderer, layout or identity resolver.

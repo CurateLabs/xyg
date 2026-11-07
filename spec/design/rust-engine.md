@@ -1005,3 +1005,9 @@ See the [scoped chart snapshot contract](tier3-phase4-roadmap.md#bounded-local-c
 The exact `xyg_chunked_columns_chart` export checks its registered generation after copying all row IDs and f64 output arrays, matching the overview export's publication boundary. A superseded result returns cancellation code 5 and hosts discard every output. The final atomic check is the success linearization point. ABI 401 signatures stay unchanged.
 
 A combined chart snapshot reports each distinct x-range candidate metadata chunk once in `chunks_considered`, including candidates pruned by y metadata. Page-boundary reconsideration does not inflate this snapshot statistic. Per-page inspection counters retain their existing semantics, and physical read/byte totals still sum actual page I/O. Empty x candidate ranges report zero.
+
+ABI402 adds immutable native temporal graph snapshot acquire/import/copy/destroy
+entry points. `temporal_graph_frozen.rs` owns XYFG canonical validation and
+admission; hosts marshal typed scalars and own no graph membership policy. This
+[native checkpoint](temporal-graph-frozen.md) leaves rendered export and public
+WASM freeze attachment open and preserves historical ABI transition receipts.

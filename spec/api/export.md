@@ -337,3 +337,13 @@ Frozen geographic SVG/HTML explicitly default the SVG root font to
 browser serif. Explicit group/text font styles override the presentation
 attribute. System font availability and antialiasing can vary; native raster
 retains the baked face, and the existing PDF font policy is unchanged.
+
+## Temporal graph acquisition checkpoint
+
+`TemporalGraph.freeze` in Python and Node captures independent immutable native
+provenance and optional retained publication planes. It currently supplies
+`to_bytes` / `toBytes` and offline import, not image output. The
+[XYFG contract](../design/temporal-graph-frozen.md) and
+[checkpoint evidence](../performance/temporal-graph-freeze-2026-11-07/README.md)
+list exact ingress, limits and remaining HTML/PNG/SVG/browser work. Do not treat
+this checkpoint as frozen rendered-artifact acceptance.

@@ -2144,3 +2144,13 @@ unit proofs for loops/parallel edges/layered provenance from actual small
 JupyterLab node-callback/UUID-selection delivery. Prior receipts remain historical.
 Full notebook frontend, exact geometric UUID sets, export and rendered size
 ladder acceptance for #1015/#36/#35 remains open.
+
+### Native immutable temporal graph snapshots
+
+Python `TemporalGraph.freeze` / Node `TemporalGraph.freeze` acquire the same
+Rust-owned [XYFG v1 snapshot](temporal-graph-frozen.md). Native bindings only
+marshal exact scalars and copy validated immutable bytes; they never filter
+source topology. The bounded history fixture pins complete native cross-host
+bytes, including hidden/reappearing UUID state. Optional existing native session
+capture retains exact accepted publication/camera bytes. Browser/WASM attachment
+and rendered HTML/PNG/SVG provenance proof remain a subsequent checkpoint.

@@ -285,6 +285,7 @@ pub mod svg;
 pub mod temporal;
 pub mod temporal_controller;
 pub mod temporal_graph;
+pub mod temporal_graph_frozen;
 pub mod textblock;
 pub mod tick_layout;
 pub mod tile_paint_control;

@@ -1014,3 +1014,13 @@ mod tests {
         assert!(!worker.join().unwrap());
     }
 }
+
+/// Borrow a retained publication while holding the same session lock as commands.
+pub(crate) fn with_frozen_publication<T>(handle: u64, owner: usize, temporal: u64, frame_revision: u64, render_revision: u32, f: impl FnOnce(xyg_engine::temporal_graph_frozen::Publication<'_>) -> Result<T, xyg_engine::temporal::TemporalError>) -> Result<T, xyg_engine::temporal::TemporalError> {
+    use xyg_engine::temporal::TemporalError as E;
+    let entry = entry(handle).ok_or(E::StaleHandle)?;
+    let slot = entry.session.lock().expect("graph session poisoned");
+    let session = slot.as_ref().ok_or(E::Disposed)?;
+    let publication = session.frozen_publication(owner, TemporalHandle(temporal), frame_revision, render_revision).map_err(|e| if e == InteractionStatus::Stale { E::StaleRevision } else { E::InvalidArgument })?;
+    f(publication)
+}
