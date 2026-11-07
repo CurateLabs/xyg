@@ -1,0 +1,387 @@
+{
+  "beforeSources": {
+    "python/xyg/_geo_temporal.py": {
+      "archive": "_geo_temporal.py.before.gz",
+      "archiveSha256": "964cccdd11a3906ac05f4b82601ddbdff18725dd88f49a0aea2728f6830cde43",
+      "sourceSha256": "149930b18a533fb23a812ec7eca5c9060d7e126b2aabe9485c4716035f508af4"
+    },
+    "tests/test_geo_mounted_temporal.py": {
+      "archive": "test_geo_mounted_temporal.py.before.gz",
+      "archiveSha256": "97fc28836834b0a936a63ad99497c4978ef6d1aabe8facd7a9d0d8b8abee4873",
+      "sourceSha256": "c4983314ea756135f24cba027b9e2260796b674d841b8376e359ccf6c63f753b"
+    }
+  },
+  "captures": {
+    "notebook-1.png": {
+      "bytes": 156372,
+      "sha256": "37a10e25d4a76b501f9398ce7f5618ae174a5a439040281c850920e18b52fda6"
+    },
+    "notebook-2.png": {
+      "bytes": 160162,
+      "sha256": "3b2c6b742360afbe917db67d19e6a5ea1f9ffda4ab7c772ba7b2355fa68d2994"
+    },
+    "notebook-3.png": {
+      "bytes": 159924,
+      "sha256": "51bc741dec49ccc4b243dac4fbbcf7fbdd7660518564b1ad0fdc454f8daff5ca"
+    }
+  },
+  "environment": {
+    "chromium": "156.0.8078.4",
+    "nativeAbi": 401,
+    "nativeSelection": "explicit producer/target/release/libxyg_core.so",
+    "node": "22.23.4",
+    "receiptInterpreter": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+    "receiptPlatform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "testPython": [
+      "3.12.15 project .venv",
+      "3.11.17 explicitly selected existing interpreter"
+    ],
+    "tmpdir": "/var/tmp"
+  },
+  "logs": {
+    "after-final.log": {
+      "archive": "after-final.log.gz",
+      "archiveSha256": "57c543ec6f06e415cd29221681481b3b8ecd611308e70af087e5e4c7064cbc55",
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_geo_mounted_temporal.py",
+        "tests/test_geo_temporal_binding.py",
+        "tests/test_temporal_controller.py",
+        "tests/test_geo_live_host.py"
+      ],
+      "exitCode": 1,
+      "rawBytes": 3994,
+      "rawSha256": "64d2d2a155d92dc4a8f22efe8b49a18bb0b98b1be7351f61338a285403e09034"
+    },
+    "after-qualified.log": {
+      "archive": "after-qualified.log.gz",
+      "archiveSha256": "1d856340456437cd53b6e9f645ed202c9b2bb5fa2bb479bc5f2bdea1b706773d",
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_geo_mounted_temporal.py",
+        "tests/test_geo_temporal_binding.py",
+        "tests/test_temporal_controller.py",
+        "tests/test_geo_live_host.py"
+      ],
+      "exitCode": 0,
+      "rawBytes": 179,
+      "rawSha256": "243277af36a1dfc655f26a8d2f93fabdd68302a5e74f868df62f4b2f1fd746f5"
+    },
+    "after.log": {
+      "archive": "after.log.gz",
+      "archiveSha256": "275ae3ad1a8e6967a02e5061394a9c2022d64b9387ab1b7e504dba363bc69828",
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_geo_mounted_temporal.py"
+      ],
+      "exitCode": 1,
+      "rawBytes": 14105,
+      "rawSha256": "fac9fcb630aef6cf3747ec4bb11156dc03c13a624ef3d649e2ec52a2dd965600"
+    },
+    "before-final.log": {
+      "archive": "before-final.log.gz",
+      "archiveSha256": "a49517982fbcb021dca11ed7493b836fdc55c88148fd1f4359b6266179b83c58",
+      "exitCode": 1,
+      "qualification": "Final assertions against exact original module, process-only replacement",
+      "rawBytes": 40251,
+      "rawSha256": "0ff702aa47c781b98235a7e61a35fb79e5f34c7b4ce9298ef1be900fc084d170"
+    },
+    "before-invalid-correlation-assertion.log": {
+      "archive": "before-invalid-correlation-assertion.log.gz",
+      "archiveSha256": "d1162cdb4058553365a621e688d3bbe4b2339a6628467549002b5d815faaf448",
+      "exitCode": 1,
+      "qualification": "Final tests against exact original production via process-only module replacement; source files untouched",
+      "rawBytes": 39531,
+      "rawSha256": "63868e8e2fa4c81c1b1cdb3bc099e53eaa1662cc277f07d3c82b09ae85683b4d"
+    },
+    "before-shared-final.log": {
+      "archive": "before-shared-final.log.gz",
+      "archiveSha256": "6edaeb98d4f42ff7ecf78312d67b6b9d1ab4eaced02a7a7e8cf73d52b65e3fe1",
+      "exitCode": 1,
+      "qualification": "Final complete mounted/snapshot regression module against exact parent production, process-only replacement",
+      "rawBytes": 81886,
+      "rawSha256": "b88fd529af6177e3b702a48df683e91261e0b846a495e9d5096b0c603f753308"
+    },
+    "before.log": {
+      "archive": "before.log.gz",
+      "archiveSha256": "95938ab8afc556de68cf0034c81a977f48c9d564921c4f70be8f9df97efd06e3",
+      "exitCode": 1,
+      "qualification": "Final new regression assertions against exact prior production source",
+      "rawBytes": 39075,
+      "rawSha256": "a9b070975c393adfbb5460c6ebc681b858015f1243f88f612dbe58144ed193f9"
+    },
+    "core-final.log": {
+      "archive": "core-final.log.gz",
+      "archiveSha256": "e41cd93d94f833ce731f1fb45048d9e4c54e8ad858fe54617803de40200209e6",
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_release_inventory.py",
+        "tests/test_verify_ownership.py"
+      ],
+      "elapsedSeconds": 9.840071430895478,
+      "exitCode": 0,
+      "rawBytes": 99,
+      "rawSha256": "ff273e247a7074fd27d20e6fef4fb54014e294965de40a4e72bd68158bc316f2"
+    },
+    "core-inventory.log": {
+      "archive": "core-inventory.log.gz",
+      "archiveSha256": "2ceaeac782edcc87a9058d8406b0179dbd9481bcac119f7dcc88ca23bb54cf92",
+      "exitCode": 0,
+      "qualification": "Final current/historical bindings with real GitCRLF and unchanged publiccontracts",
+      "rawBytes": 100,
+      "rawSha256": "ec8bb62001d01c5fb7b1ab6c52e518a5e7d4302d25d862ad590af1cccfe5ce04"
+    },
+    "format.log": {
+      "archive": "format.log.gz",
+      "archiveSha256": "962d7bffaad42adb3a3eb66f899733f41d0f9f557a5f671ad51dfb40e61b953d",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "elapsedSeconds": 0.08631853805854917,
+      "exitCode": 0,
+      "rawBytes": 29,
+      "rawSha256": "69425d6cd8235e1a4113d4eb545910ff06d23718d998267edd863b32474e9173"
+    },
+    "hooks.log": {
+      "archive": "hooks.log.gz",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "elapsedSeconds": 5.862173710018396,
+      "exitCode": 0,
+      "rawBytes": 240,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "inventory-write.log": {
+      "archive": "inventory-write.log.gz",
+      "archiveSha256": "a2277e48bd10ba89748088135de9346e064ed73e274ba49c37aee9442587f308",
+      "qualification": "Auxiliary observation; individual shell exit is not inferred.",
+      "rawBytes": 89,
+      "rawSha256": "5007bf087b7f76fea24b0f6770cabd078b1a83b26987c391b0f19af64a4a57bb"
+    },
+    "naming.log": {
+      "archive": "naming.log.gz",
+      "archiveSha256": "18aa8cbfae43d086af76f797392e406675a791b6d3096e5eb386d4b8ab4161f5",
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_stale_names.py"
+      ],
+      "elapsedSeconds": 114.94445741316304,
+      "exitCode": 0,
+      "rawBytes": 272,
+      "rawSha256": "4a9a064248416329614911888d3ed7ef041240199698a13b325e9a1befbb6394"
+    },
+    "notebook.log": {
+      "archive": "notebook.log.gz",
+      "archiveSha256": "ca1146a0282f4db7a20daeb3d29f7e29ef9537a03c160cd9f7acc415fc15e720",
+      "exitCode": 0,
+      "qualification": "Actual JupyterLab/Python3.11/anywidget binary comm with unchanged verified browser client",
+      "rawBytes": 4498,
+      "rawSha256": "e986b095360c245231572b86dd908a3e86e5c67987e25807b2f3d8a98d7a7503"
+    },
+    "python311.log": {
+      "archive": "python311.log.gz",
+      "archiveSha256": "b41c8732ead7e7c5455fb007b90a0f0d4d3fbb7d2d61f5182c9054fc48336aa4",
+      "exitCode": 0,
+      "qualification": "Actual CPython3.11.17, final shared inbox/native source/library explicitly selected",
+      "rawBytes": 180,
+      "rawSha256": "e612b62465ddcaf75f5d810d6fe6e0f23c9e0416ad06450115b0f481c1294024"
+    },
+    "ruff.log": {
+      "archive": "ruff.log.gz",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "elapsedSeconds": 0.36449886159971356,
+      "exitCode": 0,
+      "rawBytes": 19,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "shared-after.log": {
+      "archive": "shared-after.log.gz",
+      "archiveSha256": "6d75a7bf30492f32e31b8de561954b1dbe15677dde8f648c159545ce33272c44",
+      "exitCode": 0,
+      "qualification": "Shared snapshot/mounted inbox, explicit producer native/source",
+      "rawBytes": 179,
+      "rawSha256": "06a74eebabc1ed8a1b2435f3cd22f697d2355caebdb18b6df8196318ef8f7438"
+    },
+    "shared-final-format.log": {
+      "archive": "shared-final-format.log.gz",
+      "archiveSha256": "9e034aaa1899b92e6331269cd6d05434c6c7961950b18d5a76245a92c9cd89fe",
+      "qualification": "Auxiliary observation; individual shell exit is not inferred.",
+      "rawBytes": 42,
+      "rawSha256": "10869b88a75066aa23546ef1f95fcd4678c3fb92a56ed46ef91688052b67976a"
+    },
+    "shared-final-ruff.log": {
+      "archive": "shared-final-ruff.log.gz",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "qualification": "Auxiliary observation; individual shell exit is not inferred.",
+      "rawBytes": 19,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "shared-qualified.log": {
+      "archive": "shared-qualified.log.gz",
+      "archiveSha256": "1f8a675519e9874d322333f2443aa1abc8e63dba47df1446ceb0d4fd27cac3bf",
+      "exitCode": 1,
+      "qualification": "Final shared snapshot/mounted regressions and lifecycle/controller suite",
+      "rawBytes": 27892,
+      "rawSha256": "11ae7b97e9b35b6ccb7df4c7afcb604813d54eee8413a53c2cc1469ae58a467e"
+    },
+    "shared-ready-format.log": {
+      "archive": "shared-ready-format.log.gz",
+      "archiveSha256": "9e034aaa1899b92e6331269cd6d05434c6c7961950b18d5a76245a92c9cd89fe",
+      "qualification": "Auxiliary observation; individual shell exit is not inferred.",
+      "rawBytes": 42,
+      "rawSha256": "10869b88a75066aa23546ef1f95fcd4678c3fb92a56ed46ef91688052b67976a"
+    },
+    "shared-ready-ruff.log": {
+      "archive": "shared-ready-ruff.log.gz",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "qualification": "Auxiliary observation; individual shell exit is not inferred.",
+      "rawBytes": 19,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "shared-ready.log": {
+      "archive": "shared-ready.log.gz",
+      "archiveSha256": "5c5bea417734a2682734ac7e9c3b50531a1a94c489e3e05a3740074c3e785476",
+      "exitCode": 0,
+      "qualification": "Native snapshot data identity plus bounded shared ingress and lifecycle regressions",
+      "rawBytes": 180,
+      "rawSha256": "8b7564524b971aa48f5ca8c1f5e02082d71032daae47f83200c85bdb10bb5422"
+    },
+    "shared-source-format.log": {
+      "archive": "shared-source-format.log.gz",
+      "archiveSha256": "9e034aaa1899b92e6331269cd6d05434c6c7961950b18d5a76245a92c9cd89fe",
+      "qualification": "Auxiliary observation; individual shell exit is not inferred.",
+      "rawBytes": 42,
+      "rawSha256": "10869b88a75066aa23546ef1f95fcd4678c3fb92a56ed46ef91688052b67976a"
+    },
+    "shared-source-ruff.log": {
+      "archive": "shared-source-ruff.log.gz",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "qualification": "Auxiliary observation; individual shell exit is not inferred.",
+      "rawBytes": 19,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "source-format.log": {
+      "archive": "source-format.log.gz",
+      "archiveSha256": "9e034aaa1899b92e6331269cd6d05434c6c7961950b18d5a76245a92c9cd89fe",
+      "qualification": "Auxiliary observation; individual shell exit is not inferred.",
+      "rawBytes": 42,
+      "rawSha256": "10869b88a75066aa23546ef1f95fcd4678c3fb92a56ed46ef91688052b67976a"
+    },
+    "source-ruff.log": {
+      "archive": "source-ruff.log.gz",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "qualification": "Auxiliary observation; individual shell exit is not inferred.",
+      "rawBytes": 19,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "types.log": {
+      "archive": "types.log.gz",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "command": [
+        "uv",
+        "run",
+        "ty",
+        "check"
+      ],
+      "elapsedSeconds": 2.4400994046591222,
+      "exitCode": 0,
+      "rawBytes": 19,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    }
+  },
+  "originalModuleControl": {
+    "archive": "old-binding-control.py.gz",
+    "description": "Process-only exact original module, preserving registry object; producer sources never swapped.",
+    "sha256": "e081c328b6e84c5c1395ffc366faa200790704f7058f3cfa996ccba7900737bc"
+  },
+  "parentRustManifestSha256": "1f1fc35726162e4e4c4583025353b8bdb70d7b3b062a0673b0fc881fc75fd35d",
+  "publicApi": {
+    "contractsUnchanged": true,
+    "gapCount": 686,
+    "gapsUnchanged": true
+  },
+  "qualifications": [
+    "Final shared lifecycle/identity batch105 passes on each actualPython runtime.",
+    "Exact parent source:12 failing new cases,9 passing cases; failures cover both binding ingress paths and drain delivery.",
+    "Fresh actual Jupyter binary comm/painter47\u21920\u219247 with native release ACK; no page errors.",
+    "Unchanged Node72/VSCode/direct-aggregate journeys are inherited after source/artifact equality; not freshly repeated.",
+    "Intermediate development assertion failures and source-bound pre-shared results receive no final-source pass credit.",
+    "No source/native/client rebuild or generator policy weakening.",
+    "Core/CRLF/inventory/ownership/types/hooks/Ruff final commands recorded separately."
+  ],
+  "remaining": [
+    "Independent final correction review, current-main/combinedABI integration, hostedCI and requiredmergequeue.",
+    "Automatic indexed/hierarchy/overview/mixed-tile bindings, all-host attributedexports, fullaccessibility, massive/five-view memory/latency andcompetitors.",
+    "No whole#50/#39/M6 ormilestones4\u20137completion."
+  ],
+  "repairBase": "2c67a5638265ed6881d6aa50ea466b860cd2195f",
+  "runtimeArtifacts": {
+    "packages/xy-client/dist/index.js": {
+      "bytes": 812916,
+      "sha256": "8e776048e47881c9d24993b8479ace502d221fee3fafbec80d30c0113b31a5e2"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 812945,
+      "sha256": "9f50fe9b856178d9672f4da52bc9b76c7605803ad4149b40ff4df73be187aff9"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 812916,
+      "sha256": "8e776048e47881c9d24993b8479ace502d221fee3fafbec80d30c0113b31a5e2"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 812945,
+      "sha256": "9f50fe9b856178d9672f4da52bc9b76c7605803ad4149b40ff4df73be187aff9"
+    },
+    "spec/abi/xyg-abi.json": {
+      "bytes": 2238846,
+      "sha256": "be90ad3d75e7e94180d1a6b467036a670f43f727401f5f53bea7b63c6977c352"
+    },
+    "target/release/libxyg_core.so": {
+      "bytes": 6137240,
+      "sha256": "b93f21b8f19799897566a5447279f0a79729b7814c0391db302cd31a050a31bd"
+    }
+  },
+  "schema": "xyg.geo-temporal-inbox-drain-repair/v1",
+  "sourceSha256": {
+    "spec/performance/geo-mounted-drain-notification-repair-2026-11-07/README.md": "c727b102b631452a753c951ba69d96a2b46bb32295d3513c2a9621bd7a43b279",
+    "spec/performance/geo-mounted-drain-notification-repair-2026-11-07/current-bindings.json": "5e5f636bb60fbcd7b16d044a4da629a442b047b2be09c8d20a6da6848b05c6a1",
+    "spec/performance/geo-mounted-drain-notification-repair-2026-11-07/notebook-report.json": "0642cc3ff385bb71d59a2b78f8392fdc4ea01007810f5463e43445ec4714aed9"
+  },
+  "unchangedRustInputs": 245
+}

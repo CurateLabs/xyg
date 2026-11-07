@@ -559,3 +559,11 @@ python/xyg/widget.py text eol=lf
 scripts/geo_vscode_mounted_temporal_smoke.py text eol=lf
 tests/test_geo_mounted_temporal.py text eol=lf
 tests/test_geo_live_host.py text eol=lf
+
+# Shared mounted/snapshot temporal notification repair bindings.
+spec/design/geo-live-host.md text eol=lf
+spec/design/geographic-capabilities.md text eol=lf
+spec/performance/geo-mounted-drain-notification-repair-2026-11-07/*.json text eol=lf
+spec/performance/geo-mounted-drain-notification-repair-2026-11-07/*.md text eol=lf
+spec/performance/geo-mounted-drain-notification-repair-2026-11-07/*.gz -text
+spec/performance/geo-mounted-drain-notification-repair-2026-11-07/*.png -text

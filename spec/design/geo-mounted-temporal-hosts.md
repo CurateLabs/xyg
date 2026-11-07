@@ -23,6 +23,9 @@ accepted picture, membership, selected profile and revisions. A new intent can
 recover after definite cleanup. `aclose()` / `dispose()` unsubscribes, invalidates
 uncommitted temporal work, drains real acknowledgements, and releases the source
 claim. It preserves the accepted mounted picture and independent caller frames.
+A failed synchronous delivery of a drain retry restores blocked/error state and
+retains the same correlation; a later explicit cleanup call retries again. A
+reentrant confirmed drain remains authoritative even if delivery then raises.
 Controller disposal initiates the same cleanup; callers await binding cleanup to
 prove settlement. Duplicate cleanup is idempotent. An uncertain drain retains
 its exact correlation and source claim; cleanup rejects and may be retried.
@@ -104,7 +107,14 @@ settling waiters; failed destruction remains retryable through host disposal.
 Binding explicitly enables executor RPC for that widget's lifetime. Unbound
 widgets retain synchronous callback threading. The binding captures its owning
 loop. Foreign-thread controller and comm notifications dispatch there before
-changing intent, tasks or completions. Foreign comm ingress admits at most16
+changing intent, tasks or completions. Snapshot and mounted controller ingress
+share one protected latest-state inbox and at most one queued owning-loop wakeup,
+so a busy owner does not retain a snapshot/callback for every foreign update.
+Owner-loop intent supersedes older queued nonterminal snapshots. A pending
+terminal snapshot cannot be replaced by a late nonterminal snapshot; detach
+discards retained input and prevents further notification admission. Native
+predicate/revision policy and the one-active/one-latest transaction lane remain
+unchanged. Foreign comm ingress admits at most16
 small notifications before copying; native RPC admits at most16 requests including
 the active request, each at most256 bytes. One serial executor chain owns native
 callbacks; repeated cancellation drains the synchronous worker before reporting

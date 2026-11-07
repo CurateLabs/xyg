@@ -7,12 +7,63 @@ from collections.abc import Mapping
 from copy import deepcopy
 from dataclasses import replace
 from functools import partial
+from threading import Lock
 from weakref import WeakKeyDictionary
 
 from ._geoscale import _settle
 
 _BINDINGS = WeakKeyDictionary()
 _MAX = (1 << 64) - 1
+
+
+class _TemporalNotificationInbox:
+    """Retain one native snapshot and one cross-thread wakeup per binding."""
+
+    def __init__(self, loop):
+        self._loop = loop
+        self._lock = Lock()
+        self._pending = None
+        self._scheduled = False
+        self._closed = False
+
+    def accept(self, state, deliver):
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        with self._lock:
+            if self._closed or self._loop.is_closed():
+                return None
+            # Terminal delivery cannot be replaced by an older nonterminal
+            # snapshot, including one arriving later on the owning loop.
+            if self._pending is None or not self._pending["disposed"]:
+                self._pending = state if loop is self._loop else deepcopy(state)
+            if loop is not self._loop:
+                if not self._scheduled:
+                    self._scheduled = True
+                    try:
+                        self._loop.call_soon_threadsafe(deliver)
+                    except RuntimeError:
+                        self._scheduled = False
+                        self._pending = None
+                        if not self._loop.is_closed():
+                            raise
+                return None
+            # Preserve immediate owner-loop admission. An already queued
+            # wakeup can serve the next arrival without retaining older intent.
+            state, self._pending = self._pending, None
+            return state
+
+    def take(self):
+        with self._lock:
+            self._scheduled = False
+            state, self._pending = self._pending, None
+            return state
+
+    def close(self):
+        with self._lock:
+            self._closed = True
+            self._pending = None
 
 
 def _copy_chart(chart):
@@ -68,6 +119,7 @@ class GeoTemporalBinding:
         }
         self._sequence = sequence
         self._mode, self._closed, self._generation = mode, False, 0
+        self._notifications = _TemporalNotificationInbox(self._loop)
         self._frame = self._chart = self._task = None
         self._retiring = None
         self._lock = asyncio.Lock()
@@ -79,6 +131,7 @@ class GeoTemporalBinding:
             self._unsubscribe = controller.subscribe_state(self._accept)
             self._accept(controller.state)
         except BaseException:
+            self._notifications.close()
             self._closed = True
             self._unsubscribe()
             if _BINDINGS.get(self._source) is self:
@@ -86,19 +139,16 @@ class GeoTemporalBinding:
             raise
 
     def _accept(self, state):
-        # Native controller notifications run on the mutating thread. Only the
-        # binding's owning loop may update intent or create coroutine tasks.
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
-        if loop is not self._loop:
-            try:
-                self._loop.call_soon_threadsafe(self._accept, deepcopy(state))
-            except RuntimeError:
-                if not self._loop.is_closed():
-                    raise
-            return
+        state = self._notifications.accept(state, self._deliver_notification)
+        if state is not None:
+            self._apply_state(state)
+
+    def _deliver_notification(self):
+        state = self._notifications.take()
+        if state is not None:
+            self._apply_state(state)
+
+    def _apply_state(self, state):
         if self._closed:
             return
         if state["disposed"]:
@@ -238,6 +288,7 @@ class GeoTemporalBinding:
             return _copy_chart(self._chart), await self._frame.retain_async()
 
     def _detach(self):
+        self._notifications.close()
         self._closed = True
         self._generation += 1
         self._unsubscribe()
@@ -302,6 +353,7 @@ class MountedGeoTemporalBinding:
             raise RuntimeError("source already has a temporal binding")
         self._widget, self._mode = widget, mode
         self._closed = self._scheduled = self._blocked = False
+        self._notifications = _TemporalNotificationInbox(self._loop)
         self._generation, self._sent = 0, -1
         self._time = self._active = None
         self._changed = asyncio.Event()
@@ -314,19 +366,23 @@ class MountedGeoTemporalBinding:
             self._unsubscribe = controller.subscribe_state(self._accept)
             self._accept(controller.state)
         except BaseException:
+            self._notifications.close()
+            self._closed = True
             self._unsubscribe()
             del _BINDINGS[self._source]
             raise
 
     def _accept(self, state):
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
-        if loop is not self._loop:
-            if not self._loop.is_closed():
-                self._loop.call_soon_threadsafe(self._accept, deepcopy(state))
-            return
+        state = self._notifications.accept(state, self._deliver_notification)
+        if state is not None:
+            self._apply_state(state)
+
+    def _deliver_notification(self):
+        state = self._notifications.take()
+        if state is not None:
+            self._apply_state(state)
+
+    def _apply_state(self, state):
         if self._closed:
             return
         if state["disposed"]:
@@ -463,10 +519,12 @@ class MountedGeoTemporalBinding:
             await self._changed.wait()
 
     def _detach(self):
-        if not self._closed:
-            self._closed = True
-            self._unsubscribe()
-            self._schedule()
+        if self._closed:
+            return
+        self._notifications.close()
+        self._closed = True
+        self._unsubscribe()
+        self._schedule()
 
     def _close_from_host(self):
         self._detach()
@@ -479,7 +537,15 @@ class MountedGeoTemporalBinding:
     async def _finish(self, retry=False):
         if retry and self._blocked:
             self._blocked = False
-            self._send(4)
+            try:
+                self._send(4)
+            except BaseException as error:
+                # Delivery is uncertain; a later cleanup call must retry the
+                # same correlation unless a reentrant ACK already drained it.
+                self._blocked = self._active is not None
+                self.error = error.with_traceback(None)
+                self._changed.set()
+                raise
         await self.when_idle()
         if self._blocked:
             raise RuntimeError(str(self.error))

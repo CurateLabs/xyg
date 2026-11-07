@@ -290,3 +290,13 @@ or Node/VS Code view is specified in [mounted temporal hosts](geo-mounted-tempor
 using the existing XYGH CAS and retirement ACK contract.
 This does not establish all-host accessibility, complete attributed frozen
 exports, massive/five-view/competitor acceptance or M6/#50/#39 closure.
+
+### Bounded Python temporal notification ingress
+
+Python snapshot and mounted temporal bindings share the protected latest-state
+inbox described in [mounted temporal hosts](geo-mounted-temporal-hosts.md).
+Foreign notifications retain one copied native snapshot and one owning-loop
+wakeup rather than an unbounded callback list. Owner-loop updates cannot be
+replaced by an older queued nonterminal snapshot; pending disposal wins over
+late nonterminal delivery. The existing native read pump, frame leases, exact
+predicates and source exclusion/cleanup semantics remain unchanged.
