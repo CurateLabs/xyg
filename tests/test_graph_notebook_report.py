@@ -1,6 +1,8 @@
 """Fail closed on a pixel-only or helper-only graph notebook receipt."""
 
 import copy
+import gzip
+import json
 from pathlib import Path
 
 import pytest
@@ -97,3 +99,66 @@ def test_earlier_clicks_cannot_satisfy_final_pointer_proof():
     report["kernel"]["clicks"] = [{}, {}, {}]
     report["finalPointer"] = {"before": 3, "after": 3, "id": "node-0", "expectedId": "node-0"}
     assert any("after baseline" in error for error in verify(report))
+
+
+def uuid_journey():
+    report = green()
+    requested = ["01000000-0000-0000-0000-000000000001", "02000000-0000-0000-0000-000000000001"]
+    report["uuidSelection"] = {
+        "requested": requested,
+        "identities": [
+            {"kind": kind, "uuid": value}
+            for kind, value in zip(("node", "edge"), requested, strict=True)
+        ],
+    }
+    report["kernel"]["clicks"][0]["graphforge"] = report["uuidSelection"]["identities"][:1]
+    for event in report["events"]["events"]:
+        if event["kind"] == "select":
+            event["detail"]["total"] = 2
+    return report
+
+
+def test_uuid_selection_requires_both_requested_kinds_and_view_delivery():
+    assert not verify(uuid_journey())
+
+
+@pytest.mark.parametrize("total", [0, 1, 3, True, 2.0, "2"])
+def test_uuid_selection_rejects_wrong_or_untyped_view_cardinality(total):
+    report = uuid_journey()
+    report["events"]["events"][-1]["detail"]["total"] = total
+    assert any("exactly 2" in error for error in verify(report))
+
+
+@pytest.mark.parametrize("mutation", ["duplicate", "wrong_identity", "wrong_kind", "missing"])
+def test_uuid_selection_rejects_unbound_identity_request(mutation):
+    report = uuid_journey()
+    if mutation == "duplicate":
+        report["uuidSelection"]["requested"][1] = report["uuidSelection"]["requested"][0]
+    elif mutation == "wrong_identity":
+        report["uuidSelection"]["identities"][1]["uuid"] = "03000000-0000-0000-0000-000000000001"
+    elif mutation == "wrong_kind":
+        report["uuidSelection"]["identities"][1]["kind"] = "node"
+    else:
+        del report["uuidSelection"]
+    assert verify(report)
+
+
+def test_legacy_row_selection_report_still_uses_original_contract():
+    report = green()
+    assert not verify(report)
+    report["events"]["events"][-1]["detail"]["total"] = 2
+    assert verify(report)
+
+
+def test_retained_legacy_notebook_capture_still_passes():
+    path = Path("spec/performance/graph-widget-pr1100-repair-2026-11-06/notebook.json")
+    assert not verify(json.loads(path.read_text()))
+
+
+@pytest.mark.parametrize(
+    "name", ["notebook-report-initial", "notebook-report", "notebook-report-final"]
+)
+def test_prior_identity_captures_do_not_claim_complete_uuid_request_proof(name):
+    path = Path("spec/performance/graph-notebook-identity-2026-11-06") / f"{name}.json.gz"
+    report = json.loads(gzip.decompress(path.read_bytes()))
+    assert any("requires its UUID selection request" in error for error in verify(report))

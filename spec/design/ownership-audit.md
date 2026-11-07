@@ -1092,6 +1092,7 @@ Forbidden:
 | `python/xyg/temporal_controller.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/temporal_graph.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/_graph_widget.py` | Python host | `python-host` | `keep-host`; native checkpoint scheduling and revisioned notebook transport only | — |
+| `python/xyg/_graph_widget_identity.py` | Python host | `python-host` | `keep-host`; packs Rust identity requests and joins existing Rust membership planes | — |
 | `python/xyg/widget.py` | Python host | `python-host` | `keep-host` | — |
 | `crates/xyg-engine/src/geo_layers.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_layers_protocol.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |

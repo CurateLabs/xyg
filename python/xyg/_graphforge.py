@@ -738,6 +738,7 @@ def _graph_chart(composition: GraphForgeComposition, props: dict[str, Any]) -> A
         props["style"] = {**_native.graph_semantic_chrome(theme), **(props.get("style") or {})}
     chart = c.graph_chart(mark, **props)
     chart._graphforge_mark = mark
+    chart._graphforge_composition = composition
     items = _legend_items(composition, theme)
     if items:
         chart._composition_legend = {"title": composition.legend["title"], "items": items}

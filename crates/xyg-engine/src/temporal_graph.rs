@@ -263,13 +263,7 @@ impl TemporalGraph {
     /// visibility `(nodes, edges)`, and that frame's revision. One borrow, so
     /// the revision a session validates is the one whose visibility and state
     /// it then reads and mutates.
-    pub fn world_parts(
-        &mut self,
-    ) -> (
-        &mut GraphInteractionState,
-        Option<(&[u8], &[u8])>,
-        u64,
-    ) {
+    pub fn world_parts(&mut self) -> (&mut GraphInteractionState, Option<(&[u8], &[u8])>, u64) {
         (
             &mut self.state,
             self.visibility
@@ -291,7 +285,10 @@ impl TemporalGraph {
 
     /// Persisted endpoint order, used to validate a bound structural replacement.
     pub fn edge_endpoints(&self) -> impl Iterator<Item = (u64, u64)> + '_ {
-        self.sources.iter().copied().zip(self.targets.iter().copied())
+        self.sources
+            .iter()
+            .copied()
+            .zip(self.targets.iter().copied())
     }
 
     pub fn interaction_state(&self) -> &GraphInteractionState {
@@ -378,6 +375,32 @@ impl TemporalGraph {
         cancel: &CancelFlag,
         budget: usize,
     ) -> Result<TemporalGraphFrame, TemporalError> {
+        self.frame_with_output(
+            revision,
+            cursor_micros,
+            range_start_micros,
+            range_end_micros,
+            cancel,
+            budget,
+            |_| Ok(()),
+        )
+        .map(|(frame, ())| frame)
+    }
+
+    /// Prepare a bounded downstream output before publishing visibility. The
+    /// callback borrows an immutable candidate; failure or cancellation leaves
+    /// the applied world untouched, so the same revision can be retried.
+    /// This is transport admission, never a second visibility policy.
+    pub fn frame_with_output<T>(
+        &mut self,
+        revision: u64,
+        cursor_micros: i64,
+        range_start_micros: i64,
+        range_end_micros: i64,
+        cancel: &CancelFlag,
+        budget: usize,
+        output: impl FnOnce(&TemporalGraphFrame) -> Result<T, TemporalError>,
+    ) -> Result<(TemporalGraphFrame, T), TemporalError> {
         if revision == 0 || revision <= self.applied_revision {
             return Err(TemporalError::StaleRevision);
         }
@@ -436,28 +459,30 @@ impl TemporalGraph {
             GraphEntity::Node(id) => node_visibility[self.node_dense[id]] == 1,
             GraphEntity::Edge(id) => edge_visibility[self.edge_dense[id]] == 1,
         });
+        let frame = TemporalGraphFrame {
+            graph_token: self.graph_token,
+            revision,
+            cursor_micros,
+            range_start_micros,
+            range_end_micros,
+            node_visibility,
+            edge_visibility,
+            visible_node_ids: node_state.visible,
+            visible_edge_ids: edge_state.visible,
+            selected_visible_node_ids: node_state.selected_visible,
+            selected_visible_edge_ids: edge_state.selected_visible,
+            focused_visible,
+            pinned_visible_node_ids: node_state.pinned_visible,
+            selected_node_ids: node_state.selected,
+            selected_edge_ids: edge_state.selected,
+            focused,
+            pinned_node_ids: node_state.pinned,
+        };
+        let output = output(&frame)?;
         cancel.publish_if_active(|| {
             self.applied_revision = revision;
-            self.visibility = Some((node_visibility.clone(), edge_visibility.clone()));
-            TemporalGraphFrame {
-                graph_token: self.graph_token,
-                revision,
-                cursor_micros,
-                range_start_micros,
-                range_end_micros,
-                node_visibility,
-                edge_visibility,
-                visible_node_ids: node_state.visible,
-                visible_edge_ids: edge_state.visible,
-                selected_visible_node_ids: node_state.selected_visible,
-                selected_visible_edge_ids: edge_state.selected_visible,
-                focused_visible,
-                pinned_visible_node_ids: node_state.pinned_visible,
-                selected_node_ids: node_state.selected,
-                selected_edge_ids: edge_state.selected,
-                focused,
-                pinned_node_ids: node_state.pinned,
-            }
+            self.visibility = Some((frame.node_visibility.clone(), frame.edge_visibility.clone()));
+            (frame, output)
         })
     }
 
@@ -611,6 +636,59 @@ mod tests {
             valid_to: Some(ends),
             event_at: None,
         }
+    }
+
+    #[test]
+    fn output_rejection_and_late_cancel_preserve_world_and_frozen_state() {
+        let starts = column(&[0, 10, 20], &[1; 3]);
+        let ends = column(&[30, 20, 40], &[1; 3]);
+        let mut graph = TemporalGraph::bind(
+            &projection(),
+            binding(&starts, &ends),
+            TemporalBindingInput::default(),
+        )
+        .unwrap();
+        graph.set_selection([id(2)], [id(11)]).unwrap();
+        graph.set_focus(Some(GraphEntity::Node(id(2)))).unwrap();
+        graph.set_pinned_nodes([id(2)]).unwrap();
+        let budget = graph.required_budget().unwrap();
+        let first = graph
+            .frame(1, 10, 0, 40, &CancelFlag::new(), budget)
+            .unwrap();
+        let frozen = graph.freeze(&first).unwrap();
+        let rejected =
+            graph.frame_with_output(2, 20, 0, 40, &CancelFlag::new(), budget, |candidate| {
+                assert_eq!(candidate.visible_node_ids(), &[id(1), id(3)]);
+                Err::<(), _>(TemporalError::BudgetExceeded)
+            });
+        assert_eq!(rejected, Err(TemporalError::BudgetExceeded));
+        assert_eq!(graph.applied_revision(), 1);
+        assert_eq!(
+            graph.applied_visibility(),
+            Some((first.node_visibility(), first.edge_visibility()))
+        );
+        assert_eq!(graph.freeze(&first).unwrap(), frozen);
+        let cancel = CancelFlag::new();
+        let rejected = graph.frame_with_output(2, 20, 0, 40, &cancel, budget, |_| {
+            cancel.cancel();
+            Ok(vec![1u8; 64])
+        });
+        assert_eq!(rejected, Err(TemporalError::Cancelled));
+        assert_eq!(graph.applied_revision(), 1);
+        assert_eq!(graph.freeze(&first).unwrap(), frozen);
+        let retry = graph
+            .frame(2, 20, 0, 40, &CancelFlag::new(), budget)
+            .unwrap();
+        let retried = graph.freeze(&retry).unwrap();
+        assert_eq!(retried.visible_node_ids, vec![id(1), id(3)]);
+        assert!(retried.visible_edge_ids.is_empty());
+        assert_eq!(retried.selected_node_ids, frozen.selected_node_ids);
+        assert_eq!(retried.focused, frozen.focused);
+        assert_eq!(retried.pinned_node_ids, frozen.pinned_node_ids);
+        assert_eq!(
+            graph.frame(2, 20, 0, 40, &CancelFlag::new(), budget),
+            Err(TemporalError::StaleRevision)
+        );
     }
 
     #[test]

@@ -1,0 +1,95 @@
+{
+  "repairBase": "caeffd14a43b9d57686c25e253b0df10ee8fc336",
+  "sourceSha256": {
+    "crates/xyg-engine/src/chunked_columns.rs": "2f14fee24e6bab44f7b82403c64ad391baf7b551188585814d05f8db51ab58cc",
+    "spec/design-dossier.md": "9b77e64eaedefac5d46b8cc745b0cbf23fe48456dd0784f804566de64d00f526",
+    "spec/design/rust-engine.md": "0048f11f0eeec04e1f65b0afa2df94af10759a4822297136c0790fb653d98a4a",
+    "spec/design/tier3-testing.md": "40b3f36619467768845b72ba8efe4f90b01cd852a878a976eef597e9247b209d",
+    "tests/test_chunked_columns.py": "075fcb73b9475df45ead3e747b3fad89542bca5aabf7eb9b3fedeb67de4f134f",
+    "packages/xy-node/test/chunked-columns.test.mjs": "e44fde46067b70bf3683e26da053b02e8c08be125e001019bb831d3ddd5993f6",
+    "spec/performance/chunked-cache-lookup-2026-11-06/README.md": "3e1d47dcc9d85ec0cd67cdf92250f8191cbb0ab92b748ceb26cc9089e2a6df50",
+    "spec/performance/chunked-cache-lookup-2026-11-06/.gitattributes": "bd33c8ef5fb33950a4e41c61028c5665f6d5ee395ff6f17d8fb3e2dad2d9ff12"
+  },
+  "nativeArtifact": {
+    "sha256": "6323c123a0b129a0081e369a632a0b027ee0d9bca10d3ff5bc0016866bc098a6",
+    "bytes": 6128056
+  },
+  "logs": {
+    "test-initial-compile": {
+      "exitCode": 101,
+      "rawSha256": "7dbc2e530a764787bd4af8c4d321e65deeb6ef609d0c89b5ec663e6d07e3613c",
+      "archiveSha256": "e9094dc321812d08390ddd1fab74e6170f4785b8e973de0cabecd58fef45134c"
+    },
+    "before": {
+      "exitCode": 0,
+      "rawSha256": "cbbf2766cc81d9411c2482ec31fcce106d902ce55748be98240ab414bb1f92cb",
+      "archiveSha256": "78d2b79b59041c50e5f82679c97784de7eb12f6e013ec11a735e7718a1fc1706"
+    },
+    "after": {
+      "exitCode": 0,
+      "rawSha256": "50eb936e165ca27448e7a3994592d18fe62536dfe3195c1c95be00e651135d36",
+      "archiveSha256": "eff94b62a59d191ddef416fa1dfd53e4725e1cf7724b35a2fdd4a23b87d712c1"
+    },
+    "build": {
+      "exitCode": 0,
+      "rawSha256": "e9e123568e67c8e99bb4df8037df7f57dded0e9a7c415027edbefd9cf33fbd4b",
+      "archiveSha256": "97fda7d1cb4805ec3bfbc3a65ec8f684f64c92e53538a29081f173d1e53899dd"
+    },
+    "clippy": {
+      "exitCode": 0,
+      "rawSha256": "7cfc85f0b57946e19cd31468d9677fcb1f5e31d4518065923a5fecff109cb573",
+      "archiveSha256": "daa0cdaf0dc1265015389dc772f54875ae21dfe05ed8bb3f74bc693b376cb6be"
+    },
+    "python": {
+      "exitCode": 0,
+      "rawSha256": "f27130d6020e68802a370537b0d3f9a9bbbfdc8f4a6b63e9239adbe73bc04ec5",
+      "archiveSha256": "f5fbbf0f49b967780cf5ba11504ae406199f736dbf11c8a6f403a175aae589b9"
+    },
+    "node": {
+      "exitCode": 0,
+      "rawSha256": "9e49300884050d63ebf06b62b7cbf2ffc76785293384557acbf4b51c66ef6123",
+      "archiveSha256": "1f0a6b05c8734331ca05d3d60a5cf153003187134c31fff1c1b71c0f0d41787d"
+    },
+    "hooks": {
+      "exitCode": 0,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "ruff": {
+      "exitCode": 0,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "format": {
+      "exitCode": 0,
+      "rawSha256": "0be8ae93d50c615562bd0773d2904372d5886f19435a0936b6402f9fad55f102",
+      "archiveSha256": "53cdfeb3a1d2dcc20325af24fcb40f97146b32589012eedb102bd2256aa06181"
+    }
+  },
+  "debugMeasurements": {
+    "before": {
+      "chunks": 32768,
+      "coldMicros": 5649026,
+      "warmInteriorMicros": 1498976
+    },
+    "after": {
+      "chunks": 32768,
+      "coldMicros": 101489,
+      "warmInteriorMicros": 32600
+    }
+  },
+  "beforeSource": {
+    "archiveSha256": "390b83dd63e63a1d0e54b219be090d6bda4380b196df7de37ccc2e5d4d216a33",
+    "rawSha256": "febc555697c335c6decb2d54a5c5b2f931a3060761601f7b42fa153344ca9fe0"
+  },
+  "environment": {
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "cpu": "",
+    "pythonTestInterpreter": "3.12.15 (main, Oct  1 2026, 20:59:04) [Clang 22.1.3 ]",
+    "rust": "1.96.0",
+    "node": "22.23.4",
+    "load": "uncontrolled concurrent development; single diagnostic sample per variant"
+  },
+  "previousReceiptSha256": "ae635745253c08a5ab1c3a83485ab8f901844cb5cf851be231ce25b431489d39",
+  "scope": "local-native cache correctness and lookup structure; no full M7 acceptance"
+}

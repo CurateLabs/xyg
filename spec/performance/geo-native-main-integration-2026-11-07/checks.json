@@ -1,0 +1,158 @@
+{
+  "parents": {
+    "nativeRepair": "6609061500055f5bc3db185b75b79fbafba5b8f9",
+    "acceptedMain": "80e841542462eaf5509ac90e1f17a80cae974164"
+  },
+  "sourceBindingsSha256": "c18ac438740226f12980f5d2dec3972ea23bf537ebde5cf8923ed849d33cde78",
+  "protectionSha256": "abbe7fa90170d58e6321113ddcdd51a8c10c9834522de13e985fdb8a6ffeb980",
+  "browserReportSha256": "cadb012482ae03c83ba5cdd77c6dc17594d80c71290b0fe4b56ac70d154f0be9",
+  "logs": {
+    "inventory-write": {
+      "command": "uv run python scripts/check_release_inventory.py --write",
+      "exitCode": 0,
+      "rawSha256": "5007bf087b7f76fea24b0f6770cabd078b1a83b26987c391b0f19af64a4a57bb",
+      "archiveSha256": "a2277e48bd10ba89748088135de9346e064ed73e274ba49c37aee9442587f308"
+    },
+    "native-build": {
+      "command": "CARGO_BUILD_JOBS=2 cargo build --release -p xyg-core",
+      "exitCode": 0,
+      "rawSha256": "35ef28a768f4bff8f87d15d3e8c35a0988e435063037c6b5c6632818afe0c383",
+      "archiveSha256": "2b09d4dcb7624483d7b29504bce5ddf053f37a98d8cfedc047223551c9fa6dae"
+    },
+    "wasm-build": {
+      "command": "CARGO_BUILD_JOBS=2 npm run build:wasm (Node22)",
+      "exitCode": 0,
+      "rawSha256": "9b715f9f918ae18c18283ff1e33456bf70a0e5b2c66c15ed3ae10dde71ab5d29",
+      "archiveSha256": "64435056a0c6c33b45129b414e5cb477c014208c8df16b92312a679ced93199b"
+    },
+    "client-build": {
+      "command": "node js/build.mjs (Node22)",
+      "exitCode": 0,
+      "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c"
+    },
+    "ownership": {
+      "command": "uv run python scripts/verify_ownership.py",
+      "exitCode": 0,
+      "rawSha256": "114918cae22abfe24de003b791ecfc6b8c602b2cadf06589755cf06d1b748b47",
+      "archiveSha256": "d584819740eb8c538cc4bc5a1bf4f93b1fb7e1857121b605d983ac289a4a931b"
+    },
+    "focused": {
+      "command": "uv run pytest tests/test_geo_temporal_binding.py tests/test_geo_spatial.py tests/test_geo_hierarchy.py tests/test_geo_retained.py tests/test_geo_retained_components.py tests/test_geo_hierarchy_static_selected.py tests/test_temporal_controller.py tests/test_temporal_graph_native.py tests/test_chunked_columns.py tests/test_graph_widget.py tests/test_graphforge_contract_corpus.py tests/test_release_inventory.py tests/test_verify_ownership.py -q",
+      "exitCode": 0,
+      "rawSha256": "123af9238a3c3170591f30b8025e2db539eda854a281b1d632bb7d1a69ec1a89",
+      "archiveSha256": "2ac6edd8e2ae38c64f725e1327888fe0b22f7cfe354a642d1027e6aea5c7e1c4"
+    },
+    "node": {
+      "command": "Node full host/actual-WASM command while packaging still active; stale artifacts, 27passed/4failed/3cancelled",
+      "exitCode": 1,
+      "rawSha256": "7aa28abfcaf531110e4edcec4daca3170bb170e745da15c212fd3a9cebd410b9",
+      "archiveSha256": "3592b65581e3dfea75340afe69a855c934103b6e3c4ed7835d0ffcb86ff83483"
+    },
+    "node-packaged": {
+      "command": "node --test packages/xy-node/test/geo-temporal-binding.test.mjs packages/xy-node/test/temporal-controller.test.mjs packages/xy-node/test/geo-frame-leases.test.mjs packages/xy-node/test/temporal-graph-publication.test.mjs packages/xy-node/test/geo-scale-wasm-parity.test.mjs packages/xy-node/test/chunked-columns.test.mjs",
+      "exitCode": 0,
+      "rawSha256": "139d630b111c5099e5e3b212e33bc39718b8a06879ac55cf1c97cb55fda3f381",
+      "archiveSha256": "ef3bcc0f876572ab18391da8aff9cfc18410810ba9731f0f871d84669e87c692"
+    },
+    "abi": {
+      "command": "uv run python scripts/abi_smoke.py",
+      "exitCode": 0,
+      "rawSha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306",
+      "archiveSha256": "135de4fa46245b623c5d8acfa3e621c9374a4c0229b173222340fff45c526965"
+    },
+    "types-final": {
+      "command": "uv run ty check",
+      "exitCode": 0,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "browser": {
+      "command": "XYG_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome XYG_GEO_RETAINED_REPORT=target/task-tmp/native-geo-main/browser.json node scripts/geo_retained_wasm_smoke.mjs (Node22)",
+      "exitCode": 0,
+      "rawSha256": "9a8ebdc800d902008e5b1926fa098953d58422898b6d917d8f778504f11519a2",
+      "archiveSha256": "599933a91ecfe66d9dd2b5e01c0fc47c102bd7e46145f8035c9936207e517a0c"
+    },
+    "assets": {
+      "command": "uv run python scripts/verify_wasm_assets.py",
+      "exitCode": 0,
+      "rawSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+      "archiveSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730"
+    },
+    "inventory-final": {
+      "command": "uv run python scripts/check_release_inventory.py",
+      "exitCode": 0,
+      "rawSha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c",
+      "archiveSha256": "061e29d38894e10e9f9982462538fadbdf9051697515ec1315b4fc2b4d20e9f2"
+    },
+    "size": {
+      "command": "Node22 gzipSync level6 and unchanged 1882/768KiB gates",
+      "exitCode": 0,
+      "rawSha256": "0d46715ab01c8be000d4bd23be23647d794404d23276346f89cb0e0b5f8007b5",
+      "archiveSha256": "3a75c9dfc7f27f26f8710399ba001f337dc5e9ef0d3242621c6504f569999586"
+    },
+    "checkout-before-pins": {
+      "command": "uv run pytest tests/test_graphforge_contract_corpus.py -q (new normative source hashes not yet LF-pinned)",
+      "exitCode": 1,
+      "rawSha256": "f7a023b41fa3eac8699a3cafdae4b14cbcc4393c654474dfe4a8affd4a74df0d",
+      "archiveSha256": "93a39abbdb83b186f4f58faf006ac9fbde38ce04c87f8132f706f4be1e5d19cb"
+    }
+  },
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6127864,
+      "sha256": "09b2571980a8c1d97ac4478fc51b346fb9356d07916bc8b38e84c072b531b895"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 2124856,
+      "sha256": "dbae96bb9f476d5368a9ca966e554d2dea36df7bb8ff739a5d3e712e9aefa41d"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1927032,
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 804132,
+      "sha256": "09144e0e40a7c278a7a103a96bdde3b7ae73e3d71b3fdf367a1353ddbad1b80d"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 804159,
+      "sha256": "97ae3d73b9b09435550781fa79a26480a6c15ce2bcab42ec40ca60854d18afe4"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 56051,
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2588565,
+      "sha256": "8bed6f41e9d60e41010b069cfd18bbb896a799bd733649e74deaf6dbf68ac5e7"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "303b39e33590f6b2dd65aefeaefd1714088414cb515a0817c6d3fa04c7489d3e"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 804132,
+      "sha256": "09144e0e40a7c278a7a103a96bdde3b7ae73e3d71b3fdf367a1353ddbad1b80d"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 804159,
+      "sha256": "97ae3d73b9b09435550781fa79a26480a6c15ce2bcab42ec40ca60854d18afe4"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1927032,
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1"
+    }
+  },
+  "wasmSize": {
+    "raw": 1927032,
+    "gzip6": 786115
+  },
+  "environment": {
+    "systemPython": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+    "testPython": "3.12.15 (main, Oct  1 2026, 20:59:04) [Clang 22.1.3 ]",
+    "node": "v22.23.4",
+    "nativeSelection": "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-6e94436c/target/release/libxyg_core.so"
+  },
+  "limits": "No mounted native replacement or whole issue acceptance. Hook/Ruff logs retained ignored under target/task-tmp/native-geo-main; not immutable bindings."
+}

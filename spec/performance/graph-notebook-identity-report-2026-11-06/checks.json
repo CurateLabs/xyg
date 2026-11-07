@@ -1,0 +1,142 @@
+{
+  "reviewedCandidate": "1caae2a69497754be5829254e3edd1e2aea0cb2e",
+  "beforeVerifierSha256": "92abda1ee44df8c484833816d8b8e5f1c80992e6bba7f20f98731dcd1a96ca09",
+  "checks": {
+    "notebook-report-initial-before": {
+      "exitCode": 1,
+      "inputSha256": "6b4b980699e1795b2964e6c93595fa10d505d786a2d467b423007abdd32d0c8e",
+      "rawSha256": "dee17baba75718e23630c0a918ba3b35e4dd7f8c265f4ed087472f030ec72861",
+      "archiveSha256": "5b7440aa73fe00b6e169fefeb81ee4a24c6fa088555e4fa6ee069027835478e1"
+    },
+    "notebook-report-before": {
+      "exitCode": 1,
+      "inputSha256": "6b4b980699e1795b2964e6c93595fa10d505d786a2d467b423007abdd32d0c8e",
+      "rawSha256": "dee17baba75718e23630c0a918ba3b35e4dd7f8c265f4ed087472f030ec72861",
+      "archiveSha256": "5b7440aa73fe00b6e169fefeb81ee4a24c6fa088555e4fa6ee069027835478e1"
+    },
+    "notebook-report-final-before": {
+      "exitCode": 1,
+      "inputSha256": "810427ecd6cb2c26a66badf16ed469881074d47cffeb3213c5d435e0e1048852",
+      "rawSha256": "dee17baba75718e23630c0a918ba3b35e4dd7f8c265f4ed087472f030ec72861",
+      "archiveSha256": "5b7440aa73fe00b6e169fefeb81ee4a24c6fa088555e4fa6ee069027835478e1"
+    },
+    "report": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_graph_notebook_report.py",
+        "spec/performance/graph-notebook-identity-report-2026-11-06/notebook.json"
+      ],
+      "exitCode": 0,
+      "rawSha256": "8a0083ab43cb0f83117637cfeef43d13eaa95c5dd16bd8b35d4cf08da8ffa754",
+      "archiveSha256": "1b5876660f05201ed95aa742feaad51ce4a9b40450a89c0c792fafeb04096d14"
+    },
+    "focused": {
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "tests/test_graph_notebook_report.py",
+        "tests/test_graph_widget.py",
+        "tests/test_graphforge_contract_corpus.py",
+        "-q"
+      ],
+      "exitCode": 0,
+      "rawSha256": "d760e51efa6264c4d67b2613616b635edee3ecb893c5ee80864b6628907d6a5e",
+      "archiveSha256": "9db9ba9d19dee71bb670e6b989058dbb8df58c799111f5b21419eb0a6015ac46"
+    },
+    "ownership": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_ownership.py"
+      ],
+      "exitCode": 0,
+      "rawSha256": "05bc4e08ec18b45b65e6d57b56638a446616e313033b4454dac2a20eb6881f92",
+      "archiveSha256": "8d374b3086416aa738b0f9db79a959e696d1a00a65105f8d73006a30d53edd8b"
+    },
+    "workflow": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_ci_workflow.py"
+      ],
+      "exitCode": 0,
+      "rawSha256": "b47e403900163943455de0c13b3a8cd7cd5efd7f700b857c15b1fdb782349552",
+      "archiveSha256": "6a2219eb446d47e82156b2a9ffb6b5213c9ad2436208a4912afa5bba48d28abb"
+    }
+  },
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "sha256": "d1758cf111c09add3bb5a0aed107eb623d9e2035e5f5461068eb32b3a8ce0949",
+      "bytes": 6119880
+    },
+    "packages/xy-client/dist/index.js": {
+      "sha256": "484490d3f263c1ca4c4d4c54c483650d4b23c431b30aa2b53a762628e31d0db9",
+      "bytes": 801639
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "sha256": "472b3bc27c661d9c47664d1aa570a60392215b69fd71f23208da2f62352a3811",
+      "bytes": 801666
+    },
+    "python/xyg/static/index.js": {
+      "sha256": "484490d3f263c1ca4c4d4c54c483650d4b23c431b30aa2b53a762628e31d0db9",
+      "bytes": 801639
+    },
+    "python/xyg/static/standalone.js": {
+      "sha256": "472b3bc27c661d9c47664d1aa570a60392215b69fd71f23208da2f62352a3811",
+      "bytes": 801666
+    }
+  },
+  "capture": {
+    "frames": 39,
+    "first": "1",
+    "last": "300",
+    "finalPointer": {
+      "before": 2,
+      "after": 3,
+      "id": "01000000-0000-0000-0000-000000000001",
+      "expectedId": "01000000-0000-0000-0000-000000000001"
+    },
+    "pageErrors": [],
+    "uuidSelection": {
+      "requested": [
+        "01000000-0000-0000-0000-000000000001",
+        "02000000-0000-0000-0000-000000000001"
+      ],
+      "identities": [
+        {
+          "kind": "node",
+          "index": 0,
+          "uuid": "01000000-0000-0000-0000-000000000001",
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "index": 0,
+          "uuid": "02000000-0000-0000-0000-000000000001",
+          "layers": [],
+          "derived": false,
+          "type": "KNOWS",
+          "source": "01000000-0000-0000-0000-000000000001",
+          "target": "01000000-0000-0000-0000-000000000002"
+        }
+      ]
+    },
+    "notebookSha256": "9a53663d6940198211fd0ecb11592945c92d1129211fa2dc3b3e9dfd98023009",
+    "notebookLogArchiveSha256": "4974f15e2d51054ee09ca531969a8ff10b015b97f64f54c0a0bdd8e702fe6d3f",
+    "notebookLogRawSha256": "bfd3d791a6b6d0453ba7a61c78e4b21a9fc5834f969a4c62cbf21dc969da8cd9",
+    "images": {
+      "initial": "f3b0741ed2333d427ac232677738a94c79955b030050a2c248ac2193d16f7829",
+      "final": "de67b1bea47ecb08b3930cc0c90c7f68742f401afadde0e34744b3042711ba19"
+    }
+  },
+  "environment": {
+    "uvPython": "Python 3.12.15",
+    "browser": "156.0.8078.4",
+    "node": "v22.23.4"
+  }
+}

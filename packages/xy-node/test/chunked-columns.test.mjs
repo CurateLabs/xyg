@@ -97,3 +97,19 @@ test("fetched detail corruption and stale empty reads fail closed", () => {
     assert.throws(() => Array.from(columns.pages([0, 11], { pageBytes: 64, generation: 3 })), /corrupt artifact/);
   } finally { columns.close(); rmSync(dir, { recursive: true }); }
 });
+
+test("resident overlap reuses native chunks across read modes", () => {
+  const dir = mkdtempSync(join(tmpdir(), "xyg-reuse-")), path = join(dir, "ordered.xygc"), rows = artifact(path);
+  const columns = new ChunkedColumns(path);
+  try {
+    columns.read([0, 7], { budgetBytes: 192, generation: 1 });
+    const got = columns.read([4, 11], { budgetBytes: 192, generation: 2 });
+    assert.deepEqual(Array.from(got.x, (x, i) => [x, got.y[i]]), rows.slice(4));
+    assert.equal(got.provenance.chunksRead, 1n);
+    assert.equal(got.provenance.bytesRead, 64n);
+    const pages = Array.from(columns.pages([4, 11], { pageBytes: 192, generation: 3 }));
+    assert.equal(pages.length, 1);
+    assert.equal(pages[0].progress.bytesRead, 0n);
+    assert.throws(() => columns.read([4, 11], { budgetBytes: 64, generation: 4 }), /needs 128 bytes/);
+  } finally { columns.close(); rmSync(dir, { recursive: true }); }
+});

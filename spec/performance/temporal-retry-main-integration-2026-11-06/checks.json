@@ -1,0 +1,110 @@
+{
+  "reviewedHead": "f6d309675943ce30d3c58e8ca64ea1f36bbf9a87",
+  "acceptedMain": "885330e228b6ada9bff54ef1b903e5da2f79b45c",
+  "sourceProtection": {
+    "sha256": "d351d37f4f2513ec0a0bcea2c14ad76976c650a3de3a172965987cf633804fcf",
+    "bytes": 29963
+  },
+  "logs": {
+    "fetch": {
+      "exitCode": 0,
+      "rawSha256": "4f64c7200ab19cb6fa066ad4691d9045aad653f349c3e377af25ac8241c965c1",
+      "archiveSha256": "5942d5d6956eef57cbed24fedbd1c6eb8c75098f4c4c6cb516887180e62ab176"
+    },
+    "merge": {
+      "exitCode": 1,
+      "rawSha256": "8fc6140040878be618ec5e1caa3f9f0a762e70e1f12be139db6df241b797df16",
+      "archiveSha256": "e6d0ad2c389b3b0ea20c446c77cfd95a1ddae0f0aae052c0ed52688a19106fc5"
+    },
+    "native-build": {
+      "exitCode": 0,
+      "rawSha256": "5d8fae9cf92b39da509ea03af98a80d928ed3b8000d92a254e7ed8070988cba1",
+      "archiveSha256": "9f735996c372fe686da60f50e0b7ad251a874cf60c1c5fc8b5756cf4b8321ac0"
+    },
+    "wasm-build": {
+      "exitCode": 0,
+      "rawSha256": "b33fc32aacff0b2387d9c2f8d51f728e1398f307701ebe580e8ea24d2a28efaa",
+      "archiveSha256": "6327c09a8873a98bbcfbc75cafe5d17c424ae88930441d00b9e59313b8c8eb26"
+    },
+    "wasm-package": {
+      "exitCode": 0,
+      "rawSha256": "7dc162823e7f8dc954516acad0676fbbb5850a894ee6bd6597aab6f59e918e79",
+      "archiveSha256": "c4afb3348cea01a227b5fe6d1dd6aa1fe56427c5fcd5e9738ea0a54f9ec0b0cc"
+    },
+    "client-build": {
+      "exitCode": 0,
+      "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c"
+    },
+    "node": {
+      "exitCode": 0,
+      "rawSha256": "8b8268c61e6725e01f70749f9353b13c1aa7929cbf5a4fc79139645a0bea7330",
+      "archiveSha256": "0d669b2476dee7700adbae49e8e5a002aca9701776cf44e11568a8d4ff102c58"
+    },
+    "python": {
+      "exitCode": 0,
+      "rawSha256": "265f27c08845ab5e5c1a9c9bd60518d1014727d26c1ba2468d54ee571e763fe1",
+      "archiveSha256": "32f22ec05a974b8f6e0a1552bad82a9b533325699eae4c22a65259b47cd80c5a"
+    },
+    "browser": {
+      "exitCode": 0,
+      "rawSha256": "680236881e4e32eddbeaa5046291d58f1c867844c1c942bfce1a0e7643fc558f",
+      "archiveSha256": "910de06976c36bde0b3e9e7a5e6b7a9fbecf61c6f363907f9be862d0c81ad425"
+    },
+    "engine-tests": {
+      "exitCode": 0,
+      "rawSha256": "d616ca1319c1ce8d399658a43504d58d838074268417af27ef2c8fd8b203c7ee",
+      "archiveSha256": "413e66ac53b7b46fcc21b8dfa8ab1fa4b5418255ebceb6cedf9f682db9eca8be"
+    },
+    "wasm-host-tests": {
+      "exitCode": 0,
+      "rawSha256": "c91475c54cf6e3896bb4f59abf78dd1bbe3b9d4800d13ce95f1096bc8fd91c15",
+      "archiveSha256": "b1cc759d74a5aed3a39cb8b004c4baf9e678f9868beb4d1a7224d56ebe022c61"
+    },
+    "assets": {
+      "exitCode": 0,
+      "rawSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+      "archiveSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730"
+    },
+    "inventory": {
+      "exitCode": 0,
+      "rawSha256": "8361f487b98a086bb0e93039928b61981747250d6fdaa8c1b8647e7c616f0c14",
+      "archiveSha256": "5869593dcac6b883995bfd861706d29f2e6786c3e61023571497a26370385782"
+    }
+  },
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "sha256": "d0047472bf6122e490ca18dc921c5c2e9b4333a1397482780bc55b0daa96fd8d",
+      "bytes": 6120968
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1",
+      "bytes": 1927032
+    },
+    "packages/xy-client/dist/index.js": {
+      "sha256": "f25b3d10079fd8d10933a534d933ebb9b38a7a6a546ce59ccd2b83504fa470c5",
+      "bytes": 802108
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "sha256": "cc15faa42e2b9bac873689e24e20ee3caae2fb744889978d1280aad4c535d3e7",
+      "bytes": 802135
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+      "bytes": 56051
+    }
+  },
+  "wasmSizes": {
+    "raw": 1927032,
+    "nodeGzip6": 786115
+  },
+  "rawCap": 1927168,
+  "nodeGzip6Cap": 786432,
+  "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+  "node": "22.23.4",
+  "sourceSha256": {
+    "spec/performance/temporal-retry-main-integration-2026-11-06/README.md": "afc840b188a69649dd7abd76d26f919b3b4360c3b6ae354874f3ca818b25cc5b",
+    "spec/performance/temporal-retry-main-integration-2026-11-06/.gitattributes": "bd33c8ef5fb33950a4e41c61028c5665f6d5ee395ff6f17d8fb3e2dad2d9ff12"
+  },
+  "scope": "accepted-main integration of approved public temporal retry; not full M5 acceptance"
+}

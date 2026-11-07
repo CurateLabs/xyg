@@ -1,0 +1,28 @@
+{
+  "parents": [
+    "7c5ebc655ba9c8f2cb20037811246da6e01fbcd3",
+    "43b99bebcfa2c1c499d16af815d5109649643296"
+  ],
+  "sourceSha256": {
+    "crates/xyg-engine/src/chunked_columns.rs": "c63f03aa18dbcbeb052d6c6a553a401abf93ab244e4d0c0b0b086e32a8031118",
+    "packages/xy-node/test/chunked-columns.test.mjs": "e44fde46067b70bf3683e26da053b02e8c08be125e001019bb831d3ddd5993f6",
+    "tests/test_chunked_columns.py": "075fcb73b9475df45ead3e747b3fad89542bca5aabf7eb9b3fedeb67de4f134f",
+    "spec/design-dossier.md": "878542bdb81367522d75adabd3c00db212c1816b6df846dc5b57a3f081223de7",
+    "spec/design/rust-engine.md": "f479d7a8e61fd38244b4f8c202ec80f3a869df4ccbe5f1edda236703024c9329",
+    "spec/design/tier3-phase4-roadmap.md": "7321dd6771eb7b7401d79cfa4bfe9517f3b8f6b917b1a772a273ef92c61521d5",
+    "spec/design/tier3-testing.md": "a463a05587b1130e1eb5fec3bebb4242e529c804f8f4d8aad1b9034dcbb85cc1",
+    "scripts/check_stale_names.py": "fb06164817c46e759cd4624bbc56afd1a53486a3e020009e6053a3e9ebeec20a",
+    "tests/test_stale_names.py": "64637e3f36411802301e224f6c789fcfa65ab1b41784451e98632c133df03121",
+    "spec/design/xyg-naming.md": "ec269681bef573ace25af15c2b17dfe41a53eebd584b0143b7bc3872f28dce8a"
+  },
+  "receiptSha256": {
+    "spec/performance/chunked-column-reuse-2026-11-06/receipt.json": "ae635745253c08a5ab1c3a83485ab8f901844cb5cf851be231ce25b431489d39",
+    "spec/performance/chunked-read-validation-2026-11-06/manifest.json": "d0ee81046e23399a3b7886cfb233a9a3effccb908962bbd9e96f2a189b2bd51c",
+    "spec/performance/chunked-read-history-classification-2026-11-06/checks.json": "7fcee5118fdfb7dd4d29416e47b7c94a5efe6adfebb2574d0f8bb69fc251bd60"
+  },
+  "native": {
+    "path": "target/release/libxyg_core.so",
+    "sha256": "4a717d649072745734e5f238b9646189faa2619a6cc0de1d07ad8a9eb3dfa82c",
+    "bytes": 6126936
+  }
+}

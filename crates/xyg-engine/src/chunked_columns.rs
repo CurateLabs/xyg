@@ -5,11 +5,14 @@
 //! a fixed header, checked per-chunk metadata, then paired `(x, y)` f64 rows.
 //! Hosts only open a local artifact and request a viewport (§5/§22/§28).
 
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, Read, Seek, SeekFrom, Write};
 use std::path::Path;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
+
+const RESIDENT_LIMIT: u64 = 8 * 1024 * 1024;
 
 const MAGIC: &[u8; 4] = b"XYGC";
 const VERSION: u32 = 2;
@@ -32,9 +35,21 @@ pub struct ChunkMeta {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct ChunkAccess {
+    pub chunk: u32,
+    pub row_start: u64,
+    pub row_count: u32,
+    pub hit: bool,
+}
+
+#[derive(Debug, PartialEq)]
 pub struct RangeRead {
     pub x: Vec<f64>,
     pub y: Vec<f64>,
+    pub row_ids: Vec<u64>,
+    pub accesses: Vec<ChunkAccess>,
+    pub resident_bytes: u64,
+    pub evicted_chunks: Vec<u32>,
     pub generation: u64,
     pub first_chunk: u32,
     pub chunks_considered: u32,
@@ -155,8 +170,71 @@ impl From<io::Error> for Error {
     }
 }
 
+struct ResidentChunk {
+    raw: Vec<u8>,
+    previous: Option<u32>,
+    next: Option<u32>,
+}
+
+#[derive(Default)]
+struct ResidentChunks {
+    // Hash iteration never determines eviction: links preserve exact LRU order.
+    // No Arc clones: taking or evicting an entry transfers sole slab ownership.
+    entries: HashMap<u32, ResidentChunk>,
+    oldest: Option<u32>,
+    newest: Option<u32>,
+    bytes: u64,
+    #[cfg(test)]
+    positioned_reads: u64,
+}
+impl ResidentChunks {
+    fn take(&mut self, id: u32) -> Option<Vec<u8>> {
+        let entry = self.entries.remove(&id)?;
+        if let Some(previous) = entry.previous {
+            self.entries.get_mut(&previous).unwrap().next = entry.next;
+        } else {
+            self.oldest = entry.next;
+        }
+        if let Some(next) = entry.next {
+            self.entries.get_mut(&next).unwrap().previous = entry.previous;
+        } else {
+            self.newest = entry.previous;
+        }
+        self.bytes -= entry.raw.len() as u64;
+        Some(entry.raw)
+    }
+
+    fn put(&mut self, id: u32, raw: Vec<u8>) {
+        debug_assert!(!self.entries.contains_key(&id));
+        if let Some(newest) = self.newest {
+            self.entries.get_mut(&newest).unwrap().next = Some(id);
+        } else {
+            self.oldest = Some(id);
+        }
+        self.bytes += raw.len() as u64;
+        self.entries.insert(
+            id,
+            ResidentChunk {
+                raw,
+                previous: self.newest,
+                next: None,
+            },
+        );
+        self.newest = Some(id);
+    }
+
+    fn trim(&mut self, limit: u64, evicted: &mut Vec<u32>) {
+        while self.bytes > limit {
+            let id = self.oldest.unwrap();
+            self.take(id).unwrap();
+            evicted.push(id);
+        }
+    }
+}
+
 pub struct ChunkedColumns {
     file: File,
+    resident: Mutex<ResidentChunks>,
     rows: u64,
     chunk_rows: u32,
     metadata: Vec<ChunkMeta>,
@@ -469,6 +547,7 @@ impl ChunkedColumns {
         }
         Ok(Self {
             file,
+            resident: Mutex::new(ResidentChunks::default()),
             rows,
             chunk_rows,
             metadata,
@@ -558,46 +637,44 @@ impl ChunkedColumns {
         let mut out = RangeRead {
             x: Vec::new(),
             y: Vec::new(),
+            row_ids: Vec::new(),
+            accesses: Vec::new(),
+            resident_bytes: 0,
+            evicted_chunks: Vec::new(),
             generation,
             first_chunk: first as u32,
             chunks_considered: candidates.len() as u32,
             chunks_read: 0,
             bytes_read: 0,
         };
-        for (_, meta) in selected {
+        if !is_current(generation) {
+            return Err(Error::Cancelled);
+        }
+        let mut resident = self.resident.lock().unwrap();
+        if !is_current(generation) {
+            return Err(Error::Cancelled);
+        }
+        resident.trim(budget.min(RESIDENT_LIMIT), &mut out.evicted_chunks);
+        for (index, meta) in selected {
             if !is_current(generation) {
                 return Err(Error::Cancelled);
             }
-            let bytes = u64::from(meta.row_count) * ROW_BYTES;
-            let mut raw = vec![0u8; bytes as usize];
-            read_exact_at(
-                &self.file,
-                &mut raw,
-                self.data_offset + meta.row_start * ROW_BYTES,
+            self.read_chunk(
+                &mut resident,
+                index as u32,
+                &meta,
+                budget,
+                generation,
+                &mut is_current,
+                &mut out,
+                (x0, x1),
+                y,
             )?;
-            if !is_current(generation) {
-                return Err(Error::Cancelled);
-            }
-            validate_chunk_rows(&raw, &meta)?;
-            out.chunks_read += 1;
-            out.bytes_read += bytes;
-            for row in raw.chunks_exact(16) {
-                let x = f64::from_le_bytes(row[0..8].try_into().unwrap());
-                let yy = f64::from_le_bytes(row[8..16].try_into().unwrap());
-                if x.is_finite()
-                    && yy.is_finite()
-                    && x >= x0
-                    && x <= x1
-                    && y.is_none_or(|(a, b)| yy >= a && yy <= b)
-                {
-                    out.x.push(x);
-                    out.y.push(yy);
-                }
-            }
         }
         if !is_current(generation) {
             return Err(Error::Cancelled);
         }
+        out.resident_bytes = resident.bytes;
         Ok(out)
     }
 
@@ -638,12 +715,25 @@ impl ChunkedColumns {
         let mut out = RangeRead {
             x: Vec::new(),
             y: Vec::new(),
+            row_ids: Vec::new(),
+            accesses: Vec::new(),
+            resident_bytes: 0,
+            evicted_chunks: Vec::new(),
             generation,
             first_chunk: page_first as u32,
             chunks_considered: 0,
             chunks_read: 0,
             bytes_read: 0,
         };
+        if !is_current(generation) {
+            return Err(Error::Cancelled);
+        }
+        let mut resident = self.resident.lock().unwrap();
+        if !is_current(generation) {
+            return Err(Error::Cancelled);
+        }
+        resident.trim(budget.min(RESIDENT_LIMIT), &mut out.evicted_chunks);
+        let mut admitted = 0u64;
         while index < end {
             if !is_current(generation) {
                 return Err(Error::Cancelled);
@@ -655,13 +745,12 @@ impl ChunkedColumns {
                 continue;
             }
             let bytes = u64::from(meta.row_count) * ROW_BYTES;
-            if out
-                .bytes_read
+            if admitted
                 .checked_add(bytes)
                 .ok_or(Error::Corrupt("read size overflow"))?
                 > budget
             {
-                if out.chunks_read == 0 {
+                if admitted == 0 {
                     return Err(Error::BudgetExceeded {
                         needed: bytes,
                         budget,
@@ -669,7 +758,64 @@ impl ChunkedColumns {
                 }
                 break;
             }
+            admitted += bytes;
+            self.read_chunk(
+                &mut resident,
+                index as u32,
+                &meta,
+                budget,
+                generation,
+                &mut is_current,
+                &mut out,
+                (x0, x1),
+                y,
+            )?;
+            index += 1;
+        }
+        if !is_current(generation) {
+            return Err(Error::Cancelled);
+        }
+        out.resident_bytes = resident.bytes;
+        Ok(RangePage {
+            read: out,
+            next_chunk: index as u32,
+            done: index >= end,
+        })
+    }
+    // The per-store lock serializes slab ownership and accounting, including
+    // in-flight reads. Generation changes never need this lock. Validated slabs
+    // are immutable and reusable across viewport generations and predicates.
+    #[allow(clippy::too_many_arguments)]
+    fn read_chunk<F: FnMut(u64) -> bool>(
+        &self,
+        resident: &mut ResidentChunks,
+        index: u32,
+        meta: &ChunkMeta,
+        budget: u64,
+        generation: u64,
+        is_current: &mut F,
+        out: &mut RangeRead,
+        x_bounds: (f64, f64),
+        y_bounds: Option<(f64, f64)>,
+    ) -> Result<(), Error> {
+        if !is_current(generation) {
+            return Err(Error::Cancelled);
+        }
+        let bytes = u64::from(meta.row_count) * ROW_BYTES;
+        let limit = budget.min(RESIDENT_LIMIT);
+        let cached = resident.take(index);
+        let hit = cached.is_some();
+        let raw = if let Some(raw) = cached {
+            raw
+        } else {
+            // Reserve space before allocating scratch. Oversized chunks retain
+            // the existing admission contract but bypass resident caching.
+            resident.trim(limit.saturating_sub(bytes), &mut out.evicted_chunks);
             let mut raw = vec![0u8; bytes as usize];
+            #[cfg(test)]
+            {
+                resident.positioned_reads += 1;
+            }
             read_exact_at(
                 &self.file,
                 &mut raw,
@@ -678,32 +824,41 @@ impl ChunkedColumns {
             if !is_current(generation) {
                 return Err(Error::Cancelled);
             }
-            validate_chunk_rows(&raw, &meta)?;
-            out.chunks_read += 1;
-            out.bytes_read += bytes;
-            for row in raw.chunks_exact(16) {
-                let x = f64::from_le_bytes(row[0..8].try_into().unwrap());
-                let yy = f64::from_le_bytes(row[8..16].try_into().unwrap());
-                if x.is_finite()
-                    && yy.is_finite()
-                    && x >= x0
-                    && x <= x1
-                    && y.is_none_or(|(a, b)| yy >= a && yy <= b)
-                {
-                    out.x.push(x);
-                    out.y.push(yy);
-                }
-            }
-            index += 1;
-        }
+            validate_chunk_rows(&raw, meta)?;
+            raw
+        };
+        // A cancelled hit is released as well; accounting already excludes it.
         if !is_current(generation) {
             return Err(Error::Cancelled);
         }
-        Ok(RangePage {
-            read: out,
-            next_chunk: index as u32,
-            done: index >= end,
-        })
+        if !hit {
+            out.chunks_read += 1;
+            out.bytes_read += bytes;
+        }
+        out.accesses.push(ChunkAccess {
+            chunk: index,
+            row_start: meta.row_start,
+            row_count: meta.row_count,
+            hit,
+        });
+        for (offset, row) in raw.chunks_exact(16).enumerate() {
+            let x = f64::from_le_bytes(row[0..8].try_into().unwrap());
+            let y = f64::from_le_bytes(row[8..16].try_into().unwrap());
+            if x.is_finite()
+                && y.is_finite()
+                && x >= x_bounds.0
+                && x <= x_bounds.1
+                && y_bounds.is_none_or(|(a, b)| y >= a && y <= b)
+            {
+                out.x.push(x);
+                out.y.push(y);
+                out.row_ids.push(meta.row_start + offset as u64);
+            }
+        }
+        if bytes <= limit {
+            resident.put(index, raw);
+        }
+        Ok(())
     }
 }
 
@@ -860,11 +1015,292 @@ mod tests {
         assert!(matches!(
             store.read_range(0.0, 3.0, None, 64, 0, |_| {
                 checks += 1;
-                checks < 3
+                checks < 7 // final publication checkpoint after cache admission
             }),
             Err(Error::Cancelled)
         ));
-        assert_eq!(checks, 3);
+        assert_eq!(checks, 7);
+        std::fs::remove_file(p).unwrap();
+    }
+
+    fn assert_accounting(store: &ChunkedColumns, limit: u64) -> Vec<u32> {
+        let resident = store.resident.lock().unwrap();
+        assert_eq!(
+            resident.bytes,
+            resident
+                .entries
+                .values()
+                .map(|entry| entry.raw.len() as u64)
+                .sum()
+        );
+        assert!(resident.bytes <= limit);
+        let mut ids = Vec::new();
+        let mut current = resident.oldest;
+        let mut previous = None;
+        while let Some(id) = current {
+            assert!(ids.len() < resident.entries.len(), "LRU cycle");
+            let entry = &resident.entries[&id];
+            assert_eq!(entry.previous, previous);
+            ids.push(id);
+            previous = Some(id);
+            current = entry.next;
+        }
+        assert_eq!(ids.len(), resident.entries.len());
+        assert_eq!(previous, resident.newest);
+        ids
+    }
+
+    #[test]
+    fn small_chunks_reuse_and_trim_preserve_exact_lru_and_rows() {
+        let p = path("cache-small-chunks.xygc");
+        let chunks = 32_768u32;
+        let rows = u64::from(chunks) * 4;
+        ChunkedColumns::create(&p, (0..rows as usize).map(|i| (i as f64, i as f64)), 4).unwrap();
+        let store = ChunkedColumns::open(&p).unwrap();
+        let started = std::time::Instant::now();
+        let first = store
+            .read_range(0.0, (rows - 1) as f64, None, RESIDENT_LIMIT, 1, |_| true)
+            .unwrap();
+        let cold = started.elapsed();
+        assert_eq!(first.chunks_read, chunks);
+        assert_eq!(first.bytes_read, rows * ROW_BYTES);
+        assert_eq!(first.row_ids, (0..rows).collect::<Vec<_>>());
+        assert_eq!(first.resident_bytes, rows * ROW_BYTES);
+        let start = rows / 4;
+        let end = rows * 3 / 4;
+        let started = std::time::Instant::now();
+        let warm = store
+            .read_range(
+                start as f64,
+                (end - 1) as f64,
+                None,
+                RESIDENT_LIMIT,
+                2,
+                |_| true,
+            )
+            .unwrap();
+        let warm_time = started.elapsed();
+        assert_eq!(warm.chunks_read, 0);
+        assert_eq!(warm.bytes_read, 0);
+        assert!(warm.accesses.iter().all(|access| access.hit));
+        assert_eq!(warm.row_ids, (start..end).collect::<Vec<_>>());
+        let expected: Vec<_> = (0..chunks / 4)
+            .chain(chunks * 3 / 4..chunks)
+            .chain(chunks / 4..chunks * 3 / 4)
+            .collect();
+        assert_eq!(assert_accounting(&store, RESIDENT_LIMIT), expected);
+        let page = store
+            .read_range_page((0.0, 31.0), None, 8 * 64, 3, 0, |_| true)
+            .unwrap();
+        assert_eq!(page.read.row_ids, (0..32).collect::<Vec<_>>());
+        assert_eq!(page.read.chunks_read, 8);
+        assert_eq!(page.read.resident_bytes, 8 * 64);
+        assert_eq!(
+            assert_accounting(&store, 8 * 64),
+            (0..8).collect::<Vec<_>>()
+        );
+        assert_eq!(page.read.evicted_chunks, expected);
+        eprintln!(
+            "small-chunk lookup: chunks={chunks}, cold_us={}, warm_middle_us={}",
+            cold.as_micros(),
+            warm_time.as_micros()
+        );
+        std::fs::remove_file(p).unwrap();
+    }
+
+    #[test]
+    fn repeated_overlap_reuses_real_reads_and_keeps_exact_row_identity() {
+        let p = path("cache-overlap.xygc");
+        // Duplicate x values and nonfinite y prevent coordinate-based identity.
+        let rows: Vec<_> = (0..1000)
+            .map(|i| {
+                (
+                    (i / 2) as f64,
+                    if i % 13 == 0 {
+                        f64::NAN
+                    } else {
+                        (i % 7) as f64
+                    },
+                )
+            })
+            .collect();
+        ChunkedColumns::create(&p, rows.clone(), 100).unwrap();
+        let store = ChunkedColumns::open(&p).unwrap();
+        let first = store
+            .read_range(50.0, 149.0, None, 4800, 1, |_| true)
+            .unwrap();
+        assert_eq!(first.bytes_read, 3200);
+        let second = store
+            .read_range_page((100.0, 199.0), Some((2.0, 5.0)), 4800, 2, 0, |_| true)
+            .unwrap();
+        assert_eq!(
+            second
+                .read
+                .accesses
+                .iter()
+                .map(|a| (a.chunk, a.hit))
+                .collect::<Vec<_>>(),
+            vec![(2, true), (3, false)]
+        );
+        assert_eq!(second.read.bytes_read, 1600);
+        assert_eq!(second.read.resident_bytes, 4800);
+        let oracle: Vec<_> = rows
+            .iter()
+            .enumerate()
+            .filter(|(_, (x, y))| (100.0..=199.0).contains(x) && (2.0..=5.0).contains(y))
+            .map(|(id, _)| id as u64)
+            .collect();
+        assert_eq!(second.read.row_ids, oracle);
+        for ((&id, &x), &y) in second
+            .read
+            .row_ids
+            .iter()
+            .zip(&second.read.x)
+            .zip(&second.read.y)
+        {
+            assert_eq!((x, y), rows[id as usize]);
+        }
+        let repeated = store
+            .read_range(100.0, 199.0, Some((2.0, 5.0)), 4800, 3, |_| true)
+            .unwrap();
+        assert_eq!(repeated.bytes_read, 0);
+        assert_eq!(repeated.row_ids, oracle);
+        assert_eq!(store.resident.lock().unwrap().positioned_reads, 3);
+        assert_eq!(assert_accounting(&store, 4800), vec![1, 2, 3]);
+        // New viewport evicts the least recently used chunk, not the overlap.
+        let eviction = store
+            .read_range(200.0, 249.0, None, 4800, 4, |_| true)
+            .unwrap();
+        assert_eq!(eviction.evicted_chunks, vec![1]);
+        assert_eq!(assert_accounting(&store, 4800), vec![2, 3, 4]);
+        assert!(matches!(
+            store.read_range(100.0, 199.0, None, 1600, 5, |_| true),
+            Err(Error::BudgetExceeded {
+                needed: 3200,
+                budget: 1600
+            })
+        ));
+        assert_eq!(assert_accounting(&store, 4800), vec![2, 3, 4]);
+        // Page admission counts hits, so a warm cache cannot enlarge a page.
+        let page = store
+            .read_range_page((100.0, 249.0), None, 1600, 6, 0, |_| true)
+            .unwrap();
+        assert_eq!(page.next_chunk, 3);
+        assert!(!page.done);
+        assert_eq!(page.read.row_ids.len(), 92);
+        assert_accounting(&store, 1600);
+        std::fs::remove_file(p).unwrap();
+    }
+
+    #[test]
+    fn cancelled_misses_hits_and_failed_io_keep_accounting_consistent() {
+        let p = path("cache-cancel.xygc");
+        ChunkedColumns::create(&p, (0..30).map(|i| (i as f64, i as f64)), 10).unwrap();
+        let store = ChunkedColumns::open(&p).unwrap();
+        let mut checks = 0;
+        assert!(matches!(
+            store.read_range(0.0, 9.0, None, 320, 1, |_| {
+                checks += 1;
+                checks < 5 // superseded immediately after actual positioned I/O
+            }),
+            Err(Error::Cancelled)
+        ));
+        assert_eq!(store.resident.lock().unwrap().positioned_reads, 1);
+        assert!(assert_accounting(&store, 320).is_empty());
+        store.read_range(0.0, 9.0, None, 320, 2, |_| true).unwrap();
+        let mut checks = 0;
+        assert!(matches!(
+            store.read_range_page((0.0, 9.0), None, 320, 3, 0, |_| {
+                checks += 1;
+                checks < 5 // superseded on a cache hit before decode
+            }),
+            Err(Error::Cancelled)
+        ));
+        assert_accounting(&store, 320);
+        assert_eq!(store.resident.lock().unwrap().positioned_reads, 2);
+        // A stale request must not shrink current residency.
+        store.read_range(0.0, 9.0, None, 320, 4, |_| true).unwrap();
+        assert!(matches!(
+            store.read_range_page((0.0, 29.0), None, 1, 3, 0, |_| false),
+            Err(Error::Cancelled)
+        ));
+        assert_eq!(assert_accounting(&store, 320), vec![0]);
+        // Failure on a nonresident chunk cannot publish or admit partial bytes.
+        File::options()
+            .write(true)
+            .open(&p)
+            .unwrap()
+            .set_len(store.data_offset + 170)
+            .unwrap();
+        assert!(matches!(
+            store.read_range(10.0, 19.0, None, 320, 5, |_| true),
+            Err(Error::Io(_))
+        ));
+        assert_eq!(assert_accounting(&store, 320), vec![0]);
+        std::fs::remove_file(p).unwrap();
+    }
+
+    #[test]
+    fn superseded_waiter_cannot_evict_current_generation_residency() {
+        let p = path("cache-waiter.xygc");
+        ChunkedColumns::create(&p, (0..20).map(|i| (i as f64, i as f64)), 10).unwrap();
+        let registered = Registered {
+            store: ChunkedColumns::open(&p).unwrap(),
+            current_generation: AtomicU64::new(1),
+        };
+        registered.read(0.0, 9.0, None, 320, 1).unwrap();
+        std::thread::scope(|scope| {
+            let guard = registered.store.resident.lock().unwrap();
+            let (tx, rx) = std::sync::mpsc::channel();
+            let registered_ref = &registered;
+            let waiter = scope.spawn(move || {
+                let mut sent = false;
+                registered_ref
+                    .store
+                    .read_range_page((0.0, 19.0), None, 1, 1, 0, |g| {
+                        if !sent {
+                            tx.send(()).unwrap();
+                            sent = true;
+                        }
+                        registered_ref.current_generation.load(Ordering::Acquire) == g
+                    })
+            });
+            rx.recv().unwrap();
+            registered.set_generation(2);
+            drop(guard);
+            assert!(matches!(waiter.join().unwrap(), Err(Error::Cancelled)));
+        });
+        assert_eq!(assert_accounting(&registered.store, 320), vec![0]);
+        let read = registered.read(0.0, 19.0, None, 320, 2).unwrap();
+        assert_eq!(read.bytes_read, 160);
+        assert_eq!(read.row_ids, (0..20).collect::<Vec<_>>());
+        std::fs::remove_file(p).unwrap();
+    }
+
+    #[test]
+    fn cache_cap_bypasses_oversized_slabs_without_rejecting_admitted_reads() {
+        let p = path("cache-cap.xygc");
+        // Bounded 9 MiB fixture: one slab above the fixed resident ceiling.
+        let count = (RESIDENT_LIMIT / ROW_BYTES + 1) as u32;
+        ChunkedColumns::create(&p, (0..count).map(|i| (i as f64, i as f64)), count).unwrap();
+        let store = ChunkedColumns::open(&p).unwrap();
+        for page in [false, true] {
+            let read = if page {
+                store
+                    .read_range_page((0.0, 0.0), None, u64::from(count) * 16, 2, 0, |_| true)
+                    .unwrap()
+                    .read
+            } else {
+                store
+                    .read_range(0.0, 0.0, None, u64::from(count) * 16, 1, |_| true)
+                    .unwrap()
+            };
+            assert_eq!(read.row_ids, vec![0]);
+            assert_eq!(read.resident_bytes, 0);
+            assert_eq!(read.chunks_read, 1);
+        }
+        assert_eq!(store.resident.lock().unwrap().positioned_reads, 2);
+        assert_accounting(&store, 0);
         std::fs::remove_file(p).unwrap();
     }
 
@@ -941,14 +1377,13 @@ mod tests {
         assert!(matches!(
             store.read_range_page((0.0, 100.0), None, 4096, 10, 0, |_| {
                 checks += 1;
-                // The first checkpoint admits the positioned read; the
-                // second simulates cancellation while that read was in
-                // flight and must reject before decode/accounting.
-                checks == 1
+                // Supersede immediately after the actual positioned read,
+                // before structural validation, decode or cache admission.
+                checks < 5
             }),
             Err(Error::Cancelled)
         ));
-        assert_eq!(checks, 2);
+        assert_eq!(checks, 5);
         std::fs::remove_file(p).unwrap();
     }
 
@@ -966,10 +1401,11 @@ mod tests {
         assert_eq!(full.points.last().unwrap().row, rows.len() as u64 - 1);
         assert_eq!(full.source_rows, rows.len() as u64);
         assert!(full.points.windows(2).all(|pair| pair[0].row < pair[1].row));
-        assert!(full
-            .points
-            .iter()
-            .all(|point| rows[point.row as usize] == (point.x, point.y)));
+        assert!(
+            full.points
+                .iter()
+                .all(|point| rows[point.row as usize] == (point.x, point.y))
+        );
 
         let bounded = store.overview(37).unwrap();
         assert_eq!(bounded.points.len(), 37);

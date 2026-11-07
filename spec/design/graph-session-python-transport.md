@@ -168,10 +168,10 @@ view/row selection and event callbacks. The explicit WASM attachment in
 `63_graph_controller.ts` uses a separate GPU-v1/companion presentation contract;
 replacing ChartView with it would still lose authored notebook presentation.
 The notebook therefore reuses `GraphLayoutController`'s retained native
-`ForceState`, rather than introducing a second presentation stack or a
-GraphSession identity adapter. The private opaque GraphSession wrapper above
-remains unchanged and is not used by this route. Full retained GraphSession
-selection/ref projection is separate #36/#1015 work.
+`ForceState` and the ordinary presentation stack. The later typed identity slice
+below adds an optional GraphSession readout without replacing that renderer or
+layout owner. Full retained interaction and scale acceptance remain separate
+#36/#1015 work.
 
 ### Data and scheduling
 
@@ -302,3 +302,80 @@ and row controls before its paint acknowledgement. Legend changes update saved
 widget snapshots as well, including changes after terminal layout. The bounded
 notebook proof requires a new exact kernel callback after the final pointer
 baseline; earlier keyboard or pointer callbacks cannot satisfy that check.
+
+
+### Notebook typed identity slice (2026-11-06)
+
+The ordinary Figure compiler and ChartView remain authoritative for painting.
+Each compiled checkpoint owns a private identity adapter. A native GraphSession
+is created only when identity callbacks or a UUID command need it; a chart
+without these requests does not open the extra session. Callback preparation
+runs in the existing compile executor and no initial session render is requested.
+A derived-reference companion query may prepare native companion data. Any
+session render revision is private and distinct from the displayed notebook
+envelope revision. The ordinary Figure remains the renderer. Native admission
+still uses the existing 384-MiB envelope and 10,000-ref selection cap; neither
+limit is increased to accommodate the identity adapter.
+
+Identity admission cannot reject an otherwise supported Figure frame. If the
+extra identity envelope is unavailable, callbacks still receive their ordinary
+row or full canonical Selection, with `graphforge=[]` and
+`graphforge_error="XYG_GRAPH_IDENTITY_RESOURCE_LIMIT"`. The normal reply and
+subsequent layout frames continue. This explicitly signals unavailable typed
+metadata; it is not a successful empty identity result or complete #1015 scale
+acceptance. An explicit UUID command that cannot be admitted fails before
+applying a view mask; ordinary rendering and row/geometric selection remain
+available. Closed/retired adapters cannot lazily open a new session.
+
+The adapter encodes canonical kind-qualified refs from the composition and the
+original compiler's Rust source/render membership planes. SelectRefs resolves
+callback identity and all per-layer rows in Rust; SelectUuids resolves Python
+UUID input in Rust. Python decodes selection refs, indices and provenance CSR
+without matching UUID strings or inferring result rows. Derived refs transport
+the exact canonical result id/layer/path/order. Non-graph traces project no
+GraphForge refs. The readout session's private selection is scratch resolution
+state, independent of the public view's ordinary selection masks.
+
+Ref and UUID resolution uses at most 1,000 transport inputs per request, each
+replacing the scratch selection. Rust still enforces its original caps on each
+operation; the adapter never accumulates a native selection beyond them. The
+callback merges native-sorted runs using only Rust-returned binary reference
+keys and deduplicates repeated keys across batches. This preserves the single-
+request Rust order: node UUID bytes, persisted edge UUID bytes, then exact
+derived optional result-id bytes/layer/path/order. Per-reply string-pool offsets
+are never merge keys, and absent versus empty result IDs remain distinct.
+Python does not infer identities or provenance during this transport merge.
+Explicit UUID masks apply only after all batches succeed. Node source/render joins cache an inverse
+of the existing Rust member plane, preserving its one-to-one highlight refusal
+without rescanning all source rows for each selected element. Host projection
+and callback output memory is additional and is not qualified at scale here.
+
+Callback dictionaries add a `graphforge` list; Selection objects add the same
+attribute. Each entry has kind, UUID (null for derived edges), composed index,
+and layer/result_id/row records. These four fields match the corresponding
+Node graphforgePick composition identity projection; Node's additional edge and
+compound detail fields are not promised by this callback projection. No public
+GraphForgeComposition API or ABI signature changes.
+
+The existing instance/epoch/displayed-revision guard runs before resolution.
+Displayed old checkpoints resolve against their own session until replacement
+paint ACK; that ACK closes retired sessions. Remount, dispose and close release
+sessions even when application callbacks retain old Figure/Selection objects.
+Late compiler completion is discarded and its session finalizer releases it.
+UUID masks use ordinary selection_rows and are non-durable across remount;
+exact aggregate/compound highlight routing, graph-specific box/lasso edge policy,
+all browser pointer journeys, accessibility and the full ladder remain open.
+
+Focused tests and the public notebook proof are recorded in the
+[identity receipt](../performance/graph-notebook-identity-2026-11-06/README.md).
+
+### Notebook identity report contract
+
+The bounded typed-identity notebook proof records its node/edge UUID request
+and Rust composition identity records as `uuidSelection`. The report verifier
+requires that distinct canonical pair and exactly two delivered browser rows.
+Historical row-only reports retain their original one-row requirement; typed
+callback reports without request metadata cannot satisfy the new proof. This
+checks request identity and delivery cardinality, not complete geometric UUID
+sets or scale/frontend/export acceptance. The append-only correction and fresh
+capture are in [the report receipt](../performance/graph-notebook-identity-report-2026-11-06/README.md).

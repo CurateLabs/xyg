@@ -88,3 +88,91 @@ python/xyg/_geo_spatial.py text eol=lf
 spec/performance/geo-private-publication-2026-11-07/*.json text eol=lf
 spec/performance/geo-private-publication-2026-11-07/*.md text eol=lf
 spec/performance/geo-private-publication-2026-11-07/*.gz -text
+
+# Notebook identity candidate source and append-only evidence bindings.
+python/xyg/_graph_widget_identity.py text eol=lf
+python/xyg/_graphforge.py text eol=lf
+python/xyg/components.py text eol=lf
+scripts/gen_capability_matrix.py text eol=lf
+spec/api/capability-matrix.md text eol=lf
+docs/styling/capabilities.md text eol=lf
+spec/performance/graph-notebook-identity-2026-11-06/** text eol=lf
+spec/performance/graph-notebook-identity-2026-11-06/*.gz -text
+spec/performance/graph-notebook-identity-2026-11-06/*.png -text
+
+# Notebook identity ownership correction receipt.
+spec/performance/graph-notebook-identity-ownership-2026-11-06/*.json text eol=lf
+spec/performance/graph-notebook-identity-ownership-2026-11-06/*.md text eol=lf
+spec/performance/graph-notebook-identity-ownership-2026-11-06/*.gz -text
+
+# Notebook UUID-selection report correction bindings.
+spec/performance/graph-notebook-identity-report-2026-11-06/*.json text eol=lf
+spec/performance/graph-notebook-identity-report-2026-11-06/*.md text eol=lf
+spec/performance/graph-notebook-identity-report-2026-11-06/*.gz -text
+spec/performance/graph-notebook-identity-report-2026-11-06/*.png -text
+
+# Notebook identity admission/selection correction evidence.
+spec/performance/graph-notebook-identity-limits-2026-11-06/*.json text eol=lf
+spec/performance/graph-notebook-identity-limits-2026-11-06/*.md text eol=lf
+spec/performance/graph-notebook-identity-limits-2026-11-06/*.gz -text
+spec/performance/graph-notebook-identity-limits-2026-11-06/*.png -text
+
+# Canonical identity batch-order correction bindings.
+spec/performance/graph-notebook-identity-order-2026-11-06/*.json text eol=lf
+spec/performance/graph-notebook-identity-order-2026-11-06/*.md text eol=lf
+spec/performance/graph-notebook-identity-order-2026-11-06/*.gz -text
+
+# Combined native geographic and notebook current bindings.
+spec/performance/geo-native-main-integration-2026-11-07/*.json text eol=lf
+spec/performance/geo-native-main-integration-2026-11-07/*.md text eol=lf
+spec/performance/geo-native-main-integration-2026-11-07/*.gz -text
+scripts/gen_graphforge_rc7_result_fixtures.cjs text eol=lf
+spec/api/graphforge-integration.md text eol=lf
+spec/design/host-parity.md text eol=lf
+tests/test_graphforge_contract_corpus.py text eol=lf
+.github/workflows/ci.yml text eol=lf
+scripts/verify_ci_workflow.py text eol=lf
+spec/performance/graph-widget-progressive-r3-2026-11-06/README.md text eol=lf
+python/xyg/_graph_widget.py text eol=lf
+tests/test_graph_widget.py text eol=lf
+js/src/66_graph_host.ts text eol=lf
+js/test/graph-host-transport.test.mjs text eol=lf
+spec/design/graph-session-python-transport.md text eol=lf
+spec/performance/graph-widget-review-repair-2026-11-06/README.md text eol=lf
+tests/test_graph_notebook_report.py text eol=lf
+js/src/50_chartview.ts text eol=lf
+spec/design/ownership-audit.json text eol=lf
+spec/design/ownership-audit.md text eol=lf
+scripts/graph_notebook_progressive_smoke.mjs text eol=lf
+scripts/verify_graph_notebook_report.py text eol=lf
+tests/notebook_graph_progressive.ipynb text eol=lf
+spec/performance/graph-widget-pr1100-repair-2026-11-06/README.md text eol=lf
+python/xyg/_geo_temporal.py text eol=lf
+python/xyg/temporal_controller.py text eol=lf
+python/xyg/_geo_retained.py text eol=lf
+python/xyg/components.py text eol=lf
+packages/xy-node/src/geo-temporal.js text eol=lf
+packages/xy-node/src/abi.js text eol=lf
+packages/xy-node/src/charts.js text eol=lf
+packages/xy-node/src/geo-retained.js text eol=lf
+packages/xy-node/src/index.js text eol=lf
+packages/xy-node/package.json text eol=lf
+tests/test_geo_temporal_binding.py text eol=lf
+packages/xy-node/test/geo-temporal-binding.test.mjs text eol=lf
+spec/performance/geo-native-binding-lifecycle-2026-11-07/README.md text eol=lf
+python/xyg/_geo_hierarchy.py text eol=lf
+python/xyg/_geo_spatial.py text eol=lf
+spec/performance/geo-private-publication-2026-11-07/README.md text eol=lf
+docs/styling/capabilities.md text eol=lf
+python/xyg/_graph_widget_identity.py text eol=lf
+python/xyg/_graphforge.py text eol=lf
+scripts/gen_capability_matrix.py text eol=lf
+spec/api/capability-matrix.md text eol=lf
+spec/performance/graph-notebook-identity-2026-11-06/README.md text eol=lf
+spec/performance/graph-notebook-identity-ownership-2026-11-06/README.md text eol=lf
+spec/performance/graph-notebook-identity-report-2026-11-06/README.md text eol=lf
+spec/performance/graph-notebook-identity-limits-2026-11-06/README.md text eol=lf
+spec/performance/graph-notebook-identity-order-2026-11-06/README.md text eol=lf
+spec/performance/geo-native-main-integration-2026-11-07/README.md text eol=lf
+spec/design/geo-retained-hosts.md text eol=lf
+spec/design/temporal-controller.md text eol=lf
