@@ -133,6 +133,28 @@ try {
       const result=await page.evaluate(async()=>{const s=window.__graphSession,p=s.retainedTime,r={snapshot:p.handle.snapshot(),tail:p.publications.slice(p.mark).map(x=>x.temporal.cursor),operations:s.commands.filter(c=>c.owner===p.worker.worker.__graphOwner).map(c=>c.operation),failures:p.failures};await p.controller.dispose();await p.handle.dispose();await p.clockWorker.dispose();await p.worker.dispose();return r;});
       assert.equal(result.snapshot.temporal.cursor,20n);assert.deepEqual(Array.from(result.snapshot.temporal.nodeVisibility),[1,0,1]);assert.ok(result.tail.length>0&&result.tail.every(x=>x===20n));assert.ok(result.operations.includes(15));assert.deepEqual(result.failures,[]);return result;
     });
+    await run('retained-temporal-worker-failure-settles-pending-idle',async()=>{
+      await page.evaluate(async()=>{const s=window.__graphSession;await s.temporalFixture(false);s.hold=true;const p=s.retainedTime;p.refresh=p.handle.refreshRender().catch(e=>e.code);});
+      await page.waitForFunction(()=>window.__graphSession.held.length>0);
+      const result=await page.evaluate(async()=>{
+        const s=window.__graphSession,p=s.retainedTime;
+        await p.controller.setCursor(20n);
+        const idle=p.handle.whenIdle().then(()=>({resolved:true}),e=>({code:e.code}));
+        p.worker.worker.onerror({message:'injected terminal Worker failure'});
+        const refreshCode=await p.refresh;
+        const settled=await Promise.race([idle,new Promise(r=>setTimeout(()=>r({hung:true}),2000))]);
+        const mark=s.commands.length;
+        await p.controller.setCursor(30n);s.release();await new Promise(r=>setTimeout(r,0));
+        const graphCommands=s.commands.slice(mark).filter(c=>c.owner===p.worker.worker.__graphOwner).length;
+        await p.handle.dispose();await p.controller.dispose();await p.clockWorker.dispose();await p.worker.dispose();
+        return {settled,refreshCode,graphCommands};
+      });
+      assert.equal(result.settled.hung,undefined,'terminal failure must settle pre-existing idle waiters');
+      assert.equal(result.settled.code,result.refreshCode);
+      assert.match(result.settled.code,/^XYG_WASM_/);
+      assert.equal(result.graphCommands,0,'terminal attachments must ignore further time notifications');
+      return result;
+    });
     assert.deepEqual(violations,[]);assert.deepEqual(errors,[]);
     if(process.env.XYG_GRAPH_SESSION_REPORT){await writeFile(process.env.XYG_GRAPH_SESSION_REPORT+'.wire.json',JSON.stringify(await page.evaluate(()=>window.__graphSession.temporalWire),null,2)+'\n');await writeFile(process.env.XYG_GRAPH_SESSION_REPORT,JSON.stringify({...evidence,status:'passed',requests,cspViolations:violations,pageErrors:errors},(_,v)=>typeof v==='bigint'?v.toString():v,2)+'\n');
     }

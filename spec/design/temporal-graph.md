@@ -257,7 +257,7 @@ can recover with the last Rust-accepted membership, while the next controller
 notification retries failed time. Snapshot temporal membership is installed
 with the picture, never in advance. `whenIdle()` asynchronously drains admitted
 UI/time work without a microtask spin or application frame pumping; it does not
-wait for every future animation opportunity. Snapshot buffers are defensive
+wait for every future animation opportunity. Terminal Worker failures clear pending time intent, unsubscribe from controller notifications, and reject existing or later idle waits with the terminal error; explicit disposal is not required to settle them. Late replies cannot publish after terminal invalidation. Snapshot buffers are defensive
 copies. Disposal immediately unsubscribes, stops scheduling, suppresses late
 publication, and drains the lane before CLOSE/releasing its claim. Disposing
 the controller disposes its attached view. Rust temporal storage remains owned

@@ -62,6 +62,7 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   let temporalTask: Promise<void> = Promise.resolve(), initialized = false, temporalPumping = false;
   let unsubscribeTime: (() => void) | null = null;
   const idleWaiters = new Set<() => void>();
+  let terminalFailure: XygWasmError | null = null;
   const cameraCopy = (camera: XygWasmGraphCamera): XygWasmGraphCamera => {
     if (!camera || camera.length !== 7 || Array.from(camera).some(v => typeof v !== "number")) throw new TypeError("An explicit seven-f64 session camera is required");
     return Object.freeze([...camera]) as unknown as XygWasmGraphCamera;
@@ -101,7 +102,11 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   function report(error: unknown) {
     if (disposed) return;
     stopContinuation();
-    if (error instanceof XygWasmError && error.code.startsWith("XYG_WASM_")) terminal = true;
+    if (error instanceof XygWasmError && error.code.startsWith("XYG_WASM_")) {
+      terminal = true; terminalFailure ??= error;
+      intent++; pendingTime = null; unsubscribeTime?.(); unsubscribeTime = null;
+      for (const resolve of idleWaiters) resolve(); idleWaiters.clear();
+    }
     if (error instanceof XygWasmError && error.code === "GF_INTERACTION_STALE") {
       needsRefresh = true; dispatch("stale", { code: error.code, revision: output?.revision ?? 0 });
     } else dispatch("error", { code: error instanceof XygWasmError ? error.code : "GF_INTERACTION_INVALID", message: error instanceof Error ? error.message : String(error) });
@@ -127,7 +132,7 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   function setBusy(value: boolean) {
     busy = value;
     if (!value) { pumpTemporal(); scheduleContinuation(); }
-    if (disposed || (!busy && !pendingTime && !temporalPumping)) {
+    if (disposed || terminal || (!busy && !pendingTime && !temporalPumping)) {
       for (const resolve of idleWaiters) resolve(); idleWaiters.clear();
     }
     if (disposed) return;
@@ -244,7 +249,7 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
     })();
   }
   function acceptTime(state: XygTemporalState) {
-    if (disposed) return;
+    if (disposed || terminal) return;
     if (state.disposed) { void dispose(); return; }
     const key = `${state.cursor}/${state.rangeStart}/${state.rangeEnd}/${state.window}`;
     if (timeKey === key) return;
@@ -395,7 +400,8 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   return Object.freeze({ ready, snapshot, dispose,
     async whenIdle() {
       await ready;
-      while (!disposed && (busy || pendingTime || temporalPumping)) await new Promise<void>(resolve => idleWaiters.add(resolve));
+      while (!disposed && !terminal && (busy || pendingTime || temporalPumping)) await new Promise<void>(resolve => idleWaiters.add(resolve));
+      if (terminalFailure) throw terminalFailure;
       await temporalTask;
     },
     pinFocused(pinned: boolean) {

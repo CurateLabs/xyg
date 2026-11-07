@@ -93,3 +93,14 @@ spec/performance/graph-notebook-identity-limits-2026-11-06/*.png -text
 spec/performance/graph-notebook-identity-order-2026-11-06/*.json text eol=lf
 spec/performance/graph-notebook-identity-order-2026-11-06/*.md text eol=lf
 spec/performance/graph-notebook-identity-order-2026-11-06/*.gz -text
+
+# Temporal retained terminal-state source bindings.
+js/src/63_graph_controller.ts text eol=lf
+scripts/graph_session_controller_wasm_smoke.mjs text eol=lf
+spec/design/temporal-graph.md text eol=lf
+spec/releases/0.6.0-api-inventory.json text eol=lf
+tests/test_graphforge_contract_corpus.py text eol=lf
+spec/performance/temporal-retained-terminal-idle-2026-11-07/*.json text eol=lf
+spec/performance/temporal-retained-terminal-idle-2026-11-07/*.md text eol=lf
+spec/performance/temporal-retained-terminal-idle-2026-11-07/*.gz -text
+spec/performance/temporal-retained-terminal-idle-2026-11-07/*.png -text
