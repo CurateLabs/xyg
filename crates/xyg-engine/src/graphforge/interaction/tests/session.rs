@@ -2111,7 +2111,7 @@ fn near_exhaustion(s: &mut GraphSession, remaining: u32) {
     let revision = u32::MAX - remaining;
     s.render_revision = revision;
     s.published_revision = revision;
-    s.published.as_mut().unwrap().revision = revision;
+    Arc::make_mut(s.published.as_mut().unwrap()).revision = revision;
 }
 
 #[test]

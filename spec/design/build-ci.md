@@ -197,3 +197,21 @@ existing WASM foundation / Release surfaces gate; no separate CI job or timing
 gate is added. Staged-package and focused density-only runs keep their existing
 scope. `XYG_GRAPH_SCHEDULING_REPORT` optionally records this sub-run's raw report
 and canvas captures. The focused command uses `XYG_GRAPH_SESSION_REPORT`.
+
+The scheduling branch also runs a separate two-1k trusted keyboard case
+(7201/7202, explicit 384 MiB each), preserving both preceding cases. The same
+foundation Node unit invocation runs `graph-progressive-keyboard.test.mjs`:
+captured-receipt controls reject no-op actions, wrong identity, untrusted input,
+terminal-only evidence, missing progress, intervening resets and peer leakage.
+The live case requires Tab navigation, unfinished focus/Replace and later native
+progress, then completed Toggle/Replace/Clear/empty Escape, native emphasis and
+actual host-colored focus pixels. No watchdog, default scheduling or load policy
+is relaxed. See the [qualified receipt](../performance/graph-keyboard-1k-2026-11-07/README.md).
+
+The same foundation scheduling entry now qualifies neutral retained1k graphs
+with the unchanged16MiB Worker default, actual init-message assertions, trusted
+pointer/camera and reviewed real-Tab keyboard identity/emphasis oracles. It also
+runs1k held-continuation coalescing, stale/lifetime and disposal controls. The
+explicit384MiB public10k path remains a separate bounded proof. Source populations
+and exact native visible membership are distinct assertions in complete reply
+replay; no offscreen GPU-count requirement is imposed.

@@ -220,7 +220,7 @@ mod tests {
         );
         assert_eq!(xyg_wasm_instance_dispose(h), STATUS_OK);
         assert_eq!(xyg_wasm_graphforge_session_close(h), -10);
-        let tiny = xyg_wasm_instance_new(1024 * 1024);
+        let tiny = xyg_wasm_instance_new(64 * 1024);
         assert_eq!(call(tiny, &open(), xyg_wasm_graphforge_session_open), -4);
         with_instance_mut(tiny, |i| assert!(i.graph_session.is_none())).unwrap();
         xyg_wasm_instance_dispose(tiny);

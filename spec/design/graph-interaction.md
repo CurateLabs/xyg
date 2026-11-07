@@ -1460,3 +1460,86 @@ Its new browser harness qualifies a 10k primary with a 1k peer at explicit
 completion remains unqualified at the unchanged wall limit. The receipt records
 historical failures, exact full-reply native/WASM replay, memory scope and remaining
 ladder/host acceptance; this does not close #35/#36/#1015 or M4.
+
+The [bounded 1k keyboard receipt](../performance/graph-keyboard-1k-2026-11-07/README.md)
+adds a separate third normal-foundation scheduling case, with public instances
+7201/7202 and explicit 384 MiB arenas. Real Tab navigation reaches the primary
+application; trusted ArrowRight focus and Enter Replace select the exact first
+authored node while retained layout is unfinished. Every intervening accepted
+render/focus/select publication preserves identity, including equal or regressed
+step counts; a later native progress count is separately required. After
+convergence, Control+Enter Toggle, Enter Replace, Escape Clear and empty Escape
+are checked with native outcomes, default prevention, stable DOM focus and the
+polite native summary. Native emphasis planes and pixels near the native center
+prove the focus ring using explicit host CSS `--chart-focus: #ff00ff`; this is
+not a default-theme or full accessibility qualification. Full reply replay preserves
+the 1k-node/1k-edge source requests and compares browser/native/WASM digests. The isolated peer
+has no focus/selection input. This does not close M4/#35/#36/#1015 or qualify
+100k/1M, reliable two-10k, latency, peak RAM/GPU, platforms, notebooks, exports or
+competitors. Historical pointer/camera receipts and their limitations remain.
+
+### Plain retained graph phase admission (default arena)
+
+The unchanged browser default remains 16 MiB; maximum/native default remains
+384 MiB. `wire_memory::Plain` recognizes only index-zero neutral, undirected,
+non-loop persisted graphs with no parent, style, label, result-layer, generation
+or unknown sections. Recognition borrows the canonical document; normal decoding
+still validates every identity and sentinel. Recognition is an accounting fact,
+not a new graph policy. Custom budgets below source cardinality, bound owners,
+foreign derived state and structural/bulk operations retain the general plan.
+
+OPEN reserves 98,304 + 48D, the existing ingress/cache envelope and external
+ownership. It creates no publication. The 48D source bound is retained unchanged
+and includes retained/speculative identity/source/CoSE ownership. Every later
+supported operation additionally charges the actual capacities of the old
+publication, all actual state, prior outcome, pending text and retry caches.
+Before cloning it reserves the following future work, regardless of camera or
+initial grid size:
+
+- Node row work: `2 sizeof(NodePaint) + 4 sizeof(ResolvedGraphStyle) + 80*8`
+  per source node. This covers growing paint/style vectors, membership/flag/
+  hierarchy/mask/position arrays and layout/query scratch. The 80 scalar slots
+  cover the overlapping numeric vectors, including capacity doubling; fixed
+  CoSE grid minima and codec metadata fit the fixed reserve.
+- Edge row work: `2 sizeof(EdgePiece) + 4(sizeof(ResolvedGraphStyle) +
+  sizeof(SemanticPaintLayers)) + 3(5+EDGE_ENDS_STRIDE)*8 + 48*8` per source edge.
+  This includes doubled paint vectors, styles, the canonical three-slot route
+  scratch even though at most one shaft survives, membership/endpoint work and
+  routing bundle maps. Bundle hash buckets (at most four per source edge),
+  their per-bundle row vectors and sorting fit the 48 scalar slots.
+- Serialized CPU/GPU/membership columns: three times
+  `131,072 + 208n + 336m`. The per-row widths include CPU and GPU style/state,
+  indices and coordinates, offsets/membership and padding. Three copies cover
+  growing section payloads plus the exact final output; numeric encoding
+  scratch belongs to row work. The fixed part covers section names/tables,
+  the capped 200-row companion/ring text and fixed action/summary planes.
+- A future CSR pick grid at the existing maximum of
+  `min((n+m)*4096, 1,048,576)` u32 entries, plus two 4,097-u32 offset/cursor
+  arrays. The old grid remains charged at its actual capacity. Thus later grid
+  growth is reserved on every continuation, not inferred from the first frame.
+- Current state is charged by the existing 1,024/item and 128/text rules both
+  outside and inside the owner lock. Point/focused selection reserves one extra
+  source item. Only clear, hover, focus/ring, step, render/read and point/focused
+  selection use this plan. Bulk/region/highlight/coordination, bind and UPDATE
+  retain the full general reservation, including the complete old and new
+  document envelopes. A default-arena bulk operation may correctly refuse.
+
+The pick index now builds checked logical primitive/cell counts first, then
+allocates one exactly sized CSR. Clones share its immutable storage. Primitive,
+entry and candidate caps and degradation choices/order remain unchanged; no
+cleared cell capacities survive degradation. Publication/retry installation
+remains failure atomic. No signatures, caps, defaults, LOD or force policy change.
+
+The normal foundation scheduling journey now runs the pointer/camera and reviewed
+real-Tab keyboard oracles on two default-arena 1k attachments. Source identity
+counts remain 1000/1000; GPU counts follow exact native visible membership and
+legitimate culling. The existing EdgeSample tier tag can record viewport edge
+omission even without stride sampling; replay checks the whole visible edge set. The separate explicit-384-MiB 10k journey remains. Evidence
+and limitations: [default1k receipt](../performance/graph-default1k-2026-11-07/README.md).
+
+The complete preceding RenderOutput is immutable Arc-owned as well: speculative
+session clones share its rows and grid until a fresh candidate publication is
+built. The actual preceding publication remains fully charged once; no deep
+clone of its row vectors is hidden in the new-work reserve. Only the admitted
+candidate installs the new Arc after serialization succeeds. The test-only
+revision-exhaustion helper uses Arc::make_mut to construct its synthetic boundary.

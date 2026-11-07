@@ -1415,6 +1415,14 @@ Rules that make the mode targets in §2 real:
    fresh column zone maps on the next query. Existing tile-store ownership and
    finalizers remain unchanged.
 
+The retained plain-graph phase specialization is specified in
+[graph interaction admission](design/graph-interaction.md#plain-retained-graph-phase-admission-default-arena).
+It retains canonical identities and the existing culling/LOD policy, separates
+OPEN from later publication work, and charges immutable CSR pick capacities.
+The 16 MiB default and 384 MiB maximum remain unchanged; this bounded graph
+qualification does not establish full process/GPU memory or M4 completion.
+
+
 ## 28. LOD / Tiling Contract — exact rules per trace kind
 
 For each kind: *canonical requirement → tier ladder → what hover/select means → what

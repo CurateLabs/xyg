@@ -187,6 +187,7 @@ impl GraphSession {
         self.published
             .as_ref()
             .filter(|_| self.published_revision == self.render_revision)
+            .map(AsRef::as_ref)
     }
 
     /// Resolve a reference, aggregates against the current publication.
@@ -297,7 +298,7 @@ impl GraphSession {
             camera.validate()?;
         }
         self.locked(|session, world| session.publish(camera, world))??;
-        self.published.as_ref().ok_or(InteractionStatus::Invalid)
+        self.published.as_deref().ok_or(InteractionStatus::Invalid)
     }
 
     fn publish(
@@ -324,7 +325,7 @@ impl GraphSession {
         }
         self.camera = camera;
         self.published_revision = self.render_revision;
-        self.published = Some(output);
+        self.published = Some(std::sync::Arc::new(output));
         Ok(())
     }
 
