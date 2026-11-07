@@ -1862,8 +1862,16 @@ one codegen unit, stripping, pinned Binaryen132 `-O3 --all-features`, exports,
 validation, 16/384-MiB runtime bounds, deadlines and the 1,927,168 raw / 786,432
 gzip6 packaging caps remain unchanged. This supersedes the historical compiler
 profile measurements above; the old receipts are immutable. No optional export
-module or second renderer is introduced. The adapter still disables raster;
-enabling the shared Rust PNG implementation exceeds the same caps.
+module or second renderer is introduced. At the historical Worker-export
+checkpoint, the adapter disabled raster because the attempted shared PNG build
+exceeded those caps. That refusal and its receipts remain historical evidence.
+
+The [shared-PNG continuation](../performance/temporal-shared-png-2026-11-07/README.md)
+enables the shared Rust `frozen-raster` capability in this same module. Native,
+module Worker and offline Blob Worker PNG exports use the shared Scene/raster/
+PNG implementation. The qualified module is 1,886,125 raw / 784,655 Node22 gzip6
+bytes, below the unchanged caps. This standalone source qualification does not
+establish fit for a future combined-source/ABI module or full #45 acceptance.
 
 The [append-only continuation receipt](../performance/temporal-worker-export-2026-11-07/README.md)
 records same-source O3/inline50 versus O2/inline50 bytes, code/data attribution,
