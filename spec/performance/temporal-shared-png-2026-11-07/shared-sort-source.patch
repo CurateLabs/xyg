@@ -1,0 +1,858 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 1c7cc61baa30aa0d051671a8c9af0fd6dc0d4516..0c31d88921ea3987bd38947bd1d8b04d3c5d5c47 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -383,8 +383,6 @@ dependencies = [
+ [[package]]
+ name = "png"
+ version = "0.18.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "60769b8b31b2a9f263dae2776c37b1b28ae246943cf719eb6946a1db05128a61"
+ dependencies = [
+  "bitflags",
+  "crc32fast",
+diff --git a/crates/xyg-engine/Cargo.toml b/crates/xyg-engine/Cargo.toml
+index 713ea179bc2c7e325d1695aa2217e2d312caf74d..a942355e5968a9d3577f297df56506865cbfef3e 100644
+--- a/crates/xyg-engine/Cargo.toml
++++ b/crates/xyg-engine/Cargo.toml
+@@ -15,6 +15,8 @@ name = "xyg_engine"
+ # encoder or the baked raster font atlas.
+ default = ["raster"]
+ raster = ["dep:png", "dep:flate2"]
++# Same raster/PNG implementation, restricted to retained paint command capabilities.
++frozen-raster = ["dep:png"]
+ 
+ # Static chart export uses the focused `png` crate's fdeflate fast path;
+ # compression belongs beside rasterization so the hot path never round-trips
+diff --git a/crates/xyg-engine/src/graph_marker_contour.rs b/crates/xyg-engine/src/graph_marker_contour.rs
+index 71c79a708937e0655cde3b5030a46ca7edaccdf2..c3925c761d498f63302570ced1e8efa688c3e2d3 100644
+--- a/crates/xyg-engine/src/graph_marker_contour.rs
++++ b/crates/xyg-engine/src/graph_marker_contour.rs
+@@ -121,7 +121,7 @@ fn directions(size: f64, shape: u8, lo: f64, hi: f64) -> Vec<[f64; 2]> {
+             3
+         }
+     };
+-    a.sort_by(|a, b| {
++    crate::shared_sort::by(&mut a, |a, b| {
+         quadrant(a)
+             .cmp(&quadrant(b))
+             .then_with(|| (b[0] * a[1]).total_cmp(&(a[0] * b[1])))
+diff --git a/crates/xyg-engine/src/graph_scene.rs b/crates/xyg-engine/src/graph_scene.rs
+index efa2a34461dfb44dec261d8b4ad7154511d3ebb1..a0b712d779156535bd58555c4b08b58e8df581be 100644
+--- a/crates/xyg-engine/src/graph_scene.rs
++++ b/crates/xyg-engine/src/graph_scene.rs
+@@ -585,7 +585,7 @@ pub fn rebuild_composed_graph_scene(
+     // order.
+     let label_cap = MAX_SCENE_LABELS.saturating_sub(annotations.label_count());
+     let text_cap = MAX_SCENE_LABEL_TEXT_BYTES.saturating_sub(annotations.label_text_bytes());
+-    labels.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.1.cmp(&b.1)));
++    crate::shared_sort::by(&mut labels, |a, b| a.0.total_cmp(&b.0).then(a.1.cmp(&b.1)));
+     let mut text_bytes = 0usize;
+     let mut kept = 0usize;
+     for entry in &labels {
+@@ -596,7 +596,7 @@ pub fn rebuild_composed_graph_scene(
+         kept += 1;
+     }
+     labels.truncate(kept);
+-    labels.sort_by_key(|entry| entry.1);
++    crate::shared_sort::by_key(&mut labels, |entry| entry.1);
+     let labels: Vec<SceneLabel> = labels.into_iter().map(|entry| entry.2).collect();
+ 
+     // 5. Explicit legend, else the base legend.
+diff --git a/crates/xyg-engine/src/graph_style.rs b/crates/xyg-engine/src/graph_style.rs
+index 9d3afb4789a4e85625ef15e4245be22dc3bd9043..8789ec2959457527778c94d3343596ec865ebc02 100644
+--- a/crates/xyg-engine/src/graph_style.rs
++++ b/crates/xyg-engine/src/graph_style.rs
+@@ -553,7 +553,7 @@ pub fn graph_label_plan(
+         };
+     }
+     let mut order: Vec<usize> = (0..n).filter(|&i| accepted[i] != 0).collect();
+-    order.sort_by(|&a, &b| {
++    crate::shared_sort::by(&mut order, |&a, &b| {
+         input.states[b]
+             .cmp(&input.states[a])
+             .then_with(|| priorities[b].total_cmp(&priorities[a]))
+@@ -998,7 +998,7 @@ fn encode_semantic_graph_scene_internal(
+         ];
+     }
+     let mut hierarchy_order: Vec<usize> = (0..n).collect();
+-    hierarchy_order.sort_by_key(|&index| (std::cmp::Reverse(hierarchy.depth[index]), index));
++    crate::shared_sort::by_key(&mut hierarchy_order, |&index| (std::cmp::Reverse(hierarchy.depth[index]), index));
+     for index in hierarchy_order {
+         let Some(parent) = hierarchy.direct_parent[index] else {
+             continue;
+@@ -1258,7 +1258,7 @@ fn encode_semantic_graph_scene_internal(
+             });
+         }
+     }
+-    candidates.sort_by_key(|candidate| (std::cmp::Reverse(candidate.state), candidate.stable_id));
++    crate::shared_sort::by_key(&mut candidates, |candidate| (std::cmp::Reverse(candidate.state), candidate.stable_id));
+     let mut occupied: Vec<(f64, f64, f64, f64)> = Vec::new();
+     let mut labels = Vec::new();
+     for candidate in candidates {
+@@ -1532,7 +1532,7 @@ fn encode_semantic_graph_scene_internal(
+             descriptors.push(descriptor);
+         }
+     }
+-    descriptors.sort_by_key(|item| (item.field, item.value));
++    crate::shared_sort::by_key(&mut descriptors, |item| (item.field, item.value));
+     let mut legend_entries = Vec::with_capacity(descriptors.len());
+     if let Some(custom) = legend_override {
+         descriptors.clear();
+@@ -1666,7 +1666,7 @@ pub fn label_accept(priorities: &[f64], budget: u64, floor: f64, out: &mut [u8])
+         .enumerate()
+         .filter(|(_, p)| p.is_finite() && (!floor.is_finite() || *p >= floor))
+         .collect();
+-    ranked.sort_by(|a, b| b.1.total_cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
++    crate::shared_sort::by(&mut ranked, |a, b| b.1.total_cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+     let take = usize::try_from(budget)
+         .unwrap_or(usize::MAX)
+         .min(ranked.len());
+@@ -1754,7 +1754,7 @@ fn compound_hierarchy(
+         }
+     }
+     let mut order: Vec<usize> = (0..n).collect();
+-    order.sort_by_key(|&index| (depth[index], index));
++    crate::shared_sort::by_key(&mut order, |&index| (depth[index], index));
+     let mut representative: Vec<usize> = (0..n).collect();
+     let mut visible = vec![true; n];
+     for &index in &order {
+@@ -1913,7 +1913,7 @@ fn compound_frame_pads(hierarchy: &CompoundHierarchy, radius_px: &[f64]) -> Vec<
+         })
+         .collect();
+     let mut order: Vec<usize> = (0..n).collect();
+-    order.sort_by_key(|&index| (std::cmp::Reverse(hierarchy.depth[index]), index));
++    crate::shared_sort::by_key(&mut order, |&index| (std::cmp::Reverse(hierarchy.depth[index]), index));
+     for index in order {
+         if let Some(parent) = hierarchy.direct_parent[index] {
+             reach[parent] = reach[parent].max(reach[index]);
+@@ -1971,7 +1971,7 @@ pub fn compound_frames(
+         hierarchy.bounds[index] = [x[index], x[index], y[index], y[index]];
+     }
+     let mut order: Vec<usize> = (0..n).collect();
+-    order.sort_by_key(|&index| (std::cmp::Reverse(hierarchy.depth[index]), index));
++    crate::shared_sort::by_key(&mut order, |&index| (std::cmp::Reverse(hierarchy.depth[index]), index));
+     for index in order {
+         let Some(parent) = hierarchy.direct_parent[index] else {
+             continue;
+@@ -2090,7 +2090,7 @@ pub fn compound_bounds(
+         is_compound[i] = u8::from(hierarchy.is_compound[i]);
+     }
+     let mut order: Vec<usize> = (0..n).collect();
+-    order.sort_by_key(|&index| (std::cmp::Reverse(hierarchy.depth[index]), index));
++    crate::shared_sort::by_key(&mut order, |&index| (std::cmp::Reverse(hierarchy.depth[index]), index));
+     for index in order {
+         let Some(parent) = hierarchy.direct_parent[index] else {
+             continue;
+diff --git a/crates/xyg-engine/src/graphforge/container.rs b/crates/xyg-engine/src/graphforge/container.rs
+index e28c1cbec241692225212f38f1df24117d34d9d9..6ed3339424db61ebcda3b0dd6346678ce98a3847 100644
+--- a/crates/xyg-engine/src/graphforge/container.rs
++++ b/crates/xyg-engine/src/graphforge/container.rs
+@@ -103,6 +103,7 @@ impl Builder {
+         }
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub(crate) fn push(&mut self, name: &str, index: usize, dtype: Dtype, count: usize, payload: Vec<u8>) {
+         debug_assert!(valid_name(name), "section name {name}");
+         self.sections.push(Pending {
+@@ -114,38 +115,46 @@ impl Builder {
+         });
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn u8s(&mut self, name: &str, index: usize, values: &[u8]) {
+         self.push(name, index, Dtype::U8, values.len(), values.to_vec());
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn u32s(&mut self, name: &str, index: usize, values: &[u32]) {
+         let payload = values.iter().flat_map(|v| v.to_le_bytes()).collect();
+         self.push(name, index, Dtype::U32, values.len(), payload);
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn u64s(&mut self, name: &str, index: usize, values: &[u64]) {
+         let payload = values.iter().flat_map(|v| v.to_le_bytes()).collect();
+         self.push(name, index, Dtype::U64, values.len(), payload);
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn i64s(&mut self, name: &str, index: usize, values: &[i64]) {
+         let payload = values.iter().flat_map(|v| v.to_le_bytes()).collect();
+         self.push(name, index, Dtype::I64, values.len(), payload);
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn f64s(&mut self, name: &str, index: usize, values: &[f64]) {
+         let payload = values.iter().flat_map(|v| v.to_le_bytes()).collect();
+         self.push(name, index, Dtype::F64, values.len(), payload);
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn bytes(&mut self, name: &str, index: usize, value: &[u8]) {
+         self.push(name, index, Dtype::Bytes, value.len(), value.to_vec());
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn uuids(&mut self, name: &str, index: usize, values: &[Uuid]) {
+         self.push(name, index, Dtype::Uuid, values.len(), values.concat());
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn utf8(&mut self, name: &str, index: usize, value: &str) {
+         self.push(
+             name,
+@@ -183,6 +192,7 @@ impl Builder {
+         }
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn finish(self) -> Vec<u8> {
+         let count = self.sections.len();
+         let mut names = Vec::new();
+diff --git a/crates/xyg-engine/src/lib.rs b/crates/xyg-engine/src/lib.rs
+index 9b424ed5eccab3cbfa654addd8203df435e665e8..d4c50d4ba5db102ff2c1881b49c40bb5ff700707 100644
+--- a/crates/xyg-engine/src/lib.rs
++++ b/crates/xyg-engine/src/lib.rs
+@@ -33,7 +33,7 @@
+     clippy::useless_vec
+ )] // Scene/kernel ABI-shaped numerical code; CI clippy uses `-D warnings`.
+ 
+-#[cfg(feature = "raster")]
++#[cfg(any(feature = "raster", feature = "frozen-raster"))]
+ #[allow(dead_code)] // generated by scripts/gen_font.py; some metrics unused by the rasterizer
+ mod font;
+ mod simd;
+@@ -126,7 +126,7 @@ pub mod pdf;
+ pub mod png_encode;
+ pub mod polar;
+ pub mod projection;
+-#[cfg(feature = "raster")]
++#[cfg(any(feature = "raster", feature = "frozen-raster"))]
+ pub mod raster;
+ pub mod sankey;
+ pub mod scene;
+@@ -299,3 +299,8 @@ pub mod coordination;
+ pub mod temporal_graph_export;
+ 
+ mod graph_marker_contour;
++
++#[cfg(any(feature="raster",feature="frozen-raster"))]
++mod retained_png;
++
++mod shared_sort;
+diff --git a/crates/xyg-engine/src/marker_geometry.rs b/crates/xyg-engine/src/marker_geometry.rs
+index 616b3d1e0ef3174b8ad724948e89f90e9b36fd73..bc3132f937efed526b26cf9b5d77334da6222afd 100644
+--- a/crates/xyg-engine/src/marker_geometry.rs
++++ b/crates/xyg-engine/src/marker_geometry.rs
+@@ -130,7 +130,7 @@ pub(crate) fn symbol_sdf(px: f32, py: f32, r: f32, sym: u8) -> f32 {
+ }
+ 
+ #[inline]
+-#[cfg(feature = "raster")]
++#[cfg(any(feature = "raster", feature = "frozen-raster"))]
+ pub(crate) fn symbol_extent(r: f32, sym: u8) -> f32 {
+     crate::scene::marker_symbol_extent(f64::from(r), sym) as f32
+ }
+diff --git a/crates/xyg-engine/src/raster.rs b/crates/xyg-engine/src/raster.rs
+index a4a9d5e0bfa38689b3b74b03f097a926d3c7e303..f1a45d152db961fbdbd1ecf0a78efe9c2fd69fd9 100644
+--- a/crates/xyg-engine/src/raster.rs
++++ b/crates/xyg-engine/src/raster.rs
+@@ -490,8 +490,8 @@ fn fill_rect(cv: &mut Canvas<'_>, pts: &[(f32, f32)], rgba: [f32; 4]) -> bool {
+     }
+     let mut xs = [pts[0].0, pts[1].0, pts[2].0, pts[3].0];
+     let mut ys = [pts[0].1, pts[1].1, pts[2].1, pts[3].1];
+-    xs.sort_by(f32::total_cmp);
+-    ys.sort_by(f32::total_cmp);
++    crate::shared_sort::by(&mut xs, f32::total_cmp);
++    crate::shared_sort::by(&mut ys, f32::total_cmp);
+     let (x0, x1, y0, y1) = (xs[0], xs[3], ys[0], ys[3]);
+     let eps = 1e-4;
+     if xs[1] - x0 > eps || x1 - xs[2] > eps || ys[1] - y0 > eps || y1 - ys[2] > eps {
+@@ -537,16 +537,17 @@ fn fill_rect(cv: &mut Canvas<'_>, pts: &[(f32, f32)], rgba: [f32; 4]) -> bool {
+ /// Per-row coverage in [0,1] over the polygon's x-span, with `color_at` giving
+ /// the paint per pixel (flat or gradient). Non-zero winding, `SS` vertical
+ /// samples, analytic horizontal endpoint coverage.
+-fn fill_poly(cv: &mut Canvas<'_>, pts: &[(f32, f32)], color_at: impl FnMut(f32, f32) -> [f32; 4]) {
+-    fill_contours(cv, pts, pts.len(), false, color_at);
++fn fill_poly(cv: &mut Canvas<'_>, pts: &[(f32, f32)], mut color_at: impl FnMut(f32, f32) -> [f32; 4]) {
++    fill_contours(cv, pts, pts.len(), false, &mut color_at);
+ }
+ 
++#[inline(never)]
+ fn fill_contours(
+     cv: &mut Canvas<'_>,
+     pts: &[(f32, f32)],
+     contour_size: usize,
+     canonical_edges: bool,
+-    mut color_at: impl FnMut(f32, f32) -> [f32; 4],
++    color_at: &mut dyn FnMut(f32, f32) -> [f32; 4],
+ ) {
+     if contour_size < 3 || pts.len() < contour_size || pts.len() % contour_size != 0 {
+         return;
+@@ -597,7 +598,7 @@ fn fill_contours(
+             if xs.len() < 2 {
+                 continue;
+             }
+-            xs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
++            crate::shared_sort::by(&mut xs, |a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+             let mut wind = 0;
+             for i in 0..xs.len() - 1 {
+                 wind += xs[i].1;
+@@ -2385,9 +2386,54 @@ fn read_affine_axis<'a>(
+     Some((values, decode_scale, decode_offset))
+ }
+ 
++/// Validate the retained command vocabulary without allocating paint buffers.
++/// Full native dispatch keeps its existing vocabulary and behavior.
++pub(crate) fn retained_commands_valid(cmds: &[u8]) -> bool {
++    fn finite(r: &mut Reader<'_>, count: usize) -> Option<()> {
++        let bytes = r.bytes(count.checked_mul(4)?)?;
++        bytes.chunks_exact(4).all(|v| f32::from_le_bytes(v.try_into().unwrap()).is_finite()).then_some(())
++    }
++    let check = || -> Option<()> {
++        let mut r = Reader { b: cmds, i: 0 };
++        while r.i < cmds.len() {
++            match r.u8()? {
++                OP_CLIP => { finite(&mut r, 4)?; }
++                OP_FILL_POLY => {
++                    let n = r.u32()? as usize;
++                    if !(3..=crate::scene::MAX_SCENE_MARKS).contains(&n) { return None; }
++                    finite(&mut r, n.checked_mul(2)?)?; r.bytes(4)?;
++                }
++                OP_STROKE => {
++                    let n = r.u32()? as usize;
++                    if !(2..=crate::scene::MAX_SCENE_MARKS).contains(&n) { return None; }
++                    finite(&mut r, n.checked_mul(2)?)?;
++                    let width = r.f32()?;
++                    if !width.is_finite() || width < 0.0 { return None; }
++                    r.bytes(4)?; if r.u8()? > 1 { return None; }
++                    let nd = r.u32()? as usize;
++                    if nd > 16 { return None; }
++                    finite(&mut r, nd)?; if r.u8()? > 2 { return None; }
++                }
++                OP_POINT => {
++                    finite(&mut r, 3)?; if r.u8()? > 1 { return None; }
++                    r.bytes(4)?; finite(&mut r, 1)?; r.bytes(4)?;
++                }
++                OP_UNION_TRIANGLES => {
++                    let n = r.u32()? as usize;
++                    if !(1..=MAX_UNION_TRIANGLES).contains(&n) { return None; }
++                    r.bytes(4)?; finite(&mut r, n.checked_mul(6)?)?;
++                }
++                _ => return None,
++            }
++        }
++        Some(())
++    };
++    check().is_some()
++}
++
+ /// Parse and paint a display list, retaining the native byte framebuffer so a
+ /// latency-oriented PNG export can feed it straight into the encoder.
+-fn rasterize_with_spans<'a>(
++fn rasterize_with_spans<'a, const RETAINED: bool>(
+     cmds: &[u8],
+     spans: &[&[u8]],
+     w: usize,
+@@ -2402,6 +2448,18 @@ fn rasterize_with_spans<'a>(
+     let mut r = Reader { b: cmds, i: 0 };
+     while r.i < cmds.len() {
+         let op = r.u8()?;
++        if RETAINED
++            && !matches!(
++                op,
++                OP_CLIP
++                    | OP_FILL_POLY
++                    | OP_STROKE
++                    | OP_POINT
++                    | OP_UNION_TRIANGLES
++            )
++        {
++            return None;
++        }
+         let ok = (|| -> Option<()> {
+             match op {
+                 OP_CLIP => {
+@@ -2415,6 +2473,7 @@ fn rasterize_with_spans<'a>(
+                     cv.polar_clip = None;
+                 }
+                 OP_POLAR_CLIP => {
++                    if RETAINED { return None; }
+                     let (cx, cy, inner, outer) = (r.f32()?, r.f32()?, r.f32()?, r.f32()?);
+                     let (start, sweep) = (r.f32()?, r.f32()?);
+                     let polar = PolarClip::new(cx, cy, inner, outer, start, sweep)?;
+@@ -2438,6 +2497,7 @@ fn rasterize_with_spans<'a>(
+                     }
+                 }
+                 OP_FILL_POLY_GRAD => {
++                    if RETAINED { return None; }
+                     let n = r.u32()? as usize;
+                     let pts = r.pts(n)?;
+                     let (g0x, g0y, g1x, g1y) = (r.f32()?, r.f32()?, r.f32()?, r.f32()?);
+@@ -2476,6 +2536,7 @@ fn rasterize_with_spans<'a>(
+                     point(&mut cv, cx, cy, rr, sym, fill, sw, st);
+                 }
+                 OP_IMAGE => {
++                    if RETAINED { return None; }
+                     let (dx, dy, dw, dh) = (r.f32()?, r.f32()?, r.f32()?, r.f32()?);
+                     let (iw, ih) = (r.u32()? as usize, r.u32()? as usize);
+                     let nearest = r.u8()? != 0;
+@@ -2483,6 +2544,7 @@ fn rasterize_with_spans<'a>(
+                     blit(&mut cv, dx, dy, dw, dh, iw, ih, src, nearest);
+                 }
+                 OP_DENSITY_IMAGE => {
++                    if RETAINED { return None; }
+                     let (dx, dy, dw, dh) = (r.f32()?, r.f32()?, r.f32()?, r.f32()?);
+                     let (iw, ih) = (r.u32()? as usize, r.u32()? as usize);
+                     let span = r.u32()? as usize;
+@@ -2503,6 +2565,7 @@ fn rasterize_with_spans<'a>(
+                     blit_density(&mut cv, dx, dy, dw, dh, iw, ih, encoded, &lut);
+                 }
+                 OP_HEATMAP_IMAGE => {
++                    if RETAINED { return None; }
+                     let (dx, dy, dw, dh) = (r.f32()?, r.f32()?, r.f32()?, r.f32()?);
+                     let (iw, ih) = (r.u32()? as usize, r.u32()? as usize);
+                     let span = r.u32()? as usize;
+@@ -2551,6 +2614,7 @@ fn rasterize_with_spans<'a>(
+                     );
+                 }
+                 OP_TEXT => {
++                    if RETAINED { return None; }
+                     let (x, y) = (r.f32()?, r.f32()?);
+                     let anchor = r.u8()?;
+                     let size = r.f32()?;
+@@ -2560,6 +2624,7 @@ fn rasterize_with_spans<'a>(
+                     text(&mut cv, x, y, anchor, size, c, s);
+                 }
+                 OP_STYLED_TEXT => {
++                    if RETAINED { return None; }
+                     let (x, y) = (r.f32()?, r.f32()?);
+                     let anchor = r.u8()?;
+                     let size = r.f32()?;
+@@ -2587,6 +2652,7 @@ fn rasterize_with_spans<'a>(
+                     );
+                 }
+                 OP_POINTS => {
++                    if RETAINED { return None; }
+                     // Batched marks, struct-of-arrays: one header (symbol +
+                     // shared stroke) then cx/cy/r f32 arrays and per-point
+                     // RGBA8 fills. Lets Python pack whole NumPy columns in one
+@@ -2622,6 +2688,7 @@ fn rasterize_with_spans<'a>(
+                     paint_points(&mut cv, &batch, raster_fanout(est_px, POINTS_FANOUT_PX, h));
+                 }
+                 OP_AFFINE_POINTS => {
++                    if RETAINED { return None; }
+                     // Borrow offset-encoded x/y payload columns and fuse their
+                     // f64 decode + affine projection into native point paint.
+                     let n = r.u32()? as usize;
+@@ -2684,6 +2751,7 @@ fn rasterize_with_spans<'a>(
+                     );
+                 }
+                 OP_AFFINE_CHANNEL_POINTS => {
++                    if RETAINED { return None; }
+                     let n = r.u32()? as usize;
+                     let sym = r.u8()?;
+                     let sw = r.f32()?;
+@@ -2839,6 +2907,7 @@ fn rasterize_with_spans<'a>(
+                     );
+                 }
+                 OP_SEGMENTS => {
++                    if RETAINED { return None; }
+                     let n = r.u32()? as usize;
+                     let width = r.f32()?;
+                     let bytes4 = n.checked_mul(4)?;
+@@ -2871,6 +2940,7 @@ fn rasterize_with_spans<'a>(
+                     );
+                 }
+                 OP_RECTS => {
++                    if RETAINED { return None; }
+                     let n = r.u32()? as usize;
+                     let bytes4 = n.checked_mul(4)?;
+                     let x0 = r.bytes(bytes4)?;
+@@ -2936,9 +3006,10 @@ fn rasterize_with_spans<'a>(
+                         }
+                         points.extend_from_slice(&triangle);
+                     }
+-                    fill_contours(&mut cv, &points, 3, true, |_, _| color);
++                    fill_contours(&mut cv, &points, 3, true, &mut |_, _| color);
+                 }
+                 OP_TRIANGLES | OP_STROKED_TRIANGLES => {
++                    if RETAINED { return None; }
+                     let n = r.u32()? as usize;
+                     let (stroke_width, stroke_color) = if op == OP_STROKED_TRIANGLES {
+                         let width = r.f32()?;
+@@ -2977,6 +3048,7 @@ fn rasterize_with_spans<'a>(
+                     }
+                 }
+                 OP_SMOOTH_STROKE => {
++                    if RETAINED { return None; }
+                     let n = r.u32()? as usize;
+                     if n < 2 {
+                         return None;
+@@ -3020,7 +3092,7 @@ pub fn rasterize_rgb_into(cmds: &[u8], w: usize, h: usize, out: &mut [u8]) -> bo
+     if out.len() != w.checked_mul(h).and_then(|n| n.checked_mul(3)).unwrap_or(0) {
+         return false;
+     }
+-    rasterize_with_spans(cmds, &[], w, h, true, out).is_some()
++    rasterize_with_spans::<false>(cmds, &[], w, h, true, out).is_some()
+ }
+ 
+ /// Parse and paint a display list whose commands may reference `data` for the
+@@ -3044,7 +3116,7 @@ pub fn rasterize_spans_into(
+     // which is exactly what the owned `vec![0; w * h * 4]` did, and straight
+     // alpha is already the canvas's own layout — so the export step that used
+     // to `copy_from_slice` a whole frame is now nothing at all.
+-    rasterize_with_spans(cmds, spans, w, h, false, out).is_some()
++    rasterize_with_spans::<false>(cmds, spans, w, h, false, out).is_some()
+ }
+ 
+ /// Fused low-latency raster + PNG path. `Fast` uses fdeflate's PNG-tuned
+@@ -3072,15 +3144,37 @@ pub fn rasterize_png_spans_into(
+     w: usize,
+     h: usize,
+     out: &mut [u8],
++) -> Option<usize> {
++    rasterize_png_spans_policy::<false>(cmds, spans, w, h, out)
++}
++pub(crate) fn rasterize_retained_png_into(
++    cmds: &[u8],
++    w: usize,
++    h: usize,
++    out: &mut [u8],
++) -> Option<usize> {
++    rasterize_png_spans_policy::<true>(cmds, &[], w, h, out)
++}
++fn rasterize_png_spans_policy<const RETAINED: bool>(
++    cmds: &[u8],
++    spans: &[&[u8]],
++    w: usize,
++    h: usize,
++    out: &mut [u8],
+ ) -> Option<usize> {
+     let (wu, hu) = (u32::try_from(w).ok()?, u32::try_from(h).ok()?);
+     // The PNG path is 3-channel and the destination is the encoded stream, so
+     // this one still owns its framebuffer — but it is a plane fewer than the
+     // RGBA path, and nothing is copied out of it.
+     let mut px = vec![0u8; w.checked_mul(h)?.checked_mul(3)?];
+-    let cv = rasterize_with_spans(cmds, spans, w, h, true, &mut px)?;
++    let cv = rasterize_with_spans::<RETAINED>(cmds, spans, w, h, true, &mut px)?;
+     let mut cursor = Cursor::new(out);
+     {
++        if RETAINED {
++            let mut writer=png::Encoder::write_plain_rgb8(&mut cursor,wu,hu).ok()?;
++            writer.write_image_data(cv.px).ok()?;
++            writer.finish().ok()?;
++        } else {
+         let mut encoder = png::Encoder::new(&mut cursor, wu, hu);
+         encoder.set_color(if cv.opaque {
+             png::ColorType::Rgb
+@@ -3093,6 +3187,8 @@ pub fn rasterize_png_spans_into(
+         let mut writer = encoder.write_header().ok()?;
+         writer.write_image_data(cv.px).ok()?;
+         writer.finish().ok()?;
++        }
++
+     }
+     usize::try_from(cursor.position()).ok()
+ }
+@@ -3208,7 +3304,7 @@ mod tests {
+         opaque: bool,
+     ) -> Option<Vec<u8>> {
+         let mut px = canvas_px(w, h, opaque);
+-        rasterize_with_spans(cmds, spans, w, h, opaque, &mut px)?;
++        rasterize_with_spans::<false>(cmds, spans, w, h, opaque, &mut px)?;
+         Some(px)
+     }
+ 
+diff --git a/crates/xyg-engine/src/scene.rs b/crates/xyg-engine/src/scene.rs
+index 5992dd6fe74058def0a654f8d0623258fe055657..562e521576bc5eec6219a3d11c65b527603f2ca9 100644
+--- a/crates/xyg-engine/src/scene.rs
++++ b/crates/xyg-engine/src/scene.rs
+@@ -1990,7 +1990,7 @@ pub fn symlog_ticks(
+             return Err(SceneError::Limit);
+         }
+         ticks.push(0.0);
+-        ticks.sort_by(|a, b| {
++        crate::shared_sort::by(&mut ticks, |a, b| {
+             if lo > hi {
+                 b.total_cmp(a)
+             } else {
+@@ -14694,7 +14694,7 @@ impl SceneDocument {
+         }
+     }
+ 
+-    fn push_raster_poly_fill(
++    fn push_raster_poly_fill<const RETAINED: bool>(
+         &self,
+         out: &mut Vec<u8>,
+         points: &[(f64, f64)],
+@@ -14705,7 +14705,7 @@ impl SceneDocument {
+         if points.len() < 3 {
+             return Ok(());
+         }
+-        if let Some(gradient) = self.style_gradient(style_ref) {
++        if let Some(gradient) = self.style_gradient(style_ref).filter(|_| !RETAINED) {
+             let bbox = points_bbox(points);
+             let (g0x, g0y, g1x, g1y) = gradient_raster_line(gradient, bbox, self.layout);
+             let stops = rewrite_transparent_stops(&gradient.stops);
+@@ -16677,7 +16677,7 @@ impl SceneDocument {
+     }
+ 
+     #[inline(never)]
+-    fn append_raster_marks(&self, out: &mut Vec<u8>, scale: f64) -> Result<(), SceneError> {
++    fn append_raster_marks<const RETAINED:bool>(&self, out: &mut Vec<u8>, scale: f64) -> Result<(), SceneError> {
+         let mut index = 0;
+         while index < self.records.len() {
+             let record = self.records[index];
+@@ -16686,6 +16686,7 @@ impl SceneDocument {
+                 continue;
+             }
+             let style = self.styles[record.style_ref];
++            if RETAINED && !matches!(record.kind,SceneRecordKind::Scatter|SceneRecordKind::Rect|SceneRecordKind::Triangle|SceneRecordKind::Segment){return Err(SceneError::Length);}
+             match record.kind {
+                 SceneRecordKind::Scatter => {
+                     let geometry = MarkerGeometry::new(
+@@ -16693,7 +16694,7 @@ impl SceneDocument {
+                         record.diameter,
+                         style.stroke_width,
+                     );
+-                    if let Some(glyph) = self.style_glyph(record.style_ref) {
++                    if let Some(glyph) = self.style_glyph(record.style_ref).filter(|_|!RETAINED) {
+                         let font_size = geometry.radius * 2.0;
+                         out.push(6);
+                         push_raster_f32(out, record.coordinates[0], scale)?;
+@@ -16722,7 +16723,7 @@ impl SceneDocument {
+                         (record.coordinates[2], record.coordinates[3]),
+                         (record.coordinates[0], record.coordinates[3]),
+                     ];
+-                    self.push_raster_poly_fill(out, &points, style, record.style_ref, scale)?;
++                    self.push_raster_poly_fill::<RETAINED>(out, &points, style, record.style_ref, scale)?;
+                     if style.stroke_width > 0.0 {
+                         out.push(3);
+                         out.extend_from_slice(&4u32.to_le_bytes());
+@@ -16739,6 +16740,7 @@ impl SceneDocument {
+                     index += 1;
+                 }
+                 SceneRecordKind::Image => {
++                    if RETAINED { return Err(SceneError::Length); }
+                     if let Some(image) = scene_image_by_id(&self.images, record.stable_id) {
+                         out.push(5); // OP_IMAGE
+                         push_raster_f32(out, record.coordinates[0], scale)?;
+@@ -16753,6 +16755,7 @@ impl SceneDocument {
+                     index += 1;
+                 }
+                 SceneRecordKind::Band => {
++                    if RETAINED { return Err(SceneError::Length); }
+                     let start = index;
+                     let style_ref = record.style_ref;
+                     while index < self.records.len() {
+@@ -16776,7 +16779,7 @@ impl SceneDocument {
+                         for point in run.iter().rev() {
+                             points.push((point.coordinates[2], point.coordinates[3]));
+                         }
+-                        self.push_raster_poly_fill(out, &points, style, style_ref, scale)?;
++                        self.push_raster_poly_fill::<RETAINED>(out, &points, style, style_ref, scale)?;
+                         if record.symbol != BandOutline::None as u8 {
+                             let perimeter = record.symbol == BandOutline::Perimeter as u8;
+                             let stroke_count = if perimeter { count } else { run.len() as u32 };
+@@ -16809,7 +16812,7 @@ impl SceneDocument {
+                         scale,
+                         &|style_ref| self.style_gradient(style_ref).is_some(),
+                         &mut |out, points, style, style_ref| {
+-                            self.push_raster_poly_fill(out, points, style, style_ref, scale)
++                            self.push_raster_poly_fill::<RETAINED>(out, points, style, style_ref, scale)
+                         },
+                     )?;
+                 }
+@@ -16848,22 +16851,44 @@ impl SceneDocument {
+         Ok(())
+     }
+ 
+-    pub fn to_raster_commands(&self, scale: f64) -> Result<Vec<u8>, SceneError> {
++    pub fn to_raster_commands(&self, scale: f64) -> Result<Vec<u8>, SceneError> {self.to_raster_commands_policy::<false>(scale)}
++    /// The retained adapter admits only the literal, chromeless Scene vocabulary.
++    /// Refuse unexpected decorations before allocating commands; never silently
++    /// omit an authored text/glyph/gradient/image from a full Scene.
++    pub(crate) fn to_raster_commands_retained(&self, scale: f64) -> Result<Vec<u8>, SceneError> {
++        if self.y2.is_some() || self.polar.is_some() || self.legend.is_some()
++            || self.colorbar.is_some() || !self.labels.is_empty() || !self.images.is_empty()
++            || self.text != SceneChromeText::default()
++            || self.gradients.iter().any(Option::is_some)
++            || self.marker_glyphs.iter().any(Option::is_some)
++            || [&self.chrome.x_axis, &self.chrome.y_axis].iter().any(|a|
++                a.tick_sides != 0 || a.tick_label_sides != 0 || a.axis_rgba[3] != 0)
++            || self.chrome.x_major_ticks.as_deref() != Some(&[])
++            || self.chrome.y_major_ticks.as_deref() != Some(&[])
++            || !self.chrome.x_minor_ticks.is_empty() || !self.chrome.y_minor_ticks.is_empty()
++            || self.records.iter().any(|r| !matches!(r.kind,
++                SceneRecordKind::Scatter | SceneRecordKind::Rect | SceneRecordKind::Triangle | SceneRecordKind::Segment)
++                || (r.kind == SceneRecordKind::Scatter && r.symbol > 1)) {
++            return Err(SceneError::Length);
++        }
++        self.to_raster_commands_policy::<true>(scale)
++    }
++    fn to_raster_commands_policy<const RETAINED:bool>(&self,scale:f64)->Result<Vec<u8>,SceneError>{
+         if !scale.is_finite() || scale <= 0.0 {
+             return Err(SceneError::NonFinite);
+         }
+         self.check_mesh_budgets(true)?;
+-        let x_ticks = self.resolved_axis_ticks(true)?;
+-        let y_ticks = self.resolved_axis_ticks(false)?;
++        let x_ticks = if RETAINED {AxisTicks{ticks:vec![],labeled:vec![],step:1.}}else{self.resolved_axis_ticks(true)?};
++        let y_ticks = if RETAINED {AxisTicks{ticks:vec![],labeled:vec![],step:1.}}else{self.resolved_axis_ticks(false)?};
+         let y2_ticks = self
+             .y2
+-            .as_ref()
++            .as_ref().filter(|_|!RETAINED)
+             .map(|_| self.resolved_axis_ticks(AxisSlot::Y2))
+             .transpose()?;
+         // Grid strokes are 35 bytes each. Labeled ticks add another stroke
+         // plus a bounded text command; reserve their space up front so adding
+         // constant-size chrome never copies the full mark command buffer.
+-        let reserved_capacity = self.raster_command_capacity(&x_ticks, &y_ticks);
++        let reserved_capacity = if RETAINED {self.raster_mark_capacity.checked_add(256).ok_or(SceneError::Limit)?}else{self.raster_command_capacity(&x_ticks,&y_ticks)};
+         let mut out = Vec::with_capacity(reserved_capacity);
+         let f32_push = |out: &mut Vec<u8>, value: f64| -> Result<(), SceneError> {
+             let scaled = value * scale;
+@@ -16914,8 +16939,8 @@ impl SceneDocument {
+         f32_push(&mut out, self.layout.top)?;
+         f32_push(&mut out, self.layout.right - self.layout.left)?;
+         f32_push(&mut out, self.layout.bottom - self.layout.top)?;
+-        self.append_raster_grid(&mut out, scale, &x_ticks, &y_ticks)?;
+-        if let Some(polar) = &self.polar {
++        if !RETAINED {self.append_raster_grid(&mut out, scale, &x_ticks, &y_ticks)?;}
++        if let Some(polar) = self.polar.as_ref().filter(|_|!RETAINED) {
+             // Existing analytic annular-sector opcode; coordinates/radii scale,
+             // while angles remain radians. Axes reset the clip before chrome.
+             out.push(18);
+@@ -16928,7 +16953,8 @@ impl SceneDocument {
+                 out.extend_from_slice(&(angle as f32).to_le_bytes());
+             }
+         }
+-        self.append_raster_marks(&mut out, scale)?;
++        self.append_raster_marks::<RETAINED>(&mut out, scale)?;
++        if RETAINED {if out.len()>reserved_capacity{return Err(SceneError::Limit);}return Ok(out);}
+         // Reset the plot clip before chrome, then draw the canonical bottom
+         // and left axes through the same display-list primitive as line marks.
+         self.append_raster_axes(&mut out, scale, &x_ticks, &y_ticks, y2_ticks.as_ref())?;
+@@ -18442,7 +18468,7 @@ pub(crate) mod tests {
+         assert!(validate_scene_batch(&scene).is_ok());
+         assert_eq!(document.to_svg().matches(" Z ").count(), 12);
+         let mut commands = Vec::new();
+-        document.append_raster_marks(&mut commands, 1.0).unwrap();
++        document.append_raster_marks::<false>(&mut commands, 1.0).unwrap();
+         let mut cursor = 0;
+         let mut primitives = 0;
+         let mut groups = 0;
+diff --git a/crates/xyg-engine/src/scene_static.rs b/crates/xyg-engine/src/scene_static.rs
+index 38538203330cd74f9156d56afe2eaa38693a6861..b9c566b4192d0fb1d353d6d89e524c3216703d5d 100644
+--- a/crates/xyg-engine/src/scene_static.rs
++++ b/crates/xyg-engine/src/scene_static.rs
+@@ -131,19 +131,7 @@ pub(crate) fn rasterize_png(
+     width: usize,
+     height: usize,
+ ) -> Result<Vec<u8>, SceneStaticExportError> {
+-    let raw = width
+-        .checked_mul(height)
+-        .and_then(|count| count.checked_mul(4))
+-        .ok_or(SceneStaticExportError::Size)?;
+-    let cap = raw.saturating_add(raw / 8).saturating_add(65_536);
+-    let mut out = vec![0u8; cap.max(1)];
+-    let written = raster::rasterize_png_into(cmds, width, height, &mut out)
+-        .ok_or(SceneStaticExportError::Raster)?;
+-    if written > out.len() {
+-        return Err(SceneStaticExportError::Raster);
+-    }
+-    out.truncate(written);
+-    Ok(out)
++    crate::retained_png::rasterize_png_full(cmds,width,height).map_err(|e|match e {crate::retained_png::PngError::Size=>SceneStaticExportError::Size,crate::retained_png::PngError::Raster=>SceneStaticExportError::Raster})
+ }
+ 
+ /// Composite straight-alpha RGBA8 over white using the public JPEG rounding.
+diff --git a/crates/xyg-engine/src/temporal_graph_export.rs b/crates/xyg-engine/src/temporal_graph_export.rs
+index e182452bcd01719c7243a057ddb373ba65cf6404..64e965b487ab770c546f28e75f8cc7598d667f4d 100644
+--- a/crates/xyg-engine/src/temporal_graph_export.rs
++++ b/crates/xyg-engine/src/temporal_graph_export.rs
+@@ -523,12 +523,12 @@ pub fn export(
+     let document = SceneDocument::decode(&scene).map_err(bad)?;
+     document.check_mesh_budgets(format == 1).map_err(bad)?;
+     let body = if format == 1 {
+-        #[cfg(feature = "raster")]
++        #[cfg(any(feature = "raster", feature = "frozen-raster"))]
+         {
+-            let commands = document.to_raster_commands(resolution).map_err(bad)?;
+-            crate::scene_static::rasterize_png(&commands, w as usize, h as usize).map_err(bad)?
++            let commands = document.to_raster_commands_retained(resolution).map_err(bad)?;
++            crate::retained_png::rasterize_png(&commands, w as usize, h as usize).map_err(bad)?
+         }
+-        #[cfg(not(feature = "raster"))]
++        #[cfg(not(any(feature = "raster", feature = "frozen-raster")))]
+         {
+             return Err(E::UnitUnsupported);
+         }
+diff --git a/crates/xyg-wasm/Cargo.toml b/crates/xyg-wasm/Cargo.toml
+index d2b0c5580fcd7146d0f4bcd367ac4e2f69aa9ba5..433c530e1a276dce8fdba9ceeb34e6ca90dbe92e 100644
+--- a/crates/xyg-wasm/Cargo.toml
++++ b/crates/xyg-wasm/Cargo.toml
+@@ -13,7 +13,7 @@ crate-type = ["cdylib", "rlib"]
+ [dependencies]
+ # The browser adapter deliberately excludes native raster/PNG export. Browser
+ # painting stays in the existing TypeScript/WebGL client.
+-xyg-engine = { path = "../xyg-engine", default-features = false }
++xyg-engine = { path = "../xyg-engine", default-features = false, features = ["frozen-raster"] }
+ 
+ [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+ # Native-only ABI parity tests call the shipped C seam. Keep xyg-core and its
+diff --git a/packages/xy-node/test/temporal-graph-frozen-wasm.test.mjs b/packages/xy-node/test/temporal-graph-frozen-wasm.test.mjs
+index 188442e94f44688aec66132f13c0801707c005b0..5843282802b2b2ff53841fee9de819ab23716e45 100644
+--- a/packages/xy-node/test/temporal-graph-frozen-wasm.test.mjs
++++ b/packages/xy-node/test/temporal-graph-frozen-wasm.test.mjs
+@@ -2,7 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';import{read
+ const raw=readFileSync(new URL('../../../spec/performance/temporal-native-render-2026-11-07/artifacts/retained-later.xyfg',import.meta.url));
+ const bundle=readFileSync(new URL('../../xy-client/dist/standalone.js',import.meta.url));
+ function packet(data,format,client=new Uint8Array()){const out=new Uint8Array(64+data.length+client.length),v=new DataView(out.buffer);out.set([88,89,70,88]);v.setUint32(4,1,true);v.setUint32(8,1,true);v.setUint32(12,format,true);v.setFloat64(24,1,true);v.setBigUint64(32,BigInt(data.length),true);v.setBigUint64(40,BigInt(client.length),true);v.setBigUint64(48,384n*1024n*1024n,true);out.set(data,64);out.set(client,64+data.length);return out;}
+-test('actual wasm32 frozen Scene/XYPB/SVG/HTML match public native import; PNG refuses explicitly',async()=>{
++test('actual wasm32 frozen Scene/XYPB/SVG/HTML match public native import/PNG match and reject bounded operations',async()=>{
+  const{instance}=await WebAssembly.instantiate(readFileSync(new URL('../../xy-client/dist/xyg-wasm.wasm',import.meta.url)),{}),x=instance.exports,h=x.xyg_wasm_instance_new(384*1024*1024);assert.ok(h);
+- for(const input of [raw,readFileSync(new URL('../../../spec/performance/temporal-worker-export-2026-11-07/artifacts/edge-focus-dpr2.xyfg',import.meta.url))]){const source=FrozenTemporalGraph.fromBytes(input),f=source.captureFocus([77,110,159,191]);source.close();try{for(const [format,code]of[['scene',3],['painter',4],['svg',0],['html',2],['png',1]]){const p=packet(f.toBytes(),code,code===2?bundle:undefined);assert.equal(x.xyg_wasm_arena_resize(h,p.length),0);new Uint8Array(x.memory.buffer,x.xyg_wasm_arena_ptr(h),p.length).set(p);const status=x.xyg_wasm_frozen_graph_execute(h,0,p.length);if(format==='png'){assert.equal(status,3);assert.equal(x.xyg_wasm_output_len(h),0);const message=new TextDecoder().decode(new Uint8Array(x.memory.buffer,x.xyg_wasm_last_error_ptr(h),x.xyg_wasm_last_error_len(h)));assert.match(message,/XYG_FROZEN_PNG_UNAVAILABLE/);}else{assert.equal(status,0);assert.deepEqual(Buffer.from(new Uint8Array(x.memory.buffer,x.xyg_wasm_output_ptr(h),x.xyg_wasm_output_len(h))),Buffer.from(f.export(format)));}}}finally{f.close();}}assert.equal(x.xyg_wasm_instance_dispose(h),0);
++ for(const input of [raw,readFileSync(new URL('../../../spec/performance/temporal-worker-export-2026-11-07/artifacts/edge-focus-dpr2.xyfg',import.meta.url))]){const source=FrozenTemporalGraph.fromBytes(input),f=source.captureFocus([77,110,159,191]);source.close();try{for(const [format,code]of[['scene',3],['painter',4],['svg',0],['html',2],['png',1]]){const p=packet(f.toBytes(),code,code===2?bundle:undefined);assert.equal(x.xyg_wasm_arena_resize(h,p.length),0);new Uint8Array(x.memory.buffer,x.xyg_wasm_arena_ptr(h),p.length).set(p);const status=x.xyg_wasm_frozen_graph_execute(h,0,p.length);assert.equal(status,0);assert.deepEqual(Buffer.from(new Uint8Array(x.memory.buffer,x.xyg_wasm_output_ptr(h),x.xyg_wasm_output_len(h))),Buffer.from(f.export(format)));}}finally{f.close();}}assert.equal(x.xyg_wasm_instance_dispose(h),0);
+ });
+diff --git a/scripts/temporal_graph_frozen_smoke.mjs b/scripts/temporal_graph_frozen_smoke.mjs
+index 325775c979411e1fbf6e0879a7010d26ee3e0580..b85149a02c2c3ff864a2f0d4a6ae81cb8b283d85 100644
+--- a/scripts/temporal_graph_frozen_smoke.mjs
++++ b/scripts/temporal_graph_frozen_smoke.mjs
+@@ -18,9 +18,9 @@ assert.deepEqual(Array.from(native.metadata['render.focus.rgba']),[77,110,159,19
+  for(const format of ['scene','painter','svg','html']){const artifact=native.export(format);assert.deepEqual(Buffer.from(artifact),Buffer.from(result[format],'base64'),`${format} native/WASM shape ${shape}`);await writeFile(resolve(output,`${tag}.${format}`),artifact);}
+  const html2=native.export('html',{scale:2});assert.deepEqual(Buffer.from(html2),Buffer.from(result.html2,'base64'));await writeFile(resolve(output,`${tag}.scale2.html`),html2);const png2=native.export('png',{scale:2});await writeFile(resolve(output,`${tag}.scale2.png`),png2);const recoveredPng2=FrozenTemporalGraph.fromArtifact(png2);try{assert.deepEqual(Buffer.from(recoveredPng2.toBytes()),bytes);}finally{recoveredPng2.close();}
+  const png=native.export('png');await writeFile(resolve(output,`${tag}.png`),png);await writeFile(resolve(output,`${tag}.xyfg`),bytes);
+- assert.equal(result.pngError?.code,'XYG_WASM_RESOURCE_LIMIT');assert.match(result.pngError?.message,/XYG_FROZEN_PNG_UNAVAILABLE/);
++ assert.deepEqual(Buffer.from(result.png,'base64'),Buffer.from(png),'Worker PNG native parity');assert.deepEqual(Buffer.from(result.png2,'base64'),Buffer.from(png2),'Worker scale2 PNG native parity');
+  report.push({shape,parent,snapshotSha256:createHash('sha256').update(bytes).digest('hex')});}finally{native.close();}
+  for(const scale of [1,2]){const suffix=scale===1?'':'.scale2';const offline=await browser.newPage({viewport:{width:600,height:500}});await offline.route('http://**',route=>route.abort());await offline.route('https://**',route=>route.abort());offline.on('pageerror',e=>errors.push(String(e)));await offline.goto('file://'+resolve(output,`${tag}${suffix}.html`));await offline.waitForFunction(()=>document.documentElement.dataset.xyFrozenReady==='true');await offline.waitForFunction(()=>window.__xyFrozenView?.gpuTraces?.length>0);const dimensions=await offline.evaluate(()=>Array.from(document.querySelectorAll('#chart canvas'),c=>[c.width,c.height]));assert.ok(dimensions.length);for(const d of dimensions)assert.deepEqual(d,[480*scale,360*scale]);await offline.screenshot({path:resolve(output,`${tag}${suffix}.offline.png`)});await offline.close();}}
+  const vectors=spawnSync(process.env.UV??'uv',['run','python','scripts/verify_temporal_frozen_artifacts.py',output],{cwd:root,env:process.env,encoding:'utf8'});assert.equal(vectors.status,0,vectors.stdout+vectors.stderr);console.log(vectors.stdout);
+- assert.deepEqual(errors,[]);await writeFile(resolve(output,'report.json'),JSON.stringify({report,errors},null,2));console.log('7 real Worker freezes, native/WASM Scene/XYPB/SVG/HTML parity, exact recovery and offline ChartView renders passed');
++ assert.deepEqual(errors,[]);await writeFile(resolve(output,'report.json'),JSON.stringify({report,errors},null,2));console.log('7 real Worker freezes, native/WASM Scene/XYPB/SVG/HTML/PNG parity, real PNG refusals, exact recovery and offline ChartView renders passed');
+ }finally{await browser.close();await new Promise(r=>server.close(r));}
+diff --git a/tests/browser/temporal_graph_frozen_page.mjs b/tests/browser/temporal_graph_frozen_page.mjs
+index cc93eeb3651b80d652bc147c873d5ee28b8d982d..0fdb47850036279ac777d15b320fd6948a625863 100644
+--- a/tests/browser/temporal_graph_frozen_page.mjs
++++ b/tests/browser/temporal_graph_frozen_page.mjs
+@@ -19,11 +19,14 @@ window.frozenTest.capture=async(pin=true)=>{
+  const frozen=await p.session.freeze({timezone:'America/New_York',window:[0n,40n]});const before=frozen.toBytes();
+  await p.controller.setCursor(10n);await p.session.whenIdle();await p.session.dispose();await p.controller.dispose();p.worker.dispose();p.clockWorker.dispose();p.el.remove();
+  const worker=makeWorker();await worker.ready;const imported=await XygFrozenTemporalGraph.fromBytes(before,worker);const explicit=await imported.captureFocus([77,110,159,191],worker);const explicitBytes=explicit.toBytes();const scene=await imported.export('scene',{worker}),painter=await imported.export('painter',{worker}),svg=await imported.export('svg',{worker});
+- let pngError;try{await imported.export('png',{worker});}catch(e){pngError={code:e.code,message:e.message};}
++ const png=await imported.export('png',{worker}),png2=await imported.export('png',{worker,scale:2});
++ for(const artifact of [png,png2]){const recovered=await XygFrozenTemporalGraph.fromArtifact(artifact,worker);if(recovered.toBytes().length!==before.length||!recovered.toBytes().every((v,i)=>v===before[i]))throw new Error('PNG recovery changed XYFG');}
++ for(const artifact of [new Uint8Array(),png.subarray(0,png.length-1),Uint8Array.from(png,(v,i)=>i===40?v^1:v)]){let rejected=false;try{await XygFrozenTemporalGraph.fromArtifact(artifact,worker);}catch{rejected=true;}if(!rejected)throw new Error('malformed PNG accepted');}
++ const bounded=createXygWasmWorker({workerUrl:'/packages/xy-client/dist/wasm-worker.js',wasm:'/packages/xy-client/dist/xyg-wasm.wasm'});await bounded.ready;try{const limited=await XygFrozenTemporalGraph.fromBytes(before,bounded);let rejected=false;try{await limited.export('png',{worker:bounded,scale:2});}catch(e){if(e.code!=='XYG_WASM_RESOURCE_LIMIT')throw e;rejected=true;}if(!rejected)throw new Error('default 16MiB PNG reservation bypassed');const again=await limited.export('scene',{worker:bounded});if(!again.every((v,i)=>v===scene[i])||again.length!==scene.length)throw new Error('PNG refusal changed last good state');}finally{bounded.dispose();}
+  const client=new Uint8Array(await(await fetch('/packages/xy-client/dist/standalone.js')).arrayBuffer());const html=await imported.export('html',{worker,client}),html2=await imported.export('html',{worker,client,scale:2});
+  const recovered=await XygFrozenTemporalGraph.fromArtifact(html,worker,client);const after=recovered.toBytes();const recovered2=await XygFrozenTemporalGraph.fromArtifact(html2,worker,client);if(!recovered2.toBytes().every((v,i)=>v===before[i])||recovered2.toBytes().length!==before.length)throw new Error('scaled HTML recovery changed XYFG');worker.dispose();
+  const encode=a=>{let s='';for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode(...a.subarray(i,i+32768));return btoa(s);};
+- return {explicit:encode(explicitBytes),snapshot:encode(before),recovered:encode(after),scene:encode(scene),painter:encode(painter),svg:encode(svg),html:encode(html),html2:encode(html2),pngError};
++ return {explicit:encode(explicitBytes),snapshot:encode(before),recovered:encode(after),scene:encode(scene),painter:encode(painter),svg:encode(svg),html:encode(html),html2:encode(html2),png:encode(png),png2:encode(png2)};
+ };
+ 
+ window.frozenTest.legacy=async()=>{const worker=makeWorker();await worker.ready;try{const raw=new Uint8Array(await(await fetch('/spec/performance/temporal-native-render-2026-11-07/artifacts/retained-later.xyfg')).arrayBuffer());const original=await XygFrozenTemporalGraph.fromBytes(raw,worker);const svg=await original.export('svg',{worker,focusRgba:[77,110,159,191]});const explicit=await original.captureFocus([77,110,159,191],worker);const recovered=await XygFrozenTemporalGraph.fromArtifact(svg,worker);const encode=a=>{let s='';for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode(...a.subarray(i,i+32768));return btoa(s);};return {raw:encode(raw),svg:encode(svg),explicit:encode(explicit.toBytes()),recovered:encode(recovered.toBytes())};}finally{worker.dispose();}};

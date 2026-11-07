@@ -105,7 +105,7 @@ pub fn quantiles(data: &[f64], probs: &[f64]) -> Option<Vec<f64>> {
     if finite.is_empty() {
         return Some(vec![f64::NAN; probs.len()]);
     }
-    finite.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    crate::shared_sort::by(&mut finite, |a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     Some(probs.iter().map(|&p| quantile_sorted(&finite, p)).collect())
 }
 
@@ -143,7 +143,7 @@ pub fn box_stats(data: &[f64]) -> BoxStats {
             outliers: Vec::new(),
         };
     }
-    finite.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    crate::shared_sort::by(&mut finite, |a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     let q1 = quantile_sorted(&finite, 0.25);
     let median = quantile_sorted(&finite, 0.5);
     let q3 = quantile_sorted(&finite, 0.75);
@@ -631,7 +631,7 @@ pub fn contour_levels(data: &[f64], n_levels: usize) -> Option<Vec<f64>> {
             return None;
         }
         let mut out = data.to_vec();
-        out.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        crate::shared_sort::by(&mut out, |a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
         return Some(out);
     }
     if n_levels > MAX_CONTOUR_LEVELS {
@@ -866,7 +866,7 @@ fn sturges_width(data: &[f64]) -> f64 {
 
 fn fd_width(data: &[f64]) -> f64 {
     let mut sorted = data.to_vec();
-    sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    crate::shared_sort::by(&mut sorted, |a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     let q1 = quantile_sorted(&sorted, 0.25);
     let q3 = quantile_sorted(&sorted, 0.75);
     2.0 * (q3 - q1) * (data.len() as f64).powf(-1.0 / 3.0)
@@ -1018,7 +1018,7 @@ fn round_3g(value: f64) -> f64 {
 }
 
 fn unique_sorted_f64(values: &mut Vec<f64>) {
-    values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    crate::shared_sort::by(&mut *values, |a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     values.dedup_by(|a, b| a == b);
 }
 

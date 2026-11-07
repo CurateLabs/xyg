@@ -17,13 +17,14 @@ mod graphforge;
 mod graphforge_session;
 mod temporal;
 mod temporal_graph;
+mod temporal_graph_frozen;
 pub mod ticks;
 mod typed_series_abi_generated;
 
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, PainterRejection, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 37;
+pub const WASM_ABI_VERSION: u32 = 38;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -530,6 +531,22 @@ fn with_ordinary_instance_mut(
 }
 
 fn with_instance_mut<T>(handle: u32, operation: impl FnOnce(&mut Instance) -> T) -> Result<T, i32> {
+    #[cfg(target_arch = "wasm32")]
+    {
+        let mut operation = Some(operation);
+        with_instance_mut_erased(handle, &mut |i| operation.take().expect("one instance operation")(i))
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    with_instance_mut_impl(handle, operation)
+}
+
+#[cfg(target_arch = "wasm32")]
+#[inline(never)]
+fn with_instance_mut_erased<T>(handle: u32, operation: &mut dyn FnMut(&mut Instance) -> T) -> Result<T, i32> {
+    with_instance_mut_impl(handle, operation)
+}
+
+fn with_instance_mut_impl<T>(handle: u32, operation: impl FnOnce(&mut Instance) -> T) -> Result<T, i32> {
     let mut registry = registry();
     let instance = registry
         .slot_mut(handle)
@@ -1916,6 +1933,18 @@ pub extern "C" fn xyg_wasm_temporal_scene_compile(
 ) -> i32 {
     with_ordinary_instance_mut(handle, |instance| {
         geo::execute_temporal_scene(instance, sequence, offset, length)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+/// Shared XYFX frozen graph acquisition, native-equivalent export and recovery.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_frozen_graph_execute(handle: u32, offset: usize, length: usize) -> i32 {
+    with_instance_mut(handle, |i| {
+        if i.geo_transport.is_some() {
+            return STATUS_INVALID_ARGUMENT;
+        }
+        temporal_graph_frozen::execute(i, offset, length)
     })
     .unwrap_or(STATUS_INVALID_HANDLE)
 }

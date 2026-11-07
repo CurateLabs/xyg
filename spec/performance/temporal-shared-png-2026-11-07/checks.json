@@ -1,0 +1,591 @@
+{
+  "schemaVersion": 1,
+  "gitParent": "44bf73390b3d949797755d8637e3aeca0a60d7b5",
+  "scope": "Qualified standalone shared native/WASM retained PNG continuation; independent final diff review and future union/full milestone acceptance remain parent-owned",
+  "freshChecks": {
+    "clippy-final2": {
+      "label": "clippy-final2",
+      "argv": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-1cafa70d",
+      "started": "2026-11-07T15:58:45.312181+00:00",
+      "head": "44bf73390b3d949797755d8637e3aeca0a60d7b5",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "TMPDIR": "/var/tmp/pg45-1c",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so",
+        "CARGO_TARGET_DIR": "/home/ubuntu/.t3-owned/1cafa70d/png-next-target",
+        "CARGO_BUILD_JOBS": "2"
+      },
+      "native": {
+        "path": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so",
+        "sha256": "1424331bd0569c3ecbab1e3e591022aa95adac0f2fce2c486e51909974cf2929"
+      },
+      "wasm": {
+        "path": "packages/xy-client/dist/xyg-wasm.wasm",
+        "sha256": "9dbd29f1d5f20ec49494a84562de6cd43096ab02ab276b95c05a8e9e77fbb646"
+      },
+      "returncode": 0,
+      "finished": "2026-11-07T15:58:50.073113+00:00",
+      "logSha256": "f27f8056429d291ea87e2d3873bf6ea0515d3d92ea9d9701d8a0d560335c23d3"
+    },
+    "node-final": {
+      "label": "node-final",
+      "argv": [
+        "node",
+        "--test",
+        "packages/xy-node/test/temporal-graph-frozen.test.mjs",
+        "packages/xy-node/test/temporal-graph-frozen-wasm.test.mjs",
+        "packages/xy-node/test/temporal-graph.test.mjs",
+        "packages/xy-node/test/temporal-graph-publication.test.mjs",
+        "packages/xy-node/test/graph.test.mjs",
+        "packages/xy-node/test/scene.test.mjs",
+        "packages/xy-node/test/painter-admission-wasm-parity.test.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-1cafa70d",
+      "started": "2026-11-07T16:11:38.440603+00:00",
+      "head": "44bf73390b3d949797755d8637e3aeca0a60d7b5",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "TMPDIR": "/var/tmp/pg45-1c",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so"
+      },
+      "native": {
+        "path": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so",
+        "sha256": "1424331bd0569c3ecbab1e3e591022aa95adac0f2fce2c486e51909974cf2929"
+      },
+      "wasm": {
+        "path": "packages/xy-client/dist/xyg-wasm.wasm",
+        "sha256": "9dbd29f1d5f20ec49494a84562de6cd43096ab02ab276b95c05a8e9e77fbb646"
+      },
+      "returncode": 0,
+      "finished": "2026-11-07T16:11:42.204625+00:00",
+      "logSha256": "e024da3c470bd3a05c2de7f90c5b70283eabc9aa60f39b299e171d254f9212b4"
+    },
+    "foundation-final": {
+      "label": "foundation-final",
+      "argv": [
+        "node",
+        "scripts/wasm_foundation_smoke.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-1cafa70d",
+      "started": "2026-11-07T16:00:59.322223+00:00",
+      "head": "44bf73390b3d949797755d8637e3aeca0a60d7b5",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "TMPDIR": "/var/tmp/pg45-1c",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "native": {
+        "path": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so",
+        "sha256": "1424331bd0569c3ecbab1e3e591022aa95adac0f2fce2c486e51909974cf2929"
+      },
+      "wasm": {
+        "path": "packages/xy-client/dist/xyg-wasm.wasm",
+        "sha256": "9dbd29f1d5f20ec49494a84562de6cd43096ab02ab276b95c05a8e9e77fbb646"
+      },
+      "returncode": 0,
+      "finished": "2026-11-07T16:02:20.188666+00:00",
+      "logSha256": "573e1f0fe0705f8d3091614bb32b2b4881957d6995c14d0850e218fc8998d652"
+    },
+    "final-png-old-native": {
+      "label": "final-png-old-native",
+      "argv": [
+        "node",
+        "/home/ubuntu/.t3-owned/1cafa70d/png-next/parity.mjs",
+        "packages/xy-client/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-1cafa70d",
+      "started": "2026-11-07T16:00:57.641721+00:00",
+      "head": "44bf73390b3d949797755d8637e3aeca0a60d7b5",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "TMPDIR": "/var/tmp/pg45-1c",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3-owned/1cafa70d/qualified-native-final/libxyg_core.so"
+      },
+      "native": {
+        "path": "/home/ubuntu/.t3-owned/1cafa70d/qualified-native-final/libxyg_core.so",
+        "sha256": "ce420fd1ae0e52e19d3b3c20f359d968418d6ee87896743e35712dea7145d572"
+      },
+      "wasm": {
+        "path": "packages/xy-client/dist/xyg-wasm.wasm",
+        "sha256": "9dbd29f1d5f20ec49494a84562de6cd43096ab02ab276b95c05a8e9e77fbb646"
+      },
+      "returncode": 0,
+      "finished": "2026-11-07T16:00:59.289860+00:00",
+      "logSha256": "eb4c7aa6c0c4966227a941724baf7afad0d416c5aa7d0cc0c5d9e57cea77a3dc"
+    },
+    "wasm-native-unit": {
+      "label": "wasm-native-unit",
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xyg-wasm",
+        "--lib"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-1cafa70d",
+      "started": "2026-11-07T16:07:16.408818+00:00",
+      "head": "44bf73390b3d949797755d8637e3aeca0a60d7b5",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "TMPDIR": "/var/tmp/pg45-1c",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so",
+        "CARGO_TARGET_DIR": "/home/ubuntu/.t3-owned/1cafa70d/png-next-target",
+        "CARGO_BUILD_JOBS": "2"
+      },
+      "native": {
+        "path": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so",
+        "sha256": "1424331bd0569c3ecbab1e3e591022aa95adac0f2fce2c486e51909974cf2929"
+      },
+      "wasm": {
+        "path": "packages/xy-client/dist/xyg-wasm.wasm",
+        "sha256": "9dbd29f1d5f20ec49494a84562de6cd43096ab02ab276b95c05a8e9e77fbb646"
+      },
+      "returncode": 0,
+      "finished": "2026-11-07T16:07:47.893622+00:00",
+      "logSha256": "8deb7c6a17973e766e56cff2842db66dfe5a6b33eed6adab25b9369812295247"
+    },
+    "native-source-fresh": {
+      "label": "native-source-fresh",
+      "argv": [
+        "cargo",
+        "build",
+        "-p",
+        "xyg-core",
+        "--release",
+        "--locked"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-1cafa70d",
+      "started": "2026-11-07T16:12:30.496492+00:00",
+      "head": "44bf73390b3d949797755d8637e3aeca0a60d7b5",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "TMPDIR": "/var/tmp/pg45-1c",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so",
+        "CARGO_TARGET_DIR": "/home/ubuntu/.t3-owned/1cafa70d/png-next-target",
+        "CARGO_BUILD_JOBS": "2"
+      },
+      "native": {
+        "path": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so",
+        "sha256": "1424331bd0569c3ecbab1e3e591022aa95adac0f2fce2c486e51909974cf2929"
+      },
+      "wasm": {
+        "path": "packages/xy-client/dist/xyg-wasm.wasm",
+        "sha256": "9dbd29f1d5f20ec49494a84562de6cd43096ab02ab276b95c05a8e9e77fbb646"
+      },
+      "returncode": 0,
+      "finished": "2026-11-07T16:12:31.894158+00:00",
+      "logSha256": "fd25d00d43f50116e1bb87f3fd905bf09e32ec674b16996a7b80a83a20381ba4"
+    },
+    "core-final": {
+      "label": "core-final",
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_cross_host_abi_transition.py",
+        "-q"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-1cafa70d",
+      "started": "2026-11-07T16:29:02.338226+00:00",
+      "head": "44bf73390b3d949797755d8637e3aeca0a60d7b5",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "TMPDIR": "/var/tmp/pg45-1c",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so"
+      },
+      "native": {
+        "path": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so",
+        "sha256": "1424331bd0569c3ecbab1e3e591022aa95adac0f2fce2c486e51909974cf2929"
+      },
+      "wasm": {
+        "path": "packages/xy-client/dist/xyg-wasm.wasm",
+        "sha256": "9dbd29f1d5f20ec49494a84562de6cd43096ab02ab276b95c05a8e9e77fbb646"
+      },
+      "returncode": 0,
+      "finished": "2026-11-07T16:29:05.910320+00:00",
+      "logSha256": "9f2cb21c5c59ec09c923acbc692129f23dea8747ff2b927101b6fa976b6b9211"
+    },
+    "abi-final": {
+      "label": "abi-final",
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_abi_manifest.py",
+        "--check"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-1cafa70d",
+      "started": "2026-11-07T16:29:02.336271+00:00",
+      "head": "44bf73390b3d949797755d8637e3aeca0a60d7b5",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "TMPDIR": "/var/tmp/pg45-1c",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so"
+      },
+      "native": {
+        "path": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so",
+        "sha256": "1424331bd0569c3ecbab1e3e591022aa95adac0f2fce2c486e51909974cf2929"
+      },
+      "wasm": {
+        "path": "packages/xy-client/dist/xyg-wasm.wasm",
+        "sha256": "9dbd29f1d5f20ec49494a84562de6cd43096ab02ab276b95c05a8e9e77fbb646"
+      },
+      "returncode": 0,
+      "finished": "2026-11-07T16:29:04.653223+00:00",
+      "logSha256": "87a75e0e9065aa0c9a8765861691c56d30e761dc0f00251b4afb25479995f1cf"
+    },
+    "wasm-abi-final": {
+      "label": "wasm-abi-final",
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_wasm_abi.py",
+        "--check"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-1cafa70d",
+      "started": "2026-11-07T16:00:24.399866+00:00",
+      "head": "44bf73390b3d949797755d8637e3aeca0a60d7b5",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "TMPDIR": "/var/tmp/pg45-1c",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so"
+      },
+      "native": {
+        "path": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so",
+        "sha256": "1424331bd0569c3ecbab1e3e591022aa95adac0f2fce2c486e51909974cf2929"
+      },
+      "wasm": {
+        "path": "packages/xy-client/dist/xyg-wasm.wasm",
+        "sha256": "9dbd29f1d5f20ec49494a84562de6cd43096ab02ab276b95c05a8e9e77fbb646"
+      },
+      "returncode": 0,
+      "finished": "2026-11-07T16:00:24.980992+00:00",
+      "logSha256": "90209e048102fafc6bafbda79dbb0cdd215fbc3346bc5af6a86cffcfbdcf892a"
+    },
+    "ci-verifier-final": {
+      "label": "ci-verifier-final",
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_ci_workflow.py"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-1cafa70d",
+      "started": "2026-11-07T16:29:02.344744+00:00",
+      "head": "44bf73390b3d949797755d8637e3aeca0a60d7b5",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "TMPDIR": "/var/tmp/pg45-1c",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so"
+      },
+      "native": {
+        "path": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so",
+        "sha256": "1424331bd0569c3ecbab1e3e591022aa95adac0f2fce2c486e51909974cf2929"
+      },
+      "wasm": {
+        "path": "packages/xy-client/dist/xyg-wasm.wasm",
+        "sha256": "9dbd29f1d5f20ec49494a84562de6cd43096ab02ab276b95c05a8e9e77fbb646"
+      },
+      "returncode": 0,
+      "finished": "2026-11-07T16:29:04.365317+00:00",
+      "logSha256": "9923b32629c6e3c4040fdf9bcc063d9fc5d3fb2024849610effb6a8b9083790d"
+    },
+    "assets-final": {
+      "label": "assets-final",
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_wasm_assets.py"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-1cafa70d",
+      "started": "2026-11-07T16:29:02.346730+00:00",
+      "head": "44bf73390b3d949797755d8637e3aeca0a60d7b5",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "TMPDIR": "/var/tmp/pg45-1c",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so"
+      },
+      "native": {
+        "path": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so",
+        "sha256": "1424331bd0569c3ecbab1e3e591022aa95adac0f2fce2c486e51909974cf2929"
+      },
+      "wasm": {
+        "path": "packages/xy-client/dist/xyg-wasm.wasm",
+        "sha256": "9dbd29f1d5f20ec49494a84562de6cd43096ab02ab276b95c05a8e9e77fbb646"
+      },
+      "returncode": 0,
+      "finished": "2026-11-07T16:29:02.677365+00:00",
+      "logSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef"
+    },
+    "ownership-final": {
+      "label": "ownership-final",
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_ownership.py"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-1cafa70d",
+      "started": "2026-11-07T16:00:25.016258+00:00",
+      "head": "44bf73390b3d949797755d8637e3aeca0a60d7b5",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "TMPDIR": "/var/tmp/pg45-1c",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so"
+      },
+      "native": {
+        "path": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so",
+        "sha256": "1424331bd0569c3ecbab1e3e591022aa95adac0f2fce2c486e51909974cf2929"
+      },
+      "wasm": {
+        "path": "packages/xy-client/dist/xyg-wasm.wasm",
+        "sha256": "9dbd29f1d5f20ec49494a84562de6cd43096ab02ab276b95c05a8e9e77fbb646"
+      },
+      "returncode": 0,
+      "finished": "2026-11-07T16:00:25.639449+00:00",
+      "logSha256": "9ff35981d663f82e0729d216257a59fd802eb8a82f292f0613898d3cec5fc12d"
+    },
+    "precommit-final": {
+      "label": "precommit-final",
+      "argv": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-1cafa70d",
+      "started": "2026-11-07T16:24:28.937325+00:00",
+      "head": "44bf73390b3d949797755d8637e3aeca0a60d7b5",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "TMPDIR": "/var/tmp/pg45-1c",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so"
+      },
+      "native": {
+        "path": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so",
+        "sha256": "1424331bd0569c3ecbab1e3e591022aa95adac0f2fce2c486e51909974cf2929"
+      },
+      "wasm": {
+        "path": "packages/xy-client/dist/xyg-wasm.wasm",
+        "sha256": "9dbd29f1d5f20ec49494a84562de6cd43096ab02ab276b95c05a8e9e77fbb646"
+      },
+      "returncode": 0,
+      "finished": "2026-11-07T16:24:34.251903+00:00",
+      "logSha256": "a795aaa54f424dbfb45bf805df2fc225d22bb7d90a7ded4fa545d712c65313ca"
+    },
+    "ruff-check-final": {
+      "label": "ruff-check-final",
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-1cafa70d",
+      "started": "2026-11-07T16:24:34.282859+00:00",
+      "head": "44bf73390b3d949797755d8637e3aeca0a60d7b5",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "TMPDIR": "/var/tmp/pg45-1c",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so"
+      },
+      "native": {
+        "path": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so",
+        "sha256": "1424331bd0569c3ecbab1e3e591022aa95adac0f2fce2c486e51909974cf2929"
+      },
+      "wasm": {
+        "path": "packages/xy-client/dist/xyg-wasm.wasm",
+        "sha256": "9dbd29f1d5f20ec49494a84562de6cd43096ab02ab276b95c05a8e9e77fbb646"
+      },
+      "returncode": 0,
+      "finished": "2026-11-07T16:24:34.663691+00:00",
+      "logSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "ruff-format-final": {
+      "label": "ruff-format-final",
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-1cafa70d",
+      "started": "2026-11-07T16:24:34.701812+00:00",
+      "head": "44bf73390b3d949797755d8637e3aeca0a60d7b5",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "TMPDIR": "/var/tmp/pg45-1c",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so"
+      },
+      "native": {
+        "path": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so",
+        "sha256": "1424331bd0569c3ecbab1e3e591022aa95adac0f2fce2c486e51909974cf2929"
+      },
+      "wasm": {
+        "path": "packages/xy-client/dist/xyg-wasm.wasm",
+        "sha256": "9dbd29f1d5f20ec49494a84562de6cd43096ab02ab276b95c05a8e9e77fbb646"
+      },
+      "returncode": 0,
+      "finished": "2026-11-07T16:24:34.789445+00:00",
+      "logSha256": "69425d6cd8235e1a4113d4eb545910ff06d23718d998267edd863b32474e9173"
+    },
+    "precommit-sealed": {
+      "label": "precommit-sealed",
+      "argv": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-1cafa70d",
+      "started": "2026-11-07T16:30:59.634769+00:00",
+      "head": "44bf73390b3d949797755d8637e3aeca0a60d7b5",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "TMPDIR": "/var/tmp/pg45-1c",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so"
+      },
+      "native": {
+        "path": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so",
+        "sha256": "1424331bd0569c3ecbab1e3e591022aa95adac0f2fce2c486e51909974cf2929"
+      },
+      "wasm": {
+        "path": "packages/xy-client/dist/xyg-wasm.wasm",
+        "sha256": "9dbd29f1d5f20ec49494a84562de6cd43096ab02ab276b95c05a8e9e77fbb646"
+      },
+      "returncode": 0,
+      "finished": "2026-11-07T16:31:00.650826+00:00",
+      "logSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "ruff-check-sealed": {
+      "label": "ruff-check-sealed",
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-1cafa70d",
+      "started": "2026-11-07T16:31:00.681855+00:00",
+      "head": "44bf73390b3d949797755d8637e3aeca0a60d7b5",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "TMPDIR": "/var/tmp/pg45-1c",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so"
+      },
+      "native": {
+        "path": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so",
+        "sha256": "1424331bd0569c3ecbab1e3e591022aa95adac0f2fce2c486e51909974cf2929"
+      },
+      "wasm": {
+        "path": "packages/xy-client/dist/xyg-wasm.wasm",
+        "sha256": "9dbd29f1d5f20ec49494a84562de6cd43096ab02ab276b95c05a8e9e77fbb646"
+      },
+      "returncode": 0,
+      "finished": "2026-11-07T16:31:00.741865+00:00",
+      "logSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "ruff-format-sealed": {
+      "label": "ruff-format-sealed",
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-1cafa70d",
+      "started": "2026-11-07T16:31:00.772188+00:00",
+      "head": "44bf73390b3d949797755d8637e3aeca0a60d7b5",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "TMPDIR": "/var/tmp/pg45-1c",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so"
+      },
+      "native": {
+        "path": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so",
+        "sha256": "1424331bd0569c3ecbab1e3e591022aa95adac0f2fce2c486e51909974cf2929"
+      },
+      "wasm": {
+        "path": "packages/xy-client/dist/xyg-wasm.wasm",
+        "sha256": "9dbd29f1d5f20ec49494a84562de6cd43096ab02ab276b95c05a8e9e77fbb646"
+      },
+      "returncode": 0,
+      "finished": "2026-11-07T16:31:00.830944+00:00",
+      "logSha256": "69425d6cd8235e1a4113d4eb545910ff06d23718d998267edd863b32474e9173"
+    },
+    "profile-observed": {
+      "label": "profile-observed",
+      "argv": [
+        "python3",
+        "/home/ubuntu/.t3-owned/1cafa70d/png-next/profile_observed.py"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-1cafa70d",
+      "started": "2026-11-07T16:33:35.062830+00:00",
+      "head": "44bf73390b3d949797755d8637e3aeca0a60d7b5",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.local/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "TMPDIR": "/var/tmp/pg45-1c",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so"
+      },
+      "native": {
+        "path": "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so",
+        "sha256": "1424331bd0569c3ecbab1e3e591022aa95adac0f2fce2c486e51909974cf2929"
+      },
+      "wasm": {
+        "path": "packages/xy-client/dist/xyg-wasm.wasm",
+        "sha256": "9dbd29f1d5f20ec49494a84562de6cd43096ab02ab276b95c05a8e9e77fbb646"
+      },
+      "returncode": 0,
+      "finished": "2026-11-07T16:33:56.330643+00:00",
+      "logSha256": "2eeba0aaa1bb14bb28c4ce8bdd529090a58b43c8e9f5fdfe719d40fa0532df70"
+    }
+  },
+  "nativeAbiSmoke": {
+    "checks": 673,
+    "log": "abi-smoke.log.gz"
+  },
+  "engineUnit": {
+    "passed": 1859,
+    "log": "engine-unit-all.log.gz"
+  },
+  "nativePythonStaticPackaging": {
+    "passed": 265,
+    "existingXfail": 1,
+    "initialWorkerFailure": "classic Worker did not dispatch XYFX; corrected public Worker test passed",
+    "initialLog": "qualified-python-first.log.gz",
+    "correctedLog": "qualified-worker-offline.log.gz"
+  },
+  "normalInventory": "Passed preparation declarations; strict release classification remains 1049 pre-existing unclassified entries",
+  "inheritedOnly": "Earlier R2/full native acquisition and codec reviews remain historical; no claim they freshly executed on this continuation",
+  "remainingAcceptance": [
+    "Independent exact-diff review",
+    "Future combined-source/ABI single-module fit and integration",
+    "Full #45 aggregate/scale/accessibility and whole milestone acceptance",
+    "Global process/caller-retained budget #111"
+  ]
+}

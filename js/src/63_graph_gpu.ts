@@ -185,7 +185,7 @@ export function createGraphGpuPainter(surface: HTMLElement) {
   let disposed = false, program: WebGLProgram | null = null;
   let buffers: WebGLBuffer[] = [], textures: WebGLTexture[] = [], vaos: WebGLVertexArrayObject[] = [];
   let visible = true;
-  let accepted: { gpu: GraphGpuSnapshot; camera: readonly number[] } | null = null;
+  let accepted: { gpu: GraphGpuSnapshot; camera: readonly number[]; focus: Float32Array } | null = null;
   const client: GLHostClient = {
     _dashboardResourceState() { return { derivedBytes: host.clientResourceBytes(client), visible, interacting: false }; },
     _applyDashboardResidency(retained) {
@@ -223,6 +223,8 @@ export function createGraphGpuPainter(surface: HTMLElement) {
     host.markDashboardResourceUsed(client);
     const width = Math.max(1, Math.round(camera[4]! * camera[6]!)), height = Math.max(1, Math.round(camera[5]! * camera[6]!));
     stage.width = width; stage.height = height;
+    const focusToken = doc.defaultView?.getComputedStyle(surface).getPropertyValue("--chart-focus").trim();
+    const focus = Float32Array.from(parseColor(surface, focusToken || "#aa99ec", [170 / 255, 153 / 255, 236 / 255, 1]));
     const completed = host.render(client, staging, width, height, () => {
       const gl = host.clientContext(client);
       releaseObjects();
@@ -230,8 +232,7 @@ export function createGraphGpuPainter(surface: HTMLElement) {
       gl.useProgram(program);
       const uniform = (name: string) => uniformOf(gl, program, name);
       gl.uniform2f(uniform("u_view"), camera[4]!, camera[5]!);
-      const focusToken = doc.defaultView?.getComputedStyle(surface).getPropertyValue("--chart-focus").trim();
-      gl.uniform4fv(uniform("u_focusColor"), parseColor(surface, focusToken || "#aa99ec", [170 / 255, 153 / 255, 236 / 255, 1]));
+      gl.uniform4fv(uniform("u_focusColor"), focus);
       for (const [name, i] of [["u_x", 0], ["u_y", 1], ["u_dash", 2]] as const) {
         const t = gpu.transforms[i]!; gl.uniform2f(uniform(name), t[0], 1 / t[1]);
       }
@@ -288,10 +289,11 @@ export function createGraphGpuPainter(surface: HTMLElement) {
     canvas.width = width; canvas.height = height;
     canvas.style.width = `${camera[4]}px`; canvas.style.height = `${camera[5]}px`;
     present.drawImage(stage, 0, 0);
-    accepted = { gpu, camera: camera.slice() };
+    accepted = { gpu, camera: camera.slice(), focus };
   }
   return {
     canvas, paint,
+    focusRgba() { if (!accepted) throw new Error("xy: no accepted graph paint"); return accepted.focus.slice(); },
     dispose() {
       if (disposed) return;
       disposed = true; accepted = null; visibility?.disconnect();

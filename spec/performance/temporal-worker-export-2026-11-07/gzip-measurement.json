@@ -1,0 +1,7 @@
+{
+  "rawBytes": 1904840,
+  "moduleSha256": "c99579a2f61e79cb180e92405f7ff8193464210d70304f2d0f2499babaf08a32",
+  "qualifiedGate": {"encoder": "Node22.23.4 gzipSync default6, zlib1.3.1-e00f703", "bytes": 784799},
+  "archiveOnly": {"encoder": "Python3.14.4 gzip.compress level6, zlib1.3.1", "bytes": 781111},
+  "correction": "Initial uncommitted checks metadata used the archive compressor's length; corrected to the actual unchanged packaging gate before commit. Raw module bytes and all artifacts are identical after decompression."
+}

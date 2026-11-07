@@ -2166,7 +2166,7 @@ pub fn layout_concentric(n: usize, degrees: &[u64], out_x: &mut [f64], out_y: &m
         return false;
     }
     let mut order: Vec<usize> = (0..n).collect();
-    order.sort_by_key(|&i| std::cmp::Reverse(degrees[i]));
+    crate::shared_sort::by_key(&mut order, |&i| std::cmp::Reverse(degrees[i]));
     let rings = ((n as f64).sqrt().ceil() as usize).max(1);
     let mut idx = 0;
     for ring in 0..rings {

@@ -1,4 +1,5 @@
 /// <reference lib="webworker" />
+import {executeFrozenGraph} from "./wasm_frozen_graph";
 
 // The self-contained HTML runtime cannot load a module Worker from file:. This
 // deliberately small classic-worker entry has the same aggregate protocol as
@@ -175,6 +176,16 @@ scope.onmessage = (event: MessageEvent<any>) => {
     if (!Number.isInteger(sequence) || sequence <= 0 || sequence > 0xffffffff) return fail(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "sequence must be a nonzero u32", XYG_WASM_STATUS.INVALID_ARGUMENT);
     if (sequence <= sequenceWatermark) return fail(message.requestId, "XYG_WASM_STALE_SEQUENCE", "request sequence is stale", XYG_WASM_STATUS.STALE_SEQUENCE);
     sequenceWatermark = sequence; aggregate(message); return;
+  }
+  if (message?.type === "frozen_graph.command") {
+    if (!exports || !handle || lifecycle !== "initialized") return fail(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized");
+    if (active || queued.size) return fail(message.requestId, "XYG_WASM_BUSY", "Frozen export requires a drained Worker");
+    try {
+      const result = executeFrozenGraph(exports, handle, message.command, maxArenaBytes);
+      if (result.status !== XYG_WASM_STATUS.OK) fail(message.requestId, code(result.status), result.detail!, result.status);
+      else reply(message.requestId, result.response!, [result.response!]);
+    } catch (cause) { lifecycle = "failed"; disposeRust(); fail(message.requestId, "XYG_WASM_TRAP", cause instanceof Error ? cause.message : "WASM frozen graph command trapped"); }
+    return;
   }
   if (message?.type === "evidence.lifecycle") { evidenceLifecycle(message); return; }
   if (message?.type === "diagnostics") { try { reply(message.requestId, snapshot()); } catch (cause) { fail(message.requestId, "XYG_WASM_NOT_READY", cause instanceof Error ? cause.message : "worker is not initialized"); } return; }

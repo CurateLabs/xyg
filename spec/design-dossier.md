@@ -3814,3 +3814,24 @@ bets. But two genuine gaps (**distribution**, **filtering**) are missing workstr
 tweaks, and the rendering model needs to trade its idealized "one draw call, count-based
 tiers" for the real GPU ceilings (**F3**). Fix those three and the plan is buildable; the
 rest are correctness and honesty polish.
+
+### Frozen temporal graph rendered continuation (#45)
+
+The [versioned frozen contract](design/temporal-graph-frozen.md) owns exact
+accepted PaintGeometry → canonical Scene lowering, phase-aware dash splitting,
+shared marker-SDF inset/focus contours, immutable frame-time versus publication
+state, XYFGv2 computed CSS capture and whole-artifact provenance consistency.
+Native ABI404 and WASM36 use one XYFX Rust operation path. HTML embeds Scene,
+XYPB, XYFG and the shipped ChartView client for offline paint; hosts only frame
+binary ingress and capture DOM presentation. Scene identity scales retain f64
+coordinates bitwise instead of dividing/multiplying them again.
+
+The unchanged single-module raw/gzip caps govern the target-only O2/inline50
+profile; native flags and the pinned optimizer stay unchanged. Same-source
+bytes/runtime and full preservation evidence are in the
+[continuation receipt](performance/temporal-worker-export-2026-11-07/README.md).
+The [shared PNG continuation](performance/temporal-shared-png-2026-11-07/README.md)
+adds real retained PNG through the same raster/encoder within those unchanged
+single-module caps. Earlier over-cap/unavailable receipts remain historical.
+Full #45 and milestone acceptance stay OPEN; future combined-source module fit
+and global process budgets (#111) are not certified by this standalone candidate.

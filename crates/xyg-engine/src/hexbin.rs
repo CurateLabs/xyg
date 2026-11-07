@@ -529,7 +529,7 @@ pub fn hexbin_groups(
     let mut lengths = Vec::new();
     let mut indices = Vec::new();
 
-    members.sort_by_key(|&(lattice, flat, index)| (lattice, flat, index));
+    crate::shared_sort::by_key(&mut members, |&(lattice, flat, index)| (lattice, flat, index));
     let mut cursor = 0usize;
     for (lattice, n, grid_w_lat) in [(0u8, n1, grid_w + 1), (1u8, n2, grid_w)] {
         let counts_lat = if lattice == 0 { &count1 } else { &count2 };

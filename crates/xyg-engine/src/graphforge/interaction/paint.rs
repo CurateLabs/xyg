@@ -230,7 +230,7 @@ pub(super) fn build(
     let source_edges = session.edge_style.resolve(source_edge_flags, true)?;
     let map = |x: f64, y: f64| {
         if let Some(c) = camera {
-            [x * c.scale_x + c.offset_x, y * c.scale_y + c.offset_y]
+            c.project(x, y)
         } else {
             [x, y]
         }

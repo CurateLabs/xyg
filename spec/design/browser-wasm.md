@@ -253,11 +253,12 @@ record the bounded contract and actual proof.
 | `js/src/49_wasm_ticks.ts` | XYTK/XYTO codec plus latest-wins primary Cartesian ChartView attachment |
 | `dist/xyg-wasm.wasm` | Separately built direct-browser engine adapter; never copied into the Python static tree |
 
-The WASM adapter disables `xyg-engine`'s default `raster` feature. Native
-SVG/PNG/PDF export remains a native-host concern; browser output reuses the
-shared painter. The raw module must request no ambient WebAssembly imports.
+The WASM adapter disables `xyg-engine`'s default full `raster` feature and enables
+its shared `frozen-raster` capability for retained graph PNG. Native full-scene
+formats remain unchanged; frozen Scene/XYPB/SVG/HTML/PNG share Rust lowering,
+and HTML uses the shipped painter. The raw module must request no ambient WebAssembly imports.
 
-**Artifact size.** `dist/xyg-wasm.wasm` is built with the workspace release
+**Historical artifact size.** Through ABI35, `dist/xyg-wasm.wasm` used the workspace release
 profile (`opt-level = 3`, fat LTO, one codegen unit, stripped) and is about
 921 KiB raw and 336 KiB gzipped at WASM ABI 27. ABI 28 with GeoColumn
 ingestion measures 968137 raw bytes and 352160 gzip bytes (level 9), within
@@ -1852,3 +1853,47 @@ reply guards; ordinary public temporal commands still cannot bypass the claim.
 See [the bounded retained temporal contract](temporal-graph.md#retained-automatic-presentation-bounded-45-slice)
 for scheduling, publication/refusal, UUID-state and disposal semantics. No ABI,
 package cap, layout/pick authority or runtime arena limit changes.
+
+### Frozen graph single-module profile (WASM36)
+
+The target-only `.cargo/config.toml` selects Rust `opt-level=2` and LLVM inline
+threshold50 for the single browser module. Native release remains O3. Fat LTO,
+one codegen unit, stripping, pinned Binaryen132 `-O3 --all-features`, exports,
+validation, 16/384-MiB runtime bounds, deadlines and the 1,927,168 raw / 786,432
+gzip6 packaging caps remain unchanged. This supersedes the historical compiler
+profile measurements above; the old receipts are immutable. No optional export
+module or second renderer is introduced. At the historical Worker-export
+checkpoint, the adapter disabled raster because the attempted shared PNG build
+exceeded those caps. That refusal and its receipts remain historical evidence.
+
+The [shared-PNG continuation](../performance/temporal-shared-png-2026-11-07/README.md)
+enables the shared Rust `frozen-raster` capability in this same module. Native,
+module Worker and offline Blob Worker PNG exports use the shared Scene/raster/
+PNG implementation. The qualified module is 1,886,125 raw / 784,655 Node22 gzip6
+bytes, below the unchanged caps. This standalone source qualification does not
+establish fit for a future combined-source/ABI module or full #45 acceptance.
+
+The [append-only continuation receipt](../performance/temporal-worker-export-2026-11-07/README.md)
+records same-source O3/inline50 versus O2/inline50 bytes, code/data attribution,
+complete output oracles, ABBA runtime observations, failed raster and optimizer
+attempts, normal packaging and full strict-CSP foundation. The profile is a
+size/runtime tradeoff, with no comparative speed or whole-#45 acceptance claim.
+The [frozen graph protocol](temporal-graph-frozen.md) owns XYFGv2, XYFX, accepted
+Worker/controller capture, CSS focus and offline Scene/XYPB ChartView HTML.
+
+### Combined filtering, catalog and frozen-export ABI
+
+The combined module uses native ABI405 and WASM ABI38. The declaration union
+retains all 551 native symbols and all 68 Worker exports, including XYFC
+filtering, XYTM temporal Scene compilation and XYFX frozen graph operations.
+Existing shared declarations retain their signatures. Both prior native403 and
+native404 fixture bytes remain append-only predecessors; only top-level ABI
+metadata may change when the normal fixture generators run. New adapters reject
+older incompatible native/Worker ABIs rather than silently dropping a feature.
+
+The target compiler settings, native optimization, renderer, shared raster/PNG
+implementation and single-module size caps remain unchanged. Standalone parent
+measurements do not qualify the combination; fresh combined native/WASM builds,
+package-size checks, cross-host packets, Scene/painter exports and actual Worker
+journeys are required. Integration evidence is retained in
+[the combined receipt](../performance/frozen-combined-module-2026-11-07/README.md).

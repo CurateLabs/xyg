@@ -541,6 +541,33 @@ impl GraphSession {
         validate: impl FnOnce(&Self, &TemporalGraph)->Result<(), InteractionStatus>,
         f: impl FnOnce(&mut Self, World<'_>)->R,
     )->Result<R, InteractionStatus> {
+        #[cfg(target_arch = "wasm32")]
+        {
+            let (mut validate, mut f) = (Some(validate), Some(f));
+            self.locked_validated_erased(
+                &mut |s, g| validate.take().expect("one owner validation")(s, g),
+                &mut |s, w| f.take().expect("one owner operation")(s, w),
+            )
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        self.locked_validated_impl(validate, f)
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    #[inline(never)]
+    fn locked_validated_erased<R>(
+        &mut self,
+        validate: &mut dyn FnMut(&Self, &TemporalGraph) -> Result<(), InteractionStatus>,
+        f: &mut dyn FnMut(&mut Self, World<'_>) -> R,
+    ) -> Result<R, InteractionStatus> {
+        self.locked_validated_impl(validate, f)
+    }
+
+    fn locked_validated_impl<R>(
+        &mut self,
+        validate: impl FnOnce(&Self, &TemporalGraph)->Result<(), InteractionStatus>,
+        f: impl FnOnce(&mut Self, World<'_>)->R,
+    )->Result<R, InteractionStatus> {
         let bound = match &self.slot {
             StateSlot::Bound { host, handle } => Some((Arc::clone(host), *handle)),
             StateSlot::Owned(_) => None,
@@ -670,6 +697,30 @@ impl GraphSession {
     /// Idempotent retry, then, under one lock: fold the temporal revision,
     /// stamp check, apply. The outcome is retained for retries.
     fn operate(
+        &mut self,
+        header: OpHeader,
+        apply: impl FnOnce(&mut Self, &mut World<'_>) -> Result<OpOutcome, InteractionStatus>,
+    ) -> Result<OpOutcome, InteractionStatus> {
+        #[cfg(target_arch = "wasm32")]
+        {
+            let mut apply = Some(apply);
+            self.operate_erased(header, &mut |s, w| apply.take().expect("one graph operation")(s, w))
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        self.operate_impl(header, apply)
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    #[inline(never)]
+    fn operate_erased(
+        &mut self,
+        header: OpHeader,
+        apply: &mut dyn FnMut(&mut Self, &mut World<'_>) -> Result<OpOutcome, InteractionStatus>,
+    ) -> Result<OpOutcome, InteractionStatus> {
+        self.operate_impl(header, apply)
+    }
+
+    fn operate_impl(
         &mut self,
         header: OpHeader,
         apply: impl FnOnce(&mut Self, &mut World<'_>) -> Result<OpOutcome, InteractionStatus>,

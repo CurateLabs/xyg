@@ -1,0 +1,486 @@
+diff --git a/.gitattributes b/.gitattributes
+index 8e61f6e412ed73a7f626704d22beeb9cfbbbeeb6..a1a05639982ad3ab886e0ce6482e5eebf06410d1 100644
+--- a/.gitattributes
++++ b/.gitattributes
+@@ -288,3 +288,17 @@ spec/performance/temporal-worker-export-2026-11-07/predecessor403/** -text
+ scripts/gen_capability_matrix.py text eol=lf
+ spec/performance/temporal-worker-export-2026-11-07/*.txt text eol=lf
+ spec/performance/temporal-worker-export-2026-11-07/*.patch whitespace=-blank-at-eol,-blank-at-eof
++
++# Shared PNG source/dependency bindings and append-only continuation evidence.
++vendor/** text eol=lf
++# Preserve the upstream Apache license verbatim, including its final blank line.
++vendor/crc32fast/LICENSE-APACHE whitespace=-blank-at-eof
++spec/performance/temporal-shared-png-2026-11-07/*.json text eol=lf
++spec/performance/temporal-shared-png-2026-11-07/*.md text eol=lf
++spec/performance/temporal-shared-png-2026-11-07/*.txt text eol=lf
++spec/performance/temporal-shared-png-2026-11-07/*.gz -text
++spec/performance/temporal-shared-png-2026-11-07/artifacts/** -text
++spec/performance/temporal-shared-png-2026-11-07/*.patch -text
++spec/performance/temporal-shared-png-2026-11-07/*.patch whitespace=-blank-at-eol,-blank-at-eof
++pyproject.toml text eol=lf
++scripts/verify_sdist.py text eol=lf
+diff --git a/benchmarks/bench_wasm_profiles.mjs b/benchmarks/bench_wasm_profiles.mjs
+index 61805fdc28bbbdc512c2bf917f3618d679a6d404..2d0ebb3c8dccbe12f1422ce48d1291896ce33fe3 100644
+--- a/benchmarks/bench_wasm_profiles.mjs
++++ b/benchmarks/bench_wasm_profiles.mjs
+@@ -12,7 +12,7 @@ import {encodeWasmGeoSceneRequest,encodeGeoViewportColumnRequest,encodeGeoCatalo
+ const [aPath,bPath,inputs,out]=process.argv.slice(2);
+ if(!out)throw new Error('usage: node benchmarks/bench_wasm_profiles.mjs A.wasm B.wasm INPUT_DIR OUTPUT.json');
+ const digest=b=>createHash('sha256').update(b).digest('hex');
+-async function load(file){const bytes=fs.readFileSync(file),{instance}=await WebAssembly.instantiate(bytes,{}),x=instance.exports,h=x.xyg_wasm_instance_new(384<<20);assert.ok(h>0);let sequence=0;return{metadata:{path:file,sha256:digest(bytes),rawBytes:bytes.length,gzipBytes:gzipSync(bytes,{level:9}).length},run(name,request){assert.equal(x.xyg_wasm_arena_resize(h,request.byteLength),0);new Uint8Array(x.memory.buffer,x.xyg_wasm_arena_ptr(h)>>>0,request.byteLength).set(new Uint8Array(request));const status=name==='graphforge'?x.xyg_wasm_graphforge_compose(h,0,request.byteLength):x[name==='scene'?'xyg_wasm_geo_scene_compile':name==='viewport'?'xyg_wasm_geo_viewport_execute':'xyg_wasm_geo_catalog_compile'](h,++sequence,0,request.byteLength);if(status!==0){const error=new Error(new TextDecoder().decode(new Uint8Array(x.memory.buffer,x.xyg_wasm_last_error_ptr(h)>>>0,x.xyg_wasm_last_error_len(h))));error.status=status;throw error;};return new Uint8Array(x.memory.buffer,x.xyg_wasm_output_ptr(h)>>>0,x.xyg_wasm_output_len(h)).slice();},dispose(){x.xyg_wasm_instance_dispose(h);}};}
++async function load(file){const bytes=fs.readFileSync(file),{instance}=await WebAssembly.instantiate(bytes,{}),x=instance.exports,h=x.xyg_wasm_instance_new(384<<20);assert.ok(h>0);let sequence=0;return{metadata:{path:file,sha256:digest(bytes),rawBytes:bytes.length,gzipBytes:gzipSync(bytes).length},run(name,request){assert.equal(x.xyg_wasm_arena_resize(h,request.byteLength),0);new Uint8Array(x.memory.buffer,x.xyg_wasm_arena_ptr(h)>>>0,request.byteLength).set(new Uint8Array(request));const status=name==='graphforge'?x.xyg_wasm_graphforge_compose(h,0,request.byteLength):x[name==='scene'?'xyg_wasm_geo_scene_compile':name==='viewport'?'xyg_wasm_geo_viewport_execute':'xyg_wasm_geo_catalog_compile'](h,++sequence,0,request.byteLength);if(status!==0){const error=new Error(new TextDecoder().decode(new Uint8Array(x.memory.buffer,x.xyg_wasm_last_error_ptr(h)>>>0,x.xyg_wasm_last_error_len(h))));error.status=status;throw error;};return new Uint8Array(x.memory.buffer,x.xyg_wasm_output_ptr(h)>>>0,x.xyg_wasm_output_len(h)).slice();},dispose(){x.xyg_wasm_instance_dispose(h);}};}
+ const a=await load(aPath),b=await load(bPath),camera={crs:4326,centerX:0,centerY:0,zoom:0,width:800,height:600,bearing:23,pitch:40,worldWrap:true};
+ const rows=[];
+ try{for(const count of[100,10000,100000]){const read=n=>fs.readFileSync(path.join(inputs,String(count),n+'.arrow')),generation='01a0f491-f7cc-7c60-ac1c-5ec75168cf2b';const graph=encodeGraphForgeRequest({base:{tables:[read('base-nodes'),read('base-edges')],generation},layers:[{result:read('pagerank'),intent:'graph',generation,resultId:'profile-pagerank'}]});const xy=new Float64Array(count*2);for(let i=0;i<count;i++){xy[i*2]=((i*37)%360)-180;xy[i*2+1]=((i*17)%160)-80;}const geometry={geometry:1,crs:4326,xy,validity:new Uint8Array(count).fill(1)};for(const[name,request]of[['graphforge',graph],['scene',encodeWasmGeoSceneRequest(geometry,camera)],['viewport',encodeGeoViewportColumnRequest(camera,geometry)],['catalog',encodeGeoCatalogRequest({camera,layers:[{layerId:1n,kind:1,source:geometry}]})],['interaction',encodeGeoCatalogRequest({camera,layers:[{layerId:1n,kind:1,source:geometry}],event:{operation:1,coordinates:[400,300]}})]]){let expected;try{expected=a.run(name,request);}catch(error){if(name!=='interaction'||count!==100000||error.status!==3||error.message!=='XYG_GEO_RESOURCE_LIMIT')throw error;assert.throws(()=>b.run(name,request),other=>other.status===error.status&&other.message===error.message);rows.push({name,count,requestBytes:request.byteLength,admitted:false,status:error.status,error:error.message});continue;}assert.deepEqual(b.run(name,request),expected);for(let i=0;i<8;i++){a.run(name,request);b.run(name,request);}const samples=[];const repetitions=count===100?100:count===10000?5:2;for(let pair=0;pair<4;pair++)for(const label of['A','B','B','A']){const runner=label==='A'?a:b,start=performance.now();for(let repeat=0;repeat<repetitions;repeat++)runner.run(name,request);samples.push({pair,label,repetitions,msPerRequest:(performance.now()-start)/repetitions});}const median=label=>{const v=samples.filter(s=>s.label===label).map(s=>s.msPerRequest).sort((x,y)=>x-y);return(v[3]+v[4])/2;};rows.push({name,count,admitted:true,requestBytes:request.byteLength,outputBytes:expected.length,outputSha256:digest(expected),byteIdentical:true,samples,medianA:median('A'),medianB:median('B'),ratio:median('B')/median('A')});}}}finally{a.dispose();b.dispose();}
+diff --git a/crates/xyg-wasm/src/lib.rs b/crates/xyg-wasm/src/lib.rs
+index 24e1b234522195809a4c31f7801f1be8bcc4a4b4..8549c3cefd278178a43860f02dc92618e38222fa 100644
+--- a/crates/xyg-wasm/src/lib.rs
++++ b/crates/xyg-wasm/src/lib.rs
+@@ -1878,6 +1878,18 @@ pub extern "C" fn xyg_wasm_last_scene_styles(handle: u32) -> usize {
+     with_instance_mut(handle, |instance| instance.last_scene_styles).unwrap_or(0)
+ }
+ 
++/// Shared XYFX frozen graph acquisition, native-equivalent export and recovery.
++#[no_mangle]
++pub extern "C" fn xyg_wasm_frozen_graph_execute(handle: u32, offset: usize, length: usize) -> i32 {
++    with_instance_mut(handle, |i| {
++        if i.geo_transport.is_some() {
++            return STATUS_INVALID_ARGUMENT;
++        }
++        temporal_graph_frozen::execute(i, offset, length)
++    })
++    .unwrap_or(STATUS_INVALID_HANDLE)
++}
++
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+@@ -3475,15 +3487,3 @@ mod tests {
+         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+     }
+ }
+-
+-/// Shared XYFX frozen graph acquisition, native-equivalent export and recovery.
+-#[no_mangle]
+-pub extern "C" fn xyg_wasm_frozen_graph_execute(handle: u32, offset: usize, length: usize) -> i32 {
+-    with_instance_mut(handle, |i| {
+-        if i.geo_transport.is_some() {
+-            return STATUS_INVALID_ARGUMENT;
+-        }
+-        temporal_graph_frozen::execute(i, offset, length)
+-    })
+-    .unwrap_or(STATUS_INVALID_HANDLE)
+-}
+diff --git a/crates/xyg-wasm/src/temporal_graph.rs b/crates/xyg-wasm/src/temporal_graph.rs
+index 09383af933619c543d39b98d94966a2bc74d762f..f69afffc59dcd45930d0d5db6f8196c5c22c5e69 100644
+--- a/crates/xyg-wasm/src/temporal_graph.rs
++++ b/crates/xyg-wasm/src/temporal_graph.rs
+@@ -84,6 +84,8 @@ impl WasmTemporalGraph {
+         (self.owner.clone(), TemporalHandle(self.owner.generation))
+     }
+ 
++    // Typed acquisition facts mirror the existing XYFX owner/capture ingress.
++    #[allow(clippy::too_many_arguments)]
+     pub(super) fn freeze(
+         &self,
+         session: &xyg_engine::graphforge::interaction::wire::WireSession,
+diff --git a/crates/xyg-wasm/src/temporal_graph_frozen.rs b/crates/xyg-wasm/src/temporal_graph_frozen.rs
+index c06df5d1a329b002ba6d8cf5f76357703b9fbc28..cf2a6ccc1ad1e83e62b74df31287f2333f666797 100644
+--- a/crates/xyg-wasm/src/temporal_graph_frozen.rs
++++ b/crates/xyg-wasm/src/temporal_graph_frozen.rs
+@@ -43,7 +43,6 @@ pub(super) fn execute(i: &mut Instance, offset: usize, length: usize) -> i32 {
+                         xyg_engine::temporal::TemporalError::BudgetExceeded
+                             | xyg_engine::temporal::TemporalError::CapacityExceeded
+                     );
+-                    ()
+                 },
+             );
+         }
+diff --git a/packages/xy-node/test/temporal-graph-frozen-wasm.test.mjs b/packages/xy-node/test/temporal-graph-frozen-wasm.test.mjs
+index 188442e94f44688aec66132f13c0801707c005b0..d4a6106ed9204fbcc8040c646c200bea2942ae76 100644
+--- a/packages/xy-node/test/temporal-graph-frozen-wasm.test.mjs
++++ b/packages/xy-node/test/temporal-graph-frozen-wasm.test.mjs
+@@ -1,8 +1,43 @@
+-import test from 'node:test';import assert from 'node:assert/strict';import{readFileSync}from'node:fs';import{FrozenTemporalGraph}from'../src/index.js';
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import {readFileSync} from 'node:fs';
++import {FrozenTemporalGraph} from '../src/index.js';
+ const raw=readFileSync(new URL('../../../spec/performance/temporal-native-render-2026-11-07/artifacts/retained-later.xyfg',import.meta.url));
++const edge=readFileSync(new URL('../../../spec/performance/temporal-worker-export-2026-11-07/artifacts/edge-focus-dpr2.xyfg',import.meta.url));
+ const bundle=readFileSync(new URL('../../xy-client/dist/standalone.js',import.meta.url));
+-function packet(data,format,client=new Uint8Array()){const out=new Uint8Array(64+data.length+client.length),v=new DataView(out.buffer);out.set([88,89,70,88]);v.setUint32(4,1,true);v.setUint32(8,1,true);v.setUint32(12,format,true);v.setFloat64(24,1,true);v.setBigUint64(32,BigInt(data.length),true);v.setBigUint64(40,BigInt(client.length),true);v.setBigUint64(48,384n*1024n*1024n,true);out.set(data,64);out.set(client,64+data.length);return out;}
+-test('actual wasm32 frozen Scene/XYPB/SVG/HTML match public native import; PNG refuses explicitly',async()=>{
+- const{instance}=await WebAssembly.instantiate(readFileSync(new URL('../../xy-client/dist/xyg-wasm.wasm',import.meta.url)),{}),x=instance.exports,h=x.xyg_wasm_instance_new(384*1024*1024);assert.ok(h);
+- for(const input of [raw,readFileSync(new URL('../../../spec/performance/temporal-worker-export-2026-11-07/artifacts/edge-focus-dpr2.xyfg',import.meta.url))]){const source=FrozenTemporalGraph.fromBytes(input),f=source.captureFocus([77,110,159,191]);source.close();try{for(const [format,code]of[['scene',3],['painter',4],['svg',0],['html',2],['png',1]]){const p=packet(f.toBytes(),code,code===2?bundle:undefined);assert.equal(x.xyg_wasm_arena_resize(h,p.length),0);new Uint8Array(x.memory.buffer,x.xyg_wasm_arena_ptr(h),p.length).set(p);const status=x.xyg_wasm_frozen_graph_execute(h,0,p.length);if(format==='png'){assert.equal(status,3);assert.equal(x.xyg_wasm_output_len(h),0);const message=new TextDecoder().decode(new Uint8Array(x.memory.buffer,x.xyg_wasm_last_error_ptr(h),x.xyg_wasm_last_error_len(h)));assert.match(message,/XYG_FROZEN_PNG_UNAVAILABLE/);}else{assert.equal(status,0);assert.deepEqual(Buffer.from(new Uint8Array(x.memory.buffer,x.xyg_wasm_output_ptr(h),x.xyg_wasm_output_len(h))),Buffer.from(f.export(format)));}}}finally{f.close();}}assert.equal(x.xyg_wasm_instance_dispose(h),0);
++function packet(data,format,{client=new Uint8Array(),operation=1,scale=1}={}) {
++ const out=new Uint8Array(64+data.length+client.length),v=new DataView(out.buffer);
++ out.set([88,89,70,88]);v.setUint32(4,1,true);v.setUint32(8,operation,true);v.setUint32(12,format,true);v.setFloat64(24,scale,true);v.setBigUint64(32,BigInt(data.length),true);v.setBigUint64(40,BigInt(client.length),true);v.setBigUint64(48,384n*1024n*1024n,true);out.set(data,64);out.set(client,64+data.length);return out;
++}
++async function wasm() {
++ const {instance}=await WebAssembly.instantiate(readFileSync(new URL('../../xy-client/dist/xyg-wasm.wasm',import.meta.url)),{});
++ const x=instance.exports;
++ return {x,run(h,p){assert.equal(x.xyg_wasm_arena_resize(h,p.length),0);new Uint8Array(x.memory.buffer,x.xyg_wasm_arena_ptr(h),p.length).set(p);const status=x.xyg_wasm_frozen_graph_execute(h,0,p.length);const bytes=Buffer.from(new Uint8Array(x.memory.buffer,x.xyg_wasm_output_ptr(h),x.xyg_wasm_output_len(h)));return {status,bytes};}};
++}
++test('actual wasm32 frozen Scene/XYPB/SVG/HTML/PNG match public native import at scales1/2',async()=>{
++ const {x,run}=await wasm(),h=x.xyg_wasm_instance_new(384*1024*1024);assert.ok(h);
++ try {for(const input of [raw,edge]) {
++  const source=FrozenTemporalGraph.fromBytes(input),f=source.captureFocus([77,110,159,191]);source.close();
++  try {for(const scale of [1,2])for(const [format,code] of [['scene',3],['painter',4],['svg',0],['html',2],['png',1]]) {
++   const {status,bytes}=run(h,packet(f.toBytes(),code,{client:code===2?bundle:undefined,scale}));assert.equal(status,0,`${format} scale${scale}`);assert.deepEqual(bytes,Buffer.from(f.export(format,{scale})));
++   if(format==='png') {const recovered=run(h,packet(bytes,0,{operation:2}));assert.equal(recovered.status,0);assert.deepEqual(recovered.bytes,Buffer.from(f.toBytes()));}
++  }} finally {f.close();}
++ }} finally {assert.equal(x.xyg_wasm_instance_dispose(h),0);}
++});
++test('real PNG malformed carriers and output reservations refuse without poisoning later exports',async()=>{
++ const {x,run}=await wasm(),h=x.xyg_wasm_instance_new(368*1024*1024),bounded=x.xyg_wasm_instance_new(16*1024*1024);assert.ok(h);assert.ok(bounded);assert.equal(x.xyg_wasm_instance_new(1),0);
++ const source=FrozenTemporalGraph.fromBytes(raw),f=source.captureFocus([77,110,159,191]);source.close();
++ try {
++  const png=run(h,packet(f.toBytes(),1));assert.equal(png.status,0);assert.ok(png.bytes.length>100);
++  const metadata=[];for(let i=8;i<png.bytes.length;){const end=i+png.bytes.readUInt32BE(i)+12;if(png.bytes.toString('ascii',i+4,i+8)==='iTXt')metadata.push(png.bytes.subarray(i,end));i=end;}assert.equal(metadata.length,1);
++  const duplicate=Buffer.concat([png.bytes.subarray(0,-12),metadata[0],png.bytes.subarray(-12)]);
++  const corrupt=Buffer.from(png.bytes);corrupt[40]^=1;
++  for(const data of [new Uint8Array(),png.bytes.subarray(0,-1),duplicate,corrupt]) {
++   const bad=run(h,packet(data,0,{operation:2}));assert.equal(bad.status,2);assert.equal(bad.bytes.length,0);
++   const good=run(h,packet(f.toBytes(),0));assert.equal(good.status,0);assert.deepEqual(good.bytes,Buffer.from(f.export('svg')));
++  }
++  const refused=run(bounded,packet(f.toBytes(),1,{scale:8}));assert.equal(refused.status,3);assert.equal(refused.bytes.length,0);
++  const good=run(bounded,packet(f.toBytes(),1));assert.equal(good.status,0);assert.deepEqual(good.bytes,png.bytes);
++  assert.deepEqual(Buffer.from(f.toBytes()),run(h,packet(png.bytes,0,{operation:2})).bytes);
++ } finally {f.close();assert.equal(x.xyg_wasm_instance_dispose(h),0);assert.equal(x.xyg_wasm_instance_dispose(bounded),0);}
+ });
+diff --git a/scripts/gen_capability_matrix.py b/scripts/gen_capability_matrix.py
+index 67d1b063113c127a2e1911ab824c24e8748d9993..4570a0c34618fcd8423cb0402d91a598f9ce5f3a 100644
+--- a/scripts/gen_capability_matrix.py
++++ b/scripts/gen_capability_matrix.py
+@@ -91,8 +91,8 @@ def render() -> str:
+         "",
+         "Native Python/Node `TemporalGraph.freeze` now acquires an immutable [canonical snapshot](../design/temporal-graph-frozen.md)",
+         "with exact frame UUID state and optional retained publication/camera bytes. This is",
+-        "a retained export path: native SVG/PNG/HTML and actual Worker Scene/XYPB/SVG/HTML,",
+-        "with computed CSS capture and offline ChartView paint. WASM PNG and full #45",
++        "a retained export path: native SVG/PNG/HTML and actual Worker Scene/XYPB/SVG/HTML/PNG,",
++        "with computed CSS capture, shared Rust PNG and offline ChartView paint. Full #45",
+         "scale/aggregate/accessibility acceptance remain open.",
+         "",
+         "Python notebooks expose a bounded [typed graph identity/UUID highlight slice](../design/graph-session-python-transport.md#notebook-typed-identity-slice-2026-11-06).",
+diff --git a/scripts/temporal_graph_frozen_smoke.mjs b/scripts/temporal_graph_frozen_smoke.mjs
+index 325775c979411e1fbf6e0879a7010d26ee3e0580..6e0ec40f7bcdf1b1552e7a627e6795ceaf66d0a4 100644
+--- a/scripts/temporal_graph_frozen_smoke.mjs
++++ b/scripts/temporal_graph_frozen_smoke.mjs
+@@ -18,9 +18,30 @@ assert.deepEqual(Array.from(native.metadata['render.focus.rgba']),[77,110,159,19
+  for(const format of ['scene','painter','svg','html']){const artifact=native.export(format);assert.deepEqual(Buffer.from(artifact),Buffer.from(result[format],'base64'),`${format} native/WASM shape ${shape}`);await writeFile(resolve(output,`${tag}.${format}`),artifact);}
+  const html2=native.export('html',{scale:2});assert.deepEqual(Buffer.from(html2),Buffer.from(result.html2,'base64'));await writeFile(resolve(output,`${tag}.scale2.html`),html2);const png2=native.export('png',{scale:2});await writeFile(resolve(output,`${tag}.scale2.png`),png2);const recoveredPng2=FrozenTemporalGraph.fromArtifact(png2);try{assert.deepEqual(Buffer.from(recoveredPng2.toBytes()),bytes);}finally{recoveredPng2.close();}
+  const png=native.export('png');await writeFile(resolve(output,`${tag}.png`),png);await writeFile(resolve(output,`${tag}.xyfg`),bytes);
+- assert.equal(result.pngError?.code,'XYG_WASM_RESOURCE_LIMIT');assert.match(result.pngError?.message,/XYG_FROZEN_PNG_UNAVAILABLE/);
++ assert.deepEqual(Buffer.from(result.png,'base64'),Buffer.from(png),'Worker PNG native parity');assert.deepEqual(Buffer.from(result.png2,'base64'),Buffer.from(png2),'Worker scale2 PNG native parity');
+  report.push({shape,parent,snapshotSha256:createHash('sha256').update(bytes).digest('hex')});}finally{native.close();}
+  for(const scale of [1,2]){const suffix=scale===1?'':'.scale2';const offline=await browser.newPage({viewport:{width:600,height:500}});await offline.route('http://**',route=>route.abort());await offline.route('https://**',route=>route.abort());offline.on('pageerror',e=>errors.push(String(e)));await offline.goto('file://'+resolve(output,`${tag}${suffix}.html`));await offline.waitForFunction(()=>document.documentElement.dataset.xyFrozenReady==='true');await offline.waitForFunction(()=>window.__xyFrozenView?.gpuTraces?.length>0);const dimensions=await offline.evaluate(()=>Array.from(document.querySelectorAll('#chart canvas'),c=>[c.width,c.height]));assert.ok(dimensions.length);for(const d of dimensions)assert.deepEqual(d,[480*scale,360*scale]);await offline.screenshot({path:resolve(output,`${tag}${suffix}.offline.png`)});await offline.close();}}
++ // Exercise the public frozen API from a single strict-CSP file and Blob Worker.
++ const offlineRaw=await readFile(resolve(output,'shape-5-parent.xyfg'));
++ const offlineNative=FrozenTemporalGraph.fromBytes(offlineRaw);let offlineExpected;
++ try{offlineExpected=Buffer.from(offlineNative.export('png',{scale:2})).toString('base64');}finally{offlineNative.close();}
++ const standalone=(await readFile(resolve(root,'packages/xy-client/dist/standalone.js'),'utf8')).replace(/<\/script/gi,'<\\/script');
++ const inline=(await readFile(resolve(root,'packages/xy-client/dist/xyg-wasm-inline.js'),'utf8')).replace(/<\/script/gi,'<\\/script');
++ const offlineHarness=standalone+'\n'+inline+`\n(async()=>{let worker;try{
++ const options={inline:globalThis.__xygInlineWasm,maxArenaBytes:384*1024*1024};
++ const decode=s=>Uint8Array.from(atob(s),v=>v.charCodeAt(0));const encode=a=>{let s='';for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode(...a.subarray(i,i+32768));return btoa(s);};
++ worker=xy.createXygWasmWorker(options);await worker.ready;
++ const original=decode(${JSON.stringify(offlineRaw.toString('base64'))});const f=await xy.XygFrozenTemporalGraph.fromBytes(original,worker);
++ const png=await f.export('png',{worker,scale:2});if(encode(png)!==${JSON.stringify(offlineExpected)})throw Error('offline public PNG bytes differ');
++ const recovered=await xy.XygFrozenTemporalGraph.fromArtifact(png,worker);if(encode(recovered.toBytes())!==encode(original))throw Error('offline PNG recovery differs');
++ const pending=f.export('png',{worker,scale:2});await Promise.resolve();worker.dispose();let cancelled=false;try{await pending;}catch{cancelled=true;}if(!cancelled)throw Error('disposed PNG promise did not reject');
++ worker=xy.createXygWasmWorker(options);await worker.ready;const again=await f.export('png',{worker,scale:2});if(encode(again)!==encode(png))throw Error('disposal changed immutable PNG');
++ window.offlinePng={ok:true};
++ }catch(error){window.offlinePng={ok:false,error:String(error)}}finally{worker?.dispose()}})();`;
++ const cspHash=createHash('sha256').update(offlineHarness).digest('base64');const offlineFile=resolve(output,'inline-worker-png.html');
++ await writeFile(offlineFile,`<!doctype html><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-${cspHash}' 'wasm-unsafe-eval'; worker-src blob:; connect-src 'none'; object-src 'none'; base-uri 'none'"><script>${offlineHarness}</script>`);
++ const offlinePng=await browser.newPage();offlinePng.on('pageerror',e=>errors.push(String(e)));await offlinePng.route('http://**',route=>route.abort());await offlinePng.route('https://**',route=>route.abort());await offlinePng.goto('file://'+offlineFile);await offlinePng.waitForFunction(()=>window.offlinePng);assert.deepEqual(await offlinePng.evaluate(()=>window.offlinePng),{ok:true});await offlinePng.close();
++ console.log('strict-CSP single-file public Blob Worker PNG, exact recovery and disposal passed');
+  const vectors=spawnSync(process.env.UV??'uv',['run','python','scripts/verify_temporal_frozen_artifacts.py',output],{cwd:root,env:process.env,encoding:'utf8'});assert.equal(vectors.status,0,vectors.stdout+vectors.stderr);console.log(vectors.stdout);
+- assert.deepEqual(errors,[]);await writeFile(resolve(output,'report.json'),JSON.stringify({report,errors},null,2));console.log('7 real Worker freezes, native/WASM Scene/XYPB/SVG/HTML parity, exact recovery and offline ChartView renders passed');
++ assert.deepEqual(errors,[]);await writeFile(resolve(output,'report.json'),JSON.stringify({report,errors},null,2));console.log('7 real Worker freezes, native/WASM Scene/XYPB/SVG/HTML/PNG parity, real PNG refusals, exact recovery and offline ChartView renders passed');
+ }finally{await browser.close();await new Promise(r=>server.close(r));}
+diff --git a/spec/api/browser-wasm.md b/spec/api/browser-wasm.md
+index 25ede048d50e7374181cfa17c736aa7e1f84615d..9178726028489b8ad11831cf60824523c7ed7e5a 100644
+--- a/spec/api/browser-wasm.md
++++ b/spec/api/browser-wasm.md
+@@ -473,11 +473,12 @@ see [temporal graph contracts](../design/temporal-graph.md).
+ After an accepted idle temporal publication, `await session.freeze({timezone,
+ window?, budgetBytes?})` returns an immutable `XygFrozenTemporalGraph`. Dispose
+ the producer or use a fresh/drained Worker for `.fromBytes(bytes, worker)` and
+-`frozen.export('scene'|'painter'|'svg'|'html', {worker, client?, scale?, focusRgba?})`. HTML
++`frozen.export('scene'|'painter'|'svg'|'html'|'png', {worker, client?, scale?, focusRgba?})`. HTML
+ requires the shipped standalone client bytes and paints offline through the
+ same ChartView. `.fromArtifact(bytes, worker, client?)` validates complete output;
+-HTML recovery requires the expected shipped client. PNG rejects explicitly
+-with `XYG_WASM_RESOURCE_LIMIT` / `XYG_FROZEN_PNG_UNAVAILABLE`. Exact ingress,
++HTML recovery requires the expected shipped client. PNG uses the native shared
++Rust raster/PNG path in the same bounded module; resource reservations can
++reject with `XYG_WASM_RESOURCE_LIMIT` before allocating paint buffers. Exact ingress,
+ CSS capture, ownership and remaining #45 gaps are in the
+ [frozen graph contract](../design/temporal-graph-frozen.md).
+ 
+diff --git a/spec/api/capability-matrix.md b/spec/api/capability-matrix.md
+index 41c93ecea2b0918bf26d5ad5f6c059ee908486a9..e0ecf1b2999d7ab4c11221ff07d2211f8b1a57b9 100644
+--- a/spec/api/capability-matrix.md
++++ b/spec/api/capability-matrix.md
+@@ -44,8 +44,8 @@ performance acceptance remain open; this does not close #45.
+ 
+ Native Python/Node `TemporalGraph.freeze` now acquires an immutable [canonical snapshot](../design/temporal-graph-frozen.md)
+ with exact frame UUID state and optional retained publication/camera bytes. This is
+-a retained export path: native SVG/PNG/HTML and actual Worker Scene/XYPB/SVG/HTML,
+-with computed CSS capture and offline ChartView paint. WASM PNG and full #45
++a retained export path: native SVG/PNG/HTML and actual Worker Scene/XYPB/SVG/HTML/PNG,
++with computed CSS capture, shared Rust PNG and offline ChartView paint. Full #45
+ scale/aggregate/accessibility acceptance remain open.
+ 
+ Python notebooks expose a bounded [typed graph identity/UUID highlight slice](../design/graph-session-python-transport.md#notebook-typed-identity-slice-2026-11-06).
+diff --git a/spec/design-dossier.md b/spec/design-dossier.md
+index 6adcbcbf69fc34e5bc0f7850f36b53dd1cea6b4e..5daf833563b0ae41f77f018f637727ad012ffe2f 100644
+--- a/spec/design-dossier.md
++++ b/spec/design-dossier.md
+@@ -3802,5 +3802,8 @@ The unchanged single-module raw/gzip caps govern the target-only O2/inline50
+ profile; native flags and the pinned optimizer stay unchanged. Same-source
+ bytes/runtime and full preservation evidence are in the
+ [continuation receipt](performance/temporal-worker-export-2026-11-07/README.md).
+-WASM PNG remains an explicit unavailable resource error after over-cap shared
+-raster probes. Native/WASM rendered PNG and full #45 acceptance stay OPEN.
++The [shared PNG continuation](performance/temporal-shared-png-2026-11-07/README.md)
++adds real retained PNG through the same raster/encoder within those unchanged
++single-module caps. Earlier over-cap/unavailable receipts remain historical.
++Full #45 and milestone acceptance stay OPEN; future combined-source module fit
++and global process budgets (#111) are not certified by this standalone candidate.
+diff --git a/spec/design/browser-wasm.md b/spec/design/browser-wasm.md
+index b2d4c46119f1a7061cbbef35a2727e3cba307363..4754b2b248b3c92bdfe1f28765ac3bbcb2ef7b86 100644
+--- a/spec/design/browser-wasm.md
++++ b/spec/design/browser-wasm.md
+@@ -253,9 +253,10 @@ record the bounded contract and actual proof.
+ | `js/src/49_wasm_ticks.ts` | XYTK/XYTO codec plus latest-wins primary Cartesian ChartView attachment |
+ | `dist/xyg-wasm.wasm` | Separately built direct-browser engine adapter; never copied into the Python static tree |
+ 
+-The WASM adapter disables `xyg-engine`'s default `raster` feature. Native PNG/PDF export remains a native-host concern; frozen graph
+-Scene/XYPB/SVG/HTML exports share Rust lowering and the shipped painter.
+-WASM PNG remains an explicit unavailable resource error. The raw module must request no ambient WebAssembly imports.
++The WASM adapter disables `xyg-engine`'s default full `raster` feature and enables
++its shared `frozen-raster` capability for retained graph PNG. Native full-scene
++formats remain unchanged; frozen Scene/XYPB/SVG/HTML/PNG share Rust lowering,
++and HTML uses the shipped painter. The raw module must request no ambient WebAssembly imports.
+ 
+ **Historical artifact size.** Through ABI35, `dist/xyg-wasm.wasm` used the workspace release
+ profile (`opt-level = 3`, fat LTO, one codegen unit, stripped) and is about
+diff --git a/spec/design/host-parity.md b/spec/design/host-parity.md
+index 06f548cdfd3a4f5ef752884d14b6dd1b2383198a..f6f748de356d6e613ac209dbce90e4ba2010422f 100644
+--- a/spec/design/host-parity.md
++++ b/spec/design/host-parity.md
+@@ -2152,6 +2152,6 @@ retained paint-to-canonical-Scene lowering. Hosts marshal typed scalars, capture
+ computed CSS presentation and frame HTML with the shipped client; Rust owns
+ validation, membership, styles, geometry, dash phase, stable-ID mapping,
+ provenance and full-artifact consistency. Native SVG/PNG/HTML and browser
+-Scene/XYPB/SVG/HTML share these paths. WASM PNG explicitly remains unavailable
+-under the unchanged package caps. See [the versioned frozen contract](temporal-graph-frozen.md).
++Scene/XYPB/SVG/HTML/PNG share these paths under the unchanged single-module
++package caps. PNG is byte-identical through the shared Rust raster/encoder. See [the versioned frozen contract](temporal-graph-frozen.md).
+ Historical ABI402/403 acquisition/native receipts remain immutable.
+diff --git a/spec/design/ownership-audit.json b/spec/design/ownership-audit.json
+index a5cb0a491dedb28c99045e25ffa656dda3e59ddf..f9d8a447d3e09290457d10b64720913444e54532 100644
+--- a/spec/design/ownership-audit.json
++++ b/spec/design/ownership-audit.json
+@@ -4528,7 +4528,7 @@
+       "disposition": "keep-rust",
+       "follow_up_issue": null,
+       "policy": "rust-engine",
+-      "rationale": "Shared checked PNG allocation adapter; retained command admission precedes output buffers, with the one raster/PNG implementation."
++      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+     },
+     {
+       "path": "crates/xyg-engine/src/shared_sort.rs",
+@@ -4536,7 +4536,7 @@
+       "disposition": "keep-rust",
+       "follow_up_issue": null,
+       "policy": "rust-engine",
+-      "rationale": "One standard-library stable-sort implementation per browser record type; native comparator specialization and deterministic ordering remain unchanged."
++      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+     },
+     {
+       "path": "js/src/wasm_frozen_graph.ts",
+@@ -4544,7 +4544,7 @@
+       "policy": "browser-wasm-adapter",
+       "disposition": "implement-rust-wasm",
+       "follow_up_issue": 59,
+-      "rationale": "Shared byte staging for actual module and offline classic Workers; Rust alone validates XYFX and owns frozen Scene/raster/provenance policy."
++      "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation."
+     }
+   ]
+ }
+diff --git a/spec/design/ownership-audit.md b/spec/design/ownership-audit.md
+index 9f50e263ed102e1c9d8889d2b6fe99cc70166bc8..45133d5aa0f8e4c3656bd6925996b76222c47433 100644
+--- a/spec/design/ownership-audit.md
++++ b/spec/design/ownership-audit.md
+@@ -908,6 +908,7 @@ Forbidden:
+ | `js/src/63_graph_gpu.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client`; GPU-v1 validation/raw-buffer paint through GLHost | — |
+ | `js/src/63_graph_session_wire.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; internal XYGI/XYGR framing, no graph policy | #59 |
+ | `js/src/wasm_abi_generated.ts` | Generated cross-host WASM contract binding | `browser-wasm-generated` | `generate` | #59 |
++| `js/src/wasm_frozen_graph.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; Shared raw byte staging only. | #59 |
+ | `js/src/wasm_inline_worker.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+ | `js/src/wasm_worker.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+ | `packages/xy-node/src/_abi_generated.js` | Node low-level ABI binding | `node-abi-generated` | `generate` | #57 |
+@@ -1370,6 +1371,8 @@ These additions use the existing ownership policies without adding a host policy
+ | `crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+ 
+ | `crates/xyg-engine/src/graph_marker_contour.rs` | Rust safe engine | `rust-engine` | `keep-rust`; The safe engine is the single implementation of parity-affecting behavior. | — |
++| `crates/xyg-engine/src/retained_png.rs` | Rust safe engine | `rust-engine` | `keep-rust`; Shared checked raster/PNG capability adapter. | — |
++| `crates/xyg-engine/src/shared_sort.rs` | Rust safe engine | `rust-engine` | `keep-rust`; Shared standard-library stable-sort bodies for the bounded browser module. | — |
+ | `crates/xyg-engine/src/temporal_graph_export.rs` | Rust safe engine | `rust-engine` | `keep-rust`; The safe engine is the single implementation of parity-affecting behavior. | — |
+ | `crates/xyg-engine/src/temporal_graph_frozen.rs` | Rust safe engine | `rust-engine` | `keep-rust`; The safe engine is the single implementation of parity-affecting behavior. | — |
+ | `crates/xyg-core/src/temporal_graph_frozen_ffi.rs` | Rust C ABI shell | `rust-c-abi` | `keep-rust`; One versioned cdylib serves ctypes, Koffi, and future browser-facing adapters. | — |
+@@ -1502,3 +1505,16 @@ copies only. The controller captures computed CSS through the existing painter
+ parser. Python/Node frozen modules are **python-host**/**node-host** package
+ client discovery, scalar marshaling and native ownership. No second chart
+ builder, layout, routing, semantic style resolver or renderer is introduced.
++
++The shared retained PNG continuation adds `retained_png.rs` (checked allocation
++and command capability admission) and `shared_sort.rs` (one standard-library
++stable-sort body per browser record type). Both are **rust-engine**. The existing
++raster/PNG implementation, draw policy and full native text routes remain shared.
++`vendor/png` and `vendor/crc32fast` retain the existing dependency algorithms and
++licenses with auditable compile-time capability/table changes; they do not move
++product policy into hosts. Callback sharing keeps the same Rust transaction
++validation, locking and lifetime sequence.
++
++Both Worker entries call `wasm_frozen_graph.ts` for bounded XYFX byte staging
++and owned output copying. The module and strict-CSP offline classic Worker
++invoke the same Rust export/recovery operation; no export policy enters JS.
+diff --git a/spec/design/temporal-graph-frozen.md b/spec/design/temporal-graph-frozen.md
+index c49d214f9b68f340832a0284d569e58ee3c920ad..56ebe6731fbe122355c205dc3b9e41bcbc1da72e 100644
+--- a/spec/design/temporal-graph-frozen.md
++++ b/spec/design/temporal-graph-frozen.md
+@@ -2,9 +2,9 @@
+ 
+ Native Python/Node export SVG, PNG and offline HTML through retained canonical
+ Scene geometry. Public browser sessions capture XYFG v2 through their actual
+-Worker and export Scene, XYPB, SVG and the same offline HTML. Browser PNG is
+-explicitly unavailable under the unchanged single-module packaging caps; full
+-#45 and milestones 4–7 acceptance remain open. Composition remains the only
++Worker and export Scene, XYPB, SVG, PNG and the same offline HTML. PNG uses the
++same Rust raster/encoder in the single module under the unchanged packaging
++caps. Full #45 and milestones 4–7 acceptance remain open. Composition remains the only
+ chart-building surface. No host owns graph filtering, layout or style policy.
+ 
+ The v1 acquisition and ABI403 checkpoint descriptions below retain their
+@@ -314,15 +314,59 @@ Client input is capped at8 MiB; HTML preflight reserves client*12 + snapshot*8
+ Recovery's four-times-input admission remains. Per-operation limits do not solve
+ the outstanding #111 global process budget.
+ 
++### Shared retained PNG capability
++
++The browser keeps `default-features=false` and enables `frozen-raster` only.
++`SceneDocument::to_raster_commands_retained` validates the complete decoded
++Scene before allocating commands: no text, glyph sidecars, gradients, images,
++legend/colorbar, axes/ticks or unsupported record kinds can be silently skipped.
++All supported retained graph input remains representable: circle/square marks
++use existing point SDF paint; the other four graph symbols and focus bands were
++already lowered by the shared retained contour policy into independent triangles.
++Frames are solid rectangles; phase-split shafts are solid butt segments.
++Unexpected full-Scene commands reject before output/framebuffer allocation.
++
++The existing Scene mark writer and raster dispatcher are const-specialized;
++primitive coverage, SDF, clipping, alpha and draw order have one implementation.
++A solid two-point butt segment calls the same existing box-coverage compositor
++without materializing generic dash/polyline run vectors. The full native Scene
++route retains text, image, gradients, general strokes and other commands.
++The checked PNG adapter reserves the encoded buffer after command admission;
++the existing export reservation of snapshot*8 + backingpixels*32 covers command,
++RGB framebuffer, encoder/filter/compression/output and provenance temporaries.
++Checked arithmetic, 384MiB ceiling, default16MiB Worker refusals, cancellation by
++Worker disposal and owned-instance lifetimes remain. Caller-retained/global
++process budgets remain #111; this change does not resolve them.
++
++The vendored existing png0.18.1 encoder has one const-generic implementation.
++Its restricted RGB8 writer fixes exactly the prior nonanimated, noninterlaced,
++metadata-free `Fast`/`Up` configuration. The ordinary writer keeps every option.
++Fdeflate, its larger-than-stored fallback, CRC and chunk framing are unchanged.
++The existing crc32fast1.5.0 dependency uses its existing byte-at-a-time update on
++wasm32 with only the first IEEE table retained; native keeps SIMD/slicing-by-16.
++This trades browser CRC speed for module space, without changing PNG bytes or
++compression. Original licenses, source hashes and patch notes live in `vendor/`.
++
++To reduce code duplication, wasm32 shares standard-library stable-sort bodies
++per record type and callback-independent instance/graph transaction dispatch.
++Native retains comparator/callback specialization; ordering, allocations,
++validation/locking sequence and the standard-library sort algorithm remain.
++No exported ABI signature, capability, guard, resource cap or encoder is removed.
++The target-only O2/inline50 profile and Binaryen132 packaging pass stay fixed.
++Module and offline classic Workers share the same bounded XYFX byte staging
++helper. Both call the same Rust export/recovery entry; the classic entry refuses
++active/queued aggregate work before touching the arena. A single strict-CSP file
++embeds the checked module plus shipped classic Worker and exercises the public
++frozen API without network access. Disposal rejects pending PNG work before the
++Worker acknowledgement and an immutable snapshot exports identically through a
++fresh Worker.
++
+ ### Remaining acceptance
+ 
+-WASM retains `default-features=false`; the shared Rust PNG/raster implementation
+-cannot yet fit the unchanged 1,927,168 raw / 786,432 gzip6 single-module caps.
+-PNG requests return `XYG_WASM_RESOURCE_LIMIT` with
+-`XYG_FROZEN_PNG_UNAVAILABLE`; output is empty and subsequent exports remain usable.
+-No optional module, cap increase, alternative geometry, removed existing export,
+-or PNG parity acceptance is implied. Full native/WASM rendered PNG acceptance
+-and full #45 scale/aggregate/accessibility evidence remain OPEN. The append-only
+-[continuation receipt](../performance/temporal-worker-export-2026-11-07/README.md)
+-separates fresh actual Worker/offline tests, code-size attempts and inherited
+-historical evidence. No comparative performance victory is claimed.
++The append-only [shared PNG receipt](../performance/temporal-shared-png-2026-11-07/README.md)
++separates fresh single-module/actual Worker/native PNG proofs from inherited
++history and over-cap probes. Prior unavailable-PNG receipts remain authentic
++historical checkpoints. Standalone module fit does not certify a future union
++with other features or ABI additions. Full #45 scale/aggregate/accessibility
++and whole-milestone acceptance remain OPEN. No comparative performance victory
++or global process budget completion is claimed.
+diff --git a/tests/browser/temporal_graph_frozen_page.mjs b/tests/browser/temporal_graph_frozen_page.mjs
+index cc93eeb3651b80d652bc147c873d5ee28b8d982d..0fdb47850036279ac777d15b320fd6948a625863 100644
+--- a/tests/browser/temporal_graph_frozen_page.mjs
++++ b/tests/browser/temporal_graph_frozen_page.mjs
+@@ -19,11 +19,14 @@ window.frozenTest.capture=async(pin=true)=>{
+  const frozen=await p.session.freeze({timezone:'America/New_York',window:[0n,40n]});const before=frozen.toBytes();
+  await p.controller.setCursor(10n);await p.session.whenIdle();await p.session.dispose();await p.controller.dispose();p.worker.dispose();p.clockWorker.dispose();p.el.remove();
+  const worker=makeWorker();await worker.ready;const imported=await XygFrozenTemporalGraph.fromBytes(before,worker);const explicit=await imported.captureFocus([77,110,159,191],worker);const explicitBytes=explicit.toBytes();const scene=await imported.export('scene',{worker}),painter=await imported.export('painter',{worker}),svg=await imported.export('svg',{worker});
+- let pngError;try{await imported.export('png',{worker});}catch(e){pngError={code:e.code,message:e.message};}
++ const png=await imported.export('png',{worker}),png2=await imported.export('png',{worker,scale:2});
++ for(const artifact of [png,png2]){const recovered=await XygFrozenTemporalGraph.fromArtifact(artifact,worker);if(recovered.toBytes().length!==before.length||!recovered.toBytes().every((v,i)=>v===before[i]))throw new Error('PNG recovery changed XYFG');}
++ for(const artifact of [new Uint8Array(),png.subarray(0,png.length-1),Uint8Array.from(png,(v,i)=>i===40?v^1:v)]){let rejected=false;try{await XygFrozenTemporalGraph.fromArtifact(artifact,worker);}catch{rejected=true;}if(!rejected)throw new Error('malformed PNG accepted');}
++ const bounded=createXygWasmWorker({workerUrl:'/packages/xy-client/dist/wasm-worker.js',wasm:'/packages/xy-client/dist/xyg-wasm.wasm'});await bounded.ready;try{const limited=await XygFrozenTemporalGraph.fromBytes(before,bounded);let rejected=false;try{await limited.export('png',{worker:bounded,scale:2});}catch(e){if(e.code!=='XYG_WASM_RESOURCE_LIMIT')throw e;rejected=true;}if(!rejected)throw new Error('default 16MiB PNG reservation bypassed');const again=await limited.export('scene',{worker:bounded});if(!again.every((v,i)=>v===scene[i])||again.length!==scene.length)throw new Error('PNG refusal changed last good state');}finally{bounded.dispose();}
+  const client=new Uint8Array(await(await fetch('/packages/xy-client/dist/standalone.js')).arrayBuffer());const html=await imported.export('html',{worker,client}),html2=await imported.export('html',{worker,client,scale:2});
+  const recovered=await XygFrozenTemporalGraph.fromArtifact(html,worker,client);const after=recovered.toBytes();const recovered2=await XygFrozenTemporalGraph.fromArtifact(html2,worker,client);if(!recovered2.toBytes().every((v,i)=>v===before[i])||recovered2.toBytes().length!==before.length)throw new Error('scaled HTML recovery changed XYFG');worker.dispose();
+  const encode=a=>{let s='';for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode(...a.subarray(i,i+32768));return btoa(s);};
+- return {explicit:encode(explicitBytes),snapshot:encode(before),recovered:encode(after),scene:encode(scene),painter:encode(painter),svg:encode(svg),html:encode(html),html2:encode(html2),pngError};
++ return {explicit:encode(explicitBytes),snapshot:encode(before),recovered:encode(after),scene:encode(scene),painter:encode(painter),svg:encode(svg),html:encode(html),html2:encode(html2),png:encode(png),png2:encode(png2)};
+ };
+ 
+ window.frozenTest.legacy=async()=>{const worker=makeWorker();await worker.ready;try{const raw=new Uint8Array(await(await fetch('/spec/performance/temporal-native-render-2026-11-07/artifacts/retained-later.xyfg')).arrayBuffer());const original=await XygFrozenTemporalGraph.fromBytes(raw,worker);const svg=await original.export('svg',{worker,focusRgba:[77,110,159,191]});const explicit=await original.captureFocus([77,110,159,191],worker);const recovered=await XygFrozenTemporalGraph.fromArtifact(svg,worker);const encode=a=>{let s='';for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode(...a.subarray(i,i+32768));return btoa(s);};return {raw:encode(raw),svg:encode(svg),explicit:encode(explicit.toBytes()),recovered:encode(recovered.toBytes())};}finally{worker.dispose();}};
+diff --git a/tests/test_graphforge_contract_corpus.py b/tests/test_graphforge_contract_corpus.py
+index 8a5ae9ded529d12ab02425a4ad5cc68a0814bb8e..9e744664c02ab3bdf1f4c9f361e5d956e99219c9 100644
+--- a/tests/test_graphforge_contract_corpus.py
++++ b/tests/test_graphforge_contract_corpus.py
+@@ -11,7 +11,7 @@ from pathlib import Path
+ import pytest
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+-CURRENT_BINDINGS = Path("spec/performance/temporal-worker-export-2026-11-07/current-bindings.json")
++CURRENT_BINDINGS = Path("spec/performance/temporal-shared-png-2026-11-07/current-bindings.json")
+ 
+ 
+ def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> None:
+@@ -60,7 +60,9 @@ def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> N
+     git("init", "--quiet")
+     git("config", "core.autocrlf", "true")
+     git("config", "core.eol", "crlf")
+-    git("add", "--all")
++    # Pinned upstream files may match their own ignore rules; reproduce the
++    # actual tracked source set before exercising real checkout conversion.
++    git("add", "--force", "--all")
+     for path in original:
+         (tmp_path / path).unlink()
+     git("checkout-index", "--all", "--force")

@@ -251,3 +251,21 @@ in-flight state, while capture readiness stays pending until the real reply.
 No commands are filtered away, and missing/corrupt replies still fail. This
 stronger boundary does not uniquely explain historical missing-reply failures;
 those failed runs remain preserved without pass or reliability credit.
+The full source-dist WASM foundation also executes
+`temporal_graph_frozen_smoke.mjs`: actual Worker session/controller capture,
+computed CSS focus, six glyphs and a focused compound frame, source scrub and
+disposal, native/WASM Scene/XYPB/SVG/HTML byte oracles, exact artifact recovery,
+independent retained head/phase/layer/position vectors and native/offline
+ChartView pixels. This is part of the existing gate, with no conditional
+fallback, deadline/cap increase or separate CI job. The ordinary discovered
+pytest frozen suite and explicit Node test list also cover the boundary.
+The historical pre-shared-PNG run asserted refusal and supplied no PNG acceptance.
+The current shared-raster continuation requires actual module and strict-CSP
+offline Worker PNG output, exact prior-native PNG parity, recovery and disposal.
+
+The source foundation step explicitly names its already-built native core in
+`XYG_NATIVE_LIB` for the frozen cross-host oracle; the workflow verifier requires
+that binding. The discovered pytest journey passes its actually loaded ctypes
+library path to Node, so both hosts exercise the same candidate even when the
+parent shell has no native override. Commands, triggers, deadlines, package caps
+and the existing Release surfaces aggregate remain unchanged.

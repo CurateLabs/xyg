@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "abi_version": 37,
+  "abi_version": 38,
   "scene_version": 34,
   "painter_version": 17,
   "painter_header_bytes": 420,
@@ -877,6 +877,15 @@
         "usize"
       ],
       "result": "i32"
+    },
+    {
+      "name": "xyg_wasm_frozen_graph_execute",
+      "params": [
+        "u32",
+        "usize",
+        "usize"
+      ],
+      "result": "i32"
     }
   ],
   "graph": {
@@ -990,6 +999,12 @@
     "frame_header_bytes": 56,
     "output_magic": "XYTF",
     "output_header_bytes": 64,
-    "max_entities": 5000000
+    "max_entities": 5000000,
+    "frame_context": {
+      "version": 2,
+      "header_bytes": 72,
+      "window_offset": 56,
+      "revision_offset": 64
+    }
   }
 }

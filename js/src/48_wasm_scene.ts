@@ -413,6 +413,7 @@ export function hydrateWasmPainter(
 ): XygWasmSceneView {
   const preparedAt = performance.now();
   const compiled = compilePainter(prepared.painter, !!borrowedSurface);
+  if(prepared.pixelRatio!==undefined){if(!Number.isFinite(prepared.pixelRatio)||prepared.pixelRatio<=0)throw new XygWasmError('XYG_WASM_INVALID_ARGUMENT','Frozen pixel ratio must be positive and finite');(compiled.spec as any)._frozen_pixel_ratio=prepared.pixelRatio;}
   if (borrowedSurface && (compiled.spec.padding.some((value: number) => value !== 0))) {
     throw new XygWasmError("XYG_WASM_UNSUPPORTED", "Borrowed geographic paint requires a full-viewport Rust Scene");
   }

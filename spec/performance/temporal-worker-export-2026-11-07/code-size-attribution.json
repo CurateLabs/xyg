@@ -1,0 +1,897 @@
+{
+  "exact-o3": {
+    "sha256": "3e651e7a0d6d7724c9ee13c8a98441c00de4f9103a0910e645b52d05b0261caa",
+    "raw": 1963554,
+    "gzip6": 802070,
+    "sections": [
+      {
+        "id": 1,
+        "name": "type",
+        "sectionBytes": 1490,
+        "payloadBytes": 1487,
+        "offset": 11
+      },
+      {
+        "id": 3,
+        "name": "function",
+        "sectionBytes": 1733,
+        "payloadBytes": 1730,
+        "offset": 1501
+      },
+      {
+        "id": 4,
+        "name": "table",
+        "sectionBytes": 9,
+        "payloadBytes": 7,
+        "offset": 3233
+      },
+      {
+        "id": 5,
+        "name": "memory",
+        "sectionBytes": 5,
+        "payloadBytes": 3,
+        "offset": 3242
+      },
+      {
+        "id": 6,
+        "name": "global",
+        "sectionBytes": 27,
+        "payloadBytes": 25,
+        "offset": 3247
+      },
+      {
+        "id": 7,
+        "name": "export",
+        "sectionBytes": 2005,
+        "payloadBytes": 2002,
+        "offset": 3275
+      },
+      {
+        "id": 9,
+        "name": "element",
+        "sectionBytes": 331,
+        "payloadBytes": 328,
+        "offset": 5280
+      },
+      {
+        "id": 12,
+        "name": "data-count",
+        "sectionBytes": 3,
+        "payloadBytes": 1,
+        "offset": 5610
+      },
+      {
+        "id": 10,
+        "name": "code",
+        "sectionBytes": 1849007,
+        "payloadBytes": 1849003,
+        "offset": 5615
+      },
+      {
+        "id": 11,
+        "name": "data",
+        "sectionBytes": 108936,
+        "payloadBytes": 108932,
+        "offset": 1854622
+      }
+    ],
+    "largestFunctionBodies": [
+      {
+        "functionIndex": 968,
+        "bytes": 141899
+      },
+      {
+        "functionIndex": 131,
+        "bytes": 97592
+      },
+      {
+        "functionIndex": 18,
+        "bytes": 44770
+      },
+      {
+        "functionIndex": 591,
+        "bytes": 38063
+      },
+      {
+        "functionIndex": 281,
+        "bytes": 33718
+      },
+      {
+        "functionIndex": 399,
+        "bytes": 33049
+      },
+      {
+        "functionIndex": 937,
+        "bytes": 32690
+      },
+      {
+        "functionIndex": 368,
+        "bytes": 29947
+      },
+      {
+        "functionIndex": 505,
+        "bytes": 29839
+      },
+      {
+        "functionIndex": 936,
+        "bytes": 26729
+      },
+      {
+        "functionIndex": 246,
+        "bytes": 26378
+      },
+      {
+        "functionIndex": 154,
+        "bytes": 21948
+      },
+      {
+        "functionIndex": 785,
+        "bytes": 19485
+      },
+      {
+        "functionIndex": 1086,
+        "bytes": 19158
+      },
+      {
+        "functionIndex": 14,
+        "bytes": 19136
+      },
+      {
+        "functionIndex": 284,
+        "bytes": 18203
+      },
+      {
+        "functionIndex": 158,
+        "bytes": 16574
+      },
+      {
+        "functionIndex": 402,
+        "bytes": 15588
+      },
+      {
+        "functionIndex": 283,
+        "bytes": 13586
+      },
+      {
+        "functionIndex": 254,
+        "bytes": 13567
+      },
+      {
+        "functionIndex": 73,
+        "bytes": 13511
+      },
+      {
+        "functionIndex": 1092,
+        "bytes": 12481
+      },
+      {
+        "functionIndex": 159,
+        "bytes": 12427
+      },
+      {
+        "functionIndex": 800,
+        "bytes": 10355
+      },
+      {
+        "functionIndex": 560,
+        "bytes": 9385
+      }
+    ]
+  },
+  "exact-o2": {
+    "sha256": "b4fae52f0f67ddab5469bc09e7f7d2d31a709d514bf4dce0a48f3b825934d848",
+    "raw": 1904840,
+    "gzip6": 784800,
+    "sections": [
+      {
+        "id": 1,
+        "name": "type",
+        "sectionBytes": 1330,
+        "payloadBytes": 1327,
+        "offset": 11
+      },
+      {
+        "id": 3,
+        "name": "function",
+        "sectionBytes": 1737,
+        "payloadBytes": 1734,
+        "offset": 1341
+      },
+      {
+        "id": 4,
+        "name": "table",
+        "sectionBytes": 9,
+        "payloadBytes": 7,
+        "offset": 3077
+      },
+      {
+        "id": 5,
+        "name": "memory",
+        "sectionBytes": 5,
+        "payloadBytes": 3,
+        "offset": 3086
+      },
+      {
+        "id": 6,
+        "name": "global",
+        "sectionBytes": 27,
+        "payloadBytes": 25,
+        "offset": 3091
+      },
+      {
+        "id": 7,
+        "name": "export",
+        "sectionBytes": 2004,
+        "payloadBytes": 2001,
+        "offset": 3119
+      },
+      {
+        "id": 9,
+        "name": "element",
+        "sectionBytes": 377,
+        "payloadBytes": 374,
+        "offset": 5123
+      },
+      {
+        "id": 12,
+        "name": "data-count",
+        "sectionBytes": 3,
+        "payloadBytes": 1,
+        "offset": 5499
+      },
+      {
+        "id": 10,
+        "name": "code",
+        "sectionBytes": 1789448,
+        "payloadBytes": 1789444,
+        "offset": 5504
+      },
+      {
+        "id": 11,
+        "name": "data",
+        "sectionBytes": 109892,
+        "payloadBytes": 109888,
+        "offset": 1794952
+      }
+    ],
+    "largestFunctionBodies": [
+      {
+        "functionIndex": 977,
+        "bytes": 139588
+      },
+      {
+        "functionIndex": 130,
+        "bytes": 95551
+      },
+      {
+        "functionIndex": 18,
+        "bytes": 42650
+      },
+      {
+        "functionIndex": 594,
+        "bytes": 36326
+      },
+      {
+        "functionIndex": 282,
+        "bytes": 33849
+      },
+      {
+        "functionIndex": 401,
+        "bytes": 32737
+      },
+      {
+        "functionIndex": 370,
+        "bytes": 31316
+      },
+      {
+        "functionIndex": 945,
+        "bytes": 31150
+      },
+      {
+        "functionIndex": 507,
+        "bytes": 29292
+      },
+      {
+        "functionIndex": 245,
+        "bytes": 26171
+      },
+      {
+        "functionIndex": 948,
+        "bytes": 26085
+      },
+      {
+        "functionIndex": 153,
+        "bytes": 21718
+      },
+      {
+        "functionIndex": 14,
+        "bytes": 18987
+      },
+      {
+        "functionIndex": 793,
+        "bytes": 18750
+      },
+      {
+        "functionIndex": 285,
+        "bytes": 17820
+      },
+      {
+        "functionIndex": 1095,
+        "bytes": 17418
+      },
+      {
+        "functionIndex": 157,
+        "bytes": 16305
+      },
+      {
+        "functionIndex": 404,
+        "bytes": 15248
+      },
+      {
+        "functionIndex": 72,
+        "bytes": 13681
+      },
+      {
+        "functionIndex": 284,
+        "bytes": 13016
+      },
+      {
+        "functionIndex": 253,
+        "bytes": 12602
+      },
+      {
+        "functionIndex": 1101,
+        "bytes": 12568
+      },
+      {
+        "functionIndex": 158,
+        "bytes": 10893
+      },
+      {
+        "functionIndex": 807,
+        "bytes": 10370
+      },
+      {
+        "functionIndex": 562,
+        "bytes": 9664
+      }
+    ]
+  },
+  "exact-os": {
+    "sha256": "6debb926724d5ed1b3e842f424614f9f7f2244ea4c4df3bb9ca89b62c9f657bc",
+    "raw": 1854348,
+    "gzip6": 767360,
+    "sections": [
+      {
+        "id": 1,
+        "name": "type",
+        "sectionBytes": 1315,
+        "payloadBytes": 1312,
+        "offset": 11
+      },
+      {
+        "id": 3,
+        "name": "function",
+        "sectionBytes": 1883,
+        "payloadBytes": 1880,
+        "offset": 1326
+      },
+      {
+        "id": 4,
+        "name": "table",
+        "sectionBytes": 9,
+        "payloadBytes": 7,
+        "offset": 3208
+      },
+      {
+        "id": 5,
+        "name": "memory",
+        "sectionBytes": 5,
+        "payloadBytes": 3,
+        "offset": 3217
+      },
+      {
+        "id": 6,
+        "name": "global",
+        "sectionBytes": 27,
+        "payloadBytes": 25,
+        "offset": 3222
+      },
+      {
+        "id": 7,
+        "name": "export",
+        "sectionBytes": 1997,
+        "payloadBytes": 1994,
+        "offset": 3250
+      },
+      {
+        "id": 9,
+        "name": "element",
+        "sectionBytes": 378,
+        "payloadBytes": 375,
+        "offset": 5247
+      },
+      {
+        "id": 12,
+        "name": "data-count",
+        "sectionBytes": 3,
+        "payloadBytes": 1,
+        "offset": 5624
+      },
+      {
+        "id": 10,
+        "name": "code",
+        "sectionBytes": 1727653,
+        "payloadBytes": 1727649,
+        "offset": 5629
+      },
+      {
+        "id": 11,
+        "name": "data",
+        "sectionBytes": 121070,
+        "payloadBytes": 121066,
+        "offset": 1733282
+      }
+    ],
+    "largestFunctionBodies": [
+      {
+        "functionIndex": 1028,
+        "bytes": 131125
+      },
+      {
+        "functionIndex": 123,
+        "bytes": 90515
+      },
+      {
+        "functionIndex": 16,
+        "bytes": 38527
+      },
+      {
+        "functionIndex": 636,
+        "bytes": 38485
+      },
+      {
+        "functionIndex": 444,
+        "bytes": 31430
+      },
+      {
+        "functionIndex": 539,
+        "bytes": 30168
+      },
+      {
+        "functionIndex": 993,
+        "bytes": 29341
+      },
+      {
+        "functionIndex": 413,
+        "bytes": 29008
+      },
+      {
+        "functionIndex": 324,
+        "bytes": 27449
+      },
+      {
+        "functionIndex": 996,
+        "bytes": 23699
+      },
+      {
+        "functionIndex": 290,
+        "bytes": 22825
+      },
+      {
+        "functionIndex": 146,
+        "bytes": 20215
+      },
+      {
+        "functionIndex": 1153,
+        "bytes": 17568
+      },
+      {
+        "functionIndex": 327,
+        "bytes": 17465
+      },
+      {
+        "functionIndex": 847,
+        "bytes": 17290
+      },
+      {
+        "functionIndex": 150,
+        "bytes": 16711
+      },
+      {
+        "functionIndex": 12,
+        "bytes": 15628
+      },
+      {
+        "functionIndex": 447,
+        "bytes": 15178
+      },
+      {
+        "functionIndex": 62,
+        "bytes": 14368
+      },
+      {
+        "functionIndex": 301,
+        "bytes": 12139
+      },
+      {
+        "functionIndex": 326,
+        "bytes": 11783
+      },
+      {
+        "functionIndex": 1159,
+        "bytes": 11321
+      },
+      {
+        "functionIndex": 1154,
+        "bytes": 10064
+      },
+      {
+        "functionIndex": 151,
+        "bytes": 9917
+      },
+      {
+        "functionIndex": 1333,
+        "bytes": 9317
+      }
+    ]
+  },
+  "minimal-png": {
+    "sha256": "0180d73cbb31feb5f3cbf3a9fc03528c9717bae6b96a89d66100860710146ee0",
+    "raw": 2505577,
+    "gzip6": 1020398,
+    "sections": [
+      {
+        "id": 1,
+        "name": "type",
+        "sectionBytes": 1717,
+        "payloadBytes": 1714,
+        "offset": 11
+      },
+      {
+        "id": 3,
+        "name": "function",
+        "sectionBytes": 2153,
+        "payloadBytes": 2150,
+        "offset": 1728
+      },
+      {
+        "id": 4,
+        "name": "table",
+        "sectionBytes": 9,
+        "payloadBytes": 7,
+        "offset": 3880
+      },
+      {
+        "id": 5,
+        "name": "memory",
+        "sectionBytes": 5,
+        "payloadBytes": 3,
+        "offset": 3889
+      },
+      {
+        "id": 6,
+        "name": "global",
+        "sectionBytes": 27,
+        "payloadBytes": 25,
+        "offset": 3894
+      },
+      {
+        "id": 7,
+        "name": "export",
+        "sectionBytes": 2004,
+        "payloadBytes": 2001,
+        "offset": 3922
+      },
+      {
+        "id": 9,
+        "name": "element",
+        "sectionBytes": 583,
+        "payloadBytes": 580,
+        "offset": 5926
+      },
+      {
+        "id": 12,
+        "name": "data-count",
+        "sectionBytes": 4,
+        "payloadBytes": 2,
+        "offset": 6508
+      },
+      {
+        "id": 10,
+        "name": "code",
+        "sectionBytes": 2273512,
+        "payloadBytes": 2273507,
+        "offset": 6515
+      },
+      {
+        "id": 11,
+        "name": "data",
+        "sectionBytes": 225555,
+        "payloadBytes": 225551,
+        "offset": 2280026
+      }
+    ],
+    "largestFunctionBodies": [
+      {
+        "functionIndex": 1012,
+        "bytes": 139588
+      },
+      {
+        "functionIndex": 130,
+        "bytes": 95551
+      },
+      {
+        "functionIndex": 12,
+        "bytes": 68951
+      },
+      {
+        "functionIndex": 877,
+        "bytes": 52141
+      },
+      {
+        "functionIndex": 1137,
+        "bytes": 43613
+      },
+      {
+        "functionIndex": 19,
+        "bytes": 42642
+      },
+      {
+        "functionIndex": 1246,
+        "bytes": 39288
+      },
+      {
+        "functionIndex": 602,
+        "bytes": 36326
+      },
+      {
+        "functionIndex": 288,
+        "bytes": 33849
+      },
+      {
+        "functionIndex": 396,
+        "bytes": 32618
+      },
+      {
+        "functionIndex": 376,
+        "bytes": 31316
+      },
+      {
+        "functionIndex": 980,
+        "bytes": 31150
+      },
+      {
+        "functionIndex": 1473,
+        "bytes": 29340
+      },
+      {
+        "functionIndex": 514,
+        "bytes": 29299
+      },
+      {
+        "functionIndex": 251,
+        "bytes": 26171
+      },
+      {
+        "functionIndex": 983,
+        "bytes": 26085
+      },
+      {
+        "functionIndex": 153,
+        "bytes": 21725
+      },
+      {
+        "functionIndex": 811,
+        "bytes": 18688
+      },
+      {
+        "functionIndex": 291,
+        "bytes": 17714
+      },
+      {
+        "functionIndex": 1132,
+        "bytes": 17418
+      },
+      {
+        "functionIndex": 1865,
+        "bytes": 16313
+      },
+      {
+        "functionIndex": 157,
+        "bytes": 16305
+      },
+      {
+        "functionIndex": 399,
+        "bytes": 15248
+      },
+      {
+        "functionIndex": 72,
+        "bytes": 13681
+      },
+      {
+        "functionIndex": 290,
+        "bytes": 13016
+      }
+    ]
+  },
+  "minimal-feature": {
+    "sha256": "958d1635fd070a5fde46d78f6d92f1da748d19aac9cd64af5baa7f9b0c9b59c8",
+    "raw": 2174875,
+    "gzip6": 898699,
+    "sections": [
+      {
+        "id": 1,
+        "name": "type",
+        "sectionBytes": 1504,
+        "payloadBytes": 1501,
+        "offset": 11
+      },
+      {
+        "id": 3,
+        "name": "function",
+        "sectionBytes": 1906,
+        "payloadBytes": 1903,
+        "offset": 1515
+      },
+      {
+        "id": 4,
+        "name": "table",
+        "sectionBytes": 9,
+        "payloadBytes": 7,
+        "offset": 3420
+      },
+      {
+        "id": 5,
+        "name": "memory",
+        "sectionBytes": 5,
+        "payloadBytes": 3,
+        "offset": 3429
+      },
+      {
+        "id": 6,
+        "name": "global",
+        "sectionBytes": 27,
+        "payloadBytes": 25,
+        "offset": 3434
+      },
+      {
+        "id": 7,
+        "name": "export",
+        "sectionBytes": 2004,
+        "payloadBytes": 2001,
+        "offset": 3462
+      },
+      {
+        "id": 9,
+        "name": "element",
+        "sectionBytes": 465,
+        "payloadBytes": 462,
+        "offset": 5466
+      },
+      {
+        "id": 12,
+        "name": "data-count",
+        "sectionBytes": 4,
+        "payloadBytes": 2,
+        "offset": 5930
+      },
+      {
+        "id": 10,
+        "name": "code",
+        "sectionBytes": 1965857,
+        "payloadBytes": 1965853,
+        "offset": 5936
+      },
+      {
+        "id": 11,
+        "name": "data",
+        "sectionBytes": 203086,
+        "payloadBytes": 203082,
+        "offset": 1971793
+      }
+    ],
+    "largestFunctionBodies": [
+      {
+        "functionIndex": 979,
+        "bytes": 139588
+      },
+      {
+        "functionIndex": 130,
+        "bytes": 95551
+      },
+      {
+        "functionIndex": 1103,
+        "bytes": 92593
+      },
+      {
+        "functionIndex": 17,
+        "bytes": 42650
+      },
+      {
+        "functionIndex": 595,
+        "bytes": 36326
+      },
+      {
+        "functionIndex": 282,
+        "bytes": 33849
+      },
+      {
+        "functionIndex": 386,
+        "bytes": 32618
+      },
+      {
+        "functionIndex": 370,
+        "bytes": 31316
+      },
+      {
+        "functionIndex": 947,
+        "bytes": 31150
+      },
+      {
+        "functionIndex": 508,
+        "bytes": 29292
+      },
+      {
+        "functionIndex": 245,
+        "bytes": 26171
+      },
+      {
+        "functionIndex": 950,
+        "bytes": 26085
+      },
+      {
+        "functionIndex": 153,
+        "bytes": 21718
+      },
+      {
+        "functionIndex": 10,
+        "bytes": 18987
+      },
+      {
+        "functionIndex": 794,
+        "bytes": 18750
+      },
+      {
+        "functionIndex": 285,
+        "bytes": 17820
+      },
+      {
+        "functionIndex": 1097,
+        "bytes": 17418
+      },
+      {
+        "functionIndex": 157,
+        "bytes": 16305
+      },
+      {
+        "functionIndex": 405,
+        "bytes": 15248
+      },
+      {
+        "functionIndex": 72,
+        "bytes": 13681
+      },
+      {
+        "functionIndex": 284,
+        "bytes": 13016
+      },
+      {
+        "functionIndex": 253,
+        "bytes": 12602
+      },
+      {
+        "functionIndex": 158,
+        "bytes": 10893
+      },
+      {
+        "functionIndex": 808,
+        "bytes": 10370
+      },
+      {
+        "functionIndex": 563,
+        "bytes": 9664
+      }
+    ]
+  }
+}

@@ -2273,6 +2273,13 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "bounded lifecycle timeout",
         "timeout-minutes: 10",
     )
+    _require_step_contains(
+        errors,
+        wasm_job,
+        "Strict-CSP local-only lifecycle smoke",
+        "explicit native artifact for frozen native/WASM export oracles",
+        "XYG_NATIVE_LIB: ${{ github.workspace }}/target/release/libxyg_core.so",
+    )
     test_job = jobs.get("test", "")
     density_pr_steps = [
         step

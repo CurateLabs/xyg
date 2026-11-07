@@ -909,6 +909,7 @@ Forbidden:
 | `js/src/63_graph_gpu.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client`; GPU-v1 validation/raw-buffer paint through GLHost | — |
 | `js/src/63_graph_session_wire.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; internal XYGI/XYGR framing, no graph policy | #59 |
 | `js/src/wasm_abi_generated.ts` | Generated cross-host WASM contract binding | `browser-wasm-generated` | `generate` | #59 |
+| `js/src/wasm_frozen_graph.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; Shared raw byte staging only. | #59 |
 | `js/src/wasm_inline_worker.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/wasm_worker.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `packages/xy-node/src/_abi_generated.js` | Node low-level ABI binding | `node-abi-generated` | `generate` | #57 |
@@ -1387,6 +1388,16 @@ These additions use the existing ownership policies without adding a host policy
 | `python/xyg/_temporal_scene.py` | Python host | python-host | keep-host |
 | `python/xyg/_geo_temporal.py` | Python host | `python-host` | `keep-host` | — |
 | `packages/xy-node/src/geo-temporal.js` | Node host | `node-host` | `keep-host` | — |
+| `crates/xyg-engine/src/graph_marker_contour.rs` | Rust safe engine | `rust-engine` | `keep-rust`; The safe engine is the single implementation of parity-affecting behavior. | — |
+| `crates/xyg-engine/src/retained_png.rs` | Rust safe engine | `rust-engine` | `keep-rust`; Shared checked raster/PNG capability adapter. | — |
+| `crates/xyg-engine/src/shared_sort.rs` | Rust safe engine | `rust-engine` | `keep-rust`; Shared standard-library stable-sort bodies for the bounded browser module. | — |
+| `crates/xyg-engine/src/temporal_graph_export.rs` | Rust safe engine | `rust-engine` | `keep-rust`; The safe engine is the single implementation of parity-affecting behavior. | — |
+| `crates/xyg-engine/src/temporal_graph_frozen.rs` | Rust safe engine | `rust-engine` | `keep-rust`; The safe engine is the single implementation of parity-affecting behavior. | — |
+| `crates/xyg-core/src/temporal_graph_frozen_ffi.rs` | Rust C ABI shell | `rust-c-abi` | `keep-rust`; One versioned cdylib serves ctypes, Koffi, and future browser-facing adapters. | — |
+| `crates/xyg-wasm/src/temporal_graph_frozen.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm`; Issue #59 needs a minimal target-specific lifecycle shell over the same safe Rust engine. | #59 |
+| `python/xyg/_temporal_graph_frozen.py` | Python host | `python-host` | `keep-host`; This file provides Python-specific ergonomics without making Rust-owned product decisions. | — |
+| `packages/xy-node/src/temporal-graph-frozen.js` | Node host | `node-host` | `keep-host`; This file is a Node-specific shell around shared engine and paint-client contracts. | — |
+| `js/src/67_frozen_graph.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation. | #59 |
 
 ## Contributor rule
 
@@ -1512,3 +1523,29 @@ The partial temporal catalog owns exact membership/ticks/geometry in
 `xyg-engine::temporal_scene`; Python, Node and browser framing modules only
 pack source rows and call that compiler. See temporal-catalog.md for unshipped
 interaction, dense-LOD and packaging requirements.
+### Frozen retained graph export continuation
+
+`graph_marker_contour.rs`, `temporal_graph_frozen.rs` and
+`temporal_graph_export.rs` are **rust-engine**: bounded shared-SDF lowering,
+phase splitting, immutable provenance, carrier validation and shared Scene
+export. `xyg-core/temporal_graph_frozen_ffi.rs` is **rust-c-abi**.
+`xyg-wasm/temporal_graph_frozen.rs` is **rust-wasm-abi**, borrowing actual
+accepted private owners and enforcing lifetime/budget/status boundaries.
+`js/src/67_frozen_graph.ts` is **browser-wasm-adapter**: binary framing and owned
+copies only. The controller captures computed CSS through the existing painter
+parser. Python/Node frozen modules are **python-host**/**node-host** package
+client discovery, scalar marshaling and native ownership. No second chart
+builder, layout, routing, semantic style resolver or renderer is introduced.
+
+The shared retained PNG continuation adds `retained_png.rs` (checked allocation
+and command capability admission) and `shared_sort.rs` (one standard-library
+stable-sort body per browser record type). Both are **rust-engine**. The existing
+raster/PNG implementation, draw policy and full native text routes remain shared.
+`vendor/png` and `vendor/crc32fast` retain the existing dependency algorithms and
+licenses with auditable compile-time capability/table changes; they do not move
+product policy into hosts. Callback sharing keeps the same Rust transaction
+validation, locking and lifetime sequence.
+
+Both Worker entries call `wasm_frozen_graph.ts` for bounded XYFX byte staging
+and owned output copying. The module and strict-CSP offline classic Worker
+invoke the same Rust export/recovery operation; no export policy enters JS.

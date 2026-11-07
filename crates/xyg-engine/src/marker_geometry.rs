@@ -130,7 +130,7 @@ pub(crate) fn symbol_sdf(px: f32, py: f32, r: f32, sym: u8) -> f32 {
 }
 
 #[inline]
-#[cfg(feature = "raster")]
+#[cfg(any(feature = "raster", feature = "frozen-raster"))]
 pub(crate) fn symbol_extent(r: f32, sym: u8) -> f32 {
     crate::scene::marker_symbol_extent(f64::from(r), sym) as f32
 }

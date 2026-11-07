@@ -909,7 +909,7 @@ fn registry_entries_excluding(exclude: u64) -> Vec<(u64, Arc<Mutex<TileStore>>)>
             .filter(|(handle, _)| **handle != exclude)
             .map(|(handle, store)| (*handle, Arc::clone(store)))
             .collect();
-    entries.sort_by_key(|(handle, _)| *handle);
+    crate::shared_sort::by_key(&mut entries, |(handle, _)| *handle);
     entries
 }
 

@@ -1,0 +1,735 @@
+{
+  "artifacts": {
+    "combined-before-size-repair.wasm": {
+      "archive": "combined-before-size-repair.wasm.gz",
+      "archiveSha256": "e22e1470ddf433e65d6bfbe909882fc44ada117b68c7d749ed0b7a9dcc8020c3",
+      "bytes": 2151981,
+      "sha256": "79f9d832991dab081f3143b65de556db66d5efb2cee7fb89c7a838b1f4127282"
+    },
+    "native405-before-size-repair.so": {
+      "archive": "native405-before-size-repair.so.gz",
+      "archiveSha256": "b242aab069c7d989cbd45768d40636eda42eeb02ce064c081bc5f32edce12f2a",
+      "bytes": 6356776,
+      "sha256": "61edfeb4572ddd7aa2986c18f36e5f85d77bec3cebf4a82098723515d020774e"
+    },
+    "over-cap-combined-baseline.wasm": {
+      "archive": "over-cap-combined-baseline.wasm.gz",
+      "archiveSha256": "1b5e62d407ad7381e818567801e56ba98482414d423d19982ff901853132224b",
+      "bytes": 1940915,
+      "sha256": "230fadd44df91f72a1d36da708c1e2837e2d153f490008cfb056dfc0f940c4ad"
+    },
+    "rejected-geo-callback-sharing.wasm": {
+      "archive": "rejected-geo-callback-sharing.wasm.gz",
+      "archiveSha256": "3816a09ef4c9e58e72960f9f9b9c40364de6f2e9d948552a5285c7b09581ce1b",
+      "bytes": 2155587,
+      "sha256": "4988018d9b7594a1a6f87aed0b27c70d44d4e36fdd46eae18ae7409b8630c3ce"
+    },
+    "rejected-unstable-sharing.wasm": {
+      "archive": "rejected-unstable-sharing.wasm.gz",
+      "archiveSha256": "ea3717b2e79e71f1f9ead83000982c5f46022f5c3726fa7f7b1452bd7038cbf9",
+      "bytes": 2154165,
+      "sha256": "9cbcbe4a76a170f737510d8441db6ec79cf4ea50aea04d08e7bf86db76d34a0f"
+    }
+  },
+  "gates": "Full-worktree hooks and both Ruff commands passed after the pointer-only formatting correction; the initial hook failure is preserved. Package gate remains failed.",
+  "knownFreshPassing": {
+    "coreInventoryOwnership": 42,
+    "finalCorpus": 7,
+    "fixtureTransitions": 131,
+    "nativeFrozen": 35,
+    "nativeFrozenWorkerDeselected": 1
+  },
+  "logs": {
+    "animation_emit_cross_host.generator.log": {
+      "archive": "animation_emit_cross_host.generator.log.gz",
+      "archiveSha256": "1bfeb9f22cc7e0e5cbc156b84336f65cedccfc611f54aae8e7d0bb3be5c90911",
+      "bytes": 1386,
+      "sha256": "96b82accf97b821b2d757c39ff5cc88f561af7251fa20cb25bb0ffe137080752"
+    },
+    "before-format-checkpoint-hooks.log": {
+      "archive": "before-format-checkpoint-hooks.log.gz",
+      "archiveSha256": "57fe8514d601ccf72362d6e0860ae158618fd2dd6c77fef61f6e778a6ca9b898",
+      "bytes": 346,
+      "sha256": "cb9b7da33d72e9b3124fb0167004d35bf5ee02ecdf96d18ac10319a1d4dc94bc"
+    },
+    "checkpoint-format.log": {
+      "archive": "checkpoint-format.log.gz",
+      "archiveSha256": "f8d14e05b78075b54e3557e105c18bfbb1403b55b3b5cba72da123f61c1e7be9",
+      "bytes": 29,
+      "sha256": "3d68aabe5408d642d33fde4bf1ed021bed7e8bc859c7ec1d95350b0fde3d925b"
+    },
+    "checkpoint-hooks.log": {
+      "archive": "checkpoint-hooks.log.gz",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "checkpoint-ruff.log": {
+      "archive": "checkpoint-ruff.log.gz",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "default_styled_emit_cross_host.generator.log": {
+      "archive": "default_styled_emit_cross_host.generator.log.gz",
+      "archiveSha256": "bf5abcf5d705d5903dded4be17d9bf1a5c3c08c095a09cef9da7eca0c57e76fb",
+      "bytes": 1824,
+      "sha256": "c1158a40b9850b40f7282e156bf8a86a934cdf87cd72cdda23e12d0a2ace0358"
+    },
+    "density_emit_cross_host.generator.log": {
+      "archive": "density_emit_cross_host.generator.log.gz",
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "force_emit_cross_host.generator.log": {
+      "archive": "force_emit_cross_host.generator.log.gz",
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "geo-callback-sharing-package.log": {
+      "archive": "geo-callback-sharing-package.log.gz",
+      "archiveSha256": "40f60d2345f3819fdcfccc7cf86acdb21789aaf0be555c5f0217a5cd11212990",
+      "bytes": 673,
+      "sha256": "9b69e7fa25baa3278852f42cf69dd463f75fab3dd5aa12bad4fdb36e28bd5895"
+    },
+    "geo-callback-sharing-wasm-build.log": {
+      "archive": "geo-callback-sharing-wasm-build.log.gz",
+      "archiveSha256": "dc58644aa7b69c7b0e153332fd99af664a65358df53b26d9d80f1cc6a8a00bcc",
+      "bytes": 3786,
+      "sha256": "712f8d105efc6c3ac1f19c5329737b74c78d91739bfc08d00d24cf3166775c8a"
+    },
+    "geo_cross_host.generator.log": {
+      "archive": "geo_cross_host.generator.log.gz",
+      "archiveSha256": "cfbe870f4d1595f1e24db25d672d0580799b6076def568bf2f1c4fe89c5814b8",
+      "bytes": 52,
+      "sha256": "b386c3eee49ec67d5666f473df09f412e47ed202cae3e8cd45270ac77687eb0b"
+    },
+    "native-abi-generation.log": {
+      "archive": "native-abi-generation.log.gz",
+      "archiveSha256": "5d12f6a563f9bc41b09e171ee7f14badec1dfdd269e9d1523d83b2ffb41a0302",
+      "bytes": 129,
+      "sha256": "f6633eeb5323296fa714eb555e0e1b470598a5482194b2be957b996ce8b01f73"
+    },
+    "native-build.log": {
+      "archive": "native-build.log.gz",
+      "archiveSha256": "218865015ceb924dd7909dd5be1985f30d538ff47b145da809190b52f2b5edbc",
+      "bytes": 537,
+      "sha256": "af056d7fbdf2153256e02cfffbb5c8118dfd615cd2b7a8f67ace1735c555ec44"
+    },
+    "native-frozen-preliminary.log": {
+      "archive": "native-frozen-preliminary.log.gz",
+      "archiveSha256": "caa3460e90f7be8f221aadfaa9a7bfb5b7efd033c83419c695afd7832d937def",
+      "bytes": 114,
+      "sha256": "dcbd233cac645c2631e58d368948cd98b89526088edd4fa074465cf873528888"
+    },
+    "package.log": {
+      "archive": "package.log.gz",
+      "archiveSha256": "271da03c301bceee7837d5d445867238127a2dfad17d5bc50c858ad0756bdf7e",
+      "bytes": 673,
+      "sha256": "71cba0c9fb0955a3087f9a38322e2018b13467bfb5a1ca6ac8202a6bd0d4e6e9"
+    },
+    "payload_attach_cross_host.generator.log": {
+      "archive": "payload_attach_cross_host.generator.log.gz",
+      "archiveSha256": "98c2c1940a8333575b437380e1e4d76d437b951afd181a923ff98b566885067c",
+      "bytes": 95,
+      "sha256": "12e8428d9acafa014015920e0948a08a4b54d40e0d9d103d30c5048a43a3a68d"
+    },
+    "payload_chrome_cross_host.generator.log": {
+      "archive": "payload_chrome_cross_host.generator.log.gz",
+      "archiveSha256": "3c40444e97811978159d3e73f168ea56963c447f7407e696643b3c9f07063e86",
+      "bytes": 95,
+      "sha256": "097d6d79eb8b680dd2e632e2f26dd05c9671a7cb56191848f92f8b9b2e7f2141"
+    },
+    "payload_cross_host.generator.log": {
+      "archive": "payload_cross_host.generator.log.gz",
+      "archiveSha256": "2352c2c552f10f5972f41973148e57a8ff349ee8dceba1f02546cb971c908e6f",
+      "bytes": 439,
+      "sha256": "1b7eb1675dbd21a084cfcd9eb8cd90a676dd92145229245a060c829698b37e86"
+    },
+    "series_palette_cross_host.generator.log": {
+      "archive": "series_palette_cross_host.generator.log.gz",
+      "archiveSha256": "0b14d1bd09ae56e86dc68a915a892e9edd4e9596898b4190d6b4bff663e19007",
+      "bytes": 95,
+      "sha256": "6bbcec4453be58ef0e624d4342e912c9f18b05f4edc8fefed2d0ced66bd5f03e"
+    },
+    "size-diagnostic-build.log": {
+      "archive": "size-diagnostic-build.log.gz",
+      "archiveSha256": "89361244c3f066792913f931fad576625fcb54a612096fff87c06110c5d4fae6",
+      "bytes": 4164,
+      "sha256": "dcb1a482272eae96bbffe5cfa91e1e5543004b9d0b9c2630da5f474a769111c7"
+    },
+    "source-contracts.log": {
+      "archive": "source-contracts.log.gz",
+      "archiveSha256": "a24c08077e1ade7c5a92e39b897a3f6c750710c40ef15d13868b8d9710ffeb37",
+      "bytes": 100,
+      "sha256": "1cd5ec7220d198c64eddd250702a8426d5275706edd37de981d85cc8aa3f7997"
+    },
+    "source-corpus-final.log": {
+      "archive": "source-corpus-final.log.gz",
+      "archiveSha256": "56c21719756926dcd84f20f19b1191c83063038eddbc50a4d39173570b9e0f06",
+      "bytes": 98,
+      "sha256": "82b1e2370a4a21390331f65550ec932861562967b85cf60c7f08d387d8252721"
+    },
+    "tooltip_len_emit_cross_host.generator.log": {
+      "archive": "tooltip_len_emit_cross_host.generator.log.gz",
+      "archiveSha256": "951724789ca815bcc05487735b99bc801869904e27a0f8baa3988e91aace6c61",
+      "bytes": 510,
+      "sha256": "4a65be73349295c595c98449112d0607430c4702ec38696c0b24c8fabe5c9f23"
+    },
+    "unstable-sharing-package.log": {
+      "archive": "unstable-sharing-package.log.gz",
+      "archiveSha256": "97776a5231758e15474cfa70a762e9c76bd19f851e1b74e761f74ec680ddab1c",
+      "bytes": 673,
+      "sha256": "b8381fab65a56ff0c23d6b9fe04b7560fd0180d7437e81bbecabd63efb407b57"
+    },
+    "unstable-sharing-tests-retry.log": {
+      "archive": "unstable-sharing-tests-retry.log.gz",
+      "archiveSha256": "947c63bb67a0849d81d030af87a8dbd0c4ec22e742c89483302098315039d93b",
+      "bytes": 3434,
+      "sha256": "6d6d38f34574272fa74027acfbdbca1d5b3f38e9108602663f8a41be18ada2ed"
+    },
+    "unstable-sharing-tests.log": {
+      "archive": "unstable-sharing-tests.log.gz",
+      "archiveSha256": "befe813a4cc0b69aa176d3f2333097f35d3bad2918540a2e557ba89292ef7bb1",
+      "bytes": 45,
+      "sha256": "fdb047fa5c296663d986dc0a0eaf569c4300c49b8cd723166058f85e919ab0e9"
+    },
+    "unstable-sharing-wasm-build.log": {
+      "archive": "unstable-sharing-wasm-build.log.gz",
+      "archiveSha256": "4bf8e595ba731e0fad3c4a58f8ab2c9b39ea7226e54e11055082f7710f1b3867",
+      "bytes": 3786,
+      "sha256": "4d638bdd0780664cd99b8a8049e6af41f0f7ffd8be57630dc3680f0996e53029"
+    },
+    "wasm-abi-generation.log": {
+      "archive": "wasm-abi-generation.log.gz",
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "wasm-build.log": {
+      "archive": "wasm-build.log.gz",
+      "archiveSha256": "97493f9597b7d6edc7b369d05897f25a8fe1e3e81d9987f907fbb77c1bbc8a67",
+      "bytes": 4164,
+      "sha256": "12f1b59d887c59275fb56ae0b905f545c5cc05859af8b23b8a9b0694a4e3ce5a"
+    }
+  },
+  "package": {
+    "caps": {
+      "gzip6": 786432,
+      "raw": 1927168
+    },
+    "exports": [
+      "memory",
+      "xyg_wasm_abi_version",
+      "xyg_wasm_aggregate_bin2d",
+      "xyg_wasm_aggregate_step",
+      "xyg_wasm_aggregate_stream_begin",
+      "xyg_wasm_aggregate_stream_finish",
+      "xyg_wasm_aggregate_stream_push",
+      "xyg_wasm_arena_high_water",
+      "xyg_wasm_arena_len",
+      "xyg_wasm_arena_ptr",
+      "xyg_wasm_arena_resize",
+      "xyg_wasm_cancel",
+      "xyg_wasm_compound_transition",
+      "xyg_wasm_copy_bytes_hi",
+      "xyg_wasm_copy_bytes_lo",
+      "xyg_wasm_copy_count",
+      "xyg_wasm_dashboard_plan",
+      "xyg_wasm_default_palette_rgba8",
+      "xyg_wasm_default_palette_rows",
+      "xyg_wasm_default_palette_version",
+      "xyg_wasm_density_first_paint_plan",
+      "xyg_wasm_filter_execute",
+      "xyg_wasm_frozen_graph_execute",
+      "xyg_wasm_geo_catalog_compile",
+      "xyg_wasm_geo_column_ingest",
+      "xyg_wasm_geo_frame_prepare",
+      "xyg_wasm_geo_scale_execute",
+      "xyg_wasm_geo_scale_read",
+      "xyg_wasm_geo_scene_compile",
+      "xyg_wasm_geo_snapshot_execute",
+      "xyg_wasm_geo_snapshot_read",
+      "xyg_wasm_geo_tile_execute",
+      "xyg_wasm_geo_tile_frame_prepare",
+      "xyg_wasm_geo_tile_read",
+      "xyg_wasm_geo_transport_acquire",
+      "xyg_wasm_geo_viewport_execute",
+      "xyg_wasm_graph_begin",
+      "xyg_wasm_graph_step",
+      "xyg_wasm_graphforge_compose",
+      "xyg_wasm_graphforge_composition_version",
+      "xyg_wasm_graphforge_session_close",
+      "xyg_wasm_graphforge_session_interact",
+      "xyg_wasm_graphforge_session_open",
+      "xyg_wasm_graphforge_session_render",
+      "xyg_wasm_graphforge_session_update",
+      "xyg_wasm_instance_dispose",
+      "xyg_wasm_instance_new",
+      "xyg_wasm_last_error_len",
+      "xyg_wasm_last_error_ptr",
+      "xyg_wasm_last_scene_records",
+      "xyg_wasm_last_scene_styles",
+      "xyg_wasm_max_arena_bytes",
+      "xyg_wasm_output_len",
+      "xyg_wasm_output_ptr",
+      "xyg_wasm_scene_compile",
+      "xyg_wasm_scene_compile_begin",
+      "xyg_wasm_scene_compile_phase",
+      "xyg_wasm_scene_compile_prepare",
+      "xyg_wasm_scene_compile_records_processed",
+      "xyg_wasm_scene_compile_step",
+      "xyg_wasm_scene_prepare",
+      "xyg_wasm_scene_prepare_annotations",
+      "xyg_wasm_scene_validate",
+      "xyg_wasm_scene_version",
+      "xyg_wasm_temporal_execute",
+      "xyg_wasm_temporal_graph_execute",
+      "xyg_wasm_temporal_scene_compile",
+      "xyg_wasm_ticks_resolve",
+      "xyg_wasm_geo_metadata_version",
+      "__data_end",
+      "__heap_base"
+    ],
+    "gzip6": 807541,
+    "raw": 1940915,
+    "sha256": "230fadd44df91f72a1d36da708c1e2837e2d153f490008cfb056dfc0f940c4ad",
+    "shippingQualification": false
+  },
+  "parents": [
+    "bef92b1dc20894cf5f801d2421832dda8589bb45",
+    "fc50daad4a011c920fe18f814d951901ae797049"
+  ],
+  "qualification": "incomplete",
+  "rejectedExperiments": {
+    "before-geo-callback-sharing/crates/xyg-engine/src/geo_scale_protocol.rs": {
+      "archive": "before-geo-callback-sharing__crates__xyg-engine__src__geo_scale_protocol.rs.gz",
+      "archiveSha256": "e67078d84fc9f68ff457544c0e44d3520199ec1f1e5a1d87ea5b023e51344249",
+      "bytes": 98317,
+      "sha256": "bea72c82e8d6fda03b684d14d66e0036e98794f598d1c17025baeca0e563bed8"
+    },
+    "before-geo-callback-sharing/crates/xyg-engine/src/geo_tile_protocol.rs": {
+      "archive": "before-geo-callback-sharing__crates__xyg-engine__src__geo_tile_protocol.rs.gz",
+      "archiveSha256": "fa135a3e9f77f3c62bc5ab224f9d04688ce5d38bc6cfd9b03665759e0b16ccbe",
+      "bytes": 45891,
+      "sha256": "7b3bc55360de6c48c0a716e037fbec61b95eecafa234207fbcc43f127e56b93d"
+    },
+    "before-unstable-sharing/crates/xyg-engine/src/filter_tier_c_linked.rs": {
+      "archive": "before-unstable-sharing__crates__xyg-engine__src__filter_tier_c_linked.rs.gz",
+      "archiveSha256": "55747db6529c3ae2e02c8d1917ded1c535971f81e9e9e5bd2382f30e1af9a4b2",
+      "bytes": 29423,
+      "sha256": "4508077387c7b2be60ed8876f17271073cb6dbebd89a4e47d6bc4fd12684b6e1"
+    },
+    "before-unstable-sharing/crates/xyg-engine/src/geo_spatial_build_session.rs": {
+      "archive": "before-unstable-sharing__crates__xyg-engine__src__geo_spatial_build_session.rs.gz",
+      "archiveSha256": "dc6ca55226777f4a512b4fe4593d9545068acd67385b75da92ddea7f98d6e61c",
+      "bytes": 20474,
+      "sha256": "f83144d2744dec36cb2a3c78e1eb05f0e884e19b37c8539338aa4a7ddc21d1e0"
+    },
+    "before-unstable-sharing/crates/xyg-engine/src/geo_spatial_hierarchy_build.rs": {
+      "archive": "before-unstable-sharing__crates__xyg-engine__src__geo_spatial_hierarchy_build.rs.gz",
+      "archiveSha256": "a248d5688896a2ae61fed8e1632dc0de5d31fd318737865956985ed2aa24ffb2",
+      "bytes": 32840,
+      "sha256": "0f500f1660d2c6f253c11adcf1afe28b95c42a3cbc310fcbf7b7b3499b0f4ab4"
+    },
+    "before-unstable-sharing/crates/xyg-engine/src/geo_spatial_index.rs": {
+      "archive": "before-unstable-sharing__crates__xyg-engine__src__geo_spatial_index.rs.gz",
+      "archiveSha256": "1adb36951e5efd2c7362a1e924a809c2b7dd32f3db2ff31f462c76fa1d139c99",
+      "bytes": 41092,
+      "sha256": "f2d987c413cee80742ae6a5e52561b7e04e2d030d098e7c4b73def1a96620c22"
+    },
+    "before-unstable-sharing/crates/xyg-engine/src/kernels.rs": {
+      "archive": "before-unstable-sharing__crates__xyg-engine__src__kernels.rs.gz",
+      "archiveSha256": "666c3397c7e613d90d5fee1fc7631ea16ce96f41dba0696959ae0c73248dcd65",
+      "bytes": 470536,
+      "sha256": "20afe89bd47cd2d23e91c86f4137fa6910c377409989cd8d8ac5ab125cd986e1"
+    },
+    "before-unstable-sharing/crates/xyg-engine/src/packed_ticks.rs": {
+      "archive": "before-unstable-sharing__crates__xyg-engine__src__packed_ticks.rs.gz",
+      "archiveSha256": "8283363e8612cb76e644208a0542f1c8b62ecc65b8edf84bd76162ad6b465525",
+      "bytes": 24550,
+      "sha256": "d7ef0e0dd79cbdff8d695b875bccd3ec7ead193b0d50025576ff05ab5014d92b"
+    },
+    "before-unstable-sharing/crates/xyg-engine/src/shared_sort.rs": {
+      "archive": "before-unstable-sharing__crates__xyg-engine__src__shared_sort.rs.gz",
+      "archiveSha256": "3dbaa8146e28c93b013aa87bb8704f668f3415eaa7030cc161ba1aa4e9b6f78b",
+      "bytes": 961,
+      "sha256": "b758ee75a60613c4fb0710df8fb0c6fcf7e4e8a33234146c8ffcb846fbb85800"
+    },
+    "before-unstable-sharing/crates/xyg-engine/src/temporal_controller.rs": {
+      "archive": "before-unstable-sharing__crates__xyg-engine__src__temporal_controller.rs.gz",
+      "archiveSha256": "22b98db65ed547d065dd9a5df0828a53cc6cdada1d4c5afdd7a21b6ff98def0a",
+      "bytes": 30351,
+      "sha256": "5a5e605c2082a7a4e4b129fb456a0fe39146bffee13ebd1f224937ad256b0f01"
+    },
+    "rejected-geo-callback-sharing/crates/xyg-engine/src/geo_scale_protocol.rs": {
+      "archive": "rejected-geo-callback-sharing__crates__xyg-engine__src__geo_scale_protocol.rs.gz",
+      "archiveSha256": "74636c754bfb888b9092c2d55dd5ed9479d1a956a94decae8309b14ec25cf890",
+      "bytes": 99916,
+      "sha256": "848dfbbdf8f7091ba8e63657b1bf66ab142e458858d674c789f15750b016dc3b"
+    },
+    "rejected-geo-callback-sharing/crates/xyg-engine/src/geo_tile_protocol.rs": {
+      "archive": "rejected-geo-callback-sharing__crates__xyg-engine__src__geo_tile_protocol.rs.gz",
+      "archiveSha256": "b3abe6ffa085da0ff01f0b52f6ed3ab5364adcae2750da422e68a0f3e7074b4a",
+      "bytes": 46593,
+      "sha256": "70186c9599b90c0bf8406c8bb97bf2b81465d6e1175fa745487db0828ae4fd82"
+    },
+    "rejected-unstable-sharing/crates/xyg-engine/src/filter_tier_c_linked.rs": {
+      "archive": "rejected-unstable-sharing__crates__xyg-engine__src__filter_tier_c_linked.rs.gz",
+      "archiveSha256": "dac3a5e4245d26143aca248965f943dbc303297aad321529e3dbdc42ee3e9080",
+      "bytes": 29444,
+      "sha256": "92b624127fef4dd79d4e5ecd5621038e7c8577130e2851e5bbe4e3df506dc08a"
+    },
+    "rejected-unstable-sharing/crates/xyg-engine/src/geo_spatial_build_session.rs": {
+      "archive": "rejected-unstable-sharing__crates__xyg-engine__src__geo_spatial_build_session.rs.gz",
+      "archiveSha256": "3679a982c33f7f7cd1008243974786bc381a8897d8cba8b7614fb06035156f96",
+      "bytes": 20495,
+      "sha256": "0b4b67373e6ec3cb147c209ecaaf71f81f4a359a2644a4c199491809077888d1"
+    },
+    "rejected-unstable-sharing/crates/xyg-engine/src/geo_spatial_hierarchy_build.rs": {
+      "archive": "rejected-unstable-sharing__crates__xyg-engine__src__geo_spatial_hierarchy_build.rs.gz",
+      "archiveSha256": "8d27881b25803eb8408c02652e9ebcb6f55ab0e2bbcc046be556f79b1a50bace",
+      "bytes": 32861,
+      "sha256": "18b9cc93d98bc0908ac42b3ec9ecaf9eb7df2cd538bbff754308fe811d81d18a"
+    },
+    "rejected-unstable-sharing/crates/xyg-engine/src/geo_spatial_index.rs": {
+      "archive": "rejected-unstable-sharing__crates__xyg-engine__src__geo_spatial_index.rs.gz",
+      "archiveSha256": "f40a4e5b99fde3febd150fa1296294faf2e79d05b62e3d9ea4ef952489549003",
+      "bytes": 41113,
+      "sha256": "db9848d5e4535441bf1ba2f26ebd5cabc1b81a2ecbbc999348037193fda389cf"
+    },
+    "rejected-unstable-sharing/crates/xyg-engine/src/kernels.rs": {
+      "archive": "rejected-unstable-sharing__crates__xyg-engine__src__kernels.rs.gz",
+      "archiveSha256": "0dc9d4c1e7b4f5689cb91d33511400d74bfa07d5133283300f98fa9b42009185",
+      "bytes": 470557,
+      "sha256": "7a0f9db43734c6dcfae0b9a9973d3f741e4e829b8f6ce29a3325d28c174c074c"
+    },
+    "rejected-unstable-sharing/crates/xyg-engine/src/packed_ticks.rs": {
+      "archive": "rejected-unstable-sharing__crates__xyg-engine__src__packed_ticks.rs.gz",
+      "archiveSha256": "8d9b5e37411608e7424358a6b8125181c69e30af1bba3ad6c651973472db1484",
+      "bytes": 24571,
+      "sha256": "d6b8380b3638f9041ddcc24c9a497011e67fbe100acc93df66e7a0e76021e311"
+    },
+    "rejected-unstable-sharing/crates/xyg-engine/src/shared_sort.rs": {
+      "archive": "rejected-unstable-sharing__crates__xyg-engine__src__shared_sort.rs.gz",
+      "archiveSha256": "596f66484ff3a0b280ef64ae7839acc4bece16fdabcad4c9956fafd8fddde661",
+      "bytes": 4763,
+      "sha256": "b7d69e693c282ac3cfaad0a6859d07365b1952f0e115f585505e0a5dda02839f"
+    },
+    "rejected-unstable-sharing/crates/xyg-engine/src/temporal_controller.rs": {
+      "archive": "rejected-unstable-sharing__crates__xyg-engine__src__temporal_controller.rs.gz",
+      "archiveSha256": "71f91dfae73bc5689e62222bf9e83f73e4832d9bb28dfb6ef6b0cb7ab4f1d0cd",
+      "bytes": 30372,
+      "sha256": "53d3344b24eebd2c1531e637e1668f2264165d9fe73b314b0545020b0268817b"
+    }
+  },
+  "remaining": [
+    "Reduce full module below unchanged raw/gzip caps without dropping features",
+    "Fresh matching native/WASM/client builds and full combined qualification",
+    "Independent final-diff review, current-main freshness, hosted CI and merge queue",
+    "Whole milestones4-7 scale, memory, accessibility, all-host and competitor acceptance"
+  ],
+  "reports": {
+    "before-size-repair-source-inputs.json": {
+      "archive": "before-size-repair-source-inputs.json.gz",
+      "archiveSha256": "2cc5d955c4029d3f823818515068179c52bb2856033cbf41e0bc3826af98822f",
+      "bytes": 34375,
+      "sha256": "25462731112d40e1de34d3e4a728f7d955f8828826a9f3c611d5fb295b545b37"
+    },
+    "combined-before-size-repair.json": {
+      "archive": "combined-before-size-repair.json.gz",
+      "archiveSha256": "4afc7ee9e6648c63b191a0efb52909df306866a2d8156a2e595d180e529ea406",
+      "bytes": 227,
+      "sha256": "f623ca069c03f812e033c2679ccf48f9f249ffa2cf5e445e8095ef6c189db1cc"
+    },
+    "diagnostic-optimized-functions.json": {
+      "archive": "diagnostic-optimized-functions.json.gz",
+      "archiveSha256": "9db5523c4c2bc3a0e6ca3e0bbd6d5011548af62ac1b4428e4158cded57bc9814",
+      "bytes": 259036,
+      "sha256": "de9d9cfd41d6ae802a34899e06374381223c457001950dd48d83498942a1ad51"
+    },
+    "diagnostic-raw-functions.json": {
+      "archive": "diagnostic-raw-functions.json.gz",
+      "archiveSha256": "b5cb496e75871d1df323106409b02cf47da3f1c6594fbcdc5ff6e1f6adb30faa",
+      "bytes": 381737,
+      "sha256": "ce8bf7d3603c90d99362d5c4585d8ab26983c47e286bff1539cccc3f26518056"
+    },
+    "geo-callback-sharing-body-equality.json": {
+      "archive": "geo-callback-sharing-body-equality.json.gz",
+      "archiveSha256": "97e61563b0b1e9f057c4e8e0eac8d79d542b5dcc367805712bfe40278d963caf",
+      "bytes": 665,
+      "sha256": "3bf82706f38f7626760d8b5831775370ccf00e85d86503559f81e176700c8b6c"
+    },
+    "geo-callback-sharing-disposition.json": {
+      "archive": "geo-callback-sharing-disposition.json.gz",
+      "archiveSha256": "0eda94401b50402e56e2b06d78aa0398920faf51645c3078f516f923e63a27d0",
+      "bytes": 190,
+      "sha256": "40b315925db92eafdeb556886b33f29047c470a56fb070346bab81a64caa97cf"
+    },
+    "over-cap-combined-baseline.json": {
+      "archive": "over-cap-combined-baseline.json.gz",
+      "archiveSha256": "5bdcb93cd959c1cb5946324890544be88a8ebe2f49ea386aa32033770014f5d0",
+      "bytes": 2614,
+      "sha256": "68c093d598d143c9de56091bc0a4bac0d5c7f86d5a931d2f86ecdd873ea20fb1"
+    },
+    "setup-failures.json": {
+      "archive": "setup-failures.json.gz",
+      "archiveSha256": "53259860c61939d27a1b9ae4a2183e0aedc60f52bf76ad9f5f8cdfa521aac398",
+      "bytes": 441,
+      "sha256": "d5b206e038d17c7bc8ed8283ea810f4cb1919c5e974aec31319ac3100f9d9fd6"
+    },
+    "unstable-sharing-disposition.json": {
+      "archive": "unstable-sharing-disposition.json.gz",
+      "archiveSha256": "79e9c2b838538c24123418c5fed80b644a667f8642d47404f2f9b6ed75aa023a",
+      "bytes": 367,
+      "sha256": "2b8307b0358c48a3f735d9baf2cb2110fe845e86217464a2b840619da8c8984b"
+    },
+    "unstable-sharing-source-manifest.json": {
+      "archive": "unstable-sharing-source-manifest.json.gz",
+      "archiveSha256": "155a9f5a027827bdbf869e9909ae1f9f8dc62ccb1ff38428cc8de12989adc100",
+      "bytes": 933,
+      "sha256": "1eb7852ed7925d537dd9ed552e0003b125f49a63fa095efbf304110123ec40de"
+    },
+    "unstable-sharing-tests-setup.json": {
+      "archive": "unstable-sharing-tests-setup.json.gz",
+      "archiveSha256": "21e59878cd8856726628f8ff3946b204c5182e5c4bf42a82f56e82a56ee1df40",
+      "bytes": 314,
+      "sha256": "fb88d8dd55b668abfc7f98a623b841367f566a377931178a2b6653070d938596"
+    }
+  },
+  "results": {
+    "before-format-checkpoint-hooks.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exit": 1,
+      "seconds": 2.216242790222168
+    },
+    "checkpoint-format.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exit": 0,
+      "seconds": 0.13923978805541992
+    },
+    "checkpoint-hooks.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exit": 0,
+      "seconds": 0.7277441024780273
+    },
+    "checkpoint-ruff.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exit": 0,
+      "seconds": 0.22915863990783691
+    },
+    "geo-callback-sharing-package.exit.json": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs",
+        "target/milestone-integration-build/wasm32-unknown-unknown/release/xyg_wasm.wasm"
+      ],
+      "exit": 1,
+      "seconds": 45.13456320762634
+    },
+    "geo-callback-sharing-wasm-build.exit.json": {
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "xyg-wasm",
+        "--release",
+        "--target",
+        "wasm32-unknown-unknown",
+        "--target-dir",
+        "target/milestone-integration-build",
+        "-j",
+        "2"
+      ],
+      "exit": 0,
+      "seconds": 73.0325448513031
+    },
+    "native-build.exit.json": {
+      "command": [
+        "cargo",
+        "build",
+        "--release",
+        "--target-dir",
+        "target/milestone-integration-build",
+        "-j",
+        "2"
+      ],
+      "exit": 0,
+      "seconds": 130.85514116287231
+    },
+    "native-frozen-preliminary.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/test_temporal_graph_frozen.py",
+        "-k",
+        "not real_worker"
+      ],
+      "exit": 0,
+      "scope": "native405 preliminary; no WASM shipping qualification",
+      "seconds": 15.304543495178223
+    },
+    "package.exit.json": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs",
+        "target/milestone-integration-build/wasm32-unknown-unknown/release/xyg_wasm.wasm"
+      ],
+      "exit": 1,
+      "seconds": 44.498000621795654
+    },
+    "size-diagnostic-build.exit.json": {
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "xyg-wasm",
+        "--release",
+        "--target",
+        "wasm32-unknown-unknown",
+        "--target-dir",
+        "target/frozen-size-diagnostic",
+        "-j",
+        "2"
+      ],
+      "diagnosticOnlyEnv": {
+        "CARGO_PROFILE_RELEASE_STRIP": "none"
+      },
+      "exit": 0,
+      "seconds": 70.61019563674927,
+      "shippingQualification": false
+    },
+    "unstable-sharing-package.exit.json": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs",
+        "target/milestone-integration-build/wasm32-unknown-unknown/release/xyg_wasm.wasm"
+      ],
+      "exit": 1,
+      "seconds": 46.98711943626404
+    },
+    "unstable-sharing-wasm-build.exit.json": {
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "xyg-wasm",
+        "--release",
+        "--target",
+        "wasm32-unknown-unknown",
+        "--target-dir",
+        "target/milestone-integration-build",
+        "-j",
+        "2"
+      ],
+      "exit": 0,
+      "seconds": 71.36910653114319
+    },
+    "wasm-build.exit.json": {
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "xyg-wasm",
+        "--release",
+        "--target",
+        "wasm32-unknown-unknown",
+        "--target-dir",
+        "target/milestone-integration-build",
+        "-j",
+        "2"
+      ],
+      "exit": 0,
+      "seconds": 69.38005423545837
+    }
+  },
+  "schemaVersion": 1,
+  "scope": "Source integration checkpoint only; packaging rejected, NOT shipping qualified",
+  "scripts": {
+    "checkpoint_receipt.py": {
+      "archive": "checkpoint_receipt.py.gz",
+      "archiveSha256": "fe697889b708c84bc010834796ecb4ae919196519ecf1b56ea33c0946935f563",
+      "bytes": 4017,
+      "sha256": "a0c60d0ac4287b48fff235766ecd261447fca5658ab8cec126ce7c1097562a63"
+    },
+    "fixtures.py": {
+      "archive": "fixtures.py.gz",
+      "archiveSha256": "0496bd38690a278ba2b2da07f270b52389a26ac2ba3c59000413b08bf9d609fd",
+      "bytes": 1673,
+      "sha256": "e7b8d328022e4c5178845f6b0ffa408cc61b3f058de5ae26a19e7c7d12e632ad"
+    },
+    "resolve.py": {
+      "archive": "resolve.py.gz",
+      "archiveSha256": "2b8b6cbe3ebd1dada5d24c0f998cf86541e44b465dee39bfb9f0464abd1c5340",
+      "bytes": 3055,
+      "sha256": "ed9cdd4cb01e1d48011edb5caf6c82eaba3dd9e0a33638ab7eb33d6b249638d6"
+    },
+    "shared_geo_callbacks.py": {
+      "archive": "shared_geo_callbacks.py.gz",
+      "archiveSha256": "04c7df783185acb7ca7812de2ac6880018913c42b5cef226d7c1f53c7bf5cd48",
+      "bytes": 2009,
+      "sha256": "b8b5545a658a5da5ab9a4d2f363256a0f08b7ffa0bd8a6305552929fac977f25"
+    },
+    "transition_tests.py": {
+      "archive": "transition_tests.py.gz",
+      "archiveSha256": "3625d214635fe5bc92f290567e5b6dc002f6b4a669a047d0d659d1942eaa89ff",
+      "bytes": 3047,
+      "sha256": "03db850eb385f4c1aeee905de640ba178736b944c0cb32210b2aa27833e4ff82"
+    },
+    "wasm_functions.py": {
+      "archive": "wasm_functions.py.gz",
+      "archiveSha256": "f50f2dc822deafe2f1d862b04163f9955b590add7f841fda046d37987612919d",
+      "bytes": 1165,
+      "sha256": "68eca52adb196254cdebbe95bedd95642d97138f5e61d601e826fbe650a2d9cd"
+    }
+  },
+  "sourceBindingSha256": "17aac4011198eb3102b034d9b44cdcf2b05c75c6ae677b92c197470215ae5633",
+  "sourceCounts": {
+    "current": 1065,
+    "historical": 96
+  },
+  "versions": {
+    "native": 405,
+    "nativeSymbols": 551,
+    "wasm": 38,
+    "wasmExports": 68
+  }
+}

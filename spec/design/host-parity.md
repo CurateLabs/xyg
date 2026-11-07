@@ -2160,7 +2160,7 @@ ladder acceptance for #1015/#36/#35 remains open.
 
 ## Ordinary linked filtering checkpoint (#112)
 
-Native ABI 403 and WASM ABI 37 share XYFC/XYFR v1 through the Rust
+Native ABI 405 and WASM ABI 38 share XYFC/XYFR v1 through the Rust
 `FilterTierCSession`; Python `Chart.filter_session`, Node chart `filterSession`,
 and browser `createWasmFilterSession` frame that same protocol. Full packets,
 exact counts, refusal paths, and canonical u64 membership pages are compared
@@ -2176,3 +2176,13 @@ include synchronous Worker cancellation limits and logical memory accounting.
 [Temporal catalog](temporal-catalog.md) records the exact XYTM framing and
 bounded Python/Node Figure and browser WASM entry points. Package size, full
 parity and accessible controller journeys remain release blockers.
+### Immutable temporal graph snapshots and retained exports
+
+Python/Node and the actual browser Worker use Rust-owned XYFG snapshots and
+retained paint-to-canonical-Scene lowering. Hosts marshal typed scalars, capture
+computed CSS presentation and frame HTML with the shipped client; Rust owns
+validation, membership, styles, geometry, dash phase, stable-ID mapping,
+provenance and full-artifact consistency. Native SVG/PNG/HTML and browser
+Scene/XYPB/SVG/HTML/PNG share these paths under the unchanged single-module
+package caps. PNG is byte-identical through the shared Rust raster/encoder. See [the versioned frozen contract](temporal-graph-frozen.md).
+Historical ABI402/403 acquisition/native receipts remain immutable.

@@ -1543,3 +1543,12 @@ built. The actual preceding publication remains fully charged once; no deep
 clone of its row vectors is hidden in the new-work reserve. Only the admitted
 candidate installs the new Arc after serialization succeeds. The test-only
 revision-exhaustion helper uses Arc::make_mut to construct its synthetic boundary.
+### Native frozen-publication borrowing
+
+The [native immutable temporal checkpoint](temporal-graph-frozen.md) borrows a
+WireSession's actual latest complete publication while holding the existing
+session lock. It checks the exact bound owner, accepted frame/render revisions,
+explicit camera and source token before the temporal acquisition gate. Existing
+XYGI/XYGR packet bytes and command behavior are unchanged. Snapshot acquisition
+adds the session's retained memory charge to its own peak admission. This is an
+export input seam, not a second publisher, renderer, layout or identity resolver.

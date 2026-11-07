@@ -110,7 +110,7 @@ fn collide(
         if row.is_empty() {
             continue;
         }
-        row.sort_by(|a, b| a.pos.total_cmp(&b.pos));
+        crate::shared_sort::by(&mut *row, |a, b| a.pos.total_cmp(&b.pos));
         if is_x && anchor != ANCHOR_CENTER {
             for pair in row.windows(2) {
                 let prev = pair[0];

@@ -75,6 +75,8 @@ export interface XygWasmSceneValidation extends XygWasmDiagnostics {
 export interface XygWasmScenePaint extends XygWasmSceneValidation {
   /** Rust-authored, checked-f32 painter columns and trace descriptors. */
   painter: ArrayBuffer;
+  /** Frozen backing resolution, independent of the current browser display. */
+  pixelRatio?: number;
 }
 
 export interface XygWasmDashboardPlan {
@@ -946,6 +948,16 @@ export class XygWasmWorker {
     return result;
   }
 
+  /** Export/import immutable frozen graphs through the shared Rust protocol. */
+  frozenGraphCommand(command:ArrayBuffer):Promise<ArrayBuffer> {
+    this.assertLive();
+    if(this.pending.size)throw new XygWasmError('XYG_WASM_BUSY','Frozen export requires a drained Worker');
+    if(!(command instanceof ArrayBuffer)||command.byteLength<64||command.byteLength>this.maxArenaBytes)throw new RangeError('bounded XYFX required');
+    const requestId=this.allocateRequest(),result=this.promiseFor<ArrayBuffer>(requestId);
+    try{this.worker.postMessage({type:'frozen_graph.command',requestId,command},[command]);}
+    catch(cause){this.pending.delete(requestId);throw cause;}return result;
+  }
+
   /** Run one Rust CoSE job progressively inside this dedicated Worker. */
   layoutCose(
     request: ArrayBuffer,
@@ -1215,11 +1227,12 @@ export function createXygWasmWorker(options: XygWasmWorkerOptions | XygInlineWas
  * graph controller. Not exported through 60_entries.ts. Request bytes survive
  * the transfer until resolution; op_seq belongs to Rust, not this transport. */
 type GraphSessionExport = "open" | "update" | "render" | "interact";
-type GraphTemporalExport = "temporal-create" | "temporal-frame";
+type GraphTemporalExport = "temporal-create" | "temporal-frame" | "freeze";
 interface GraphWorkerAttachment {
   fail(error: XygWasmError): void;
   temporalCreate(request: Uint8Array): Promise<ArrayBuffer>;
   temporalFrame(request: Uint8Array): Promise<ArrayBuffer>;
+  freeze(request:Uint8Array):Promise<ArrayBuffer>;
   execute(operation: GraphSessionExport, request: Uint8Array): Promise<ArrayBuffer>;
   close(): Promise<void>;
 }
@@ -1297,6 +1310,7 @@ export function claimGraphWorker(worker: XygWasmWorker, onFailure: (error: XygWa
     execute: enqueue,
     temporalCreate: (request: Uint8Array) => enqueue("temporal-create", request),
     temporalFrame: (request: Uint8Array) => enqueue("temporal-frame", request),
+    freeze: (request:Uint8Array)=>enqueue("freeze",request),
     close() {
       if (closePromise) return closePromise;
       closing = true;

@@ -72,6 +72,7 @@ _EXPORTS = {
     "Theme": ".components",
     "TemporalController": ".temporal_controller",
     "TemporalGraph": ".temporal_graph",
+    "FrozenTemporalGraph": "._temporal_graph_frozen",
     "TemporalGraphError": ".temporal_graph",
     "Tooltip": ".components",
     "ZoneMaps": ".columns",
@@ -180,6 +181,7 @@ __all__ = [
     "Engine",
     "ExportConfig",
     "FacetChart",
+    "FrozenTemporalGraph",
     "GeoChart",
     "GeoLayer",
     "GeoOverviewIndex",
@@ -365,6 +367,7 @@ if TYPE_CHECKING:
         graphforge_table_html,
     )
     from ._ooc import ChunkedColumns
+    from ._temporal_graph_frozen import FrozenTemporalGraph
     from .columns import Column, ColumnStore, ZoneMaps
     from .components import (
         Animation,

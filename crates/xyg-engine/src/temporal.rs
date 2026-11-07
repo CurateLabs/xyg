@@ -232,7 +232,7 @@ impl TemporalColumn {
     }
 }
 
-fn validate_timezone(timezone: &str) -> Result<(), TemporalError> {
+pub(crate) fn validate_timezone(timezone: &str) -> Result<(), TemporalError> {
     if timezone.is_empty() || timezone.len() > 128 || timezone.bytes().any(|b| b == 0) {
         return Err(TemporalError::TimezoneRequired);
     }
@@ -326,7 +326,7 @@ impl IntervalIndex {
             }
         }
         let mut order: Vec<u32> = (0..n as u32).collect();
-        order.sort_by_key(|&idx| {
+        crate::shared_sort::by_key(&mut order, |&idx| {
             let i = idx as usize;
             // Unbounded starts sort before all finite starts.
             if endpoints.start_valid[i] == 0 {

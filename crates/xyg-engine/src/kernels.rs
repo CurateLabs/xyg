@@ -1830,7 +1830,7 @@ fn resolve_host_stop_positions(positions: &[Option<f64>]) -> Vec<f64> {
     if positions[count - 1].is_none() {
         anchors.push((count - 1, 1.0));
     }
-    anchors.sort_by_key(|(index, _)| *index);
+    crate::shared_sort::by_key(&mut anchors, |(index, _)| *index);
     let mut prev = 0.0;
     for anchor in &mut anchors {
         prev = anchor.1.max(prev);
@@ -9204,7 +9204,7 @@ pub fn argsort_stable_f64(data: &[f64]) -> Option<Vec<u32>> {
         return None;
     }
     let mut indices: Vec<u32> = (0..data.len() as u32).collect();
-    indices.sort_by(|&i, &j| {
+    crate::shared_sort::by(&mut indices, |&i, &j| {
         let a = data[i as usize];
         let b = data[j as usize];
         match (a.is_nan(), b.is_nan()) {

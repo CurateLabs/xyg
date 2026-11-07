@@ -499,3 +499,26 @@ Real five-view Chromium pointer/keyboard/count/texture/context tests are in the
 existing Release surfaces command. This does not qualify automatic native
 widget transport, nonlinear/nonprimary/large-offset paint, active rectangles, Worker
 chunk cancellation, real assistive hardware, 100M/≥50 FPS or competitors.
+## Frozen temporal graph exports (WASM38)
+
+After an accepted idle temporal publication, `await session.freeze({timezone,
+window?, budgetBytes?})` returns an immutable `XygFrozenTemporalGraph`. Dispose
+the producer or use a fresh/drained Worker for `.fromBytes(bytes, worker)` and
+`frozen.export('scene'|'painter'|'svg'|'html'|'png', {worker, client?, scale?, focusRgba?})`. HTML
+requires the shipped standalone client bytes and paints offline through the
+same ChartView. `.fromArtifact(bytes, worker, client?)` validates complete output;
+HTML recovery requires the expected shipped client. PNG uses the native shared
+Rust raster/PNG path in the same bounded module; resource reservations can
+reject with `XYG_WASM_RESOURCE_LIMIT` before allocating paint buffers. Exact ingress,
+CSS capture, ownership and remaining #45 gaps are in the
+[frozen graph contract](../design/temporal-graph-frozen.md).
+
+Imported XYFGv1 has no captured CSS color: pass an explicit `focusRgba` export
+override or use `await frozen.captureFocus(rgba, worker)` to return v2 explicit
+presentation provenance. This does not mutate the original or its accepted
+controller context. It does not label an explicit override as captured CSS.
+
+The instance's unchanged arena ceiling also bounds export reservations. Rich
+retained SDF/HTML exports can exceed the default16 MiB Worker; callers may
+explicitly create the existing maximum384 MiB Worker. The API never enlarges
+an instance automatically, and insufficient reservations reject before output.

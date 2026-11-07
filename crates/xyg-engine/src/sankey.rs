@@ -371,7 +371,7 @@ fn order_layers(
         let mut pos = positions(&columns);
         for layer in order {
             let incoming = forward;
-            columns[layer].sort_by(|&a, &b| {
+            crate::shared_sort::by(&mut columns[layer], |&a, &b| {
                 let ba = barycentre(a, incoming, nodes, links, &pos);
                 let bb = barycentre(b, incoming, nodes, links, &pos);
                 ba.partial_cmp(&bb).unwrap_or(std::cmp::Ordering::Equal)
@@ -476,7 +476,7 @@ fn place(
 fn stack_endpoints(nodes: &[Node], links: &mut [Link]) {
     for node in nodes {
         let mut outgoing = node.outgoing.clone();
-        outgoing.sort_by(|&a, &b| {
+        crate::shared_sort::by(&mut outgoing, |&a, &b| {
             let ya = nodes[links[a].target].y0;
             let yb = nodes[links[b].target].y0;
             ya.partial_cmp(&yb)
@@ -496,7 +496,7 @@ fn stack_endpoints(nodes: &[Node], links: &mut [Link]) {
         }
 
         let mut incoming = node.incoming.clone();
-        incoming.sort_by(|&a, &b| {
+        crate::shared_sort::by(&mut incoming, |&a, &b| {
             let ya = nodes[links[a].source].y0;
             let yb = nodes[links[b].source].y0;
             ya.partial_cmp(&yb)

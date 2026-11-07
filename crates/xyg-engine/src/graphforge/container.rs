@@ -103,7 +103,8 @@ impl Builder {
         }
     }
 
-    fn push(&mut self, name: &str, index: usize, dtype: Dtype, count: usize, payload: Vec<u8>) {
+    #[cfg_attr(target_arch = "wasm32", inline(never))]
+    pub(crate) fn push(&mut self, name: &str, index: usize, dtype: Dtype, count: usize, payload: Vec<u8>) {
         debug_assert!(valid_name(name), "section name {name}");
         self.sections.push(Pending {
             name: name.to_owned(),
@@ -114,38 +115,46 @@ impl Builder {
         });
     }
 
+    #[cfg_attr(target_arch = "wasm32", inline(never))]
     pub fn u8s(&mut self, name: &str, index: usize, values: &[u8]) {
         self.push(name, index, Dtype::U8, values.len(), values.to_vec());
     }
 
+    #[cfg_attr(target_arch = "wasm32", inline(never))]
     pub fn u32s(&mut self, name: &str, index: usize, values: &[u32]) {
         let payload = values.iter().flat_map(|v| v.to_le_bytes()).collect();
         self.push(name, index, Dtype::U32, values.len(), payload);
     }
 
+    #[cfg_attr(target_arch = "wasm32", inline(never))]
     pub fn u64s(&mut self, name: &str, index: usize, values: &[u64]) {
         let payload = values.iter().flat_map(|v| v.to_le_bytes()).collect();
         self.push(name, index, Dtype::U64, values.len(), payload);
     }
 
+    #[cfg_attr(target_arch = "wasm32", inline(never))]
     pub fn i64s(&mut self, name: &str, index: usize, values: &[i64]) {
         let payload = values.iter().flat_map(|v| v.to_le_bytes()).collect();
         self.push(name, index, Dtype::I64, values.len(), payload);
     }
 
+    #[cfg_attr(target_arch = "wasm32", inline(never))]
     pub fn f64s(&mut self, name: &str, index: usize, values: &[f64]) {
         let payload = values.iter().flat_map(|v| v.to_le_bytes()).collect();
         self.push(name, index, Dtype::F64, values.len(), payload);
     }
 
+    #[cfg_attr(target_arch = "wasm32", inline(never))]
     pub fn bytes(&mut self, name: &str, index: usize, value: &[u8]) {
         self.push(name, index, Dtype::Bytes, value.len(), value.to_vec());
     }
 
+    #[cfg_attr(target_arch = "wasm32", inline(never))]
     pub fn uuids(&mut self, name: &str, index: usize, values: &[Uuid]) {
         self.push(name, index, Dtype::Uuid, values.len(), values.concat());
     }
 
+    #[cfg_attr(target_arch = "wasm32", inline(never))]
     pub fn utf8(&mut self, name: &str, index: usize, value: &str) {
         self.push(
             name,
@@ -183,6 +192,7 @@ impl Builder {
         }
     }
 
+    #[cfg_attr(target_arch = "wasm32", inline(never))]
     pub fn finish(self) -> Vec<u8> {
         let count = self.sections.len();
         let mut names = Vec::new();

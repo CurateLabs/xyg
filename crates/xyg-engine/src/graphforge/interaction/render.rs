@@ -44,6 +44,15 @@ pub struct Camera {
 }
 
 impl Camera {
+    /// Canonical CSS-pixel mapping shared by live paint and frozen validation.
+    #[inline]
+    pub(crate) fn project(&self, x: f64, y: f64) -> [f64; 2] {
+        [
+            x * self.scale_x + self.offset_x,
+            y * self.scale_y + self.offset_y,
+        ]
+    }
+
     pub(super) fn validate(&self) -> Result<(), InteractionStatus> {
         let finite = [
             self.scale_x,
@@ -329,7 +338,11 @@ impl GraphSession {
         Ok(())
     }
 
-    pub(super) fn collect_inputs(&mut self, state: &GraphInteractionState, vis: &Visible) -> Inputs {
+    pub(super) fn collect_inputs(
+        &mut self,
+        state: &GraphInteractionState,
+        vis: &Visible,
+    ) -> Inputs {
         let mut node_flags = self.node_style.flags.clone();
         let mut edge_flags = self.edge_style.flags.clone();
         let mark = |set: &ElementSet, flag: u32, nodes: &mut [u32], edges: &mut [u32]| {

@@ -1,4 +1,5 @@
 /// <reference lib="webworker" />
+import {executeFrozenGraph} from "./wasm_frozen_graph";
 
 import {
   bindXygWasmExports,
@@ -986,6 +987,13 @@ function runTemporalCommand(message: any, filter = false) {
 function runTemporalGraphCommand(message: any) {
   if (!exports || !handle || lifecycle !== "initialized") { error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return; }
   try {
+    if(message.type==='frozen_graph.command'&&(activeCompile||activeGraph||activeAggregate||activeAggregateStream||activeTick||tickQueue.length)){error(message.requestId,'XYG_WASM_BUSY','Frozen export requires a drained Worker');return;}
+    if (message.type === 'frozen_graph.command') {
+      const result = executeFrozenGraph(exports, handle, message.command, operationBudgetBytes);
+      if (result.status !== XYG_WASM_STATUS.OK) rustError(message.requestId, statusCode(result.status), result.detail!, result.status);
+      else reply(message.requestId, result.response!, [result.response!]);
+      return;
+    }
     if (activeCompile) terminateActiveCompile("a temporal graph frame");
     if (activeGraph) {
       clearTimeout(activeGraph.timer); exports.xyg_wasm_cancel(handle, activeGraph.sequence);
@@ -1207,13 +1215,13 @@ function runGraphSession(message: any) {
   const operation = message.type.slice("graph.session.".length);
   if (!Number.isSafeInteger(message.lifetime) || message.lifetime <= 0 || retainedGeoMode
       || (graphSessionLifetime !== null && graphSessionLifetime !== message.lifetime)
-      || !["open", "update", "render", "interact", "close", "temporal-create", "temporal-frame"].includes(operation)
+      || !["open", "update", "render", "interact", "close", "temporal-create", "temporal-frame", "freeze"].includes(operation)
       || (graphSessionLifetime === null && operation !== "open")) {
     error(message.requestId, "GF_INTERACTION_INVALID", "Invalid retained graph ownership", -3); return;
   }
   if (!admitOperationSequence(message)) return;
   try {
-    const temporal = operation === "temporal-create" || operation === "temporal-frame";
+    const temporal = operation === "temporal-create" || operation === "temporal-frame" || operation === "freeze";
     let status: number;
     if (operation === "close") status = exports.xyg_wasm_graphforge_session_close(handle);
     else {
@@ -1223,7 +1231,7 @@ function runGraphSession(message: any) {
       if (operation === "open" && (queued.size || activeCompile || activeGraph || activeAggregate || activeAggregateStream || activeTick || tickQueue.length)) {
         error(message.requestId, "GF_INTERACTION_INVALID", "Graph attachment requires a drained Worker", -3); return;
       }
-      if (temporal) {
+      if (temporal && operation!=="freeze") {
         const v = new DataView(message.request);
         if (v.getUint32(0, true) !== 0x47545958 || v.getUint32(12, true) !== (operation === "temporal-create" ? 1 : 2)) {
           error(message.requestId, "GF_INTERACTION_INVALID", "Invalid named temporal operation", -3); return;
@@ -1236,7 +1244,7 @@ function runGraphSession(message: any) {
       const ptr = exports.xyg_wasm_arena_ptr(handle) >>> 0;
       if (!ptr || ptr + message.request.byteLength > exports.memory.buffer.byteLength) throw new Error("Invalid graph staging range");
       new Uint8Array(exports.memory.buffer, ptr, message.request.byteLength).set(new Uint8Array(message.request));
-      const execute = temporal ? exports.xyg_wasm_temporal_graph_execute
+      const execute = operation==="freeze" ? exports.xyg_wasm_frozen_graph_execute : temporal ? exports.xyg_wasm_temporal_graph_execute
         : operation === "open" ? exports.xyg_wasm_graphforge_session_open
         : operation === "update" ? exports.xyg_wasm_graphforge_session_update
         : operation === "render" ? exports.xyg_wasm_graphforge_session_render
@@ -1359,7 +1367,7 @@ scope.onmessage = (event: MessageEvent<any>) => {
     runTemporalCommand(message);
     return;
   }
-  if (message?.type === "temporal_graph.command") { runTemporalGraphCommand(message); return; }
+  if (message?.type === "temporal_graph.command" || message?.type === "frozen_graph.command") { runTemporalGraphCommand(message); return; }
   if (message?.type === "dashboard.plan") { runDashboardPlan(message); return; }
   if (message?.type === "compound.transition") { runCompoundTransition(message); return; }
   if (message?.type === "geo.ingest" || message?.type === "temporal.scene" || message?.type === "geo.scene" || message?.type === "geo.viewport" || message?.type === "geo.catalog" || message?.type === "geo.scale.execute" || message?.type === "geo.scale.read") {

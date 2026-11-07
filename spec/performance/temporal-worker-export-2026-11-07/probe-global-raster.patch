@@ -1,0 +1,230 @@
+--- a/crates/xyg-engine/src/raster.rs
++++ b/crates/xyg-engine/src/raster.rs
+@@ -2387,7 +2387,7 @@
+ 
+ /// Parse and paint a display list, retaining the native byte framebuffer so a
+ /// latency-oriented PNG export can feed it straight into the encoder.
+-fn rasterize_with_spans<'a>(
++fn rasterize_with_spans<'a, const RETAINED: bool>(
+     cmds: &[u8],
+     spans: &[&[u8]],
+     w: usize,
+@@ -2402,6 +2402,20 @@
+     let mut r = Reader { b: cmds, i: 0 };
+     while r.i < cmds.len() {
+         let op = r.u8()?;
++        if RETAINED
++            && !matches!(
++                op,
++                OP_CLIP
++                    | OP_FILL_POLY
++                    | OP_STROKE
++                    | OP_POINT
++                    | OP_UNION_TRIANGLES
++                    | OP_TRIANGLES
++                    | OP_STROKED_TRIANGLES
++            )
++        {
++            return None;
++        }
+         let ok = (|| -> Option<()> {
+             match op {
+                 OP_CLIP => {
+@@ -3020,7 +3034,7 @@
+     if out.len() != w.checked_mul(h).and_then(|n| n.checked_mul(3)).unwrap_or(0) {
+         return false;
+     }
+-    rasterize_with_spans(cmds, &[], w, h, true, out).is_some()
++    rasterize_with_spans::<false>(cmds, &[], w, h, true, out).is_some()
+ }
+ 
+ /// Parse and paint a display list whose commands may reference `data` for the
+@@ -3044,7 +3058,7 @@
+     // which is exactly what the owned `vec![0; w * h * 4]` did, and straight
+     // alpha is already the canvas's own layout — so the export step that used
+     // to `copy_from_slice` a whole frame is now nothing at all.
+-    rasterize_with_spans(cmds, spans, w, h, false, out).is_some()
++    rasterize_with_spans::<false>(cmds, spans, w, h, false, out).is_some()
+ }
+ 
+ /// Fused low-latency raster + PNG path. `Fast` uses fdeflate's PNG-tuned
+@@ -3067,6 +3081,23 @@
+ 
+ /// Fused PNG path backed by multiple synchronous display-list arenas.
+ pub fn rasterize_png_spans_into(
++    cmds: &[u8],
++    spans: &[&[u8]],
++    w: usize,
++    h: usize,
++    out: &mut [u8],
++) -> Option<usize> {
++    rasterize_png_spans_policy::<false>(cmds, spans, w, h, out)
++}
++pub(crate) fn rasterize_retained_png_into(
++    cmds: &[u8],
++    w: usize,
++    h: usize,
++    out: &mut [u8],
++) -> Option<usize> {
++    rasterize_png_spans_policy::<true>(cmds, &[], w, h, out)
++}
++fn rasterize_png_spans_policy<const RETAINED: bool>(
+     cmds: &[u8],
+     spans: &[&[u8]],
+     w: usize,
+@@ -3078,7 +3109,7 @@
+     // this one still owns its framebuffer — but it is a plane fewer than the
+     // RGBA path, and nothing is copied out of it.
+     let mut px = vec![0u8; w.checked_mul(h)?.checked_mul(3)?];
+-    let cv = rasterize_with_spans(cmds, spans, w, h, true, &mut px)?;
++    let cv = rasterize_with_spans::<RETAINED>(cmds, spans, w, h, true, &mut px)?;
+     let mut cursor = Cursor::new(out);
+     {
+         let mut encoder = png::Encoder::new(&mut cursor, wu, hu);
+@@ -3208,7 +3239,7 @@
+         opaque: bool,
+     ) -> Option<Vec<u8>> {
+         let mut px = canvas_px(w, h, opaque);
+-        rasterize_with_spans(cmds, spans, w, h, opaque, &mut px)?;
++        rasterize_with_spans::<false>(cmds, spans, w, h, opaque, &mut px)?;
+         Some(px)
+     }
+ 
+--- a/crates/xyg-engine/src/scene_static.rs
++++ b/crates/xyg-engine/src/scene_static.rs
+@@ -131,14 +131,32 @@
+     width: usize,
+     height: usize,
+ ) -> Result<Vec<u8>, SceneStaticExportError> {
++    rasterize_png_policy::<false>(cmds, width, height)
++}
++pub(crate) fn rasterize_png_retained(
++    cmds: &[u8],
++    width: usize,
++    height: usize,
++) -> Result<Vec<u8>, SceneStaticExportError> {
++    rasterize_png_policy::<true>(cmds, width, height)
++}
++fn rasterize_png_policy<const RETAINED: bool>(
++    cmds: &[u8],
++    width: usize,
++    height: usize,
++) -> Result<Vec<u8>, SceneStaticExportError> {
+     let raw = width
+         .checked_mul(height)
+         .and_then(|count| count.checked_mul(4))
+         .ok_or(SceneStaticExportError::Size)?;
+     let cap = raw.saturating_add(raw / 8).saturating_add(65_536);
+     let mut out = vec![0u8; cap.max(1)];
+-    let written = raster::rasterize_png_into(cmds, width, height, &mut out)
+-        .ok_or(SceneStaticExportError::Raster)?;
++    let written = if RETAINED {
++        raster::rasterize_retained_png_into(cmds, width, height, &mut out)
++    } else {
++        raster::rasterize_png_into(cmds, width, height, &mut out)
++    }
++    .ok_or(SceneStaticExportError::Raster)?;
+     if written > out.len() {
+         return Err(SceneStaticExportError::Raster);
+     }
+--- a/crates/xyg-engine/src/scene.rs
++++ b/crates/xyg-engine/src/scene.rs
+@@ -16677,7 +16677,7 @@
+     }
+ 
+     #[inline(never)]
+-    fn append_raster_marks(&self, out: &mut Vec<u8>, scale: f64) -> Result<(), SceneError> {
++    fn append_raster_marks<const RETAINED:bool>(&self, out: &mut Vec<u8>, scale: f64) -> Result<(), SceneError> {
+         let mut index = 0;
+         while index < self.records.len() {
+             let record = self.records[index];
+@@ -16686,6 +16686,7 @@
+                 continue;
+             }
+             let style = self.styles[record.style_ref];
++            if RETAINED && !matches!(record.kind,SceneRecordKind::Scatter|SceneRecordKind::Rect|SceneRecordKind::Triangle|SceneRecordKind::Segment){return Err(SceneError::Length);}
+             match record.kind {
+                 SceneRecordKind::Scatter => {
+                     let geometry = MarkerGeometry::new(
+@@ -16693,7 +16694,7 @@
+                         record.diameter,
+                         style.stroke_width,
+                     );
+-                    if let Some(glyph) = self.style_glyph(record.style_ref) {
++                    if let Some(glyph) = self.style_glyph(record.style_ref).filter(|_|!RETAINED) {
+                         let font_size = geometry.radius * 2.0;
+                         out.push(6);
+                         push_raster_f32(out, record.coordinates[0], scale)?;
+@@ -16848,22 +16849,24 @@
+         Ok(())
+     }
+ 
+-    pub fn to_raster_commands(&self, scale: f64) -> Result<Vec<u8>, SceneError> {
++    pub fn to_raster_commands(&self, scale: f64) -> Result<Vec<u8>, SceneError> {self.to_raster_commands_policy::<false>(scale)}
++    pub(crate) fn to_raster_commands_retained(&self,scale:f64)->Result<Vec<u8>,SceneError>{self.to_raster_commands_policy::<true>(scale)}
++    fn to_raster_commands_policy<const RETAINED:bool>(&self,scale:f64)->Result<Vec<u8>,SceneError>{
+         if !scale.is_finite() || scale <= 0.0 {
+             return Err(SceneError::NonFinite);
+         }
+         self.check_mesh_budgets(true)?;
+-        let x_ticks = self.resolved_axis_ticks(true)?;
+-        let y_ticks = self.resolved_axis_ticks(false)?;
++        let x_ticks = if RETAINED {AxisTicks{ticks:vec![],labeled:vec![],step:1.}}else{self.resolved_axis_ticks(true)?};
++        let y_ticks = if RETAINED {AxisTicks{ticks:vec![],labeled:vec![],step:1.}}else{self.resolved_axis_ticks(false)?};
+         let y2_ticks = self
+             .y2
+-            .as_ref()
++            .as_ref().filter(|_|!RETAINED)
+             .map(|_| self.resolved_axis_ticks(AxisSlot::Y2))
+             .transpose()?;
+         // Grid strokes are 35 bytes each. Labeled ticks add another stroke
+         // plus a bounded text command; reserve their space up front so adding
+         // constant-size chrome never copies the full mark command buffer.
+-        let reserved_capacity = self.raster_command_capacity(&x_ticks, &y_ticks);
++        let reserved_capacity = if RETAINED {self.raster_mark_capacity.saturating_add(256)}else{self.raster_command_capacity(&x_ticks,&y_ticks)};
+         let mut out = Vec::with_capacity(reserved_capacity);
+         let f32_push = |out: &mut Vec<u8>, value: f64| -> Result<(), SceneError> {
+             let scaled = value * scale;
+@@ -16914,8 +16917,8 @@
+         f32_push(&mut out, self.layout.top)?;
+         f32_push(&mut out, self.layout.right - self.layout.left)?;
+         f32_push(&mut out, self.layout.bottom - self.layout.top)?;
+-        self.append_raster_grid(&mut out, scale, &x_ticks, &y_ticks)?;
+-        if let Some(polar) = &self.polar {
++        if !RETAINED {self.append_raster_grid(&mut out, scale, &x_ticks, &y_ticks)?;}
++        if let Some(polar) = self.polar.as_ref().filter(|_|!RETAINED) {
+             // Existing analytic annular-sector opcode; coordinates/radii scale,
+             // while angles remain radians. Axes reset the clip before chrome.
+             out.push(18);
+@@ -16928,7 +16931,8 @@
+                 out.extend_from_slice(&(angle as f32).to_le_bytes());
+             }
+         }
+-        self.append_raster_marks(&mut out, scale)?;
++        self.append_raster_marks::<RETAINED>(&mut out, scale)?;
++        if RETAINED {if out.len()>reserved_capacity{return Err(SceneError::Limit);}return Ok(out);}
+         // Reset the plot clip before chrome, then draw the canonical bottom
+         // and left axes through the same display-list primitive as line marks.
+         self.append_raster_axes(&mut out, scale, &x_ticks, &y_ticks, y2_ticks.as_ref())?;
+@@ -18442,7 +18446,7 @@
+         assert!(validate_scene_batch(&scene).is_ok());
+         assert_eq!(document.to_svg().matches(" Z ").count(), 12);
+         let mut commands = Vec::new();
+-        document.append_raster_marks(&mut commands, 1.0).unwrap();
++        document.append_raster_marks::<false>(&mut commands, 1.0).unwrap();
+         let mut cursor = 0;
+         let mut primitives = 0;
+         let mut groups = 0;
+--- a/crates/xyg-engine/src/temporal_graph_export.rs
++++ b/crates/xyg-engine/src/temporal_graph_export.rs
+@@ -525,8 +525,8 @@
+     let body = if format == 1 {
+         #[cfg(feature = "raster")]
+         {
+-            let commands = document.to_raster_commands(resolution).map_err(bad)?;
+-            crate::scene_static::rasterize_png(&commands, w as usize, h as usize).map_err(bad)?
++            let commands = document.to_raster_commands_retained(resolution).map_err(bad)?;
++            crate::scene_static::rasterize_png_retained(&commands, w as usize, h as usize).map_err(bad)?
+         }
+         #[cfg(not(feature = "raster"))]
+         {
