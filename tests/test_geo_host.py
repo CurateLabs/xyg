@@ -168,7 +168,8 @@ def test_host_rejects_other_source_kinds_before_protocol_access(monkeypatch):
             type(chart), "_retained_layer", lambda self: SimpleNamespace(source=object())
         )
         with pytest.raises(
-            ValueError, match="canonical RetainedGeoSource; indexed hosts are pending"
+            ValueError,
+            match="native host requires one retained source; a spatial index requires an explicit matching initial frame",
         ):
             chart.host()
     finally:
