@@ -178,3 +178,103 @@ def test_resident_overlap_reuses_native_chunks_across_read_modes(tmp_path):
         assert pages[0][2]["bytes_read"] == 0
         with pytest.raises(ValueError, match="needs 128 bytes"):
             columns.read((4.0, 11.0), budget_bytes=64, generation=4)
+
+
+def test_chart_overview_viewport_pan_and_disposal(tmp_path):
+    rows = [(float(i), float((i * 7) % 13)) for i in range(40)]
+    path = tmp_path / "chart.xygc"
+    _artifact_with_overview(path, rows)
+    with ChunkedColumns(path) as columns:
+        overview = columns.chart(max_points=7)
+        assert len(overview.source_row_ids) == 7
+        assert overview.source_provenance["detail_rows_read"] == 0
+        overview.figure().build_payload_split()
+        for generation, bounds in enumerate([(5, 15), (9, 19), (10, 11)], 1):
+            chart = columns.chart(bounds, page_bytes=256, budget_bytes=1024, generation=generation)
+            ids = [i for i, (x, _) in enumerate(rows) if bounds[0] <= x <= bounds[1]]
+            assert list(chart.source_row_ids) == ids
+            assert list(chart.children[0].x) == [rows[i][0] for i in ids]
+            chart.figure().build_payload_split()
+        warm = columns.chart((10, 11), page_bytes=256, budget_bytes=1024, generation=4)
+        assert warm.source_provenance["bytes_read"] == 0
+        with pytest.raises(ValueError, match="cancelled by newer viewport"):
+            columns.chart((10, 11), generation=3)
+        with pytest.raises(ValueError, match="exceeding"):
+            columns.chart((0, 39), budget_bytes=64, page_bytes=64, generation=5)
+    with pytest.raises(ValueError, match="stale chunked-column handle"):
+        columns.chart()
+
+
+def test_rendered_chart_snapshot_navigation(tmp_path):
+    import os
+
+    chromium = os.environ.get("XYG_TEST_CHROMIUM")
+    if not chromium:
+        if os.environ.get("XY_REQUIRE_BROWSER") == "1":
+            pytest.fail("required chunked chart snapshot browser is not configured")
+        pytest.skip("set XYG_TEST_CHROMIUM for the headless chart snapshot proof")
+    from scripts.chunked_chart_evidence import run
+
+    report = run(tmp_path, chromium)
+    assert len(report["requests"]) == 4
+    assert all(request["exact_pixel_match"] for request in report["requests"])
+
+
+def test_chart_overview_rejects_stale_generation_without_changing_static_overview(tmp_path):
+    path = tmp_path / "overview-generation.xygc"
+    _artifact_with_overview(path, [(float(i), float(i % 3)) for i in range(12)])
+    with ChunkedColumns(path) as columns:
+        columns.cancel_before(5)
+        with pytest.raises(ValueError, match="cancelled by newer viewport"):
+            columns.chart(generation=4, max_points=5)
+        current = columns.chart(generation=5, max_points=5)
+        assert current.source_provenance["generation"] == 5
+        assert current.source_provenance["detail_rows_read"] == 0
+        assert len(current.source_row_ids) == 5
+        columns.cancel_before(6)
+        with pytest.raises(ValueError, match="cancelled by newer viewport"):
+            columns.chart(generation=5, max_points=5)
+        # The explicit static metadata API has no viewport generation contract.
+        assert len(columns.overview(max_points=5)[0]) == 5
+
+
+@pytest.mark.parametrize("page_bytes", [64, 128, 192])
+def test_chart_counts_distinct_candidate_chunks_across_page_boundaries(tmp_path, page_bytes):
+    path = tmp_path / "distinct-chunks.xygc"
+    rows = [(float(i), float(i // 4)) for i in range(12)]
+    _artifact_with_overview(path, rows)
+    with ChunkedColumns(path) as columns:
+        chart = columns.chart((0, 11), budget_bytes=192, page_bytes=page_bytes)
+        assert chart.source_provenance["chunks_considered"] == 3
+        assert list(chart.source_row_ids) == list(range(12))
+        pruned = columns.chart((0, 11), (1, 1), budget_bytes=192, page_bytes=page_bytes)
+        assert pruned.source_provenance["chunks_considered"] == 3
+        assert list(pruned.source_row_ids) == [4, 5, 6, 7]
+
+
+def test_no_browser_skips_before_importing_optional_render_dependencies():
+    import os
+    import subprocess
+    import sys
+
+    script = """
+import importlib.abc
+import sys
+import pytest
+class BlockOptional(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname == "resource" or fullname == "PIL" or fullname.startswith("PIL."):
+            raise ModuleNotFoundError("optional render dependency unavailable: " + fullname)
+sys.meta_path.insert(0, BlockOptional())
+code = pytest.main(["tests/test_chunked_columns.py::test_rendered_chart_snapshot_navigation", "-q"])
+assert "scripts.chunked_chart_evidence" not in sys.modules
+raise SystemExit(code)
+"""
+    env = dict(os.environ, PYTEST_DISABLE_PLUGIN_AUTOLOAD="1")
+    env.pop("XYG_TEST_CHROMIUM", None)
+    env.pop("XY_REQUIRE_BROWSER", None)
+    result = subprocess.run(
+        [sys.executable, "-c", script], env=env, text=True, capture_output=True, timeout=30
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "1 skipped" in result.stdout

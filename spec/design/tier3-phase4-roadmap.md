@@ -370,3 +370,37 @@ support, unordered spatial localization, and remote range artifacts if supported
 #109/#113 remain gated by those journeys plus #5/#11 accepted-main accelerated
 100M proof, #111 shared-GPU dashboards and #112 Filter Tier C. No hardware gate,
 WASM limit, quality tolerance, benchmark workflow or milestone closure changes.
+
+
+## Bounded local chart snapshots (#110 continuation)
+
+Python `ChunkedColumns.chart()` and Node `ChunkedColumns.chart()` now compose
+precomputed overview points without detail reads. An explicit x range, with an
+optional y predicate, asks Rust to admit the complete selected canonical byte
+count under the declared scene budget before any page I/O. Rust reuses its
+existing page selector and per-open LRU, applies the exact predicate, and returns
+canonical physical row IDs with generation and I/O provenance. The adapters
+compose the ordinary scatter renderer, with no alternative overview sampler.
+Python uses `source_row_ids` / `source_provenance`; Node uses `sourceRowIds` /
+`sourceProvenance`. Row IDs are source metadata alongside the snapshot; browser
+pick indices remain snapshot-local and require mapping through these arrays.
+
+These are programmatic viewport snapshots, not an automatic widget/app gesture
+bridge. Hosts retain the open source while requesting successive viewports;
+`close()` deterministically releases native source residency. Previously returned
+charts remain independent snapshots. Overview charts use the same monotonic generation watermark as detail charts, with admission and final native output-publication checks; stale overview requests never receive host-stamped success provenance. The explicit static `overview()` metadata API remains generation-independent. Caller retention of many snapshots is not
+bounded by the source cache. Scene budget defaults to 4 MiB canonical input;
+page budget defaults to 1 MiB and may not exceed scene budget. Scratch, returned
+vectors, IDs, composition copies, metadata and renderer allocations are additional;
+these are not a total RSS guarantee. Requests exceeding either declared budget
+fail closed, without truncated output or a new tier decision. A viewport snapshot
+may contain many pages, but cannot admit unbounded detail across those pages.
+
+Bounded native correctness and Python/Node composition tests run through existing
+cargo/pytest/npm commands. The headless Python test compares overview, viewport,
+programmatic pan and deep-zoom pixels exactly with a full-scan oracle; it requires
+`XYG_TEST_CHROMIUM`. The normal native Python CI step aliases its installed Playwright Chromium into that variable and requires browser execution; absent configuration fails instead of skipping when `XY_REQUIRE_BROWSER=1`. Workflow negative controls forbid removal of either binding. The retained
+receipt is `spec/performance/chunked-chart-snapshots-2026-11-07/README.md`.
+No larger-than-RAM, automatic live refinement, browser/WASM orchestration,
+competitive performance, remote-source or full #110/#109/#113 acceptance claim
+follows from this bounded snapshot integration.
