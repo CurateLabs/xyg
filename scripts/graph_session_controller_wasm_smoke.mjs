@@ -63,7 +63,11 @@ try {
       await page.evaluate(async () => {
         const s=window.__graphSession;
         await Promise.all([s.progressiveFixture(1000,7101n),s.progressiveFixture(1000,7102n)]);
-        for(const p of s.progressives.slice(-2)) {
+        // Deterministically exercise reverse Worker arrival order.
+        const views=[7102n,7101n].map(id=>s.progressives.find(p=>p.id===id));
+        for(const view of views)if(!view)throw Error('missing scheduling view');
+        s.progressives=[...s.progressives.filter(p=>p.id!==7101n&&p.id!==7102n),...views];
+        for(const p of [7101n,7102n].map(id=>s.progressives.find(p=>p.id===id))) {
           p.el.dataset.scheduling=String(p.id); p.selections=[]; p.pans=[]; p.keys=[];
           p.el.addEventListener('xy:graph-select',e=>p.selections.push({at:performance.now(),snapshot:e.detail}));
           p.el.addEventListener('xy:graph-focus',e=>p.keys.push({at:performance.now(),snapshot:e.detail}));
@@ -75,13 +79,15 @@ try {
           });
         }
       });
+      evidence.fixtureStorageOrder=await page.evaluate(()=>window.__graphSession.progressives.filter(p=>p.id===7101n||p.id===7102n).map(p=>p.id));
+      assert.deepEqual(evidence.fixtureStorageOrder,[7102n,7101n]);
       const cdp=await page.context().newCDPSession(page);await cdp.send('Performance.enable');
       evidence.heapDuring=await cdp.send('Performance.getMetrics');
       const surface=page.locator('[data-scheduling="7101"] [role="application"]');
       await surface.focus();await page.keyboard.press('ArrowRight');
       for(let attempt=0;attempt<80;attempt++) {
         const point=await page.evaluate(()=>{
-          const s=window.__graphSession,p=s.progressives.at(-2),snap=p.handle.snapshot();
+          const s=window.__graphSession,p=s.progressives.find(p=>p.id===7101n),snap=p.handle.snapshot();
           const reply=s.replies.filter(r=>r.owner===p.worker.worker.__graphOwner).at(-1);
           const centers=s.values(reply.bytes,'paint.node.center.f64');const r=p.el.querySelector('canvas').getBoundingClientRect();
           for(let i=0;i<centers.length;i+=2)if(centers[i]>10&&centers[i]<630&&centers[i+1]>10&&centers[i+1]<310)
@@ -90,16 +96,16 @@ try {
         });
         if(point.done) break;
         if(point.x!==undefined)await page.mouse.click(point.x,point.y);
-        if(await page.evaluate(()=>window.__graphSession.progressives.at(-2).selections.some(e=>e.snapshot.outcome.selected>0&&!e.snapshot.relayout?.done))) break;
+        if(await page.evaluate(()=>window.__graphSession.progressives.find(p=>p.id===7101n).selections.some(e=>e.snapshot.outcome.selected>0&&!e.snapshot.relayout?.done))) break;
       }
       for(let attempt=0;attempt<80;attempt++) {
         await page.locator('[data-scheduling="7101"] [data-pan]').click();
-        if(await page.evaluate(()=>window.__graphSession.progressives.at(-2).pans.some(p=>p.after&&!p.after.relayout?.done)))break;
+        if(await page.evaluate(()=>window.__graphSession.progressives.find(p=>p.id===7101n).pans.some(p=>p.after&&!p.after.relayout?.done)))break;
       }
-      await page.waitForFunction(()=>window.__graphSession.progressives.slice(-2).every(p=>p.handle.snapshot()?.relayout?.done||p.errors.length),null,{timeout:40000});
+      await page.waitForFunction(()=>[7101n,7102n].map(id=>window.__graphSession.progressives.find(p=>p.id===id)).every(p=>p.handle.snapshot()?.relayout?.done||p.errors.length),null,{timeout:40000});
       const result=await page.evaluate(async()=>{
         const s=window.__graphSession,out=[];
-        for(const p of s.progressives.slice(-2)) {
+        for(const p of [7101n,7102n].map(id=>s.progressives.find(p=>p.id===id))) {
           const at=performance.now(),frames=p.frames.length,finalSnapshot=p.handle.snapshot();const owner=p.worker.worker.__graphOwner;const commands=s.commands.filter(c=>c.owner===owner);const replies=s.replies.filter(c=>c.owner===owner);
           clearInterval(p.timer);await p.handle.dispose();await p.worker.dispose();
           out.push({id:p.id,finalSnapshot,started:p.started,workerReady:p.workerReady,captures:p.captures,arena:384*1024*1024,painted:p.painted,clicks:p.clicks,payloadBytes:{requests:commands.reduce((n,c)=>n+c.bytes.length,0),replies:replies.reduce((n,c)=>n+c.bytes.length,0)},frames:p.frames,errors:p.errors,heartbeats:p.heartbeats,selections:p.selections,pans:p.pans,keys:p.keys,
@@ -114,10 +120,12 @@ try {
       evidence.views=result;evidence.heapAfter=await cdp.send('Performance.getMetrics');
       if(process.env.XYG_GRAPH_SESSION_REPORT)await writeFile(process.env.XYG_GRAPH_SESSION_REPORT,JSON.stringify(evidence,(_,v)=>typeof v==='bigint'?v.toString():v,2)+'\n');
       for(const p of result){assert.deepEqual(p.errors,[]);assert.equal(p.held,0);assert.equal(p.disposed,true);assert.equal(p.attachmentChildren,0);assert.equal(p.frames.length,p.framesAtDispose);assert.ok(p.commands.filter(c=>c.operation).every(c=>String(c.instanceId)===String(p.id)));assert.ok(new Set(p.painted.filter(f=>!f.progress.done&&f.pixels>0).map(f=>f.progress.steps)).size>3);assert.ok(new Set(p.painted.map(f=>f.hash)).size>3);assert.ok(p.frames.filter(f=>!f.progress.done&&f.pixels>0).length>3);assert.ok(p.frames.at(-1).progress.done);}
-      assert.ok(result[0].selections.some(e=>e.snapshot.outcome.selected>0&&!e.snapshot.relayout?.done),'trusted unfinished pick');
-      assertProgressiveCameraPan(result[0]);
-      assert.ok(result[0].clicks.some(e=>e.trusted&&e.prevented&&!e.progress?.done));
-      assert.equal(result[1].selections.length,0);assert.equal(result[1].finalSnapshot.selection.refs.length,0);assert.equal(result[1].finalSnapshot.camera[2],320);assert.deepEqual(violations,[]);assert.deepEqual(errors,[]);
+      const primary=result.find(p=>p.id===7101n),secondary=result.find(p=>p.id===7102n);
+      assert.ok(primary&&secondary);
+      assert.ok(primary.selections.some(e=>e.snapshot.outcome.selected>0&&!e.snapshot.relayout?.done),'trusted unfinished pick');
+      assertProgressiveCameraPan(primary);
+      assert.ok(primary.clicks.some(e=>e.trusted&&e.prevented&&!e.progress?.done));
+      assert.equal(secondary.selections.length,0);assert.equal(secondary.finalSnapshot.selection.refs.length,0);assert.equal(secondary.finalSnapshot.camera[2],320);assert.deepEqual(violations,[]);assert.deepEqual(errors,[]);
       return result;
     });
   } else if (process.env.XYG_GRAPH_PROGRESSIVE_ONLY) {
