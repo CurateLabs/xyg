@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Unmasked production Worker/WASM graph session keyboard/paint/ownership journey.
 import assert from "node:assert/strict";
+import {assertProgressiveCameraPan} from "./verify_graph_progressive_camera.mjs";
 import { gunzipSync } from "node:zlib";
 import { createServer } from "node:http";
 import { readFile, writeFile } from "node:fs/promises";
@@ -114,7 +115,7 @@ try {
       if(process.env.XYG_GRAPH_SESSION_REPORT)await writeFile(process.env.XYG_GRAPH_SESSION_REPORT,JSON.stringify(evidence,(_,v)=>typeof v==='bigint'?v.toString():v,2)+'\n');
       for(const p of result){assert.deepEqual(p.errors,[]);assert.equal(p.held,0);assert.equal(p.disposed,true);assert.equal(p.attachmentChildren,0);assert.equal(p.frames.length,p.framesAtDispose);assert.ok(p.commands.filter(c=>c.operation).every(c=>String(c.instanceId)===String(p.id)));assert.ok(new Set(p.painted.filter(f=>!f.progress.done&&f.pixels>0).map(f=>f.progress.steps)).size>3);assert.ok(new Set(p.painted.map(f=>f.hash)).size>3);assert.ok(p.frames.filter(f=>!f.progress.done&&f.pixels>0).length>3);assert.ok(p.frames.at(-1).progress.done);}
       assert.ok(result[0].selections.some(e=>e.snapshot.outcome.selected>0&&!e.snapshot.relayout?.done),'trusted unfinished pick');
-      assert.ok(result[0].pans.some(e=>e.trusted&&e.after&&!e.after.relayout?.done),'trusted unfinished host camera pan');
+      assertProgressiveCameraPan(result[0]);
       assert.ok(result[0].clicks.some(e=>e.trusted&&e.prevented&&!e.progress?.done));
       assert.equal(result[1].selections.length,0);assert.equal(result[1].finalSnapshot.selection.refs.length,0);assert.equal(result[1].finalSnapshot.camera[2],320);assert.deepEqual(violations,[]);assert.deepEqual(errors,[]);
       return result;

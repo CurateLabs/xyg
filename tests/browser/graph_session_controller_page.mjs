@@ -308,7 +308,7 @@ state.progressiveFixture = async (count, id, load = {}, arena = count===1000 ? 3
   const started=performance.now();const worker=makeWorker(undefined, arena); await worker.ready;const workerReady=performance.now();
   const el=container(), p={id,el,worker,started,workerReady,frames:[],errors:[],beats:0,document,load:{progressive:true,...load},camera:[count===1000?.25:25,count===1000?.25:25,320,160,640,320,1]};
   state.progressives ??= []; state.progressives.push(p);
-  el.addEventListener('xy:graph-render',e=>p.frames.push({at:performance.now(),revision:e.detail.revision,progress:e.detail.relayout,pixels:state.pixel(el).filter((v,i)=>i%4===3&&v>0).length}));
+  el.addEventListener('xy:graph-render',e=>p.frames.push({at:performance.now(),revision:e.detail.revision,progress:e.detail.relayout,camera:[...e.detail.camera],pixels:state.pixel(el).filter((v,i)=>i%4===3&&v>0).length}));
   for(const kind of ['error','stale']) el.addEventListener(`xy:graph-${kind}`,e=>p.errors.push(e.detail));
   p.painted=[]; p.clicks=[]; p.captures={};
   el.addEventListener('xy:graph-render',()=>requestAnimationFrame(()=>{
