@@ -706,7 +706,7 @@ class GeoHierarchy(RetainedGeoSource):
                 on_release()
             raise
 
-    def update(self, query, *, sequence, style):
+    def update(self, query, *, sequence, style, _publish=True):
         self._check()
         if self._selected_mode:
             raise GeoHierarchyUnsupportedSelected()
@@ -737,10 +737,11 @@ class GeoHierarchy(RetainedGeoSource):
                 raise
             finally:
                 self._busy = False
-        self.current = frame
+        if _publish:
+            self.current = frame
         return frame
 
-    async def aupdate(self, query, *, sequence, style):
+    async def aupdate(self, query, *, sequence, style, _publish=True):
         self._check(True)
         if self._selected_mode:
             raise GeoHierarchyUnsupportedSelected()
@@ -784,7 +785,8 @@ class GeoHierarchy(RetainedGeoSource):
                 raise
             finally:
                 self._busy, self._active = False, None
-        self.current = frame
+        if _publish:
+            self.current = frame
         return frame
 
     def close(self):

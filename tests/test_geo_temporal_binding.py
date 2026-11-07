@@ -396,3 +396,71 @@ def test_foreign_thread_controller_updates_and_disposal_use_owner_loop():
             controller.close()
 
     asyncio.run(run())
+
+
+@pytest.mark.parametrize("asynchronous", [False, True])
+@pytest.mark.parametrize("indexed", ["spatial", "hierarchy"])
+def test_indexed_composition_private_frames_preserve_default_publication(indexed, asynchronous):
+    from test_geo_hierarchy import storage
+    from test_geo_spatial import setup
+    from xyg._geo_hierarchy import GeoHierarchy
+
+    async def run():
+        source, initial, _ = setup()
+        pages = {}
+        index = private = published = None
+        try:
+            if indexed == "hierarchy":
+                if asynchronous:
+                    index = await GeoHierarchy.from_frame_async(initial, source, **storage(pages))
+                else:
+                    index = GeoHierarchy.from_frame(initial, source, **storage(pages))
+            else:
+                options = dict(
+                    grid=16,
+                    max_vertices=1000000,
+                    read_page=lambda ticket: pages[ticket["page"]],
+                    write_page=lambda ticket, data: pages.__setitem__(ticket["page"], bytes(data)),
+                )
+                if asynchronous:
+                    index = await initial.spatial_index_async(**options)
+                else:
+                    index = initial.spatial_index(**options)
+            q = query(index.info)
+
+            def chart(sequence):
+                return xyg.geo_chart(
+                    xyg.geo_layer(
+                        "points",
+                        source=index,
+                        layer_id=U64,
+                        query=q,
+                        sequence=sequence,
+                        style=style(),
+                    ),
+                    camera=q["camera"],
+                )
+
+            before = index.current
+            private = (
+                await chart(2).compile_async(_publish=False)
+                if asynchronous
+                else chart(2).compile(_publish=False)
+            )
+            assert index.current is before
+            assert private.data.record(0)["feature_id"] == U64
+            published = await chart(3).compile_async() if asynchronous else chart(3).compile()
+            assert index.current is published
+            assert published.data.record(0)["feature_id"] == U64
+            assert private.data.scene == published.data.scene
+        finally:
+            if published is not None:
+                await published.aclose()
+            if private is not None:
+                await private.aclose()
+            if index is not None:
+                await index.aclose()
+            initial.close()
+            source.close()
+
+    asyncio.run(run())

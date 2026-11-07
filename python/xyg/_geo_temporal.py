@@ -27,15 +27,15 @@ class GeoTemporalBinding:
         if layer.source in _BINDINGS:
             raise RuntimeError("source already has a temporal binding")
         self._source, self._layer, self._template = layer.source, layer, chart
-        self._query, self._sequence = (
-            {
-                **query,
-                "source_digest": bytes(query["source_digest"]),
-                "camera": dict(query["camera"]),
-                "time": dict(query["time"]),
-            },
-            sequence,
-        )
+        # The typed request is a heterogeneous mapping; Rust validates each
+        # named field when it is encoded. Preserve field values and copy owners.
+        self._query: dict = {
+            **query,
+            "source_digest": bytes(query["source_digest"]),
+            "camera": dict(query["camera"]),
+            "time": dict(query["time"]),
+        }
+        self._sequence = sequence
         self._mode, self._closed, self._generation = mode, False, 0
         self._frame = self._chart = self._task = None
         self._retiring = None

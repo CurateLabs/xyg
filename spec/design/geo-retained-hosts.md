@@ -22,7 +22,12 @@ Query updates receive the complete frozen camera, time predicate, all revision
 counters, source identity, row/work bounds, and tier profile. Style is the exact
 48-byte typed Rust framing. Commands 5/6/7/8 drive the bounded point processor;
 11 prepares a durable Scene snapshot and 23 reads it. The coordinator replaces
-its `current` reference only after the new snapshot is parsed successfully.
+its `current` reference only after the new snapshot is parsed successfully. Canonical,
+spatial-index and hierarchy source overrides all honor the internal private-frame
+publication flag on synchronous and asynchronous compilation. A private compile
+returns an independent frame without replacing `current`; ordinary compilation
+retains its default publication behavior. This flag grants no temporal-binding
+admission to indexed or hierarchical sources.
 A failed update preserves the previous frame. Every published frame also retains its immutable semantic LOD, validated source,
 and exact style binding. Frame membership and picking address the frame Data
 handle and its sequence, so an old visible frame remains queryable after a

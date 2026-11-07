@@ -81,3 +81,10 @@ packages/xy-node/test/geo-temporal-binding.test.mjs text eol=lf
 spec/performance/geo-native-binding-lifecycle-2026-11-07/*.json text eol=lf
 spec/performance/geo-native-binding-lifecycle-2026-11-07/*.md text eol=lf
 spec/performance/geo-native-binding-lifecycle-2026-11-07/*.gz -text
+
+# Indexed private publication correction.
+python/xyg/_geo_hierarchy.py text eol=lf
+python/xyg/_geo_spatial.py text eol=lf
+spec/performance/geo-private-publication-2026-11-07/*.json text eol=lf
+spec/performance/geo-private-publication-2026-11-07/*.md text eol=lf
+spec/performance/geo-private-publication-2026-11-07/*.gz -text
