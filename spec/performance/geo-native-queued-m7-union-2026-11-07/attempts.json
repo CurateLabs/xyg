@@ -1,0 +1,24 @@
+{
+  "attempts": [
+    {
+      "name": "wasm-reuse-from-live-1b-checkout",
+      "exit": 1,
+      "reason": "source equality correctly rejected modified crates/xyg-engine/src/graphforge/interaction/tests/wire.rs; no artifact copied; verified 0a producer used instead"
+    },
+    {
+      "name": "node",
+      "exit": 1,
+      "reason": "started before WASM preparation completed; ENOENT; superseded by node-final 57/57 pass"
+    },
+    {
+      "name": "foundation",
+      "exit": 1,
+      "reason": "same missing WASM preparation; superseded by foundation-final pass"
+    },
+    {
+      "name": "initial-parent-protection",
+      "exit": 1,
+      "reason": "report script compared ls-tree type field against index metadata; corrected comparison to mode/blob; no product files changed"
+    }
+  ]
+}

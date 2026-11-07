@@ -1,0 +1,126 @@
+{
+  "recordedAt": "2026-11-07T03:50:36.012Z",
+  "artifact": {
+    "rawBytes": 1927032,
+    "gzipBytes": 785652,
+    "gzipLevel": 9,
+    "releaseGateGzipBytes": 786115,
+    "releaseGateGzipLevel": 6,
+    "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1"
+  },
+  "environment": {
+    "node": "v22.23.4",
+    "browser": "156.0.8078.4",
+    "platform": "linux",
+    "architecture": "x64",
+    "cpu": "Intel(R) Xeon(R) CPU E3-1270 v6 @ 3.80GHz",
+    "logicalCpus": 8,
+    "physicalMemoryBytes": 33319313408,
+    "executablePath": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "load": "Concurrent development load was not controlled; no comparative latency claim"
+  },
+  "startupScope": "Worker constructor to ready in a fresh browser process/profile; raw loopback HTTP without compression, warm OS file cache, excludes main ESM bundle parse; not WAN latency",
+  "proof": {
+    "ok": true,
+    "automaticTemporalBinding": true,
+    "asyncStateObserversIsolated": true,
+    "abiVersion": 35,
+    "concurrentOwnership": true,
+    "sharedViews": 5,
+    "directPages": 3,
+    "fullU64": true,
+    "fullI64": true,
+    "cancelledReadAck": true,
+    "oldFramePreserved": true,
+    "contextRestored": true,
+    "memberCursor": true,
+    "originalRows": true,
+    "indexedSidecar": true,
+    "indexedRecovery": true,
+    "indexedWriteCancelAck": true,
+    "offscreenKeyboardFocus": true,
+    "failedInitializationCleaned": true,
+    "pending": 0,
+    "parserNegativeControls": 63,
+    "frozenSnapshot": true,
+    "wasmRasterExport": "unsupported",
+    "startupMs": 58.799999713897705,
+    "retainedBuffers": [
+      {
+        "rows": 101,
+        "packetBytes": 11976,
+        "painterBytes": 5332,
+        "distinctTypedBuffers": 2,
+        "typedBytes": 17308,
+        "conservativePersistentBytes": 41260,
+        "rowCharge": 111616
+      },
+      {
+        "rows": 101,
+        "packetBytes": 11976,
+        "painterBytes": 5332,
+        "distinctTypedBuffers": 2,
+        "typedBytes": 17308,
+        "conservativePersistentBytes": 41260,
+        "rowCharge": 111616
+      },
+      {
+        "rows": 101,
+        "packetBytes": 11976,
+        "painterBytes": 5332,
+        "distinctTypedBuffers": 2,
+        "typedBytes": 17308,
+        "conservativePersistentBytes": 41260,
+        "rowCharge": 111616
+      },
+      {
+        "rows": 101,
+        "packetBytes": 11976,
+        "painterBytes": 5332,
+        "distinctTypedBuffers": 2,
+        "typedBytes": 17308,
+        "conservativePersistentBytes": 41260,
+        "rowCharge": 111616
+      },
+      {
+        "rows": 101,
+        "packetBytes": 11976,
+        "painterBytes": 5332,
+        "distinctTypedBuffers": 2,
+        "typedBytes": 17308,
+        "conservativePersistentBytes": 41260,
+        "rowCharge": 111616
+      },
+      {
+        "rows": 101,
+        "packetBytes": 11976,
+        "painterBytes": 5332,
+        "distinctTypedBuffers": 2,
+        "typedBytes": 17308,
+        "conservativePersistentBytes": 41260,
+        "rowCharge": 111616
+      }
+    ],
+    "environment": {
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+      "hardwareConcurrency": 8,
+      "devicePixelRatio": 1
+    }
+  },
+  "network": {
+    "served": [
+      "/",
+      "/tests/browser/geo_retained_page.mjs",
+      "/packages/xy-client/dist/index.js",
+      "/tests/browser/geo_source_parser.mjs",
+      "/packages/xy-client/dist/wasm-worker.js",
+      "/packages/xy-client/dist/xyg-wasm.wasm",
+      "/packages/xy-client/dist/wasm-worker.js",
+      "/packages/xy-client/dist/xyg-wasm.wasm",
+      "/packages/xy-client/dist/wasm-worker.js",
+      "/packages/xy-client/dist/xyg-wasm.wasm"
+    ],
+    "external": [],
+    "cspViolations": []
+  }
+}
