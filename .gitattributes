@@ -313,6 +313,19 @@ spec/performance/temporal-chunked-queued-union-2026-11-07/*.json text eol=lf
 spec/performance/temporal-chunked-queued-union-2026-11-07/*.md text eol=lf
 spec/performance/temporal-chunked-queued-union-2026-11-07/*.gz -text
 
+# Current public10k plus temporal/chunked union source bindings.
+crates/xyg-engine/src/graphforge/interaction/wire.rs text eol=lf
+crates/xyg-engine/tests/graph_session_memory.rs text eol=lf
+Cargo.lock text eol=lf
+rust-toolchain.toml text eol=lf
+package-lock.json text eol=lf
+spec/performance/graph-browser-scheduling-1k-2026-11-07/*.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/*.png -text
+spec/performance/pr1110-abi-fixtures-2026-11-07/*.gz -text
+spec/performance/public10k-temporal-chunked-union-2026-11-07/*.json text eol=lf
+spec/performance/public10k-temporal-chunked-union-2026-11-07/*.md text eol=lf
+spec/performance/public10k-temporal-chunked-union-2026-11-07/*.gz -text
+spec/performance/public10k-temporal-chunked-union-2026-11-07/*.png -text
 # Combined native geographic and queued M7 evidence.
 spec/performance/geo-native-queued-m7-union-2026-11-07/*.json text eol=lf
 spec/performance/geo-native-queued-m7-union-2026-11-07/*.md text eol=lf
@@ -525,3 +538,26 @@ tests/fixtures/payload_cross_host.json text eol=lf
 tests/fixtures/series_palette_cross_host.json text eol=lf
 tests/fixtures/tooltip_len_emit_cross_host.json text eol=lf
 spec/performance/geo-native-queued-m7-union-2026-11-07/*.txt text eol=lf
+spec/performance/public10k-native-main-integration-2026-11-07/*.json text eol=lf
+spec/performance/public10k-native-main-integration-2026-11-07/README.md text eol=lf
+spec/performance/public10k-native-main-integration-2026-11-07/*.gz -text
+spec/performance/public10k-native-main-integration-2026-11-07/*.png -text
+
+# Node startup-cancellation source and additive qualification bytes.
+packages/xy-node/src/force_scheduler.js text eol=lf
+packages/xy-node/test/force-worker-lifecycle.test.mjs text eol=lf
+spec/design/graph-mark.md text eol=lf
+spec/design/graphforge-node-scheduling.md text eol=lf
+spec/performance/force-worker-startup-cancellation-2026-11-07/*.json text eol=lf
+spec/performance/force-worker-startup-cancellation-2026-11-07/README.md text eol=lf
+spec/performance/force-worker-startup-cancellation-2026-11-07/*.gz -text
+
+# Trusted bounded public graph keyboard proof.
+scripts/graph_progressive_keyboard_case.mjs text eol=lf
+scripts/verify_graph_progressive_keyboard.mjs text eol=lf
+js/test/graph-progressive-keyboard.test.mjs text eol=lf
+js/test/fixtures/graph-progressive-keyboard.json text eol=lf
+spec/performance/graph-keyboard-1k-2026-11-07/*.json text eol=lf
+spec/performance/graph-keyboard-1k-2026-11-07/*.md text eol=lf
+spec/performance/graph-keyboard-1k-2026-11-07/*.gz -text
+spec/performance/graph-keyboard-1k-2026-11-07/*.png -text

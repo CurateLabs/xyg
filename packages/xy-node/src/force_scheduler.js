@@ -65,7 +65,7 @@ function yieldEventLoop() {
   });
 }
 
-async function runForceTicksImmediate(args, acceptTick) {
+async function runForceTicksImmediate(args, acceptTick, cancelled = () => false) {
   const nNodes = Number(args.nNodes);
   const totalSteps = Number(args.totalSteps ?? 300);
   const chunkSteps = Number(args.chunkSteps ?? 10);
@@ -76,6 +76,7 @@ async function runForceTicksImmediate(args, acceptTick) {
   if (!Number.isInteger(chunkSteps) || chunkSteps <= 0 || chunkSteps > 1000) throw new RangeError("chunkSteps must be an integer in 1..1000");
   if (!Number.isInteger(revision) || revision <= 0 || revision > 0xffffffff) throw new RangeError("revision must be a nonzero u32");
   if (!Number.isFinite(maxWallMs) || maxWallMs <= 0 || maxWallMs > 300_000) throw new RangeError("maxWallMs must be in (0, 300000]");
+  if (args.signal?.aborted || cancelled()) throw new Error("force ticks aborted");
   const started = performance.now();
   const handle = graphForceCreate(nNodes, args.sources, args.targets, {
     x: args.x,
@@ -90,7 +91,7 @@ async function runForceTicksImmediate(args, acceptTick) {
   let last = { x: new Float64Array(nNodes), y: new Float64Array(nNodes), alpha: 1.0 };
   try {
     while (step < totalSteps) {
-      if (args.signal?.aborted) {
+      if (args.signal?.aborted || cancelled()) {
         throw new Error("force ticks aborted");
       }
       if (performance.now() - started > maxWallMs) throw new Error("force ticks exceeded maxWallMs");
@@ -131,7 +132,11 @@ function runForceTicksInWorker(args) {
   return new Promise((resolve, reject) => {
     let outcome;
     let worker;
+    let constructing = false;
     let cleanupTimeout;
+    // A port message may arrive during asynchronous module initialization.
+    // Keep cancellation observable before native ownership and between chunks.
+    const cancellation = new Int32Array(new SharedArrayBuffer(4));
     const stopListening = () => {
       clearTimeout(timeout);
       if (signal) signal.removeEventListener("abort", onAbort);
@@ -154,9 +159,10 @@ function runForceTicksInWorker(args) {
       // Keep the first cause, including the exact object thrown by onTick.
       // Suppress all further callbacks while the worker destroys its handle.
       outcome = { failed: true, value: cause };
+      Atomics.store(cancellation, 0, 1);
       stopListening();
       if (!worker) {
-        finish();
+        if (!constructing) finish();
         return;
       }
       worker.postMessage({ type: "cancel" });
@@ -172,15 +178,20 @@ function runForceTicksInWorker(args) {
         return;
       }
       signal.addEventListener("abort", onAbort, { once: true });
+      if (signal.aborted) onAbort();
+      if (outcome) return;
     }
     try {
+      constructing = true;
       worker = new Worker(selfPath, {
-        workerData: { type: "force_ticks", args: serializable },
+        workerData: { type: "force_ticks", args: serializable, cancellation: cancellation.buffer },
       });
     } catch (cause) {
-      outcome = { failed: true, value: cause };
+      outcome ??= { failed: true, value: cause };
       finish();
       return;
+    } finally {
+      constructing = false;
     }
     worker.on("message", (msg) => {
       if (outcome) return;
@@ -212,12 +223,19 @@ function runForceTicksInWorker(args) {
       if (!outcome || (!outcome.failed && code !== 0)) outcome = { failed: true, value: new Error(`force tick worker exited with code ${code}`) };
       finish();
     });
+    // Structured cloning may have re-entered cancellation before assignment.
+    // Attach the actual exit listener before handing that cancellation over.
+    if (outcome) {
+      worker.postMessage({ type: "cancel" });
+      awaitExit();
+    }
   });
 }
 
 // Worker entry — only active when this module is loaded as a Worker.
 if (!isMainThread && parentPort && workerData?.type === "force_ticks") {
   const controller = new AbortController();
+  const cancellation = new Int32Array(workerData.cancellation);
   let checkpoint;
   parentPort.on("message", (msg) => {
     if (msg?.type === "cancel") {
@@ -235,7 +253,7 @@ if (!isMainThread && parentPort && workerData?.type === "force_ticks") {
   }, (state) => new Promise((resolve, reject) => {
     checkpoint = { step: state.step, resolve, reject };
     parentPort.postMessage({ type: "tick", state });
-  }))
+  }), () => Atomics.load(cancellation, 0) !== 0)
     .then((result) => {
       // Transfer typed-array buffers back to the parent after handle cleanup.
       parentPort.postMessage(
@@ -244,9 +262,9 @@ if (!isMainThread && parentPort && workerData?.type === "force_ticks") {
       );
     })
     .catch((err) => {
-      // runForceTicksImmediate's finally destroys the native handle before
-      // acknowledging cancellation or reporting any native/validation error.
-      parentPort.postMessage(controller.signal.aborted
+      // Any allocated handle is destroyed by runForceTicksImmediate's finally
+      // before cancellation or native/validation errors are acknowledged.
+      parentPort.postMessage(controller.signal.aborted || Atomics.load(cancellation, 0) !== 0
         ? { type: "cancelled" }
         : { type: "error", message: String(err?.message ?? err) });
     })

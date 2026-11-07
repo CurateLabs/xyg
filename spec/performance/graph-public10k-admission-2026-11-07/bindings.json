@@ -1,0 +1,392 @@
+{
+  "workspace": "/home/ubuntu/.t3/worktrees/xyg/t3-3c28a8ac",
+  "branch": "t3/public-10k-progressive-graph",
+  "initialHead": "74195403ccd18c760e3d20a18f024daab95d711a",
+  "implementationBase": "581f4682c4079d1604eb3186df7d5ac92c125e66",
+  "acceptedMain": "80e841542462eaf5509ac90e1f17a80cae974164",
+  "reviewedProof": "33baef7134f9bd5c8f298a4a348714685e1d8e5a",
+  "source": {
+    "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+      "bytes": 64653,
+      "sha256": "930e0b46451e094ee902b23baf4977608beef4a49c3bfa4ac0258d1f025a552f"
+    },
+    "crates/xyg-engine/tests/graph_session_memory.rs": {
+      "bytes": 4259,
+      "sha256": "3d61a04c87bf22303cf6e83016c96b9eb3392f973334e6f83a7860ad70bdf703"
+    },
+    "packages/xy-node/test/graph-session-wire.test.mjs": {
+      "bytes": 45853,
+      "sha256": "504b559b1423729acdff05a32b2dfbf4d12361094d06ec1247dad668b5200f02"
+    },
+    "scripts/graph_session_public10k_smoke.mjs": {
+      "bytes": 15983,
+      "sha256": "7732918da1509b394ac2b180f1f34d8934c2f81bb16ff7714aa8e6266040e418"
+    },
+    "scripts/graph_session_public10k_replay.mjs": {
+      "bytes": 2260,
+      "sha256": "0643af11bf12aefbf1d65f717f3a79ae243f1e528ff9c9c2bc7abbf5b9a33331"
+    },
+    "spec/design/graph-interaction.md": {
+      "bytes": 110934,
+      "sha256": "e76e7e53ac035a7cec9c48eeb7f23ceb3163d0321441c9bda785050626ad5347"
+    },
+    "spec/design/graphforge-node-scheduling.md": {
+      "bytes": 25503,
+      "sha256": "4f439ac365d3a2b0c20742e185ce97ffcbca9d9c181988e811e4d3411f1df5dc"
+    },
+    "scripts/graph_session_controller_wasm_smoke.mjs": {
+      "bytes": 80300,
+      "sha256": "244a927e23681bfc2ca6b5add6c295b83fcebaed2dd5103eeb3a48522188075f"
+    },
+    "tests/browser/graph_session_controller_page.mjs": {
+      "bytes": 29715,
+      "sha256": "dfbf21ac796977e134e032b734b8eca6a3558ab233633c48c218ac38a5c49bae"
+    },
+    "js/src/63_graph_controller.ts": {
+      "bytes": 20649,
+      "sha256": "53a231dc02aafc217c37b764252a2459544ffec36b29c84b1e9fe65444bdd89d"
+    },
+    "Cargo.lock": {
+      "bytes": 20648,
+      "sha256": "b521317a3cee01d9e04f40fd97e2c7638d648f57052a42078dcb7c8593a4433a"
+    },
+    "rust-toolchain.toml": {
+      "bytes": 66,
+      "sha256": "e59c5da37d1f9f4e0f815bc188cb6056fc7410c9cdaa9673c2d44da557c75d12"
+    },
+    "package-lock.json": {
+      "bytes": 52836,
+      "sha256": "8d8fd757c65329343e3e212f540bf6dfd5a7950b3af321787a649b94ab15a5d8"
+    },
+    "js/package-wasm.mjs": {
+      "bytes": 13902,
+      "sha256": "e27f7a26c57d857b2897df83a08619f0d5ab9e534bc2b214f159a101a3a14d17"
+    },
+    "js/optimize-wasm.mjs": {
+      "bytes": 1078,
+      "sha256": "c9cf5458bebced72e5478d6a681c8df2a9ee3668273bad5c4f5d860d6c7f4658"
+    }
+  },
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6127992,
+      "sha256": "40a94cd7c043b675b8ccbaa622937e952d76f67625cf0adf52fa3e2111cc73e7"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 2124906,
+      "sha256": "58b1942eced656e7070c7cda9c2082d658dac8085fbef0579be6807459b2aaf3"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1927066,
+      "sha256": "06938b014a74528eb95a279971cb884b41a9dbcb094d3530a49a633ffd1e9792"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 804132,
+      "sha256": "09144e0e40a7c278a7a103a96bdde3b7ae73e3d71b3fdf367a1353ddbad1b80d"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 56051,
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "8c184aa8e350a0a8bef3e44f976d051fa48ff5403933df20acefc7a284af51e9"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1927066,
+      "sha256": "06938b014a74528eb95a279971cb884b41a9dbcb094d3530a49a633ffd1e9792"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 804132,
+      "sha256": "09144e0e40a7c278a7a103a96bdde3b7ae73e3d71b3fdf367a1353ddbad1b80d"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "bytes": 56051,
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+    }
+  },
+  "receipts": {
+    "spec/performance/graph-public10k-admission-2026-11-07/README.md": {
+      "bytes": 8974,
+      "sha256": "903d321c54f243a1a21dc2500fc1b37476cc15a3a94ef531fa53e165db4d68cd"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/asset-verification.log.gz": {
+      "bytes": 104,
+      "sha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/browser-candidate1-failure.log.gz": {
+      "bytes": 270,
+      "sha256": "41f3adf9d691d345486f9c6907201a710b65e65bf44337f59460ccfa68c72918"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/browser-candidate2-timeout.log.gz": {
+      "bytes": 539,
+      "sha256": "a5200d70086be88474d4263614d6ebbeaed86c5a472ee1ae227d7f93d03ffc8d"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/browser-candidate3-timeout.log.gz": {
+      "bytes": 508,
+      "sha256": "eee5875d16ad26402202ce53738798e6a7fec34c2a842c0961d5658ea77d9281"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/browser-candidate4-warm-timeout.log.gz": {
+      "bytes": 501,
+      "sha256": "7a9863e04f46201ddce97456573dec934a2e03bb9d80879d296a887d791df2b1"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/browser-candidate5-two10k-timeout.log.gz": {
+      "bytes": 534,
+      "sha256": "6e1e681d9ba072bcc9737e5c44c6269c9c689028f5e792ab0341337cd95684e1"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/browser-cold4.log.gz": {
+      "bytes": 182,
+      "sha256": "24238ffba6de8089070467464aeef744fd6d4e4ef0063742438726783c5084f2"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/browser-qualified-cold.log.gz": {
+      "bytes": 182,
+      "sha256": "24238ffba6de8089070467464aeef744fd6d4e4ef0063742438726783c5084f2"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/browser-qualified-warm-disk.log.gz": {
+      "bytes": 182,
+      "sha256": "24238ffba6de8089070467464aeef744fd6d4e4ef0063742438726783c5084f2"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/browser-warm-tmp-quota-failure.log.gz": {
+      "bytes": 3482,
+      "sha256": "27dbf0086b71ba8ad33b7a1baba8f9eaff6288024d69acefa476198588cad289"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/client-build.log.gz": {
+      "bytes": 1056,
+      "sha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/commit-format.log.gz": {
+      "bytes": 49,
+      "sha256": "2c6ab4aea7deb473cb03120e197b035f027d28e416affb553cf4b8dc275d80b7"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/commit-hooks.log.gz": {
+      "bytes": 72,
+      "sha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/commit-ruff.log.gz": {
+      "bytes": 39,
+      "sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/historical-refusals.json": {
+      "bytes": 182953,
+      "sha256": "b0e6f04b5d7672d49e80ef58cca2d6b077386ebdfdeb034e6dab559945e54a04"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/memory-candidate3.log.gz": {
+      "bytes": 430,
+      "sha256": "37c851bea5b947c2e81065d8365a0754c5ed0f8e589a2a0d31eb9492521ed770"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/native-allocation-ledger.log.gz": {
+      "bytes": 429,
+      "sha256": "d8ca22087a0a334952c03775f23efe4ecc88d9f6f3612c010e76b8ccacfead4b"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/native-candidate3-build.log.gz": {
+      "bytes": 192,
+      "sha256": "5fcaca7a325a4ad1bf989c04a2a7f0242a0674700559801b0d3d8897bf14f739"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/node-resource.log.gz": {
+      "bytes": 534,
+      "sha256": "9232e04267825c3b449af459d61a16bb29faa66bd46b910cc717d7c30cb706f0"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/node-wire-final.log.gz": {
+      "bytes": 1062,
+      "sha256": "dfb1341f2b2216a7d328047034fd66a546aea566977f895ad3ec08587ca7f9dd"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/package-candidate1-refusal.log.gz": {
+      "bytes": 387,
+      "sha256": "d5f960145d4c39171753a19d18968b2e626ce7722dac6d3325c58f06a9e16c52"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/package-candidate2-refusal.log.gz": {
+      "bytes": 387,
+      "sha256": "d5f960145d4c39171753a19d18968b2e626ce7722dac6d3325c58f06a9e16c52"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/package-candidate3.log.gz": {
+      "bytes": 199,
+      "sha256": "3f0c1bbf3a57fb132508374392c3dac1d3615fbdb2bc5596b4d4633b5de9c823"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/public10k-cold.json.7101.final.png": {
+      "bytes": 8122,
+      "sha256": "e7f41105975657ce7808cfc1e67d233683a28f388b43db42cfdb9c3e5723b1b3"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/public10k-cold.json.7101.initial.png": {
+      "bytes": 12258,
+      "sha256": "3efa8ea35d7493873f7e1b3ef40579afb78e5923eca4f3c82799c3ec9b1d8c80"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/public10k-cold.json.7101.intermediate.png": {
+      "bytes": 9205,
+      "sha256": "b5f626bb7be916ff42278b4ec273f54a5e9a10156d28fc890ae72f9979a82aaa"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/public10k-cold.json.7102.final.png": {
+      "bytes": 7518,
+      "sha256": "b6e392e2c7f59113b54e1a1a1836e2aae6432ca502b6d64d40a2210351660ec1"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/public10k-cold.json.7102.initial.png": {
+      "bytes": 12258,
+      "sha256": "3efa8ea35d7493873f7e1b3ef40579afb78e5923eca4f3c82799c3ec9b1d8c80"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/public10k-cold.json.7102.intermediate.png": {
+      "bytes": 8670,
+      "sha256": "e2bfbb7b0f295bf2e18946f51fd2e9d0341ed88271b5c58048763abdf5c145f8"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/public10k-cold.json.gz": {
+      "bytes": 199447,
+      "sha256": "4c9775a216451817b7a97346bb3d3e19730f046effefdacbc20f676835de9929"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/public10k-qualified-cold.json.7101.final.png": {
+      "bytes": 8122,
+      "sha256": "e7f41105975657ce7808cfc1e67d233683a28f388b43db42cfdb9c3e5723b1b3"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/public10k-qualified-cold.json.7101.initial.png": {
+      "bytes": 12258,
+      "sha256": "3efa8ea35d7493873f7e1b3ef40579afb78e5923eca4f3c82799c3ec9b1d8c80"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/public10k-qualified-cold.json.7101.intermediate.png": {
+      "bytes": 9222,
+      "sha256": "3c6cc5531407af64bdd3250acdf0a9f497c53b90a89ee0208f5b301522f68dc2"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/public10k-qualified-cold.json.7102.final.png": {
+      "bytes": 8695,
+      "sha256": "4453d9610a62a79b6a900bf2a3d67145ea2e95cf799286690cff9365a63ff06b"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/public10k-qualified-cold.json.7102.initial.png": {
+      "bytes": 16340,
+      "sha256": "d378702d8644f2616909d71978479b0b684f4477871e68316d5c9280d88a52e9"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/public10k-qualified-cold.json.7102.intermediate.png": {
+      "bytes": 9175,
+      "sha256": "86b4b1cb20b0aa65ade77479d6b17599e09123b660ceb57eae6bbd0054f4f5db"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/public10k-qualified-cold.json.gz": {
+      "bytes": 121255,
+      "sha256": "1fd199fa1448a75d09b381e5d2299809a3560f2f3f74f2ac3434a157c848e516"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/public10k-qualified-warm.json.7101.final.png": {
+      "bytes": 8122,
+      "sha256": "e7f41105975657ce7808cfc1e67d233683a28f388b43db42cfdb9c3e5723b1b3"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/public10k-qualified-warm.json.7101.initial.png": {
+      "bytes": 12258,
+      "sha256": "3efa8ea35d7493873f7e1b3ef40579afb78e5923eca4f3c82799c3ec9b1d8c80"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/public10k-qualified-warm.json.7101.intermediate.png": {
+      "bytes": 9205,
+      "sha256": "b5f626bb7be916ff42278b4ec273f54a5e9a10156d28fc890ae72f9979a82aaa"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/public10k-qualified-warm.json.7102.final.png": {
+      "bytes": 8695,
+      "sha256": "4453d9610a62a79b6a900bf2a3d67145ea2e95cf799286690cff9365a63ff06b"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/public10k-qualified-warm.json.7102.initial.png": {
+      "bytes": 16340,
+      "sha256": "d378702d8644f2616909d71978479b0b684f4477871e68316d5c9280d88a52e9"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/public10k-qualified-warm.json.7102.intermediate.png": {
+      "bytes": 9175,
+      "sha256": "86b4b1cb20b0aa65ade77479d6b17599e09123b660ceb57eae6bbd0054f4f5db"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/public10k-qualified-warm.json.gz": {
+      "bytes": 121038,
+      "sha256": "e0c94f1ae5db91d214e50f0066665377858db3bbe2f0b5b30eef79dc27b98896"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/python-session-final.log.gz": {
+      "bytes": 52,
+      "sha256": "80863c8599f0e0f463932e05977731728621bccc7c9d82016868232a92063ae0"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/replay-cold.log.gz": {
+      "bytes": 129,
+      "sha256": "2280ea642e2b9a7fbd9501f3d8c27d04ec67860b744eb3c1974b6889456cff20"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/replay-qualified-cold.log.gz": {
+      "bytes": 129,
+      "sha256": "c8f531a726c6e2133f7a4e2f50d33027f7427a96138543cfa5ad00430e99e8bf"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/replay-qualified-warm.log.gz": {
+      "bytes": 129,
+      "sha256": "c8f531a726c6e2133f7a4e2f50d33027f7427a96138543cfa5ad00430e99e8bf"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/results.json": {
+      "bytes": 3513,
+      "sha256": "e80b47166125cfde91d7c92f4567b23548ca412a001ea7fb7df25e596ec3d2bc"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/rust-interaction-final.log.gz": {
+      "bytes": 4676,
+      "sha256": "83faa7ad707f565d95e90890436a1922ccc890d94db5d8ded0566909c676c186"
+    },
+    "spec/performance/graph-public10k-admission-2026-11-07/wasm-candidate3-build.log.gz": {
+      "bytes": 1011,
+      "sha256": "6f8cda44f1b55f68d85a89f2adf5e14600eaf3d51f9d0d513d8ab12aaa58e7f7"
+    }
+  },
+  "decompressedSha256": {
+    "spec/performance/graph-public10k-admission-2026-11-07/memory-candidate3.log.gz": "56f8e30f84b367b5282a1b91ff4fc3908bab9dc28675a9dc2474781bdf4b0e95",
+    "spec/performance/graph-public10k-admission-2026-11-07/browser-candidate4-warm-timeout.log.gz": "6c9f46187cfb32202a3204254e2593a65ba34b3ee8d1d747d2ee020953134207",
+    "spec/performance/graph-public10k-admission-2026-11-07/client-build.log.gz": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+    "spec/performance/graph-public10k-admission-2026-11-07/package-candidate1-refusal.log.gz": "4be15a54e3e3a48da87c3dc730bef13c0e2647209347fa41e27ae43a23335df6",
+    "spec/performance/graph-public10k-admission-2026-11-07/commit-hooks.log.gz": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+    "spec/performance/graph-public10k-admission-2026-11-07/browser-qualified-warm-disk.log.gz": "9504f682bea23919bfbc3913c6a4fd6411cfc35a4c1b22a692ed226f95f5a7e8",
+    "spec/performance/graph-public10k-admission-2026-11-07/commit-ruff.log.gz": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "spec/performance/graph-public10k-admission-2026-11-07/native-allocation-ledger.log.gz": "445feee143f5dcd5a900c8779028968e2bd0476851c007870bc54da6cacf5833",
+    "spec/performance/graph-public10k-admission-2026-11-07/commit-format.log.gz": "71828415ae7956717bbef7f9bd1683393e137b6b7b3f2ae381407f4327456e23",
+    "spec/performance/graph-public10k-admission-2026-11-07/public10k-qualified-warm.json.gz": "f71bf35efed81ebc07e658d7744edc6a67c48fa6c6aa088da3705d40e938ce11",
+    "spec/performance/graph-public10k-admission-2026-11-07/replay-cold.log.gz": "ca6da8d85c0cf5b43e97d0b09aea12fc6ff3d991b393520b0b768a5a35f55191",
+    "spec/performance/graph-public10k-admission-2026-11-07/browser-warm-tmp-quota-failure.log.gz": "ad0e5020c155f5b2a860a4cb4b47928b033fe020a50f989063ba57224f7eab2a",
+    "spec/performance/graph-public10k-admission-2026-11-07/wasm-candidate3-build.log.gz": "162ca74236db323042c91cff9599946f7616af53fdc4779a7fd40a31c6a0e069",
+    "spec/performance/graph-public10k-admission-2026-11-07/browser-candidate3-timeout.log.gz": "d703111c07e49996c0a50c8b2e56593c833b7e17c47354528c08bce3c215815e",
+    "spec/performance/graph-public10k-admission-2026-11-07/node-resource.log.gz": "435f00f4c93a743b28aa35dc8b875572fe8c4b0f4bf1a1f2f31fb43d35a24624",
+    "spec/performance/graph-public10k-admission-2026-11-07/browser-candidate5-two10k-timeout.log.gz": "378214689ab0a9c528ee2745fe1ba6149a3f7a5bed135065e807e3ac2d48bf39",
+    "spec/performance/graph-public10k-admission-2026-11-07/python-session-final.log.gz": "365a6f304c4c179e92c7835fc11e557624c1cb884d1fccd1a9d21e5408218675",
+    "spec/performance/graph-public10k-admission-2026-11-07/browser-cold4.log.gz": "9504f682bea23919bfbc3913c6a4fd6411cfc35a4c1b22a692ed226f95f5a7e8",
+    "spec/performance/graph-public10k-admission-2026-11-07/browser-candidate1-failure.log.gz": "efddd0752a6a817c7207fc0269d81804c93bd773f10b731412bc38d804c7a451",
+    "spec/performance/graph-public10k-admission-2026-11-07/rust-interaction-final.log.gz": "4e8ac06994b8e4fc420bf00569680054d5e2ba21aa116d9292140234eedff77e",
+    "spec/performance/graph-public10k-admission-2026-11-07/public10k-cold.json.gz": "69037fa15e747fb7d4b657f26766a36d6e02433be670b344d0140afc5a94145e",
+    "spec/performance/graph-public10k-admission-2026-11-07/browser-qualified-cold.log.gz": "9504f682bea23919bfbc3913c6a4fd6411cfc35a4c1b22a692ed226f95f5a7e8",
+    "spec/performance/graph-public10k-admission-2026-11-07/asset-verification.log.gz": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+    "spec/performance/graph-public10k-admission-2026-11-07/public10k-qualified-cold.json.gz": "5785323e69066ae18ba3d073336f18eeba919d72f47260b2295b0e9993cf28c5",
+    "spec/performance/graph-public10k-admission-2026-11-07/replay-qualified-cold.log.gz": "930064a076f6c44228f3389f868aa3a7e417c1c0369bbe59e0fc49127b50ab86",
+    "spec/performance/graph-public10k-admission-2026-11-07/replay-qualified-warm.log.gz": "930064a076f6c44228f3389f868aa3a7e417c1c0369bbe59e0fc49127b50ab86",
+    "spec/performance/graph-public10k-admission-2026-11-07/browser-candidate2-timeout.log.gz": "6154d0a2f6eecff586f41afc1aa9f3a5eb2111c84bd206cf92c7667373e4cb1e",
+    "spec/performance/graph-public10k-admission-2026-11-07/package-candidate2-refusal.log.gz": "4be15a54e3e3a48da87c3dc730bef13c0e2647209347fa41e27ae43a23335df6",
+    "spec/performance/graph-public10k-admission-2026-11-07/native-candidate3-build.log.gz": "bc8222fa72dd9e154075f5249d69019c8b55f7f7ee32388ce390edbc40edd520",
+    "spec/performance/graph-public10k-admission-2026-11-07/node-wire-final.log.gz": "5b6627716091c96ad29d3535499d0e861f83ae81e6fd0fd1aca6d4b537186b22",
+    "spec/performance/graph-public10k-admission-2026-11-07/package-candidate3.log.gz": "b6d7c57cea4d13dd0a2c347f7d3e45823222d41b4c8322648ed2e60741c2adb3"
+  },
+  "environment": {
+    "os": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "machine": "x86_64",
+    "node": "22.23.4",
+    "rust": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "python": "3.12.15",
+    "chrome": "156.0.8078.4",
+    "chromiumPath": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "cargoBuildJobs": 2,
+    "warmTmpdir": "/home/ubuntu/.t3/worktrees/xyg/t3-3c28a8ac/target/task-tmp/tmp",
+    "cpuModel": "Intel(R) Xeon(R) CPU E3-1270 v6 @ 3.80GHz"
+  },
+  "package": {
+    "raw": 1927066,
+    "node22Gzip6": 786154,
+    "rawCap": 1927168,
+    "gzipCap": 786432
+  },
+  "commands": [
+    "cargo build -p xyg-core --release",
+    "cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
+    "node js/build.mjs",
+    "node js/package-wasm.mjs",
+    "cargo test -p xyg-engine --test graph_session_memory -- --nocapture",
+    "cargo test -p xyg-engine graphforge::interaction",
+    "XYG_NATIVE_LIB=$PWD/target/release/libxyg_core.so node --test packages/xy-node/test/graph-session-wire.test.mjs",
+    "UV_NO_SYNC=1 uv run --python 3.12.15 pytest -q tests/test_graph_session_python_transport.py tests/test_graph_session_abi.py",
+    "UV_NO_SYNC=1 uv run --python 3.12.15 python scripts/verify_wasm_assets.py",
+    "XYG_GRAPH_SESSION_REPORT=target/task-tmp/public10k-qualified-{cold,warm}.json node scripts/graph_session_public10k_smoke.mjs",
+    "node scripts/graph_session_public10k_replay.mjs target/task-tmp/public10k-qualified-{cold,warm}.json",
+    "uv run --python 3.12.15 --with pre-commit pre-commit run --all-files",
+    "uv run --python 3.12.15 ruff check .",
+    "uv run --python 3.12.15 ruff format --check ."
+  ],
+  "remaining": [
+    "reliable concurrent two-10k convergence under the unchanged wall limit",
+    "default-16MiB 1k admission (still refuses)",
+    "100k/1M rendered ladder",
+    "Python notebook and full host semantics",
+    "broader #35/#36/#1015/M4 and independent review/PR/CI"
+  ]
+}

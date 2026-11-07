@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Unmasked production Worker/WASM graph session keyboard/paint/ownership journey.
 import assert from "node:assert/strict";
+import {graphProgressiveKeyboardCase} from "./graph_progressive_keyboard_case.mjs";
 import {assertProgressiveCameraPan} from "./verify_graph_progressive_camera.mjs";
 import { gunzipSync } from "node:zlib";
 import { createServer } from "node:http";
@@ -281,6 +282,7 @@ try {
       assert.equal(secondary.selections.length,0);assert.equal(secondary.finalSnapshot.selection.refs.length,0);assert.equal(secondary.finalSnapshot.camera[2],320);assert.deepEqual(violations,[]);assert.deepEqual(errors,[]);
       return result;
     });
+    await run("public-1k-trusted-keyboard-focus-retention",()=>graphProgressiveKeyboardCase(page,process.env.XYG_GRAPH_SESSION_REPORT));
   } else if (process.env.XYG_GRAPH_PROGRESSIVE_ONLY) {
     const delay = ms => new Promise(r=>setTimeout(r,ms));
     for (const count of [0,4,1000]) {
