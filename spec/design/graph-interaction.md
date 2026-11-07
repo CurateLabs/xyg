@@ -1315,9 +1315,10 @@ then CLOSEs and releases the Worker claim. Initialization failure also closes an
 opened session. Double cleanup and WebGL context restoration retain the same
 lifetime rules; disposal remains available while an action is busy.
 
-This vertical intentionally exposes no temporal binding, coordination/linking,
-structural update, hover/pan/brush/lasso, disclosure,
-manual move/pin/relayout, or legacy click aliases. Opt-in bounded automatic
+The original bounded vertical exposes no coordination/linking, structural
+update, hover/pan/brush/lasso, disclosure, manual move/relayout, or legacy click
+aliases. Temporal binding and a Rust-issued focused pin action are now provided
+by the bounded #45 extension below. Opt-in bounded automatic
 continuation is documented below. Broader S5b, S6 legacy attachment and
 removal, S7 visual/scale/responsiveness, #36, M4 and #108 acceptance remain open.
 `58_graph.ts` CSR handling remains for ordinary `spec.graph`, whose host wire
@@ -1397,6 +1398,24 @@ wire tests and foundation smoke. This bounded browser slice establishes no
 competitor win or full rendered 1k/10k/100k/1M ladder. Python notebook/widget
 progressive integration (#1015), broader #36 interactions and full #35/#108
 acceptance remain open. Publication still requires all #108 acceptance.
+
+
+### Retained temporal controller attachment (#45)
+
+The optional `temporal: {controller, binding, budget}` on
+`attachWasmGraphSession` binds the existing Rust temporal owner before first
+paint and automatically consumes controller snapshots. Named temporal
+create/frame messages share the exclusive graph lifetime/sequence/byte lane;
+public foreign Worker routes remain refused. Rust render synchronizes temporal
+membership before paint/pick/layout. A newer intent suppresses an older reply;
+refusals preserve the preceding picture and block stale interactions until a
+matching render. `whenIdle()` drains current admitted work; `pinFocused(boolean)`
+uses the single Rust-issued eligible focus ref. This adds no arbitrary command
+API. Bind adopts the initially empty temporal state, so nonzero `load.pinned`
+is refused with this option; pin after ready. Selection/focus/pins persist across
+later temporal frames. See [the full lifecycle contract](temporal-graph.md#retained-automatic-presentation-bounded-45-slice)
+and [actual browser/native evidence](../performance/temporal-retained-presentation-2026-11-07/README.md).
+Broad accessibility, aggregate, export, scale and host acceptance remain open.
 
 The [2026-11-07 scheduling receipt](../performance/graph-browser-scheduling-1k-2026-11-07/README.md)
 adds bounded real 1k primary-click and host-driven camera response while retained

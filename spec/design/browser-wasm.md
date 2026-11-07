@@ -1843,3 +1843,12 @@ in the packaged Worker after initial paint, using the existing chunk/wall limits
 See [the bounded continuation contract](graph-interaction.md#bounded-public-browser-continuation-35-release-108-preparation).
 This is a #35 slice; Python notebooks, the full rendered ladder and #108 acceptance
 remain open. Ordinary one-shot rendering and all admission limits are unchanged.
+
+
+`attachWasmGraphSession` now accepts an explicit temporal controller/binding and
+work budget through its existing exclusive Worker lane. The named XYTG
+create/frame operations, Rust Bind and matching render share ownership and
+reply guards; ordinary public temporal commands still cannot bypass the claim.
+See [the bounded retained temporal contract](temporal-graph.md#retained-automatic-presentation-bounded-45-slice)
+for scheduling, publication/refusal, UUID-state and disposal semantics. No ABI,
+package cap, layout/pick authority or runtime arena limit changes.

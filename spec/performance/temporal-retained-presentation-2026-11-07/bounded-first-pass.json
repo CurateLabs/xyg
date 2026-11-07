@@ -1,0 +1,2198 @@
+{
+  "schema": "xyg.graph-s5b-pointer-selection/v1",
+  "node": "v22.23.4",
+  "browser": "156.0.8078.4",
+  "cases": [
+    {
+      "name": "retained-temporal-initial-pixels-and-canonical-membership",
+      "result": {
+        "result": {
+          "relayout": null,
+          "revision": 2,
+          "degraded": false,
+          "unmatched": 0,
+          "dropped": 0,
+          "selection": {
+            "refs": [],
+            "indices": {},
+            "layerOffsets": {
+              "0": "0"
+            },
+            "layers": {},
+            "rows": {},
+            "resultIds": []
+          },
+          "changed": [],
+          "focus": [],
+          "focusRing": {},
+          "focusAction": {
+            "refs": [],
+            "disclosureEligible": false,
+            "collapsed": false,
+            "pinEligible": false,
+            "pinned": false,
+            "moveCapability": false
+          },
+          "clearAction": {
+            "applicable": false
+          },
+          "outcome": {
+            "stateChanged": false,
+            "selected": 0,
+            "disclosurePresent": false
+          },
+          "disclosure": {
+            "refs": [],
+            "collapsed": []
+          },
+          "companion": {
+            "rows": [
+              [
+                "Node",
+                "01010101010101010101010101010101",
+                "",
+                "2 relationships",
+                "not selected"
+              ],
+              [
+                "Node",
+                "02020202020202020202020202020202",
+                "",
+                "1 relationships",
+                "not selected"
+              ],
+              [
+                "Node",
+                "03030303030303030303030303030303",
+                "",
+                "1 relationships",
+                "not selected"
+              ],
+              [
+                "Edge",
+                "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+                "",
+                "0 to 1",
+                "not selected"
+              ],
+              [
+                "Edge",
+                "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c",
+                "",
+                "0 to 2",
+                "not selected"
+              ]
+            ],
+            "refs": [
+              {
+                "kind": 0,
+                "uuid": "01010101-0101-0101-0101-010101010101"
+              },
+              {
+                "kind": 0,
+                "uuid": "02020202-0202-0202-0202-020202020202"
+              },
+              {
+                "kind": 0,
+                "uuid": "03030303-0303-0303-0303-030303030303"
+              },
+              {
+                "kind": 1,
+                "uuid": "0b0b0b0b-0b0b-0b0b-0b0b-0b0b0b0b0b0b"
+              },
+              {
+                "kind": 1,
+                "uuid": "0c0c0c0c-0c0c-0c0c-0c0c-0c0c0c0c0c0c"
+              }
+            ],
+            "total": 5
+          },
+          "summary": "Graph, 3 nodes, 2 edges, 0 selected",
+          "camera": [
+            1,
+            1,
+            0,
+            0,
+            640,
+            320,
+            1
+          ],
+          "temporal": {
+            "revision": "1",
+            "cursor": "10",
+            "range": [
+              "0",
+              "40"
+            ],
+            "nodeVisibility": {
+              "0": 1,
+              "1": 1,
+              "2": 0
+            },
+            "edgeVisibility": {
+              "0": 1,
+              "1": 0
+            },
+            "visibleNodeIds": {
+              "0": 1,
+              "1": 1,
+              "2": 1,
+              "3": 1,
+              "4": 1,
+              "5": 1,
+              "6": 1,
+              "7": 1,
+              "8": 1,
+              "9": 1,
+              "10": 1,
+              "11": 1,
+              "12": 1,
+              "13": 1,
+              "14": 1,
+              "15": 1,
+              "16": 2,
+              "17": 2,
+              "18": 2,
+              "19": 2,
+              "20": 2,
+              "21": 2,
+              "22": 2,
+              "23": 2,
+              "24": 2,
+              "25": 2,
+              "26": 2,
+              "27": 2,
+              "28": 2,
+              "29": 2,
+              "30": 2,
+              "31": 2
+            },
+            "visibleEdgeIds": {
+              "0": 11,
+              "1": 11,
+              "2": 11,
+              "3": 11,
+              "4": 11,
+              "5": 11,
+              "6": 11,
+              "7": 11,
+              "8": 11,
+              "9": 11,
+              "10": 11,
+              "11": 11,
+              "12": 11,
+              "13": 11,
+              "14": 11,
+              "15": 11
+            },
+            "sources": {
+              "0": "0"
+            },
+            "targets": {
+              "0": "1"
+            }
+          }
+        },
+        "image": {
+          "at2": [
+            75,
+            85,
+            99,
+            242
+          ],
+          "at3": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "nonzero": 1084
+        }
+      }
+    },
+    {
+      "name": "retained-temporal-native-pick-focus-select-pin",
+      "result": {
+        "relayout": null,
+        "revision": 3,
+        "degraded": false,
+        "unmatched": 0,
+        "dropped": 0,
+        "selection": {
+          "refs": [
+            {
+              "kind": 0,
+              "uuid": "02020202-0202-0202-0202-020202020202"
+            }
+          ],
+          "indices": {
+            "0": "1"
+          },
+          "layerOffsets": {
+            "0": "0",
+            "1": "0"
+          },
+          "layers": {},
+          "rows": {},
+          "resultIds": []
+        },
+        "changed": [],
+        "focus": [
+          {
+            "kind": 0,
+            "uuid": "02020202-0202-0202-0202-020202020202"
+          }
+        ],
+        "focusRing": {
+          "0": 0,
+          "1": 1,
+          "2": 1,
+          "3": 0,
+          "4": 0,
+          "5": 0
+        },
+        "focusAction": {
+          "refs": [
+            {
+              "kind": 0,
+              "uuid": "02020202-0202-0202-0202-020202020202"
+            }
+          ],
+          "disclosureEligible": false,
+          "collapsed": false,
+          "pinEligible": true,
+          "pinned": true,
+          "moveCapability": true
+        },
+        "clearAction": {
+          "applicable": true
+        },
+        "outcome": {
+          "stateChanged": true,
+          "selected": 1,
+          "disclosurePresent": false
+        },
+        "disclosure": {
+          "refs": [],
+          "collapsed": []
+        },
+        "companion": {
+          "rows": [
+            [
+              "Node",
+              "01010101010101010101010101010101",
+              "",
+              "2 relationships",
+              "not selected"
+            ],
+            [
+              "Node",
+              "02020202020202020202020202020202",
+              "",
+              "1 relationships",
+              "selected"
+            ],
+            [
+              "Node",
+              "03030303030303030303030303030303",
+              "",
+              "1 relationships",
+              "not selected"
+            ],
+            [
+              "Edge",
+              "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+              "",
+              "0 to 1",
+              "not selected"
+            ],
+            [
+              "Edge",
+              "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c",
+              "",
+              "0 to 2",
+              "not selected"
+            ]
+          ],
+          "refs": [
+            {
+              "kind": 0,
+              "uuid": "01010101-0101-0101-0101-010101010101"
+            },
+            {
+              "kind": 0,
+              "uuid": "02020202-0202-0202-0202-020202020202"
+            },
+            {
+              "kind": 0,
+              "uuid": "03030303-0303-0303-0303-030303030303"
+            },
+            {
+              "kind": 1,
+              "uuid": "0b0b0b0b-0b0b-0b0b-0b0b-0b0b0b0b0b0b"
+            },
+            {
+              "kind": 1,
+              "uuid": "0c0c0c0c-0c0c-0c0c-0c0c-0c0c0c0c0c0c"
+            }
+          ],
+          "total": 5
+        },
+        "summary": "Node , 1 relationships, selected, 2 of 3",
+        "camera": [
+          1,
+          1,
+          0,
+          0,
+          640,
+          320,
+          1
+        ],
+        "temporal": {
+          "revision": "1",
+          "cursor": "10",
+          "range": [
+            "0",
+            "40"
+          ],
+          "nodeVisibility": {
+            "0": 1,
+            "1": 1,
+            "2": 0
+          },
+          "edgeVisibility": {
+            "0": 1,
+            "1": 0
+          },
+          "visibleNodeIds": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1,
+            "6": 1,
+            "7": 1,
+            "8": 1,
+            "9": 1,
+            "10": 1,
+            "11": 1,
+            "12": 1,
+            "13": 1,
+            "14": 1,
+            "15": 1,
+            "16": 2,
+            "17": 2,
+            "18": 2,
+            "19": 2,
+            "20": 2,
+            "21": 2,
+            "22": 2,
+            "23": 2,
+            "24": 2,
+            "25": 2,
+            "26": 2,
+            "27": 2,
+            "28": 2,
+            "29": 2,
+            "30": 2,
+            "31": 2
+          },
+          "visibleEdgeIds": {
+            "0": 11,
+            "1": 11,
+            "2": 11,
+            "3": 11,
+            "4": 11,
+            "5": 11,
+            "6": 11,
+            "7": 11,
+            "8": 11,
+            "9": 11,
+            "10": 11,
+            "11": 11,
+            "12": 11,
+            "13": 11,
+            "14": 11,
+            "15": 11
+          },
+          "sources": {
+            "0": "0"
+          },
+          "targets": {
+            "0": "1"
+          }
+        }
+      }
+    },
+    {
+      "name": "retained-temporal-half-open-history-pixels-and-UUID-retention",
+      "result": [
+        {
+          "result": {
+            "relayout": null,
+            "revision": 4,
+            "degraded": false,
+            "unmatched": 0,
+            "dropped": 0,
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "02020202-0202-0202-0202-020202020202"
+                }
+              ],
+              "indices": {
+                "0": "1"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "changed": [],
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "02020202-0202-0202-0202-020202020202"
+              }
+            ],
+            "focusRing": {
+              "0": 0,
+              "1": 1,
+              "2": 1,
+              "3": 0,
+              "4": 0,
+              "5": 0
+            },
+            "focusAction": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "02020202-0202-0202-0202-020202020202"
+                }
+              ],
+              "disclosureEligible": false,
+              "collapsed": false,
+              "pinEligible": true,
+              "pinned": true,
+              "moveCapability": true
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "outcome": {
+              "stateChanged": false,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "disclosure": {
+              "refs": [],
+              "collapsed": []
+            },
+            "companion": {
+              "rows": [
+                [
+                  "Node",
+                  "01010101010101010101010101010101",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "02020202020202020202020202020202",
+                  "",
+                  "1 relationships",
+                  "selected"
+                ],
+                [
+                  "Node",
+                  "03030303030303030303030303030303",
+                  "",
+                  "1 relationships",
+                  "not selected"
+                ],
+                [
+                  "Edge",
+                  "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+                  "",
+                  "0 to 1",
+                  "not selected"
+                ],
+                [
+                  "Edge",
+                  "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c",
+                  "",
+                  "0 to 2",
+                  "not selected"
+                ]
+              ],
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01010101-0101-0101-0101-010101010101"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "02020202-0202-0202-0202-020202020202"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "03030303-0303-0303-0303-030303030303"
+                },
+                {
+                  "kind": 1,
+                  "uuid": "0b0b0b0b-0b0b-0b0b-0b0b-0b0b0b0b0b0b"
+                },
+                {
+                  "kind": 1,
+                  "uuid": "0c0c0c0c-0c0c-0c0c-0c0c-0c0c0c0c0c0c"
+                }
+              ],
+              "total": 5
+            },
+            "summary": "Node , 1 relationships, selected, 2 of 3",
+            "camera": [
+              1,
+              1,
+              0,
+              0,
+              640,
+              320,
+              1
+            ],
+            "temporal": {
+              "revision": "2",
+              "cursor": "19",
+              "range": [
+                "0",
+                "40"
+              ],
+              "nodeVisibility": {
+                "0": 1,
+                "1": 1,
+                "2": 0
+              },
+              "edgeVisibility": {
+                "0": 1,
+                "1": 0
+              },
+              "visibleNodeIds": {
+                "0": 1,
+                "1": 1,
+                "2": 1,
+                "3": 1,
+                "4": 1,
+                "5": 1,
+                "6": 1,
+                "7": 1,
+                "8": 1,
+                "9": 1,
+                "10": 1,
+                "11": 1,
+                "12": 1,
+                "13": 1,
+                "14": 1,
+                "15": 1,
+                "16": 2,
+                "17": 2,
+                "18": 2,
+                "19": 2,
+                "20": 2,
+                "21": 2,
+                "22": 2,
+                "23": 2,
+                "24": 2,
+                "25": 2,
+                "26": 2,
+                "27": 2,
+                "28": 2,
+                "29": 2,
+                "30": 2,
+                "31": 2
+              },
+              "visibleEdgeIds": {
+                "0": 11,
+                "1": 11,
+                "2": 11,
+                "3": 11,
+                "4": 11,
+                "5": 11,
+                "6": 11,
+                "7": 11,
+                "8": 11,
+                "9": 11,
+                "10": 11,
+                "11": 11,
+                "12": 11,
+                "13": 11,
+                "14": 11,
+                "15": 11
+              },
+              "sources": {
+                "0": "0"
+              },
+              "targets": {
+                "0": "1"
+              }
+            }
+          },
+          "image": {
+            "at2": [
+              0,
+              0,
+              0,
+              255
+            ],
+            "at3": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "nonzero": 1242
+          },
+          "renderMembers": {
+            "nodes": [
+              "0",
+              "1"
+            ],
+            "edges": [
+              "0"
+            ]
+          }
+        },
+        {
+          "result": {
+            "relayout": null,
+            "revision": 5,
+            "degraded": false,
+            "unmatched": 0,
+            "dropped": 0,
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "02020202-0202-0202-0202-020202020202"
+                }
+              ],
+              "indices": {
+                "0": "1"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "changed": [],
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "02020202-0202-0202-0202-020202020202"
+              }
+            ],
+            "focusRing": {},
+            "focusAction": {
+              "refs": [],
+              "disclosureEligible": false,
+              "collapsed": false,
+              "pinEligible": false,
+              "pinned": false,
+              "moveCapability": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "outcome": {
+              "stateChanged": false,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "disclosure": {
+              "refs": [],
+              "collapsed": []
+            },
+            "companion": {
+              "rows": [
+                [
+                  "Node",
+                  "01010101010101010101010101010101",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "02020202020202020202020202020202",
+                  "",
+                  "1 relationships",
+                  "selected"
+                ],
+                [
+                  "Node",
+                  "03030303030303030303030303030303",
+                  "",
+                  "1 relationships",
+                  "not selected"
+                ],
+                [
+                  "Edge",
+                  "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+                  "",
+                  "0 to 1",
+                  "not selected"
+                ],
+                [
+                  "Edge",
+                  "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c",
+                  "",
+                  "0 to 2",
+                  "not selected"
+                ]
+              ],
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01010101-0101-0101-0101-010101010101"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "02020202-0202-0202-0202-020202020202"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "03030303-0303-0303-0303-030303030303"
+                },
+                {
+                  "kind": 1,
+                  "uuid": "0b0b0b0b-0b0b-0b0b-0b0b-0b0b0b0b0b0b"
+                },
+                {
+                  "kind": 1,
+                  "uuid": "0c0c0c0c-0c0c-0c0c-0c0c-0c0c0c0c0c0c"
+                }
+              ],
+              "total": 5
+            },
+            "summary": "Node , 1 relationships, selected, 2 of 3",
+            "camera": [
+              1,
+              1,
+              0,
+              0,
+              640,
+              320,
+              1
+            ],
+            "temporal": {
+              "revision": "3",
+              "cursor": "20",
+              "range": [
+                "0",
+                "40"
+              ],
+              "nodeVisibility": {
+                "0": 1,
+                "1": 0,
+                "2": 1
+              },
+              "edgeVisibility": {
+                "0": 0,
+                "1": 1
+              },
+              "visibleNodeIds": {
+                "0": 1,
+                "1": 1,
+                "2": 1,
+                "3": 1,
+                "4": 1,
+                "5": 1,
+                "6": 1,
+                "7": 1,
+                "8": 1,
+                "9": 1,
+                "10": 1,
+                "11": 1,
+                "12": 1,
+                "13": 1,
+                "14": 1,
+                "15": 1,
+                "16": 3,
+                "17": 3,
+                "18": 3,
+                "19": 3,
+                "20": 3,
+                "21": 3,
+                "22": 3,
+                "23": 3,
+                "24": 3,
+                "25": 3,
+                "26": 3,
+                "27": 3,
+                "28": 3,
+                "29": 3,
+                "30": 3,
+                "31": 3
+              },
+              "visibleEdgeIds": {
+                "0": 12,
+                "1": 12,
+                "2": 12,
+                "3": 12,
+                "4": 12,
+                "5": 12,
+                "6": 12,
+                "7": 12,
+                "8": 12,
+                "9": 12,
+                "10": 12,
+                "11": 12,
+                "12": 12,
+                "13": 12,
+                "14": 12,
+                "15": 12
+              },
+              "sources": {
+                "0": "0"
+              },
+              "targets": {
+                "0": "1"
+              }
+            }
+          },
+          "image": {
+            "at2": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "at3": [
+              75,
+              85,
+              99,
+              242
+            ],
+            "nonzero": 1884
+          },
+          "renderMembers": {
+            "nodes": [
+              "0",
+              "2"
+            ],
+            "edges": [
+              "1"
+            ]
+          }
+        },
+        {
+          "result": {
+            "relayout": null,
+            "revision": 6,
+            "degraded": false,
+            "unmatched": 0,
+            "dropped": 0,
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "02020202-0202-0202-0202-020202020202"
+                }
+              ],
+              "indices": {
+                "0": "1"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "changed": [],
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "02020202-0202-0202-0202-020202020202"
+              }
+            ],
+            "focusRing": {
+              "0": 0,
+              "1": 1,
+              "2": 1,
+              "3": 0,
+              "4": 0,
+              "5": 0
+            },
+            "focusAction": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "02020202-0202-0202-0202-020202020202"
+                }
+              ],
+              "disclosureEligible": false,
+              "collapsed": false,
+              "pinEligible": true,
+              "pinned": true,
+              "moveCapability": true
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "outcome": {
+              "stateChanged": false,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "disclosure": {
+              "refs": [],
+              "collapsed": []
+            },
+            "companion": {
+              "rows": [
+                [
+                  "Node",
+                  "01010101010101010101010101010101",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "02020202020202020202020202020202",
+                  "",
+                  "1 relationships",
+                  "selected"
+                ],
+                [
+                  "Node",
+                  "03030303030303030303030303030303",
+                  "",
+                  "1 relationships",
+                  "not selected"
+                ],
+                [
+                  "Edge",
+                  "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+                  "",
+                  "0 to 1",
+                  "not selected"
+                ],
+                [
+                  "Edge",
+                  "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c",
+                  "",
+                  "0 to 2",
+                  "not selected"
+                ]
+              ],
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01010101-0101-0101-0101-010101010101"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "02020202-0202-0202-0202-020202020202"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "03030303-0303-0303-0303-030303030303"
+                },
+                {
+                  "kind": 1,
+                  "uuid": "0b0b0b0b-0b0b-0b0b-0b0b-0b0b0b0b0b0b"
+                },
+                {
+                  "kind": 1,
+                  "uuid": "0c0c0c0c-0c0c-0c0c-0c0c-0c0c0c0c0c0c"
+                }
+              ],
+              "total": 5
+            },
+            "summary": "Node , 1 relationships, selected, 2 of 3",
+            "camera": [
+              1,
+              1,
+              0,
+              0,
+              640,
+              320,
+              1
+            ],
+            "temporal": {
+              "revision": "4",
+              "cursor": "10",
+              "range": [
+                "0",
+                "40"
+              ],
+              "nodeVisibility": {
+                "0": 1,
+                "1": 1,
+                "2": 0
+              },
+              "edgeVisibility": {
+                "0": 1,
+                "1": 0
+              },
+              "visibleNodeIds": {
+                "0": 1,
+                "1": 1,
+                "2": 1,
+                "3": 1,
+                "4": 1,
+                "5": 1,
+                "6": 1,
+                "7": 1,
+                "8": 1,
+                "9": 1,
+                "10": 1,
+                "11": 1,
+                "12": 1,
+                "13": 1,
+                "14": 1,
+                "15": 1,
+                "16": 2,
+                "17": 2,
+                "18": 2,
+                "19": 2,
+                "20": 2,
+                "21": 2,
+                "22": 2,
+                "23": 2,
+                "24": 2,
+                "25": 2,
+                "26": 2,
+                "27": 2,
+                "28": 2,
+                "29": 2,
+                "30": 2,
+                "31": 2
+              },
+              "visibleEdgeIds": {
+                "0": 11,
+                "1": 11,
+                "2": 11,
+                "3": 11,
+                "4": 11,
+                "5": 11,
+                "6": 11,
+                "7": 11,
+                "8": 11,
+                "9": 11,
+                "10": 11,
+                "11": 11,
+                "12": 11,
+                "13": 11,
+                "14": 11,
+                "15": 11
+              },
+              "sources": {
+                "0": "0"
+              },
+              "targets": {
+                "0": "1"
+              }
+            }
+          },
+          "image": {
+            "at2": [
+              0,
+              0,
+              0,
+              255
+            ],
+            "at3": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "nonzero": 1242
+          },
+          "renderMembers": {
+            "nodes": [
+              "0",
+              "1"
+            ],
+            "edges": [
+              "0"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "retained-temporal-step-play-pause-and-remote-snapshot",
+      "result": {
+        "relayout": null,
+        "revision": 9,
+        "degraded": false,
+        "unmatched": 0,
+        "dropped": 0,
+        "selection": {
+          "refs": [
+            {
+              "kind": 0,
+              "uuid": "02020202-0202-0202-0202-020202020202"
+            }
+          ],
+          "indices": {
+            "0": "1"
+          },
+          "layerOffsets": {
+            "0": "0",
+            "1": "0"
+          },
+          "layers": {},
+          "rows": {},
+          "resultIds": []
+        },
+        "changed": [],
+        "focus": [
+          {
+            "kind": 0,
+            "uuid": "02020202-0202-0202-0202-020202020202"
+          }
+        ],
+        "focusRing": {
+          "0": 0,
+          "1": 1,
+          "2": 1,
+          "3": 0,
+          "4": 0,
+          "5": 0
+        },
+        "focusAction": {
+          "refs": [
+            {
+              "kind": 0,
+              "uuid": "02020202-0202-0202-0202-020202020202"
+            }
+          ],
+          "disclosureEligible": false,
+          "collapsed": false,
+          "pinEligible": true,
+          "pinned": true,
+          "moveCapability": true
+        },
+        "clearAction": {
+          "applicable": true
+        },
+        "outcome": {
+          "stateChanged": false,
+          "selected": 1,
+          "disclosurePresent": false
+        },
+        "disclosure": {
+          "refs": [],
+          "collapsed": []
+        },
+        "companion": {
+          "rows": [
+            [
+              "Node",
+              "01010101010101010101010101010101",
+              "",
+              "2 relationships",
+              "not selected"
+            ],
+            [
+              "Node",
+              "02020202020202020202020202020202",
+              "",
+              "1 relationships",
+              "selected"
+            ],
+            [
+              "Node",
+              "03030303030303030303030303030303",
+              "",
+              "1 relationships",
+              "not selected"
+            ],
+            [
+              "Edge",
+              "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+              "",
+              "0 to 1",
+              "not selected"
+            ],
+            [
+              "Edge",
+              "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c",
+              "",
+              "0 to 2",
+              "not selected"
+            ]
+          ],
+          "refs": [
+            {
+              "kind": 0,
+              "uuid": "01010101-0101-0101-0101-010101010101"
+            },
+            {
+              "kind": 0,
+              "uuid": "02020202-0202-0202-0202-020202020202"
+            },
+            {
+              "kind": 0,
+              "uuid": "03030303-0303-0303-0303-030303030303"
+            },
+            {
+              "kind": 1,
+              "uuid": "0b0b0b0b-0b0b-0b0b-0b0b-0b0b0b0b0b0b"
+            },
+            {
+              "kind": 1,
+              "uuid": "0c0c0c0c-0c0c-0c0c-0c0c-0c0c0c0c0c0c"
+            }
+          ],
+          "total": 5
+        },
+        "summary": "Node , 1 relationships, selected, 2 of 3",
+        "camera": [
+          1,
+          1,
+          0,
+          0,
+          640,
+          320,
+          1
+        ],
+        "temporal": {
+          "revision": "7",
+          "cursor": "10",
+          "range": [
+            "0",
+            "40"
+          ],
+          "nodeVisibility": {
+            "0": 1,
+            "1": 1,
+            "2": 0
+          },
+          "edgeVisibility": {
+            "0": 1,
+            "1": 0
+          },
+          "visibleNodeIds": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1,
+            "6": 1,
+            "7": 1,
+            "8": 1,
+            "9": 1,
+            "10": 1,
+            "11": 1,
+            "12": 1,
+            "13": 1,
+            "14": 1,
+            "15": 1,
+            "16": 2,
+            "17": 2,
+            "18": 2,
+            "19": 2,
+            "20": 2,
+            "21": 2,
+            "22": 2,
+            "23": 2,
+            "24": 2,
+            "25": 2,
+            "26": 2,
+            "27": 2,
+            "28": 2,
+            "29": 2,
+            "30": 2,
+            "31": 2
+          },
+          "visibleEdgeIds": {
+            "0": 11,
+            "1": 11,
+            "2": 11,
+            "3": 11,
+            "4": 11,
+            "5": 11,
+            "6": 11,
+            "7": 11,
+            "8": 11,
+            "9": 11,
+            "10": 11,
+            "11": 11,
+            "12": 11,
+            "13": 11,
+            "14": 11,
+            "15": 11
+          },
+          "sources": {
+            "0": "0"
+          },
+          "targets": {
+            "0": "1"
+          }
+        }
+      }
+    },
+    {
+      "name": "retained-temporal-refused-frame-keeps-picture-state-and-retries",
+      "result": {
+        "relayout": null,
+        "revision": 10,
+        "degraded": false,
+        "unmatched": 0,
+        "dropped": 0,
+        "selection": {
+          "refs": [
+            {
+              "kind": 0,
+              "uuid": "02020202-0202-0202-0202-020202020202"
+            }
+          ],
+          "indices": {
+            "0": "1"
+          },
+          "layerOffsets": {
+            "0": "0",
+            "1": "0"
+          },
+          "layers": {},
+          "rows": {},
+          "resultIds": []
+        },
+        "changed": [],
+        "focus": [
+          {
+            "kind": 0,
+            "uuid": "02020202-0202-0202-0202-020202020202"
+          }
+        ],
+        "focusRing": {},
+        "focusAction": {
+          "refs": [],
+          "disclosureEligible": false,
+          "collapsed": false,
+          "pinEligible": false,
+          "pinned": false,
+          "moveCapability": false
+        },
+        "clearAction": {
+          "applicable": true
+        },
+        "outcome": {
+          "stateChanged": false,
+          "selected": 1,
+          "disclosurePresent": false
+        },
+        "disclosure": {
+          "refs": [],
+          "collapsed": []
+        },
+        "companion": {
+          "rows": [
+            [
+              "Node",
+              "01010101010101010101010101010101",
+              "",
+              "2 relationships",
+              "not selected"
+            ],
+            [
+              "Node",
+              "02020202020202020202020202020202",
+              "",
+              "1 relationships",
+              "selected"
+            ],
+            [
+              "Node",
+              "03030303030303030303030303030303",
+              "",
+              "1 relationships",
+              "not selected"
+            ],
+            [
+              "Edge",
+              "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+              "",
+              "0 to 1",
+              "not selected"
+            ],
+            [
+              "Edge",
+              "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c",
+              "",
+              "0 to 2",
+              "not selected"
+            ]
+          ],
+          "refs": [
+            {
+              "kind": 0,
+              "uuid": "01010101-0101-0101-0101-010101010101"
+            },
+            {
+              "kind": 0,
+              "uuid": "02020202-0202-0202-0202-020202020202"
+            },
+            {
+              "kind": 0,
+              "uuid": "03030303-0303-0303-0303-030303030303"
+            },
+            {
+              "kind": 1,
+              "uuid": "0b0b0b0b-0b0b-0b0b-0b0b-0b0b0b0b0b0b"
+            },
+            {
+              "kind": 1,
+              "uuid": "0c0c0c0c-0c0c-0c0c-0c0c-0c0c0c0c0c0c"
+            }
+          ],
+          "total": 5
+        },
+        "summary": "Node , 1 relationships, selected, 2 of 3",
+        "camera": [
+          1,
+          1,
+          0,
+          0,
+          640,
+          320,
+          1
+        ],
+        "temporal": {
+          "revision": "9",
+          "cursor": "20",
+          "range": [
+            "0",
+            "40"
+          ],
+          "nodeVisibility": {
+            "0": 1,
+            "1": 0,
+            "2": 1
+          },
+          "edgeVisibility": {
+            "0": 0,
+            "1": 1
+          },
+          "visibleNodeIds": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1,
+            "6": 1,
+            "7": 1,
+            "8": 1,
+            "9": 1,
+            "10": 1,
+            "11": 1,
+            "12": 1,
+            "13": 1,
+            "14": 1,
+            "15": 1,
+            "16": 3,
+            "17": 3,
+            "18": 3,
+            "19": 3,
+            "20": 3,
+            "21": 3,
+            "22": 3,
+            "23": 3,
+            "24": 3,
+            "25": 3,
+            "26": 3,
+            "27": 3,
+            "28": 3,
+            "29": 3,
+            "30": 3,
+            "31": 3
+          },
+          "visibleEdgeIds": {
+            "0": 12,
+            "1": 12,
+            "2": 12,
+            "3": 12,
+            "4": 12,
+            "5": 12,
+            "6": 12,
+            "7": 12,
+            "8": 12,
+            "9": 12,
+            "10": 12,
+            "11": 12,
+            "12": 12,
+            "13": 12,
+            "14": 12,
+            "15": 12
+          },
+          "sources": {
+            "0": "0"
+          },
+          "targets": {
+            "0": "1"
+          }
+        }
+      }
+    },
+    {
+      "name": "retained-temporal-hidden-node-native-pick-does-not-select-hidden-UUID",
+      "result": {
+        "relayout": null,
+        "revision": 10,
+        "degraded": false,
+        "unmatched": 0,
+        "dropped": 0,
+        "selection": {
+          "refs": [
+            {
+              "kind": 0,
+              "uuid": "02020202-0202-0202-0202-020202020202"
+            }
+          ],
+          "indices": {
+            "0": "1"
+          },
+          "layerOffsets": {
+            "0": "0",
+            "1": "0"
+          },
+          "layers": {},
+          "rows": {},
+          "resultIds": []
+        },
+        "changed": [],
+        "focus": [
+          {
+            "kind": 0,
+            "uuid": "02020202-0202-0202-0202-020202020202"
+          }
+        ],
+        "focusRing": {},
+        "focusAction": {
+          "refs": [],
+          "disclosureEligible": false,
+          "collapsed": false,
+          "pinEligible": false,
+          "pinned": false,
+          "moveCapability": false
+        },
+        "clearAction": {
+          "applicable": true
+        },
+        "outcome": {
+          "stateChanged": false,
+          "selected": 1,
+          "disclosurePresent": false
+        },
+        "disclosure": {
+          "refs": [],
+          "collapsed": []
+        },
+        "companion": {
+          "rows": [
+            [
+              "Node",
+              "01010101010101010101010101010101",
+              "",
+              "2 relationships",
+              "not selected"
+            ],
+            [
+              "Node",
+              "02020202020202020202020202020202",
+              "",
+              "1 relationships",
+              "selected"
+            ],
+            [
+              "Node",
+              "03030303030303030303030303030303",
+              "",
+              "1 relationships",
+              "not selected"
+            ],
+            [
+              "Edge",
+              "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+              "",
+              "0 to 1",
+              "not selected"
+            ],
+            [
+              "Edge",
+              "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c",
+              "",
+              "0 to 2",
+              "not selected"
+            ]
+          ],
+          "refs": [
+            {
+              "kind": 0,
+              "uuid": "01010101-0101-0101-0101-010101010101"
+            },
+            {
+              "kind": 0,
+              "uuid": "02020202-0202-0202-0202-020202020202"
+            },
+            {
+              "kind": 0,
+              "uuid": "03030303-0303-0303-0303-030303030303"
+            },
+            {
+              "kind": 1,
+              "uuid": "0b0b0b0b-0b0b-0b0b-0b0b-0b0b0b0b0b0b"
+            },
+            {
+              "kind": 1,
+              "uuid": "0c0c0c0c-0c0c-0c0c-0c0c-0c0c0c0c0c0c"
+            }
+          ],
+          "total": 5
+        },
+        "summary": "Node , 1 relationships, selected, 2 of 3",
+        "camera": [
+          1,
+          1,
+          0,
+          0,
+          640,
+          320,
+          1
+        ],
+        "temporal": {
+          "revision": "9",
+          "cursor": "20",
+          "range": [
+            "0",
+            "40"
+          ],
+          "nodeVisibility": {
+            "0": 1,
+            "1": 0,
+            "2": 1
+          },
+          "edgeVisibility": {
+            "0": 0,
+            "1": 1
+          },
+          "visibleNodeIds": {
+            "0": 1,
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+            "5": 1,
+            "6": 1,
+            "7": 1,
+            "8": 1,
+            "9": 1,
+            "10": 1,
+            "11": 1,
+            "12": 1,
+            "13": 1,
+            "14": 1,
+            "15": 1,
+            "16": 3,
+            "17": 3,
+            "18": 3,
+            "19": 3,
+            "20": 3,
+            "21": 3,
+            "22": 3,
+            "23": 3,
+            "24": 3,
+            "25": 3,
+            "26": 3,
+            "27": 3,
+            "28": 3,
+            "29": 3,
+            "30": 3,
+            "31": 3
+          },
+          "visibleEdgeIds": {
+            "0": 12,
+            "1": 12,
+            "2": 12,
+            "3": 12,
+            "4": 12,
+            "5": 12,
+            "6": 12,
+            "7": 12,
+            "8": 12,
+            "9": 12,
+            "10": 12,
+            "11": 12,
+            "12": 12,
+            "13": 12,
+            "14": 12,
+            "15": 12
+          },
+          "sources": {
+            "0": "0"
+          },
+          "targets": {
+            "0": "1"
+          }
+        }
+      }
+    },
+    {
+      "name": "retained-temporal-latest-wins-held-reply-and-disposal",
+      "result": {
+        "before": {
+          "relayout": null,
+          "revision": 10,
+          "degraded": false,
+          "unmatched": 0,
+          "dropped": 0,
+          "selection": {
+            "refs": [
+              {
+                "kind": 0,
+                "uuid": "02020202-0202-0202-0202-020202020202"
+              }
+            ],
+            "indices": {
+              "0": "1"
+            },
+            "layerOffsets": {
+              "0": "0",
+              "1": "0"
+            },
+            "layers": {},
+            "rows": {},
+            "resultIds": []
+          },
+          "changed": [],
+          "focus": [
+            {
+              "kind": 0,
+              "uuid": "02020202-0202-0202-0202-020202020202"
+            }
+          ],
+          "focusRing": {},
+          "focusAction": {
+            "refs": [],
+            "disclosureEligible": false,
+            "collapsed": false,
+            "pinEligible": false,
+            "pinned": false,
+            "moveCapability": false
+          },
+          "clearAction": {
+            "applicable": true
+          },
+          "outcome": {
+            "stateChanged": false,
+            "selected": 1,
+            "disclosurePresent": false
+          },
+          "disclosure": {
+            "refs": [],
+            "collapsed": []
+          },
+          "companion": {
+            "rows": [
+              [
+                "Node",
+                "01010101010101010101010101010101",
+                "",
+                "2 relationships",
+                "not selected"
+              ],
+              [
+                "Node",
+                "02020202020202020202020202020202",
+                "",
+                "1 relationships",
+                "selected"
+              ],
+              [
+                "Node",
+                "03030303030303030303030303030303",
+                "",
+                "1 relationships",
+                "not selected"
+              ],
+              [
+                "Edge",
+                "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+                "",
+                "0 to 1",
+                "not selected"
+              ],
+              [
+                "Edge",
+                "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c",
+                "",
+                "0 to 2",
+                "not selected"
+              ]
+            ],
+            "refs": [
+              {
+                "kind": 0,
+                "uuid": "01010101-0101-0101-0101-010101010101"
+              },
+              {
+                "kind": 0,
+                "uuid": "02020202-0202-0202-0202-020202020202"
+              },
+              {
+                "kind": 0,
+                "uuid": "03030303-0303-0303-0303-030303030303"
+              },
+              {
+                "kind": 1,
+                "uuid": "0b0b0b0b-0b0b-0b0b-0b0b-0b0b0b0b0b0b"
+              },
+              {
+                "kind": 1,
+                "uuid": "0c0c0c0c-0c0c-0c0c-0c0c-0c0c0c0c0c0c"
+              }
+            ],
+            "total": 5
+          },
+          "summary": "Node , 1 relationships, selected, 2 of 3",
+          "camera": [
+            1,
+            1,
+            0,
+            0,
+            640,
+            320,
+            1
+          ],
+          "temporal": {
+            "revision": "9",
+            "cursor": "20",
+            "range": [
+              "0",
+              "40"
+            ],
+            "nodeVisibility": {
+              "0": 1,
+              "1": 0,
+              "2": 1
+            },
+            "edgeVisibility": {
+              "0": 0,
+              "1": 1
+            },
+            "visibleNodeIds": {
+              "0": 1,
+              "1": 1,
+              "2": 1,
+              "3": 1,
+              "4": 1,
+              "5": 1,
+              "6": 1,
+              "7": 1,
+              "8": 1,
+              "9": 1,
+              "10": 1,
+              "11": 1,
+              "12": 1,
+              "13": 1,
+              "14": 1,
+              "15": 1,
+              "16": 3,
+              "17": 3,
+              "18": 3,
+              "19": 3,
+              "20": 3,
+              "21": 3,
+              "22": 3,
+              "23": 3,
+              "24": 3,
+              "25": 3,
+              "26": 3,
+              "27": 3,
+              "28": 3,
+              "29": 3,
+              "30": 3,
+              "31": 3
+            },
+            "visibleEdgeIds": {
+              "0": 12,
+              "1": 12,
+              "2": 12,
+              "3": 12,
+              "4": 12,
+              "5": 12,
+              "6": 12,
+              "7": 12,
+              "8": 12,
+              "9": 12,
+              "10": 12,
+              "11": 12,
+              "12": 12,
+              "13": 12,
+              "14": 12,
+              "15": 12
+            },
+            "sources": {
+              "0": "0"
+            },
+            "targets": {
+              "0": "1"
+            }
+          }
+        },
+        "latest": {
+          "relayout": null,
+          "revision": 12,
+          "degraded": false,
+          "unmatched": 0,
+          "dropped": 0,
+          "selection": {
+            "refs": [
+              {
+                "kind": 0,
+                "uuid": "02020202-0202-0202-0202-020202020202"
+              }
+            ],
+            "indices": {
+              "0": "1"
+            },
+            "layerOffsets": {
+              "0": "0",
+              "1": "0"
+            },
+            "layers": {},
+            "rows": {},
+            "resultIds": []
+          },
+          "changed": [],
+          "focus": [
+            {
+              "kind": 0,
+              "uuid": "02020202-0202-0202-0202-020202020202"
+            }
+          ],
+          "focusRing": {},
+          "focusAction": {
+            "refs": [],
+            "disclosureEligible": false,
+            "collapsed": false,
+            "pinEligible": false,
+            "pinned": false,
+            "moveCapability": false
+          },
+          "clearAction": {
+            "applicable": true
+          },
+          "outcome": {
+            "stateChanged": false,
+            "selected": 1,
+            "disclosurePresent": false
+          },
+          "disclosure": {
+            "refs": [],
+            "collapsed": []
+          },
+          "companion": {
+            "rows": [
+              [
+                "Node",
+                "01010101010101010101010101010101",
+                "",
+                "2 relationships",
+                "not selected"
+              ],
+              [
+                "Node",
+                "02020202020202020202020202020202",
+                "",
+                "1 relationships",
+                "selected"
+              ],
+              [
+                "Node",
+                "03030303030303030303030303030303",
+                "",
+                "1 relationships",
+                "not selected"
+              ],
+              [
+                "Edge",
+                "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+                "",
+                "0 to 1",
+                "not selected"
+              ],
+              [
+                "Edge",
+                "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c",
+                "",
+                "0 to 2",
+                "not selected"
+              ]
+            ],
+            "refs": [
+              {
+                "kind": 0,
+                "uuid": "01010101-0101-0101-0101-010101010101"
+              },
+              {
+                "kind": 0,
+                "uuid": "02020202-0202-0202-0202-020202020202"
+              },
+              {
+                "kind": 0,
+                "uuid": "03030303-0303-0303-0303-030303030303"
+              },
+              {
+                "kind": 1,
+                "uuid": "0b0b0b0b-0b0b-0b0b-0b0b-0b0b0b0b0b0b"
+              },
+              {
+                "kind": 1,
+                "uuid": "0c0c0c0c-0c0c-0c0c-0c0c-0c0c0c0c0c0c"
+              }
+            ],
+            "total": 5
+          },
+          "summary": "Node , 1 relationships, selected, 2 of 3",
+          "camera": [
+            1,
+            1,
+            0,
+            0,
+            640,
+            320,
+            1
+          ],
+          "temporal": {
+            "revision": "11",
+            "cursor": "20",
+            "range": [
+              "0",
+              "40"
+            ],
+            "nodeVisibility": {
+              "0": 1,
+              "1": 0,
+              "2": 1
+            },
+            "edgeVisibility": {
+              "0": 0,
+              "1": 1
+            },
+            "visibleNodeIds": {
+              "0": 1,
+              "1": 1,
+              "2": 1,
+              "3": 1,
+              "4": 1,
+              "5": 1,
+              "6": 1,
+              "7": 1,
+              "8": 1,
+              "9": 1,
+              "10": 1,
+              "11": 1,
+              "12": 1,
+              "13": 1,
+              "14": 1,
+              "15": 1,
+              "16": 3,
+              "17": 3,
+              "18": 3,
+              "19": 3,
+              "20": 3,
+              "21": 3,
+              "22": 3,
+              "23": 3,
+              "24": 3,
+              "25": 3,
+              "26": 3,
+              "27": 3,
+              "28": 3,
+              "29": 3,
+              "30": 3,
+              "31": 3
+            },
+            "visibleEdgeIds": {
+              "0": 12,
+              "1": 12,
+              "2": 12,
+              "3": 12,
+              "4": 12,
+              "5": 12,
+              "6": 12,
+              "7": 12,
+              "8": 12,
+              "9": 12,
+              "10": 12,
+              "11": 12,
+              "12": 12,
+              "13": 12,
+              "14": 12,
+              "15": 12
+            },
+            "sources": {
+              "0": "0"
+            },
+            "targets": {
+              "0": "1"
+            }
+          }
+        },
+        "tail": [
+          "20"
+        ],
+        "closed": {
+          "sameSource": true,
+          "noLate": true,
+          "empty": true,
+          "failures": [
+            {
+              "code": "GF_INTERACTION_BUDGET",
+              "message": "temporal graph frame failed"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "status": "passed",
+  "requests": [
+    "/",
+    "/tests/browser/graph_session_controller_page.mjs",
+    "/packages/xy-client/dist/index.js",
+    "/packages/xy-node/src/graphforge-container.js",
+    "/packages/xy-client/dist/wasm-worker.js",
+    "/packages/xy-client/dist/xyg-wasm.wasm",
+    "/tests/fixtures/graphforge/results/base-cyclic-nodes.arrow",
+    "/tests/fixtures/graphforge/results/base-cyclic-edges.arrow",
+    "/tests/fixtures/graphforge/results/pagerank.arrow",
+    "/tests/fixtures/graphforge/results/node_similarity.arrow",
+    "/packages/xy-client/dist/wasm-worker.js",
+    "/packages/xy-client/dist/xyg-wasm.wasm",
+    "/tests/fixtures/temporal/assertion-history.json",
+    "/packages/xy-client/dist/wasm-worker.js",
+    "/packages/xy-client/dist/wasm-worker.js",
+    "/packages/xy-client/dist/xyg-wasm.wasm",
+    "/packages/xy-client/dist/xyg-wasm.wasm"
+  ],
+  "cspViolations": [],
+  "pageErrors": []
+}

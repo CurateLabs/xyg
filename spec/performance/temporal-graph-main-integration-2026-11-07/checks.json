@@ -1,0 +1,216 @@
+{
+  "parents": [
+    "0151a1915421933990d3bb2874e0f74e203099d4",
+    "084b3c1b7c393e135476aab9610bf8334767b2ac"
+  ],
+  "base": "80e841542462eaf5509ac90e1f17a80cae974164",
+  "protectedParentEntries": 15270,
+  "parentProtectionSha256": "7195a4d54799750f8f6d667e23449b133f36ddbc102e03d431e28c57a7121e05",
+  "currentBindingsSha256": "da6d95d4c11d92b1611a0d9b799da507b765df50d8e309d6b72b01356a3905da",
+  "previousChecksSha256": "c4e3db95d8f8fe236dc2e7c694d0ca2a01eabd9ce4ed02af0e0277e528cf21c5",
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6127864,
+      "sha256": "09b2571980a8c1d97ac4478fc51b346fb9356d07916bc8b38e84c072b531b895"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1927032,
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 808602,
+      "sha256": "279ac3767ee8b9dedf91698018f71441d143767ad940e887d3cc0fadbd29b056"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 808631,
+      "sha256": "147a3dbd091c75782567f6bb44c32190366948a0481fb548f5b40bdb1676dc8a"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 56634,
+      "sha256": "cc65e16ea9d59dcee9a339ff7ead857c71c8507771e5cddc24ab2cd090ffd555"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 808602,
+      "sha256": "279ac3767ee8b9dedf91698018f71441d143767ad940e887d3cc0fadbd29b056"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 808631,
+      "sha256": "147a3dbd091c75782567f6bb44c32190366948a0481fb548f5b40bdb1676dc8a"
+    }
+  },
+  "logs": {
+    "wire.log": {
+      "archive": "spec/performance/temporal-graph-main-integration-2026-11-07/wire.log.gz",
+      "archiveSha256": "83a86e210990edd56b6e43193bd15d6b219ed898596a7444b6cb6e1e2f8b9b7c",
+      "rawSha256": "23ad49caeca14e2580dda0fa5560ffe7c68039eb685d91a1d83e828ab4ab304f"
+    },
+    "merge-syntax-correction.log": {
+      "archive": "spec/performance/temporal-graph-main-integration-2026-11-07/merge-syntax-correction.log.gz",
+      "archiveSha256": "d5938a25ae749fb9e55119f8f7d522cc41828e02161550f57d7f95b15a290517",
+      "rawSha256": "5910c063fd48c6001c414e01fe82d78b7986ae575a897e59829a6b8c96736512"
+    },
+    "metadata.log": {
+      "archive": "spec/performance/temporal-graph-main-integration-2026-11-07/metadata.log.gz",
+      "archiveSha256": "bf85d0115ecaadca507765c8725d5db1ff1e2259c5dd5e1a150e97bfd87a8fb3",
+      "rawSha256": "ee3c22135b934b47a2abc0b9d6502cca70be0d03a54f51556bfef0e1ac91b6ae"
+    },
+    "foundation.json.retained-temporal.json": {
+      "archive": "spec/performance/temporal-graph-main-integration-2026-11-07/foundation.json.retained-temporal.json.gz",
+      "archiveSha256": "b28038b03a58ba437fff9db9cd95b2c28ce4fc313231a3b5e5f24699fd706f39",
+      "rawSha256": "028cf790fbe8574e9b863dd49828b9ff42ad3b2aa4331e7dae54b28f5a8313d6"
+    },
+    "foundation.json.retained-temporal.json.wire.json": {
+      "archive": "spec/performance/temporal-graph-main-integration-2026-11-07/foundation.json.retained-temporal.json.wire.json.gz",
+      "archiveSha256": "dff45d33712bf77ead8fbddf07d8ca4c153d127433a87a3cda72c5babcc4c757",
+      "rawSha256": "42a53f677d374e684036c24cb54b33f55a31f61f87963eca026d7352be2dc2c6"
+    },
+    "foundation.json": {
+      "archive": "spec/performance/temporal-graph-main-integration-2026-11-07/foundation.json.gz",
+      "archiveSha256": "fee1e2f1faeb5a84a8e7e3d5a01cf9a6d14b02bac20cf1afd63a28eb95182089",
+      "rawSha256": "87d23dd43a0858cffd5a1a05f7c924a26c733ccc9bfc7362704730b085cce1a6"
+    },
+    "foundation.log": {
+      "archive": "spec/performance/temporal-graph-main-integration-2026-11-07/foundation.log.gz",
+      "archiveSha256": "1d0e64651ec1aecf502dfa27c52894f018f1a69afae624e76d8ee4baa7b08c1c",
+      "rawSha256": "ccea0609115a8b28718ce5581fbf6017ed14115ae6f994b175fcbc8ac8917671"
+    },
+    "hooks.log": {
+      "archive": "spec/performance/temporal-graph-main-integration-2026-11-07/hooks.log.gz",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "exit": 0
+    },
+    "ruff.log": {
+      "archive": "spec/performance/temporal-graph-main-integration-2026-11-07/ruff.log.gz",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "exit": 0
+    },
+    "format.log": {
+      "archive": "spec/performance/temporal-graph-main-integration-2026-11-07/format.log.gz",
+      "archiveSha256": "835bc8532114b6a7e9f391e3929452866c2a68c7909bda183e373cc290b3dac9",
+      "rawSha256": "c08417703e235fbcd31aab1bd271c50f17753bb4753bfc0f65bcf7b8139f4bfa",
+      "exit": 0
+    }
+  },
+  "captures": {
+    "foundation.json.esm-missing-inline-artifact.png": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+    "foundation.json.iife-malformed-inline-artifact.png": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+    "foundation.json.iife-missing-inline-artifact.png": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+    "foundation.json.iife-missing-retained-source.png": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66",
+    "foundation.json.esm-missing-retained-source.png": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66",
+    "foundation.json.retained-temporal.json.initial.png": "a03d81a62746e81bbc035d278d5ebc73be03be673f7fee0a4e3a9ca31fa0eceb",
+    "foundation.json.retained-temporal.json.boundary.png": "e47464cd85a30210f9cbe6ec12af0aee391c3aa8ec4c01afdc2b814b823a7d6d",
+    "foundation.json.esm-malformed-inline-artifact.png": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+  },
+  "environment": {
+    "node": "v22.23.4",
+    "browser": "156.0.8078.4",
+    "testPython": "3.12.15",
+    "native": "explicit XYG_NATIVE_LIB=$PWD/target/release/libxyg_core.so",
+    "temporaryDirectory": "/home/ubuntu/.t3tmp/1111"
+  },
+  "results": {
+    "foundation": "pass;16camera+2scheduling+14temporal",
+    "wire": 8,
+    "metadata": 33
+  },
+  "explicitMergePaths": [
+    {
+      "path": ".gitattributes",
+      "ours": [
+        "100644",
+        "02cb128c7f85dc47d8340641c1e96b16d8e96f30"
+      ],
+      "main": [
+        "100644",
+        "dba47d05dce454ba7edb2a3d4029485117355995"
+      ],
+      "actual": "6b9efdd7c13f9db518c823049a8447d997e7f580"
+    },
+    {
+      "path": "scripts/graph_session_controller_wasm_smoke.mjs",
+      "ours": [
+        "100644",
+        "77bb5e4b0583e6becb849fa41ee18fb4f2db8062"
+      ],
+      "main": [
+        "100644",
+        "1df29717d20f8ea2e685c81151c65598242132ac"
+      ],
+      "actual": "946ef7ad94c005a292aed07eab3e2c1ee577ae1f"
+    },
+    {
+      "path": "scripts/wasm_foundation_smoke.mjs",
+      "ours": [
+        "100644",
+        "1edf5b2643ed3c65992889a80174a861942e253a"
+      ],
+      "main": [
+        "100644",
+        "8cac73767f55c8f08278cc6e9c66ded8464993bf"
+      ],
+      "actual": "e09eec43e91e2e023e377d12d5e1e5120dec4b6a"
+    },
+    {
+      "path": "spec/design/build-ci.md",
+      "ours": [
+        "100644",
+        "cbf8c0ec2d951c0131c6fc09f6d1cd536b3530d8"
+      ],
+      "main": [
+        "100644",
+        "5ef2a24545d5dc63593bfadbdd994b044a6430e2"
+      ],
+      "actual": "b92c8cc3aa5cdd885f80b046f5d1c66f32268bad"
+    },
+    {
+      "path": "spec/design/graph-interaction.md",
+      "ours": [
+        "100644",
+        "98da7ac322cc60a07bdc019c6d93f8ed16282dd6"
+      ],
+      "main": [
+        "100644",
+        "acbc0314e4b4703e32b08c17f7bc6949844fe1ed"
+      ],
+      "actual": "837542f678106ca0bedff71bb4ba594538bf5c47"
+    },
+    {
+      "path": "spec/releases/0.6.0-api-inventory.json",
+      "ours": [
+        "100644",
+        "b413ac78c11a4426e5d5e1acb8bcfdf7cf92abc9"
+      ],
+      "main": [
+        "100644",
+        "e02813dd9253990dcdfa864edeb2122704c3dcff"
+      ],
+      "actual": "51498c563d7b02f3adbf7b5a4cffe976c0c1cb90"
+    },
+    {
+      "path": "tests/browser/graph_session_controller_page.mjs",
+      "ours": [
+        "100644",
+        "69e29f9feb4af5f437834e08bc9630b1e28518a5"
+      ],
+      "main": [
+        "100644",
+        "47c561649bc896f9ff7bcb73740e33467d2a7966"
+      ],
+      "actual": "eed60da8e9cfb5d3442d581177557fc7b4c3f6b1"
+    },
+    {
+      "path": "tests/test_graphforge_contract_corpus.py",
+      "ours": [
+        "100644",
+        "55c9e0dfb30d6d699e610cfb226f1eee1a794a30"
+      ],
+      "main": [
+        "100644",
+        "c1af23c6ee9d4d06234fd6c2e8bd1cfe2cf84a27"
+      ],
+      "actual": "a240a9458d4da0413831e0f624ab2d144b05605c"
+    }
+  ]
+}
