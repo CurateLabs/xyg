@@ -3876,6 +3876,9 @@ class Chart(Component):
         self.on_click = on_click
         self.on_brush = on_brush
         self.on_select = on_select
+        # Local XYGC snapshots attach canonical row identity and read provenance.
+        self.source_row_ids: Any = None
+        self.source_provenance: dict[str, Any] = {}
         self.on_view_change = on_view_change
         self.hover = hover
         self.click = click

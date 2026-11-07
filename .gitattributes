@@ -221,6 +221,64 @@ spec/performance/geo-native-main-proof-integration-2026-11-07/*.png -text
 spec/performance/geo-python-floor-2026-11-07/*.json text eol=lf
 spec/performance/geo-python-floor-2026-11-07/*.md text eol=lf
 spec/performance/geo-python-floor-2026-11-07/*.gz -text
+# Current-source bindings for the chart snapshot review correction.
+.github/workflows/ci.yml text eol=lf
+crates/xyg-core/src/lib.rs text eol=lf
+crates/xyg-engine/src/chunked_columns.rs text eol=lf
+packages/xy-node/src/_abi_generated.js text eol=lf
+packages/xy-node/src/chunked-columns.js text eol=lf
+packages/xy-node/test/chunked-columns.test.mjs text eol=lf
+python/xyg/_abi_generated.py text eol=lf
+python/xyg/_native.py text eol=lf
+python/xyg/_ooc.py text eol=lf
+scripts/verify_ci_workflow.py text eol=lf
+spec/abi/xyg-abi.json text eol=lf
+spec/abi/xyg.h text eol=lf
+spec/design/rust-engine.md text eol=lf
+spec/design/tier3-phase4-roadmap.md text eol=lf
+spec/releases/0.6.0-api-inventory.json text eol=lf
+tests/test_chunked_columns.py text eol=lf
+tests/test_graphforge_contract_corpus.py text eol=lf
+tests/test_verify_ci_workflow.py text eol=lf
+spec/performance/chunked-chart-review-repair-2026-11-07/*.json text eol=lf
+spec/performance/chunked-chart-review-repair-2026-11-07/*.md text eol=lf
+spec/performance/chunked-chart-review-repair-2026-11-07/*.gz -text
+
+scripts/chunked_chart_evidence.py text eol=lf
+spec/design/tier3-testing.md text eol=lf
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.json text eol=lf
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.md text eol=lf
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.txt text eol=lf
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.gz -text
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.py text eol=lf
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.png -text
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.xygc -text
+
+# Append-only PR1110 ABI fixture refresh and current source bindings.
+spec/performance/pr1110-abi-fixtures-2026-11-07/*.json text eol=lf
+spec/performance/pr1110-abi-fixtures-2026-11-07/*.md text eol=lf
+spec/performance/pr1110-abi-fixtures-2026-11-07/predecessor/*.json text eol=lf
+tests/test_cross_host_abi_transition.py text eol=lf
+tests/test_graph_session_python_transport.py text eol=lf
+spec/design/graph-session-python-transport.md text eol=lf
+tests/fixtures/*_cross_host.json text eol=lf
+
+# Current notebook verifier ABI correction evidence.
+spec/performance/pr1110-notebook-abi-2026-11-07/*.json text eol=lf
+spec/performance/pr1110-notebook-abi-2026-11-07/*.md text eol=lf
+spec/performance/pr1110-notebook-abi-2026-11-07/*.gz -text
+
+# Combined accepted-main / PR1110 integration evidence.
+spec/performance/pr1110-main-integration-2026-11-07/*.json text eol=lf
+spec/performance/pr1110-main-integration-2026-11-07/*.md text eol=lf
+spec/performance/pr1110-main-integration-2026-11-07/*.gz -text
+spec/performance/pr1110-main-integration-2026-11-07/*.png -text
+spec/design/build-ci.md text eol=lf
+spec/design/graph-interaction.md text eol=lf
+spec/design/graphforge-node-scheduling.md text eol=lf
+spec/performance/graph-browser-scheduling-1k-2026-11-07/*.md text eol=lf
+spec/performance/graph-browser-scheduling-1k-2026-11-07/*.json text eol=lf
+spec/performance/graph-browser-scheduling-1k-2026-11-07/*.py text eol=lf
 # Temporal retained terminal-state source bindings.
 js/src/63_graph_controller.ts text eol=lf
 scripts/graph_session_controller_wasm_smoke.mjs text eol=lf
@@ -250,3 +308,220 @@ spec/design/graph-interaction.md text eol=lf
 spec/performance/geo-native-accepted-temporal-main-2026-11-07/*.json text eol=lf
 spec/performance/geo-native-accepted-temporal-main-2026-11-07/*.md text eol=lf
 spec/performance/geo-native-accepted-temporal-main-2026-11-07/*.gz -text
+# Combined queued temporal/chunked qualification receipt.
+spec/performance/temporal-chunked-queued-union-2026-11-07/*.json text eol=lf
+spec/performance/temporal-chunked-queued-union-2026-11-07/*.md text eol=lf
+spec/performance/temporal-chunked-queued-union-2026-11-07/*.gz -text
+
+# Combined native geographic and queued M7 evidence.
+spec/performance/geo-native-queued-m7-union-2026-11-07/*.json text eol=lf
+spec/performance/geo-native-queued-m7-union-2026-11-07/*.md text eol=lf
+spec/performance/geo-native-queued-m7-union-2026-11-07/*.gz -text
+
+# Complete union current and historical binding pins.
+js/src/47_wasm.ts text eol=lf
+js/test/graph-progressive-camera.test.mjs text eol=lf
+scripts/verify_graph_progressive_camera.mjs text eol=lf
+scripts/wasm_foundation_smoke.mjs text eol=lf
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/README.md text eol=lf
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/current-bindings.json text eol=lf
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/original-c-chart-output.rs.txt text eol=lf
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/render_without_resource.py text eol=lf
+spec/performance/chunked-chart-review-repair-2026-11-07/README.md text eol=lf
+spec/performance/chunked-chart-review-repair-2026-11-07/current-bindings.json text eol=lf
+spec/performance/geo-binding-pump-boundary-2026-11-07/README.md text eol=lf
+spec/performance/geo-binding-pump-boundary-2026-11-07/current-bindings.json text eol=lf
+spec/performance/geo-binding-terminal-state-2026-11-07/README.md text eol=lf
+spec/performance/geo-binding-terminal-state-2026-11-07/current-bindings.json text eol=lf
+spec/performance/geo-controller-reentrant-close-2026-11-07/README.md text eol=lf
+spec/performance/geo-controller-reentrant-close-2026-11-07/current-bindings.json text eol=lf
+spec/performance/geo-disposal-recipients-2026-11-07/README.md text eol=lf
+spec/performance/geo-disposal-recipients-2026-11-07/current-bindings.json text eol=lf
+spec/performance/geo-native-accepted-temporal-main-2026-11-07/README.md text eol=lf
+spec/performance/geo-native-accepted-temporal-main-2026-11-07/current-bindings.json text eol=lf
+spec/performance/geo-native-binding-lifecycle-2026-11-07/current-bindings.json text eol=lf
+spec/performance/geo-native-main-integration-2026-11-07/current-bindings.json text eol=lf
+spec/performance/geo-native-main-proof-integration-2026-11-07/README.md text eol=lf
+spec/performance/geo-native-main-proof-integration-2026-11-07/current-bindings.json text eol=lf
+spec/performance/geo-native-queued-m7-union-2026-11-07/README.md text eol=lf
+spec/performance/geo-native-temporal-binding-2026-11-06/current-bindings.json text eol=lf
+spec/performance/geo-native-temporal-binding-2026-11-06/historical/.gitattributes.txt text eol=lf
+spec/performance/geo-native-temporal-binding-2026-11-06/historical/spec__design__host-parity.md.txt text eol=lf
+spec/performance/geo-native-temporal-binding-2026-11-06/historical/spec__design__ownership-audit.json.txt text eol=lf
+spec/performance/geo-native-temporal-binding-2026-11-06/historical/spec__design__ownership-audit.md.txt text eol=lf
+spec/performance/geo-native-temporal-binding-2026-11-06/historical/tests__test_graphforge_contract_corpus.py.txt text eol=lf
+spec/performance/geo-private-publication-2026-11-07/current-bindings.json text eol=lf
+spec/performance/geo-python-floor-2026-11-07/README.md text eol=lf
+spec/performance/geo-python-floor-2026-11-07/current-bindings.json text eol=lf
+spec/performance/geo-queued-recipients-2026-11-07/README.md text eol=lf
+spec/performance/geo-queued-recipients-2026-11-07/current-bindings.json text eol=lf
+spec/performance/geo-terminal-pass-delivery-2026-11-07/README.md text eol=lf
+spec/performance/geo-terminal-pass-delivery-2026-11-07/current-bindings.json text eol=lf
+spec/performance/geo-worker-ownership-2026-11-07/README.md text eol=lf
+spec/performance/geo-worker-ownership-2026-11-07/current-bindings.json text eol=lf
+spec/performance/graph-browser-scheduling-1k-2026-11-07/README.md text eol=lf
+spec/performance/graph-browser-scheduling-1k-2026-11-07/checks.json text eol=lf
+spec/performance/graph-browser-scheduling-1k-2026-11-07/ci-final.json.7101.final.png -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/ci-final.json.7101.initial.png -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/ci-final.json.7101.intermediate.png -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/ci-final.json.7102.final.png -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/ci-final.json.7102.initial.png -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/ci-final.json.7102.intermediate.png -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/ci-final.json.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/ci-graph.json.7101.final.png -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/ci-graph.json.7101.initial.png -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/ci-graph.json.7101.intermediate.png -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/ci-graph.json.7102.final.png -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/ci-graph.json.7102.initial.png -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/ci-graph.json.7102.intermediate.png -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/ci-graph.json.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/client-build.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/collect.py text eol=lf
+spec/performance/graph-browser-scheduling-1k-2026-11-07/commit-format.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/commit-hooks.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/commit-ruff.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/environment.json text eol=lf
+spec/performance/graph-browser-scheduling-1k-2026-11-07/final-format.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/final-hooks.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/final-isolation.json text eol=lf
+spec/performance/graph-browser-scheduling-1k-2026-11-07/final-isolation.json.7101.final.png -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/final-isolation.json.7101.initial.png -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/final-isolation.json.7101.intermediate.png -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/final-isolation.json.7102.final.png -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/final-isolation.json.7102.initial.png -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/final-isolation.json.7102.intermediate.png -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/final-isolation.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/final-ruff.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/final.json.7101.final.png -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/final.json.7101.initial.png -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/final.json.7101.intermediate.png -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/final.json.7102.final.png -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/final.json.7102.initial.png -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/final.json.7102.intermediate.png -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/final.json.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/final.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/foundation-final.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/foundation.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/initial-missing-artifact.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/inventory.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/legacy.json.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/legacy.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/merge-format.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/merge-hooks.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/merge-inventory.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/merge-ruff.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/ownership.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/premerge-format.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/premerge-hooks.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/premerge-ruff.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/producer-inputs.json text eol=lf
+spec/performance/graph-browser-scheduling-1k-2026-11-07/scheduling-after.json.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/scheduling-after.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/scheduling-before-run.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/scheduling-before.json.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/staged-format.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/staged-hooks.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/staged-ruff.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/summary.json text eol=lf
+spec/performance/graph-browser-scheduling-1k-2026-11-07/wasm-build.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/wasm-package.log.gz -text
+spec/performance/graph-browser-scheduling-1k-2026-11-07/wire.log.gz -text
+spec/performance/graph-camera-retention-all-frames-2026-11-07/.gitattributes text eol=lf
+spec/performance/graph-camera-retention-all-frames-2026-11-07/README.md text eol=lf
+spec/performance/graph-camera-retention-all-frames-2026-11-07/checks.json text eol=lf
+spec/performance/graph-camera-retention-all-frames-2026-11-07/foundation-final.log.gz -text
+spec/performance/graph-camera-retention-all-frames-2026-11-07/report-final.json.7101.final.png -text
+spec/performance/graph-camera-retention-all-frames-2026-11-07/report-final.json.7101.initial.png -text
+spec/performance/graph-camera-retention-all-frames-2026-11-07/report-final.json.7101.intermediate.png -text
+spec/performance/graph-camera-retention-all-frames-2026-11-07/report-final.json.7102.final.png -text
+spec/performance/graph-camera-retention-all-frames-2026-11-07/report-final.json.7102.initial.png -text
+spec/performance/graph-camera-retention-all-frames-2026-11-07/report-final.json.7102.intermediate.png -text
+spec/performance/graph-camera-retention-all-frames-2026-11-07/report.json.gz -text
+spec/performance/graph-camera-retention-all-frames-2026-11-07/unit-final.log.gz -text
+spec/performance/graph-notebook-identity-2026-11-06/current-bindings.json text eol=lf
+spec/performance/graph-notebook-identity-limits-2026-11-06/current-bindings.json text eol=lf
+spec/performance/graph-notebook-identity-order-2026-11-06/current-bindings.json text eol=lf
+spec/performance/graph-notebook-identity-ownership-2026-11-06/current-bindings.json text eol=lf
+spec/performance/graph-notebook-identity-report-2026-11-06/current-bindings.json text eol=lf
+spec/performance/graph-scheduling-camera-proof-2026-11-07/.gitattributes text eol=lf
+spec/performance/graph-scheduling-camera-proof-2026-11-07/README.md text eol=lf
+spec/performance/graph-scheduling-camera-proof-2026-11-07/browser.log.gz -text
+spec/performance/graph-scheduling-camera-proof-2026-11-07/checks.json text eol=lf
+spec/performance/graph-scheduling-camera-proof-2026-11-07/ci-report.json.7101.final.png -text
+spec/performance/graph-scheduling-camera-proof-2026-11-07/ci-report.json.7101.initial.png -text
+spec/performance/graph-scheduling-camera-proof-2026-11-07/ci-report.json.7101.intermediate.png -text
+spec/performance/graph-scheduling-camera-proof-2026-11-07/ci-report.json.7102.final.png -text
+spec/performance/graph-scheduling-camera-proof-2026-11-07/ci-report.json.7102.initial.png -text
+spec/performance/graph-scheduling-camera-proof-2026-11-07/ci-report.json.7102.intermediate.png -text
+spec/performance/graph-scheduling-camera-proof-2026-11-07/ci-report.json.gz -text
+spec/performance/graph-scheduling-camera-proof-2026-11-07/foundation.log.gz -text
+spec/performance/graph-scheduling-camera-proof-2026-11-07/report.json.7101.final.png -text
+spec/performance/graph-scheduling-camera-proof-2026-11-07/report.json.7101.initial.png -text
+spec/performance/graph-scheduling-camera-proof-2026-11-07/report.json.7101.intermediate.png -text
+spec/performance/graph-scheduling-camera-proof-2026-11-07/report.json.7102.final.png -text
+spec/performance/graph-scheduling-camera-proof-2026-11-07/report.json.7102.initial.png -text
+spec/performance/graph-scheduling-camera-proof-2026-11-07/report.json.7102.intermediate.png -text
+spec/performance/graph-scheduling-camera-proof-2026-11-07/report.json.gz -text
+spec/performance/graph-scheduling-camera-proof-2026-11-07/unit.log.gz -text
+spec/performance/graph-scheduling-worker-order-2026-11-07/.gitattributes text eol=lf
+spec/performance/graph-scheduling-worker-order-2026-11-07/README.md text eol=lf
+spec/performance/graph-scheduling-worker-order-2026-11-07/after.log.gz -text
+spec/performance/graph-scheduling-worker-order-2026-11-07/before.log.gz -text
+spec/performance/graph-scheduling-worker-order-2026-11-07/camera-units.log.gz -text
+spec/performance/graph-scheduling-worker-order-2026-11-07/checks.json text eol=lf
+spec/performance/graph-scheduling-worker-order-2026-11-07/foundation.log.gz -text
+spec/performance/graph-scheduling-worker-order-2026-11-07/report.json.7101.final.png -text
+spec/performance/graph-scheduling-worker-order-2026-11-07/report.json.7101.initial.png -text
+spec/performance/graph-scheduling-worker-order-2026-11-07/report.json.7101.intermediate.png -text
+spec/performance/graph-scheduling-worker-order-2026-11-07/report.json.7102.final.png -text
+spec/performance/graph-scheduling-worker-order-2026-11-07/report.json.7102.initial.png -text
+spec/performance/graph-scheduling-worker-order-2026-11-07/report.json.7102.intermediate.png -text
+spec/performance/graph-scheduling-worker-order-2026-11-07/report.json.gz -text
+spec/performance/graph-widget-pr1100-repair-2026-11-06/current-bindings.json text eol=lf
+spec/performance/graph-widget-progressive-r3-2026-11-06/current-bindings.json text eol=lf
+spec/performance/graph-widget-review-repair-2026-11-06/current-bindings.json text eol=lf
+spec/performance/pr1110-abi-fixtures-2026-11-07/README.md text eol=lf
+spec/performance/pr1110-abi-fixtures-2026-11-07/after-node.log.gz -text
+spec/performance/pr1110-abi-fixtures-2026-11-07/before-node.log.gz -text
+spec/performance/pr1110-abi-fixtures-2026-11-07/before-python.log.gz -text
+spec/performance/pr1110-abi-fixtures-2026-11-07/current-bindings.json text eol=lf
+spec/performance/pr1110-abi-fixtures-2026-11-07/fixture-transition.json text eol=lf
+spec/performance/pr1110-abi-fixtures-2026-11-07/predecessor/animation_emit_cross_host.json text eol=lf
+spec/performance/pr1110-abi-fixtures-2026-11-07/predecessor/default_styled_emit_cross_host.json text eol=lf
+spec/performance/pr1110-abi-fixtures-2026-11-07/predecessor/density_emit_cross_host.json text eol=lf
+spec/performance/pr1110-abi-fixtures-2026-11-07/predecessor/force_emit_cross_host.json text eol=lf
+spec/performance/pr1110-abi-fixtures-2026-11-07/predecessor/geo_cross_host.json text eol=lf
+spec/performance/pr1110-abi-fixtures-2026-11-07/predecessor/payload_attach_cross_host.json text eol=lf
+spec/performance/pr1110-abi-fixtures-2026-11-07/predecessor/payload_chrome_cross_host.json text eol=lf
+spec/performance/pr1110-abi-fixtures-2026-11-07/predecessor/payload_cross_host.json text eol=lf
+spec/performance/pr1110-abi-fixtures-2026-11-07/predecessor/series_palette_cross_host.json text eol=lf
+spec/performance/pr1110-abi-fixtures-2026-11-07/predecessor/tooltip_len_emit_cross_host.json text eol=lf
+spec/performance/pr1110-abi-fixtures-2026-11-07/premerge-hooks.log.gz -text
+spec/performance/pr1110-abi-fixtures-2026-11-07/provenance.json text eol=lf
+spec/performance/pr1110-abi-fixtures-2026-11-07/regenerate.log.gz -text
+spec/performance/pr1110-main-integration-2026-11-07/current-bindings.json text eol=lf
+spec/performance/pr1110-notebook-abi-2026-11-07/README.md text eol=lf
+spec/performance/pr1110-notebook-abi-2026-11-07/current-bindings.json text eol=lf
+spec/performance/temporal-chunked-queued-union-2026-11-07/README.md text eol=lf
+spec/performance/temporal-chunked-queued-union-2026-11-07/current-bindings.json text eol=lf
+spec/performance/temporal-graph-main-integration-2026-11-07/README.md text eol=lf
+spec/performance/temporal-graph-main-integration-2026-11-07/current-bindings.json text eol=lf
+spec/performance/temporal-retained-terminal-idle-2026-11-07/README.md text eol=lf
+spec/performance/temporal-retained-terminal-idle-2026-11-07/current-bindings.json text eol=lf
+spec/performance/temporal-worker-lifetime-2026-11-07/README.md text eol=lf
+spec/performance/temporal-worker-lifetime-2026-11-07/current-bindings.json text eol=lf
+spec/releases/core-rc7-checkout-repair-2026-11-06/bindings.json text eol=lf
+spec/releases/core-rc7-compatibility-2026-11-06/checks.json text eol=lf
+spec/releases/core-rc7-generator-default-2026-11-06/bindings.json text eol=lf
+tests/browser/graph_session_controller_page.mjs text eol=lf
+tests/fixtures/animation_emit_cross_host.json text eol=lf
+tests/fixtures/default_styled_emit_cross_host.json text eol=lf
+tests/fixtures/density_emit_cross_host.json text eol=lf
+tests/fixtures/force_emit_cross_host.json text eol=lf
+tests/fixtures/geo_cross_host.json text eol=lf
+tests/fixtures/payload_attach_cross_host.json text eol=lf
+tests/fixtures/payload_chrome_cross_host.json text eol=lf
+tests/fixtures/payload_cross_host.json text eol=lf
+tests/fixtures/series_palette_cross_host.json text eol=lf
+tests/fixtures/tooltip_len_emit_cross_host.json text eol=lf
+spec/performance/geo-native-queued-m7-union-2026-11-07/*.txt text eol=lf

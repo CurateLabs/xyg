@@ -1,0 +1,17 @@
+import subprocess,json,gzip
+from pathlib import Path
+ps=['8c9ab8b59f467e443831bf6af6c7f1e5658a8814','fc096e61f3069496c6cae5719e361ec4336180e8'];base=subprocess.check_output(['git','merge-base',*ps],text=True).strip()
+def tree(c):
+ return {x.split('\t',1)[1]:' '.join(x.split('\t',1)[0].split()[::2]) for x in subprocess.check_output(['git','ls-tree','-r',c],text=True).splitlines()}
+a,b,z=[tree(c) for c in [*ps,base]];idx={x.split('\t',1)[1]:x.split('\t',1)[0].rsplit(' ',1)[0] for x in subprocess.check_output(['git','ls-files','--stage'],text=True).splitlines()};explicit=['.gitattributes','python/xyg/components.py','spec/releases/0.6.0-api-inventory.json','tests/test_graphforge_contract_corpus.py'];rows={};errors=[]
+for p in sorted(a.keys()|b.keys()):
+ av,bv,zv=a.get(p),b.get(p),z.get(p)
+ if av==bv:expected=av
+ elif av==zv:expected=bv
+ elif bv==zv:expected=av
+ else:expected=None
+ actual=idx.get(p)
+ if p not in explicit and (expected is None or actual!=expected):errors.append(p)
+ rows[p]={'parent8c':av,'parentFc':bv,'index':actual,'explicitResolution':p in explicit}
+assert not errors,errors[:20]
+out=Path('spec/performance/geo-native-queued-m7-union-2026-11-07');raw=json.dumps({'parents':ps,'mergeBase':base,'explicitResolutions':explicit,'protectedParentPaths':len(rows),'paths':rows},sort_keys=True,indent=2).encode()+b'\n';(out/'parent-protection.json.gz').write_bytes(gzip.compress(raw,mtime=0));print('Protected staged parent identities',len(rows))
