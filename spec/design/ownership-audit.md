@@ -1374,6 +1374,8 @@ These additions use the existing ownership policies without adding a host policy
 | `packages/xy-node/src/temporal-scene-framing.js` | Node host | node-host | keep-host |
 | `packages/xy-node/src/temporal-scene.js` | Node host | node-host | keep-host |
 | `python/xyg/_temporal_scene.py` | Python host | python-host | keep-host |
+| `python/xyg/_geo_temporal.py` | Python host | `python-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-temporal.js` | Node host | `node-host` | `keep-host` | — |
 
 ## Contributor rule
 

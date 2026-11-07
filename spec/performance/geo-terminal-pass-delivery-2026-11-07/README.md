@@ -1,0 +1,9 @@
+# Terminal notification passes are not superseded
+
+Independent review of `57a80d68b809070be74a22e962f0163417a7af41` found one remaining P1: dispose publishes terminal state while retaining the native handle; an early observer can close that handle and queue another terminal snapshot. The publisher incorrectly interrupted the current terminal pass, cleared subscriptions, and lost disposal delivery to later observers such as the geographic binding.
+
+The interruption condition now applies only to nonterminal passes. Every still-subscribed observer in an active terminal pass receives its captured state before subscriptions clear; nested close remains idempotent. The existing real-controller regression now covers cursor-triggered closure and disposal-triggered closure, each with and without nested terminal close. A hash-zero callable forces the adverse legal order in the actual observer set, and the test asserts that ordering prerequisite before delivery. It verifies automatic private-frame and source-registration release, independent caller-lease survival, and successful source rebinding with an explicitly newer native sequence. Before repair the dispose-plus-nested-close case fails while the other three pass; afterward all four pass.
+
+No Node, Rust, browser, ABI or artifact changes occur. All previous receipts are preserved, and successor source/checkout bindings replace only current-source claims. Focused Python/Core/inventory checks, types and mandatory hooks/Ruff are run on final bytes. Prior complete R6/R7 assessments and 39 Node tests remain inherited evidence for unchanged scopes, not new executions.
+
+Independent final re-review, PR/CI and queue delivery remain pending. This remains a native snapshot route, not mounted notebook/VS Code replacement, mixed tiles, indexed/hierarchy automatic binding, all-host exports/accessibility, scale/five-view/competitor acceptance, or #50/#39/M6 closure.

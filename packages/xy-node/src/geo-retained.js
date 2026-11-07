@@ -194,7 +194,7 @@ export class RetainedGeoSource {
       .catch(() => {});
     return promise;
   }
-  update(query, { sequence, style, signal }) {
+  update(query, { sequence, style, signal, _publish = true }) {
     uint(sequence);
     if (!(style instanceof Uint8Array) || style.length !== 48)
       throw new TypeError("style must be exact48 bytes");
@@ -234,7 +234,7 @@ export class RetainedGeoSource {
           throw new Error("operation aborted");
         }
         attachRetainedFrame(this, frame, sequence, queryPacket, style);
-        this.current = frame;
+        if(_publish)this.current = frame;
         return frame;
       } finally {
         signal?.removeEventListener("abort", abort);

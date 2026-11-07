@@ -40,6 +40,9 @@ def request(
     lo, hi = (integer(v) for v in domain)
     zone = timezone.encode("utf-8")
     heading = (title or "").encode("utf-8")
+    count = len(rows)
+    if 128 + len(zone) + len(heading) + count * 40 > MAX_BYTES:
+        raise ValueError("temporal request exceeds framing budget")
     out = bytearray(128)
     struct.pack_into(
         "<4sIII2d3qIII",
@@ -48,7 +51,7 @@ def request(
         b"XYTM",
         1,
         KINDS[kind],
-        len(rows),
+        count,
         width,
         height,
         lo,

@@ -131,3 +131,28 @@ def test_temporal_html_uses_standalone_script_and_style_safeguards(monkeypatch):
     assert f'content="{export._standalone_csp(wasm_ticks=False, density=False)}"' in html
     with pytest.raises(TypeError, match="custom_css must be a string"):
         chart.to_html(custom_css=123)
+
+
+def test_temporal_transport_budget_refuses_before_copying_rows():
+    class OversizedRows:
+        def __len__(self):
+            return _temporal_scene.MAX_BYTES // 40 + 1
+
+        def __iter__(self):
+            raise AssertionError("over-budget rows must not be materialized")
+
+    with pytest.raises(ValueError, match="temporal request exceeds framing budget"):
+        _temporal_scene.request(
+            "event",
+            OversizedRows(),
+            domain=(-3, 3),
+            timezone="UTC",
+            precision=2,
+            title="",
+            width=900,
+            height=420,
+            cursor=-1,
+            color=(1, 2, 3, 255),
+            stroke=(1, 2, 3, 255),
+            stroke_width=1,
+        )

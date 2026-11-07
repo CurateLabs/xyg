@@ -46,7 +46,9 @@ does not implement an IANA database or infer local/UTC semantics.
 
 ## Budgets and presentation limits
 
-Request/operation cap is 64 MiB, rows at most four times viewport width,
+Request/operation cap is 64 MiB. Python, Node and browser framing check the
+encoded request size before copying rows; this is a transport limit, not a
+host-side row/LOD decision. Rust admits rows at most four times viewport width,
 viewport 160..16384 by 120..16384 CSS pixels. Admission estimates source and
 Scene scratch before variable allocation; over-budget input refuses. This is
 an explicit direct tier, **not dense temporal LOD**. Interval/Gantt use authored

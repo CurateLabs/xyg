@@ -348,6 +348,7 @@ function geoCameraBytes(camera) {
   return b;
 }
 /** Geographic composition. Static compile returns a catalog; compileRetained returns an owned frame. */
+import { GeoTemporalBinding } from "./geo-temporal.js";
 import { GeoHostAdapter } from "./geo-webview.js";
 
 export class GeoChart {
@@ -377,6 +378,7 @@ export class GeoChart {
     )
       throw new TypeError("tile options require tileSession");
   }
+  bindTemporal(handle, mode = "cursor") { return new GeoTemporalBinding(this, handle, mode); }
   host(options) { return new GeoHostAdapter(this, options); }
   _overview(){
     const layers=this.layers.filter(x=>x.source instanceof GeoOverviewIndex);
@@ -525,7 +527,7 @@ export class GeoChart {
     });
   }
   compileRetained(options = {}) {
-    exactKeys(options, [], "retained compile options");
+    exactKeys(options, Object.hasOwn(options,"_publish") ? ["_publish"] : [], "retained compile options");
     const overview=this._overview();if(overview){const {query,sequence}=this._overviewInputs(overview);return overview.source.update(query,{sequence});}
     const layer = this._retained();
     if (this.tileSession)
@@ -535,7 +537,7 @@ export class GeoChart {
     if (!layer)
       throw new TypeError("compileRetained requires a retained source");
     const { query, sequence, style } = this._inputs(layer);
-    return layer.source.update(query, { sequence, style });
+    return layer.source.update(query, { sequence, style, _publish:options._publish });
   }
   toImage(format = "png", { scale = 1, quality = 90, frame } = {}) {
     const overview=this._overview();if(overview){if(!frame)throw new TypeError('compileRetained first, then pass overview frame');const {packet,sequence}=this._overviewInputs(overview),a=overviewFrameAuthority(frame);if(!a||a.index!==overview.source||a.sequence!==sequence||a.query.byteLength!==packet.byteLength||new Uint8Array(a.query).some((n,i)=>n!==new Uint8Array(packet)[i]))throw new TypeError('frame must match this overview source and exact snapshot');return frame.export(format,{scale,quality,budget:this.budget});}

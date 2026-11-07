@@ -231,6 +231,7 @@ export {
   geoColumnPlaneLens,
   geoColumnRead,
   geoColumnFree,
+  temporalControllerSubscribeState,
   temporalControllerCreate,
   temporalControllerState,
   temporalControllerSetRange,

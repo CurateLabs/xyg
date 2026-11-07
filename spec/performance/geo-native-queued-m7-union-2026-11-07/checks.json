@@ -1,0 +1,130 @@
+{
+  "parents": [
+    "8c9ab8b59f467e443831bf6af6c7f1e5658a8814",
+    "fc096e61f3069496c6cae5719e361ec4336180e8"
+  ],
+  "logs": {
+    "build": {
+      "command": "node js/build.mjs",
+      "exit": 0,
+      "seconds": 3.903531312942505,
+      "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+      "rawBytes": 5448,
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c"
+    },
+    "contracts": {
+      "command": "uv run python scripts/gen_abi_manifest.py --check && uv run python scripts/check_abi_parity.py && uv run python scripts/verify_wasm_assets.py && uv run python scripts/check_python_floor.py && uv run python scripts/verify_ownership.py && uv run python scripts/gen_capability_matrix.py --check && uv run python scripts/verify_ci_workflow.py",
+      "exit": 0,
+      "seconds": 10.897937297821045,
+      "rawSha256": "4e42918cd6b3fb5bcbb168f662d3f49ef2a159aab7a9ee619d91fb8c4afa4ed0",
+      "rawBytes": 888,
+      "archiveSha256": "a7207eaa5a777c937cf4b77e746f0bcfd7fb2ff031cfc7364d809c33311a98a0"
+    },
+    "core-final": {
+      "command": "uv run --no-project /home/ubuntu/.t3/worktrees/xyg/t3-3cad2042/.venv/bin/python -m pytest tests/test_graphforge_contract_corpus.py tests/test_python_floor.py -q -rs",
+      "exit": 0,
+      "seconds": 1.0216283798217773,
+      "rawSha256": "76d9ab82eaf1b574614e891762664b52db9da23563b15c0255e4fec6be9fc9c3",
+      "rawBytes": 169,
+      "archiveSha256": "3466aadc6c3bcb1b6a7fc171bb089edd12a3868f7392741253b435b0f5990b86"
+    },
+    "format": {
+      "command": "uv run ruff format --check .",
+      "exit": 0,
+      "seconds": 0.32608985900878906,
+      "rawSha256": "74c745446ab59b95d83eae0eb9ca8a207e3c8ae685adb44ba44d09729b09fd50",
+      "rawBytes": 29,
+      "archiveSha256": "d4160c99c20a19850835698ce6871704ebd3836d4c49d75c887d833168460224"
+    },
+    "foundation-final": {
+      "command": "node scripts/wasm_foundation_smoke.mjs",
+      "exit": 0,
+      "seconds": 50.54156970977783,
+      "rawSha256": "d45e4cfb5b7d2202c8600eb115eb7b9b43b3064f35ac893587ca8f6ec2b7c922",
+      "rawBytes": 3853,
+      "archiveSha256": "ec4724e43d8e17394df94a65276814f905d43539f7949c528acae67b4df9499f"
+    },
+    "foundation": {
+      "command": "node scripts/wasm_foundation_smoke.mjs",
+      "exit": 1,
+      "seconds": 7.2974693775177,
+      "rawSha256": "a0c700b88892f12f96dd9111480cb96c777c93891c30b6d2a086e78b1ccd1b42",
+      "rawBytes": 458,
+      "archiveSha256": "0e16b9eb5b94bddd8d3ffc5d373de0dc41d83da17af0c1c53da591924129e947"
+    },
+    "hooks": {
+      "command": "uv run --with pre-commit pre-commit run --all-files",
+      "exit": 0,
+      "seconds": 2.782585382461548,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "rawBytes": 240,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "inventory": {
+      "command": "uv run --no-project /home/ubuntu/.t3/worktrees/xyg/t3-3cad2042/.venv/bin/python scripts/check_release_inventory.py --write",
+      "exit": 0,
+      "seconds": 6.363840579986572,
+      "rawSha256": "f1148035512bf59e4b9fc135683e6e43493a9afca865c4c6488c766e7cb2b607",
+      "rawBytes": 159,
+      "archiveSha256": "1ebcda426c8cf8810c5972e2c9311d7d3931f3d8d5d7689b167965944d4f7841"
+    },
+    "node-final": {
+      "command": "node --test packages/xy-node/test/geo-temporal-binding.test.mjs packages/xy-node/test/temporal-controller.test.mjs packages/xy-node/test/graph-session-wire.test.mjs packages/xy-node/test/chunked-columns.test.mjs packages/xy-node/test/temporal-graph-publication.test.mjs",
+      "exit": 0,
+      "seconds": 1.4461009502410889,
+      "rawSha256": "5f8c55b5368310c3d52fddfc9dc9f9147e53c18bd00593eeea64dcb2f6696a9f",
+      "rawBytes": 13071,
+      "archiveSha256": "502e90441c675d7bbbd94be445c4b30f6b9120f2fc2ba9233d7d1cabd2c4ccd3"
+    },
+    "node": {
+      "command": "node --test packages/xy-node/test/geo-temporal-binding.test.mjs packages/xy-node/test/temporal-controller.test.mjs packages/xy-node/test/graph-session-wire.test.mjs packages/xy-node/test/chunked-columns.test.mjs packages/xy-node/test/temporal-graph-publication.test.mjs",
+      "exit": 1,
+      "seconds": 0.40199971199035645,
+      "rawSha256": "63af5dbf567c547f194bca78d5dc69f28ff94160904c3f840f88e0d83af7b989",
+      "rawBytes": 22702,
+      "archiveSha256": "e165292d8244ab472e39e099a8757cbab8e4166db8ff8f39f5fe6a26e7858e9a"
+    },
+    "python311": {
+      "command": "uv run --no-project /home/ubuntu/.t3/worktrees/xyg/t3-3cad2042/.venv/bin/python -m pytest tests/test_geo_temporal_binding.py tests/test_temporal_controller.py tests/test_geo_retained.py tests/test_geo_retained_components.py tests/test_geo_frame_leases.py tests/test_graphforge_contract_corpus.py tests/test_release_inventory.py tests/test_python_floor.py tests/test_chunked_columns.py tests/test_cross_host_abi_transition.py tests/test_graph_session_python_transport.py tests/test_graph_notebook_report.py tests/test_verify_ci_workflow.py tests/test_temporal_graph_native.py -q",
+      "exit": 0,
+      "seconds": 411.67154479026794,
+      "rawSha256": "5cda01ab662a07aa440d73d70ec2e19f3e0281050f4a23afc9900995dc1de902",
+      "rawBytes": 1969,
+      "archiveSha256": "c07d806bae62d6f4c8753f1179bb23b6dfa9e0a56348d854c121c86a0cbb7c92"
+    },
+    "render": {
+      "command": "uv run --no-project /home/ubuntu/.t3/worktrees/xyg/t3-3cad2042/.venv/bin/python -m pytest tests/test_chunked_columns.py::test_rendered_chart_snapshot_navigation -q -rs",
+      "exit": 0,
+      "seconds": 5.972491979598999,
+      "rawSha256": "dd2c45776ebb2153078871eb181bfe82b6d36c3cc7310d4c0401736f65fa2fab",
+      "rawBytes": 904,
+      "archiveSha256": "741753cf4478cf7bb842e1ce415073fb1c2a1ef6a44d4bb1de0cb5d36eac3e0c"
+    },
+    "ruff": {
+      "command": "uv run ruff check .",
+      "exit": 0,
+      "seconds": 0.2841043472290039,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "rawBytes": 19,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "runtime": {
+      "command": "uv run --no-project /home/ubuntu/.t3/worktrees/xyg/t3-3cad2042/.venv/bin/python -c \"import sys,xyg.kernels as k; print(sys.version); print(k.BACKEND)\" && node -e 'const fs=require(\"node:fs\"),z=require(\"node:zlib\");const b=fs.readFileSync(\"packages/xy-client/dist/xyg-wasm.wasm\");console.log(process.version,b.length,z.gzipSync(b,{level:6}).length)'",
+      "exit": 0,
+      "seconds": 0.23024249076843262,
+      "rawSha256": "a9b0b87fb29ebc73591629255e3ae4fa7bf99e0af7a4db7188678768522e750a",
+      "rawBytes": 155,
+      "archiveSha256": "b0b3b530590d38465c09af652588cf8bef4c7aa2cf5eab98608c4bd9609af4d9"
+    }
+  },
+  "finalGates": "/home/ubuntu/.t3tmp/1111/native-m7/final-{hooks,ruff,format}.{log,result.json}; run after final staging and before merge commit",
+  "scope": "local combined candidate; root owns independent review, fresh CI, freshness and queue; milestones4-7 remain open",
+  "environment": {
+    "TMPDIR": "/home/ubuntu/.t3tmp/1111",
+    "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-51dfcef3/python",
+    "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+    "NodePATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin",
+    "python": "/home/ubuntu/.t3/worktrees/xyg/t3-3cad2042/.venv/bin/python",
+    "Chromium": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+  }
+}

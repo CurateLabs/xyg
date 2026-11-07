@@ -1,0 +1,62 @@
+{
+  "artifacts": {
+    "packages/xy-client/dist/index.js": {
+      "sha256": "279ac3767ee8b9dedf91698018f71441d143767ad940e887d3cc0fadbd29b056",
+      "bytes": 808602
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "sha256": "147a3dbd091c75782567f6bb44c32190366948a0481fb548f5b40bdb1676dc8a",
+      "bytes": 808631
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "sha256": "cc65e16ea9d59dcee9a339ff7ead857c71c8507771e5cddc24ab2cd090ffd555",
+      "bytes": 56634
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1",
+      "bytes": 1927032
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "sha256": "8bed6f41e9d60e41010b069cfd18bbb896a799bd733649e74deaf6dbf68ac5e7",
+      "bytes": 2588565
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "sha256": "303b39e33590f6b2dd65aefeaefd1714088414cb515a0817c6d3fa04c7489d3e",
+      "bytes": 226
+    },
+    "python/xyg/static/index.js": {
+      "sha256": "279ac3767ee8b9dedf91698018f71441d143767ad940e887d3cc0fadbd29b056",
+      "bytes": 808602
+    },
+    "python/xyg/static/standalone.js": {
+      "sha256": "147a3dbd091c75782567f6bb44c32190366948a0481fb548f5b40bdb1676dc8a",
+      "bytes": 808631
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "sha256": "cc65e16ea9d59dcee9a339ff7ead857c71c8507771e5cddc24ab2cd090ffd555",
+      "bytes": 56634
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1",
+      "bytes": 1927032
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "sha256": "8bed6f41e9d60e41010b069cfd18bbb896a799bd733649e74deaf6dbf68ac5e7",
+      "bytes": 2588565
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "sha256": "303b39e33590f6b2dd65aefeaefd1714088414cb515a0817c6d3fa04c7489d3e",
+      "bytes": 226
+    },
+    "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so": {
+      "sha256": "7a513d1f98212a39e50132ba3b24dc83a76af0d9192635eab248fa3816fc898b",
+      "bytes": 6137112
+    }
+  },
+  "wasmNode22Gzip6Bytes": 786115,
+  "wasmCaps": "unchanged",
+  "nativeSourceInputCount": 244,
+  "nativeAndWasmProducer": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d",
+  "rustRebuild": false,
+  "clientBuild": "fresh node js/build.mjs"
+}

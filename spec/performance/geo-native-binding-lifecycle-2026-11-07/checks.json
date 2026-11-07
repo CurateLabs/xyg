@@ -1,0 +1,109 @@
+{
+  "base": "bfb7aaecf909680d2613a9a00a689e880269ad38",
+  "sourceBindingsSha256": "4c8a5290823b4852a92410bfefa7c64497490201823d6a4b2b208f443de40e9e",
+  "logs": {
+    "negative-python": {
+      "command": "Original bfb _accept/_pump/acancel/_dispose_async restored in process; pytest source_cancellation or foreign_thread",
+      "exitCode": 1,
+      "rawSha256": "f4e4ad2f80d8bfc9111a66794ebb9d6dfa52629e30bc602081847925aed06670",
+      "archiveSha256": "e385b94ba4cd4752683ace77151671700f070ea81e1bcb03e6d4fc5c65a72e2b"
+    },
+    "before-node": {
+      "command": "node --test --test-name-pattern=old unsubscribe packages/xy-node/test/geo-temporal-binding.test.mjs (original source)",
+      "exitCode": 1,
+      "rawSha256": "5bf11b7b8fb1a755ec37048c690cde879315803bc799a916254c537d9ad3f005",
+      "archiveSha256": "cca8f035489c3d622d4a54fbe4e1ea8153e35f9dd2658ace71a46995a7a403f5"
+    },
+    "focused-final": {
+      "command": "uv run pytest tests/test_geo_temporal_binding.py tests/test_geo_retained.py tests/test_geo_retained_components.py tests/test_temporal_controller.py -q",
+      "exitCode": 0,
+      "rawSha256": "583a1f2da7c9f80a4cf971d006360f568ffd76c9fcf9a897a2990d278a8add10",
+      "archiveSha256": "ff0a1146e187f87de91d86ada84bb61e795411028eff93108135cc88cd7c6224"
+    },
+    "node-verified": {
+      "command": "node --test packages/xy-node/test/geo-temporal-binding.test.mjs packages/xy-node/test/temporal-controller.test.mjs packages/xy-node/test/geo-frame-leases.test.mjs",
+      "exitCode": 0,
+      "rawSha256": "0efc5a10f5964cf882c1cf386a93671e02d4d2beb0d84f497d261ab57f306ec5",
+      "archiveSha256": "2a3e089e9eae072794fea5b9866f2b118cfd14e17d5ee7c0cb47e745bdf8c851"
+    },
+    "bindings-inventory": {
+      "command": "uv run pytest tests/test_graphforge_contract_corpus.py tests/test_release_inventory.py -q",
+      "exitCode": 0,
+      "rawSha256": "ac51b5ed8cf272644dbaab0e3de1cce3df85b7373169a0a7526ef97a2c74a9c2",
+      "archiveSha256": "690e4ae9f98366c3119d01cdcb0aa6d839e09eac3f2e7f925735780786cc5347"
+    },
+    "abi": {
+      "command": "uv run python scripts/abi_smoke.py",
+      "exitCode": 0,
+      "rawSha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306",
+      "archiveSha256": "135de4fa46245b623c5d8acfa3e621c9374a4c0229b173222340fff45c526965"
+    },
+    "types": {
+      "command": "uv run ty check",
+      "exitCode": 1,
+      "rawSha256": "f7046337dcfd390f150fc8fe94a59f7ff524862cd3f3e700730021923a71403e",
+      "archiveSha256": "ec6530925e15255fb7569a2aae794fd3d0118a49842bf0f8e7ca92150280fa15"
+    },
+    "baseline-types-verified": {
+      "command": "uv run ty check --project target/task-tmp/geo-lifecycle/baseline target/task-tmp/geo-lifecycle/baseline/python (bfb Git archive, original config, project venv symlink)",
+      "exitCode": 1,
+      "rawSha256": "096a824e95b0dd0bdb939037134a2a7810bec89e1cd1ef7b9ae992b56850531a",
+      "archiveSha256": "ea42c420b5a3557400da9a930848863890a3eb5a8c3874a162f8ede9e064322d"
+    },
+    "before-python": {
+      "command": "Initial fixture with unreleased storage read; terminated without pass credit",
+      "exitCode": "interrupted",
+      "rawSha256": "0fb4348ec6d4e3fe2947e8dbd88c086a50543b9b5adbdc29321ab4c3525bca59",
+      "archiveSha256": "32101bf85d24d8d598d0d45cd9536bf7539122fd8421d35018a67a8fffabcd7b"
+    },
+    "after-python": {
+      "command": "Initial fixture with unreleased storage read; terminated without pass credit",
+      "exitCode": "interrupted",
+      "rawSha256": "24290e0b0dc3d9f20614502ba7f16e9870f2bdc2fde99265bf40a53d5cd8a909",
+      "archiveSha256": "9674975e58f589dc73d0e1238ef5af40c349e866fb3d517ae43f182a463f6987"
+    },
+    "focused": {
+      "command": "Mistyped tests/test_geo_composition.py; no tests collected",
+      "exitCode": 4,
+      "rawSha256": "f6a17104e7f08a416fe708624b565a196d653e5f2f9b55ba58352923582f44c0",
+      "archiveSha256": "e0e0fa2a9f605772708fbf2bdf2f4d4dc42f01a7735141459f5822451e9569a7"
+    }
+  },
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6121112,
+      "sha256": "f0fb0c738d2cfa98295dae50a8804fb801c21e1be82c2cff30a183576fcd74ff"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 2124514,
+      "sha256": "f323d12e662abf2ef97a57e0606941147453d5d4306c2cde3a1b41f8d1ac4e05"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1926555,
+      "sha256": "0ba71b670ceae0459935ca04f6004670bac327a3c05cea4e99e7dca89ff538b7"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 803663,
+      "sha256": "a153c45ab04a5ae8a923bfc3b005c9986a966660f2aa292e95112313c68e6359"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 803690,
+      "sha256": "507cce3ff73e1c0b69360fc547d90e663abbddd922f702965e0514e061c238b1"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "df39ed30ac859444711c74242602b428c70b6f2cb90026b79101f81e3e0a9b31"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2587929,
+      "sha256": "371e0f5e68307054a3f4d9260f79c5eaceafda20948e4817d4695d192f108947"
+    }
+  },
+  "negativeDriverSha256": "b790417c444e26da3a7f2cbd373c53b753183c172aa68d3f564a17264e44bb79",
+  "testPython": "3.12.15 (main, Oct  1 2026, 20:59:04) [Clang 22.1.3 ]",
+  "systemPython": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+  "node": "v22.23.4",
+  "producerInputs": "Rust, Cargo/toolchain and browser inputs bfb-exact; prior native/client artifacts reused by verified digest",
+  "remainingBlocker": "10 original-candidate type errors, current-main integration, independent review, CI and queue",
+  "noBrowserOrWasmExecution": true
+}
