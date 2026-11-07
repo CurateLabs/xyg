@@ -252,3 +252,37 @@ tests/fixtures/payload_chrome_cross_host.json text eol=lf
 tests/fixtures/payload_cross_host.json text eol=lf
 tests/fixtures/series_palette_cross_host.json text eol=lf
 tests/fixtures/tooltip_len_emit_cross_host.json text eol=lf
+# Temporal retained terminal-state source bindings.
+js/src/63_graph_controller.ts text eol=lf
+scripts/graph_session_controller_wasm_smoke.mjs text eol=lf
+spec/design/temporal-graph.md text eol=lf
+spec/releases/0.6.0-api-inventory.json text eol=lf
+tests/test_graphforge_contract_corpus.py text eol=lf
+spec/performance/temporal-retained-terminal-idle-2026-11-07/*.json text eol=lf
+spec/performance/temporal-retained-terminal-idle-2026-11-07/*.md text eol=lf
+spec/performance/temporal-retained-terminal-idle-2026-11-07/*.gz -text
+spec/performance/temporal-retained-terminal-idle-2026-11-07/*.png -text
+
+# Independent retained graph Worker-lifetime correction evidence.
+spec/performance/temporal-worker-lifetime-2026-11-07/*.json text eol=lf
+spec/performance/temporal-worker-lifetime-2026-11-07/*.md text eol=lf
+spec/performance/temporal-worker-lifetime-2026-11-07/*.gz -text
+spec/performance/temporal-worker-lifetime-2026-11-07/*.png -text
+
+# Combined accepted scheduling/temporal integration provenance.
+spec/performance/temporal-graph-main-integration-2026-11-07/*.json text eol=lf
+spec/performance/temporal-graph-main-integration-2026-11-07/*.md text eol=lf
+spec/performance/temporal-graph-main-integration-2026-11-07/*.gz -text
+spec/performance/temporal-graph-main-integration-2026-11-07/*.png -text
+spec/design/build-ci.md text eol=lf
+spec/design/graph-interaction.md text eol=lf
+
+# Combined queued temporal/chunked qualification receipt.
+spec/performance/temporal-chunked-queued-union-2026-11-07/*.json text eol=lf
+spec/performance/temporal-chunked-queued-union-2026-11-07/*.md text eol=lf
+spec/performance/temporal-chunked-queued-union-2026-11-07/*.gz -text
+
+spec/performance/filter-tier-c-linked-2026-11-07/*.json text eol=lf
+spec/performance/filter-tier-c-linked-2026-11-07/*.md text eol=lf
+spec/performance/filter-tier-c-linked-2026-11-07/*.gz -text
+spec/performance/filter-tier-c-linked-2026-11-07/*.png -text

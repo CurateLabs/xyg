@@ -1,3 +1,6 @@
+import type { XygTemporalState, XygWasmTemporalController } from "./49_wasm_temporal";
+import { encodeWasmTemporalGraphCreate, encodeWasmTemporalGraphFrame, decodeWasmTemporalGraphFrame,
+  type XygWasmTemporalGraphBinding, type XygWasmTemporalGraphFrame } from "./49_wasm_temporal_graph";
 /** Experimental explicit retained WASM graph attachment (#36 bounded S5b).
  * Rust owns every graph decision; this module owns pointer/keyboard/DOM/lifetime only.
  * See spec/design/graph-interaction.md “Bounded explicit S5b attachment”. */
@@ -13,7 +16,7 @@ export type XygWasmGraphCamera = GraphSessionCamera;
 /** @experimental Bounded S5b preparation; broader graph interactions remain open. */
 export type XygWasmGraphLoad = GraphSessionLoad;
 /** @experimental Bounded S5b preparation; broader graph interactions remain open. */
-export type XygWasmGraphSnapshot = Omit<GraphSessionResult, "sections"> & { camera: XygWasmGraphCamera };
+export type XygWasmGraphSnapshot = Omit<GraphSessionResult, "sections"> & { camera: XygWasmGraphCamera; temporal: XygWasmTemporalGraphFrame | null };
 /** @experimental Bounded S5b preparation; broader graph interactions remain open. */
 export interface XygWasmGraphSessionOptions {
   el: HTMLElement;
@@ -23,6 +26,8 @@ export interface XygWasmGraphSessionOptions {
   /** Complete XYGF bytes, for example composeWasmGraphForge(...).result.bytes. */
   document: Uint8Array | ArrayBuffer;
   load?: XygWasmGraphLoad;
+  /** Canonical UUID planes; controller uses its own Worker. Bind before first paint. */
+  temporal?: { controller: XygWasmTemporalController; binding: XygWasmTemporalGraphBinding; budget: bigint };
   /** Exact Rust session order: scale_x, scale_y, offset_x, offset_y, width, height, DPR. */
   camera: XygWasmGraphCamera;
 }
@@ -31,11 +36,13 @@ export interface XygWasmGraphSession {
   readonly ready: Promise<XygWasmGraphSnapshot>;
   refreshRender(camera?: XygWasmGraphCamera): Promise<XygWasmGraphSnapshot>;
   snapshot(): XygWasmGraphSnapshot | null;
+  whenIdle(): Promise<void>;
+  pinFocused(pinned: boolean): Promise<XygWasmGraphSnapshot>;
   dispose(): Promise<void>;
 }
 
 /** Attach one initially Owned, unlinked session to one packaged Worker.
- * @experimental S5b subset; no temporal/link/update/hover/gesture API. */
+ * @experimental S5b subset; bounded temporal binding; no link/update/hover/gesture API. */
 export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): XygWasmGraphSession {
   if (!options || !(options.el instanceof HTMLElement)) throw new TypeError("A graph container is required");
   // Frame immutable ingress synchronously before asynchronous application work.
@@ -43,12 +50,25 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   let opening: Uint8Array | null = encodeGraphSessionRequest({ instanceId, opSeq: 1n, revision: 0,
     operation: 19, document: options.document, load });
   const progressive = load?.progressive === true;
+  const temporal = options.temporal;
+  if (temporal && load?.pinned && Array.from(load.pinned).some(value => value !== 0)) {
+    throw new TypeError("Temporal binding starts with Rust-owned empty interaction state; use pinFocused after ready");
+  }
+  // Encode before async work, so later author-buffer mutation cannot alter bindings.
+  let temporalCreate = temporal ? new Uint8Array(encodeWasmTemporalGraphCreate(temporal.binding)) : null;
+  const temporalBudget = temporal?.budget;
+  let temporalFrame: XygWasmTemporalGraphFrame | null = null, acceptedMembership: XygWasmTemporalGraphFrame | null = null, sessionRevision = 0, timeRevision = 0n;
+  let pendingTime: XygTemporalState | null = null, timeKey: string | null = null, intent = 0;
+  let temporalTask: Promise<void> = Promise.resolve(), initialized = false, temporalPumping = false;
+  let unsubscribeTime: (() => void) | null = null;
+  const idleWaiters = new Set<() => void>();
+  let terminalFailure: XygWasmError | null = null;
   const cameraCopy = (camera: XygWasmGraphCamera): XygWasmGraphCamera => {
     if (!camera || camera.length !== 7 || Array.from(camera).some(v => typeof v !== "number")) throw new TypeError("An explicit seven-f64 session camera is required");
     return Object.freeze([...camera]) as unknown as XygWasmGraphCamera;
   };
   let camera = cameraCopy(options.camera);
-  const lane = claimGraphWorker(options.worker), doc = options.el.ownerDocument;
+  const lane = claimGraphWorker(options.worker, report), doc = options.el.ownerDocument;
   let disposed = false, terminal = false, busy = true, needsRefresh = false, sequence = 2n, output: GraphSessionResult | null = null;
   let continuation = progressive, frame: number | null = null, deadline: ReturnType<typeof setTimeout> | null = null;
   let disposal: Promise<void> | null = null, page = 0;
@@ -72,7 +92,7 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   function snapshot(): XygWasmGraphSnapshot | null {
     if (!output) return null;
     const { sections: _sections, ...semantic } = output;
-    return structuredClone({ ...semantic, camera });
+    return structuredClone({ ...semantic, camera, temporal: temporalFrame });
   }
   function dispatch(name: string, detail: unknown) {
     if (disposed) return;
@@ -82,7 +102,12 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   function report(error: unknown) {
     if (disposed) return;
     stopContinuation();
-    if (error instanceof XygWasmError && error.code.startsWith("XYG_WASM_")) terminal = true;
+    if (error instanceof XygWasmError && error.code.startsWith("XYG_WASM_")) {
+      if (terminalFailure) return;
+      terminal = true; terminalFailure = error;
+      intent++; pendingTime = null; unsubscribeTime?.(); unsubscribeTime = null;
+      for (const resolve of idleWaiters) resolve(); idleWaiters.clear();
+    }
     if (error instanceof XygWasmError && error.code === "GF_INTERACTION_STALE") {
       needsRefresh = true; dispatch("stale", { code: error.code, revision: output?.revision ?? 0 });
     } else dispatch("error", { code: error instanceof XygWasmError ? error.code : "GF_INTERACTION_INVALID", message: error instanceof Error ? error.message : String(error) });
@@ -94,7 +119,7 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
     frame = null; deadline = null;
   }
   function scheduleContinuation() {
-    if (!continuation || disposed || terminal || needsRefresh || frame !== null) return;
+    if (!continuation || disposed || terminal || needsRefresh || pendingTime || temporalPumping || frame !== null) return;
     if (output?.relayout?.done) { stopContinuation(); return; }
     frame = requestAnimationFrame(() => {
       frame = null;
@@ -107,7 +132,10 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   }
   function setBusy(value: boolean) {
     busy = value;
-    if (!value) scheduleContinuation();
+    if (!value) { pumpTemporal(); scheduleContinuation(); }
+    if (disposed || terminal || (!busy && !pendingTime && !temporalPumping)) {
+      for (const resolve of idleWaiters) resolve(); idleWaiters.clear();
+    }
     if (disposed) return;
     surface.setAttribute("aria-busy", String(value));
     for (const button of companion.querySelectorAll("button")) {
@@ -154,8 +182,10 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   }
   function request(input: Pick<GraphSessionRequest, "operation"> & Partial<GraphSessionRequest>, candidateCamera = camera, candidatePage = page) {
     if (sequence > 0xffffffffffffffffn) throw new RangeError("Graph op_seq exhausted");
-    const bytes = encodeGraphSessionRequest({ ...input, instanceId, opSeq: sequence++, revision: output?.revision ?? 0 });
+    const currentIntent = intent;
+    const bytes = encodeGraphSessionRequest({ ...input, instanceId, opSeq: sequence++, revision: sessionRevision });
     return lane.execute(input.operation === 21 ? "render" : "interact", bytes).then(async bytes => {
+      sessionRevision = decodeGraphSessionAck(bytes).revision;
       if (input.operation === 15 && candidatePage !== 0) {
         // Step replies carry page zero. Preserve the user's companion page by
         // coalescing that checkpoint with a same-state Rust render, never by
@@ -166,8 +196,73 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
         bytes = await lane.execute("render", encodeGraphSessionRequest({ instanceId, opSeq: sequence++, revision: checkpoint.revision,
           operation: 21, camera: candidateCamera, page: candidatePage, pageSize: 50 }));
       }
-      return install(bytes, candidateCamera, input.operation === 17 || input.operation === 21 || input.operation === 15 ? candidatePage : 0, input.operation === 15);
+      sessionRevision = decodeGraphSessionAck(bytes).revision;
+      if (temporal && currentIntent !== intent) { needsRefresh = true; throw new XygWasmError("GF_INTERACTION_STALE", "Temporal intent superseded the graph reply", -1); }
+      const prior = temporalFrame;
+      if (acceptedMembership) temporalFrame = acceptedMembership;
+      try { return install(bytes, candidateCamera, input.operation === 17 || input.operation === 21 || input.operation === 15 ? candidatePage : 0, input.operation === 15); }
+      catch (error) { temporalFrame = prior; throw error; }
     });
+  }
+  async function computeTime() {
+    const state = pendingTime!, current = intent; pendingTime = null;
+    const revision = ++timeRevision;
+    const bytes = await lane.temporalFrame(new Uint8Array(encodeWasmTemporalGraphFrame(revision,
+      state.cursor, [state.rangeStart, state.rangeEnd], temporalBudget!)));
+    const membership = decodeWasmTemporalGraphFrame(bytes);
+    if (membership.revision !== revision) throw new XygWasmError("GF_INTERACTION_STALE", "Temporal frame revision mismatch", -1);
+    // Rust may have advanced while the previous picture stays mounted. Until a
+    // matching render is installed, old picking stamps must not be admitted.
+    acceptedMembership = membership; needsRefresh = true;
+    return { membership, current };
+  }
+  async function renderTime({ membership, current }: { membership: XygWasmTemporalGraphFrame; current: number }): Promise<XygWasmGraphSnapshot | null> {
+    if (disposed || current !== intent) return null;
+    const rendered = await lane.execute("render", encodeGraphSessionRequest({ instanceId, opSeq: sequence++,
+      revision: sessionRevision, operation: 21, camera, page, pageSize: 50 }));
+    sessionRevision = decodeGraphSessionAck(rendered).revision;
+    if (disposed || current !== intent) return null;
+    const prior = temporalFrame;
+    temporalFrame = membership;
+    try {
+      const value = install(rendered, camera, page);
+      if (progressive) {
+        continuation = true;
+        if (deadline !== null) clearTimeout(deadline);
+        deadline = setTimeout(() => report(new XygWasmError("XYG_WASM_TIMEOUT", "Graph continuation exceeded the scheduler wall limit")), XYG_WASM_GRAPH_DEFAULT_MAX_WALL_MS);
+      }
+      return value;
+    }
+    catch (error) { temporalFrame = prior; throw error; }
+  }
+  async function applyTime() { return renderTime(await computeTime()); }
+  function pumpTemporal() {
+    if (!initialized || !pendingTime || busy || temporalPumping || disposed || terminal) return;
+    temporalPumping = true; setBusy(true);
+    temporalTask = (async () => {
+      try {
+        while (pendingTime && !disposed && !terminal) {
+          const current = intent;
+          try { const value = await applyTime(); if (value && !disposed) dispatch("render", value); }
+          catch (error) {
+            // Transport lifetime failure outranks time-intent supersession.
+            if (!disposed && error instanceof XygWasmError && error.code.startsWith("XYG_WASM_")) report(error);
+            else if (!disposed && current === intent) { timeKey = null; report(error); }
+          }
+        }
+      } finally { temporalPumping = false; setBusy(false); }
+    })();
+  }
+  function acceptTime(state: XygTemporalState) {
+    if (disposed || terminal) return;
+    if (state.disposed) { void dispose(); return; }
+    const key = `${state.cursor}/${state.rangeStart}/${state.rangeEnd}/${state.window}`;
+    if (timeKey === key) return;
+    timeKey = key; pendingTime = state; intent++;
+    // No checkpoint built for older membership may paint while intent is newer.
+    if (frame !== null) cancelAnimationFrame(frame);
+    frame = null;
+    pumpTemporal();
   }
   // Framing and lane admission happen synchronously. No event is retained by
   // asynchronous work, and no observer runs between choosing a Rust fact and
@@ -175,7 +270,7 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   function admit(input: Pick<GraphSessionRequest, "operation"> & Partial<GraphSessionRequest>, kind: "focus" | "select" | "render", candidateCamera = camera, candidatePage = page): Promise<XygWasmGraphSnapshot> {
     if (disposed) throw new XygWasmError("XYG_WASM_DISPOSED", "Graph attachment was disposed");
     if (terminal) throw new XygWasmError("XYG_WASM_DISPOSED", "Graph Worker lifetime ended; mutation outcome may be unknown");
-    if (busy) throw new XygWasmError("XYG_WASM_GRAPH_BUSY", "One graph UI action is already outstanding");
+    if (pendingTime || temporalPumping || busy) throw new XygWasmError("XYG_WASM_GRAPH_BUSY", "One graph UI action is already outstanding");
     if (needsRefresh && input.operation !== 21) throw new XygWasmError("GF_INTERACTION_STALE", "Refresh the graph publication before further input", -1);
     const pending = request(input, candidateCamera, candidatePage);
     setBusy(true);
@@ -263,6 +358,10 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   const nextPage = () => { if (!disposed && !busy && !needsRefresh && output && (page + 1) * 50 < output.companion.total) void run({ operation: 17, page: page + 1, pageSize: 50 }, "render", camera, page + 1).catch(() => {}); };
   painter.canvas.addEventListener("click", primaryClick);
   surface.addEventListener("keydown", keyDown); previous.addEventListener("click", previousPage); next.addEventListener("click", nextPage);
+  if (temporal) {
+    try { unsubscribeTime = temporal.controller.subscribeState(acceptTime); acceptTime(temporal.controller.state); }
+    catch (error) { void dispose(); throw error; }
+  }
   setBusy(true);
   if (progressive) deadline = setTimeout(() => {
     report(new XygWasmError("XYG_WASM_TIMEOUT", "Graph continuation exceeded the scheduler wall limit"));
@@ -270,9 +369,22 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   const ready = (async () => {
     const ack = await lane.execute("open", opening!); opening = null; decodeGraphSessionAck(ack);
     if (disposed) throw new XygWasmError("XYG_WASM_DISPOSED", "Graph attachment was disposed");
+    if (temporalCreate) {
+      await lane.temporalCreate(temporalCreate); temporalCreate = null;
+      // Bind itself renders in Rust. Publish initial membership first so even
+      // its unpainted layout/pick construction sees the temporal world.
+      const initialTime = await computeTime();
+      const bound = await lane.execute("interact", encodeGraphSessionRequest({ instanceId, opSeq: sequence++, revision: sessionRevision, operation: 18, temporal: true }));
+      sessionRevision = decodeGraphSessionAck(bound).revision;
+      const initial = await renderTime(initialTime); if (initial) return initial;
+      while (pendingTime && !disposed) {
+        const value = await applyTime(); if (value) return value;
+      }
+      throw new XygWasmError("XYG_WASM_DISPOSED", "Temporal graph closed before initial paint");
+    }
     return await request({ operation: 21, camera, page: 0, pageSize: 50 });
   })().then(value => { if (!disposed) dispatch("render", value); return value; }).catch(async error => { report(error); await dispose(); throw error; }).finally(() => {
-    setBusy(false);
+    initialized = true; setBusy(false);
     if (frame !== null) cancelAnimationFrame(frame);
     frame = null;
     if (continuation && !disposed) frame = requestAnimationFrame(() => { frame = null; scheduleContinuation(); });
@@ -280,7 +392,8 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   // Do not await ready in cleanup: its failure path itself awaits disposal.
   function dispose(): Promise<void> {
     if (disposal) return disposal;
-    disposed = true; stopContinuation();
+    disposed = true; intent++; pendingTime = null; unsubscribeTime?.(); unsubscribeTime = null; stopContinuation();
+    for (const resolve of idleWaiters) resolve(); idleWaiters.clear();
     painter.canvas.removeEventListener("click", primaryClick);
     surface.removeEventListener("keydown", keyDown); previous.removeEventListener("click", previousPage); next.removeEventListener("click", nextPage);
     for (const [name, value] of surfaceAttributes) { if (value === null) surface.removeAttribute(name); else surface.setAttribute(name, value); }
@@ -290,6 +403,16 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
     disposal = lane.close(); return disposal;
   }
   return Object.freeze({ ready, snapshot, dispose,
+    async whenIdle() {
+      await ready;
+      while (!disposed && !terminal && (busy || pendingTime || temporalPumping)) await new Promise<void>(resolve => idleWaiters.add(resolve));
+      if (terminalFailure) throw terminalFailure;
+      await temporalTask;
+    },
+    pinFocused(pinned: boolean) {
+      if (typeof pinned !== "boolean" || !output?.focusAction.pinEligible || output.focusAction.refs.length !== 1) return Promise.reject(new TypeError("A pinnable focused node and boolean are required"));
+      return run({ operation: 13, pinned, refs: output.focusAction.refs }, "render");
+    },
     refreshRender(nextCamera?: XygWasmGraphCamera) {
       const target = nextCamera === undefined ? camera : cameraCopy(nextCamera);
       return run({ operation: 21, camera: target, page, pageSize: 50 }, "render", target);

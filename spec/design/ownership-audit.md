@@ -904,7 +904,7 @@ Forbidden:
 | `js/src/58_graph.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/60_entries.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/66_graph_host.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client`; notebook frame/ACK presentation and existing comm routing only | — |
-| `js/src/63_graph_controller.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client`; explicit S5b keyboard/DOM/ARIA/companion/lifetime only | — |
+| `js/src/63_graph_controller.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client`; explicit S5b keyboard/DOM/ARIA/companion/lifetime plus bounded automatic temporal scheduling; Rust owns membership/state/layout/pick | — |
 | `js/src/63_graph_gpu.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client`; GPU-v1 validation/raw-buffer paint through GLHost | — |
 | `js/src/63_graph_session_wire.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; internal XYGI/XYGR framing, no graph policy | #59 |
 | `js/src/wasm_abi_generated.ts` | Generated cross-host WASM contract binding | `browser-wasm-generated` | `generate` | #59 |
