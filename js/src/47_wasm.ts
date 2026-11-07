@@ -1172,7 +1172,10 @@ export function createXygWasmWorker(options: XygWasmWorkerOptions | XygInlineWas
  * graph controller. Not exported through 60_entries.ts. Request bytes survive
  * the transfer until resolution; op_seq belongs to Rust, not this transport. */
 type GraphSessionExport = "open" | "update" | "render" | "interact";
+type GraphTemporalExport = "temporal-create" | "temporal-frame";
 interface GraphWorkerAttachment {
+  temporalCreate(request: Uint8Array): Promise<ArrayBuffer>;
+  temporalFrame(request: Uint8Array): Promise<ArrayBuffer>;
   execute(operation: GraphSessionExport, request: Uint8Array): Promise<ArrayBuffer>;
   close(): Promise<void>;
 }
@@ -1199,7 +1202,7 @@ export function claimGraphWorker(worker: XygWasmWorker): GraphWorkerAttachment {
     origin.terminate(); geographicDispatch.failAll.call(worker, error);
     return error;
   };
-  const send = async (operation: GraphSessionExport | "close", retained?: Uint8Array): Promise<ArrayBuffer> => {
+  const send = async (operation: GraphSessionExport | GraphTemporalExport | "close", retained?: Uint8Array): Promise<ArrayBuffer> => {
     await origin.ready; live();
     // No pre-existing deferred job may later stage over the retained instance.
     if (operation === "open" && !opened && worker["pending"].size) {
@@ -1230,8 +1233,7 @@ export function claimGraphWorker(worker: XygWasmWorker): GraphWorkerAttachment {
       worker["pending"].delete(requestId);
     }
   };
-  const attachment: GraphWorkerAttachment = Object.freeze({
-    execute(operation: GraphSessionExport, request: Uint8Array) {
+  function enqueue(operation: GraphSessionExport | GraphTemporalExport, request: Uint8Array) {
       live();
       if (closing) throw new XygWasmError("XYG_WASM_DISPOSED", "Graph attachment is closing");
       if (!(request instanceof Uint8Array) || !request.byteLength || request.byteLength > origin.maxArenaBytes) throw new RangeError("Graph request exceeds Worker arena");
@@ -1240,7 +1242,11 @@ export function claimGraphWorker(worker: XygWasmWorker): GraphWorkerAttachment {
       const result = chain.then(() => send(operation, retained));
       chain = result.catch(() => {});
       return result.finally(() => { queued--; bytesHeld -= retained.byteLength; });
-    },
+  }
+  const attachment: GraphWorkerAttachment = Object.freeze({
+    execute: enqueue,
+    temporalCreate: (request: Uint8Array) => enqueue("temporal-create", request),
+    temporalFrame: (request: Uint8Array) => enqueue("temporal-frame", request),
     close() {
       if (closePromise) return closePromise;
       closing = true;

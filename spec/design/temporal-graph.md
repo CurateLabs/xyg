@@ -199,20 +199,81 @@ unsubscribes immediately, suppresses late publication and drains active work;
 controller and Worker ownership stay with the caller. Graph/controller disposal
 also detaches the binding. Do not mix manual frame submissions with a binding.
 
-This is a coordinator API, **not retained graph composition attachment**. The
-existing `attachWasmGraphSession` claims its Worker and blocks foreign temporal
-commands. Its public surface provides only ready/snapshot/refreshRender/dispose;
-its internal byte encoder omits Rust operation 18 (bind temporal). A narrow
-serialized temporal-create/bind/frame/render hook in that attachment is a
-cross-lane dependency. This slice does not duplicate the painter or bypass its
-exclusive Worker admission. Browser selected/focused/pinned state through that
-retained journey, temporal-before-pick/paint, and cancellation of retained layout
-remain unproved. The native shared assertion-history fixture proves persistent
-UUID state; it does not stand in for browser interaction proof. No timezone setter
-exists on this UTC-microsecond controller; timezone/export presentation remains
-outside this slice. Aggregate/export/scale and comparative performance gates
-remain open. No competitor performance lead is claimed.
+The standalone coordinator remains available for explicit frame/layout consumers.
+Retained composition now uses the optional `temporal` property of
+`attachWasmGraphSession`, described below. No timezone setter exists on this
+UTC-microsecond controller; timezone/export presentation remains outside this
+slice. Aggregate/export/scale and comparative performance gates remain open.
+No competitor performance lead is claimed.
 
 The existing full strict-CSP foundation command executes the automatic Worker
 journey and exact seven-frame assertion-validity/event-history fixture shared
 with `tests/test_temporal_graph_native.py`. This adds no separate CI gate.
+
+## Retained automatic presentation (bounded #45 slice)
+
+```js
+const graph = attachWasmGraphSession({
+  el, worker: graphWorker, instanceId: 950n, document, load, camera,
+  temporal: { controller, binding, budget: 14n },
+});
+await graph.ready;
+await controller.setCursor(20n); // normal controller controls drive the graph
+```
+
+The existing attachment owns one exclusive Worker lifetime. Its internal lane
+has named temporal-create and temporal-frame messages; both use the same queue,
+request/sequence/lifetime checks, bounded retained bytes and lost-reply watchdog
+as graph commands. Foreign public temporal commands still fail admission. There
+is no public arbitrary execute endpoint, alternate renderer, topology rebuild,
+JavaScript filter/identity resolution, or independent layout. The controller
+uses a separate Worker; its complete canonical snapshots, including received
+coordination events, automatically drive initial and subsequent presentation.
+
+Initialization performs OPEN, XYTG create, XYTG frame, Rust Bind (operation 18),
+and Rust render before first paint. Bind itself renders in Rust, so initial
+membership is published before binding as well as before presentation. Bind adopts the temporal owner's initially
+empty interaction state, per the existing Rust contract. Nonzero authored
+`load.pinned` with this option is refused synchronously; use the bounded
+`pinFocused(boolean)` action after ready. That action forwards the single Rust
+focus-action ref and remains subject to busy/stale/applicability guards.
+Selection, focus and pins then live in the same Rust temporal owner and persist
+when UUIDs leave/re-enter visibility. Companion rows remain canonical, including
+hidden entities; they are not the visible render membership oracle.
+
+Each time intent occupies one latest pending snapshot beside one active lane
+operation. Supersession suppresses older frame/render/layout replies before
+paint and pauses the old continuation. Rust frame publication is failure-atomic;
+render synchronizes that published visibility before graph LOD, picking or
+retained layout. The session's actual acknowledged revision is tracked even if
+its reply is superseded. Interactions are withheld while the presentation and
+Rust temporal world differ. `load.progressive` reuses the existing retained
+continuation, with unchanged chunk/wall/work limits, after matching render.
+
+A refused frame retains the last accepted picture, camera, snapshot and UUID
+state. A successful frame followed by refused render also retains that picture;
+interactions stay blocked until a successful matching render. `refreshRender`
+can recover with the last Rust-accepted membership, while the next controller
+notification retries failed time. Snapshot temporal membership is installed
+with the picture, never in advance. `whenIdle()` asynchronously drains admitted
+UI/time work without a microtask spin or application frame pumping; it does not
+wait for every future animation opportunity. Snapshot buffers are defensive
+copies. Disposal immediately unsubscribes, stops scheduling, suppresses late
+publication, and drains the lane before CLOSE/releasing its claim. Disposing
+the controller disposes its attached view. Rust temporal storage remains owned
+by the borrowed Worker until replacement/Worker disposal, as on the existing
+standalone path; dispose an owned Worker after the attachment.
+
+The existing full source-dist foundation command now includes the retained
+journey in `graph_session_controller_wasm_smoke.mjs`. Its seven-frame shared
+assertion-history fixture verifies actual pixels, exact Rust render/UUID
+membership, native picks and hidden/reappearing selection/focus/pins. It also
+covers real Rust frame and render refusals, remote snapshots, step/play/pause,
+held-reply latest-wins/disposal and in-flight progressive checkpoint replacement.
+The existing Node native/WASM wire test compares complete retained replies,
+including GPU, membership and interaction state, for the same fixture. Evidence:
+[retained presentation receipt](../performance/temporal-retained-presentation-2026-11-07/README.md).
+
+This bounded direct-tier proof does not close aggregate membership, exports,
+large/massive playback, full accessibility, timezone presentation, supported
+host parity or competitor comparison acceptance.

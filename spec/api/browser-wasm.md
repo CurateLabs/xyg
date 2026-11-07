@@ -459,6 +459,11 @@ This does not close #35/#1015/#36 or waive any #108 publication acceptance.
 Rust controller snapshots into temporal membership and Rust CoSE. Supply an
 explicit work `budget`, optional `layout`, and optional `onFrame`/`onError`.
 The returned binding has `whenIdle()`, defensive `snapshot()`, and asynchronous
-`dispose()`. Use separate Workers for controller and graph. This bounded
-coordinator does not yet connect the retained `attachWasmGraphSession` painter;
+`dispose()`. Use separate Workers for controller and graph. For retained
+presentation, pass `temporal: {controller, binding, budget}` directly to
+`attachWasmGraphSession`; it uses the same existing retained painter and Rust
+layout/picking. Its `snapshot().temporal` is the painted membership, `whenIdle()`
+drains admitted UI/time work, and `pinFocused(boolean)` forwards the Rust-issued
+focus target. Nonzero `load.pinned` is refused with temporal binding; pin after
+ready. Disposal stops the subscription and drains before closing the lane;
 see [temporal graph contracts](../design/temporal-graph.md).

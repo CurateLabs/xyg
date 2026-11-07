@@ -176,3 +176,13 @@ The normal source-path classifier selects these files as release surfaces, and
 merge queue rule, blanket size ladder or release compatibility policy is added.
 Local reproduction is in the
 [R2 receipt](../performance/graph-widget-progressive-r2-2026-11-06/README.md).
+
+
+The full source-dist `node scripts/wasm_foundation_smoke.mjs` command includes the
+bounded retained temporal presentation branch of
+`graph_session_controller_wasm_smoke.mjs` (`XYG_GRAPH_TEMPORAL_ONLY=1` internally).
+It uses actual shipped Worker/WASM, native mouse input and the shared history
+fixture. This extends the existing gate, without adding a workflow/job or
+changing package/runtime budgets. Staged-package and density-only foundation
+runs keep their stated scope. Complete fixture retained native/WASM byte parity
+runs in the existing `graph-session-wire.test.mjs` command.
