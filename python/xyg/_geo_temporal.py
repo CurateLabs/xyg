@@ -1,12 +1,37 @@
 """Bounded native scheduling; all geographic decisions remain Rust-owned."""
 
 import asyncio
+from collections.abc import Mapping
 from copy import deepcopy
 from dataclasses import replace
 from weakref import WeakKeyDictionary
 
 _BINDINGS = WeakKeyDictionary()
 _MAX = (1 << 64) - 1
+
+
+def _copy_chart(chart):
+    # Canonical digests may borrow native memory. Copy values, not source owners.
+    layers = []
+    for layer in chart.layers:
+        properties = dict(layer.properties)
+        query = dict(properties["query"])
+        query["source_digest"] = bytes(query["source_digest"])
+        query["camera"] = dict(query["camera"])
+        query["time"] = dict(query["time"])
+        properties["query"] = query
+        if isinstance(properties["style"], Mapping):
+            style = dict(properties["style"])
+            style["fill"], style["stroke"] = bytes(style["fill"]), bytes(style["stroke"])
+            properties["style"] = style
+        layers.append(replace(layer, properties=deepcopy(properties)))
+    return replace(
+        chart,
+        layers=tuple(layers),
+        camera=deepcopy(dict(chart.camera)),
+        legend=deepcopy(chart.legend),
+        tile_vector_styles=deepcopy(chart.tile_vector_styles),
+    )
 
 
 class GeoTemporalBinding:
@@ -26,7 +51,8 @@ class GeoTemporalBinding:
             raise RuntimeError("controller disposed")
         if layer.source in _BINDINGS:
             raise RuntimeError("source already has a temporal binding")
-        self._source, self._layer, self._template = layer.source, layer, chart
+        self._template = _copy_chart(chart)
+        self._source, self._layer = layer.source, self._template.layers[0]
         # The typed request is a heterogeneous mapping; Rust validates each
         # named field when it is encoded. Preserve field values and copy owners.
         self._query: dict = {
@@ -43,8 +69,16 @@ class GeoTemporalBinding:
         self.error = None
         self._time = None
         _BINDINGS[self._source] = self
-        self._unsubscribe = controller.subscribe_state(self._accept)
-        self._accept(controller.state)
+        self._unsubscribe = lambda: None
+        try:
+            self._unsubscribe = controller.subscribe_state(self._accept)
+            self._accept(controller.state)
+        except BaseException:
+            self._closed = True
+            self._unsubscribe()
+            if _BINDINGS.get(self._source) is self:
+                del _BINDINGS[self._source]
+            raise
 
     def _accept(self, state):
         # Native controller notifications run on the mutating thread. Only the
@@ -133,8 +167,16 @@ class GeoTemporalBinding:
                             await self._retiring.aclose()
                             self._retiring = None
                 except asyncio.CancelledError:
-                    if self._source._cancel_generation == cancellation:
-                        raise
+                    task = asyncio.current_task()
+                    if task is not None:
+                        # Acknowledge only source-owned task.cancel() requests.
+                        # Other task cancellation (for example loop shutdown) is
+                        # still terminal; reader-raised cancellation has no count.
+                        owned = self._source._cancel_generation - cancellation
+                        for _ in range(min(owned, task.cancelling())):
+                            task.uncancel()
+                        if task.cancelling():
+                            raise
                     # Source cancellation is an operation failure, not cancellation
                     # of callers waiting on this pump. Keep the last accepted lease.
                     self.error = RuntimeError("geographic source read cancelled")
@@ -159,7 +201,15 @@ class GeoTemporalBinding:
         """Wait for admitted work and latest pending replacement to settle."""
         while self._task is not None:
             task = self._task
-            await asyncio.shield(task)
+            try:
+                await asyncio.shield(task)
+            except asyncio.CancelledError:
+                waiter = asyncio.current_task()
+                if waiter is None or waiter.cancelling() or not task.cancelled():
+                    raise
+                # A terminal child cancellation cannot make private-owner cleanup
+                # permanently inaccessible. Genuine caller cancellation propagates.
+                self.error = RuntimeError("geographic operation cancelled")
             if task is self._task:
                 return
 
@@ -169,7 +219,7 @@ class GeoTemporalBinding:
         async with self._lock:
             if self._frame is None:
                 raise RuntimeError("no accepted temporal frame") from self.error
-            return self._chart, await self._frame.retain_async()
+            return _copy_chart(self._chart), await self._frame.retain_async()
 
     def _detach(self):
         self._closed = True
@@ -179,7 +229,10 @@ class GeoTemporalBinding:
     async def aclose(self):
         """Drain admitted reads and release private frame; caller leases survive."""
         self._detach()
-        await self.when_idle()
+        # A cancelled, terminal child has no work left to drain. In particular,
+        # cleanup inside a caller's CancelledError handler must remain usable.
+        if self._task is None or not self._task.cancelled():
+            await self.when_idle()
         async with self._lock:
             if self._retiring is not None:
                 await self._retiring.aclose()

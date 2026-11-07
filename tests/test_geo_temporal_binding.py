@@ -334,6 +334,7 @@ def test_source_cancellation_preserves_snapshot_and_releases_binding(action):
             release.set()
             await closing
             await binding.when_idle()
+            assert binding._task.cancelling() == 0
             assert isinstance(binding.error, RuntimeError)
             _, retained = await binding.snapshot()
             leases.append(retained)
@@ -462,5 +463,181 @@ def test_indexed_composition_private_frames_preserve_default_publication(indexed
                 await index.aclose()
             initial.close()
             source.close()
+
+    asyncio.run(run())
+
+
+def test_reader_cancelled_error_keeps_snapshot_and_allows_cleanup():
+    from contextlib import suppress
+
+    from xyg._geo_temporal import _BINDINGS
+
+    async def run():
+        manifest, chunk = fixture_manifest()
+        cancel = False
+
+        async def reader(_):
+            if cancel:
+                raise asyncio.CancelledError
+            return chunk
+
+        source = await xyg.RetainedGeoSource.create_async(manifest, reader, budget=BUDGET)
+        controller = xyg.TemporalController(instance_id=31, domain=(-10, 10))
+        q = query(source.info)
+        q.update(time_revision=0, camera_revision=0)
+        chart = xyg.geo_chart(
+            xyg.geo_layer(
+                "points", source=source, layer_id=U64, query=q, sequence=1, style=style()
+            ),
+            camera=q["camera"],
+        )
+        binding = chart.bind_temporal(controller)
+        leases = []
+        try:
+            await binding.when_idle()
+            _, first = await binding.snapshot()
+            leases.append(first)
+            cancel = True
+            controller.set_cursor(3)
+            await binding.when_idle()
+            assert isinstance(binding.error, RuntimeError)
+            _, retained = await binding.snapshot()
+            leases.append(retained)
+            assert retained.data.identity == first.data.identity
+            cancel = False
+            controller.set_cursor(4)
+            _, recovery = await binding.snapshot()
+            leases.append(recovery)
+            assert binding.error is None
+            assert recovery.data.identity["time"]["instant"] == 4
+            await binding.aclose()
+            await binding.aclose()
+            assert binding._frame is None
+            assert source not in _BINDINGS
+        finally:
+            # Preserve the test's failure while releasing fixtures on old code.
+            with suppress(asyncio.CancelledError):
+                await binding.aclose()
+            if binding._frame is not None:
+                await binding._frame.aclose()
+            for frame in leases:
+                await frame.aclose()
+            await source.aclose()
+            controller.close()
+
+    asyncio.run(run())
+
+
+def test_snapshots_and_authored_styles_are_independent_compositions():
+    async def run():
+        manifest, chunk = fixture_manifest()
+        source = xyg.RetainedGeoSource(manifest, lambda _: chunk, budget=BUDGET)
+        controller = xyg.TemporalController(instance_id=32, domain=(-10, 10))
+        q = query(source.info)
+        q.update(time_revision=0, camera_revision=0)
+        authored = dict(
+            fill=b"\xff\0\0\xff",
+            stroke=b"\0" * 4,
+            stroke_width=0.0,
+            diameter=6.0,
+            opacity=1.0,
+            symbol=0,
+        )
+        chart = xyg.geo_chart(
+            xyg.geo_layer(
+                "points", source=source, layer_id=U64, query=q, sequence=1, style=authored
+            ),
+            camera=q["camera"],
+        )
+        binding = chart.bind_temporal(controller)
+        frames = []
+        try:
+            authored["diameter"] = 100.0
+            first_chart, first = await binding.snapshot()
+            frames.append(first)
+            assert first_chart.layers[0].properties["style"]["diameter"] == 6.0
+            first_chart.layers[0].properties["query"]["time"]["instant"] = 5
+            first_chart.layers[0].properties["style"]["opacity"] = 0.0
+            first_chart.camera["zoom"] = 99.0
+            second_chart, second = await binding.snapshot()
+            frames.append(second)
+            assert second_chart is not first_chart
+            assert second_chart.layers[0].source is source
+            assert (
+                second_chart.layers[0].properties["query"]["time"] == second.data.identity["time"]
+            )
+            assert second_chart.layers[0].properties["style"]["opacity"] == 1.0
+            artifact = second_chart.to_image("svg", frame=second)
+            artifact.close()
+            controller.set_cursor(2)
+            next_chart, next_frame = await binding.snapshot()
+            frames.append(next_frame)
+            assert next_chart.layers[0].properties["style"]["diameter"] == 6.0
+            assert next_frame.data.identity["time"]["instant"] == 2
+        finally:
+            await binding.aclose()
+            for frame in frames:
+                await frame.aclose()
+            await source.aclose()
+            controller.close()
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("cancelled_caller", [False, True])
+def test_terminal_cancelled_pump_cannot_block_private_frame_cleanup(cancelled_caller):
+    from xyg._geo_temporal import _BINDINGS
+
+    async def run():
+        manifest, chunk = fixture_manifest()
+        entered, release = asyncio.Event(), asyncio.Event()
+        block = False
+
+        async def reader(_):
+            if block:
+                entered.set()
+                await release.wait()
+            return chunk
+
+        source = await xyg.RetainedGeoSource.create_async(manifest, reader, budget=BUDGET)
+        controller = xyg.TemporalController(instance_id=33, domain=(-10, 10))
+        q = query(source.info)
+        q.update(time_revision=0, camera_revision=0)
+        chart = xyg.geo_chart(
+            xyg.geo_layer(
+                "points", source=source, layer_id=U64, query=q, sequence=1, style=style()
+            ),
+            camera=q["camera"],
+        )
+        binding = chart.bind_temporal(controller)
+        frame = None
+        try:
+            _, frame = await binding.snapshot()
+            block = True
+            controller.set_cursor(3)
+            await asyncio.wait_for(entered.wait(), 5)
+            # Simulate terminal cancellation of the binding's own job, distinct
+            # from cancelling a shielded caller (covered by the source tests).
+            task = binding._task
+            task.cancel()
+            release.set()
+            await binding.when_idle()
+            assert task.cancelled()
+            assert isinstance(binding.error, RuntimeError)
+            if cancelled_caller:
+                asyncio.current_task().cancel()
+                with pytest.raises(asyncio.CancelledError):
+                    await asyncio.sleep(0)
+            await binding.aclose()
+            assert binding._frame is None
+            assert source not in _BINDINGS
+            assert frame.data.record(0)["feature_id"] == U64
+        finally:
+            release.set()
+            await binding.aclose()
+            if frame is not None:
+                await frame.aclose()
+            await source.aclose()
+            controller.close()
 
     asyncio.run(run())

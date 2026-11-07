@@ -176,3 +176,8 @@ spec/performance/graph-notebook-identity-order-2026-11-06/README.md text eol=lf
 spec/performance/geo-native-main-integration-2026-11-07/README.md text eol=lf
 spec/design/geo-retained-hosts.md text eol=lf
 spec/design/temporal-controller.md text eol=lf
+
+# Native terminal state and snapshot ownership correction.
+spec/performance/geo-binding-terminal-state-2026-11-07/*.json text eol=lf
+spec/performance/geo-binding-terminal-state-2026-11-07/*.md text eol=lf
+spec/performance/geo-binding-terminal-state-2026-11-07/*.gz -text

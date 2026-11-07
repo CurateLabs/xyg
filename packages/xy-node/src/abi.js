@@ -979,8 +979,11 @@ export function temporalControllerState(handle) {
 const temporalObservers = new Map();
 const temporalPublishing = new Set();
 const temporalPending = new Map();
+const temporalDestroying = new Map();
 /** Subscribe to exact native snapshots. Observers cannot fail a successful command. */
 export function temporalControllerSubscribeState(handle, observer) {
+  handle = toU64(handle, "handle");
+  if(temporalDestroying.has(handle))throw new Error('temporal controller is being destroyed');
   temporalControllerState(handle);
   if(typeof observer !== 'function') throw new TypeError('observer must be a function');
   let observers = temporalObservers.get(handle);
@@ -995,7 +998,8 @@ export function temporalControllerSubscribeState(handle, observer) {
   };
 }
 function publishTemporalState(handle, disposed = false) {
-  if(!temporalObservers.has(handle))return;
+  handle = toU64(handle, "handle");
+  if(temporalDestroying.get(handle)?.nativeDone || !temporalObservers.has(handle))return;
   const raw=temporalControllerState(handle);
   const state=Object.freeze({...raw, disposed:disposed || raw.disposed, selection:Object.freeze([...raw.selection])});
   temporalPending.set(handle,state);
@@ -1004,10 +1008,15 @@ function publishTemporalState(handle, disposed = false) {
   try { while(temporalPending.has(handle)) {
     const next=temporalPending.get(handle);temporalPending.delete(handle);
     for(const observer of [...(temporalObservers.get(handle)??[])]) {
+      if(temporalPending.get(handle)?.disposed && !next.disposed)break;
       if(!temporalObservers.get(handle)?.has(observer))continue;
       try { Promise.resolve(observer(next)).catch(()=>{}); } catch {}
     }
-  }} finally { temporalPublishing.delete(handle); }
+    if(next.disposed)temporalObservers.delete(handle);
+  }} finally {
+    temporalPublishing.delete(handle);
+    if(temporalDestroying.get(handle)?.nativeDone)temporalDestroying.delete(handle);
+  }
 }
 
 export function temporalControllerSetRange(handle, start, end) {
@@ -1167,9 +1176,21 @@ export function temporalControllerDispose(handle) {
 }
 
 export function temporalControllerDestroy(handle) {
-  publishTemporalState(handle, true);
-  temporalObservers.delete(handle);
-  temporalStatus(xyTemporalControllerDestroy(toU64(handle, "handle")));
+  handle = toU64(handle, "handle");
+  if(temporalDestroying.has(handle))return;
+  const request = {nativeDone:false};
+  temporalDestroying.set(handle,request);
+  try {
+    publishTemporalState(handle, true);
+    temporalStatus(xyTemporalControllerDestroy(handle));
+  } finally {
+    request.nativeDone = true;
+    // A reentrant destroy queues its terminal snapshot in the active publisher.
+    // Keep that observer set alive until the terminal pass has notified it.
+    if(!temporalPublishing.has(handle)){
+      temporalObservers.delete(handle);temporalPending.delete(handle);temporalDestroying.delete(handle);
+    }
+  }
 }
 
 function asUuidBytes(value, name) {

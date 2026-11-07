@@ -78,3 +78,93 @@ test('old unsubscribe cannot remove a resubscribed observer set',()=>{
   assert.deepEqual(seen,[3n]);
  }finally{temporalControllerDestroy(h);}
 });
+
+for(const numericSubscription of [false,true])test(`native observers normalize Number and BigInt handles ${numericSubscription}`,()=>{
+ const h=temporalControllerCreate({instanceId:41n,domainStart:-10n,domainEnd:10n,cursor:0n,window:0n,step:1n});
+ const n=Number(h);assert.ok(Number.isSafeInteger(n));const seen=[];
+ const stop=temporalControllerSubscribeState(numericSubscription?n:h,s=>seen.push({cursor:s.cursor,disposed:s.disposed}));
+ try{
+  temporalControllerSetCursor(numericSubscription?h:n,3n);
+  assert.deepEqual(seen,[{cursor:3n,disposed:false}]);
+  temporalControllerDestroy(numericSubscription?h:n);
+  assert.deepEqual(seen,[{cursor:3n,disposed:false},{cursor:3n,disposed:true}]);
+ }finally{stop();try{temporalControllerDestroy(h);}catch{}}
+});
+
+test('reentrant destroy notifies retained binding and releases its source registration',async()=>{
+ let q,style;const packets=await fixture(undefined,async(_,f)=>{q=f.query;style=f.style;});
+ const bytes=h=>Uint8Array.from(Buffer.from(h,'hex')).buffer;
+ const source=await RetainedGeoSource.create(bytes(packets.manifest),async()=>bytes(packets.chunk),{budget});
+ q={...q,timeRevision:0n,cameraRevision:0n};
+ const chart=geoChart(geoLayer('points',{source,layerId:U64,query:q,sequence:1n,style}),{camera:q.camera});
+ const create=id=>temporalControllerCreate({instanceId:id,domainStart:-10n,domainEnd:10n,cursor:0n,window:0n,step:1n});
+ const h=create(42n);const stop=temporalControllerSubscribeState(h,s=>{if(!s.disposed)temporalControllerDestroy(h);});
+ let binding,replacement,lease,h2;
+ try{
+  binding=chart.bindTemporal(h);await binding.whenIdle();({frame:lease}=await binding.snapshot());
+  temporalControllerSetCursor(h,3n);
+  assert.equal(binding.closed,true);
+  assert.ok(binding.disposing);await binding.disposing;
+  h2=create(43n);const nextChart=geoChart(geoLayer('points',{source,layerId:U64,query:q,sequence:binding.sequence,style}),{camera:q.camera});replacement=nextChart.bindTemporal(h2);await replacement.whenIdle();assert.equal(replacement.error,undefined);
+  assert.equal(lease.data.record(0).featureId,U64);
+ }finally{
+  stop();await replacement?.dispose();await binding?.dispose();await lease?.dispose();await source.dispose();
+  for(const handle of [h,h2])if(handle!==undefined)try{temporalControllerDestroy(handle);}catch{}
+ }
+});
+
+test('destroy remains safe when a terminal observer also requests destruction',()=>{
+ const h=temporalControllerCreate({instanceId:44n,domainStart:-10n,domainEnd:10n,cursor:0n,window:0n,step:1n});let calls=0;
+ const stop=temporalControllerSubscribeState(h,s=>{assert.equal(s.disposed,true);calls++;temporalControllerDestroy(h);});
+ try{temporalControllerDestroy(h);assert.equal(calls,1);}finally{stop();try{temporalControllerDestroy(h);}catch{}}
+});
+
+for(const mapping of [false,true])for(const bytesKind of ['plain','shared','buffer'])test(`snapshot charts and authored styles are isolated mapping=${mapping} bytes=${bytesKind}`,async()=>{
+ let q,rawStyle;const packets=await fixture(undefined,async(_,f)=>{q=f.query;rawStyle=f.style;});
+ const bytes=h=>Uint8Array.from(Buffer.from(h,'hex')).buffer;
+ const source=await RetainedGeoSource.create(bytes(packets.manifest),async()=>bytes(packets.chunk),{budget});
+ q={...q,timeRevision:0n,cameraRevision:0n};
+ let authored=mapping?{fill:new Uint8Array([255,0,0,255]),stroke:new Uint8Array(4),strokeWidth:0,diameter:6,opacity:1,symbol:0}:rawStyle.slice();
+ if(bytesKind==='shared'){
+  const copy=bytes=>{const value=new Uint8Array(new SharedArrayBuffer(bytes.length));value.set(bytes);return value;};
+  q.sourceDigest=copy(q.sourceDigest);
+  if(mapping){authored.fill=copy(authored.fill);authored.stroke=copy(authored.stroke);}
+  else authored=copy(authored);
+ }
+ if(bytesKind==='buffer'){
+  q.sourceDigest=Buffer.from(q.sourceDigest);
+  if(mapping){authored.fill=Buffer.from(authored.fill);authored.stroke=Buffer.from(authored.stroke);}else authored=Buffer.from(authored);
+ }
+ const expected=mapping?{...authored,fill:new Uint8Array(authored.fill),stroke:new Uint8Array(authored.stroke)}:new Uint8Array(authored);
+ const chart=geoChart(geoLayer('points',{source,layerId:U64,query:q,sequence:1n,style:authored}),{camera:q.camera});
+ const h=temporalControllerCreate({instanceId:45n,domainStart:-10n,domainEnd:10n,cursor:0n,window:0n,step:1n}),binding=chart.bindTemporal(h),leases=[];
+ try{
+  if(mapping){authored.diameter=100;authored.fill[0]=0;}else authored[0]^=255;
+  if(bytesKind!=='plain')q.sourceDigest.fill(0);
+  const a=await binding.snapshot();leases.push(a.frame);
+  assert.deepEqual(a.chart.layers[0].properties.style,expected);
+  a.chart.layers[0].properties.query.time.instant=5n;a.chart.camera.zoom=99;
+  if(mapping)a.chart.layers[0].properties.style.opacity=0;else a.chart.layers[0].properties.style[0]^=255;
+  const b=await binding.snapshot();leases.push(b.frame);
+  assert.notEqual(a.chart,b.chart);assert.equal(b.chart.layers[0].source,source);
+  assert.deepEqual(b.chart.layers[0].properties.query.time,b.frame.data.identity.time);
+  assert.deepEqual(b.chart.layers[0].properties.style,expected);
+  const artifact=await b.chart.toImage('svg',{frame:b.frame});await artifact.dispose();
+  temporalControllerSetCursor(h,2n);const c=await binding.snapshot();leases.push(c.frame);
+  assert.deepEqual(c.chart.layers[0].properties.style,expected);assert.equal(c.frame.data.identity.time.instant,2n);
+ }finally{await binding.dispose();for(const f of leases)await f.dispose();await source.dispose();temporalControllerDestroy(h);}
+});
+
+test('binding refused during terminal notification leaves no source registration',async()=>{
+ let q,style;const packets=await fixture(undefined,async(_,f)=>{q=f.query;style=f.style;});
+ const bytes=h=>Uint8Array.from(Buffer.from(h,'hex')).buffer;
+ const source=await RetainedGeoSource.create(bytes(packets.manifest),async()=>bytes(packets.chunk),{budget});
+ q={...q,timeRevision:0n,cameraRevision:0n};const chart=geoChart(geoLayer('points',{source,layerId:U64,query:q,sequence:1n,style}),{camera:q.camera});
+ const create=id=>temporalControllerCreate({instanceId:id,domainStart:-10n,domainEnd:10n,cursor:0n,window:0n,step:1n});
+ const h=create(46n);let refusal,other,binding;
+ const stop=temporalControllerSubscribeState(h,()=>{try{chart.bindTemporal(h);}catch(error){refusal=error;}});
+ try{
+  temporalControllerDestroy(h);assert.match(refusal?.message??'',/being destroyed/);
+  other=create(47n);binding=chart.bindTemporal(other);await binding.whenIdle();assert.equal(binding.error,undefined);
+ }finally{stop();await binding?.dispose();await source.dispose();for(const handle of [h,other])if(handle!==undefined)try{temporalControllerDestroy(handle);}catch{}}
+});

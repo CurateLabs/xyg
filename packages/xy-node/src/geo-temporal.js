@@ -3,6 +3,24 @@ import { temporalControllerState, temporalControllerSubscribeState } from './abi
 import { RetainedGeoSource } from './geo-retained.js';
 const bindings = new WeakMap();
 const MAX = 0xffffffffffffffffn;
+function copyQuery(query) {
+  const value=structuredClone(query);
+  // structuredClone preserves SharedArrayBuffer backing; authoring bytes must
+  // instead be owned copies, just like the binary native request framing.
+  value.sourceDigest=new Uint8Array(query.sourceDigest);
+  return value;
+}
+function copyChart(chart) {
+  const layers=chart.layers.map(layer=>{
+    const properties=structuredClone(layer.properties);properties.query=copyQuery(layer.properties.query);
+    const style=layer.properties.style;
+    if(style instanceof Uint8Array)properties.style=new Uint8Array(style);
+    else {properties.style.fill=new Uint8Array(style.fill);properties.style.stroke=new Uint8Array(style.stroke);}
+    return new layer.constructor(layer.kind,layer.source,layer.layerId,properties);
+  });
+  return new chart.constructor(layers,{camera:structuredClone(chart.camera),legend:structuredClone(chart.legend),budget:chart.budget,tileSession:chart.tileSession,tileVectorStyles:structuredClone(chart.tileVectorStyles),tileImageId:chart.tileImageId});
+}
+
 export class GeoTemporalBinding {
   #frame; #chart; #query; #retiring;
   constructor(chart, handle, mode = 'cursor') {
@@ -12,12 +30,18 @@ export class GeoTemporalBinding {
     const {query,sequence}=chart._inputs(layer);
     if(temporalControllerState(handle).disposed)throw Error('controller disposed');
     if(bindings.has(layer.source))throw Error('source already has a temporal binding');
-    this.source=layer.source;this.template=chart;this.layer=layer;
-    this.#query=structuredClone(query);this.sequence=sequence;this.mode=mode;
+    this.source=layer.source;this.template=copyChart(chart);this.layer=this.template.layers[0];
+    this.#query=copyQuery(query);this.sequence=sequence;this.mode=mode;
     this.closed=false;this.generation=0;this.running=Promise.resolve();this.lock=Promise.resolve();
     bindings.set(this.source,this);
-    this.unsubscribe=temporalControllerSubscribeState(handle,state=>this.accept(state));
-    this.accept(temporalControllerState(handle));
+    try {
+      this.unsubscribe=temporalControllerSubscribeState(handle,state=>this.accept(state));
+      this.accept(temporalControllerState(handle));
+    } catch(error) {
+      this.closed=true;this.unsubscribe?.();
+      if(bindings.get(this.source)===this)bindings.delete(this.source);
+      throw error;
+    }
   }
   accept(state) {
     if(this.closed)return;
@@ -69,7 +93,7 @@ export class GeoTemporalBinding {
     await this.whenIdle();
     return this.exclusive(async()=>{
       if(!this.#frame)throw Error('no accepted temporal frame',{cause:this.error});
-      return {chart:this.#chart,frame:await this.#frame.retain()};
+      return {chart:copyChart(this.#chart),frame:await this.#frame.retain()};
     });
   }
   detach() {this.closed=true;this.generation++;this.unsubscribe();}

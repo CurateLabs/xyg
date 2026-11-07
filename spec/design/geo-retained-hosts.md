@@ -253,7 +253,10 @@ Python `await binding.snapshot()` returns `(chart, frame)`; Node returns
 `{chart, frame}`. The chart is the exact public composition that produced this
 frame, so existing export and native host adapters consume it without a second
 renderer. Frames are independently retained Rust Data owners. Consumers must drop
-borrowed views before closing them. The binding never exposes or transfers its
+borrowed views before closing them. The binding copies authored query, camera and style values at construction.
+Each snapshot returns isolated nested composition values while retaining the
+same opaque source owner; mutating one snapshot cannot change later snapshots
+or future styles. The binding never exposes or transfers its
 private accepted owner, never publishes into the source's batch `current`, and
 releases only its own superseded frames. Failed cleanup retains its owner for
 retry before admitting another query. One binding per source prevents competing
@@ -267,7 +270,10 @@ binding's creating event loop before changing desired state or creating tasks.
 Source-initiated cancellation settles as a binding operation error and preserves
 the accepted snapshot; explicit binding cleanup still releases its private owner
 and source registration. Cancelling a caller waiting for idle does not cancel the
-admitted pump. Native Node unsubscribe closures are idempotent and cannot remove
+admitted pump. Reader-raised cancellation is an operation failure that retains
+the accepted frame. A terminally cancelled pump does not block private-owner
+teardown, including cleanup from a caller cancellation handler. Native Node
+unsubscribe closures are idempotent and cannot remove
 a later observer set for the same controller handle.
 The source remains caller-owned. Source disposal can make future queries fail
 without invalidating accepted snapshots. Static/batch compilation stays synchronous.

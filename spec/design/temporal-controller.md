@@ -234,3 +234,10 @@ subscribed peers; Python automatic observation covers wrapper commands and
 `apply_event`, not direct calls to `_native`. Disposal notifies observers before
 handle destruction and detaches geographic bindings. See the bounded native
 contract in [geo-retained-hosts.md](geo-retained-hosts.md).
+
+Native Node observers normalize safe Number and BigInt handle arguments to the
+same u64 key. Reentrant destruction preserves its terminal snapshot and observer
+set until the terminal notification pass drains. Observer-triggered destruction
+does not admit new subscriptions for the dying handle; a refused binding rolls
+back its source registration. Observer callbacks and rejected promises remain
+isolated, and do not delay native commands on asynchronous completion.
