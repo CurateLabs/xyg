@@ -380,7 +380,10 @@ def test_context_governor_reserves_pending_restores() -> None:
     pick_start = client.index("  _pickAt(cssX, cssY) {")
     pick = client[pick_start : client.index("  _decodeValue(", pick_start)]
     assert "this.gl.isContextLost()" in pick
-    assert "if (!this.gl || this.gl.isContextLost()) return null;" in pick
+    guard = pick[: pick.index("this._initPickTarget();")]
+    for marker in ("!this.gl", "this.gl.isContextLost()", "this._glLost", "clientAdmitted(this)"):
+        assert marker in guard
+    assert ") return null;" in guard
 
 
 def test_triangle_mesh_resource_cleanup_deletes_every_coordinate_buffer() -> None:

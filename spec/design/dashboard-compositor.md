@@ -77,8 +77,12 @@ all outstanding chart reservations before canvas growth can occur.
 Eviction quiesces the existing context-loss lifecycle, deletes all client
 objects (including unpublished partial builds), and retains canonical payload,
 view and accessible DOM. The Canvas2D picture remains until a complete fresh
-paint. Suspended charts cannot return stale picks. Active use updates Rust's
-recency input even while suspended. Retention reuses the existing restore
+paint. Shared views preserve a Canvas2D stand-in before eviction or context
+loss, and only a successful full rebuild retires it; a larger append whose
+first reservation is insufficient keeps that last accepted picture throughout
+failed readmission attempts. Suspended charts cannot return stale picks. Active
+use updates Rust's recency input even while suspended, including retained-graph
+paint requests before the host checks their current admission. Retention reuses the existing restore
 lifecycle and schedules the current view again. Desired capacity is a
 conservative high-water reservation until chart removal; it is deliberately
 distinct from resident bytes. `storageSnapshot()` exposes resident requested
@@ -140,7 +144,11 @@ nor predicts retain bits, and every mutation still passes through the exact
 snapshot check and Rust-returned residency vector. Invalid budgets fail before
 a listener is installed; disposal removes the listener and prevents later
 plans. The explicit one-shot application remains available for hosts that own
-their scheduling.
+their scheduling. Context loss clears invalid GPU objects and measurements,
+but preserves the Rust-approved byte reservations for surviving clients.
+Rebuilding the same resource set therefore works without a watcher or a second
+admission call. Larger payloads still require fresh Rust admission; keeping a
+reservation does not permit growth beyond its recorded limit.
 
 ## Current slice and remaining closure
 

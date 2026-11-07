@@ -204,3 +204,14 @@ spec/performance/gpu-temporal-chunked-union-2026-11-07/*.json text eol=lf
 spec/performance/gpu-temporal-chunked-union-2026-11-07/*.md text eol=lf
 spec/performance/gpu-temporal-chunked-union-2026-11-07/*.gz -text
 spec/performance/gpu-temporal-chunked-union-2026-11-07/*.png -text
+
+# Current dashboard recovery source and receipt bindings.
+scripts/density_tile_smoke.py text eol=lf
+spec/performance/dashboard-recovery-2026-11-07/README.md text eol=lf
+tests/test_benchmark_environment.py text eol=lf
+tests/test_density_physical_alpha.py text eol=lf
+tests/test_static_client_security.py text eol=lf
+spec/performance/dashboard-recovery-2026-11-07/*.json text eol=lf
+spec/performance/dashboard-recovery-2026-11-07/*.md text eol=lf
+spec/performance/dashboard-recovery-2026-11-07/*.gz -text
+spec/performance/dashboard-recovery-2026-11-07/*.png -text

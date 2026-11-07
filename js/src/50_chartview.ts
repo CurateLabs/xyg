@@ -1872,6 +1872,25 @@ export class ChartView {
   // updates written into now-dead buffers are gone until it answers).
   _onGlHostContextLost() {
     if (this._destroyed) return;
+    // The shared renderer already owns a completed Canvas2D picture. Keep a
+    // stand-in through readmission attempts: _initGl may resize/clear the
+    // presentation surface before a larger canonical payload is admitted.
+    if (this._present2d && !this._ctxSnapshot) {
+      const snapshot = document.createElement("canvas");
+      snapshot.width = this.canvas.width;
+      snapshot.height = this.canvas.height;
+      snapshot.style.cssText = this.canvas.style.cssText;
+      snapshot.style.pointerEvents = "none";
+      snapshot.dataset.xyCtxSnapshot = "";
+      snapshot.setAttribute("aria-hidden", "true");
+      const context = snapshot.getContext("2d");
+      if (context) {
+        context.drawImage(this.canvas, 0, 0);
+        this._ctxSnapshot = snapshot;
+        this.canvas.before(snapshot);
+        this.canvas.style.visibility = "hidden";
+      }
+    }
     clearTimeout(this._glHostRecoveryTimer);
     this._glHostRecoveryTimer = null;
     this._glHostRecoveryDelay = 0;

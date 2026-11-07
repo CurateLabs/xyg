@@ -218,6 +218,9 @@ export function createGraphGpuPainter(surface: HTMLElement) {
     if (disposed) return;
     if (camera.length !== 7 || !camera.every(Number.isFinite) || !camera[0] || !camera[1]
         || camera[4]! <= 0 || camera[5]! <= 0 || camera[6]! <= 0) invalid("camera");
+    // Report demand even when admission currently blocks the pass. Rust alone
+    // ranks the updated last-use identity when a budget watcher re-plans.
+    host.markDashboardResourceUsed(client);
     const width = Math.max(1, Math.round(camera[4]! * camera[6]!)), height = Math.max(1, Math.round(camera[5]! * camera[6]!));
     stage.width = width; stage.height = height;
     const completed = host.render(client, staging, width, height, () => {

@@ -1196,7 +1196,7 @@
  "releaseLine":"0.6.0",
  "schema":"xyg.release-api-inventory/v1",
  "sourceProvenance":{
-  "baseCommit":"44f9f06cda17f4e4ec76de001ad8dc5771940ae6",
+  "baseCommit":"df742dcfe92a547b085d68edab2b689038eccca2",
   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
  },
  "sourceSha256":{
@@ -1212,7 +1212,7 @@
   "js/src/30_ticks.ts":"6be9d8893d9e06282d0c7743b5ad1b0eda8f85898e58196c0971cc4b2e61bac0",
   "js/src/40_gl.ts":"d6421a28d63e6c38e5f9f102949d1055e28e01c09b481f3909140ee2ac9e568a",
   "js/src/41_gpu_storage.ts":"0ca851f29ef80a6919d7476d7cd5f21290b03cb9a8029016b3b10c30fbbd2a3f",
-  "js/src/42_glhost.ts":"51e0c28ee69f74d2c7052f3abc372841d81a728d0528bcfc4c6cc40e2251435c",
+  "js/src/42_glhost.ts":"b9cfd518d503d42993dcbc9dd201bed1655fef84257a60d10534a60b6db727d1",
   "js/src/43_external_gl.ts":"06ed8e024e47fd792a97f0cd9bad6d0cc806fbfee8d142df35776c69ee74fbd2",
   "js/src/45_lod.ts":"8bbde3d6b5e38aaa9214e404bd53e13e5a1ec5d424a90e287ab95e896772b498",
   "js/src/47_wasm.ts":"93b3ab20a9d684105bc82d7c0a94b64e989106afe2ad2b38dd1b9fcac34adaab",
@@ -1231,7 +1231,7 @@
   "js/src/49_wasm_temporal.ts":"5af6cd26451de05d76ab280d3305f234ba5299b77f34190e3af117479e1daaaf",
   "js/src/49_wasm_temporal_graph.ts":"43a5d193d6e65de04caac3ff1842d208bad5773db1c0d0ba67581105bf5cb14a",
   "js/src/49_wasm_ticks.ts":"e71b83b58b04c23a272a6644e2d2c46772011459dff13ac2c64cfe941c85ded5",
-  "js/src/50_chartview.ts":"c10d7e07b97978a504ac913f1d7e2c5ca4bee8accc5e36bb983f55074fad731c",
+  "js/src/50_chartview.ts":"ea281a2d0f2f4ada9f625ddaae2b497621c6d032dd3fedf13c472ba38e0a3084",
   "js/src/51_annotations.ts":"d916c1e2995d7ef7c90180434754ca264aac433b1114aab43fc17aa9b18a3c63",
   "js/src/52_tooltip.ts":"0f6bbeb96091fb91f5a8bc977b64246048923e88a7d44eb588e2f9b21af3090a",
   "js/src/53_interaction.ts":"764d044a3e3ab7f6bb7502a77ee8e7c5d67d842dbb045d06a6e0fa1109220d0f",
@@ -1246,7 +1246,7 @@
   "js/src/62_geographic_controller.ts":"7ca5120bdf72d08409ed36673367ccb407379103d716100da21aad97d5fc8a6f",
   "js/src/63_geo_source.ts":"18c9241c630189f89960fd70804b0f72c73703f44b34d3b663a56a754d1c2f97",
   "js/src/63_graph_controller.ts":"e373d73de39c5eaae0f6dcf8eb6f4ce01cff23500ca988ebc8937086cde3a238",
-  "js/src/63_graph_gpu.ts":"d3038cc62b21b51b90704826338601bc4e2fd2d73e8dbdaa0bccd7553b37e745",
+  "js/src/63_graph_gpu.ts":"a22d9b6e1fee19aa364dabeb3a9dfdf9ed383fa9cff25c361ab6ca76ea3d4a4d",
   "js/src/63_graph_session_wire.ts":"2cbbc8471322040377e0e56f16641edd075c20766f1d5f0e93c16dfa21e1c693",
   "js/src/64_geo_retained_controller.ts":"3be21ad483015b40d220e21279ee9bf3565e3f561554ea4be9388504e9cf4c3d",
   "js/src/65_geo_host.ts":"3949d02581cbf254b92beae731b2cf17ca05c982086dfe53029e7e39ddbb9702",

@@ -782,7 +782,9 @@ export class GLHost {
       this.generation += 1;
       this._activeClient = null;
       this._storage.clear();
-      this._grants.clear();
+      // Context loss invalidates GPU objects, not Rust's reserved byte grants.
+      // Rebuilding the same client under its existing reservation also works
+      // for one-shot admission without a watcher. Growth still needs a plan.
       this._dashboardRevision += 1;
       this._notifyDashboardListeners();
       this._dropSharedHandles();

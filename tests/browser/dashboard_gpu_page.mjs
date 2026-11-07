@@ -153,6 +153,34 @@
   for(const v of views)v._applyAppend({spec:appendSpec,affected:[trace.id]},[appended]);
   await recovery.settled;await new Promise(r=>setTimeout(r,100));await recovery.settled;
   check('32 appends');assert(views.every(v=>!v._glLost && v.gpuTraces[0].n===4),'append canonical rebuild');
+  recovery.dispose();
+  // A larger canonical append arrives while all old GPU storage is evicted.
+  // The first one-shot plan sees old demand; its attempted rebuild must keep
+  // the last accepted picture even when a later allocation needs more bytes.
+  const growthSnapshot=host.dashboardResourceSnapshot();
+  const smallest=growthSnapshot.resources.reduce((best,resource,index)=>resource.derivedBytes<growthSnapshot.resources[best].derivedBytes?index:best,0);
+  const changed=growthSnapshot.clients[smallest], savedPicture=picture(changed);
+  assert(views.includes(changed),'growth fixture uses a real ordinary chart');
+  await applyWasmDashboardResourceBudget(worker,host,totalBudget,0n);
+  const growthSpec=JSON.parse(JSON.stringify(appendSpec)), growthTrace=growthSpec.traces[0];
+  const gx=growthSpec.columns[growthTrace.x],gy=growthSpec.columns[growthTrace.y],count=4096;
+  const growthBuffer=new ArrayBuffer(count*8),xx=new Float32Array(growthBuffer,0,count),yy=new Float32Array(growthBuffer,count*4,count);
+  for(let i=0;i<count;i++){xx[i]=(i/count-Number(gx.offset||0))*Math.abs(Number(gx.scale||1));yy[i]=(i/count-Number(gy.offset||0))*Math.abs(Number(gy.scale||1));}
+  gx.byte_offset=0;gx.len=count;gy.byte_offset=count*4;gy.len=count;growthTrace.n_points=count;
+  changed._applyAppend({spec:growthSpec,affected:[growthTrace.id]},[growthBuffer]);
+  await applyWasmDashboardResourceBudget(worker,host,totalBudget);
+  await new Promise(r=>setTimeout(r,50));
+  const presented=changed._ctxSnapshot || changed.canvas;
+  const retained=Array.from(presented.getContext('2d').getImageData(0,0,presented.width,presented.height).data).join(',');
+  assert(changed._glLost && retained===savedPicture,'larger append retains last picture through refused rebuild: '+JSON.stringify({lost:changed._glLost,snapshot:!!changed._ctxSnapshot,visibility:changed.canvas.style.visibility,savedLength:savedPicture.length,retainedLength:retained.length,savedInk:savedPicture.split(',').filter(v=>v!=='0').length,retainedInk:retained.split(',').filter(v=>v!=='0').length,canvasInk:picture(changed).split(',').filter(v=>v!=='0').length}));
+  assert(changed.canvas.style.visibility==='hidden' && changed._ctxSnapshot?.isConnected,'saved picture stays visible until complete replacement');
+  const fresh=changed.watchDashboardResourceBudget(worker,totalBudget*4n);
+  await fresh.settled;await new Promise(r=>setTimeout(r,100));await fresh.settled;
+  assert(!changed._glLost && !changed._ctxSnapshot && changed.gpuTraces[0].n===count,'larger canonical payload paints after fresh admission');
+  fresh.dispose();
+  // This exact public one-shot call has no remaining budget watcher. Its Rust
+  // reservations must survive actual context loss and permit automatic rebuild.
+  await applyWasmDashboardResourceBudget(worker,host,totalBudget*4n);
   const wait=async predicate=>{const end=performance.now()+10000;while(!predicate()){assert(performance.now()<end,'lifecycle timeout');await new Promise(r=>setTimeout(r,25));}};
   host.canvas.addEventListener('webglcontextlost',()=>allocated.clear(),{once:true});
   const extension=host.gl.getExtension('WEBGL_lose_context');extension.loseContext();
@@ -167,7 +195,6 @@
   await recovery.settled;check('hide show');
   for(let i=0;i<4;i++){views[i].destroy();const holder=document.createElement('div');grid.append(holder);views[i]=xy.renderStandalone(holder,{...spec,width:150,height:150},buf);}
   await recovery.settled;await new Promise(r=>setTimeout(r,100));await recovery.settled;check('rapid replacement');
-  recovery.dispose();
   for(const v of views)v.destroy();
   assert(allocated.size===0,'all buffers/textures deleted including host');
   worker.dispose();

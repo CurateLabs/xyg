@@ -154,12 +154,14 @@ def main() -> None:
   const host=document.createElement('div');document.body.append(host);
   const local=JSON.parse(JSON.stringify(spec));
   if(kind==='color')local.traces[0].color={mode:'categorical',palette:['#f03228','#145ae6'],categories:['red','blue']};
+  let uploads=0, creates=0, requests=0,lastRaw=null,lastMessage=null,lastRequest=null,inflight=Promise.resolve();
+  // Observe driver calls before the client captures its accounting wrappers.
+  // Replacing a method on the client proxy cannot observe a cached GL method.
+  const proto=WebGL2RenderingContext.prototype,image=proto.texImage2D,create=proto.createTexture;
+  proto.texImage2D=function(...a){uploads++;return image.apply(this,a);};
+  proto.createTexture=function(...a){creates++;return create.apply(this,a);};
   const v=xy.renderStandalone(host,local,blob),g=v.gpuTraces[0],gl=v.gl;
   v._prefersReducedMotion=()=>true;
-  let uploads=0, creates=0, requests=0,lastRaw=null,lastMessage=null,lastRequest=null,inflight=Promise.resolve();
-  const image=gl.texImage2D.bind(gl),create=gl.createTexture.bind(gl);
-  gl.texImage2D=(...a)=>{uploads++;return image(...a);};
-  gl.createTexture=(...a)=>{creates++;return create(...a);};
   v.comm={send(msg,buffers){if(msg.type!=='density_view')return;requests++;lastRequest=msg;
    assert(msg.tile_cache===true&&buffers.length===1&&!msg.keys,'observations must be raw binary');
    inflight=fetch(endpoint,{method:'POST',headers:{'content-type':'application/octet-stream','x-xyg-request':JSON.stringify({...msg,case:kind})},body:buffers[0]})
@@ -295,6 +297,7 @@ def main() -> None:
   v.destroy();const destroyedUploads=uploads,destroyedCreates=creates;v._onKernelMsg(savedMsg,[savedRaw]);
   assert(uploads===destroyedUploads&&creates===destroyedCreates&&!v.gl&&g._tileTextures.size===0,'disposed reply retained tiles');
   assert(all.every(t=>!gl.isTexture(t))&&!gl.isBuffer(sharedBuffer),'disposed GPU resource live');
+  proto.texImage2D=image;proto.createTexture=create;
   output[kind]={first:a,pan:b,insidePan:inside,uncached:fresh,pixelDifferences:different,cachedCapture:{...cachedCapture,densityPixels:cachedInk},uncachedCapture:{...oracleCapture,densityPixels:oracleInk},zoomCapture:{...zoomCapture,densityPixels:zoomInk},ordinaryLevels:[oldLevel,zoomLevel],adjacentFade,wideViewport:{requestedWidth:wideRequest.w,servedWidth:4096,capture:{...wideCapture,densityPixels:wideInk},pixelDifferences:0,sizeRefusal:true},sameLevelResize,adjacentResize,malformedFormatFlip:true,legacyOverlayRetirement:true,sharedOverlayPreserved:true,malformedAndStale:true,disposed:true};
  }
  document.title='TILES:'+JSON.stringify(output);
