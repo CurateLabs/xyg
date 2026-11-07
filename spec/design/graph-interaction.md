@@ -1082,6 +1082,12 @@ admit against the full retained envelope before cloning. All arithmetic and
 failure-atomic installation checks remain unchanged. This phase distinction
 replaces the former 128× charge on document ingress; it changes no resource cap
 and makes no measured-heap-as-general-bound claim.
+The committed UPDATE boundary regression calculates this envelope for a
+three-node replacement independently of the admission helper, rejects one byte
+below the exact limit without changing reply/revision/publication/work, then
+retries the same sequence at the exact limit and checks the replacement output
+and cached retry. Removing either the document discount or the complete
+replacement charge fails this regression.
 
 Current Owned state is charged additionally. Inside the authoritative owner
 lock, before cloning bound state, actual state items and exact UTF-8 bytes are
