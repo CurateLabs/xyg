@@ -1,0 +1,66 @@
+{
+  "base": "93ddc636b7af2952c5c52f000c14b9e4ecdc6216",
+  "compiledInputsVerifiedUnchanged": 298,
+  "currentBindingsSha256": "9123568778033bbba300cffb1c04c9d074825f19c8836d32f5b0d87b67d1a396",
+  "evidence": {
+    "baseIndependentReview": {
+      "archive": "evidence/base-independent-review.json.gz",
+      "archiveSha256": "a5ee9b76d11ea8b92074b4fb4de41e6c31e12716b2a31d22d5392ddf609c0a62",
+      "bytes": 4221,
+      "disposition": "Bounded APPROVE; does not review this correction",
+      "reviewedCommit": "93ddc636b7af2952c5c52f000c14b9e4ecdc6216",
+      "sha256": "3e67f428f88783db14f8dbd11151c1c3bbb9725109552052992ead015dc7539e"
+    },
+    "core.log": {
+      "archive": "evidence/core.log.gz",
+      "archiveSha256": "c5aadc7f716a83be005510741b175c36aded36030dc2f57298e1aa3349606ed3",
+      "bytes": 98,
+      "sha256": "4d47980beb64b1ecf5778b5f454fef05b36795bf82c24c18c31f338782b5a8ec"
+    },
+    "hooks.log": {
+      "archive": "evidence/hooks.log.gz",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "ruff-check.log": {
+      "archive": "evidence/ruff-check.log.gz",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "ruff-format.log": {
+      "archive": "evidence/ruff-format.log.gz",
+      "archiveSha256": "12ab5fee1474e98cf63fc3c3c42a1daa130a02b56f66cad572dc88bb5cb2898e",
+      "bytes": 29,
+      "sha256": "b9f1ef6bf58314812be7d71572aeae800757c588f3479ea7809949cff5fc1519"
+    }
+  },
+  "freshChecks": [
+    {
+      "command": "TMPDIR=/var/tmp XYG_NATIVE_LIB=$PWD/target/task-tmp/frozen-fit-qualification/native405.so uv run --no-sync pytest -q tests/test_graphforge_contract_corpus.py",
+      "exit": 0,
+      "passed": 7
+    },
+    {
+      "command": "TMPDIR=/var/tmp uv run --no-sync --with pre-commit pre-commit run --all-files",
+      "exit": 0
+    },
+    {
+      "command": "TMPDIR=/var/tmp uv run --no-sync ruff check .",
+      "exit": 0
+    },
+    {
+      "command": "TMPDIR=/var/tmp uv run --no-sync ruff format --check .",
+      "exit": 0
+    }
+  ],
+  "readmeSha256": "9d832a50688418ca5279ab51bc8d033842d60f99dc1e34fe47b58585a11fb404",
+  "remaining": [
+    "Independent correction review",
+    "Hosted CI and mandatory merge queue",
+    "Full #45 and milestones 4\u20137 acceptance"
+  ],
+  "schemaVersion": 1,
+  "scope": "Documentation-only temporal PNG current-status correction; no runtime or artifact change"
+}

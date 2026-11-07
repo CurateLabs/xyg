@@ -1,8 +1,10 @@
 # Temporal graph bindings and identity-safe filtering
 
 **Status:** Rust engine plus native Python/Node and direct-browser/WASM frame
-transport. Graph LOD aggregate membership, rendered host export attachment,
-and massive playback evidence remain required before issue 45 closes.
+transport, immutable native snapshots and retained Worker export through the
+shared Scene/painter/raster path. Graph LOD aggregate membership, broader
+installed-host export attachment and massive playback evidence remain required
+before issue 45 closes.
 
 **Authority:** [temporal.md](temporal.md) defines canonical i64 UTC micros and
 half-open intervals; [temporal-controller.md](temporal-controller.md) defines
@@ -285,14 +287,25 @@ XYFG snapshots from the accepted native frame, with independent lifetime and
 optional exact retained GraphSession publication/camera capture. The
 [codec and ownership contract](temporal-graph-frozen.md) defines explicit
 window/timezone ingress, frame-versus-publication state, limits and refusal rules.
-This is a functional programmatic checkpoint; the rendered HTML/PNG/SVG adapters
-and browser/WASM freeze attachment described above remain open. It does not
+At this programmatic checkpoint, the rendered HTML/PNG/SVG adapters and
+browser/WASM freeze attachment described above remained open. It does not
 close #45, milestones 4–7, or the original complete frozen-export task.
 
-The ABI404/WASM36 [retained export continuation](temporal-graph-frozen.md) now
-adds actual Worker/controller freeze and computed CSS capture, native
+The original ABI404/WASM36 [retained export continuation](temporal-graph-frozen.md)
+added actual Worker/controller freeze and computed CSS capture, native
 SVG/PNG/HTML and browser Scene/XYPB/SVG/HTML, with exact whole-artifact recovery
-after scrub/disposal. HTML uses the shipped ChartView painter. WASM PNG remains
-an explicit unavailable resource error under unchanged single-module caps;
-full #45 scale/aggregate/accessibility and PNG parity remain open. Prior
-acquisition/native-only statements above describe historical checkpoints.
+after scrub/disposal. HTML uses the shipped ChartView painter. At that
+checkpoint, WASM PNG returned an explicit unavailable resource error under
+the unchanged single-module caps.
+
+The [shared-PNG continuation](../performance/temporal-shared-png-2026-11-07/README.md)
+enabled PNG through the same Rust raster/encoder in native, module Worker and
+offline Blob Worker execution. The combined native405/WASM38
+[package qualification](../performance/combined-wasm-layout-2026-11-07/README.md)
+preserves that capability within the unchanged caps. Seven retained captures
+cover all six supported focus glyphs and parent focus, scales1/2, exact
+native/WASM Scene/XYPB/SVG/HTML/PNG bytes, recovery after scrub/disposal and
+offline ChartView presentation. These bounded proofs do not close full #45
+scale, aggregate membership, installed-host, accessibility or competitor
+acceptance. Prior acquisition/native-only and PNG-refusal statements describe
+historical checkpoints.

@@ -1018,3 +1018,7 @@ tests/vscode_geo_mounted_indexed_temporal/*.json text eol=lf
 python/xyg/_geo_selected.py text eol=lf
 tests/test_geo_indexed_host.py text eol=lf
 tests/test_geo_host.py text eol=lf
+
+# Current temporal PNG status and successor evidence.
+spec/performance/temporal-png-status-2026-11-07/** text eol=lf
+spec/performance/temporal-png-status-2026-11-07/**/*.gz -text
