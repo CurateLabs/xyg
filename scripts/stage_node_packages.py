@@ -17,16 +17,15 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import re
 import shutil
 import sys
 import zipfile
 from pathlib import Path
 
 try:
-    from release_version import parse_tag
+    from release_version import parse_npm, parse_tag
 except ModuleNotFoundError:
-    from scripts.release_version import parse_tag
+    from scripts.release_version import parse_npm, parse_tag
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGES = ROOT / "packages"
@@ -39,11 +38,6 @@ PLATFORMS = {
     "win32-x64": ("xyg_core.dll", "win32", "x64"),
 }
 
-PRERELEASE_IDENTIFIER = r"(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)"
-SEMVER_RE = re.compile(
-    r"^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)"
-    rf"(?:-{PRERELEASE_IDENTIFIER}(?:\.{PRERELEASE_IDENTIFIER})*)?$"
-)
 REPOSITORY = {"type": "git", "url": "git+https://github.com/CurateLabs/xyg.git"}
 PUBLISH_CONFIG = {"access": "public", "provenance": True}
 NATIVE_BUDGET_BYTES = 40 * 1024 * 1024
@@ -56,8 +50,10 @@ def npm_version_from_tag(tag: str) -> str:
 
 
 def _require_semver(version: str) -> None:
-    if SEMVER_RE.fullmatch(version) is None:
-        raise ValueError(f"invalid npm semver {version!r}")
+    try:
+        parse_npm(version)
+    except ValueError as error:
+        raise ValueError(f"invalid npm semver {version!r}: {error}") from error
 
 
 def _fresh_dir(path: Path) -> None:

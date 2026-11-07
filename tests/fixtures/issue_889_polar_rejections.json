@@ -1,0 +1,75 @@
+[
+  {
+    "test": "test_strategy_off_hides_polar_labels_but_keeps_grid",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+  },
+  {
+    "test": "test_tick_label_angle_rotates_polar_labels",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+  },
+  {
+    "test": "test_line_vertices_outside_the_radial_range_split_the_path",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+  },
+  {
+    "test": "test_full_turn_slice_draws_an_annulus_not_nothing",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+  },
+  {
+    "test": "test_area_fill_clamps_to_the_radial_range_rather_than_vanishing",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+  },
+  {
+    "test": "test_unequal_slice_widths_render_as_wedges_not_rectangles",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+  },
+  {
+    "test": "test_point_annotations_project_through_polar",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+  },
+  {
+    "test": "test_svg_rounded_slice_differs_from_a_square_one",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+  },
+  {
+    "test": "test_raster_polar_wedge_honours_a_gradient_fill",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+  },
+  {
+    "test": "test_reversed_radial_axis_keeps_wedges_in_static_exports",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+  },
+  {
+    "test": "test_fully_culled_polar_area_exports_without_malformed_path",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS",
+    "param_index": 0
+  },
+  {
+    "test": "test_fully_culled_polar_area_exports_without_malformed_path",
+    "reason": "XYG_SCENE_UNSUPPORTED_NONFINITE_COORDINATES: Scene v12 does not yet encode missing-data breaks or nonfinite coordinates",
+    "param_index": 1
+  },
+  {
+    "test": "test_pie_chart_renders_a_zero_valued_slice",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+  },
+  {
+    "test": "test_radial_tick_labels_do_not_overlap",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS",
+    "param_index": 0
+  },
+  {
+    "test": "test_radial_tick_labels_do_not_overlap",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS",
+    "param_index": 1
+  },
+  {
+    "test": "test_radial_tick_labels_do_not_overlap",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS",
+    "param_index": 2
+  },
+  {
+    "test": "test_raster_polar_area_culls_vertices_outside_the_sector",
+    "reason": "XYG_SCENE_UNSUPPORTED_PUBLIC_AXIS"
+  }
+]

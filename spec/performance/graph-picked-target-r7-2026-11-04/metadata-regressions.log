@@ -1,0 +1,19 @@
+..........................F............................................. [ 31%]
+........................................................................ [ 63%]
+........................................................................ [ 95%]
+..........                                                               [100%]
+=================================== FAILURES ===================================
+_______________ test_real_repository_ownership_audit_is_complete _______________
+
+    def test_real_repository_ownership_audit_is_complete() -> None:
+        root = Path(__file__).resolve().parents[1]
+>       assert VERIFY.validate(root, root / "spec/design/ownership-audit.json") == []
+E       AssertionError: assert ['unclassifie...n ledger row'] == []
+E         
+E         Left contains 5 more items, first extra item: 'unclassified production source: crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs; add one ownership-audit.json entry and the human ledger row'
+E         Use -v to get more diff
+
+tests/test_verify_ownership.py:77: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_verify_ownership.py::test_real_repository_ownership_audit_is_complete
+1 failed, 225 passed in 94.12s (0:01:34)

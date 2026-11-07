@@ -1,0 +1,39 @@
+{
+  "crates/xyg-engine/src/graphforge/interaction/pick.rs": {
+    "stripped_cfg_test_probe_sha256": "62e8cb4524db0cf78fb235d9b8007ccb2417870216e591d0b666d459eb6bf36b",
+    "exact_r2": true
+  },
+  "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+    "stripped_cfg_test_probe_sha256": "88a58f6e33b82cefb2cdd77ee3e5f17d6ddcee6758b438e6d5aed7469bfc9151",
+    "exact_r2": true
+  },
+  "crates/xyg-engine/src/graphforge/interaction.rs": {
+    "sha256": "7308227670b594e777d069015b2da63f4c473a4f25574d7ad2cdcdf1575fe503",
+    "inline_receipt": true
+  },
+  "shipping_wasm_paths_absent": [
+    "packages/xy-client/dist/xyg-wasm.wasm",
+    "packages/xy-client/dist/xyg-wasm-inline.js",
+    "packages/xy-client/dist/xyg-wasm.manifest.json",
+    "python/xyg/static/xyg-wasm.wasm",
+    "python/xyg/static/xyg-wasm-inline.js",
+    "python/xyg/static/xyg-wasm.manifest.json"
+  ],
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "classification": "EXACT_R2_NATIVE_NOT_HEAD",
+      "bytes": 6118472,
+      "sha256": "0deea9029e4a328dc15aa2d86873a203f12b8911e1c89c274f14270b31a3f880"
+    },
+    "target/task-tmp/graph-picked-target-r4-diagnostic/rejected-r2.wasm": {
+      "classification": "DIAGNOSTIC_REJECTED_ARCHIVED_R2_NOT_SHIPPING",
+      "bytes": 1926555,
+      "sha256": "e3ef33b58820675f4c201a2b81ad23b3665090442210aa22fcee28a269884a96"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "classification": "REJECTED_R3_RAW_NOT_USED",
+      "bytes": 2126290,
+      "sha256": "efd99dc7040ac06e3adc084105eb10812282fd46fc9cf6e4dbd32e6e7c3d2b0b"
+    }
+  }
+}

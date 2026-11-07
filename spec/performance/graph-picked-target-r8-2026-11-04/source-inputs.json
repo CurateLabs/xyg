@@ -1,0 +1,83 @@
+{
+  "bases": {
+    "local": "44626a8a477649442c72d8b5e0e0ef98e8ee7baa",
+    "incoming": "6e240f4bd3189640779fd684e97072923cbfb9c8"
+  },
+  "nonreceipt_diffs": {
+    "local": {
+      "sha256": "a062a474ed29b942c9d7f1ba85c225139eb271ffb50d8524f3b983e44fe1b047",
+      "changed_paths": [
+        "spec/design/dual-host-parity-matrix.md",
+        "spec/design/graph-mark.md",
+        "spec/design/graphforge-node-scheduling.md",
+        "spec/design/host-parity.md",
+        "spec/releases/0.6.0-api-inventory.json"
+      ],
+      "source_sha256": {
+        "spec/design/dual-host-parity-matrix.md": "11fb21e98fb35b2dbdc4231cb5b850b33ec02a587b3c46ee694f1b5cddbb687c",
+        "spec/design/graph-mark.md": "c50019ee92fdae62f5f53fa8b90228f75d7f8d801ada6f666a317a898abddebd",
+        "spec/design/graphforge-node-scheduling.md": "fa87c1d57ab7f881c2ddfbe496d95b70ac3bf4621130cd18298921102f5523b8",
+        "spec/design/host-parity.md": "b47a61eed34956fcf5073d0c1f4a2ed685f13594be3d62f20413ed5a3c64dd2a",
+        "spec/releases/0.6.0-api-inventory.json": "f2933dc4bec2048938484bfff685f3d8cd08cb78347ef71b3de85fd74932df81"
+      }
+    },
+    "incoming": {
+      "sha256": "f2e81455d1a7a12bc11a88ce51a0d0e30d1022afe5ec1f92416a0ac5c4bf7ada",
+      "changed_paths": [
+        "crates/xyg-engine/src/graphforge/interaction.rs",
+        "crates/xyg-engine/src/graphforge/interaction/pick.rs",
+        "crates/xyg-engine/src/graphforge/interaction/tests/wire.rs",
+        "crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs",
+        "crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs",
+        "crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_probe.rs",
+        "crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs",
+        "crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs",
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs",
+        "js/package-wasm.mjs",
+        "js/test/graph-picked-golden-migration.test.mjs",
+        "js/test/graph-session-controller-wire.test.mjs",
+        "packages/xy-node/test/graph-picked-receipt-diagnostic.mjs",
+        "packages/xy-node/test/graph-picked-receipt-shipping.mjs",
+        "packages/xy-node/test/graph-session-replay-helpers.mjs",
+        "packages/xy-node/test/graph-session-wire.test.mjs",
+        "scripts/check_release_inventory.py",
+        "spec/design-dossier.md",
+        "spec/design/browser-wasm.md",
+        "spec/design/graph-interaction.md",
+        "spec/design/ownership-audit.json",
+        "spec/design/ownership-audit.md",
+        "spec/releases/0.6.0-api-inventory.json",
+        "spec/releases/api-inventory.md",
+        "tests/test_release_inventory.py"
+      ],
+      "source_sha256": {
+        "crates/xyg-engine/src/graphforge/interaction.rs": "7308227670b594e777d069015b2da63f4c473a4f25574d7ad2cdcdf1575fe503",
+        "crates/xyg-engine/src/graphforge/interaction/pick.rs": "a5e6dd1561206614af01722285f55d9c42b00fab8f4c8e295df7fc676985920d",
+        "crates/xyg-engine/src/graphforge/interaction/tests/wire.rs": "2f9001f3457ef0b8117044b1a4c1d031f4c6984b2af87a4fa203c578e80c4e59",
+        "crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs": "6e2d0bc97158546a16e8b298e4181d9a7c4ea25180f29d7f178ef2f17860ee15",
+        "crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs": "6af79ea2ed5edcb6ec6b3fe63d7d25f02f9b03af24ca5cb6f086a9cfe9e6fb62",
+        "crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_probe.rs": "e866ce2f93add0933610a66507846e09a7b2accd1e7c0d1191dc0d071ffb0091",
+        "crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs": "e23bfb1292b06c1c1291bf3a46b3fd7098cd63dfdc87fa041560b3398874b811",
+        "crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs": "0e3086946f9fa541762da75b3d1163e6363d132b277da6f2fb3b0a2a8e8c53a0",
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": "b63629aefa8c7043fa5e5400c67394060d6cb1bb1acb7d807b7d97cfd9e8f6d6",
+        "js/package-wasm.mjs": "e27f7a26c57d857b2897df83a08619f0d5ab9e534bc2b214f159a101a3a14d17",
+        "js/test/graph-picked-golden-migration.test.mjs": "670bc33a2e5d6d1ded4b2a4848d34d6e0ec6f077095106eeaa693e7b1d926fd0",
+        "js/test/graph-session-controller-wire.test.mjs": "a436ee29361d4f483e06fd6c52e872aca82ec39fe326d65e2d4ea26db4081e4f",
+        "packages/xy-node/test/graph-picked-receipt-diagnostic.mjs": "e29c2c3bee57c740e40e46f499c271ad5564e1fa98fe8d67c57eeda5c34b40ce",
+        "packages/xy-node/test/graph-picked-receipt-shipping.mjs": "bd73cae7c78bf575d485aaf7e2d7db7e7abc135916b5ef88e5cb7eac005f4e8d",
+        "packages/xy-node/test/graph-session-replay-helpers.mjs": "d43485af58543a7e537fb79d8d86d1f92c414412e17c3b04d88db5f6682b2aa5",
+        "packages/xy-node/test/graph-session-wire.test.mjs": "f6a4b087facdd692b8364ecbdd7028e8f0499d986e3a1f0c4df02ac9d3cb2c17",
+        "scripts/check_release_inventory.py": "0dff7c2746dd1c8068d61230eb190b83a6d95389bcca0a2988d606fc0993b994",
+        "spec/design-dossier.md": "593527dfe3a7216e04a3e8735a5085f30ebf4a8db2d66a2f8dbbf93daf49c662",
+        "spec/design/browser-wasm.md": "0a5469ed427bee4ad8854d0eee18eff1a2c61a435d0866262bc129fc90695563",
+        "spec/design/graph-interaction.md": "ef47511c7de6ddf21f2c72c1e670bf861c0616b815aaeb0019d2f84de9aac121",
+        "spec/design/ownership-audit.json": "f5f7d1317863bda0cd92becad40639e6c3a4f316a4cbeaa4fadd79eecac7c0fc",
+        "spec/design/ownership-audit.md": "f5a4639da1243f62b6e99c1b977a7f5ce445d270bb7175401cbc159fd6c382a6",
+        "spec/releases/0.6.0-api-inventory.json": "f2933dc4bec2048938484bfff685f3d8cd08cb78347ef71b3de85fd74932df81",
+        "spec/releases/api-inventory.md": "ba791cc3fb21c60dbda419f6c9cc870eb701b15b839d10d68958789d04dd94cb",
+        "tests/test_release_inventory.py": "094d37c819a2e21cdaccaf9251c45f653fd0ae1261f3b3e9a4ab901360f161cb"
+      }
+    }
+  },
+  "historical_receipt_correction": "authorized-r7-correction.json and authorized-r7-correction.patch"
+}

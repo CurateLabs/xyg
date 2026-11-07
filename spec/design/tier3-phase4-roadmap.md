@@ -343,3 +343,30 @@ inside this frame; changing any of it means editing this section first.
 - [xy-coverage.md](xy-coverage.md)
 - [host-parity.md](host-parity.md) — three runtime surfaces
 - Dossier §27 (rebuildable caches), §28 (recorded decisions), §32 / §32b
+
+
+## Canonical-column continuation (#110)
+
+The local ordered XYGC path now validates fetched detail slabs against admitted
+zone-map extrema and ordering and cancels stale empty nonpaged reads. The
+bounded failure proof is described in [tier3-testing.md](tier3-testing.md).
+This advances #110 independently while #11/#5 still require successful
+accelerated 100M browser evidence and normalized competitive/remaining headline
+proof. At that failure-repair checkpoint, chunk reuse, full cross-host/WASM
+orchestration, larger-than-RAM journeys,
+shared-context dashboards (#111) and indexed linked views (#112) remained open;
+that change added no completion claim or revised resource/performance budget.
+
+
+The next bounded continuation implements local canonical chunk reuse in both
+read modes, with exact row identity, shared per-open deterministic LRU, actual
+positioned-fetch counters and generation-safe serialized residency accounting.
+See [rust-engine.md §5.1a](rust-engine.md#51a-bounded-local-canonical-chunk-reuse-110)
+and [the focused proof](tier3-testing.md#bounded-canonical-chunk-reuse-proof-110).
+This fulfills the local resident-overlap read contract only. #110 still needs
+larger-than-RAM first paint/navigation and latency/RSS evidence, chart-lifecycle
+overview/detail integration, complete host orchestration and direct browser/WASM
+support, unordered spatial localization, and remote range artifacts if supported.
+#109/#113 remain gated by those journeys plus #5/#11 accepted-main accelerated
+100M proof, #111 shared-GPU dashboards and #112 Filter Tier C. No hardware gate,
+WASM limit, quality tolerance, benchmark workflow or milestone closure changes.

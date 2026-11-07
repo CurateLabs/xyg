@@ -483,7 +483,16 @@ retain both endpoints, while a one-point request returns the first point. A view
 maps, optionally prunes by y, performs positioned reads of only candidate chunks,
 and applies the exact row predicate. Every reply records generation, first chunk,
 chunks considered/read, and bytes read. A hard byte budget is checked before I/O;
-generation changes cancel stale work between reads. Python `ChunkedColumns` and Node
+generation changes cancel stale work between reads. Both read modes reuse validated
+canonical slabs through a per-open Rust LRU capped at 8 MiB and the request byte
+budget. Admission/page boundaries still count hit bytes; only misses perform
+positioned reads. A chunk-keyed hash table and linked LRU avoid resident scans
+or entry shifts; hash iteration never controls eviction order. Rust records exact
+row/chunk identity, hit/miss, evictions and
+resident bytes; existing host byte/read counters count actual fetches. Oversized
+admitted chunks bypass retention. See [the precise residency and accounting
+contract](design/rust-engine.md#51a-bounded-local-canonical-chunk-reuse-110),
+including additional metadata/output memory and cooperative cancellation. Python `ChunkedColumns` and Node
 `ChunkedColumns` are thin, behavior-identical hosts. The artifact is local/offline;
 no network lookup is attempted. This is the ordered/time-series half of Tier 3 and
 does **not** complete this paragraph: remote HTTP range sources, direct-browser WASM
@@ -1247,15 +1256,20 @@ Where it must run, and what each environment denies us:
 `python/xyg/static/`; these generated bundles are not committed (§33). The
 direct-browser Rust/WASM surface additionally packages its Worker, optimized
 module, deterministic inline bootstrap and version/hash manifest. Current
-WASM functionality gates are **1,878 KiB raw / 765 KiB gzip6 (1,923,072 /
-783,360 bytes)**, explicitly adopted by the parent on 2026-11-03 after
-independent property-default source and package assessment. The reviewed
-1,922,561 / 783,148-byte module leaves 511 / 212 bytes. Shared native home/label
-policy is newly reachable on that path; exact component costs are unmeasured.
-The old P1 gate failure remains historical, not a retroactive package pass.
-The [property package decision receipt](performance/graph-property-default-package-2026-11-03/README.md)
-records fresh combined CSS/property production packaging, paired asset and
-manifest validation, full strict-CSP foundation and six unmasked image pairs.
+WASM functionality gates are **1,882 KiB raw / 768 KiB gzip6 (1,927,168 /
+786,432 bytes)**, explicitly adopted by the parent on 2026-11-04 after completed
+independent functionality/correctness reviews for #36 actual picked-target,
+source/group provenance and typed Leave. The best measured R2 inline candidate
+is 1,926,555 / 785,546 bytes, leaving 613 / 886 bytes. The former 1,878/765 gates
+failed it by 3,483 / 2,186 bytes; 1,881/767 still fails by 411 / 138. Growth over
+207 is 3,832 / 2,365. Shared CSR and borrowed refs save 1,022 / 380 over R1;
+rejected R3 Arc adds 1,768 / 55 over R2. Required receipt facts are retained.
+The [R5 functionality decision receipt](performance/graph-picked-target-r5-2026-11-04/README.md)
+separates this explicit decision from fresh production qualification. R1–R4
+measurements and failures remain immutable, including diagnostic-only R4 proof.
+The [R6 current-golden receipt](performance/graph-picked-target-r6-2026-11-04/README.md)
+records the separately authorized fresh actual shipping-browser capture and
+strict raw-section migration, preserving R5's failed historical-golden replay.
 Compiler/profile/toolchain/optimizer/dependencies/exports/validation and
 16-MiB default / 384-MiB maximum arenas are unchanged. No automatic allowance
 for later growth or performance/milestone/publication acceptance is granted.
@@ -2856,7 +2870,7 @@ requiring a Rust toolchain — an instant adoption cliff.
   retains that failure, source/artifact hashes, unchanged historical evidence,
   and scoped preservation checks; parent integration and independent review
   remain required. No comparative performance or milestone completion claim.
-- **Current property-default functionality limits (parent decision 2026-11-03):**
+- **Historical property-default functionality limits (parent decision 2026-11-03):**
   1,878 KiB raw / 765 KiB gzip6 (1,923,072 / 783,360 bytes), after independent
   `m4_defaults_audit` source approval of `2ed544dc` and package assessment. The
   required shared home/label behavior is retained. The reviewed 1,922,561 /

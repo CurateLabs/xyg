@@ -1,0 +1,14 @@
+import fs from "node:fs";
+import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { gzipSync } from "node:zlib";
+const result=JSON.parse(fs.readFileSync(new URL("./current-size.json",import.meta.url)));
+const bytes=fs.readFileSync("packages/xy-client/dist/xyg-wasm.wasm");
+assert.equal(result.node,process.version);
+assert.equal(result.moduleSha256,createHash("sha256").update(bytes).digest("hex"));
+assert.equal(result.raw,bytes.length);
+assert.equal(result.gzip6,gzipSync(bytes,{level:6}).length);
+assert.deepEqual(result.limits,{raw:1882*1024,gzip6:768*1024});
+assert.deepEqual(result.headroom,{raw:613,gzip6:886});
+assert.ok(result.raw<=result.limits.raw && result.gzip6<=result.limits.gzip6);
+console.log(JSON.stringify(result,null,2));

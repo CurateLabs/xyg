@@ -442,3 +442,15 @@ key; column responses also expose source IDs, visible bounds and typed geometry.
 Full-u64 identities remain BigUint64Array values. These engine adapters do not
 add a public chart-building surface. Exact framing, limits, errors and topology
 are in [the camera protocol](../design/geo-viewport-protocol.md).
+
+
+### Bounded public browser continuation (#35)
+
+The experimental `attachWasmGraphSession` now honors `load.progressive: true`
+with bounded off-thread retained CoSE continuation, initial-first painting and
+Rust-reported progress. Its render-event/snapshot `relayout` field is nullable
+`{steps: bigint, alpha: number, done: boolean}`; authored positions may initially
+lack a report. Absent/false retains legacy semantics. See
+[the controller contract](../design/graph-interaction.md#bounded-public-browser-continuation-35-release-108-preparation)
+for scheduling, limits, failure and disposal. No new method or ABI is added.
+This does not close #35/#1015/#36 or waive any #108 publication acceptance.

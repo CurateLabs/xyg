@@ -108,6 +108,9 @@ OPTIONS: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
         {},
     ),
     "document_defaults": ({}, {}),
+    "document_authored_frame": ({}, {}),
+    "document_polar_annulus": ({}, {}),
+    "document_scatter_colormap_alpha": ({}, {}),
     "document_background": ({}, {"background": "#ddeeff80"}),
     "document_optimized_png": ({}, {"optimize_png": True}),
     "document_tight_crop": ({}, {"tight_crop": True, "crop_padding": 3}),
@@ -129,8 +132,12 @@ OPTIONS: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
     "document_labels_end_bottom": ({}, {}),
     "document_labels_baseline_rotated": ({}, {}),
     "document_legend": ({}, {}),
+    "document_legend_relabel": ({}, {}),
+    "document_legend_frameless": ({}, {}),
     "document_signed_panels": ({}, {}),
     "document_overlap": ({}, {}),
+    "document_overlap_red_blue": ({}, {"background": "white"}),
+    "document_overlap_blue_red": ({}, {"background": "white"}),
     "document_colorbar_vertical": ({"colorbar_layout": (0.75, 0.5, 0.5)}, {}),
     "document_colorbar_horizontal": ({}, {}),
     "document_shared_colorbar": ({}, {"colorbar": "viridis"}),
@@ -142,12 +149,40 @@ OPTIONS: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {
 
 
 def _scene(name: str) -> bytes:
+    if name == "document_polar_annulus":
+        return figure_scene(
+            xyg.polar_chart(
+                xyg.bar([30, 70], [3, 5], width=8, color="#ef4444", opacity=1),
+                xyg.line([0, 180], [5, 5], color="#00cc88", width=9),
+                xyg.theta_axis(unit="degrees", label="Time"),
+                xyg.r_axis(hole=0.3, domain=(0, 5), label="Value"),
+                xyg.legend(show=False),
+                width=320,
+                height=240,
+                title="Panel",
+            ).figure()
+        )
     colorbar = "colorbar" in name and name != "document_shared_colorbar"
     children: list[xyg.Mark | xyg.Colorbar | xyg.Annotation] = (
         [xyg.scatter([0, 1, 2], [1, 3, 2], color=[1.0, 10.0, 100.0], color_domain=(1, 100), size=6)]
         if colorbar
         else [xyg.line([0, 1, 2], [1, 3, 2], color="#ef4444", width=2)]
     )
+    if name == "document_scatter_colormap_alpha":
+        children = [
+            xyg.scatter(
+                [0, 1, 2],
+                [1, 3, 2],
+                color=[0, 0.5, 1],
+                color_domain=(0, 1),
+                size=10,
+                opacity=0.4,
+                stroke_width=2,
+            )
+        ]
+    if name.startswith("overlap_paint_"):
+        color = "#ff000080" if name.endswith("red") else "#0000ff80"
+        children = [xyg.bar([1], [4], width=2, color=color, opacity=1.0)]
     if colorbar:
         children.append(
             xyg.colorbar(
@@ -180,7 +215,9 @@ def _scene(name: str) -> bytes:
         height=240,
         title="Panel",
     )
-    return figure_scene(chart.figure())
+    return figure_scene(
+        chart.figure(), margins=(46, 8, 32, 36) if name == "document_authored_frame" else None
+    )
 
 
 def _labels(name: str) -> list[dict]:
@@ -222,6 +259,33 @@ def _legend() -> dict:
 
 
 def _build(name: str) -> tuple[bytes, list[bytes], float, int]:
+    if name in {"document_legend_relabel", "document_legend_frameless"}:
+        figure = xyg.chart(
+            xyg.line([0, 1, 2], [1, 3, 2], name="Original", color="#ef4444", width=2),
+            xyg.x_axis(domain=(0, 2), label="Time"),
+            xyg.y_axis(domain=(0, 4), label="Value"),
+            width=320,
+            height=240,
+            title="Panel",
+        ).figure()
+        figure.legend_options = {
+            "items": [
+                {"kind": "line", "name": "Relabelled", "style": {"color": "#ef4444", "width": 2}}
+            ]
+        }
+        if name.endswith("frameless"):
+            figure.legend_options["style"] = {
+                "background": "transparent",
+                "borderColor": "transparent",
+            }
+        document = sd.figure_document(figure, width=320, height=240)
+        start = (
+            64
+            + 128
+            + sum(struct.unpack_from("<I", document, offset)[0] for offset in (24, 52, 60, 164))
+        )
+        offset, length = struct.unpack_from("<2I", document, 80)
+        return document, [document[start + offset : start + offset + length]], 1.0, 90
     panel, document = OPTIONS[name]
     document = dict(document)
     if name.startswith("document_title_"):
@@ -239,6 +303,14 @@ def _build(name: str) -> tuple[bytes, list[bytes], float, int]:
             sd.Panel(scene, -5, 0, 320, 240),
             sd.Panel(scene, 150 if name.endswith("overlap") else 320, 10, 320, 240),
         ]
+    if name == "document_polar_annulus":
+        panels = [sd.Panel(scene, 0, 0, 320, 240), sd.Panel(scene, 320, 0, 320, 240)]
+    if name.startswith("document_overlap_"):
+        colors = name.removeprefix("document_overlap_").split("_")
+        panels = [
+            sd.Panel(_scene("overlap_paint_" + color), index * 150, 0, 320, 240)
+            for index, color in enumerate(colors)
+        ]
     width, height = (640, 260) if len(panels) == 2 else (320, 240)
     if name == "document_title_x_center":
         width = 321
@@ -254,7 +326,7 @@ def _build(name: str) -> tuple[bytes, list[bytes], float, int]:
     )
     return (
         sd.encode(panels, width=width, height=height, **document),
-        [scene] * len(panels),
+        [panel.scene for panel in panels],
         scale,
         quality,
     )
@@ -436,6 +508,13 @@ def test_registered_document_all_consumers(name, node_results):
                     assert left.size == (int(width * scale), int(height * scale))
                 rgba = left.convert("RGBA")
                 assert rgba.tobytes() == right.convert("RGBA").tobytes()
+                if format == "png" and name.startswith("document_overlap_"):
+                    # Both 320px-wide panels cover this point. Swapping paint
+                    # order must change source-over, never paste/erase a panel.
+                    expected = (
+                        (127, 63, 191, 255) if name.endswith("red_blue") else (191, 63, 127, 255)
+                    )
+                    assert rgba.getpixel((250, 100)) == expected
                 pixels = rgba.tobytes()
                 assert (
                     len(
@@ -450,6 +529,15 @@ def test_registered_document_all_consumers(name, node_results):
             assert root.tag.endswith("svg")
             assert "Time" in actual.decode() and "Value" in actual.decode()
             text = "".join(root.itertext())
+            if name == "document_authored_frame":
+                rect = root.find(".//{*}clipPath/{*}rect")
+                assert rect is not None
+                assert tuple(float(rect.attrib[key]) for key in ("x", "y", "width", "height")) == (
+                    46,
+                    32,
+                    266,
+                    172,
+                )
             if name == "document_title_x_center":
                 title = next(node for node in root.iter() if node.text == "Document < & >")
                 assert float(title.attrib["x"]) == 160.5
@@ -459,6 +547,14 @@ def test_registered_document_all_consumers(name, node_results):
                 assert "Document < & >" in text
             if name.startswith("document_labels_"):
                 assert "Label < & >" in text
+            if name in {"document_legend_relabel", "document_legend_frameless"}:
+                legend = root.find(".//{*}g[@data-xy-static-legend]")
+                assert legend is not None and "Relabelled" in "".join(legend.itertext())
+                assert "Original" not in "".join(legend.itertext())
+                if name.endswith("frameless"):
+                    rect = legend.find("{*}rect")
+                    assert rect.attrib["fill"] == "rgba(0,0,0,0.000000)"
+                    assert rect.attrib["stroke"] == "rgba(0,0,0,0.000000)"
             if name == "document_legend":
                 assert all(label in text for label in ("Kinds", "line", "scatter", "patch"))
             if "colorbar" in name and name != "document_shared_colorbar":
@@ -518,3 +614,39 @@ def test_registered_panel_flag_masks_cover_every_admitted_bit(node_results):
         base64.b64decode(node_results["cases"]["document_colorbar_discrete"]["document"]),
     ):
         assert struct.unpack_from("<I", source, 64 + 24)[0] & (1 << 25)
+
+
+def test_annulus_center_crossing_mark_uses_one_compound_clip():
+    document, scenes, _, _ = _build("document_polar_annulus")
+    svg = ET.fromstring(_native.static_document_export(document, "svg"))
+    clips = svg.findall(".//{*}clipPath/{*}path")
+    annulus = next(path for path in clips if path.attrib.get("clip-rule") == "evenodd")
+    assert annulus.attrib["d"].count("M") == 2
+    assert annulus.attrib["d"].count(" A ") == 4
+    # A single compound path defines a hole in SVG as well as PDF. Distinct
+    # clip children would instead be unioned by SVG, painting this center.
+    for clip in svg.findall(".//{*}clipPath"):
+        assert not (len(clip) == 2 and all(child.tag.endswith("circle") for child in clip))
+    values = list(
+        map(float, re.findall(r"[-+]?(?:\d*\.)?\d+(?:[eE][-+]?\d+)?", annulus.attrib["d"]))
+    )
+    cx, cy, radius = (values[0] + values[7]) / 2, values[1], values[2]
+    png = _native.static_document_export(document, "png")
+    with Image.open(io.BytesIO(png)) as image:
+        rgba = image.convert("RGBA")
+        for offset in (0, 320):
+            assert rgba.getpixel((round(cx) + offset, round(cy))) == (255, 255, 255, 255)
+            assert rgba.getpixel((round(cx + 0.65 * radius) + offset, round(cy))) == (
+                0,
+                204,
+                136,
+                255,
+            )
+    pdf = _native.static_document_export(document, "pdf")
+    streams = []
+    for payload in re.findall(rb"stream\n(.*?)\nendstream", pdf, re.S):
+        try:
+            streams.append(zlib.decompress(payload))
+        except zlib.error:
+            streams.append(payload)
+    assert any(b"W*" in stream for stream in streams)

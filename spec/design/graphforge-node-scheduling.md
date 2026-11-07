@@ -251,10 +251,16 @@ records the normal merge of actual main `3ebf70c3`, whose tree exactly equals
 reviewed `7c581024`. It preserves the Buffer implementation and all earlier
 proof bytes, source qualifications and artifact identities without a new
 browser run or native/client build. Historical receipts retain their original
-review and remote-status text. This new accepted-main sync candidate requires
-its own completed independent final review and actual main-based CI before
-queueing or integration; earlier `eb9ea4c` CI, prior-head approval and skipped
-checks on a conflicted head do not qualify it.
+review and remote-status text. The parent now reports completed independent
+final approval of exact `74195403` and #1094 landing as main `40c0cc5a` on
+2026-11-04 at 07:59:51Z. Their full Git trees are identical. The
+[Rust R10 accepted-main receipt](../performance/graph-picked-target-r10-2026-11-04/README.md)
+records that tree comparison and the normal merge of accepted main into the
+separately reviewed Rust checkpoint `c318a0cb`, without a native/WASM/client
+rebuild or new browser measurement. The new combined Rust tip requires its own completed
+independent final review and fresh main-based CI before queueing or integration;
+prior-head approval, earlier `eb9ea4c` CI and skipped checks on a conflicted head
+do not qualify it.
 
 This is partial 1k evidence, not #35 closure: the rest of the rendered ladder,
 unheld initial trusted response, public browser progressive scheduling and
@@ -287,3 +293,49 @@ A move Preview/Commit before the first presentation honors the one-tick seed
 when opted in, then invalidates the force continuation under the existing move
 contract; absent/zero progressive keeps the legacy 300-step seed. Failed wire
 requests install neither seed/move/pin state nor sequence/retry changes.
+
+
+### Bounded public browser continuation (#35, release #108 preparation)
+
+`attachWasmGraphSession` now schedules retained CoSE continuation when its
+existing `load.progressive` is true. The initial Rust publication is painted
+before continuation crosses a browser paint boundary. Each subsequent animation
+opportunity admits at most one opcode 15 request with the existing scheduler's
+8-step chunk; force work executes inside the claimed packaged WASM Worker.
+There is one outstanding request and no queued checkpoint backlog or held ACK.
+Presentation opportunities coalesce scheduling demand; callbacks are not ticks.
+`ready` still means the initial presentation. Render events and snapshots add
+nullable `relayout: {steps: bigint, alpha: number, done: boolean}` copied from
+validated Rust planes. Authored positions may initially have no report; the first
+step constructs native continuation. Empty/all-hidden states terminate from the
+Rust done flag without invented ticks. Absent/false progressive preserves the
+legacy initial layout and schedules no continuation.
+
+The existing scheduler 30-second wall bound includes initialization and ends
+continuation with an observable timeout; errors stop automatic scheduling.
+Disposal cancels scheduled frames/timers immediately, suppresses late installation,
+drains admitted commands and closes the session before releasing its Worker.
+Separate attachments require separate claimed Workers. Recreate only after
+awaiting disposal; no public replacement/update API is added. Selection, focus,
+and camera operations keep Rust continuation intact. Existing keyboard default
+timing, pointer/CSS guards, selection identity and painter admission stay intact.
+No algorithm, done inference, CPU geometry, resource ceiling, ABI, or shipped
+asset policy changes. The 1024-node composition ceiling remains unchanged.
+
+Evidence/reproduction: `XYG_GRAPH_PROGRESSIVE_ONLY=1 node
+scripts/graph_session_controller_wasm_smoke.mjs`, alongside its full legacy run,
+wire tests and foundation smoke. This bounded browser slice establishes no
+competitor win or full rendered 1k/10k/100k/1M ladder. Python notebook/widget
+progressive integration (#1015), broader #36 interactions and full #35/#108
+acceptance remain open. Publication still requires all #108 acceptance.
+
+
+The progressive companion paging regression under
+`spec/performance/graph-browser-progressive-paging-2026-11-05/` uses the real
+public attachment and trusted keyboard activation to move to a nonzero page
+while Rust layout is unfinished. Subsequent unheld continuation must preserve
+that page's complete row/ref ordering and matching displayed cells; selecting
+its first row must yield the exact aligned Rust ref. The recorded command path
+includes companion paging, continuation followed by same-state render, and ref
+selection. This 64-node fixture explicitly requests the existing 384 MiB arena;
+no default/maximum is raised and no broader scale or interaction claim follows.

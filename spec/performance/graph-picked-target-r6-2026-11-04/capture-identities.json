@@ -1,0 +1,14 @@
+{
+  "spec/performance/graph-picked-target-r6-2026-11-04/captured-requests.json": {
+    "bytes": 249244,
+    "sha256": "efb547f8b569179069102f63ee93a9b4f7a4f12b343d70b0f46bf0a776cf7834"
+  },
+  "spec/performance/graph-picked-target-r6-2026-11-04/captured-requests.json.gz": {
+    "bytes": 12506,
+    "sha256": "22de8b4fd038904a483432cfd93ba046e1ca3f76458365fd7492cc799b2c8dee"
+  },
+  "spec/performance/graph-s5b-pointer-native-input-repair-2026-11-04/captured-requests.json.gz": {
+    "bytes": 10347,
+    "sha256": "f74f282792a5a71d9f4718277670c897d91affc4d42fa3c0b6a5021ff1a5abc9"
+  }
+}

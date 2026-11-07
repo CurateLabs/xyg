@@ -15,14 +15,14 @@ try:
     from stage_node_packages import (
         PUBLISH_CONFIG,
         REPOSITORY,
-        SEMVER_RE,
+        _require_semver,
         npm_version_from_tag,
     )
 except ModuleNotFoundError:
     from scripts.stage_node_packages import (
         PUBLISH_CONFIG,
         REPOSITORY,
-        SEMVER_RE,
+        _require_semver,
         npm_version_from_tag,
     )
 
@@ -134,8 +134,7 @@ def _validate_assets(dist: Path) -> dict[str, dict[str, int | str]]:
 
 
 def stage(*, dist: Path, output: Path, version: str) -> Path:
-    if SEMVER_RE.fullmatch(version) is None:
-        raise ValueError(f"invalid npm semver {version!r}")
+    _require_semver(version)
     inventory = _validate_assets(dist)
     destination = output / "xyg-browser"
     if destination.exists():

@@ -1,0 +1,20 @@
+   Compiling xyg-engine v0.1.0 (/home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/crates/xyg-engine)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 29.07s
+     Running unittests src/lib.rs (target/debug/deps/xyg_engine-7ae6b16ad685de05)
+
+running 2 tests
+
+thread 'graphforge::interaction::tests::wire::picked_checkpoint::actual_tiers_collapsed_parallel_loop_provenance_and_noquery_receipts' (2144009) panicked at crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs:101:14:
+actual clipped/parallel/loop edge point
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test graphforge::interaction::tests::wire::picked_checkpoint::actual_tiers_collapsed_parallel_loop_provenance_and_noquery_receipts ... FAILED
+test graphforge::interaction::tests::wire::picked_checkpoint::full_selection_actual_query_suffix_and_overflow_refusal_are_atomic ... ok
+
+failures:
+
+failures:
+    graphforge::interaction::tests::wire::picked_checkpoint::actual_tiers_collapsed_parallel_loop_provenance_and_noquery_receipts
+
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 1830 filtered out; finished in 0.49s
+
+error: test failed, to rerun pass `-p xyg-engine --lib`

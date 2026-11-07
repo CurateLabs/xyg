@@ -1,0 +1,51 @@
+{
+  "repairBase": "d86875e284cf82e817114de9e894a85c3ca6cbd8",
+  "sourceSha256": {
+    "scripts/check_stale_names.py": "215fe4f6047ce01feec47d08531996c5920702ac1278497dbe31146b48b70f5a",
+    "tests/test_stale_names.py": "94c65529a09f0dc7cdd6df0ab9a1f6d6bfd4bd615e83cf3e545a4238fbf422be",
+    "spec/design/xyg-naming.md": "f170e8167d31220dda73399bda0ea47e267e0f6ab4e9b8a1c630380891927fda",
+    "spec/performance/chunked-cache-history-classification-2026-11-06/README.md": "0ec4e9f4612e6540f8d29829612ce16e1f82a4df9070f5be95eb23c72e9fa72d",
+    "spec/performance/chunked-cache-history-classification-2026-11-06/.gitattributes": "bd33c8ef5fb33950a4e41c61028c5665f6d5ee395ff6f17d8fb3e2dad2d9ff12"
+  },
+  "logs": {
+    "before": {
+      "exitCode": 0,
+      "rawSha256": "c7ea5f1f98d6ff456d2c7389471614dd37cb9614017e8ba46b8663213578e2e5",
+      "archiveSha256": "9cc6bdbc9d698b974a4bf5fca1a2bd6c8edb6380fcb7eccd37bd60bb730eb705"
+    },
+    "tests": {
+      "exitCode": 0,
+      "rawSha256": "892c32230d90babbe77123381b95731d64ece277b6291412a174daef471b1281",
+      "archiveSha256": "e3ba8aef794437cb1644e6d27eba757449467bace5a88f7508da935c52fbb7c3"
+    },
+    "format-edits": {
+      "exitCode": 0,
+      "rawSha256": "43affe539ba0ae8b202b306a3294d04f3b7fc062316c1c825399076d966c8f2d",
+      "archiveSha256": "0263b388b63e459b1b8ad82d845aea8b92d8e00aaa664cbb3c0d500be0b1373d"
+    },
+    "hooks": {
+      "exitCode": 0,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "ruff": {
+      "exitCode": 0,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "format": {
+      "exitCode": 0,
+      "rawSha256": "0be8ae93d50c615562bd0773d2904372d5886f19435a0936b6402f9fad55f102",
+      "archiveSha256": "53cdfeb3a1d2dcc20325af24fcb40f97146b32589012eedb102bd2256aa06181"
+    },
+    "ci-errors": {
+      "rawSha256": "f2d84795d5852d9f04d27cda20ba2ebfed620e7154514857128b89d7ae5b3d99",
+      "archiveSha256": "03810aa87f6b5836c6cf1f0087c8e71db48800c36c9212d4de1d32000bc7459f",
+      "jobId": 128159731244,
+      "head": "caeffd14a43b9d57686c25e253b0df10ee8fc336"
+    }
+  },
+  "frozenReceiptSha256": "ab1fd6dd588c7022eda421e672d88d90ec0ee53a26402120f3258833362cb3eb",
+  "nativeSha256": "6323c123a0b129a0081e369a632a0b027ee0d9bca10d3ff5bc0016866bc098a6",
+  "scope": "exact frozen transcript classification only"
+}

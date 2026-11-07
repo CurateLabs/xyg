@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "acceptedMain": "c3152d97bdb3a1efd61686b21d84385ee0f8de9e",
+  "syncCommit": "12706a9d",
+  "branch": "t3/m7-spill-chunked-filter",
+  "workspace": "/home/ubuntu/.t3/worktrees/xyg/t3-b946596d",
+  "sourceSha256": {
+    "crates/xyg-engine/src/chunked_columns.rs": "7d97a70d3db7b926ecbfe5c0089f20ffdc33d1e873c3f35297024c31b9612f21",
+    "packages/xy-node/test/chunked-columns.test.mjs": "3f7ef8abe66aa76d982c2899a31a4d95d7ef0e348b92c7b912dcd76ed6e3e532",
+    "tests/test_chunked_columns.py": "e7c243b938349ebb303724fa0149f7cdcc8fb80a22135eccf5882080453f6c2e",
+    "spec/design/rust-engine.md": "f074ea9f20b59e65602bd770754d872f6baa6c2e2123a1c6f5fb615c690f4fd6",
+    "spec/design/tier3-testing.md": "c9fc36672ccb2191e408db2741afcc3e86c99f1b1d73166b0907e713ca14979e",
+    "spec/design/tier3-phase4-roadmap.md": "ecd090e6733c4082e97d22825e3dca4f9c29914f0b7bc4b426197c88cc73689e",
+    "spec/performance/chunked-read-validation-2026-11-06/README.md": "f9503d406a5c76ba439932061f28dc7cffc889adc898f5219618657e321462ab"
+  },
+  "artifactSha256": {
+    "target/release/libxyg_core.so": "f0fb0c738d2cfa98295dae50a8804fb801c21e1be82c2cff30a183576fcd74ff",
+    "packages/xy-client/dist/index.js": "484490d3f263c1ca4c4d4c54c483650d4b23c431b30aa2b53a762628e31d0db9",
+    "packages/xy-client/dist/standalone.js": "472b3bc27c661d9c47664d1aa570a60392215b69fd71f23208da2f62352a3811"
+  },
+  "receiptSha256": {
+    "README.md": "f9503d406a5c76ba439932061f28dc7cffc889adc898f5219618657e321462ab",
+    "after.log.gz": "d029940d357f399dd5612593b692f77f2bfacca73fa770ee3e01643e73dc09c8",
+    "before.log.gz": "629d9402185f550d63d39748c278f0cff992e10ac148c843d350337b76a79b4a",
+    "bindings.log.gz": "20c595dbb918aa6eb972509a53e32a3fb0845a38549e2530f7c1121325804981",
+    "issue-11-blocked-by.json": "644f7b508bb36c53c3af96e9c4212cc6833eadf4020ef32ae68ad2ba3a8c8604",
+    "issue-110-blocked-by.json": "27fba304d91c937c4e001586b4798c0bbe9da443e4a90f4963b0df040897e893",
+    "issue-5-blocked-by.json": "8add22090cd068e7d1d00999e6517a8b218377ddeaed16aea0749ecc1eaed82d",
+    "js-build.log.gz": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+    "node-install.log.gz": "2bbe625df32b1ed65316fbbb9198d4688bad0c0cecdf3fb3ee11ac3c10435302",
+    "node.log.gz": "4098f54a22cb5125ad1f69dcce90be8de65235249f9f9c94dd46654dca023efd",
+    "python.log.gz": "f491169c6c6ea44b666ccf2924b70a43ef2aa8062b26e7cac2778350c2fce7dd",
+    "receipt-format.log.gz": "53cdfeb3a1d2dcc20325af24fcb40f97146b32589012eedb102bd2256aa06181",
+    "receipt-hooks.log.gz": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+    "receipt-ruff.log.gz": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+    "release.log.gz": "d7a552d9a87c2b802302792ba5b32f47c86b8128900b8a6b91778c968c064c9a",
+    "rustfmt-file.log.gz": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+    "sync-format.log.gz": "53cdfeb3a1d2dcc20325af24fcb40f97146b32589012eedb102bd2256aa06181",
+    "sync-hooks.log.gz": "0fa1b94579549c45d6ccd59d96d75e728166c39ba23906d50695a8034c947111",
+    "sync-ruff.log.gz": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+    "workspace-rustfmt.log.gz": "8528a2a48b8e5d8cafad070018e9fd0dd203b94a8d879ec117c7bfa38dbd0fed"
+  },
+  "environment": {
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "machine": "x86_64",
+    "python": "3.14.4",
+    "rust": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "node": "v22.23.4",
+    "nodeExecutable": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin/node"
+  },
+  "results": {
+    "before": {
+      "exitCode": 101,
+      "passed": 11,
+      "failed": 2
+    },
+    "after": {
+      "exitCode": 0,
+      "passed": 13
+    },
+    "python": {
+      "exitCode": 0
+    },
+    "node": {
+      "exitCode": 0
+    },
+    "bindings": {
+      "exitCode": 0,
+      "passed": 5
+    },
+    "workspaceRustfmt": {
+      "exitCode": 1,
+      "scope": "pre-existing workspace formatting differences; not modified"
+    },
+    "fileRustfmt": {
+      "exitCode": 0
+    },
+    "release": {
+      "exitCode": 0
+    },
+    "jsBuild": {
+      "exitCode": 0
+    }
+  },
+  "scope": "bounded local/native correctness only; no hardware or scale acceptance"
+}

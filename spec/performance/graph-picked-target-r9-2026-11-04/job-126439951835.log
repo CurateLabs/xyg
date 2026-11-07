@@ -1,0 +1,288 @@
+﻿2026-11-04T07:04:21.8343697Z Current runner version: '2.338.2'
+2026-11-04T07:04:21.8347271Z Runner name: 'blacksmith-4vcpu-ubuntu-2404-xd2cqc6zv4h7idmf'
+2026-11-04T07:04:21.8347810Z Runner group name: 'blacksmith scale sets - blacksmith-4vcpu-ubuntu-2404'
+2026-11-04T07:04:21.8348414Z Machine name: 'ip-172-31-73-130'
+2026-11-04T07:04:21.8350805Z ##[group]GITHUB_TOKEN Permissions
+2026-11-04T07:04:21.8351862Z Contents: read
+2026-11-04T07:04:21.8352164Z Metadata: read
+2026-11-04T07:04:21.8352434Z ##[endgroup]
+2026-11-04T07:04:21.8353591Z Secret source: Actions
+2026-11-04T07:04:21.8354021Z Cache mode: write
+2026-11-04T07:04:21.8354370Z Prepare workflow directory
+2026-11-04T07:04:21.8534644Z Prepare all required actions
+2026-11-04T07:04:21.8559228Z Getting action download info
+2026-11-04T07:04:22.1345764Z Download action repository 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+2026-11-04T07:04:22.2084786Z Setting BLACKSMITH_ACTIONS_RESULTS_URL to https://results-receiver.actions.githubusercontent.com/
+2026-11-04T07:04:22.2118181Z Complete job name: Release surfaces
+2026-11-04T07:04:22.2446279Z A job started hook has been configured by the self-hosted runner administrator
+2026-11-04T07:04:22.2510915Z ##[group]Run '/setup.sh'
+2026-11-04T07:04:22.2523538Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-04T07:04:22.2523957Z env:
+2026-11-04T07:04:22.2524193Z   BLACKSMITH_RUNNER_MESSAGE_WAIT_MS: 672
+2026-11-04T07:04:22.2524490Z   BLACKSMITH_RUNNER_ACQUIRE_JOB_MS: 900
+2026-11-04T07:04:22.2524781Z   BLACKSMITH_CHECK_RUN_ID: 126439951835
+2026-11-04T07:04:22.2525088Z   BLACKSMITH_JOB_DISPLAY_NAME: Release surfaces
+2026-11-04T07:04:22.2525403Z   GITHUB_ACTIONS_CACHE_MODE: write
+2026-11-04T07:04:22.2525719Z ##[endgroup]
+2026-11-04T07:04:22.2746367Z Logging daemon started (blacksmithd for logs)
+2026-11-04T07:04:22.2826603Z Results daemon started (blacksmithd for results)
+2026-11-04T07:04:22.2940465Z Background adoption and SSH setup started (PID: 2964)
+2026-11-04T07:04:22.2940987Z 
+2026-11-04T07:04:22.2941228Z ----------------------------------------
+2026-11-04T07:04:22.2941976Z View this job: https://app.blacksmith.sh/CurateLabs/runs/41788401132/jobs/126439951835
+2026-11-04T07:04:22.2942739Z SSH Access (using your GitHub SSH key):
+2026-11-04T07:04:22.2943686Z   ssh -p 64002 runner@blacksmith-4vcpu-ubuntu-2404-xd2cqc6zv4h7idmf.vm.blacksmith.sh
+2026-11-04T07:04:22.2950161Z 
+2026-11-04T07:04:22.2950593Z No GitHub SSH key? Add one at:
+2026-11-04T07:04:22.2951547Z https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account
+2026-11-04T07:04:22.2952399Z 
+2026-11-04T07:04:22.2952685Z ----------------------------------------
+2026-11-04T07:04:22.2953144Z 
+2026-11-04T07:04:22.2953477Z VM ID: blacksmith-4vcpu-ubuntu-2404-xd2cqc6zv4h7idmf
+2026-11-04T07:04:22.2954119Z Host: production-192.240.255.129-x8664
+2026-11-04T07:04:22.2954696Z Host Agent PID: 415042
+2026-11-04T07:04:22.2955180Z Host Agent Git SHA: 39581068a
+2026-11-04T07:04:22.2955799Z Host CPU Manufacturer: AuthenticAMD
+2026-11-04T07:04:22.2956361Z Blacksmith Host Generation: gen 2
+2026-11-04T07:04:22.2956935Z Petname: production-ready-lark-09663693
+2026-11-04T07:04:22.2957489Z Region: us-west
+2026-11-04T07:04:22.2957980Z Rootfs Version: ubuntu24-full-x64-081926
+2026-11-04T07:04:22.2958582Z OS Version: Ubuntu 24.04.4 LTS
+2026-11-04T07:04:22.2959222Z 
+2026-11-04T07:04:22.2959571Z Enabling Blacksmith transparent cache
+2026-11-04T07:04:22.3196357Z ##[group]Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+2026-11-04T07:04:22.3199775Z with:
+2026-11-04T07:04:22.3199993Z   fetch-depth: 0
+2026-11-04T07:04:22.3200227Z   repository: CurateLabs/xyg
+2026-11-04T07:04:22.3201996Z   token: ***
+2026-11-04T07:04:22.3202213Z   ssh-strict: true
+2026-11-04T07:04:22.3202436Z   ssh-user: git
+2026-11-04T07:04:22.3202662Z   persist-credentials: true
+2026-11-04T07:04:22.3202913Z   clean: true
+2026-11-04T07:04:22.3203141Z   sparse-checkout-cone-mode: true
+2026-11-04T07:04:22.3203407Z   fetch-tags: false
+2026-11-04T07:04:22.3203942Z   show-progress: true
+2026-11-04T07:04:22.3204170Z   lfs: false
+2026-11-04T07:04:22.3204377Z   submodules: false
+2026-11-04T07:04:22.3204614Z   set-safe-directory: true
+2026-11-04T07:04:22.3204919Z   allow-unsafe-pr-checkout: false
+2026-11-04T07:04:22.3205179Z env:
+2026-11-04T07:04:22.3205397Z   BLACKSMITH_RUNNER_MESSAGE_WAIT_MS: 672
+2026-11-04T07:04:22.3205736Z   BLACKSMITH_RUNNER_ACQUIRE_JOB_MS: 900
+2026-11-04T07:04:22.3206038Z   GITHUB_REPO_NAME: CurateLabs/xyg
+2026-11-04T07:04:22.3206295Z ##[endgroup]
+2026-11-04T07:04:22.4072920Z Syncing repository: CurateLabs/xyg
+2026-11-04T07:04:22.4074066Z ##[group]Getting Git version info
+2026-11-04T07:04:22.4074387Z Working directory is '/home/runner/_work/xyg/xyg'
+2026-11-04T07:04:22.4074924Z [command]/usr/local/bin/git version
+2026-11-04T07:04:22.4129943Z git version 2.55.0
+2026-11-04T07:04:22.4139122Z ##[endgroup]
+2026-11-04T07:04:22.4143338Z Temporarily overriding HOME='/home/runner/_work/_temp/bc22ef67-5e81-4951-af7f-ab1e4bf22514' before making global git config changes
+2026-11-04T07:04:22.4144605Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-04T07:04:22.4146308Z [command]/usr/local/bin/git config --global --add safe.directory /home/runner/_work/xyg/xyg
+2026-11-04T07:04:22.4172886Z Deleting the contents of '/home/runner/_work/xyg/xyg'
+2026-11-04T07:04:22.4174642Z ##[group]Determining repository object format
+2026-11-04T07:04:22.4175469Z ##[endgroup]
+2026-11-04T07:04:22.4176052Z ##[group]Initializing the repository
+2026-11-04T07:04:22.4177398Z [command]/usr/local/bin/git init /home/runner/_work/xyg/xyg
+2026-11-04T07:04:22.4207347Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-11-04T07:04:22.4207860Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-11-04T07:04:22.4208335Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-11-04T07:04:22.4208706Z hint: call:
+2026-11-04T07:04:22.4208952Z hint:
+2026-11-04T07:04:22.4209227Z hint: 	git config --global init.defaultBranch <name>
+2026-11-04T07:04:22.4209545Z hint:
+2026-11-04T07:04:22.4209914Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-11-04T07:04:22.4210405Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-11-04T07:04:22.4210790Z hint:
+2026-11-04T07:04:22.4211026Z hint: 	git branch -m <name>
+2026-11-04T07:04:22.4211346Z hint:
+2026-11-04T07:04:22.4211720Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-11-04T07:04:22.4212204Z Initialized empty Git repository in /home/runner/_work/xyg/xyg/.git/
+2026-11-04T07:04:22.4213080Z [command]/usr/local/bin/git remote add origin https://github.com/CurateLabs/xyg
+2026-11-04T07:04:22.4231631Z ##[endgroup]
+2026-11-04T07:04:22.4232035Z ##[group]Disabling automatic garbage collection
+2026-11-04T07:04:22.4233613Z [command]/usr/local/bin/git config --local gc.auto 0
+2026-11-04T07:04:22.4300800Z ##[endgroup]
+2026-11-04T07:04:22.4301206Z ##[group]Setting up auth
+2026-11-04T07:04:22.4301590Z Removing SSH command configuration
+2026-11-04T07:04:22.4302021Z [command]/usr/local/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-04T07:04:22.4303091Z [command]/usr/local/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-04T07:04:22.4417875Z Removing HTTP extra header
+2026-11-04T07:04:22.4421620Z [command]/usr/local/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-04T07:04:22.4443782Z [command]/usr/local/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-04T07:04:22.4527992Z Removing includeIf entries pointing to credentials config files
+2026-11-04T07:04:22.4531691Z [command]/usr/local/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-04T07:04:22.4552653Z [command]/usr/local/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-04T07:04:22.4660126Z [command]/usr/local/bin/git config --file /home/runner/_work/_temp/git-credentials-205c297a-5da2-4cf5-a12c-86db26ef1c3b.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-11-04T07:04:22.4683218Z [command]/usr/local/bin/git config --local includeIf.gitdir:/home/runner/_work/xyg/xyg/.git.path /home/runner/_work/_temp/git-credentials-205c297a-5da2-4cf5-a12c-86db26ef1c3b.config
+2026-11-04T07:04:22.4701822Z [command]/usr/local/bin/git config --local includeIf.gitdir:/home/runner/_work/xyg/xyg/.git/worktrees/*.path /home/runner/_work/_temp/git-credentials-205c297a-5da2-4cf5-a12c-86db26ef1c3b.config
+2026-11-04T07:04:22.4721315Z [command]/usr/local/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-205c297a-5da2-4cf5-a12c-86db26ef1c3b.config
+2026-11-04T07:04:22.4739261Z [command]/usr/local/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-205c297a-5da2-4cf5-a12c-86db26ef1c3b.config
+2026-11-04T07:04:22.4754928Z ##[endgroup]
+2026-11-04T07:04:22.4755315Z ##[group]Fetching the repository
+2026-11-04T07:04:22.4759291Z [command]/usr/local/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/* +da8d0e952fbc02845e2422336f61ddc4e13f2d2e:refs/remotes/pull/1095/merge
+2026-11-04T07:04:28.4447158Z From http://192.168.127.1:1037/github.com/CurateLabs/xyg
+2026-11-04T07:04:28.4448380Z  * [new branch]        13-release-versioning-safety -> origin/13-release-versioning-safety
+2026-11-04T07:04:28.4449245Z  * [new branch]        7-phase4-wp0-spec-lock  -> origin/7-phase4-wp0-spec-lock
+2026-11-04T07:04:28.4450093Z  * [new branch]        cursor/backup-scene-ingress-wip-9b8a -> origin/cursor/backup-scene-ingress-wip-9b8a
+2026-11-04T07:04:28.4450788Z  * [new branch]        cursor/hexbin-rust-domain-9b8a -> origin/cursor/hexbin-rust-domain-9b8a
+2026-11-04T07:04:28.4451421Z  * [new branch]        cursor/m2-116-authored-tick-labels-fb59 -> origin/cursor/m2-116-authored-tick-labels-fb59
+2026-11-04T07:04:28.4452115Z  * [new branch]        cursor/m2-assign-milestone-6b8a -> origin/cursor/m2-assign-milestone-6b8a
+2026-11-04T07:04:28.4452679Z  * [new branch]        cursor/m2-hexbin-domain-9b8a -> origin/cursor/m2-hexbin-domain-9b8a
+2026-11-04T07:04:28.4453378Z  * [new branch]        cursor/m2-hexbin-ingress-9b8a -> origin/cursor/m2-hexbin-ingress-9b8a
+2026-11-04T07:04:28.4454104Z  * [new branch]        cursor/m2-host-parity-findings-issues-7ce1 -> origin/cursor/m2-host-parity-findings-issues-7ce1
+2026-11-04T07:04:28.4454752Z  * [new branch]        cursor/m2-issue-assign-9b8a -> origin/cursor/m2-issue-assign-9b8a
+2026-11-04T07:04:28.4455346Z  * [new branch]        cursor/m2-node-fix-animation-coverage-7ce1 -> origin/cursor/m2-node-fix-animation-coverage-7ce1
+2026-11-04T07:04:28.4456043Z  * [new branch]        cursor/m2-node-hexbin-xyta-colormap-7ce1 -> origin/cursor/m2-node-hexbin-xyta-colormap-7ce1
+2026-11-04T07:04:28.4456734Z  * [new branch]        cursor/m2-node-payload-rebase-staging-7ce1 -> origin/cursor/m2-node-payload-rebase-staging-7ce1
+2026-11-04T07:04:28.4457446Z  * [new branch]        cursor/m2-node-payload-replay-clean-7ce1 -> origin/cursor/m2-node-payload-replay-clean-7ce1
+2026-11-04T07:04:28.4458135Z  * [new branch]        cursor/m2-node-scene-rebase-staging-7ce1 -> origin/cursor/m2-node-scene-rebase-staging-7ce1
+2026-11-04T07:04:28.4458810Z  * [new branch]        cursor/m2-node-scene-rebase-v2-7ce1 -> origin/cursor/m2-node-scene-rebase-v2-7ce1
+2026-11-04T07:04:28.4459450Z  * [new branch]        cursor/m2-ownership-audit-m2-complete-7ce1 -> origin/cursor/m2-ownership-audit-m2-complete-7ce1
+2026-11-04T07:04:28.4460318Z  * [new branch]        cursor/m2-payload-channel-marshal-fixes-7ce1 -> origin/cursor/m2-payload-channel-marshal-fixes-7ce1
+2026-11-04T07:04:28.4461042Z  * [new branch]        cursor/m2-payload-errorbar-role-maps-7ce1 -> origin/cursor/m2-payload-errorbar-role-maps-7ce1
+2026-11-04T07:04:28.4461721Z  * [new branch]        cursor/m2-payload-writer-ci-fixes-7ce1 -> origin/cursor/m2-payload-writer-ci-fixes-7ce1
+2026-11-04T07:04:28.4462348Z  * [new branch]        cursor/m2-payload-writer-ship-7ce1 -> origin/cursor/m2-payload-writer-ship-7ce1
+2026-11-04T07:04:28.4462934Z  * [new branch]        cursor/payload-stack-repair-4420 -> origin/cursor/payload-stack-repair-4420
+2026-11-04T07:04:28.4463533Z  * [new branch]        cursor/polar-scene-allowlist-9b8a -> origin/cursor/polar-scene-allowlist-9b8a
+2026-11-04T07:04:28.4464033Z  * [new branch]        f74619d0                -> origin/f74619d0
+2026-11-04T07:04:28.4464550Z  * [new branch]        feature/42-render-codspeed -> origin/feature/42-render-codspeed
+2026-11-04T07:04:28.4465256Z  * [new branch]        feature/50-geographic-hierarchy-host -> origin/feature/50-geographic-hierarchy-host
+2026-11-04T07:04:28.4465910Z  * [new branch]        feature/50-geographic-hierarchy-protocol -> origin/feature/50-geographic-hierarchy-protocol
+2026-11-04T07:04:28.4466586Z  * [new branch]        feature/50-geographic-hierarchy-recovery -> origin/feature/50-geographic-hierarchy-recovery
+2026-11-04T07:04:28.4467303Z  * [new branch]        feature/50-geographic-hierarchy-trace -> origin/feature/50-geographic-hierarchy-trace
+2026-11-04T07:04:28.4467937Z  * [new branch]        feature/50-geographic-live-host -> origin/feature/50-geographic-live-host
+2026-11-04T07:04:28.4468548Z  * [new branch]        feature/50-geographic-mixed-transport -> origin/feature/50-geographic-mixed-transport
+2026-11-04T07:04:28.4469213Z  * [new branch]        feature/50-geographic-native-overview-host -> origin/feature/50-geographic-native-overview-host
+2026-11-04T07:04:28.4469869Z  * [new branch]        feature/50-geographic-overview-binary -> origin/feature/50-geographic-overview-binary
+2026-11-04T07:04:28.4470527Z  * [new branch]        feature/50-geographic-overview-browser -> origin/feature/50-geographic-overview-browser
+2026-11-04T07:04:28.4470926Z  * [new branch]        feature/50-geographic-overview-members-host -> origin/feature/50-geographic-overview-members-host
+2026-11-04T07:04:28.4471353Z  * [new branch]        feature/50-geographic-overview-members-recovery -> origin/feature/50-geographic-overview-members-recovery
+2026-11-04T07:04:28.4471812Z  * [new branch]        feature/50-geographic-overview-membership-protocol -> origin/feature/50-geographic-overview-membership-protocol
+2026-11-04T07:04:28.4472544Z  * [new branch]        feature/50-geographic-overview-painter-snapshot -> origin/feature/50-geographic-overview-painter-snapshot
+2026-11-04T07:04:28.4473015Z  * [new branch]        feature/50-geographic-overview-recovery -> origin/feature/50-geographic-overview-recovery
+2026-11-04T07:04:28.4473418Z  * [new branch]        feature/50-geographic-overview-recovery-host -> origin/feature/50-geographic-overview-recovery-host
+2026-11-04T07:04:28.4473835Z  * [new branch]        feature/50-geographic-overview-selected-guard -> origin/feature/50-geographic-overview-selected-guard
+2026-11-04T07:04:28.4474273Z  * [new branch]        feature/50-geographic-overview-snapshot-recovery -> origin/feature/50-geographic-overview-snapshot-recovery
+2026-11-04T07:04:28.4474690Z  * [new branch]        feature/50-geographic-overview-source -> origin/feature/50-geographic-overview-source
+2026-11-04T07:04:28.4475113Z  * [new branch]        feature/50-geographic-selected-hierarchy-host -> origin/feature/50-geographic-selected-hierarchy-host
+2026-11-04T07:04:28.4475562Z  * [new branch]        feature/50-geographic-selected-hierarchy-live -> origin/feature/50-geographic-selected-hierarchy-live
+2026-11-04T07:04:28.4476029Z  * [new branch]        feature/50-geographic-selected-mutation-recovery -> origin/feature/50-geographic-selected-mutation-recovery
+2026-11-04T07:04:28.4476505Z  * [new branch]        feature/50-geographic-selected-publication-recovery -> origin/feature/50-geographic-selected-publication-recovery
+2026-11-04T07:04:28.4476946Z  * [new branch]        feature/50-geographic-selected-snapshot -> origin/feature/50-geographic-selected-snapshot
+2026-11-04T07:04:28.4477294Z  * [new branch]        feature/51-import-rename -> origin/feature/51-import-rename
+2026-11-04T07:04:28.4477579Z  * [new branch]        feature/58-scene-export -> origin/feature/58-scene-export
+2026-11-04T07:04:28.4477869Z  * [new branch]        feature/pypi-first-alpha -> origin/feature/pypi-first-alpha
+2026-11-04T07:04:28.4478170Z  * [new branch]        feature/release-0.6.0-rc.1 -> origin/feature/release-0.6.0-rc.1
+2026-11-04T07:04:28.4478509Z  * [new branch]        fix/ci-sdist-wasm-worker-and-ty -> origin/fix/ci-sdist-wasm-worker-and-ty
+2026-11-04T07:04:28.4478851Z  * [new branch]        fix/g2-annotations-table-1006 -> origin/fix/g2-annotations-table-1006
+2026-11-04T07:04:28.4479175Z  * [new branch]        fix/issue-898-graph-defaults -> origin/fix/issue-898-graph-defaults
+2026-11-04T07:04:28.4479483Z  * [new branch]        fix/issue-909-graph-axes -> origin/fix/issue-909-graph-axes
+2026-11-04T07:04:28.4479800Z  * [new branch]        integrate/extension-xyg-intents -> origin/integrate/extension-xyg-intents
+2026-11-04T07:04:28.4480127Z  * [new branch]        issue-43-temporal-columns -> origin/issue-43-temporal-columns
+2026-11-04T07:04:28.4480457Z  * [new branch]        main                    -> origin/main
+2026-11-04T07:04:28.4480777Z  * [new branch]        t3/node-buffer-container-span-20261104 -> origin/t3/node-buffer-container-span-20261104
+2026-11-04T07:04:28.4481187Z  * [new branch]        t3/rust-picked-target-checkpoint-20261104 -> origin/t3/rust-picked-target-checkpoint-20261104
+2026-11-04T07:04:28.4481519Z  * [new tag]           xyg-v0.0.1a1            -> xyg-v0.0.1a1
+2026-11-04T07:04:28.4481747Z  * [new tag]           xyg-v0.0.1a2            -> xyg-v0.0.1a2
+2026-11-04T07:04:28.4482003Z  * [new ref]           da8d0e952fbc02845e2422336f61ddc4e13f2d2e -> pull/1095/merge
+2026-11-04T07:04:28.4483051Z ##[endgroup]
+2026-11-04T07:04:28.4483315Z ##[group]Determining the checkout info
+2026-11-04T07:04:28.4483601Z ##[endgroup]
+2026-11-04T07:04:28.4483779Z [command]/usr/local/bin/git sparse-checkout disable
+2026-11-04T07:04:28.4499085Z [command]/usr/local/bin/git config --local --unset-all extensions.worktreeConfig
+2026-11-04T07:04:28.4517616Z ##[group]Checking out the ref
+2026-11-04T07:04:28.4520075Z [command]/usr/local/bin/git checkout --progress --force refs/remotes/pull/1095/merge
+2026-11-04T07:04:29.0145261Z Note: switching to 'refs/remotes/pull/1095/merge'.
+2026-11-04T07:04:29.0145574Z 
+2026-11-04T07:04:29.0146019Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-11-04T07:04:29.0146555Z changes and commit them, and you can discard any commits you make in this
+2026-11-04T07:04:29.0147000Z state without impacting any branches by switching back to a branch.
+2026-11-04T07:04:29.0147241Z 
+2026-11-04T07:04:29.0147403Z If you want to create a new branch to retain commits you create, you may
+2026-11-04T07:04:29.0147700Z do so (now or later) by using -c with the switch command. Example:
+2026-11-04T07:04:29.0147840Z 
+2026-11-04T07:04:29.0147926Z   git switch -c <new-branch-name>
+2026-11-04T07:04:29.0148076Z 
+2026-11-04T07:04:29.0148156Z Or undo this operation with:
+2026-11-04T07:04:29.0148252Z 
+2026-11-04T07:04:29.0148321Z   git switch -
+2026-11-04T07:04:29.0148404Z 
+2026-11-04T07:04:29.0148581Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-11-04T07:04:29.0148745Z 
+2026-11-04T07:04:29.0148952Z HEAD is now at da8d0e95 Merge 8b231d70d03e53e380f7198b4f618c0f33ec9ddf into 6e240f4bd3189640779fd684e97072923cbfb9c8
+2026-11-04T07:04:29.0170585Z ##[endgroup]
+2026-11-04T07:04:29.0202506Z [command]/usr/local/bin/git log -1 --format=%H
+2026-11-04T07:04:29.0221174Z da8d0e952fbc02845e2422336f61ddc4e13f2d2e
+2026-11-04T07:04:29.0304650Z ##[group]Run python3 scripts/verify_release_surface_results.py \
+2026-11-04T07:04:29.0305099Z [36;1mpython3 scripts/verify_release_surface_results.py \[0m
+2026-11-04T07:04:29.0305312Z [36;1m  --required "true" \[0m
+2026-11-04T07:04:29.0305478Z [36;1m  --event "pull_request" \[0m
+2026-11-04T07:04:29.0305650Z [36;1m  --job "test=failure" \[0m
+2026-11-04T07:04:29.0305817Z [36;1m  --job "wasm_assets=success" \[0m
+2026-11-04T07:04:29.0306004Z [36;1m  --job "wasm_foundation=success" \[0m
+2026-11-04T07:04:29.0306183Z [36;1m  --job "python_floor=success" \[0m
+2026-11-04T07:04:29.0306388Z [36;1m  --job "browser_conformance=success" \[0m
+2026-11-04T07:04:29.0306578Z [36;1m  --job "authored_scene=success" \[0m
+2026-11-04T07:04:29.0306773Z [36;1m  --job "matplotlib_reference=success" \[0m
+2026-11-04T07:04:29.0306966Z [36;1m  --job "sdist=success" \[0m
+2026-11-04T07:04:29.0307140Z [36;1m  --job "wheels=skipped" \[0m
+2026-11-04T07:04:29.0307342Z [36;1m  --job "install_without_rust=success" \[0m
+2026-11-04T07:04:29.0307527Z [36;1m  --job "benchmark_vs=skipped" \[0m
+2026-11-04T07:04:29.0307717Z [36;1m  --job "benchmark_methodology=skipped" \[0m
+2026-11-04T07:04:29.0307960Z [36;1m  --job "benchmark=skipped"[0m
+2026-11-04T07:04:29.0322913Z shell: /usr/bin/bash -e {0}
+2026-11-04T07:04:29.0323072Z env:
+2026-11-04T07:04:29.0323212Z   BLACKSMITH_RUNNER_MESSAGE_WAIT_MS: 672
+2026-11-04T07:04:29.0323387Z   BLACKSMITH_RUNNER_ACQUIRE_JOB_MS: 900
+2026-11-04T07:04:29.0323557Z   GITHUB_REPO_NAME: CurateLabs/xyg
+2026-11-04T07:04:29.0323719Z ##[endgroup]
+2026-11-04T07:04:29.0468889Z ERROR: test must succeed, got 'failure'
+2026-11-04T07:04:29.0469167Z ERROR: release-surface job wheels must succeed, got 'skipped'
+2026-11-04T07:04:29.0498445Z ##[error]Process completed with exit code 1.
+2026-11-04T07:04:29.0574489Z Post job cleanup.
+2026-11-04T07:04:29.0971138Z [command]/usr/local/bin/git version
+2026-11-04T07:04:29.1022653Z git version 2.55.0
+2026-11-04T07:04:29.1043146Z Temporarily overriding HOME='/home/runner/_work/_temp/753f598a-b498-41df-98b6-9494e8895ee6' before making global git config changes
+2026-11-04T07:04:29.1043817Z Adding repository directory to the temporary git global config as a safe directory
+2026-11-04T07:04:29.1047018Z [command]/usr/local/bin/git config --global --add safe.directory /home/runner/_work/xyg/xyg
+2026-11-04T07:04:29.1067873Z Removing SSH command configuration
+2026-11-04T07:04:29.1071270Z [command]/usr/local/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-11-04T07:04:29.1093191Z [command]/usr/local/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-11-04T07:04:29.1238727Z Removing HTTP extra header
+2026-11-04T07:04:29.1239782Z [command]/usr/local/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-11-04T07:04:29.1262295Z [command]/usr/local/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-11-04T07:04:29.1365945Z Removing includeIf entries pointing to credentials config files
+2026-11-04T07:04:29.1368934Z [command]/usr/local/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-11-04T07:04:29.1387761Z includeif.gitdir:/home/runner/_work/xyg/xyg/.git.path
+2026-11-04T07:04:29.1388127Z includeif.gitdir:/home/runner/_work/xyg/xyg/.git/worktrees/*.path
+2026-11-04T07:04:29.1388366Z includeif.gitdir:/github/workspace/.git.path
+2026-11-04T07:04:29.1388593Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+2026-11-04T07:04:29.1394188Z [command]/usr/local/bin/git config --local --get-all includeif.gitdir:/home/runner/_work/xyg/xyg/.git.path
+2026-11-04T07:04:29.1411578Z /home/runner/_work/_temp/git-credentials-205c297a-5da2-4cf5-a12c-86db26ef1c3b.config
+2026-11-04T07:04:29.1416809Z [command]/usr/local/bin/git config --local --unset includeif.gitdir:/home/runner/_work/xyg/xyg/.git.path \/home\/runner\/_work\/_temp\/git\-credentials\-205c297a\-5da2\-4cf5\-a12c\-86db26ef1c3b\.config
+2026-11-04T07:04:29.1439435Z [command]/usr/local/bin/git config --local --get-all includeif.gitdir:/home/runner/_work/xyg/xyg/.git/worktrees/*.path
+2026-11-04T07:04:29.1455938Z /home/runner/_work/_temp/git-credentials-205c297a-5da2-4cf5-a12c-86db26ef1c3b.config
+2026-11-04T07:04:29.1460536Z [command]/usr/local/bin/git config --local --unset includeif.gitdir:/home/runner/_work/xyg/xyg/.git/worktrees/*.path \/home\/runner\/_work\/_temp\/git\-credentials\-205c297a\-5da2\-4cf5\-a12c\-86db26ef1c3b\.config
+2026-11-04T07:04:29.1480854Z [command]/usr/local/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+2026-11-04T07:04:29.1497847Z /github/runner_temp/git-credentials-205c297a-5da2-4cf5-a12c-86db26ef1c3b.config
+2026-11-04T07:04:29.1502925Z [command]/usr/local/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path \/github\/runner_temp\/git\-credentials\-205c297a\-5da2\-4cf5\-a12c\-86db26ef1c3b\.config
+2026-11-04T07:04:29.1525114Z [command]/usr/local/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+2026-11-04T07:04:29.1541370Z /github/runner_temp/git-credentials-205c297a-5da2-4cf5-a12c-86db26ef1c3b.config
+2026-11-04T07:04:29.1544657Z [command]/usr/local/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-205c297a\-5da2\-4cf5\-a12c\-86db26ef1c3b\.config
+2026-11-04T07:04:29.1565898Z [command]/usr/local/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-11-04T07:04:29.1693068Z Removing credentials config '/home/runner/_work/_temp/git-credentials-205c297a-5da2-4cf5-a12c-86db26ef1c3b.config'
+2026-11-04T07:04:29.1753677Z A job completed hook has been configured by the self-hosted runner administrator
+2026-11-04T07:04:29.1776868Z ##[group]Run '/job_completed.sh'
+2026-11-04T07:04:29.1792668Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2026-11-04T07:04:29.1792877Z env:
+2026-11-04T07:04:29.1793031Z   BLACKSMITH_RUNNER_MESSAGE_WAIT_MS: 672
+2026-11-04T07:04:29.1793211Z   BLACKSMITH_RUNNER_ACQUIRE_JOB_MS: 900
+2026-11-04T07:04:29.1793454Z   BLACKSMITH_CHECK_RUN_ID: 126439951835
+2026-11-04T07:04:29.1793659Z   BLACKSMITH_JOB_DISPLAY_NAME: Release surfaces
+2026-11-04T07:04:29.1793848Z   GITHUB_ACTIONS_CACHE_MODE: write
+2026-11-04T07:04:29.1794014Z ##[endgroup]
+2026-11-04T07:04:29.1882711Z Docker container cache not activated, skipping hash computation.
+2026-11-04T07:04:29.2150305Z No active SSH sessions detected. Proceeding with shutdown immediately.
+2026-11-04T07:04:29.2199307Z Cleaning up orphan processes

@@ -1,0 +1,77 @@
+{
+  "schema": "xyg.chunked-reuse-proof/v1",
+  "scope": "bounded local native correctness; not scale or competitive latency evidence",
+  "implementationBase": "7093ea3f5a37a5fe87a6ab4dcda542cdde41931a",
+  "acceptedMain": "c3152d97bdb3a1efd61686b21d84385ee0f8de9e",
+  "reviewedRepair": "82fab9c1239e8df3d4e065c0a7fbcf98759ec9e7",
+  "environment": {
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "python": "3.14.4",
+    "pythonExecutable": "/home/ubuntu/.t3/worktrees/xyg/t3-2417b455/.venv/bin/python",
+    "rust": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "node": "v22.23.4",
+    "nodeExecutable": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin/node"
+  },
+  "sourceSha256": {
+    "crates/xyg-engine/src/chunked_columns.rs": "c63f03aa18dbcbeb052d6c6a553a401abf93ab244e4d0c0b0b086e32a8031118",
+    "packages/xy-node/test/chunked-columns.test.mjs": "e44fde46067b70bf3683e26da053b02e8c08be125e001019bb831d3ddd5993f6",
+    "spec/design-dossier.md": "878542bdb81367522d75adabd3c00db212c1816b6df846dc5b57a3f081223de7",
+    "spec/design/rust-engine.md": "f479d7a8e61fd38244b4f8c202ec80f3a869df4ccbe5f1edda236703024c9329",
+    "spec/design/tier3-phase4-roadmap.md": "7321dd6771eb7b7401d79cfa4bfe9517f3b8f6b917b1a772a273ef92c61521d5",
+    "spec/design/tier3-testing.md": "a463a05587b1130e1eb5fec3bebb4242e529c804f8f4d8aad1b9034dcbb85cc1",
+    "tests/test_chunked_columns.py": "075fcb73b9475df45ead3e747b3fad89542bca5aabf7eb9b3fedeb67de4f134f"
+  },
+  "artifact": {
+    "path": "target/release/libxyg_core.so",
+    "sha256": "4a717d649072745734e5f238b9646189faa2619a6cc0de1d07ad8a9eb3dfa82c",
+    "bytes": 6126936,
+    "verification": "same SHA-256 before and after Python/Node tests; final native build from local source, no external reuse"
+  },
+  "checks": {
+    "rustChunkTests": {
+      "passed": 17,
+      "exitCode": 0
+    },
+    "pythonChunkTests": {
+      "passed": 9,
+      "exitCode": 0
+    },
+    "nodeChunkTests": {
+      "passed": 6,
+      "exitCode": 0
+    },
+    "workspaceReleaseBuild": {
+      "exitCode": 0,
+      "qualification": "initial workspace build; final production rebuild below"
+    },
+    "finalNativeReleaseBuild": {
+      "exitCode": 0
+    },
+    "fullWorktreeHooksAndRuff": {
+      "exitCode": 0,
+      "commands": [
+        "uv run --with pre-commit pre-commit run --all-files",
+        "uv run ruff check .",
+        "uv run ruff format --check ."
+      ]
+    }
+  },
+  "commands": [
+    "cargo test -p xyg-engine chunked_columns -- --nocapture",
+    "cargo build --release",
+    "cargo build --release -p xyg-core",
+    "XYG_NATIVE_LIB=$PWD/target/release/libxyg_core.so uv run pytest tests/test_chunked_columns.py -q",
+    "XYG_NATIVE_LIB=$PWD/target/release/libxyg_core.so node --test packages/xy-node/test/chunked-columns.test.mjs"
+  ],
+  "logs": {
+    "native-build.log": "1053bc4a44a3a8a73124c0b6db6ce977300403bb18d1d6d6d613234b32c216b3",
+    "node-tests.log": "4511dfdd07f9331fc5595f71dfdfe4df191da4c17c7eb73e9a8cf3b91ba72a6c",
+    "python-tests.log": "b2bb4074266d1068b6ca6c1475e3155e68e3870ecbf7b93c0756e4de10a08699",
+    "workspace-build.log": "4e35bae28ab34910866027f1371ffb8651dc07afa14a4882bf6983026fce6346",
+    "rust-tests.json": "ab1fd6dd588c7022eda421e672d88d90ec0ee53a26402120f3258833362cb3eb",
+    "hooks.log": "277a0ec6736a5d62058e0fe038650f29053083ec47ea7529d8a3aedeac627aa4"
+  },
+  "remainingAcceptance": "README.md#remaining-acceptance",
+  "independentReview": "pending parent final diff review; no review or delivery claimed",
+  "rustStdoutSha256": "14d4fa2995bcd868a2d289e77158da95901a5f7a15cfbc3dc7ba4078ce9ba9dd"
+}

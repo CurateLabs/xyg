@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 try:
-    from release_version import parse_tag
+    from release_version import parse_npm, parse_tag
     from stage_browser_package import ASSETS, EXPECTED_EXPORTS, JS_BUDGET_BYTES, WASM_BUDGET_BYTES
     from stage_node_packages import (
         NATIVE_BUDGET_BYTES,
@@ -34,7 +34,7 @@ try:
         PLATFORMS as PLATFORM_LAYOUTS,
     )
 except ModuleNotFoundError:  # Imported as ``scripts.publish_node_packages`` in tests.
-    from scripts.release_version import parse_tag
+    from scripts.release_version import parse_npm, parse_tag
     from scripts.stage_browser_package import (
         ASSETS,
         EXPECTED_EXPORTS,
@@ -107,6 +107,7 @@ def _artifact(path: Path) -> Artifact:
     version = manifest.get("version")
     if not isinstance(name, str) or not isinstance(version, str):
         raise ValueError(f"{path.name} is missing a string name/version")
+    parse_npm(version)
     payload = path.read_bytes()
     return Artifact(
         path,
