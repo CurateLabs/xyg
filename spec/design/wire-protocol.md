@@ -572,3 +572,10 @@ five f64 operation arguments, optionally followed by XYGD source ingress.
 geometry/u64 identity/u32 offset/u8 ring-role planes. No camera/projection numeric
 arrays move as JSON. [The camera contract](geo-viewport-protocol.md) pins exact
 framing, bounds presence, normalized bit keys and atomic error behavior.
+
+### Temporal composition authoring candidate
+
+[XYTM v1](temporal-catalog.md#exactness-and-framing) carries raw i64 times/u64
+identities and u8 validity into Rust. Only derived ordinary Scene/painter
+geometry uses floating coordinates. This is authoring ingress, not a new live
+message or a temporal JSON-number protocol.

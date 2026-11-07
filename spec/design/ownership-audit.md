@@ -1369,6 +1369,12 @@ These additions use the existing ownership policies without adding a host policy
 | `crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 
+| `crates/xyg-engine/src/temporal_scene.rs` | Rust safe engine | rust-engine | keep-rust |
+| `js/src/75_temporal_scene.ts` | Browser adapter | browser-wasm-adapter | implement-rust-wasm |
+| `packages/xy-node/src/temporal-scene-framing.js` | Node host | node-host | keep-host |
+| `packages/xy-node/src/temporal-scene.js` | Node host | node-host | keep-host |
+| `python/xyg/_temporal_scene.py` | Python host | python-host | keep-host |
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.
@@ -1479,3 +1485,8 @@ The R7 inventory review disposition classifies the five R6 picked-target Rust
 test modules in the file ledger under the existing `rust-engine` policy, without
 a new policy or exclusion. They cover exact receipts, projection admission,
 retry/atomicity and diagnostic corpus generation for the shared Rust owner.
+
+The partial temporal catalog owns exact membership/ticks/geometry in
+`xyg-engine::temporal_scene`; Python, Node and browser framing modules only
+pack source rows and call that compiler. See temporal-catalog.md for unshipped
+interaction, dense-LOD and packaging requirements.

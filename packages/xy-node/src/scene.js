@@ -3406,6 +3406,7 @@ export function figureStaticDocument(figure, {
       throw new RangeError(`${label} must be a positive integer pixel count`);
     }
   }
+  if (figure._temporalCompile) return staticDocumentEncode({panels:[{scene:figure._temporalCompile(),x:0,y:0,width:documentWidth,height:documentHeight}],width:documentWidth,height:documentHeight,background,optimizePng});
   const rootStyle = { ...(figure.style ?? {}) };
   const chrome = resolveStaticChromeStyle({
     hasTitle: Boolean(figure.title),
@@ -7635,6 +7636,7 @@ export function packFigureXyTc(figure) {
 }
 
 export function figureSceneV3(figure, { margins = null, y2Chrome = null } = {}) {
+  if (figure._temporalCompile) return figure._temporalCompile();
   let colorbarUnsupported = false;
   try { colorbarInput(figure); } catch { colorbarUnsupported = Boolean(figureColorbarOptions(figure)); }
   const attachPlan = sceneEncodeProductAttachPlan({ polar: figure.coords === "polar" });

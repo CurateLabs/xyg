@@ -283,6 +283,7 @@ pub mod stats;
 pub mod stream;
 pub mod svg;
 pub mod temporal;
+pub mod temporal_scene;
 pub mod temporal_controller;
 pub mod temporal_graph;
 pub mod textblock;

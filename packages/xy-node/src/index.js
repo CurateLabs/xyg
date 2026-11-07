@@ -491,3 +491,7 @@ export {RetainedGeoSource} from './geo-retained.js';
 export {GeoTileSource,GeoTileSession} from './geo-tiles.js';
 
 export {GeoOverviewIndex} from './geo-overview-source.js';
+
+export { encodeTemporalScene, temporalSceneCompile } from './temporal-scene.js';
+
+export {temporalChart} from "./charts.js";

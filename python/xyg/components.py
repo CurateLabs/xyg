@@ -85,6 +85,7 @@ __all__ = [
     "Mark",
     "Modebar",
     "Spring",
+    "TemporalChart",
     "Theme",
     "Tooltip",
     "animation",
@@ -149,6 +150,7 @@ __all__ = [
     "stem_chart",
     "step",
     "step_chart",
+    "temporal_chart",
     "text",
     "theme",
     "theta_axis",
@@ -7887,3 +7889,73 @@ def geo_chart(
     return GeoChart(
         tuple(layers), camera, legend, budget, tile_session, tile_vector_styles, tile_image_id
     )
+
+
+class TemporalChart(Chart):
+    """Exact UTC temporal composition using the shared Rust Scene compiler.
+
+    Rows are (start_us, end_us, value_or_lane, stable_u64_id). Null endpoints
+    are unbounded for intervals; null instants are omitted by Rust.
+    """
+
+    def __init__(
+        self,
+        kind,
+        rows,
+        *,
+        domain,
+        timezone,
+        precision=2,
+        controller=None,
+        color=(31, 119, 180, 255),
+        stroke=(31, 119, 180, 255),
+        stroke_width=1.0,
+        budget=64 * 1024 * 1024,
+        **props,
+    ):
+        super().__init__("temporal", (), **props)
+        self.temporal_kind = kind
+        self.rows = tuple(tuple(row) for row in rows)
+        self.domain = tuple(domain)
+        self.timezone = timezone
+        self.precision = precision
+        self.controller = controller
+        self.temporal_color = color
+        self.temporal_stroke = stroke
+        self.temporal_width = stroke_width
+        self.temporal_budget = budget
+
+    def figure(self):
+        figure = super().figure()
+        figure._temporal_composition = self
+        return figure
+
+    def _compile_temporal(self, width=None, height=None):
+        from . import _temporal_scene
+
+        state = self.controller.state if self.controller is not None else None
+        domain = (state["range_start"], state["range_end"]) if state else self.domain
+        packet = _temporal_scene.request(
+            self.temporal_kind,
+            self.rows,
+            domain=domain,
+            timezone=self.timezone,
+            precision=self.precision,
+            title=self.title,
+            width=width or self.width,
+            height=height or self.height,
+            cursor=state["cursor"] if state else domain[0],
+            color=self.temporal_color,
+            stroke=self.temporal_stroke,
+            stroke_width=self.temporal_width,
+        )
+        return _temporal_scene.compile_request(packet, self.temporal_budget)
+
+
+def temporal_chart(kind, rows, *, domain, timezone, **props):
+    """Declare event/interval/Gantt/line/bar/scatter with exact i64 UTC times."""
+    from ._temporal_scene import KINDS
+
+    if kind not in KINDS:
+        raise ValueError("unknown temporal composition kind")
+    return TemporalChart(kind, rows, domain=domain, timezone=timezone, **props)

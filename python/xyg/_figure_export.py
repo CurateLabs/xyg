@@ -54,6 +54,10 @@ def to_html(
     injects an author stylesheet so `class_names` utility classes
     (e.g. Tailwind) resolve in the export. ``wasm_ticks`` attaches
     hosted Rust/WASM ticks when explicit Worker/WASM URLs are available."""
+    if getattr(self, "_temporal_composition", None) is not None:
+        from . import _temporal_scene
+
+        return _temporal_scene.html(self, path, custom_css=custom_css)
     return export.to_html(
         self,
         path,
