@@ -1,0 +1,10 @@
+{
+  "target/release/libxyg_core.so": {
+    "sha256": "649251d33001490423d1bff9f31572f70f0bff90c0f1da469cce3dafd25dad1d",
+    "bytes": 6211208
+  },
+  "packages/xy-client/dist/xyg-wasm.wasm": {
+    "sha256": "8e67955d5909ca6f56952a3d15580eecfa12b39bf3df0b3615aaa8d9d41fcb9e",
+    "bytes": 1911687
+  }
+}

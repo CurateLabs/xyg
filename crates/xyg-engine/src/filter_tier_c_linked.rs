@@ -438,6 +438,11 @@ impl FilterTierCSession {
             }
             intent = Some([lo.min(hi), lo.max(hi)]);
         }
+        // The active range consumes the same C-clause budget as retained ranges.
+        // Refuse before building an index or publishing any replacement intent.
+        if st.clauses.len() + usize::from(intent.is_some()) > MAX_VIEWS {
+            return Err(Error::Budget.into());
+        }
         let query = matches!(op, 5 | 7 | 11);
         build |= query && self.index.is_none();
         let output = add(

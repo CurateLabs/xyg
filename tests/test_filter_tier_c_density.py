@@ -155,3 +155,53 @@ def test_explicit_transparent_selected_style_is_preserved_by_rust():
         result = s.paint()
         assert result["selected_count"] == 2
         assert all(alpha == 0 for alpha in result["density"][0]["rgba"][3::4])
+
+
+def test_sixty_fifth_linked_clause_refuses_without_poisoning_accepted_state():
+    columns = {"a": [0.0, 0.5, 1.0, 2.0], "b": [0.0, 0.5, 1.0, 2.0]}
+    chart = xyg.scatter_chart(xyg.scatter(x=columns["a"], y=columns["b"], density=True))
+    views = [
+        dict(id=i, x="a", y="b", width=2, height=2, x_range=[0.0, 3.0], y_range=[0.0, 3.0])
+        for i in range(1, 34)
+    ]
+    with chart.filter_session(columns, source_id=112) as session:
+        for view in views[:32]:
+            for dimension in ("a", "b"):
+                session.configure_density(
+                    dict(id=view["id"], dimension=dimension, cuts=[0.0, 1.0]), views
+                )
+                session.range(0.0, 1.0, exact=True)
+        session.configure_density(dict(id=33, dimension="a", cuts=[0.0, 1.0]), views)
+        before = session.paint(exact=True)
+        assert before["selected_count"] == 3
+        with pytest.raises(FilterTierCError) as refused:
+            session.range(0.0, 1.0, exact=True)
+        reply = refused.value.reply
+        assert refused.value.status == 2
+        for field in (
+            "revision",
+            "filter_hash",
+            "index_bytes",
+            "source_id",
+            "epoch",
+            "source_revision",
+            "active_view",
+            "has_intent",
+        ):
+            assert reply[field] == before[field], field
+        after = session.paint(exact=True)
+        assert after["filter_hash"] == before["filter_hash"]
+        assert after["views"] == before["views"]
+        assert after["selected_count"] == 3
+        assert session.membership(0, 4)["membership"] == b"\x07"
+        # Refusal must leave editing and reconfiguration usable at the cap.
+        session.begin_edit()
+        session.cancel_edit()
+        session.configure_density(dict(id=1, dimension="a", cuts=[0.0, 1.0]), views)
+        assert session.paint(exact=True)["filter_hash"] == before["filter_hash"]
+        session.range(0.0, 0.5, exact=True)
+        assert session.paint(exact=True)["selected_count"] == 2
+        session.clear()
+        assert session.paint(exact=True)["selected_count"] == 4
+        session.range(0.0, 1.0, exact=True)
+        assert session.paint(exact=True)["selected_count"] == 3

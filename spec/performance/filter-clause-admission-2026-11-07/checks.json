@@ -1,0 +1,343 @@
+{
+  "beforeSources": {
+    "crates/xyg-engine/src/filter_tier_c_linked.rs": {
+      "archive": "filter_tier_c_linked.rs.before.gz",
+      "archiveSha256": "f63f2175bcf55a7860e432a815acb4eaae67545d45434067cb8071030d0ecfd6",
+      "sourceSha256": "61fd9a36b23088afc41620d97f0472d804ee9d274b351ace366dc40e30c2ec66"
+    },
+    "packages/xy-node/test/filter-tier-c-density.test.mjs": {
+      "archive": "filter-tier-c-density.test.mjs.before.gz",
+      "archiveSha256": "ba4be5f6a25eb4da0bea425aa1faaa28dab7a8c7198816a79a5f006812811496",
+      "sourceSha256": "ff03bed956d61d6fec549210aa416d32bbed731f88aee0cf4c8aa68c1cd90482"
+    },
+    "spec/design/filter-tier-c.md": {
+      "archive": "filter-tier-c.md.before.gz",
+      "archiveSha256": "2f928751e356cce0a7462837549f0a1815876da8a301c71d5695dfa1552ad810",
+      "sourceSha256": "643e923d2c7e2d7660bb2358537c6556227e695564b8a90db35042c204588a82"
+    },
+    "tests/test_filter_tier_c_density.py": {
+      "archive": "test_filter_tier_c_density.py.before.gz",
+      "archiveSha256": "17a984e0b96b3a73c3c48a798d360576c258d406779b70b2a24b3ef48e992773",
+      "sourceSha256": "c9c22eef2b2ac12b49b171382ce2d7b4c76861d9911425e015a104213f78fd06"
+    }
+  },
+  "captures": {
+    "linked.png": {
+      "bytes": 37630,
+      "sha256": "c48c85076ce9bc19bfa5cdd712e86016fad4c7e2201e9ea19e120c6896f433cd"
+    },
+    "linked.png.indexed.png": {
+      "bytes": 34706,
+      "sha256": "de87a57085d2543e07f7ea78554ed5ca3bdcec62645d1eb7ac00d797c0a0cdc1"
+    }
+  },
+  "commandGroups": {
+    "after-python.exit.json": {
+      "exit": 0
+    },
+    "before-node.exit.json": {
+      "exit": 1
+    },
+    "before-python.exit.json": {
+      "exit": 1
+    },
+    "browser.exit.json": {
+      "exit": 0
+    },
+    "build.exit.json": {
+      "exit": 0
+    },
+    "contracts.exit.json": {
+      "exit": 0
+    },
+    "core-final.exit.json": {
+      "exit": 0
+    },
+    "gates.exit.json": {
+      "exit": 0
+    },
+    "initial-boundary-refusal.exit.json": {
+      "exit": 1
+    },
+    "node-final.exit.json": {
+      "exit": 0
+    },
+    "python-final.exit.json": {
+      "exit": 0
+    }
+  },
+  "historicalBindings": {
+    "spec/performance/chunked-chart-postcopy-portability-2026-11-07/current-bindings.json": "7e4ab5ee7e71aa33b59d88b20db4059b3bbcb1a7e7fa5a096f49ef0a2c297a2d",
+    "spec/performance/chunked-chart-postcopy-portability-2026-11-07/original-c-chart-output.rs.txt": "aa6035db2bd8695fe1bb4a831ccd5f548f3e0ea00e8f26c774e93c338f4a0ce6",
+    "spec/performance/chunked-chart-review-repair-2026-11-07/current-bindings.json": "342d407cea5a970a41c21b9c0b2b039afefdc7a2e570c7f0054b9f5c5b4ef2e1",
+    "spec/performance/filter-tier-c-linked-2026-11-07/current-bindings.json": "46323fca65c276ed13a715ae6ecd26d4cddeb7e63ef3cac383725d94a6f037e2",
+    "spec/performance/filter-tier-c-linked-product-2026-11-07/current-bindings.json": "84fc861154ed376f0eb33ae04b2f4425018205fba735335b72807eb1bb487dcc",
+    "spec/performance/filter-tier-c-programmatic-2026-11-07/current-bindings.json": "191a84b7023e0b28f6820bd4ee1835ad18fbc497437dcf8f271002e6c32b76e9",
+    "spec/performance/graph-notebook-identity-2026-11-06/current-bindings.json": "824d0de463cf7777729109838de52a3e8eafe64c69fbe8c3ca99db874ce45b26",
+    "spec/performance/graph-notebook-identity-limits-2026-11-06/current-bindings.json": "6eed61b2b510601799a67db4bb273cb3c945728231de10eda94eb4129d08ec37",
+    "spec/performance/graph-notebook-identity-order-2026-11-06/current-bindings.json": "bb5f99899f7ecd94b5cd4b27c7d555b666f1029a4013639d9947b39daa7a118c",
+    "spec/performance/graph-notebook-identity-ownership-2026-11-06/current-bindings.json": "16103ab3609d57d7af27d1b126dc833765ce33424a0536ecd3a587e075c648c2",
+    "spec/performance/graph-notebook-identity-report-2026-11-06/current-bindings.json": "d48d92908c3f27d65deb4d279e7b3d799158f55d76069611b850671f5c37a0df",
+    "spec/performance/graph-widget-pr1100-repair-2026-11-06/current-bindings.json": "f2b3d6b6fa73d87e168bbb74c3173c0d7efa2686d9bf33b4e963ca78c344682d",
+    "spec/performance/graph-widget-progressive-r3-2026-11-06/current-bindings.json": "bd50d6ce0d4ed6781a3f2933ef78b8523ab192a7c1e31737079cb518a7b0ebb8",
+    "spec/performance/graph-widget-review-repair-2026-11-06/current-bindings.json": "c200259d17dd02563bbcc8d29b043d4ea49b5130064b6c8a292a537246ae5bd1",
+    "spec/performance/pr1110-abi-fixtures-2026-11-07/current-bindings.json": "8cb6aca913cc1999b050875f265161287561a00901c36f15ff1230d6d4aabbcd",
+    "spec/performance/pr1110-main-integration-2026-11-07/current-bindings.json": "307320873e84bf3c26db2f837c197e6e6f91896f0d6e425eb5a81183a4bbe543",
+    "spec/performance/pr1110-notebook-abi-2026-11-07/current-bindings.json": "20af1c294085f69eef85ca201881152a9e4ecc4fdaaf2babe3f5bac7edc6fef6",
+    "spec/performance/temporal-chunked-queued-union-2026-11-07/current-bindings.json": "6e8f8fd26e7eff48fb7a1a54165d156e29849787eb922fffd67b104f08d5d086",
+    "spec/performance/temporal-graph-main-integration-2026-11-07/current-bindings.json": "da6d95d4c11d92b1611a0d9b799da507b765df50d8e309d6b72b01356a3905da",
+    "spec/performance/temporal-retained-terminal-idle-2026-11-07/current-bindings.json": "9cb674bd4c61a85f93101d8a411a8c1a42c0680409531817ebeb3bfe484c0a6e",
+    "spec/performance/temporal-worker-lifetime-2026-11-07/current-bindings.json": "2c41c868fe8cd22a8195e0a424f960150e5982bce3b7d3c7dd66e2e02d2b395a",
+    "spec/releases/core-rc7-checkout-repair-2026-11-06/bindings.json": "bf9baaf0d5b0e3a3dd06c756e98f5032f8a091b3157a742b590d550acb53abcc",
+    "spec/releases/core-rc7-compatibility-2026-11-06/checks.json": "7d03d70d0f62d9713aa4eb869eb9a4fdca04a1b3438fbdc0cf9aa703266424d3",
+    "spec/releases/core-rc7-generator-default-2026-11-06/bindings.json": "935d1c13c39e316a8a6cbda1d184fb618cb488a1853f429a9456626c05fa7168"
+  },
+  "limits": [
+    "Correction needs independent review before delivery.",
+    "Older whole-product results and 750-state independent oracle are inherited, not fresh rebuild/re-execution here.",
+    "No full issue/milestone, massive, hardware or competitor acceptance is claimed.",
+    "Current-main, combined ABI integration, hosted CI and queue remain parent gates."
+  ],
+  "logs": {
+    "abi-generated.log.gz": {
+      "archiveSha256": "690871738f57552561385ec3d682ff3b5461b0981c2286296626950c736f9243",
+      "rawBytes": 42,
+      "rawSha256": "1e5253747b0eb8297a88a998a59f3a9e19241e6c56be151cc28a65f347c03a79",
+      "status": "auxiliary output; individual shell exit is not inferred"
+    },
+    "abi-smoke.log.gz": {
+      "archiveSha256": "135de4fa46245b623c5d8acfa3e621c9374a4c0229b173222340fff45c526965",
+      "rawBytes": 52,
+      "rawSha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306",
+      "status": "auxiliary output; individual shell exit is not inferred"
+    },
+    "after-python.log.gz": {
+      "archiveSha256": "84abde2a2e3b0f9cef5e6d415e220878e72717f163d2405e426f57ad893bdd2c",
+      "exit": 0,
+      "rawBytes": 112,
+      "rawSha256": "f55002f1b2ce251ab20affc2da77a77c33358f5db7db468644ea455372912689"
+    },
+    "assets.log.gz": {
+      "archiveSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730",
+      "rawBytes": 88,
+      "rawSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+      "status": "auxiliary output; individual shell exit is not inferred"
+    },
+    "before-node.log.gz": {
+      "archiveSha256": "659a628f33c9f2d85eb290ebb6437f587caacd33e0d3b2ae5a264a5bcc2eeb28",
+      "exit": 1,
+      "rawBytes": 862,
+      "rawSha256": "4577871803c65830b3f4da9b9fbd5b6dd5a249cbe902274f3109bd977c247376"
+    },
+    "before-python.log.gz": {
+      "archiveSha256": "2ce1ea853be821807852c4a92335ba2fd2cf5910607fd08c3f693943e2214372",
+      "exit": 1,
+      "rawBytes": 1594,
+      "rawSha256": "5fcdc5f7754fc1d9f0c23061e3436fb51f566cc7af59c9f4caca31db4537ba2d"
+    },
+    "browser.log.gz": {
+      "archiveSha256": "0f24878fc0a6277168f3f60cf6e57db9b7d48dca13a0da583de0f4b9f3e4fa44",
+      "exit": 0,
+      "rawBytes": 1408,
+      "rawSha256": "d0761a15cbcaec93c9c0826a74afa2099fe63f36750cbfc8cf1f94e5067ad5d2"
+    },
+    "clippy.log.gz": {
+      "archiveSha256": "58694aae003858eb5c038c4693a79e6cbd58253bb5ebb9f6853a2332af1c134a",
+      "rawBytes": 167,
+      "rawSha256": "738780896e46be2a1997a1f62428550c6c5c72407233a8bbf77a5723f68abd04",
+      "status": "auxiliary output; individual shell exit is not inferred"
+    },
+    "core-final.log.gz": {
+      "archiveSha256": "448f58257d874b207a3b47cb6272cc2e48660143a61f5c4b1cf32adf1956078a",
+      "exit": 0,
+      "rawBytes": 99,
+      "rawSha256": "9dbeee6cf7778b8c1c79265fede0ed9fa5cf1bb043430290629d36b72656809f"
+    },
+    "format.log.gz": {
+      "archiveSha256": "ac89e8ec815e13dfb374f773dba79975c2ff4c7568286d8c15dc7f5d3cb52b41",
+      "rawBytes": 29,
+      "rawSha256": "27435c968d4c651de3c752432107894ffdd8d6d590a7ed8178876d6a78affde9",
+      "status": "auxiliary output; individual shell exit is not inferred"
+    },
+    "hooks.log.gz": {
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "rawBytes": 240,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "status": "auxiliary output; individual shell exit is not inferred"
+    },
+    "initial-boundary-refusal.log.gz": {
+      "archiveSha256": "8a1cb200e33444872db57405bb44b179efdb64f0e7f891dfcaa9a25b18ede524",
+      "exit": 1,
+      "rawBytes": 2379,
+      "rawSha256": "1a3cecd0425eb08c80e02bb0b9403e7d276f2a485f652322b7219c7c73b5f226"
+    },
+    "native-build.log.gz": {
+      "archiveSha256": "393dcc5557165a2151907f0cca1cae68984196c32919ed61b38a676218c34b23",
+      "rawBytes": 337,
+      "rawSha256": "59e3a87a0b39f1c0d45692e6862618622cdc4527a028636a1a512206a157ba30",
+      "status": "auxiliary output; individual shell exit is not inferred"
+    },
+    "node-final.log.gz": {
+      "archiveSha256": "f3e774e5e494e809fd730625e3077e53e703fb309a7a28e1957f31e3b904af36",
+      "exit": 0,
+      "rawBytes": 2886,
+      "rawSha256": "3045e6db8b7b582085ce93f6c387447267ab61668e52aef4ccf20349fb27b900"
+    },
+    "python-environment.log.gz": {
+      "archiveSha256": "f15818bc3d90f0fc1194a95aa4041afbf07418eb58161cf72dad214348bc1d3c",
+      "rawBytes": 119,
+      "rawSha256": "eb1b0bc41beecdd0d7a1338af549a65f46a7a591defb9c74733977861d24e307",
+      "status": "auxiliary output; individual shell exit is not inferred"
+    },
+    "python-final.log.gz": {
+      "archiveSha256": "eee71604c5c4ba553f7e55d44d9b90102f4e0c25cdd395164e75493f9c7d64b7",
+      "exit": 0,
+      "rawBytes": 100,
+      "rawSha256": "5b6194b69bb7c725c689b3a37f72f2399235007a1d6f82104bbd6c4eda2d14b1"
+    },
+    "ruff.log.gz": {
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "rawBytes": 19,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "status": "auxiliary output; individual shell exit is not inferred"
+    },
+    "rust-tests.log.gz": {
+      "archiveSha256": "a8d91c2f3c8b07a99de69e01c70618d8c2b12d61eee8a6953861c53ca68c33ca",
+      "rawBytes": 1019,
+      "rawSha256": "e638485222b5d9681cabdb7bb144fb7b3fbacee586c17b07c82a438d8e8f0175",
+      "status": "auxiliary output; individual shell exit is not inferred"
+    },
+    "rustfmt.log.gz": {
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "rawBytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "auxiliary output; individual shell exit is not inferred"
+    },
+    "source-format.log.gz": {
+      "archiveSha256": "9e034aaa1899b92e6331269cd6d05434c6c7961950b18d5a76245a92c9cd89fe",
+      "rawBytes": 42,
+      "rawSha256": "10869b88a75066aa23546ef1f95fcd4678c3fb92a56ed46ef91688052b67976a",
+      "status": "auxiliary output; individual shell exit is not inferred"
+    },
+    "test-format.log.gz": {
+      "archiveSha256": "2283aea2b330488a006d79106f5f562181af4f1fab820fd23ed7f19cf203d3f9",
+      "rawBytes": 19,
+      "rawSha256": "413a709001976657cb743636fd34e48fc41d8d302d665460d3f874b3313da127",
+      "status": "auxiliary output; individual shell exit is not inferred"
+    },
+    "wasm-abi-generated.log.gz": {
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "rawBytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "auxiliary output; individual shell exit is not inferred"
+    },
+    "wasm-build.log.gz": {
+      "archiveSha256": "34f1657488d5325a2078b6c628c675b40e8c645bb0a089c7fb960f5dbf0d4ca0",
+      "rawBytes": 4267,
+      "rawSha256": "69569abadd3b2f8c4da7675db4d9901bae2ea97a0b461cde4202b2f58ebc0769",
+      "status": "auxiliary output; individual shell exit is not inferred"
+    },
+    "wasm-size.log.gz": {
+      "archiveSha256": "b6152ad076bae702d5ebdd4ec160fa67bf55366a51ff90c408da32f8511c613e",
+      "rawBytes": 125,
+      "rawSha256": "05669f12d477218475407a3c55aafffd4d7730e596b469385482fe70ccecfb72",
+      "status": "auxiliary output; individual shell exit is not inferred"
+    },
+    "wasm-tests.log.gz": {
+      "archiveSha256": "ca7981974ef48cef78b7c407b4125adc36dd29faadedecdda6e123bc00f05b4e",
+      "rawBytes": 6645,
+      "rawSha256": "1820610418d0b7dbb247f0fa501c021dca0779aace6bb28da3cf4ac4e1256947",
+      "status": "auxiliary output; individual shell exit is not inferred"
+    }
+  },
+  "nativeAbi": 402,
+  "qualification": {
+    "beforeArtifactIdentity": "artifacts-during-build.json records original hashes; optional later native copy met already-rebuilt bytes, so no original native byte archive is claimed",
+    "nativeSelection": "explicit XYG_NATIVE_LIB=checkout/target/release/libxyg_core.so",
+    "node": "22.23.4",
+    "receiptInterpreter": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+    "testPython": "uv project .venv Python3.12.15; actual version logged separately",
+    "tmpdir": "/var/tmp",
+    "wasmCaps": {
+      "gzip6": 786432,
+      "raw": 1927168
+    }
+  },
+  "repairBase": "bf5e155a7019249ce9fdd3b6f83165b7d674d1bf",
+  "runtimeArtifacts": {
+    "packages/xy-client/dist/index.js": {
+      "bytes": 826318,
+      "sha256": "68b2f176b2aed11e0b68303289583aa422c38186a4469ddb0c99d470a0f112f0"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 826340,
+      "sha256": "0348855a007ab1e4b45fca0cd003f1868df85ad5282abdae42aec3684372d271"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "bytes": 19171,
+      "sha256": "4280d7c45fb1f1773f43ae14b11642161de80f33a2c304e28918612ea19ff2d2"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 56942,
+      "sha256": "98f47be50de12a26a6132fad7c956bc8ec2d052e1e4b8664f37ea4a5975dae87"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2568328,
+      "sha256": "a24018bc01d70694addebbf93dda6b72822ab5f252fb6fc96ca0495d360ffa9f"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "f2dfcaa6e100291716a5985e1993fe2f19977afcdda7b5735fafca68bd86bea6"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1911725,
+      "sha256": "195c592ef30b09a6068e4fcd9259bc76c04b9ce5a7accbc66398d801d8f028c1"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 826318,
+      "sha256": "68b2f176b2aed11e0b68303289583aa422c38186a4469ddb0c99d470a0f112f0"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 826340,
+      "sha256": "0348855a007ab1e4b45fca0cd003f1868df85ad5282abdae42aec3684372d271"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1911725,
+      "sha256": "195c592ef30b09a6068e4fcd9259bc76c04b9ce5a7accbc66398d801d8f028c1"
+    },
+    "target/release/libxyg_core.so": {
+      "bytes": 6211128,
+      "sha256": "9a461455e649b659164cb20e8502bf1fcd156eeedc4586a52b6f5dd5f9b91dfd"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 2107920,
+      "sha256": "e307d8ebda48402fa6aba63c7408d867f5f45183d99553c5cae7054100e1c198"
+    },
+    "tests/fixtures/filter_tier_c/density.bin": {
+      "bytes": 69470,
+      "sha256": "c94c47569acd18b9d3a924fc807204eca5ea19d465e471fb4e323ef12be871ee"
+    },
+    "tests/fixtures/filter_tier_c/density.json": {
+      "bytes": 6867,
+      "sha256": "0bbf08587993b925c440f8a9c594b3fb03078316d03b5a42da012ef6b5e24935"
+    },
+    "tests/fixtures/filter_tier_c/session.bin": {
+      "bytes": 70561,
+      "sha256": "0bbd8c9cec08f3b0041c9c558af96d241a5907d277979e638273bf14a8747cb0"
+    }
+  },
+  "sourceSha256": {
+    "spec/performance/filter-clause-admission-2026-11-07/README.md": "02c2ab58c1031547b73cb9a42a6d70ca7c76ac3dccd4e7a254c417cd7f206c84",
+    "spec/performance/filter-clause-admission-2026-11-07/artifacts-during-build.json": "309798874d6a622fb739cbf5407ca9232b165ce709f7ada6dd46d8a7238b64b6",
+    "spec/performance/filter-clause-admission-2026-11-07/before-artifacts.json": "0eade9c469f9efd30e98b64f9967efef59a429d5e6a3219725899b6fdebe699a",
+    "spec/performance/filter-clause-admission-2026-11-07/current-bindings.json": "592f6277a8d30e772ac223213073a4617129ee56e4aa948f3c2d1ed6aee833d6",
+    "spec/performance/filter-clause-admission-2026-11-07/producer-inputs.json": "2d99e1713dd9b7659ebcde74aabec200eaba0c51575bbca01d2806a8838e375f"
+  },
+  "wasmAbi": 36,
+  "wasmMeasured": {
+    "gzip6": 782197,
+    "node": "v22.23.4",
+    "raw": 1911725,
+    "sha256": "195c592ef30b09a6068e4fcd9259bc76c04b9ce5a7accbc66398d801d8f028c1"
+  }
+}

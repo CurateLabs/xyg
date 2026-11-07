@@ -302,3 +302,12 @@ spec/performance/filter-tier-c-linked-product-2026-11-07/*.txt text eol=lf
 spec/performance/filter-tier-c-linked-product-2026-11-07/*.gz -text
 spec/performance/filter-tier-c-linked-product-2026-11-07/*.png -text
 spec/performance/filter-tier-c-linked-product-2026-11-07/*.py text eol=lf
+
+# Linked clause admission: canonical source and append-only qualification.
+crates/xyg-engine/src/filter_tier_c_linked.rs text eol=lf
+tests/test_filter_tier_c_density.py text eol=lf
+packages/xy-node/test/filter-tier-c-density.test.mjs text eol=lf
+spec/design/filter-tier-c.md text eol=lf
+spec/performance/filter-clause-admission-2026-11-07/*.json text eol=lf
+spec/performance/filter-clause-admission-2026-11-07/README.md text eol=lf
+spec/performance/filter-clause-admission-2026-11-07/*.gz -text

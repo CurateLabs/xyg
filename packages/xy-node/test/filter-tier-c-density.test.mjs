@@ -369,3 +369,48 @@ test("300 mutated linked requests preserve complete native/WASM refusal and publ
     }
   }
 });
+
+test("65th linked clause refuses atomically with complete native/WASM parity", async () => {
+  const {FilterSessionClient} = await import("../src/filter-protocol.js");
+  const {instance} = await WebAssembly.instantiate(fs.readFileSync(new URL("packages/xy-client/dist/xyg-wasm.wasm", root)), {});
+  const x = instance.exports, native = xyFilterSessionNew(64n << 20n), wasm = x.xyg_wasm_instance_new(64 << 20);
+  const columns = {a: [0, 0.5, 1, 2], b: [0, 0.5, 1, 2]};
+  const execute = packet => {
+    const actual = executeFilterPacket(native, packet);
+    assert.equal(x.xyg_wasm_arena_resize(wasm, packet.length), 0);
+    new Uint8Array(x.memory.buffer, x.xyg_wasm_arena_ptr(wasm) >>> 0, packet.length).set(packet);
+    assert.equal(x.xyg_wasm_filter_execute(wasm, 0, packet.length, 2 << 20), 0);
+    const other = new Uint8Array(x.memory.buffer, x.xyg_wasm_output_ptr(wasm) >>> 0, x.xyg_wasm_output_len(wasm)).slice();
+    assert.deepEqual(Buffer.from(actual), Buffer.from(other));
+    return actual;
+  };
+  const session = new FilterSessionClient(execute, () => {xyFilterSessionFree(native); x.xyg_wasm_instance_dispose(wasm);}, columns, {sourceId: 112n});
+  const views = Array.from({length: 33}, (_, i) => ({id: BigInt(i + 1), x: "a", y: "b", width: 2, height: 2, xRange: [0, 3], yRange: [0, 3]}));
+  try {
+    session.initialize(columns);
+    for (const view of views.slice(0, 32)) for (const dimension of ["a", "b"]) {
+      session.configureDensity({id: view.id, dimension, cuts: [0, 1]}, views);
+      session.range(0, 1, {exact: true});
+    }
+    session.configureDensity({id: 33n, dimension: "a", cuts: [0, 1]}, views);
+    const before = session.paint({exact: true});
+    assert.equal(before.selectedCount, 3n);
+    assert.throws(() => session.range(0, 1, {exact: true}), error => {
+      assert.equal(error.status, 2);
+      for (const key of ["revision", "filterHash", "indexBytes", "sourceId", "epoch", "sourceRevision", "activeView", "hasIntent"]) assert.equal(error.reply[key], before[key], key);
+      return true;
+    });
+    const after = session.paint({exact: true});
+    assert.equal(after.filterHash, before.filterHash);
+    assert.deepEqual(after.views, before.views);
+    assert.equal(after.selectedCount, 3n);
+    assert.deepEqual([...session.membership(0n, 4n).membership], [7]);
+    session.beginEdit(); session.cancelEdit();
+    session.configureDensity({id: 1n, dimension: "a", cuts: [0, 1]}, views);
+    assert.equal(session.paint({exact: true}).filterHash, before.filterHash);
+    session.range(0, 0.5, {exact: true});
+    assert.equal(session.paint({exact: true}).selectedCount, 2n);
+    session.clear(); assert.equal(session.paint({exact: true}).selectedCount, 4n);
+    session.range(0, 1, {exact: true}); assert.equal(session.paint({exact: true}).selectedCount, 3n);
+  } finally {session.close();}
+});

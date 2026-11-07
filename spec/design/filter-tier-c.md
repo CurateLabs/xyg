@@ -254,6 +254,11 @@ base or active configuration requires a rebuild and is never a Tier C query
 claim. Partial active cells still refuse by default or execute an explicitly
 recorded full exact scan. Inclusive/reversed/zero-width/signed-zero semantics
 are preserved. At most 64 C clauses and 64 unique base dimensions are admitted.
+The active range counts toward the same 64-clause C limit. A request that would
+add a 65th clause refuses with budget status before index construction or intent
+publication. Previously accepted clauses, index/counts, fingerprint and accepted
+revision remain unchanged; editing and switching to an existing clause remain
+usable. Replacing an existing clause at the limit does not consume another slot.
 
 Opcode 11 paints current intent, optionally with flag 1 to allow exact boundary
 work. A missing index automatically rebuilds. Tier 3 means zero canonical rows
