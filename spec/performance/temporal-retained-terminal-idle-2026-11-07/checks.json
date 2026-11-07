@@ -1,0 +1,219 @@
+{
+  "reviewedParent": "76aee55e9d64b0fd4fee2540c4f97a8b04501a87",
+  "currentBindingsSha256": "9cb674bd4c61a85f93101d8a411a8c1a42c0680409531817ebeb3bfe484c0a6e",
+  "logs": {
+    "before": {
+      "argv": [
+        "node",
+        "scripts/graph_session_controller_wasm_smoke.mjs"
+      ],
+      "environmentOverrides": {
+        "XYG_GRAPH_TEMPORAL_ONLY": "1"
+      },
+      "exitCode": 1,
+      "rawSha256": "6c416fc1f60ebdebd924c50cc18b3efbb84a39a558df458af6ee8c1f06eb654b",
+      "archiveSha256": "4d9361b9cefa5f2db9702140c4e6a7eda853c76ad1e75b15bab587cd97f085e3"
+    },
+    "after": {
+      "argv": [
+        "node",
+        "scripts/graph_session_controller_wasm_smoke.mjs"
+      ],
+      "environmentOverrides": {
+        "XYG_GRAPH_TEMPORAL_ONLY": "1",
+        "XYG_GRAPH_SESSION_REPORT": "target/task-tmp/retained-temporal-terminal/report.json"
+      },
+      "exitCode": 0,
+      "rawSha256": "05a978947707f88732a750b61afaf2751cd13b0f798f429bd4d59e83b2e46672",
+      "archiveSha256": "d74858dd606debb45142cc53041d050082dae863cfb7b2057e3b7a01602035e5"
+    },
+    "build": {
+      "argv": [
+        "node",
+        "js/build.mjs"
+      ],
+      "environmentOverrides": {},
+      "exitCode": 0,
+      "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c"
+    },
+    "foundation": {
+      "argv": [
+        "node",
+        "scripts/wasm_foundation_smoke.mjs"
+      ],
+      "environmentOverrides": {
+        "XYG_WASM_FOUNDATION_REPORT": "target/task-tmp/retained-temporal-terminal/foundation.json"
+      },
+      "exitCode": 0,
+      "rawSha256": "4d940031bec0cf6375b70caf2c3c0902c376da1a0244a01709a78aa8d3509574",
+      "archiveSha256": "eef032c56cb0522e4ba49b9268db4faccd7499b534d630fa5220211ef9bb8834"
+    },
+    "assets": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_wasm_assets.py"
+      ],
+      "environmentOverrides": {},
+      "exitCode": 0,
+      "rawSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+      "archiveSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730"
+    },
+    "inventory": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_release_inventory.py"
+      ],
+      "environmentOverrides": {},
+      "exitCode": 0,
+      "rawSha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c",
+      "archiveSha256": "061e29d38894e10e9f9982462538fadbdf9051697515ec1315b4fc2b4d20e9f2"
+    },
+    "metadata-before-binding": {
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "tests/test_release_inventory.py",
+        "tests/test_graphforge_contract_corpus.py",
+        "-q"
+      ],
+      "environmentOverrides": {},
+      "exitCode": 1,
+      "rawSha256": "f3c21dd85f8a5743557dacfb56ddfa76fdce26b2475eebe30af0a1f29fe52534",
+      "archiveSha256": "feddad07cf47dd3be937d67e040dedb902c4842f8054bc01e21088c4c0149056"
+    },
+    "metadata": {
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "tests/test_release_inventory.py",
+        "tests/test_graphforge_contract_corpus.py",
+        "-q"
+      ],
+      "environmentOverrides": {},
+      "exitCode": 0,
+      "rawSha256": "b5f3d31ae9a348e2cac054f6cae8c730bd2e28e2184fffc3c584ab4ff3eff45a",
+      "archiveSha256": "75685ab3daffbc4d2ba68c59c6d82b6d37f06479541b39b0b5e1364721405120"
+    },
+    "wire": {
+      "argv": [
+        "node",
+        "--test",
+        "packages/xy-node/test/graph-session-wire.test.mjs"
+      ],
+      "environmentOverrides": {},
+      "exitCode": 0,
+      "rawSha256": "2c9684c9ea2d74604e04c2f2c3aee655e8194052fd6745847c6ad121d2677a07",
+      "archiveSha256": "a09071b7fbd20a050355cb701c837b6a365a85121ff978cd62ba33c59e18d5e1"
+    }
+  },
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6127864,
+      "sha256": "09b2571980a8c1d97ac4478fc51b346fb9356d07916bc8b38e84c072b531b895"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1927032,
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 808457,
+      "sha256": "9c973543ab907e6b73509aca82a59a0736e672cd203d1d804b3f39ad29dad3af"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 808486,
+      "sha256": "7e65bfd85d438bcc82bf2507e73c40235fb6b2935d5e21012327a8fe3a325f41"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 56634,
+      "sha256": "cc65e16ea9d59dcee9a339ff7ead857c71c8507771e5cddc24ab2cd090ffd555"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 808457,
+      "sha256": "9c973543ab907e6b73509aca82a59a0736e672cd203d1d804b3f39ad29dad3af"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 808486,
+      "sha256": "7e65bfd85d438bcc82bf2507e73c40235fb6b2935d5e21012327a8fe3a325f41"
+    }
+  },
+  "captures": {
+    "report.json.initial.png": {
+      "sha256": "a03d81a62746e81bbc035d278d5ebc73be03be673f7fee0a4e3a9ca31fa0eceb",
+      "bytes": 44231
+    },
+    "report.json.wire.json": {
+      "rawSha256": "b19518592340315fc9035e77076600a40b5746b13b2b0a88553e77b8210b6822",
+      "archiveSha256": "bc5540a36c398977df4253bd01616650ffe5a0c8534cac13bb4a75a6e787340f",
+      "bytes": 2230983
+    },
+    "foundation.json.esm-missing-inline-artifact.png": {
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+      "bytes": 11369
+    },
+    "foundation.json.iife-malformed-inline-artifact.png": {
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+      "bytes": 11369
+    },
+    "foundation.json.iife-missing-inline-artifact.png": {
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+      "bytes": 11369
+    },
+    "report.json": {
+      "rawSha256": "3e5df3b1d468e8fa10f50582d7dc2f9387319dbba4a4e58e2d133bb2b1385505",
+      "archiveSha256": "61dfb0def8250aaf6912da28248fb1e4b784a1baf3701385d82a34cefc19c29d",
+      "bytes": 98738
+    },
+    "foundation.json.iife-missing-retained-source.png": {
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66",
+      "bytes": 11315
+    },
+    "foundation.json.esm-missing-retained-source.png": {
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66",
+      "bytes": 11315
+    },
+    "foundation.json.retained-temporal.json.initial.png": {
+      "sha256": "a03d81a62746e81bbc035d278d5ebc73be03be673f7fee0a4e3a9ca31fa0eceb",
+      "bytes": 44231
+    },
+    "foundation.json.retained-temporal.json": {
+      "rawSha256": "447bcb40310e2b7b42e7eb9536c022e4e9de033d260e7a910630504707da7e30",
+      "archiveSha256": "fdff447ba335c6d19674661790c9078cba4a7bb79247ca071099ab9119d11f6f",
+      "bytes": 98739
+    },
+    "foundation.json.retained-temporal.json.wire.json": {
+      "rawSha256": "4ebaaca7968a7bedc3d8b29ab8b03a9ca60422a7f67c386eee252d4cbe21dfaf",
+      "archiveSha256": "b3ebc84e9eb493d5937d5a247045e882f8e8e16e056b9f9da3077f1b3e7fd296",
+      "bytes": 2368557
+    },
+    "foundation.json.retained-temporal.json.boundary.png": {
+      "sha256": "e47464cd85a30210f9cbe6ec12af0aee391c3aa8ec4c01afdc2b814b823a7d6d",
+      "bytes": 44546
+    },
+    "report.json.boundary.png": {
+      "sha256": "e47464cd85a30210f9cbe6ec12af0aee391c3aa8ec4c01afdc2b814b823a7d6d",
+      "bytes": 44546
+    },
+    "foundation.json": {
+      "rawSha256": "3a923105c7f591356602afd85361fa0dbc0ac2a969cc2552b1b3e5c7b61d186f",
+      "archiveSha256": "33106f79e4b3b429607ded78fee41849801bce16448b785c7498d4a422040883",
+      "bytes": 25639
+    },
+    "foundation.json.esm-malformed-inline-artifact.png": {
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+      "bytes": 11369
+    }
+  },
+  "environment": {
+    "node": "v22.23.4",
+    "testPython": "3.12.15",
+    "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "XYG_NATIVE_LIB": "target/release/libxyg_core.so"
+  }
+}

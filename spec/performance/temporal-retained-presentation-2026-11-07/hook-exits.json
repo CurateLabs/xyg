@@ -1,0 +1,35 @@
+[
+  {
+    "command": [
+      "uv",
+      "run",
+      "--with",
+      "pre-commit",
+      "pre-commit",
+      "run",
+      "--all-files"
+    ],
+    "exitCode": 0
+  },
+  {
+    "command": [
+      "uv",
+      "run",
+      "ruff",
+      "check",
+      "."
+    ],
+    "exitCode": 0
+  },
+  {
+    "command": [
+      "uv",
+      "run",
+      "ruff",
+      "format",
+      "--check",
+      "."
+    ],
+    "exitCode": 0
+  }
+]

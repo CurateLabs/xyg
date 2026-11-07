@@ -1,0 +1,8 @@
+Using CPython 3.12.15
+Creating virtual environment at: .venv
+   Building xyg @ file:///home/ubuntu/.t3/worktrees/xyg/t3-226571f1
+      Built xyg @ file:///home/ubuntu/.t3/worktrees/xyg/t3-226571f1
+Installed 42 packages in 780ms
+ruff check...............................................................Passed
+ruff format..............................................................Passed
+docs app codespell.......................................................Passed

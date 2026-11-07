@@ -220,6 +220,13 @@ cannot delay temporal commands; failures from `onError` are also contained.
 The first automatic geographic consumer is specified in
 [geo-retained-hosts.md](geo-retained-hosts.md#automatic-browser-temporal-binding-50-partial).
 
+
+Retained graph consumers may now pass this controller to the `temporal` option
+of `attachWasmGraphSession`. Initial and received snapshots automatically drive
+Rust membership and the same retained paint/pick/layout path. The view subscribes
+without owning the controller; disposing the controller closes the view, while
+disposing the view only unsubscribes. See [temporal graph presentation](temporal-graph.md#retained-automatic-presentation-bounded-45-slice).
+
 ## Native state observers
 
 Python `TemporalController.subscribe_state(callback)` and Node

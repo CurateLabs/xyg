@@ -1,0 +1,156 @@
+{
+  "description": "Account survives a revocation and reassertion of a customer relationship; validity and transaction history are conjunctive and half-open.",
+  "nodes": [
+    1,
+    2,
+    3
+  ],
+  "edges": [
+    11,
+    12
+  ],
+  "sources": [
+    1,
+    1
+  ],
+  "targets": [
+    2,
+    3
+  ],
+  "nodeValidFrom": [
+    0,
+    10,
+    20
+  ],
+  "nodeValidTo": [
+    40,
+    20,
+    40
+  ],
+  "edgeValidFrom": [
+    10,
+    20
+  ],
+  "edgeValidTo": [
+    20,
+    40
+  ],
+  "edgeEventAt": [
+    10,
+    20
+  ],
+  "frames": [
+    {
+      "cursor": 9,
+      "range": [
+        0,
+        40
+      ],
+      "nodes": [
+        1,
+        0,
+        0
+      ],
+      "edges": [
+        0,
+        0
+      ]
+    },
+    {
+      "cursor": 10,
+      "range": [
+        0,
+        40
+      ],
+      "nodes": [
+        1,
+        1,
+        0
+      ],
+      "edges": [
+        1,
+        0
+      ]
+    },
+    {
+      "cursor": 19,
+      "range": [
+        0,
+        40
+      ],
+      "nodes": [
+        1,
+        1,
+        0
+      ],
+      "edges": [
+        1,
+        0
+      ]
+    },
+    {
+      "cursor": 20,
+      "range": [
+        0,
+        40
+      ],
+      "nodes": [
+        1,
+        0,
+        1
+      ],
+      "edges": [
+        0,
+        1
+      ]
+    },
+    {
+      "cursor": 19,
+      "range": [
+        10,
+        20
+      ],
+      "nodes": [
+        1,
+        1,
+        0
+      ],
+      "edges": [
+        1,
+        0
+      ]
+    },
+    {
+      "cursor": 20,
+      "range": [
+        20,
+        40
+      ],
+      "nodes": [
+        1,
+        0,
+        1
+      ],
+      "edges": [
+        0,
+        1
+      ]
+    },
+    {
+      "cursor": 39,
+      "range": [
+        0,
+        40
+      ],
+      "nodes": [
+        1,
+        0,
+        1
+      ],
+      "edges": [
+        0,
+        1
+      ]
+    }
+  ]
+}

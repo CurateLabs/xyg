@@ -9,7 +9,7 @@ import { extname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 const root = fileURLToPath(new URL("..", import.meta.url));
-const allowed = p => p === "/old-same-abi.wasm" || p === "/packages/xy-node/src/graphforge-container.js" || p === "/tests/browser/graph_session_controller_page.mjs" || p === "/tests/fixtures/graphforge/session_companion_nodes.arrow" || /^\/tests\/fixtures\/graphforge\/results\/[a-z_-]+\.arrow$/.test(p) || ["/packages/xy-client/dist/index.js", "/packages/xy-client/dist/wasm-worker.js", "/packages/xy-client/dist/xyg-wasm.wasm"].includes(p);
+const allowed = p => p === "/old-same-abi.wasm" || p === "/tests/fixtures/temporal/assertion-history.json" || p === "/packages/xy-node/src/graphforge-container.js" || p === "/tests/browser/graph_session_controller_page.mjs" || p === "/tests/fixtures/graphforge/session_companion_nodes.arrow" || /^\/tests\/fixtures\/graphforge\/results\/[a-z_-]+\.arrow$/.test(p) || ["/packages/xy-client/dist/index.js", "/packages/xy-client/dist/wasm-worker.js", "/packages/xy-client/dist/xyg-wasm.wasm"].includes(p);
 const csp = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; style-src 'unsafe-inline'; object-src 'none'; base-uri 'none'";
 const requests = [], violations = [], errors = [];
 const server = createServer(async (req, res) => {
@@ -45,7 +45,160 @@ try {
       return { ok: true, point, after, delivery: "Playwright mouse.click" };
     });
   }
-  if (process.env.XYG_GRAPH_SCHEDULING_ONLY) {
+  if (process.env.XYG_GRAPH_TEMPORAL_ONLY) {
+    await page.evaluate(()=>window.__graphSession.temporalFixture());
+    const snap=()=>page.evaluate(()=>window.__graphSession.retainedTime.handle.snapshot());
+    const pixels=()=>page.evaluate(()=>{const s=window.__graphSession,p=s.retainedTime,b=s.pixel(p.el);return {at2:b.slice((165*640+300)*4,(165*640+300)*4+4),at3:b.slice((165*640+500)*4,(165*640+500)*4+4),nonzero:b.filter((v,i)=>i%4===3&&v>0).length};});
+    const click=async(x,y,modifiers=[])=>{const box=await page.locator('[data-temporal-fixture] canvas').boundingBox();await page.mouse.click(box.x+x,box.y+y,{modifiers});await page.evaluate(()=>window.__graphSession.waitIdle(window.__graphSession.retainedTime.el));};
+    await run('retained-temporal-initial-pixels-and-canonical-membership',async()=>{
+      const result=await snap(), image=await pixels();
+      assert.deepEqual(Array.from(result.temporal.nodeVisibility),[1,1,0]);assert.deepEqual(Array.from(result.temporal.edgeVisibility),[1,0]);assert.ok(image.at2[3]>0);assert.equal(image.at3[3],0);
+      if(process.env.XYG_GRAPH_SESSION_REPORT)await page.locator('[data-temporal-fixture]').screenshot({path:process.env.XYG_GRAPH_SESSION_REPORT+'.initial.png'});
+      const initialOrder=await page.evaluate(()=>{const s=window.__graphSession,p=s.retainedTime;return s.temporalWire.filter(r=>r.kind==='request'&&r.owner===p.worker.worker.__graphOwner).map(r=>r.type);});
+      assert.deepEqual(initialOrder,['graph.session.open','graph.session.temporal-create','graph.session.temporal-frame','graph.session.interact','graph.session.render']);
+      return {result,image,initialOrder};
+    });
+    await run('retained-temporal-native-pick-focus-select-pin',async()=>{
+      await click(300,160);
+      assert.equal((await snap()).selection.refs[0].uuid,'02020202-0202-0202-0202-020202020202');
+      await page.locator('[data-temporal-fixture] [role=application]').focus();
+      for(let i=0;i<3;i++) {if((await snap()).focus[0]?.uuid==='02020202-0202-0202-0202-020202020202')break;await page.keyboard.press('ArrowRight');await page.evaluate(()=>window.__graphSession.waitIdle(window.__graphSession.retainedTime.el));}
+      await page.evaluate(()=>window.__graphSession.retainedTime.handle.pinFocused(true));
+      const result=await snap();assert.equal(result.focusAction.pinned,true);assert.equal(result.focus[0].uuid,'02020202-0202-0202-0202-020202020202');return result;
+    });
+    await run('retained-temporal-half-open-history-pixels-and-UUID-retention',async()=>{
+      const results=[];
+      const frames=await page.evaluate(()=>window.__graphSession.retainedTime.history.frames);
+      frames.push({cursor:10,range:[0,40],nodes:[1,1,0],edges:[1,0]});
+      for(const expected of frames) {
+        const cursor=BigInt(expected.cursor);
+        await page.evaluate(async ({cursor,expected})=>{const p=window.__graphSession.retainedTime;await p.controller.setCursor(cursor);await p.controller.setRange(...expected.range.map(BigInt));await p.handle.whenIdle();},{cursor,expected});
+        const result=await snap(),image=await pixels();results.push({result,image});
+        assert.equal(result.selection.refs[0].uuid,'02020202-0202-0202-0202-020202020202');
+        assert.deepEqual(Array.from(result.temporal.nodeVisibility),expected.nodes);
+        assert.deepEqual(Array.from(result.temporal.edgeVisibility),expected.edges);
+        assert.deepEqual(result.temporal.range,expected.range.map(BigInt));
+        const renderMembers=await page.evaluate(()=>{const s=window.__graphSession,p=s.retainedTime,r=s.replies.filter(r=>r.owner===p.worker.worker.__graphOwner).at(-1);const get=name=>{const b=s.section(r.bytes,name),v=new DataView(b.buffer,b.byteOffset,b.byteLength);return Array.from({length:b.byteLength/8},(_,i)=>v.getBigUint64(i*8,true));};return {nodes:get('render.node_members.u64'),edges:get('render.edge_members.u64')};});
+        assert.deepEqual(renderMembers.nodes,expected.nodes.flatMap((v,i)=>v?[BigInt(i)]:[]));assert.deepEqual(renderMembers.edges,expected.edges.flatMap((v,i)=>v?[BigInt(i)]:[]));
+        results.at(-1).renderMembers=renderMembers;
+        if(expected.nodes[2]){assert.equal(image.at2[3],0);assert.ok(image.at3[3]>0);if(process.env.XYG_GRAPH_SESSION_REPORT)await page.locator('[data-temporal-fixture]').screenshot({path:process.env.XYG_GRAPH_SESSION_REPORT+'.boundary.png'});}
+        else if(expected.nodes[1]) {assert.ok(image.at2[3]>0);assert.equal(result.focusAction.pinned,true);assert.equal(result.focus[0].uuid,'02020202-0202-0202-0202-020202020202');}
+      }
+      return results;
+    });
+    await run('retained-temporal-step-play-pause-and-remote-snapshot',async()=>{
+      await page.evaluate(async()=>{const p=window.__graphSession.retainedTime;await p.controller.setCursor(19n);await p.controller.step();await p.controller.play();await p.controller.pause();await p.handle.whenIdle();});
+      let result=await snap();assert.equal(result.temporal.cursor,await page.evaluate(()=>window.__graphSession.retainedTime.controller.state.cursor));
+      await page.evaluate(async()=>{const p=window.__graphSession.retainedTime;await p.controller.applyEvent({groupId:951n,sourceInstance:952n,revision:1n,rangeStart:0n,rangeEnd:40n,cursor:10n,window:40n,selection:[]});await p.handle.whenIdle();});
+      result=await snap();assert.equal(result.temporal.cursor,10n);assert.equal(result.focusAction.pinned,true);return result;
+    });
+    await run('retained-temporal-refused-frame-keeps-picture-state-and-retries',async()=>{
+      const before=await snap(), beforePixels=await page.evaluate(()=>window.__graphSession.pixel(window.__graphSession.retainedTime.el));
+      // Actual Rust budget refusal, no fake reply. The test changes only the
+      // submitted budget field of this one command, retaining original bytes.
+      await page.evaluate(()=>{window.__graphSession.inject='temporal-budget';});
+      await page.evaluate(async()=>{const p=window.__graphSession.retainedTime;await p.controller.setCursor(20n);await p.handle.whenIdle();});
+      assert.deepEqual(await snap(),before);assert.deepEqual(await page.evaluate(()=>window.__graphSession.pixel(window.__graphSession.retainedTime.el)),beforePixels);
+      await page.evaluate(async()=>{const p=window.__graphSession.retainedTime;await p.controller.pause();await p.handle.whenIdle();});
+      const result=await snap();assert.equal(result.temporal.cursor,20n);assert.deepEqual(result.selection.refs,before.selection.refs);return result;
+    });
+    await run('retained-temporal-render-refusal-retains-picture-and-refreshes-matching-membership',async()=>{
+      const before=await snap(),beforePixels=await page.evaluate(()=>window.__graphSession.pixel(window.__graphSession.retainedTime.el));
+      await page.evaluate(async()=>{const s=window.__graphSession,p=s.retainedTime;s.inject='temporal-render-invalid';await p.controller.setCursor(10n);await p.handle.whenIdle();});
+      assert.deepEqual(await snap(),before);assert.deepEqual(await page.evaluate(()=>window.__graphSession.pixel(window.__graphSession.retainedTime.el)),beforePixels);
+      await page.evaluate(()=>window.__graphSession.retainedTime.handle.refreshRender());
+      const refreshed=await snap();assert.equal(refreshed.temporal.cursor,10n);assert.deepEqual(Array.from(refreshed.temporal.nodeVisibility),[1,1,0]);assert.equal(refreshed.focusAction.pinned,true);
+      await page.evaluate(async()=>{const p=window.__graphSession.retainedTime;await p.controller.setCursor(20n);await p.handle.whenIdle();});return {before,refreshed};
+    });
+    await run('retained-temporal-hidden-node-native-pick-does-not-select-hidden-UUID',async()=>{
+      await page.keyboard.down('Control');await click(300,165);await page.keyboard.up('Control');
+      const result=await snap();assert.deepEqual(result.selection.refs.map(r=>r.uuid),['02020202-0202-0202-0202-020202020202']);
+      const pick=await page.evaluate(()=>{const s=window.__graphSession,p=s.retainedTime,r=s.replies.filter(r=>r.owner===p.worker.worker.__graphOwner).at(-1),b=s.section(r.bytes,'pick.header.u32'),v=new DataView(b.buffer,b.byteOffset,b.byteLength);return Array.from({length:b.length/4},(_,i)=>v.getUint32(i*4,true));});assert.equal(pick[4],0);return {result,pick};
+    });
+    await run('retained-temporal-latest-wins-held-reply-and-disposal',async()=>{
+      await page.evaluate(async()=>{const s=window.__graphSession,p=s.retainedTime;s.hold=true;await p.controller.setCursor(19n);});
+      await page.waitForFunction(()=>window.__graphSession.held.length>0);
+      const before=await snap();
+      await page.evaluate(async()=>{const s=window.__graphSession,p=s.retainedTime;p.mark=p.publications.length;const count=s.commands.length;await Promise.all([p.controller.setCursor(10n),p.controller.setCursor(20n)]);if(count!==s.commands.length)throw Error('temporal queue flooded held lane');s.release();await p.handle.whenIdle();});
+      const latest=await snap();assert.equal(latest.temporal.cursor,20n);
+      const tail=await page.evaluate(()=>{const p=window.__graphSession.retainedTime;return p.publications.slice(p.mark).map(x=>x.temporal.cursor);});assert.deepEqual(tail,[20n]);
+      await page.evaluate(async()=>{const s=window.__graphSession,p=s.retainedTime;s.hold=true;await p.controller.setCursor(10n);});
+      await page.waitForFunction(()=>window.__graphSession.held.length>0);
+      const closed=await page.evaluate(async()=>{const s=window.__graphSession,p=s.retainedTime,n=p.publications.length;const closing=p.handle.dispose();s.release();await closing;await p.controller.setCursor(20n);await p.controller.dispose();await p.clockWorker.dispose();await p.worker.dispose();return {sameSource:p.document.every((v,i)=>v===p.original[i]),noLate:n===p.publications.length,empty:p.el.children.length===0,failures:p.failures,opens:s.commands.filter(c=>c.owner===p.worker.worker.__graphOwner&&c.operation===19).length,updates:s.commands.filter(c=>c.owner===p.worker.worker.__graphOwner&&c.operation===20).length};});
+      assert.ok(closed.sameSource&&closed.noLate&&closed.empty);assert.equal(closed.failures.length,2);assert.equal(closed.opens,1);assert.equal(closed.updates,0);return {before,latest,tail,closed};
+    });
+    await run('retained-temporal-progressive-checkpoint-supersession-and-drain',async()=>{
+      await page.evaluate(async()=>{const s=window.__graphSession;await s.temporalFixture(true);s.hold=true;});
+      await page.waitForFunction(()=>window.__graphSession.held.length>0);
+      await page.evaluate(async()=>{const s=window.__graphSession,p=s.retainedTime;p.mark=p.publications.length;await p.controller.setCursor(20n);p.idle=p.handle.whenIdle();s.release();await p.idle;});
+      const result=await page.evaluate(async()=>{const s=window.__graphSession,p=s.retainedTime,r={snapshot:p.handle.snapshot(),tail:p.publications.slice(p.mark).map(x=>x.temporal.cursor),operations:s.commands.filter(c=>c.owner===p.worker.worker.__graphOwner).map(c=>c.operation),failures:p.failures};await p.controller.dispose();await p.handle.dispose();await p.clockWorker.dispose();await p.worker.dispose();return r;});
+      assert.equal(result.snapshot.temporal.cursor,20n);assert.deepEqual(Array.from(result.snapshot.temporal.nodeVisibility),[1,0,1]);assert.ok(result.tail.length>0&&result.tail.every(x=>x===20n));assert.ok(result.operations.includes(15));assert.deepEqual(result.failures,[]);return result;
+    });
+    for (const pending of [false,true]) for (const fault of ['error','messageerror']) {
+      await run(`retained-temporal-${pending?'superseded':'idle'}-worker-${fault}-preserves-first-cause`,async()=>{
+        await page.evaluate(async pending=>{
+          const s=window.__graphSession;await s.temporalFixture(false);
+          if(pending){s.hold=true;await s.retainedTime.controller.setCursor(20n);}
+        },pending);
+        if(pending) await page.waitForFunction(()=>window.__graphSession.held.length>0);
+        const result=await page.evaluate(async ({pending,fault})=>{
+          const s=window.__graphSession,p=s.retainedTime;
+          if(pending) await p.controller.setCursor(30n);
+          const before=p.handle.snapshot(), mark=p.publications.length;
+          const expected=fault==='error'?'XYG_WASM_WORKER_TRAP':'XYG_WASM_MESSAGE_ERROR';
+          if(fault==='error') p.worker.worker.onerror({message:'first idle-or-superseded trap'});
+          else p.worker.worker.onmessageerror({});
+          const settle=()=>Promise.race([
+            p.handle.whenIdle().then(()=>({resolved:true}),e=>({code:e.code,message:e.message})),
+            new Promise(r=>setTimeout(()=>r({hung:true}),2000))
+          ]);
+          const first=await settle();
+          // A later lifetime signal must never replace the accepted first cause.
+          p.worker.worker.onerror({message:'later replacement cause'});
+          const second=await settle(), count=s.commands.length;
+          await p.controller.setCursor(40n);s.release();await new Promise(r=>setTimeout(r,0));
+          const graphCommands=s.commands.slice(count).filter(c=>c.owner===p.worker.worker.__graphOwner).length;
+          const after=p.handle.snapshot(), newPublications=p.publications.length-mark;
+          const failures=p.failures.slice();
+          await p.handle.dispose();await p.controller.dispose();await p.clockWorker.dispose();await p.worker.dispose();
+          return {expected,first,second,graphCommands,newPublications,beforeRevision:before.revision,afterRevision:after.revision,failures};
+        },{pending,fault});
+        assert.equal(result.first.hung,undefined,'Worker lifetime failure must settle idle without another command');
+        assert.equal(result.first.code,result.expected,'first Worker cause must survive supersession');
+        assert.deepEqual(result.second,result.first,'later errors must preserve the first cause');
+        if(fault==='error')assert.equal(result.first.message,'first idle-or-superseded trap');
+        assert.equal(result.graphCommands,0);assert.equal(result.newPublications,0);
+        assert.equal(result.afterRevision,result.beforeRevision);
+        return result;
+      });
+    }
+    await run('retained-temporal-worker-failure-settles-pending-idle',async()=>{
+      await page.evaluate(async()=>{const s=window.__graphSession;await s.temporalFixture(false);s.hold=true;const p=s.retainedTime;p.refresh=p.handle.refreshRender().catch(e=>e.code);});
+      await page.waitForFunction(()=>window.__graphSession.held.length>0);
+      const result=await page.evaluate(async()=>{
+        const s=window.__graphSession,p=s.retainedTime;
+        await p.controller.setCursor(20n);
+        const idle=p.handle.whenIdle().then(()=>({resolved:true}),e=>({code:e.code}));
+        p.worker.worker.onerror({message:'injected terminal Worker failure'});
+        const refreshCode=await p.refresh;
+        const settled=await Promise.race([idle,new Promise(r=>setTimeout(()=>r({hung:true}),2000))]);
+        const mark=s.commands.length;
+        await p.controller.setCursor(30n);s.release();await new Promise(r=>setTimeout(r,0));
+        const graphCommands=s.commands.slice(mark).filter(c=>c.owner===p.worker.worker.__graphOwner).length;
+        await p.handle.dispose();await p.controller.dispose();await p.clockWorker.dispose();await p.worker.dispose();
+        return {settled,refreshCode,graphCommands};
+      });
+      assert.equal(result.settled.hung,undefined,'terminal failure must settle pre-existing idle waiters');
+      assert.equal(result.settled.code,result.refreshCode);
+      assert.match(result.settled.code,/^XYG_WASM_/);
+      assert.equal(result.graphCommands,0,'terminal attachments must ignore further time notifications');
+      return result;
+    });
+    assert.deepEqual(violations,[]);assert.deepEqual(errors,[]);
+    if(process.env.XYG_GRAPH_SESSION_REPORT){await writeFile(process.env.XYG_GRAPH_SESSION_REPORT+'.wire.json',JSON.stringify(await page.evaluate(()=>window.__graphSession.temporalWire),null,2)+'\n');await writeFile(process.env.XYG_GRAPH_SESSION_REPORT,JSON.stringify({...evidence,status:'passed',requests,cspViolations:violations,pageErrors:errors},(_,v)=>typeof v==='bigint'?v.toString():v,2)+'\n');
+    }
+    console.log('PASS public retained temporal presentation');
+  } else if (process.env.XYG_GRAPH_SCHEDULING_ONLY) {
     await run('public-resource-refusals-unchanged-arenas',async()=>{
       const result=await page.evaluate(async()=>{
         const s=window.__graphSession,out=[];

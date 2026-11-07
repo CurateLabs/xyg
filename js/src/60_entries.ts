@@ -367,7 +367,7 @@ export type {
   XygTemporalState,
 } from "./49_wasm_temporal";
 export type { XygWasmCoseOptions, XygWasmGraphCheckpoint, XygWasmGraphRequest } from "./49_wasm_graph";
-export type { XygTemporalPlane, XygWasmTemporalGraphBinding, XygWasmTemporalGraphFrame } from "./49_wasm_temporal_graph";
+export type { XygTemporalPlane, XygWasmTemporalGraphBinding, XygWasmTemporalGraphFrame, XygTemporalGraphControllerBinding } from "./49_wasm_temporal_graph";
 export type { XygWasmSemanticGraphInput } from "./49_wasm_semantic_graph";
 export type { XygCompoundAction, XygWasmCompoundTransitionInput, XygWasmCompoundTransitionResult } from "./49_wasm_compound";
 export type { XygGraphForgeInput, XygGraphForgeLayerInput, XygGraphForgeIdentity, XygGraphForgeIntent, XygWasmGraphForgeView } from "./49_wasm_graphforge";

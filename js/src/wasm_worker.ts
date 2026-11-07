@@ -1205,12 +1205,13 @@ function runGraphSession(message: any) {
   const operation = message.type.slice("graph.session.".length);
   if (!Number.isSafeInteger(message.lifetime) || message.lifetime <= 0 || retainedGeoMode
       || (graphSessionLifetime !== null && graphSessionLifetime !== message.lifetime)
-      || !["open", "update", "render", "interact", "close"].includes(operation)
+      || !["open", "update", "render", "interact", "close", "temporal-create", "temporal-frame"].includes(operation)
       || (graphSessionLifetime === null && operation !== "open")) {
     error(message.requestId, "GF_INTERACTION_INVALID", "Invalid retained graph ownership", -3); return;
   }
   if (!admitOperationSequence(message)) return;
   try {
+    const temporal = operation === "temporal-create" || operation === "temporal-frame";
     let status: number;
     if (operation === "close") status = exports.xyg_wasm_graphforge_session_close(handle);
     else {
@@ -1220,6 +1221,12 @@ function runGraphSession(message: any) {
       if (operation === "open" && (queued.size || activeCompile || activeGraph || activeAggregate || activeAggregateStream || activeTick || tickQueue.length)) {
         error(message.requestId, "GF_INTERACTION_INVALID", "Graph attachment requires a drained Worker", -3); return;
       }
+      if (temporal) {
+        const v = new DataView(message.request);
+        if (v.getUint32(0, true) !== 0x47545958 || v.getUint32(12, true) !== (operation === "temporal-create" ? 1 : 2)) {
+          error(message.requestId, "GF_INTERACTION_INVALID", "Invalid named temporal operation", -3); return;
+        }
+      }
       const staging = exports.xyg_wasm_arena_resize(handle, message.request.byteLength);
       if (staging !== XYG_WASM_STATUS.OK) {
         rustError(message.requestId, "GF_INTERACTION_BUDGET", readXygWasmError(exports, handle), -4); return;
@@ -1227,11 +1234,16 @@ function runGraphSession(message: any) {
       const ptr = exports.xyg_wasm_arena_ptr(handle) >>> 0;
       if (!ptr || ptr + message.request.byteLength > exports.memory.buffer.byteLength) throw new Error("Invalid graph staging range");
       new Uint8Array(exports.memory.buffer, ptr, message.request.byteLength).set(new Uint8Array(message.request));
-      const execute = operation === "open" ? exports.xyg_wasm_graphforge_session_open
+      const execute = temporal ? exports.xyg_wasm_temporal_graph_execute
+        : operation === "open" ? exports.xyg_wasm_graphforge_session_open
         : operation === "update" ? exports.xyg_wasm_graphforge_session_update
         : operation === "render" ? exports.xyg_wasm_graphforge_session_render
         : exports.xyg_wasm_graphforge_session_interact;
       status = execute(handle, 0, message.request.byteLength);
+    }
+    if (temporal && status !== XYG_WASM_STATUS.OK) {
+      const code = status === XYG_WASM_STATUS.RESOURCE_LIMIT ? "BUDGET" : status === XYG_WASM_STATUS.STALE_REVISION ? "STALE" : "INVALID";
+      rustError(message.requestId, `GF_INTERACTION_${code}`, readXygWasmError(exports, handle), code === "BUDGET" ? -4 : code === "STALE" ? -1 : -3); return;
     }
     if (status !== 0) {
       rustError(message.requestId, `GF_INTERACTION_${GRAPH_SESSION_STATUS[-status] ?? "INVALID"}`, readXygWasmError(exports, handle), status); return;
@@ -1240,8 +1252,8 @@ function runGraphSession(message: any) {
     let bytes = new ArrayBuffer(0);
     if (operation !== "close") {
       const ptr = exports.xyg_wasm_output_ptr(handle) >>> 0, length = exports.xyg_wasm_output_len(handle) >>> 0;
-      if (!ptr || length < 32 || length > operationBudgetBytes || ptr + length > exports.memory.buffer.byteLength) throw new Error("Invalid complete XYGR range");
-      bytes = new Uint8Array(exports.memory.buffer, ptr, length).slice().buffer;
+      if ((length !== 0 || operation !== "temporal-create") && (!ptr || length < (temporal ? 64 : 32) || length > operationBudgetBytes || ptr + length > exports.memory.buffer.byteLength)) throw new Error("Invalid complete retained graph output range");
+      bytes = length === 0 ? new ArrayBuffer(0) : new Uint8Array(exports.memory.buffer, ptr, length).slice().buffer;
     }
     graphSessionLifetime = operation === "close" ? null : message.lifetime;
     reply(message.requestId, { bytes, sequence: message.sequence, lifetime: message.lifetime }, [bytes]);
