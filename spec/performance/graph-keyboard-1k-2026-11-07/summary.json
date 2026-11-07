@@ -1,0 +1,151 @@
+{
+  "source": "ci-qualified.json.keyboard.json.gz",
+  "actions": [
+    {
+      "action": "focus",
+      "ordinal": 9,
+      "steps": "65",
+      "done": false,
+      "trusted": true,
+      "prevented": true,
+      "commandsBefore": 10,
+      "commandsAtKey": 11,
+      "outcome": {
+        "stateChanged": true,
+        "selected": 0,
+        "disclosurePresent": false
+      },
+      "nativeState": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "focusPixelsNearNativeCenter": 61
+    },
+    {
+      "action": "replace",
+      "ordinal": 15,
+      "steps": "105",
+      "done": false,
+      "trusted": true,
+      "prevented": true,
+      "commandsBefore": 16,
+      "commandsAtKey": 17,
+      "outcome": {
+        "stateChanged": true,
+        "selected": 1,
+        "disclosurePresent": false
+      },
+      "nativeState": [
+        5,
+        1,
+        2,
+        0
+      ],
+      "focusPixelsNearNativeCenter": 61
+    },
+    {
+      "action": "toggle",
+      "ordinal": 61,
+      "steps": "458",
+      "done": true,
+      "trusted": true,
+      "prevented": true,
+      "commandsBefore": 62,
+      "commandsAtKey": 63,
+      "outcome": {
+        "stateChanged": true,
+        "selected": 0,
+        "disclosurePresent": false
+      },
+      "nativeState": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "focusPixelsNearNativeCenter": 59
+    },
+    {
+      "action": "replace",
+      "ordinal": 62,
+      "steps": "458",
+      "done": true,
+      "trusted": true,
+      "prevented": true,
+      "commandsBefore": 63,
+      "commandsAtKey": 64,
+      "outcome": {
+        "stateChanged": true,
+        "selected": 1,
+        "disclosurePresent": false
+      },
+      "nativeState": [
+        5,
+        1,
+        2,
+        0
+      ],
+      "focusPixelsNearNativeCenter": 59
+    },
+    {
+      "action": "clear",
+      "ordinal": 63,
+      "steps": "458",
+      "done": true,
+      "trusted": true,
+      "prevented": true,
+      "commandsBefore": 64,
+      "commandsAtKey": 65,
+      "outcome": {
+        "stateChanged": true,
+        "selected": 0,
+        "disclosurePresent": false
+      },
+      "nativeState": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "focusPixelsNearNativeCenter": 59
+    },
+    {
+      "action": "empty",
+      "ordinal": 64,
+      "steps": "458",
+      "done": true,
+      "trusted": true,
+      "prevented": false,
+      "commandsBefore": 65,
+      "commandsAtKey": 66,
+      "outcome": {
+        "stateChanged": false,
+        "selected": 0,
+        "disclosurePresent": false
+      },
+      "nativeState": [
+        0,
+        1,
+        0,
+        0
+      ],
+      "focusPixelsNearNativeCenter": 59
+    }
+  ],
+  "views": [
+    {
+      "id": "7202",
+      "publications": 59,
+      "commands": 60,
+      "finalSteps": "458"
+    },
+    {
+      "id": "7201",
+      "publications": 65,
+      "commands": 66,
+      "finalSteps": "458"
+    }
+  ]
+}

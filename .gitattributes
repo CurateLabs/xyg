@@ -551,3 +551,13 @@ spec/design/graphforge-node-scheduling.md text eol=lf
 spec/performance/force-worker-startup-cancellation-2026-11-07/*.json text eol=lf
 spec/performance/force-worker-startup-cancellation-2026-11-07/README.md text eol=lf
 spec/performance/force-worker-startup-cancellation-2026-11-07/*.gz -text
+
+# Trusted bounded public graph keyboard proof.
+scripts/graph_progressive_keyboard_case.mjs text eol=lf
+scripts/verify_graph_progressive_keyboard.mjs text eol=lf
+js/test/graph-progressive-keyboard.test.mjs text eol=lf
+js/test/fixtures/graph-progressive-keyboard.json text eol=lf
+spec/performance/graph-keyboard-1k-2026-11-07/*.json text eol=lf
+spec/performance/graph-keyboard-1k-2026-11-07/*.md text eol=lf
+spec/performance/graph-keyboard-1k-2026-11-07/*.gz -text
+spec/performance/graph-keyboard-1k-2026-11-07/*.png -text

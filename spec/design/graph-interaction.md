@@ -1460,3 +1460,20 @@ Its new browser harness qualifies a 10k primary with a 1k peer at explicit
 completion remains unqualified at the unchanged wall limit. The receipt records
 historical failures, exact full-reply native/WASM replay, memory scope and remaining
 ladder/host acceptance; this does not close #35/#36/#1015 or M4.
+
+The [bounded 1k keyboard receipt](../performance/graph-keyboard-1k-2026-11-07/README.md)
+adds a separate third normal-foundation scheduling case, with public instances
+7201/7202 and explicit 384 MiB arenas. Real Tab navigation reaches the primary
+application; trusted ArrowRight focus and Enter Replace select the exact first
+authored node while retained layout is unfinished. Every intervening accepted
+render/focus/select publication preserves identity, including equal or regressed
+step counts; a later native progress count is separately required. After
+convergence, Control+Enter Toggle, Enter Replace, Escape Clear and empty Escape
+are checked with native outcomes, default prevention, stable DOM focus and the
+polite native summary. Native emphasis planes and pixels near the native center
+prove the focus ring using explicit host CSS `--chart-focus: #ff00ff`; this is
+not a default-theme or full accessibility qualification. Full reply replay preserves
+the 1k-node/1k-edge source requests and compares browser/native/WASM digests. The isolated peer
+has no focus/selection input. This does not close M4/#35/#36/#1015 or qualify
+100k/1M, reliable two-10k, latency, peak RAM/GPU, platforms, notebooks, exports or
+competitors. Historical pointer/camera receipts and their limitations remain.

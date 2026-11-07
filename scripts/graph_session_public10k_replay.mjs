@@ -13,12 +13,12 @@ for(const view of report.views){
   for(const record of view.replay){
    const bytes=Buffer.from(record.request,'base64'),parts=decodeContainer(bytes,'XYGI'),h=parts.get('header.u64#0').value;
    const op=record.operation;
-   if(op===19){const d=parts.get('document.bytes#0').value;assert.equal(native.xyGraphforgeSessionCreate(ptr(d),BigInt(d.length),ptr(bytes),BigInt(bytes.length),h[0],h[1],native.pointer(handle,'uint64_t *')),0);}
+   if(op===19){const d=parts.get('document.bytes#0').value;const document=decodeContainer(d,'XYGF');assert.equal(document.get('node.uuid#0').value.length/16,view.sourceNodes);assert.equal(document.get('edge.uuid#0').value.length/16,view.sourceEdges);assert.equal(native.xyGraphforgeSessionCreate(ptr(d),BigInt(d.length),ptr(bytes),BigInt(bytes.length),h[0],h[1],native.pointer(handle,'uint64_t *')),0);}
    const compare=b=>{assert.equal(b.length,record.replyBytes);assert.equal(createHash('sha256').update(b).digest('hex'),record.replySha256);};
    if(op!==19)compare(nativeComplete(op===21?native.xyGraphforgeSessionRender:native.xyGraphforgeSessionInteract,handle[0],bytes));
    const reply=wasmCall(x,wasm,op===19?'xyg_wasm_graphforge_session_open':op===21?'xyg_wasm_graphforge_session_render':'xyg_wasm_graphforge_session_interact',bytes);assert.equal(reply.status,0);compare(reply.output);
    const gpu=decodeContainer(reply.output,'XYGR').get('gpu.header.u32#0')?.value;
-   if(gpu&&view.sourceNodes===10000){assert.equal(gpu[2],10000,'every primary publication keeps all 10k nodes');assert.equal(gpu[3],10000,'every primary publication keeps all 10k edges');}
+   if(gpu&&view.sourceNodes===10000){assert.equal(gpu[2],view.sourceNodes,'every publication keeps all source nodes');assert.equal(gpu[3],view.sourceEdges,'every publication keeps all source edges');}
   }
   console.log(JSON.stringify({id:view.id,commands:view.replay.length,linearPeak:x.memory.buffer.byteLength,comparison:'full XYGR SHA256: browser/native/WASM'}));
  }finally{assert.equal(native.xyGraphforgeSessionDestroy(handle[0]),0);assert.equal(x.xyg_wasm_graphforge_session_close(wasm),0);assert.equal(x.xyg_wasm_instance_dispose(wasm),0);}
