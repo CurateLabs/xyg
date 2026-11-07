@@ -1355,6 +1355,7 @@ These additions use the existing ownership policies without adding a host policy
 |---|---|---|---|---|
 | `crates/xyg-core/src/graphforge_session_ffi.rs` | Rust C ABI shell | `rust-c-abi` | `keep-rust` | — |
 | `crates/xyg-engine/src/graphforge/interaction/wire.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graphforge/interaction/wire_memory.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graphforge/interaction/wire_paint.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graphforge/interaction/tests/wire.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-wasm/src/graphforge_session.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm` | #59 |

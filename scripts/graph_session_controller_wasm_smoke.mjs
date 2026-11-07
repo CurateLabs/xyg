@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // Unmasked production Worker/WASM graph session keyboard/paint/ownership journey.
 import assert from "node:assert/strict";
+import {graphCaptureCase} from "./graph_capture_case.mjs";
+import {graphProgressiveKeyboardCase} from "./graph_progressive_keyboard_case.mjs";
 import {assertProgressiveCameraPan} from "./verify_graph_progressive_camera.mjs";
 import { gunzipSync } from "node:zlib";
 import { createServer } from "node:http";
@@ -45,6 +47,29 @@ try {
       return { ok: true, point, after, delivery: "Playwright mouse.click" };
     });
   }
+  const progressiveFaultCase = async()=>{
+      const delay=ms=>new Promise(r=>setTimeout(r,ms));
+      const result=[];
+      for(const fault of ['stale','wrong-lifetime','dispose-held']) {
+        await page.evaluate(async fault=>{const s=window.__graphSession;await s.progressiveFixture(1000,4001n);s.inject=fault==='dispose-held'?null:fault;s.hold=fault==='dispose-held';},fault);
+        if(fault==='dispose-held') {
+          await page.waitForFunction(()=>window.__graphSession.held.length>0);
+          const mark=await page.evaluate(()=>{const s=window.__graphSession,p=s.progressives.at(-1);return s.commands.filter(c=>c.owner===p.worker.worker.__graphOwner).length;});
+          await delay(100);
+          assert.equal(await page.evaluate(()=>{const s=window.__graphSession,p=s.progressives.at(-1);return s.commands.filter(c=>c.owner===p.worker.worker.__graphOwner).length;}),mark,'animation demand coalesces while continuation is held');
+          await page.evaluate(()=>{const s=window.__graphSession,p=s.progressives.at(-1);p.disposal=p.handle.dispose();p.frameCount=p.frames.length;s.release();});
+          await page.evaluate(async()=>{const p=window.__graphSession.progressives.at(-1);await p.disposal;if(p.frames.length!==p.frameCount||p.handle.snapshot()!==null)throw Error('late disposed publication');});
+        } else {
+          await page.waitForFunction(()=>window.__graphSession.progressives.at(-1).errors.length>0);
+          const before=await page.evaluate(()=>window.__graphSession.progressives.at(-1).frames.length);
+          await delay(80);
+          assert.equal(await page.evaluate(()=>window.__graphSession.progressives.at(-1).frames.length),before);
+        }
+        result.push(await page.evaluate(async()=>{const p=window.__graphSession.progressives.at(-1),out={errors:p.errors,frames:p.frames.length};clearInterval(p.timer);await p.handle.dispose();await p.worker.dispose();p.el.remove();return out;}));
+      }
+      return result;
+
+  };
   if (process.env.XYG_GRAPH_TEMPORAL_ONLY) {
     await page.evaluate(()=>window.__graphSession.temporalFixture());
     const snap=()=>page.evaluate(()=>window.__graphSession.retainedTime.handle.snapshot());
@@ -199,6 +224,7 @@ try {
     }
     console.log('PASS public retained temporal presentation');
   } else if (process.env.XYG_GRAPH_SCHEDULING_ONLY) {
+    await run('capture-waits-for-recorded-request-reply',()=>graphCaptureCase(page));
     await run('public-resource-refusals-unchanged-arenas',async()=>{
       const result=await page.evaluate(async()=>{
         const s=window.__graphSession,out=[];
@@ -209,7 +235,7 @@ try {
         }return out;
       });
       evidence.refusals=result;
-      assert.equal(result[0].status,'refused');assert.equal(result[0].code,'GF_INTERACTION_BUDGET');
+      assert.equal(result[0].status,'opened');
       return result;
     });
     await run('public-1k-unheld-pick-camera-isolation-cleanup', async () => {
@@ -259,9 +285,12 @@ try {
       const result=await page.evaluate(async()=>{
         const s=window.__graphSession,out=[];
         for(const p of [7101n,7102n].map(id=>s.progressives.find(p=>p.id===id))) {
-          const at=performance.now(),frames=p.frames.length,finalSnapshot=p.handle.snapshot();const owner=p.worker.worker.__graphOwner;const commands=s.commands.filter(c=>c.owner===owner);const replies=s.replies.filter(c=>c.owner===owner);
+          await s.waitForCapture(p);
+          const at=performance.now(),frames=p.frames.length,finalSnapshot=p.handle.snapshot();const owner=p.worker.worker.__graphOwner;
+          const b64=b=>{let t='';for(let i=0;i<b.length;i+=16384)t+=String.fromCharCode(...b.subarray(i,i+16384));return btoa(t);};
+          const replay=await Promise.all(s.commands.filter(c=>c.owner===owner&&c.bytes).map(async c=>{const r=s.replies.find(r=>r.owner===owner&&r.requestId===c.requestId);const h=await crypto.subtle.digest('SHA-256',r.bytes);return {operation:c.operation,request:b64(c.bytes),replyBytes:r.bytes.length,replySha256:Array.from(new Uint8Array(h),b=>b.toString(16).padStart(2,'0')).join('')};}));const commands=s.commands.filter(c=>c.owner===owner);const replies=s.replies.filter(c=>c.owner===owner);
           clearInterval(p.timer);await p.handle.dispose();await p.worker.dispose();
-          out.push({id:p.id,finalSnapshot,started:p.started,workerReady:p.workerReady,captures:p.captures,arena:384*1024*1024,painted:p.painted,clicks:p.clicks,payloadBytes:{requests:commands.reduce((n,c)=>n+c.bytes.length,0),replies:replies.reduce((n,c)=>n+c.bytes.length,0)},frames:p.frames,errors:p.errors,heartbeats:p.heartbeats,selections:p.selections,pans:p.pans,keys:p.keys,
+          out.push({id:p.id,replay,finalSnapshot,started:p.started,workerReady:p.workerReady,captures:p.captures,arena:p.arena,actualArena:p.worker.worker.__actualArena,defaultArena:p.defaultArena,requestedArena:p.worker.__requestedArena??null,sourceNodes:1000,sourceEdges:1000,painted:p.painted,clicks:p.clicks,payloadBytes:{requests:commands.reduce((n,c)=>n+c.bytes.length,0),replies:replies.reduce((n,c)=>n+c.bytes.length,0)},frames:p.frames,errors:p.errors,heartbeats:p.heartbeats,selections:p.selections,pans:p.pans,keys:p.keys,
             commands:s.commands.filter(c=>c.owner===p.worker.worker.__graphOwner).map(({bytes,...c})=>c),held:s.held.length,
             cleanupMs:performance.now()-at,attachmentChildren:p.el.querySelectorAll('[data-xy-graph-session],table,canvas').length,disposed:p.handle.snapshot()===null,framesAtDispose:frames});p.el.remove();
         }await new Promise(r=>setTimeout(r,25));return out;
@@ -272,7 +301,7 @@ try {
       }
       evidence.views=result;evidence.heapAfter=await cdp.send('Performance.getMetrics');
       if(process.env.XYG_GRAPH_SESSION_REPORT)await writeFile(process.env.XYG_GRAPH_SESSION_REPORT,JSON.stringify(evidence,(_,v)=>typeof v==='bigint'?v.toString():v,2)+'\n');
-      for(const p of result){assert.deepEqual(p.errors,[]);assert.equal(p.held,0);assert.equal(p.disposed,true);assert.equal(p.attachmentChildren,0);assert.equal(p.frames.length,p.framesAtDispose);assert.ok(p.commands.filter(c=>c.operation).every(c=>String(c.instanceId)===String(p.id)));assert.ok(new Set(p.painted.filter(f=>!f.progress.done&&f.pixels>0).map(f=>f.progress.steps)).size>3);assert.ok(new Set(p.painted.map(f=>f.hash)).size>3);assert.ok(p.frames.filter(f=>!f.progress.done&&f.pixels>0).length>3);assert.ok(p.frames.at(-1).progress.done);}
+      for(const p of result){assert.equal(p.actualArena,16*1024*1024);assert.equal(p.arena,16*1024*1024);assert.equal(p.defaultArena,true);assert.equal(p.requestedArena,null);assert.deepEqual(p.errors,[]);assert.equal(p.held,0);assert.equal(p.disposed,true);assert.equal(p.attachmentChildren,0);assert.equal(p.frames.length,p.framesAtDispose);assert.ok(p.commands.filter(c=>c.operation).every(c=>String(c.instanceId)===String(p.id)));assert.ok(new Set(p.painted.filter(f=>!f.progress.done&&f.pixels>0).map(f=>f.progress.steps)).size>3);assert.ok(new Set(p.painted.map(f=>f.hash)).size>3);assert.ok(p.frames.filter(f=>!f.progress.done&&f.pixels>0).length>3);assert.ok(p.frames.at(-1).progress.done);}
       const primary=result.find(p=>p.id===7101n),secondary=result.find(p=>p.id===7102n);
       assert.ok(primary&&secondary);
       assert.ok(primary.selections.some(e=>e.snapshot.outcome.selected>0&&!e.snapshot.relayout?.done),'trusted unfinished pick');
@@ -281,6 +310,9 @@ try {
       assert.equal(secondary.selections.length,0);assert.equal(secondary.finalSnapshot.selection.refs.length,0);assert.equal(secondary.finalSnapshot.camera[2],320);assert.deepEqual(violations,[]);assert.deepEqual(errors,[]);
       return result;
     });
+    await run("public-1k-trusted-keyboard-focus-retention",()=>graphProgressiveKeyboardCase(page,process.env.XYG_GRAPH_SESSION_REPORT));
+    await run('default1k-coalescing-stale-terminal-disposal',progressiveFaultCase);
+    if(process.env.XYG_GRAPH_SESSION_REPORT)await writeFile(process.env.XYG_GRAPH_SESSION_REPORT,JSON.stringify(evidence,(_,v)=>typeof v==='bigint'?String(v):v,2)+'\n');
   } else if (process.env.XYG_GRAPH_PROGRESSIVE_ONLY) {
     const delay = ms => new Promise(r=>setTimeout(r,ms));
     for (const count of [0,4,1000]) {
@@ -382,9 +414,9 @@ try {
       assert.ok(result.operations.includes(11));
       return result;
     });
-    await run('1k-default-arena-still-refuses-without-fallback',async()=>{
-      const code=await page.evaluate(async()=>{try{await window.__graphSession.progressiveFixture(1000,3099n,{},16*1024*1024);return 'unexpected success';}catch(e){return e.code;}});
-      assert.equal(code,'GF_INTERACTION_BUDGET');return {code,arenaBytes:16*1024*1024};
+    await run('1k-default-arena-opens-without-override',async()=>{
+      const code=await page.evaluate(async()=>{try{await window.__graphSession.progressiveFixture(1000,3099n);const p=window.__graphSession.progressives.at(-1);clearInterval(p.timer);await p.handle.dispose();await p.worker.dispose();p.el.remove();return 'opened';}catch(e){return e.code;}});
+      assert.equal(code,'opened');return {code,arenaBytes:16*1024*1024};
     });
     await run('authored-pinned-progressive-and-explicit-false-legacy',async()=>{
       const results=[];
@@ -405,24 +437,7 @@ try {
       await page.waitForFunction(()=>window.__graphSession.progressives.slice(-2).every(p=>p.handle.snapshot()?.relayout?.done),null,{timeout:40000});
       return page.evaluate(async()=>{const ps=window.__graphSession.progressives.slice(-2),result=ps.map(p=>({id:p.id,frames:p.frames.length,errors:p.errors}));for(const p of ps){clearInterval(p.timer);await p.handle.dispose();await p.worker.dispose();p.el.remove();}return result;});
     });
-    await run('progressive-stale-terminal-dispose-late-reply-cleanup',async()=>{
-      const result=[];
-      for(const fault of ['stale','wrong-lifetime','dispose-held']) {
-        await page.evaluate(async fault=>{const s=window.__graphSession;await s.progressiveFixture(4,4001n);s.inject=fault==='dispose-held'?null:fault;s.hold=fault==='dispose-held';},fault);
-        if(fault==='dispose-held') {
-          await page.waitForFunction(()=>window.__graphSession.held.length>0);
-          await page.evaluate(()=>{const s=window.__graphSession,p=s.progressives.at(-1);p.disposal=p.handle.dispose();p.frameCount=p.frames.length;s.release();});
-          await page.evaluate(async()=>{const p=window.__graphSession.progressives.at(-1);await p.disposal;if(p.frames.length!==p.frameCount||p.handle.snapshot()!==null)throw Error('late disposed publication');});
-        } else {
-          await page.waitForFunction(()=>window.__graphSession.progressives.at(-1).errors.length>0);
-          const before=await page.evaluate(()=>window.__graphSession.progressives.at(-1).frames.length);
-          await delay(80);
-          assert.equal(await page.evaluate(()=>window.__graphSession.progressives.at(-1).frames.length),before);
-        }
-        result.push(await page.evaluate(async()=>{const p=window.__graphSession.progressives.at(-1),out={errors:p.errors,frames:p.frames.length};clearInterval(p.timer);await p.handle.dispose();await p.worker.dispose();p.el.remove();return out;}));
-      }
-      return result;
-    });
+    await run('progressive-stale-terminal-dispose-late-reply-cleanup',progressiveFaultCase);
     assert.deepEqual(violations,[]); assert.deepEqual(errors,[]);
     if(process.env.XYG_GRAPH_SESSION_REPORT) await writeFile(process.env.XYG_GRAPH_SESSION_REPORT,JSON.stringify(evidence,(_,v)=>typeof v==='bigint'?v.toString():v,2)+'\n');
     console.log('PASS public progressive attachment');

@@ -801,3 +801,35 @@ tests/test_check_typing.py text eol=lf
 spec/performance/mounted-catalog-repair-union-2026-11-07/*.json text eol=lf
 spec/performance/mounted-catalog-repair-union-2026-11-07/*.md text eol=lf
 spec/performance/mounted-catalog-repair-union-2026-11-07/*.gz -text
+
+# Trusted bounded public graph keyboard proof.
+scripts/graph_progressive_keyboard_case.mjs text eol=lf
+scripts/verify_graph_progressive_keyboard.mjs text eol=lf
+js/test/graph-progressive-keyboard.test.mjs text eol=lf
+js/test/fixtures/graph-progressive-keyboard.json text eol=lf
+spec/performance/graph-keyboard-1k-2026-11-07/*.json text eol=lf
+spec/performance/graph-keyboard-1k-2026-11-07/*.md text eol=lf
+spec/performance/graph-keyboard-1k-2026-11-07/*.gz -text
+spec/performance/graph-keyboard-1k-2026-11-07/*.png -text
+
+# DEFAULT16MiB retained graph qualification, including real CRLF proof inputs.
+crates/xyg-engine/src/graphforge/interaction/wire_memory.rs text eol=lf
+crates/xyg-engine/tests/graph_session_memory.rs text eol=lf
+spec/performance/graph-default1k-2026-11-07/*.md text eol=lf
+spec/performance/graph-default1k-2026-11-07/*.json text eol=lf
+spec/performance/graph-default1k-2026-11-07/*.log text eol=lf
+spec/performance/graph-default1k-2026-11-07/*.gz -text
+spec/performance/graph-default1k-2026-11-07/*.png -text
+spec/performance/graph-default1k-2026-11-07/*.wasm -text
+spec/performance/graph-default1k-2026-11-07/*.arrow -text
+crates/xyg-wasm/src/graphforge_session.rs text eol=lf
+crates/xyg-engine/src/graphforge/interaction/render.rs text eol=lf
+crates/xyg-engine/src/graphforge/interaction/tests/session.rs text eol=lf
+crates/xyg-engine/src/graphforge/interaction.rs text eol=lf
+crates/xyg-engine/src/graphforge/interaction/pick.rs text eol=lf
+
+# Default-arena graph with mounted/filter/catalog integration.
+spec/performance/default1k-mounted-filter-catalog-union-2026-11-07/*.json text eol=lf
+spec/performance/default1k-mounted-filter-catalog-union-2026-11-07/*.md text eol=lf
+spec/performance/default1k-mounted-filter-catalog-union-2026-11-07/*.gz -text
+spec/performance/default1k-mounted-filter-catalog-union-2026-11-07/*.png -text

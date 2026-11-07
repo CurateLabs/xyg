@@ -1213,7 +1213,7 @@
  "releaseLine":"0.6.0",
  "schema":"xyg.release-api-inventory/v1",
  "sourceProvenance":{
-  "baseCommit":"2fe570c63abe5a9d976151dd460a50e56fc88aa9",
+  "baseCommit":"bbdd3f11738c86279beef8ab447544e2ab1d680a",
   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
  },
  "sourceSha256":{

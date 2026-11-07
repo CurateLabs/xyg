@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Unmasked production Worker/WASM graph session keyboard/paint/ownership journey.
 import assert from "node:assert/strict";
+import {graphCaptureCase} from "./graph_capture_case.mjs";
 import {assertProgressiveCameraPan} from "./verify_graph_progressive_camera.mjs";
 import { gunzipSync } from "node:zlib";
 import { createServer } from "node:http";
@@ -33,14 +34,14 @@ try {
   const run = async (name, fn) => { const result = await fn(); evidence.cases.push({ name, result }); console.log(`PASS ${name}`); return result; };
   const check = async fn => { const result = await page.evaluate(fn); assert.equal(result.ok, true, JSON.stringify(result, (_, v) => typeof v === "bigint" ? v.toString() : v)); return result; };
   evidence.default1k=await page.evaluate(async()=>{
-    try { await window.__graphSession.progressiveFixture(1000,16001n,{},16*1024*1024);return {status:'opened'}; }
+    try { await window.__graphSession.progressiveFixture(1000,16001n,{});const p=window.__graphSession.progressives.at(-1);clearInterval(p.timer);await p.handle.dispose();await p.worker.dispose();p.el.remove();return {status:'opened'}; }
     catch(e) {return {status:'refused',code:e.code};}
   });
-  assert.deepEqual(evidence.default1k,{status:'refused',code:'GF_INTERACTION_BUDGET'});
+  assert.deepEqual(evidence.default1k,{status:'opened'});
   await page.evaluate(async () => {
     const state=window.__graphSession, makeWorker=state.makeWorker, container=state.container;
     const {DTYPE,encodeContainer}=await import('/packages/xy-node/src/graphforge-container.js');
-state.progressiveFixture = async (count, id, load = {}, arena = count===1000 ? 384*1024*1024 : undefined) => {
+  state.progressiveFixture = async (count, id, load = {}, arena) => {
   const f = (name, dtype, values) => ({name, dtype:DTYPE[dtype], values});
   const nodes = new Uint8Array(count*16), edges = new Uint8Array(count*16);
   for (let i=0;i<count;i++) { new DataView(nodes.buffer).setUint32(i*16,i+1,true); new DataView(edges.buffer).setUint32(i*16,i+10001,true); }
@@ -87,6 +88,8 @@ state.progressiveFixture = async (count, id, load = {}, arena = count===1000 ? 3
 };
 
   });
+    if(process.env.XYG_GRAPH_CAPTURE_BASELINE)await page.evaluate(()=>{window.__graphSession.waitForCapture=async()=>{};});
+    await run('capture-waits-for-recorded-request-reply',()=>graphCaptureCase(page));
     await run('public-10k-unheld-pick-camera-isolation-cleanup', async () => {
       await page.evaluate(async () => {
         const s=window.__graphSession;
@@ -138,10 +141,12 @@ state.progressiveFixture = async (count, id, load = {}, arena = count===1000 ? 3
       const result=await page.evaluate(async()=>{
         const s=window.__graphSession,out=[];
         for(const p of [7101n,7102n].map(id=>s.progressives.find(p=>p.id===id))) {
+          await s.waitForCapture(p);
           const at=performance.now(),frames=p.frames.length,finalSnapshot=p.handle.snapshot();const owner=p.worker.worker.__graphOwner;const commands=s.commands.filter(c=>c.owner===owner);const replies=s.replies.filter(c=>c.owner===owner);
           const base64=b=>{let text='';for(let i=0;i<b.length;i+=16384)text+=String.fromCharCode(...b.subarray(i,i+16384));return btoa(text);};
           const replay=await Promise.all(commands.filter(c=>c.bytes).map(async c=>{
-            const reply=replies.find(r=>r.requestId===c.requestId);if(!reply)throw Error('missing reply');
+            const reply=replies.find(r=>r.requestId===c.requestId);
+            if(!reply)throw Error(s.json({kind:'missing reply',owner,id:p.id,command:{...c,bytes:c.bytes.length},terminal:s.transportReplies?.filter(r=>r.owner===owner&&r.requestId===c.requestId),lastCommands:commands.slice(-3).map(({bytes,...v})=>v),lastReplies:replies.slice(-3).map(({bytes,digest,...v})=>v),collectedAt:performance.now()}));
             const hash=await reply.digest;
             return {operation:c.operation,request:base64(c.bytes),replyBytes:reply.replyBytes,replySha256:hash};
           }));

@@ -58,6 +58,7 @@ pub use pick::{
 pub use render::{Camera, RenderOutput, NOT_RENDERED};
 pub mod wire;
 mod wire_paint;
+mod wire_memory;
 
 /// Default direct-tier budgets (`_graph.py` `layout_render`).
 pub const DEFAULT_NODE_BUDGET: u64 = 200_000;
@@ -246,7 +247,7 @@ pub struct GraphSession {
     /// Temporal frame revision last folded into `render_revision` (F4).
     seen_temporal: u64,
     camera: Option<Camera>,
-    published: Option<RenderOutput>,
+    published: Option<Arc<RenderOutput>>,
     /// Revision `published` was built at (`0`: nothing published).
     published_revision: u32,
     hover: Hover,

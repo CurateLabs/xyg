@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "finalSourceBinding": "current-bindings.json",
+  "finalArtifactBinding": "artifacts.json",
+  "intermediateArtifactBinding": "artifacts-grid-share-only.json",
+  "intermediateQualification": "The grid-only artifacts/captures predate full-publication Arc sharing. Their historical sourceBindings path is not a final-source attestation; preserve their bytes as intermediate observations. Final shared-* captures and final artifacts.json supersede qualification, not history.",
+  "baselineArchive": "original-investigation.tar.gz",
+  "pending": "Parent independent review, current-main integration, PR/CI/queue; wholeM4 and remaining issue acceptance stay open."
+}

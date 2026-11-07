@@ -4,6 +4,7 @@ import { attachWasmGraphSession, composeWasmGraphForge, createXygWasmWorker, ren
 import { encodeContainer, decodeContainer, DTYPE } from "/packages/xy-node/src/graphforge-container.js";
 const state = window.__graphSession = { stage: "boot", products: [], commands: [], replies: [], gl: [], errors: [], inject: null, hold: false, held: [], events: [], legacyCalls: [] };
 state.json = value => JSON.stringify(value, (_, v) => typeof v === "bigint" ? v.toString() : v);
+state.waitForCapture = async p => { await p.handle.whenIdle(); };
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
 function section(bytes, name, index = 0) {
   const a = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes), v = new DataView(a.buffer, a.byteOffset, a.byteLength), start = 32 + 40 * v.getUint32(8, true), dec = new TextDecoder();
@@ -17,6 +18,7 @@ const view = (a) => new DataView(a.buffer, a.byteOffset, a.byteLength);
 const post = Worker.prototype.postMessage;
 Worker.prototype.postMessage = function(message, transfer) {
   state.products.push(message.type);
+  if(message.type === "init") this.__actualArena = message.maxArenaBytes;
   if (state.inject === "temporal-budget" && message.type === "graph.session.temporal-frame") {
     new DataView(message.request).setBigUint64(48,0n,true); state.inject=null;
   }
@@ -52,6 +54,12 @@ Worker.prototype.postMessage = function(message, transfer) {
     state.temporalWire ??= [];
     state.temporalWire.push({kind:"request",owner:this.__graphOwner,type:message.type,requestId:message.requestId,sequence:message.sequence,lifetime:message.lifetime,bytes:message.request instanceof ArrayBuffer?Array.from(new Uint8Array(message.request)):null});
   }
+  if (typeof state.deferGraphRequest === "function" && message.type === "graph.session.render") {
+    const deferred = state.deferGraphRequest;
+    state.deferGraphRequest = null;
+    deferred(() => post.call(this, message, transfer));
+    return;
+  }
   return post.call(this, message, transfer);
 };
 const context = HTMLCanvasElement.prototype.getContext;
@@ -63,8 +71,12 @@ HTMLCanvasElement.prototype.getContext = function(kind, ...args) {
 const bytes = async (name) => new Uint8Array(await (await fetch(`/tests/fixtures/graphforge/results/${name}.arrow`)).arrayBuffer());
 const makeWorker = (wasm = "/packages/xy-client/dist/xyg-wasm.wasm", maxArenaBytes) => {
   const worker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm, maxArenaBytes });
+  worker.__requestedArena = maxArenaBytes;
   const actual = worker.worker, deliver = actual.onmessage; actual.__graphOwner = state.nextOwner = (state.nextOwner ?? 0)+1;
   actual.onmessage = event => {
+    // Test-only terminal metadata also retains refusals without an XYGR body.
+    state.transportReplies ??= [];
+    state.transportReplies.push({owner:actual.__graphOwner,requestId:event.data.requestId,ok:event.data.ok,error:event.data.error,at:performance.now()});
     if (actual.__temporalCapture) {
       state.temporalWire ??= [];
       const raw=event.data.value?.bytes;
@@ -315,13 +327,13 @@ state.closedPoint = ({kind,tag='div',named=true,nested=false}) => {
 };
 
 // Real public progressive attachment; no held replies or layout callback hooks.
-state.progressiveFixture = async (count, id, load = {}, arena = count===1000 ? 384*1024*1024 : undefined) => {
+state.progressiveFixture = async (count, id, load = {}, arena) => {
   const f = (name, dtype, values) => ({name, dtype:DTYPE[dtype], values});
   const nodes = new Uint8Array(count*16), edges = new Uint8Array(count*16);
   for (let i=0;i<count;i++) { new DataView(nodes.buffer).setUint32(i*16,i+1,true); new DataView(edges.buffer).setUint32(i*16,i+10001,true); }
   const document = encodeContainer('XYGF', [f('status','u32',[0]),f('kind','utf8','graph'),f('composition.version','u32',[2]),f('node.uuid','uuid',nodes),f('edge.uuid','uuid',edges),f('edge.derived','u8',Array(count).fill(0)),f('edge.layer','u32',Array(count).fill(0xffffffff)),f('edge.order','i64',Array(count).fill(-1n)),f('edge.path','u64',Array(count).fill(0xffffffffffffffffn)),f('edge.source','u64',Array.from({length:count},(_,i)=>BigInt(i))),f('edge.target','u64',Array.from({length:count},(_,i)=>BigInt((i+1)%count))),f('graph.directed','u8',[0])]);
   const started=performance.now();const worker=makeWorker(undefined, arena); await worker.ready;const workerReady=performance.now();
-  const el=container(), p={id,el,worker,started,workerReady,frames:[],errors:[],beats:0,document,load:{progressive:true,...load},camera:[count===1000?.25:25,count===1000?.25:25,320,160,640,320,1]};
+  const el=container(), p={id,arena:arena??16*1024*1024,defaultArena:arena===undefined,el,worker,started,workerReady,frames:[],errors:[],beats:0,document,load:{progressive:true,...load},camera:[count===1000?.25:25,count===1000?.25:25,320,160,640,320,1]};
   state.progressives ??= []; state.progressives.push(p);
   el.addEventListener('xy:graph-render',e=>p.frames.push({at:performance.now(),revision:e.detail.revision,progress:e.detail.relayout,camera:[...e.detail.camera],pixels:state.pixel(el).filter((v,i)=>i%4===3&&v>0).length}));
   for(const kind of ['error','stale']) el.addEventListener(`xy:graph-${kind}`,e=>p.errors.push(e.detail));

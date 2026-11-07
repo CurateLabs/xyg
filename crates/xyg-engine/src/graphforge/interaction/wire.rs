@@ -566,6 +566,7 @@ pub fn decode_event(bytes: &[u8]) -> Result<GraphCoordinationEvent> {
 /// to the candidate; only this complete reply is observable across the boundary.
 pub struct WireSession {
     session: GraphSession,
+    plain: Option<super::wire_memory::Plain>,
     document: Vec<u8>,
     opening: Vec<u8>,
     open_reply: Vec<u8>,
@@ -709,8 +710,14 @@ impl WireSession {
         count.checked_mul(1024)?.checked_add(text.checked_mul(128)?)
     }
     pub fn retained_budget(&self) -> usize {
-        Self::document_charge(&self.document, self.session.coordination.gate.len())
-            .ok()
+        self.retained_with(self.plain.is_some_and(|p| p.retains(&self.session)))
+    }
+    fn retained_with(&self, plain: bool) -> usize {
+        (if plain {
+            self.plain.and_then(|p| p.source(self.session.coordination.gate.len()))
+                .and_then(|n| n.checked_add(self.session.published.as_ref().map_or(Some(0), |p| super::wire_memory::publication_bytes(p))?))
+                .and_then(|n| n.checked_add(self.session.last_op.as_ref().map_or(Some(0), |(_,o)| o.changed.len().checked_mul(1024)?.checked_add(o.positions.capacity().checked_mul(2 * std::mem::size_of::<NodePosition>())?))?))
+        } else { Self::document_charge(&self.document, self.session.coordination.gate.len()).ok() })
             .and_then(|n| {
                 n.checked_add(match &self.session.slot {
                     StateSlot::Owned(state) => Self::state_charge(state)?,
@@ -730,7 +737,8 @@ impl WireSession {
                         })
                         .try_fold(0usize, |sum, len| sum.checked_add(len))
                 })?;
-                n.checked_add(text.checked_mul(128)?)
+                n.checked_add(text.checked_mul(128)?)?
+                    .checked_add(if plain { self.session.pending_outbound().map_or(0, |e| e.refs.len()).checked_mul(1024)? } else { 0 })
             })
             .and_then(|n| n.checked_add(self.last_request.len().checked_mul(3)?))
             .and_then(|n| n.checked_add(self.opening.len().checked_mul(3)?))
@@ -756,9 +764,12 @@ impl WireSession {
         } else {
             (0, 0)
         };
+        let plain = self.plain.filter(|p| p.applies(&self.session, &r));
+        let work = plain.map_or(Some(0), |p| p.work(&r)).ok_or(InteractionStatus::Budget)?;
         let charge = self
-            .retained_budget()
-            .checked_add(Self::request_charge(request.len(), document_bytes)?)
+            .retained_with(plain.is_some())
+            .checked_add(work)
+            .and_then(|n| n.checked_add(Self::request_charge(request.len(), document_bytes).ok()?))
             .and_then(|v| v.checked_add(external))
             .and_then(|v| v.checked_add(replacement))
             .ok_or(InteractionStatus::Budget)?;
@@ -773,7 +784,8 @@ impl WireSession {
             return bad();
         }
         let document = r.document()?;
-        let charge = Self::document_charge(document, 0)?
+        let plain = super::wire_memory::Plain::recognize(document);
+        let charge = plain.map_or_else(|| Self::document_charge(document, 0), |p| p.source(0).ok_or(InteractionStatus::Budget))?
             .checked_add(Self::request_charge(bytes.len(), document.len())?)
             .and_then(|v| v.checked_add(external))
             .ok_or(InteractionStatus::Budget)?;
@@ -783,6 +795,7 @@ impl WireSession {
         let session = GraphSession::create_linked(document, r.load()?, r.instance, r.group)?;
         let mut out = Self {
             session,
+            plain,
             document: document.to_vec(),
             opening: bytes.to_vec(),
             open_reply: Vec::new(),
@@ -1014,6 +1027,7 @@ impl WireSession {
         self.last_reply = result;
         if r.operation == UPDATE {
             self.document = r.document()?.to_vec();
+            self.plain = super::wire_memory::Plain::recognize(&self.document);
         }
         self.last_request = bytes.to_vec();
         self.last_sequence = r.sequence;
@@ -1684,3 +1698,82 @@ mod projection_reuse_tests;
 #[cfg(test)]
 #[path = "tests/wire/projection_probe.rs"]
 pub(super) mod projection_probe;
+
+#[cfg(test)]
+mod plain_memory_tests {
+    use super::*;
+    fn document(n: usize, extra: impl FnOnce(&mut Builder)) -> Vec<u8> {
+        let ids = |offset: u32| (0..n).map(|i| { let mut id=[0;16]; id[..4].copy_from_slice(&(i as u32+offset).to_le_bytes()); id }).collect::<Vec<_>>();
+        let mut b=Builder::new(b"XYGF");
+        b.u32s("status",0,&[0]); b.utf8("kind",0,"graph");b.u32s("composition.version",0,&[2]);
+        b.uuids("node.uuid",0,&ids(1));b.uuids("edge.uuid",0,&ids(10001));
+        b.u8s("edge.derived",0,&vec![0;n]);b.u32s("edge.layer",0,&vec![u32::MAX;n]);
+        b.i64s("edge.order",0,&vec![-1;n]);b.u64s("edge.path",0,&vec![u64::MAX;n]);
+        b.u64s("edge.source",0,&(0..n as u64).collect::<Vec<_>>());
+        b.u64s("edge.target",0,&(0..n as u64).map(|i|(i+1)%n as u64).collect::<Vec<_>>());
+        extra(&mut b); b.finish()
+    }
+    fn request(seq:u64, rev:u32, op:u32, doc:Option<&[u8]>) -> Vec<u8> {
+        let mut b=Builder::new(REQUEST_MAGIC);b.u64s("header.u64",0,&[77,0,seq]);
+        b.u32s("header.u32",0,&[rev,op,0,0,0,0,0,if op==15 {8} else {0},0]);
+        if let Some(d)=doc { b.bytes("document.bytes",0,d);b.u8s("load.progressive.u8",0,&[1]); }
+        if op==RENDER {b.f64s("camera.f64",0,&[0.25,0.25,320.,160.,640.,320.,1.]);} b.finish()
+    }
+    #[test]
+    fn plain_open_and_repeated_publication_exact_boundaries() {
+        let doc=document(1000, |_|{});let open=request(1,0,OPEN,Some(&doc)); let external=8192;
+        let limit=98_304+48*doc.len()+128*(open.len()-doc.len())+6*doc.len()+external;
+        assert!(matches!(WireSession::open(&open,limit-1,external),Err(InteractionStatus::Budget)));
+        let mut s=WireSession::open(&open,limit,external).unwrap();
+        for seq in 2..5 {
+            let req=request(seq,s.session.render_revision,RENDER,None);
+            // Independent recipe: typed row owners, complete CPU/GPU columns,
+            // three builder/final capacities, full future CSR plus two cursors.
+            let node=2*std::mem::size_of::<NodePaint>()+4*std::mem::size_of::<crate::graph_style::ResolvedGraphStyle>()+640;
+            let edge=2*std::mem::size_of::<EdgePiece>()+4*(std::mem::size_of::<crate::graph_style::ResolvedGraphStyle>()+std::mem::size_of::<crate::graph_style::SemanticPaintLayers>())+3*12*8+384;
+            let limit=s.retained_budget()+1000*(node+edge)+3*(131072+1000*208+1000*336)+4*1048576+2*4097*4+128*req.len()+external+1024;
+            let prior=s.reply().to_vec();let work=s.session.work();let rev=s.session.render_revision;
+            s.max_bytes=limit-1;assert_eq!(s.execute(&req,external,None),Err(InteractionStatus::Budget));
+            assert_eq!(s.reply(),prior);assert_eq!(s.session.work(),work);assert_eq!(s.session.render_revision,rev);
+            s.max_bytes=limit;let accepted=s.execute(&req,external,None).unwrap().to_vec();
+            assert_eq!(s.execute(&req,usize::MAX,None).unwrap(),accepted);
+            assert!(s.retained_budget()<limit);
+        }
+    }
+    #[test]
+    fn complex_documents_and_large_mutations_keep_general_reservation() {
+        for doc in [document(1000,|b|b.texts("node.label",0,&vec!["\n\\λ";1000])),
+            document(1000,|b|b.u8s("node.status",0,&vec![1;1000])),
+            document(1000,|b|b.u32s("node.parent",0,&vec![0;1000])),
+            document(1000,|b|b.bytes("unknown",0,&[0;16]))] {
+            assert!(super::super::wire_memory::Plain::recognize(&doc).is_none());
+            assert!(matches!(WireSession::open(&request(1,0,OPEN,Some(&doc)),16<<20,0),Err(InteractionStatus::Budget)));
+        }
+        let doc=document(1000,|_|{});let mut s=WireSession::open(&request(1,0,OPEN,Some(&doc)),16<<20,0).unwrap();
+        let prior=s.reply().to_vec();
+        for op in [2,3,9,10,11,12,13,14,16,18,UPDATE] {
+            // Invalid payloads can reject even before budget; never mutate.
+            assert!(s.execute(&request(2,0,op,None),0,None).is_err());assert_eq!(s.reply(),prior);
+        }
+    }
+    #[test]
+    fn plain_update_keeps_both_whole_document_envelopes() {
+        let old=document(1000,|_|{});let new=document(3,|_|{});
+        let mut s=WireSession::open(&request(1,0,OPEN,Some(&old)),DEFAULT_MAX_BYTES,0).unwrap();
+        let before=s.execute(&request(2,0,RENDER,None),0,None).unwrap().to_vec();
+        let r=request(3,s.session.render_revision,UPDATE,Some(&new));
+        let general=|d:usize,n:usize,m:usize| 98_304+16_384+2048*n+8192*m+48*d+8192*(n+m)
+            +16*((2*n+11*m)*4096).min(1_048_576)+1024*(4*(n+m).min(10_000)+n+1)+256*(n+m).min(10_000)+8192;
+        let replacement=general(new.len(),3,3);
+        let old_envelope=general(old.len(),1000,1000)+1024+3*(s.last_request.len()+s.opening.len()+s.open_reply.len()+s.last_reply.len());
+        let limit=old_envelope+replacement+128*(r.len()-new.len())+6*new.len()+4096+1024;
+        for omitted in [1, replacement, 48*old.len()] {
+            s.max_bytes=limit-omitted;
+            assert_eq!(s.execute(&r,4096,None),Err(InteractionStatus::Budget));assert_eq!(s.reply(),before);
+            assert_eq!(s.session.identity.node_count(),1000);
+        }
+        s.max_bytes=limit;let after=s.execute(&r,4096,None).unwrap().to_vec();
+        assert_eq!(s.session.identity.node_count(),3);assert_eq!(s.execute(&r,usize::MAX,None).unwrap(),after);
+    }
+
+}
