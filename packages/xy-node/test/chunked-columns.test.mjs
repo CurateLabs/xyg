@@ -151,3 +151,15 @@ test("chart overview rejects superseded generations while static overview remain
     assert.equal(columns.overview({maxPoints:5}).rowIds.length,5);
   } finally {columns.close();rmSync(dir,{recursive:true});}
 });
+
+test("chart chunk candidate counts are independent of page boundaries", () => {
+  const dir=mkdtempSync(join(tmpdir(),"xyg-chart-chunks-")),path=join(dir,"chart.xygc");
+  overviewArtifact(path);const columns=new ChunkedColumns(path);
+  try {
+    for(const pageBytes of [64,128,192]) {
+      const chart=columns.chart([0,11],{budgetBytes:192,pageBytes});
+      assert.equal(chart.sourceProvenance.chunksConsidered,3n);
+      assert.deepEqual(Array.from(chart.sourceRowIds,Number),Array.from({length:12},(_,i)=>i));
+    }
+  } finally {columns.close();rmSync(dir,{recursive:true});}
+});

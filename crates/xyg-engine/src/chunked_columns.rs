@@ -769,7 +769,7 @@ impl ChunkedColumns {
             result.row_ids.append(&mut page.read.row_ids);
             result.accesses.append(&mut page.read.accesses);
             result.evicted_chunks.append(&mut page.read.evicted_chunks);
-            result.chunks_considered += page.read.chunks_considered;
+
             result.chunks_read += page.read.chunks_read;
             result.bytes_read += page.read.bytes_read;
             result.resident_bytes = page.read.resident_bytes;
@@ -777,6 +777,9 @@ impl ChunkedColumns {
         if !current(generation) {
             return Err(Error::Cancelled);
         }
+        // Page limits may consider their first unadmitted chunk again on the
+        // next page. Snapshot provenance counts each candidate metadata row once.
+        result.chunks_considered = (end - first.min(end)) as u32;
         Ok(result)
     }
 
@@ -1525,6 +1528,34 @@ mod tests {
             Err(Error::Cancelled)
         ));
         assert_eq!(checks, 5);
+        std::fs::remove_file(p).unwrap();
+    }
+
+    #[test]
+    fn chart_candidate_counts_are_distinct_across_page_boundaries_and_pruning() {
+        let p = path("chart-distinct-candidates.xygc");
+        let rows: Vec<_> = (0..12).map(|i| (i as f64, (i / 4) as f64)).collect();
+        ChunkedColumns::create(&p, rows, 4).unwrap();
+        let store = ChunkedColumns::open(&p).unwrap();
+        for page in [64, 128, 192] {
+            for (filter, expected) in [
+                (None, (0..12).collect::<Vec<u64>>()),
+                (Some((1.0, 1.0)), vec![4, 5, 6, 7]),
+                (Some((10.0, 10.0)), vec![]),
+            ] {
+                let read = store
+                    .read_chart((0.0, 11.0), filter, 192, page, 0, |_| true)
+                    .unwrap();
+                assert_eq!(read.chunks_considered, 3);
+                assert_eq!(read.row_ids, expected);
+            }
+            let empty = store
+                .read_chart((100.0, 200.0), None, 192, page, 0, |_| true)
+                .unwrap();
+            assert_eq!(empty.chunks_considered, 0);
+            assert!(empty.row_ids.is_empty());
+        }
+        drop(store);
         std::fs::remove_file(p).unwrap();
     }
 

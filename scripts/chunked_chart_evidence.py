@@ -7,16 +7,31 @@ import hashlib
 import io
 import json
 import platform
-import resource
 import struct
 import sys
 import time
 from pathlib import Path
 
+try:
+    import resource
+except ImportError:
+    resource = None
+
 from PIL import Image
 
 from xyg import ChunkedColumns, scatter, scatter_chart
 from xyg._chromium import ChromiumSession
+
+
+def _host_peak_rss_kib() -> float | None:
+    if resource is None:
+        return None
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    if sys.platform.startswith("linux"):
+        return float(peak)
+    if sys.platform == "darwin":
+        return peak / 1024.0
+    return None
 
 
 def run(output: Path, chromium: str) -> dict:
@@ -95,8 +110,10 @@ def run(output: Path, chromium: str) -> dict:
                     "exact_pixel_match": True,
                 }
             )
-    report["host_peak_rss_kib"] = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    report["host_peak_rss_kib"] = _host_peak_rss_kib()
+    report["rss_available"] = report["host_peak_rss_kib"] is not None
     report["rss_scope"] = (
+        "null when resource or a known KiB conversion is unavailable; "
         "Python process only; includes full bounded oracle fixture; excludes browser/GPU"
     )
     (output / "report.json").write_text(json.dumps(report, indent=2) + "\n")

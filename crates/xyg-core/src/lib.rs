@@ -13615,6 +13615,33 @@ pub unsafe extern "C" fn xyg_chunked_columns_chart_overview(
     })
 }
 
+// The C publication boundary is separate from the engine's read completion.
+// Caller supplies writable output buffers and six statistics slots.
+#[cfg(not(target_os = "emscripten"))]
+unsafe fn write_chunked_chart_result<F: FnOnce(u64) -> bool>(
+    read: &chunked_columns::RangeRead,
+    outputs: (*mut u64, *mut f64, *mut f64),
+    stats: &mut [u64],
+    current: F,
+) -> usize {
+    std::ptr::copy_nonoverlapping(read.x.as_ptr(), outputs.1, read.x.len());
+    std::ptr::copy_nonoverlapping(read.y.as_ptr(), outputs.2, read.y.len());
+    std::ptr::copy_nonoverlapping(read.row_ids.as_ptr(), outputs.0, read.row_ids.len());
+    // Publication linearizes here, after every foreign output copy.
+    if !current(read.generation) {
+        stats[5] = 5;
+        return usize::MAX;
+    }
+    stats[0..5].copy_from_slice(&[
+        read.generation,
+        u64::from(read.first_chunk),
+        u64::from(read.chunks_considered),
+        u64::from(read.chunks_read),
+        read.bytes_read,
+    ]);
+    read.x.len()
+}
+
 /// Read exact rows matching an x/y viewport under a hard byte budget.
 /// `out_stats[0..6]` receives generation, first chunk, chunks considered,
 /// chunks read, bytes read and a stable error code (0 success, 1 I/O,
@@ -13735,17 +13762,7 @@ pub unsafe extern "C" fn xyg_chunked_columns_chart(
             stats[5] = 6;
             return usize::MAX;
         }
-        std::ptr::copy_nonoverlapping(read.x.as_ptr(), out_x, read.x.len());
-        std::ptr::copy_nonoverlapping(read.y.as_ptr(), out_y, read.y.len());
-        std::ptr::copy_nonoverlapping(read.row_ids.as_ptr(), out_rows, read.row_ids.len());
-        stats[0..5].copy_from_slice(&[
-            read.generation,
-            u64::from(read.first_chunk),
-            u64::from(read.chunks_considered),
-            u64::from(read.chunks_read),
-            read.bytes_read,
-        ]);
-        read.x.len()
+        write_chunked_chart_result(&read, (out_rows, out_x, out_y), stats, |g| s.is_current(g))
     })
 }
 
@@ -33121,5 +33138,61 @@ mod tests {
         assert_eq!(summary.visible, 2);
         assert_eq!(summary.grid_from_pyramid, 0);
         assert_eq!(&binning[..5], b"exact");
+    }
+}
+
+
+#[cfg(all(test, not(target_os = "emscripten")))]
+mod chunked_chart_publication_tests {
+    use super::*;
+
+    #[test]
+    fn chunked_chart_publication_rejects_supersession_after_all_outputs_are_copied() {
+        let path =
+            std::env::temp_dir().join(format!("xyg-chart-post-copy-{}.xygc", std::process::id()));
+        let input = vec![(0.0, 3.0), (1.0, 2.0), (2.0, 1.0), (3.0, 0.0)];
+        chunked_columns::ChunkedColumns::create(&path, input, 2).unwrap();
+        let store = chunked_columns::ChunkedColumns::open(&path).unwrap();
+        let read = store
+            .read_chart((0.0, 3.0), None, 64, 32, 7, |_| true)
+            .unwrap();
+        let (mut rows, mut x, mut y, mut stats) =
+            (vec![99; 4], vec![-1.0; 4], vec![-1.0; 4], [0; 6]);
+        let observed = std::cell::Cell::new(false);
+        let count = unsafe {
+            write_chunked_chart_result(
+                &read,
+                (rows.as_mut_ptr(), x.as_mut_ptr(), y.as_mut_ptr()),
+                &mut stats,
+                |generation| {
+                    assert_eq!(generation, 7);
+                    assert_eq!(rows, vec![0, 1, 2, 3]);
+                    assert_eq!(x, vec![0.0, 1.0, 2.0, 3.0]);
+                    assert_eq!(y, vec![3.0, 2.0, 1.0, 0.0]);
+                    observed.set(true);
+                    false
+                },
+            )
+        };
+        assert!(
+            observed.get(),
+            "publication check must follow all C output copying"
+        );
+        assert_eq!(count, usize::MAX);
+        assert_eq!(stats[5], 5);
+        stats.fill(0);
+        let count = unsafe {
+            write_chunked_chart_result(
+                &read,
+                (rows.as_mut_ptr(), x.as_mut_ptr(), y.as_mut_ptr()),
+                &mut stats,
+                |generation| generation == 7,
+            )
+        };
+        assert_eq!(count, 4);
+        assert_eq!(stats[0], 7);
+        assert_eq!(stats[5], 0);
+        drop(store);
+        std::fs::remove_file(path).unwrap();
     }
 }

@@ -116,3 +116,13 @@ tests/test_verify_ci_workflow.py text eol=lf
 spec/performance/chunked-chart-review-repair-2026-11-07/*.json text eol=lf
 spec/performance/chunked-chart-review-repair-2026-11-07/*.md text eol=lf
 spec/performance/chunked-chart-review-repair-2026-11-07/*.gz -text
+
+scripts/chunked_chart_evidence.py text eol=lf
+spec/design/tier3-testing.md text eol=lf
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.json text eol=lf
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.md text eol=lf
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.txt text eol=lf
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.gz -text
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.py text eol=lf
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.png -text
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.xygc -text

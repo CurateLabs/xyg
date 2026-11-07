@@ -12,7 +12,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 CURRENT_BINDINGS = Path(
-    "spec/performance/chunked-chart-review-repair-2026-11-07/current-bindings.json"
+    "spec/performance/chunked-chart-postcopy-portability-2026-11-07/current-bindings.json"
 )
 
 

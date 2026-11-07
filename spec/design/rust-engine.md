@@ -999,3 +999,9 @@ generation again before final publication. The new C ABI
 fails closed. ABI 401 adds `xyg_chunked_columns_chart_overview`: Rust checks the monotonic generation before and after bounded overview construction and after copying C outputs. On refusal the host discards every output; success provenance contains the Rust-accepted generation. The existing static overview API remains unchanged. No browser/WASM file reader is introduced. Existing XYGC versions,
 LRU accounting, overview construction and render kernels remain authoritative.
 See the [scoped chart snapshot contract](tier3-phase4-roadmap.md#bounded-local-chart-snapshots-110-continuation).
+
+### Exact chart C-output publication and provenance
+
+The exact `xyg_chunked_columns_chart` export checks its registered generation after copying all row IDs and f64 output arrays, matching the overview export's publication boundary. A superseded result returns cancellation code 5 and hosts discard every output. The final atomic check is the success linearization point. ABI 401 signatures stay unchanged.
+
+A combined chart snapshot reports each distinct x-range candidate metadata chunk once in `chunks_considered`, including candidates pruned by y metadata. Page-boundary reconsideration does not inflate this snapshot statistic. Per-page inspection counters retain their existing semantics, and physical read/byte totals still sum actual page I/O. Empty x candidate ranges report zero.
