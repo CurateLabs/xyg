@@ -1,0 +1,25 @@
+{
+  "parent": "5ccab2ecdc8862e9a70f49537b2bbcec6b0972b8",
+  "commands": {
+    "before": "uv run pytest tests/test_graphforge_contract_corpus.py -q",
+    "after": "uv run pytest tests/test_graphforge_contract_corpus.py tests/test_release_inventory.py tests/test_shared_glhost.py::test_dashboard_gpu_allocation_oracle_and_lifecycle -q"
+  },
+  "logs": {
+    "core-before.log.gz": {
+      "rawSha256": "ee3a8cb76474e735bf73c68f6282de8972b3962710aa4a7d948c8332e9644c36",
+      "archiveSha256": "3fd75bf4e7824f9ed1e840c5e0882c0312236419cce0de6325215471675e5b60",
+      "rawBytes": 1660,
+      "exit": 1
+    },
+    "core-after.log.gz": {
+      "rawSha256": "4524c2b5189d782a8dddcef10b017061a3722ca6509240351085fd2d88c2b675",
+      "archiveSha256": "bd24ebff5c69d9c5e6dd43f2f9a09b9f7ec37ced5c68c88da882888fed2c5e09",
+      "rawBytes": 100,
+      "exit": 0
+    }
+  },
+  "nativePath": "/home/ubuntu/.t3/worktrees/xyg/t3-6e94436c/target/release/libxyg_core.so",
+  "nativeSha256": "09b2571980a8c1d97ac4478fc51b346fb9356d07916bc8b38e84c072b531b895",
+  "chromium": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+  "bounds": "No runtime edits; prior artifacts/source/build evidence remain tied to their historical sources. The successor Python test is qualified by the fresh 34-test run."
+}
