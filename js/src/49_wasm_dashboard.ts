@@ -56,15 +56,33 @@ export async function applyWasmDashboardResourceBudget(
   beforeBytes: bigint;
   afterBytes: bigint;
 }>> {
+  return applyDashboardResourceBudget(worker, host, budgetBytes, perChartBudgetBytes, () => false);
+}
+
+async function applyDashboardResourceBudget(
+  worker: XygWasmWorker,
+  host: GLHost,
+  budgetBytes: bigint,
+  perChartBudgetBytes: bigint,
+  cancelled: () => boolean,
+  existingAdmission?: object,
+) {
+  encodeWasmDashboardPlan([], budgetBytes);
   encodeWasmDashboardPlan([], perChartBudgetBytes);
   if (!host || typeof host.dashboardResourceSnapshot !== "function"
       || typeof host.applyDashboardResidency !== "function") {
     throw new TypeError("a shared GLHost is required");
   }
+  const admission = existingAdmission ?? host.beginDashboardAdmission(budgetBytes, perChartBudgetBytes);
+  const requireCurrent = () => {
+    if (cancelled()) throw new Error("xy: dashboard admission was cancelled");
+    if (!host.isDashboardAdmissionCurrent(admission)) throw new Error("xy: dashboard admission was superseded");
+  };
   // Rendering may finish a transition while Rust is planning. Re-snapshot a
   // bounded number of times so one ordinary lifecycle edge does not turn a
   // valid public request into a no-op; every individual apply remains atomic.
   for (let attempt = 0; attempt < 3; attempt += 1) {
+    requireCurrent();
     const availableBytes = host.beginDashboardBudget(budgetBytes);
     const snapshot = host.dashboardResourceSnapshot();
     const beforeBytes = snapshot.clients.reduce((sum, client) => sum + host.clientResourceBytes(client), host.sharedResourceBytes());
@@ -76,13 +94,16 @@ export async function applyWasmDashboardResourceBudget(
       const eligible = await Promise.all(snapshot.resources.map(resource =>
         planWasmDashboardResources(worker, [resource], perChartBudgetBytes)));
       const admittedIndices = snapshot.resources.flatMap((_, index) => eligible[index].retained[0] ? [index] : []);
+      requireCurrent();
       const globalPlan = await planWasmDashboardResources(worker,
         admittedIndices.map(index => snapshot.resources[index]), availableBytes);
       const retained = snapshot.resources.map(() => false);
       admittedIndices.forEach((index, at) => { retained[index] = globalPlan.retained[at]; });
       plan = Object.freeze({ retainedBytes: globalPlan.retainedBytes, retained: Object.freeze(retained) });
     }
-    const applied = host.applyDashboardResidency(snapshot, plan.retained);
+    requireCurrent();
+    const applied = host.applyDashboardResidency(snapshot, plan.retained, admission, cancelled);
+    requireCurrent();
     if (applied) {
       const afterBytes = host.dashboardResourceSnapshot().clients.reduce((sum, client) => sum + host.clientResourceBytes(client), host.sharedResourceBytes());
       return Object.freeze({ plan, applied, beforeBytes, afterBytes });
@@ -113,6 +134,7 @@ export function watchWasmDashboardResourceBudget(
   if (!host || typeof host.subscribeDashboardResources !== "function") {
     throw new TypeError("a shared GLHost is required");
   }
+  const admission = host.beginDashboardAdmission(budgetBytes, perChartBudgetBytes);
   let disposed = false, scheduled = false, running = false, rerun = false;
   let resolveSettled: (() => void) | null = null;
   let rejectSettled: ((reason: unknown) => void) | null = null;
@@ -135,11 +157,17 @@ export function watchWasmDashboardResourceBudget(
       try {
         do {
           rerun = false;
-          await applyWasmDashboardResourceBudget(worker, host, budgetBytes, perChartBudgetBytes);
+          await applyDashboardResourceBudget(worker, host, budgetBytes, perChartBudgetBytes, () => disposed, admission);
         } while (rerun && !disposed);
       } catch (error) {
-        failure = error;
-        rejectSettled?.(error);
+        if (!disposed) {
+          failure = error;
+          rejectSettled?.(error);
+          if (!host.isDashboardAdmissionCurrent(admission)) {
+            disposed = true;
+            unsubscribe();
+          }
+        }
       } finally {
         running = false;
         const resolve = resolveSettled;

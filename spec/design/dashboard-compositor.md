@@ -158,3 +158,21 @@ interaction latency are not established by the small scatter pressure probe.
 The issue's historical Reflex requirement conflicts with the current supported
 consumer contract; it does not authorize a Reflex product surface. No competitor
 performance win or full milestone closure is claimed.
+
+
+### Admission ownership and watcher cancellation
+
+Each accepted global/per-chart budget request captures one host admission
+identity. Every Rust reply, retry and residency mutation validates that identity.
+A superseded request rejects with `xy: dashboard admission was superseded` and
+cannot restore its old budgets. Watchers retain the identity of their original
+budget intent across automatic passes. A later request supersedes that watcher
+and removes its subscription after rejection.
+
+Watcher disposal immediately cancels its pending coordinator work. After each
+asynchronous Rust stage, cancellation is checked before further commands or
+residency application. A delayed reply cannot evict or rebuild charts after
+disposal. Existing and future work uses the most recent admitted budget intent.
+The normal 32-chart allocation oracle covers held real-WASM replies, different
+global budgets, per-chart zero caps, cancelled per-chart plans and superseded
+watcher notifications.

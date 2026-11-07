@@ -2848,7 +2848,13 @@ async function run() {
       return { result };
     },
   };
+  let instrumentedAdmission = null;
   const instrumentedHost = {
+    beginDashboardAdmission(budgetBytes, perChartBudgetBytes) {
+      instrumentedAdmission = Object.freeze({budgetBytes, perChartBudgetBytes});
+      return instrumentedAdmission;
+    },
+    isDashboardAdmissionCurrent(admission) { return instrumentedAdmission === admission; },
     beginDashboardBudget(budget) { return budget; },
     clientResourceBytes() { return 4n; },
     sharedResourceBytes() { return 0n; },

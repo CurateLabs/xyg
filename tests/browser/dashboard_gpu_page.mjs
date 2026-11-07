@@ -38,6 +38,75 @@
   const before=views.map(picture), identities=views.map(v=>v.gpuTraces[0].trace.id);
   const demand=host.dashboardResourceSnapshot().resources[0].derivedBytes;
   const budget=host.sharedResourceBytes()+demand*8n;
+  // Keep real Rust replies pending to exercise admission ownership ordering.
+  const {applyWasmDashboardResourceBudget, watchWasmDashboardResourceBudget} = await import('/index.js');
+  const delayedPlanner = () => {
+    const held = [];
+    let commands = 0;
+    let delaying = true;
+    return {
+      held,
+      get commands() { return commands; },
+      release() {
+        delaying = false;
+        held.splice(0).forEach(resolve => resolve());
+      },
+      dashboardPlan(request) {
+        commands += 1;
+        const operation = worker.dashboardPlan(request);
+        return {result: operation.result.then(result => delaying ? new Promise(resolve => {
+          held.push(() => resolve(result));
+        }) : result)};
+      },
+    };
+  };
+  const waitHeld = async (planner, count) => {
+    const deadline = performance.now() + 10000;
+    while (planner.held.length < count) {
+      assert(performance.now() < deadline, 'delayed Rust reply timed out');
+      await new Promise(resolve => setTimeout(resolve, 5));
+    }
+  };
+  const rejectedWith = (promise, message) => promise.then(
+    () => { throw new Error('obsolete admission unexpectedly succeeded'); },
+    error => assert(String(error).includes(message), 'stable admission rejection'),
+  );
+  const broadBudget = host.sharedResourceBytes() + demand * 128n;
+  const older = delayedPlanner();
+  const oldResult = rejectedWith(
+    applyWasmDashboardResourceBudget(older, host, broadBudget), 'superseded');
+  await waitHeld(older, 1);
+  await applyWasmDashboardResourceBudget(worker, host, budget, 0n);
+  older.release();
+  await oldResult;
+  assert(host._budget === budget, 'older request cannot restore its global budget');
+  assert(views.every(view => view._glLost), 'newer per-chart zero cap remains applied');
+  assert(older.commands === 1, 'superseded request issues no retry');
+  await applyWasmDashboardResourceBudget(worker, host, broadBudget);
+  await new Promise(resolve => setTimeout(resolve, 50));
+  const pending = delayedPlanner();
+  const cancelledWatcher = watchWasmDashboardResourceBudget(pending, host, broadBudget, 0n);
+  await waitHeld(pending, 32);
+  const beforeCancellation = actual();
+  cancelledWatcher.dispose();
+  pending.release();
+  await cancelledWatcher.settled;
+  await new Promise(resolve => setTimeout(resolve, 50));
+  assert(actual() === beforeCancellation && views.every(view => !view._glLost),
+    'disposed watcher cannot evict after a pending reply');
+  assert(pending.commands === 32, 'cancelled per-chart pass never submits global planning');
+  const formerWatcher = watchWasmDashboardResourceBudget(worker, host, broadBudget);
+  await formerWatcher.settled;
+  await applyWasmDashboardResourceBudget(worker, host, budget, 0n);
+  await rejectedWith(formerWatcher.settled, 'superseded');
+  host.dashboardResourceChanged(views[0]);
+  await new Promise(resolve => setTimeout(resolve, 50));
+  assert(host._budget === budget && views.every(view => view._glLost),
+    'superseded watcher cannot reclaim future notifications');
+  formerWatcher.dispose();
+  await applyWasmDashboardResourceBudget(worker, host, broadBudget);
+  await new Promise(resolve => setTimeout(resolve, 50));
+  check('admission ownership races');
   const controller=views[0].watchDashboardResourceBudget(worker,budget);
   await controller.settled;
   await new Promise(r=>setTimeout(r,100));await controller.settled;

@@ -26,7 +26,18 @@ const logs=[]; page.on('console',m=>logs.push(m.type()+': '+m.text())); page.on(
 try {
   await page.goto(`http://127.0.0.1:${server.address().port}/`);
   await page.waitForFunction(()=>globalThis.gpuFixture);
-  const result = await page.evaluate(await readFile('tests/browser/dashboard_gpu_page.mjs','utf8'));
+  let deadline;
+  let result;
+  try {
+    result = await Promise.race([
+      page.evaluate(await readFile('tests/browser/dashboard_gpu_page.mjs','utf8')),
+      new Promise((_, reject) => {
+        deadline = setTimeout(() => reject(new Error('dashboard GPU journey timed out')), 90000);
+      }),
+    ]);
+  } finally {
+    clearTimeout(deadline);
+  }
   await page.screenshot({path:`${output}/dashboard.png`,fullPage:true});
   const hashes={};
   for (const path of ['packages/xy-client/dist/index.js','packages/xy-client/dist/xyg-wasm.wasm',`${output}/pressure.png`,`${output}/restored.png`]) hashes[path]=createHash('sha256').update(await readFile(path)).digest('hex');

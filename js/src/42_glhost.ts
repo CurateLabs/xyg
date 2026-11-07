@@ -182,6 +182,19 @@ export class GLHost {
     return this.lost ? 0n : BigInt(this.canvas.width) * BigInt(this.canvas.height) * 4n + this._storage.bytes(this);
   }
 
+  private _budgetAdmission: object | null = null;
+
+  beginDashboardAdmission(budgetBytes: bigint, perChartBudgetBytes: bigint): object {
+    this.beginDashboardBudget(budgetBytes);
+    const admission = Object.freeze({ budgetBytes, perChartBudgetBytes });
+    this._budgetAdmission = admission;
+    return admission;
+  }
+
+  isDashboardAdmissionCurrent(admission: object): boolean {
+    return !this._disposed && this._budgetAdmission === admission;
+  }
+
   beginDashboardBudget(budget: bigint): bigint {
     if (budget < this.sharedResourceBytes()) throw new RangeError("xy: dashboard budget is below existing shared backing storage");
     if (this._budget !== budget) {
@@ -376,7 +389,10 @@ export class GLHost {
   }
 
   /** Apply only the exact snapshot Rust planned; changed state retries later. */
-  applyDashboardResidency(snapshot: GLHostDashboardSnapshot, retained: readonly boolean[]): boolean {
+  applyDashboardResidency(snapshot: GLHostDashboardSnapshot, retained: readonly boolean[],
+    admission?: object, cancelled: () => boolean = () => false): boolean {
+    const active = () => !cancelled() && (admission === undefined || this.isDashboardAdmissionCurrent(admission));
+    if (!active()) return false;
     if (this._disposed || this._activeClient || snapshot.revision !== this._dashboardRevision
         || retained.length !== snapshot.clients.length) return false;
     if (this._budget !== null && snapshot.resources.reduce((sum, resource, index) =>
@@ -394,23 +410,26 @@ export class GLHost {
         })) return false;
     // Revoke and delete first, then publish reservations and rebuild. No
     // rebuild can overlap the storage of an evicted chart.
-    snapshot.clients.forEach((client, index) => {
+    for (const [index, client] of snapshot.clients.entries()) {
+      if (!active()) return false;
       if (!retained[index]) {
         this._grants.set(client, 0n);
         this._blocked.add(client);
         client._applyDashboardResidency?.(false);
       }
-    });
-    snapshot.clients.forEach((client, index) => {
+    }
+    for (const [index, client] of snapshot.clients.entries()) {
+      if (!active()) return false;
       if (retained[index]) {
         this._grants.set(client, snapshot.resources[index].derivedBytes);
         this._blocked.delete(client);
       }
-    });
-    snapshot.clients.forEach((client, index) => {
+    }
+    for (const [index, client] of snapshot.clients.entries()) {
+      if (!active()) return false;
       if (retained[index]) client._applyDashboardResidency?.(true);
-    });
-    return true;
+    }
+    return active();
   }
 
   /** Resolve one immutable compiled shader for this host context. Programs

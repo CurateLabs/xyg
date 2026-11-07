@@ -99,3 +99,10 @@ tests/test_shared_glhost.py text eol=lf
 spec/performance/dashboard-gpu-parent-repair-2026-11-07/*.json text eol=lf
 spec/performance/dashboard-gpu-parent-repair-2026-11-07/*.md text eol=lf
 spec/performance/dashboard-gpu-parent-repair-2026-11-07/*.gz -text
+
+# Dashboard admission generation correction source and receipt identities.
+spec/design/dashboard-compositor.md text eol=lf
+spec/performance/dashboard-admission-races-2026-11-07/*.json text eol=lf
+spec/performance/dashboard-admission-races-2026-11-07/*.md text eol=lf
+spec/performance/dashboard-admission-races-2026-11-07/*.gz -text
+spec/performance/dashboard-admission-races-2026-11-07/*.png -text

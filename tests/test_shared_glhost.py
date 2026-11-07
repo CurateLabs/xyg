@@ -1022,7 +1022,7 @@ def test_shared_glhost_source_contract() -> None:
         assert marker in host, f"automatic dashboard lifecycle marker missing: {marker}"
     for marker in (
         "watchWasmDashboardResourceBudget(",
-        "await applyWasmDashboardResourceBudget(worker, host, budgetBytes, perChartBudgetBytes);",
+        "await applyDashboardResourceBudget(worker, host, budgetBytes, perChartBudgetBytes, () => disposed, admission);",
         "if (running) { rerun = true; return; }",
         "const unsubscribe = host.subscribeDashboardResources(request);",
         "unsubscribe();",

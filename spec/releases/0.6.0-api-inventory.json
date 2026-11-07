@@ -1195,7 +1195,7 @@
  "releaseLine":"0.6.0",
  "schema":"xyg.release-api-inventory/v1",
  "sourceProvenance":{
-  "baseCommit":"084b3c1b7c393e135476aab9610bf8334767b2ac",
+  "baseCommit":"254cafd313494c409971f4545bac69e3b53085aa",
   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
  },
  "sourceSha256":{
@@ -1211,7 +1211,7 @@
   "js/src/30_ticks.ts":"6be9d8893d9e06282d0c7743b5ad1b0eda8f85898e58196c0971cc4b2e61bac0",
   "js/src/40_gl.ts":"d6421a28d63e6c38e5f9f102949d1055e28e01c09b481f3909140ee2ac9e568a",
   "js/src/41_gpu_storage.ts":"0ca851f29ef80a6919d7476d7cd5f21290b03cb9a8029016b3b10c30fbbd2a3f",
-  "js/src/42_glhost.ts":"a3ec6aba4cb074f65fb5f99e2f60139c2d9371a9207a184e8adb467fea6b3c05",
+  "js/src/42_glhost.ts":"51e0c28ee69f74d2c7052f3abc372841d81a728d0528bcfc4c6cc40e2251435c",
   "js/src/43_external_gl.ts":"06ed8e024e47fd792a97f0cd9bad6d0cc806fbfee8d142df35776c69ee74fbd2",
   "js/src/45_lod.ts":"8bbde3d6b5e38aaa9214e404bd53e13e5a1ec5d424a90e287ab95e896772b498",
   "js/src/47_wasm.ts":"f0b04fd797475808a40457e94122cd02094a4350c4566ca8848307fa318b4da3",
@@ -1220,7 +1220,7 @@
   "js/src/49_wasm_chart.ts":"ee69d10d5f502632e7cdf164128ec8d99049a0358b2ac546d4ca3db533159b0f",
   "js/src/49_wasm_columns.ts":"2b0b53ca726247747ce3f4dc855eed20ee479f530989e7a948deb945440fdc80",
   "js/src/49_wasm_compound.ts":"13b2fcdf6f0d41bad4ec3ed394001a37c42114f1357a9c5e35a6ec9479f50d4c",
-  "js/src/49_wasm_dashboard.ts":"71d6e1881ffc8964908a284ba2e9f0d5e67e16fe29351d14a8297268b0be8bad",
+  "js/src/49_wasm_dashboard.ts":"93f34d4bd8883b905190520fd7cb62aedee8d0ea7f78daa88b0e495b81ac764b",
   "js/src/49_wasm_density.ts":"418ae2ee4e3e21ca61f4693b83e79446179d97235c2cebb2895dd38eabc084fa",
   "js/src/49_wasm_geo.ts":"2c1f5c33f143a2aa28a1c97338b765befb50ca22c89f4a63c390086b368e5554",
   "js/src/49_wasm_geoviewport.ts":"7b161af3a209f74a20a5469fa68d3cfb9c227f9d0142f67c4a52ae418b2263cc",
