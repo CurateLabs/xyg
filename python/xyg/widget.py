@@ -8,9 +8,11 @@ no CDN (§33.2, airgapped notebooks).
 
 from __future__ import annotations
 
+import asyncio
 import math
 import pathlib
 import struct
+import threading
 from concurrent.futures import Future
 from typing import TYPE_CHECKING, Any
 
@@ -213,10 +215,31 @@ class GeoWidget(anywidget.AnyWidget):
     def __init__(self, adapter, **kwargs):
         self._adapter = adapter
         self._close_requested = False
+        self._geo_binding = None
+        self._geo_mount = None
+        self._geo_loop = None
+        self._geo_rpc_queue = []
+        self._geo_rpc_task = None
+        self._geo_rpc_active = False
+        self._geo_notify_lock = threading.Lock()
+        self._geo_notify_pending = 0
         self._geo_updates = {}
         self._geo_update_serial = 0
         super().__init__(spec={"geo_host": True}, buffers=[], **kwargs)
         self.on_msg(self._on_geo_message)
+
+    def bind_temporal(self, controller, mode="cursor"):
+        """Bind native time to this mounted painter; enables serialized executor RPC."""
+        from ._geo_temporal import MountedGeoTemporalBinding
+
+        binding = MountedGeoTemporalBinding(self, controller, mode)
+        self._geo_binding = binding
+        return binding
+
+    def _enable_geo_executor(self, loop):
+        if self._geo_loop is not None and self._geo_loop is not loop:
+            raise RuntimeError("geographic widget belongs to another event loop")
+        self._geo_loop = loop
 
     def update(
         self, *, operation, args, sequence, camera_revision, time_revision, state_revision, time
@@ -274,6 +297,56 @@ class GeoWidget(anywidget.AnyWidget):
         return future
 
     def _on_geo_message(self, widget, content, msg_buffers):
+        if self._geo_loop is not None:
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop is not self._geo_loop:
+                # Newer notebook kernels can dispatch comms on a separate loop.
+                # Admit before copying, and wake the owning loop explicitly.
+                if len(msg_buffers) > 1 or any(memoryview(b).nbytes > 256 for b in msg_buffers):
+                    self.send(
+                        dict(
+                            type="geo_host",
+                            request=content.get("request"),
+                            error="invalid geographic notification attachment",
+                        )
+                    )
+                    return
+                with self._geo_notify_lock:
+                    admitted = self._geo_notify_pending < 16
+                    if admitted:
+                        self._geo_notify_pending += 1
+                if not admitted:
+                    self.send(
+                        dict(
+                            type="geo_host",
+                            request=content.get("request"),
+                            error="geographic notification queue is full",
+                        )
+                    )
+                    return
+                try:
+                    self._geo_loop.call_soon_threadsafe(
+                        self._deliver_geo_message, dict(content), [bytes(b) for b in msg_buffers]
+                    )
+                except BaseException:
+                    with self._geo_notify_lock:
+                        self._geo_notify_pending -= 1
+                    raise
+                return
+        if isinstance(content, dict) and content.get("type") == "geo_host_ready":
+            mount = content.get("mount")
+            if isinstance(mount, str) and mount == self._adapter._mount:
+                self._geo_mount = mount
+                if self._geo_binding is not None:
+                    self._geo_binding._schedule()
+            return
+        if isinstance(content, dict) and content.get("type") == "geo_host_temporal_done":
+            if self._geo_binding is not None:
+                self._geo_binding._message(content)
+            return
         if isinstance(content, dict) and content.get("type") == "geo_host_updated":
             future = self._geo_updates.pop(content.get("request"), None)
             if future is not None and not future.done():
@@ -282,10 +355,76 @@ class GeoWidget(anywidget.AnyWidget):
                 else:
                     future.set_result(None)
             return
-        reply = self._adapter.handle_host_message(content, msg_buffers)
+        if self._geo_loop is not None:
+            if len(self._geo_rpc_queue) + self._geo_rpc_active >= 16:
+                self.send(
+                    dict(
+                        type="geo_host",
+                        request=content.get("request"),
+                        error="geographic widget RPC queue is full",
+                    )
+                )
+                return
+            if len(msg_buffers) != 1 or not 32 <= len(msg_buffers[0]) <= 256:
+                self.send(
+                    dict(
+                        type="geo_host",
+                        request=content.get("request"),
+                        error="invalid geographic RPC attachment",
+                    )
+                )
+                return
+            self._geo_rpc_queue.append((dict(content), [bytes(msg_buffers[0])]))
+            self._start_geo_rpc()
+            return
+        self._geo_reply(self._adapter.handle_host_message(content, msg_buffers), content)
+
+    def _deliver_geo_message(self, content, buffers):
+        with self._geo_notify_lock:
+            self._geo_notify_pending -= 1
+        self._on_geo_message(self, content, buffers)
+
+    def _start_geo_rpc(self):
+        loop = self._geo_loop
+        assert loop is not None
+        if self._geo_rpc_task is None or self._geo_rpc_task.done():
+            self._geo_rpc_task = loop.create_task(self._drain_geo_rpc())
+
+    async def _drain_geo_rpc(self):
+        from ._geoscale import _settle
+
+        loop = self._geo_loop
+        assert loop is not None
+        interrupted = False
+        while self._geo_rpc_queue:
+            content, buffers = self._geo_rpc_queue.pop(0)
+            self._geo_rpc_active = True
+            try:
+                if content is None:
+                    worker = loop.run_in_executor(None, self._adapter.close)
+                    _, cancelled = await _settle(worker)
+                else:
+                    worker = loop.run_in_executor(
+                        None, self._adapter.handle_host_message, content, buffers
+                    )
+                    reply, cancelled = await _settle(worker)
+                    self._geo_reply(reply, content)
+            finally:
+                self._geo_rpc_active = False
+            interrupted |= cancelled
+        if self._close_requested and not self._adapter.mounted:
+            super().close()
+        if interrupted:
+            raise asyncio.CancelledError
+
+    def _geo_reply(self, reply, content):
         if reply is not None:
             message, buffers = reply
             self.send(message, buffers=buffers)
+        if content.get("mount") == self._geo_mount and not self._adapter.mounted:
+            mount, self._geo_mount = self._geo_mount, None
+            if self._geo_binding is not None:
+                self._geo_binding._released(mount)
         if self._close_requested and not self._adapter.mounted:
             super().close()
 
@@ -293,11 +432,33 @@ class GeoWidget(anywidget.AnyWidget):
         adapter = getattr(self, "_adapter", None)
         if adapter is None:
             return super().close()
+        if self._geo_loop is not None:
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop is not self._geo_loop:
+                if not self._geo_loop.is_closed():
+                    self._geo_loop.call_soon_threadsafe(self.close)
+                return
+            if self._close_requested:
+                task = self._geo_rpc_task
+                if task is None or not task.done():
+                    return
+                if not task.cancelled() and task.exception() is None:
+                    return
         self._close_requested = True
+        if self._geo_binding is not None:
+            self._geo_binding._close_from_host()
         for future in self._geo_updates.values():
             if not future.done():
                 future.set_exception(RuntimeError("geographic widget disposed"))
         self._geo_updates.clear()
+        if self._geo_loop is not None:
+            self._geo_rpc_queue.append((None, None))
+            self._start_geo_rpc()
+            self.send({"type": "geo_host_close"})
+            return
         adapter.close()
         if adapter.mounted:
             self.send({"type": "geo_host_close"})

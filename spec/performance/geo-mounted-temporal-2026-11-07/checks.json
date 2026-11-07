@@ -1,0 +1,751 @@
+[
+  {
+    "name": "final-client-build",
+    "command": [
+      "node",
+      "js/build.mjs"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests"
+    },
+    "exit": 0,
+    "elapsedSeconds": 3.701,
+    "log": "final-client-build.log.gz"
+  },
+  {
+    "name": "final-python",
+    "command": [
+      "uv",
+      "run",
+      "pytest",
+      "tests/test_geo_mounted_temporal.py",
+      "tests/test_geo_temporal_binding.py",
+      "tests/test_geo_host.py",
+      "tests/test_geo_live_host.py",
+      "tests/test_geo_live_hierarchy_host.py",
+      "tests/test_geo_native_overview_host.py",
+      "-q"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests"
+    },
+    "exit": 0,
+    "elapsedSeconds": 2.128,
+    "log": "final-python.log.gz"
+  },
+  {
+    "name": "final-node",
+    "command": [
+      "node",
+      "--test",
+      "packages/xy-node/test/geo-mounted-temporal.test.mjs",
+      "packages/xy-node/test/geo-temporal-binding.test.mjs",
+      "packages/xy-node/test/geo-host.test.mjs",
+      "packages/xy-node/test/geo-live-host.test.mjs",
+      "packages/xy-node/test/geo-live-hierarchy-host.test.mjs",
+      "packages/xy-node/test/geo-native-overview-host.test.mjs",
+      "packages/xy-node/test/temporal-controller.test.mjs"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests"
+    },
+    "exit": 0,
+    "elapsedSeconds": 5.392,
+    "log": "final-node.log.gz"
+  },
+  {
+    "name": "final-browser-selected",
+    "command": [
+      "node",
+      "tests/browser/geo_mounted_temporal_test.mjs"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests",
+      "XYG_GEO_MOUNTED_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/spec/performance/geo-mounted-temporal-2026-11-07/selected-report.json",
+      "XYG_GEO_MOUNTED_CAPTURE": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/spec/performance/geo-mounted-temporal-2026-11-07/selected.png"
+    },
+    "exit": 0,
+    "elapsedSeconds": 5.449,
+    "log": "final-browser-selected.log.gz"
+  },
+  {
+    "name": "final-browser-aggregate",
+    "command": [
+      "node",
+      "tests/browser/geo_mounted_temporal_test.mjs"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests",
+      "XYG_GEO_SELECTED": "0",
+      "XYG_GEO_AGGREGATE": "1",
+      "XYG_GEO_MOUNTED_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/spec/performance/geo-mounted-temporal-2026-11-07/aggregate-report.json",
+      "XYG_GEO_MOUNTED_CAPTURE": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/spec/performance/geo-mounted-temporal-2026-11-07/aggregate.png"
+    },
+    "exit": 1,
+    "elapsedSeconds": 5.075,
+    "log": "final-browser-aggregate.log.gz"
+  },
+  {
+    "name": "final-browser-baseline-host",
+    "command": [
+      "node",
+      "tests/browser/geo_live_host_test.mjs"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests"
+    },
+    "exit": 0,
+    "elapsedSeconds": 3.218,
+    "log": "final-browser-baseline-host.log.gz"
+  },
+  {
+    "name": "final-browser-baseline-pointer",
+    "command": [
+      "node",
+      "tests/browser/geo_live_pointer_test.mjs"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests"
+    },
+    "exit": 0,
+    "elapsedSeconds": 4.857,
+    "log": "final-browser-baseline-pointer.log.gz"
+  },
+  {
+    "name": "final-browser-baseline-overview",
+    "command": [
+      "node",
+      "tests/browser/geo_native_overview_host_test.mjs"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests"
+    },
+    "exit": 0,
+    "elapsedSeconds": 6.57,
+    "log": "final-browser-baseline-overview.log.gz"
+  },
+  {
+    "name": "final-notebook",
+    "command": [
+      "node",
+      "scripts/geo_notebook_mounted_temporal_smoke.mjs"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests",
+      "XYG_GEO_JUPYTER": "/home/ubuntu/.t3/worktrees/xyg/t3-150befc0/.venv/bin/jupyter-lab",
+      "XYG_GEO_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/spec/performance/geo-mounted-temporal-2026-11-07/notebook-report.json",
+      "XYG_GEO_NOTEBOOK_CAPTURE": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/spec/performance/geo-mounted-temporal-2026-11-07/notebook.png"
+    },
+    "exit": 0,
+    "elapsedSeconds": 14.263,
+    "log": "final-notebook.log.gz"
+  },
+  {
+    "name": "final-python311",
+    "command": [
+      "uv",
+      "run",
+      "--no-project",
+      "--python",
+      "/home/ubuntu/.t3/worktrees/xyg/t3-150befc0/.venv/bin/python",
+      "python",
+      "-m",
+      "pytest",
+      "tests/test_geo_mounted_temporal.py",
+      "tests/test_geo_temporal_binding.py",
+      "tests/test_geo_live_host.py",
+      "-q"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests"
+    },
+    "exit": 0,
+    "elapsedSeconds": 5.381,
+    "log": "final-python311.log.gz"
+  },
+  {
+    "name": "final-abi",
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "scripts/abi_smoke.py"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests"
+    },
+    "exit": 0,
+    "elapsedSeconds": 0.161,
+    "log": "final-abi.log.gz"
+  },
+  {
+    "name": "final-ownership",
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "scripts/verify_ownership.py"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests"
+    },
+    "exit": 0,
+    "elapsedSeconds": 10.33,
+    "log": "final-ownership.log.gz"
+  },
+  {
+    "name": "final-inventory-write",
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "scripts/check_release_inventory.py",
+      "--write"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests"
+    },
+    "exit": 0,
+    "elapsedSeconds": 4.651,
+    "log": "final-inventory-write.log.gz"
+  },
+  {
+    "name": "final-inventory-check",
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "scripts/check_release_inventory.py"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests"
+    },
+    "exit": 0,
+    "elapsedSeconds": 3.961,
+    "log": "final-inventory-check.log.gz"
+  },
+  {
+    "name": "final-ci",
+    "command": [
+      "uv",
+      "run",
+      "make",
+      "check-ci"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests"
+    },
+    "exit": 0,
+    "elapsedSeconds": 448.763,
+    "log": "final-ci.log.gz"
+  },
+  {
+    "name": "recheck-client-build",
+    "command": [
+      "node",
+      "js/build.mjs"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests"
+    },
+    "exit": 0,
+    "elapsedSeconds": 2.057,
+    "log": "recheck-client-build.log.gz"
+  },
+  {
+    "name": "recheck-python",
+    "command": [
+      "uv",
+      "run",
+      "pytest",
+      "tests/test_geo_mounted_temporal.py",
+      "tests/test_geo_temporal_binding.py",
+      "tests/test_geo_host.py",
+      "tests/test_geo_live_host.py",
+      "tests/test_geo_live_hierarchy_host.py",
+      "tests/test_geo_native_overview_host.py",
+      "-q"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests"
+    },
+    "exit": 0,
+    "elapsedSeconds": 2.811,
+    "log": "recheck-python.log.gz"
+  },
+  {
+    "name": "recheck-browser-selected",
+    "command": [
+      "node",
+      "tests/browser/geo_mounted_temporal_test.mjs"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests",
+      "XYG_GEO_MOUNTED_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/spec/performance/geo-mounted-temporal-2026-11-07/selected-report.json",
+      "XYG_GEO_MOUNTED_CAPTURE": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/spec/performance/geo-mounted-temporal-2026-11-07/selected.png"
+    },
+    "exit": 0,
+    "elapsedSeconds": 6.503,
+    "log": "recheck-browser-selected.log.gz"
+  },
+  {
+    "name": "recheck-browser-aggregate",
+    "command": [
+      "node",
+      "tests/browser/geo_mounted_temporal_test.mjs"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests",
+      "XYG_GEO_SELECTED": "0",
+      "XYG_GEO_AGGREGATE": "1",
+      "XYG_GEO_MOUNTED_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/spec/performance/geo-mounted-temporal-2026-11-07/aggregate-report.json",
+      "XYG_GEO_MOUNTED_CAPTURE": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/spec/performance/geo-mounted-temporal-2026-11-07/aggregate.png"
+    },
+    "exit": 0,
+    "elapsedSeconds": 6.085,
+    "log": "recheck-browser-aggregate.log.gz"
+  },
+  {
+    "name": "recheck-notebook",
+    "command": [
+      "node",
+      "scripts/geo_notebook_mounted_temporal_smoke.mjs"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests",
+      "XYG_GEO_JUPYTER": "/home/ubuntu/.t3/worktrees/xyg/t3-150befc0/.venv/bin/jupyter-lab",
+      "XYG_GEO_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/spec/performance/geo-mounted-temporal-2026-11-07/notebook-report.json",
+      "XYG_GEO_NOTEBOOK_CAPTURE": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/spec/performance/geo-mounted-temporal-2026-11-07/notebook.png"
+    },
+    "exit": 0,
+    "elapsedSeconds": 13.81,
+    "log": "recheck-notebook.log.gz"
+  },
+  {
+    "name": "recheck-python311",
+    "command": [
+      "uv",
+      "run",
+      "--no-project",
+      "--python",
+      "/home/ubuntu/.t3/worktrees/xyg/t3-150befc0/.venv/bin/python",
+      "python",
+      "-m",
+      "pytest",
+      "tests/test_geo_mounted_temporal.py",
+      "tests/test_geo_temporal_binding.py",
+      "tests/test_geo_live_host.py",
+      "-q"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests"
+    },
+    "exit": 0,
+    "elapsedSeconds": 1.955,
+    "log": "recheck-python311.log.gz"
+  },
+  {
+    "name": "recheck-ty",
+    "command": [
+      "uv",
+      "run",
+      "ty",
+      "check"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests"
+    },
+    "exit": 0,
+    "elapsedSeconds": 1.824,
+    "log": "recheck-ty.log.gz"
+  },
+  {
+    "name": "recheck-inventory-write",
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "scripts/check_release_inventory.py",
+      "--write"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests"
+    },
+    "exit": 0,
+    "elapsedSeconds": 5.77,
+    "log": "recheck-inventory-write.log.gz"
+  },
+  {
+    "name": "recheck-inventory-check",
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "scripts/check_release_inventory.py"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests"
+    },
+    "exit": 0,
+    "elapsedSeconds": 4.503,
+    "log": "recheck-inventory-check.log.gz"
+  },
+  {
+    "name": "recheck-ownership",
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "scripts/verify_ownership.py"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/python:/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests"
+    },
+    "exit": 0,
+    "elapsedSeconds": 0.882,
+    "log": "recheck-ownership.log.gz"
+  },
+  {
+    "name": "mandatory-hooks-initial",
+    "command": [
+      "uv",
+      "run",
+      "--with",
+      "pre-commit",
+      "pre-commit",
+      "run",
+      "--all-files"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so"
+    },
+    "exit": 0,
+    "elapsedSeconds": 9.434,
+    "log": "mandatory-hooks-initial.log.gz"
+  },
+  {
+    "name": "mandatory-ruff-initial",
+    "command": [
+      "uv",
+      "run",
+      "ruff",
+      "check",
+      "."
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so"
+    },
+    "exit": 0,
+    "elapsedSeconds": 0.517,
+    "log": "mandatory-ruff-initial.log.gz"
+  },
+  {
+    "name": "mandatory-format-initial",
+    "command": [
+      "uv",
+      "run",
+      "ruff",
+      "format",
+      "--check",
+      "."
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so"
+    },
+    "exit": 0,
+    "elapsedSeconds": 0.039,
+    "log": "mandatory-format-initial.log.gz"
+  },
+  {
+    "name": "vscode-qualified",
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "scripts/geo_vscode_mounted_temporal_smoke.py",
+      "--code",
+      "target/task-tmp/mounted-temporal-continuation/vscode-node22/code",
+      "--output",
+      "target/task-tmp/mounted-temporal-continuation/vscode-qualified",
+      "--tcp-xvfb"
+    ],
+    "nativeCommand": {
+      "command": [
+        "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/task-tmp/mounted-temporal-continuation/vscode-node22/code",
+        "--no-sandbox",
+        "--disable-gpu-sandbox",
+        "--use-angle=swiftshader",
+        "--enable-unsafe-swiftshader",
+        "--verbose",
+        "--user-data-dir=/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/task-tmp/mounted-temporal-continuation/vscode-qualified/user",
+        "--extensions-dir=/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/task-tmp/mounted-temporal-continuation/vscode-qualified/extensions",
+        "--extensionDevelopmentPath=/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests/vscode_geo_mounted_temporal",
+        "--extensionTestsPath=/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests/vscode_geo_mounted_temporal/test.cjs",
+        "--disable-extensions",
+        "--skip-welcome",
+        "--skip-release-notes"
+      ],
+      "xvfb": [
+        "sudo",
+        "-n",
+        "Xvfb",
+        ":104",
+        "-screen",
+        "0",
+        "1280x900x24",
+        "-nolock",
+        "-nolisten",
+        "unix",
+        "-listen",
+        "tcp",
+        "-auth",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/task-tmp/mounted-temporal-continuation/vscode-qualified/xauthority"
+      ],
+      "exit": 0,
+      "environment": {
+        "TMPDIR": "/var/tmp",
+        "DISPLAY": "127.0.0.1:104",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+        "XYG_GEO_VSCODE_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/task-tmp/mounted-temporal-continuation/vscode-qualified/report.json"
+      }
+    },
+    "exit": 0,
+    "log": "vscode-qualified.log.gz"
+  },
+  {
+    "name": "vscode-node22-first",
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "scripts/geo_vscode_mounted_temporal_smoke.py",
+      "--code",
+      "target/task-tmp/mounted-temporal-continuation/vscode-node22/code",
+      "--output",
+      "target/task-tmp/mounted-temporal-continuation/vscode-final",
+      "--tcp-xvfb"
+    ],
+    "nativeCommand": {
+      "command": [
+        "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/task-tmp/mounted-temporal-continuation/vscode-node22/code",
+        "--no-sandbox",
+        "--disable-gpu-sandbox",
+        "--use-angle=swiftshader",
+        "--enable-unsafe-swiftshader",
+        "--verbose",
+        "--user-data-dir=/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/task-tmp/mounted-temporal-continuation/vscode-final/user",
+        "--extensions-dir=/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/task-tmp/mounted-temporal-continuation/vscode-final/extensions",
+        "--extensionDevelopmentPath=/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests/vscode_geo_mounted_temporal",
+        "--extensionTestsPath=/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/tests/vscode_geo_mounted_temporal/test.cjs",
+        "--disable-extensions",
+        "--skip-welcome",
+        "--skip-release-notes"
+      ],
+      "xvfb": [
+        "sudo",
+        "-n",
+        "Xvfb",
+        ":104",
+        "-screen",
+        "0",
+        "1280x900x24",
+        "-nolock",
+        "-nolisten",
+        "unix",
+        "-listen",
+        "tcp",
+        "-auth",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/task-tmp/mounted-temporal-continuation/vscode-final/xauthority"
+      ],
+      "exit": 0,
+      "environment": {
+        "TMPDIR": "/var/tmp",
+        "DISPLAY": "127.0.0.1:104",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+        "XYG_GEO_VSCODE_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/task-tmp/mounted-temporal-continuation/vscode-final/report.json"
+      }
+    },
+    "exit": 0,
+    "log": "vscode-node22-first.log.gz"
+  },
+  {
+    "name": "notebook-reader-cancel",
+    "command": [
+      "node",
+      "scripts/geo_notebook_mounted_temporal_smoke.mjs"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "PATHPrefix": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "XYG_GEO_JUPYTER": "/home/ubuntu/.t3/worktrees/xyg/t3-150befc0/.venv/bin/jupyter-lab"
+    },
+    "exit": 0,
+    "log": "notebook-reader-cancel.log.gz"
+  },
+  {
+    "name": "aggregate-complete-membership",
+    "command": [
+      "node",
+      "tests/browser/geo_mounted_temporal_test.mjs"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "PATHPrefix": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+      "XYG_GEO_SELECTED": "0",
+      "XYG_GEO_AGGREGATE": "1"
+    },
+    "exit": 0,
+    "log": "aggregate-complete-membership.log.gz"
+  },
+  {
+    "name": "selected-final-source",
+    "command": [
+      "node",
+      "tests/browser/geo_mounted_temporal_test.mjs"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "PATHPrefix": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so",
+      "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+    },
+    "exit": 0,
+    "log": "selected-final-source.log.gz"
+  },
+  {
+    "name": "mandatory-hooks",
+    "command": [
+      "uv",
+      "run",
+      "--with",
+      "pre-commit",
+      "pre-commit",
+      "run",
+      "--all-files"
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so"
+    },
+    "exit": 0,
+    "elapsedSeconds": 16.918,
+    "log": "mandatory-hooks.log.gz"
+  },
+  {
+    "name": "mandatory-ruff",
+    "command": [
+      "uv",
+      "run",
+      "ruff",
+      "check",
+      "."
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so"
+    },
+    "exit": 0,
+    "elapsedSeconds": 0.087,
+    "log": "mandatory-ruff.log.gz"
+  },
+  {
+    "name": "mandatory-format",
+    "command": [
+      "uv",
+      "run",
+      "ruff",
+      "format",
+      "--check",
+      "."
+    ],
+    "environmentOverrides": {
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/release/libxyg_core.so"
+    },
+    "exit": 0,
+    "elapsedSeconds": 0.041,
+    "log": "mandatory-format.log.gz"
+  }
+]

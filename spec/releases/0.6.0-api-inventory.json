@@ -1,6 +1,6 @@
 {
  "acceptance":"preparation-only-not-a-freeze",
- "contractSha256":"7970c1451defe23a0de3bda158ec9292574cebcefe531a99680b50be26a95594",
+ "contractSha256":"b4668e69f5416bc8391a0c923915857de1c8898d47911dfeb413cfbec1a837c7",
  "contracts":{
   "buildHooks":{
    "sdist":{"custom":{"path":"hatch_build.py"}},
@@ -551,7 +551,7 @@
    "packages/xy-node/src/geo-tiles.js#geoTileRead":{"declarations":[{"defaultTypes":[null,null],"kind":"FunctionDeclaration","modifiers":["async","export"],"parameters":["request","limit"]}],"signatures":[{"parameters":[{"name":"request","type":"any"},{"name":"limit","type":"any"}],"returns":"Promise<ArrayBuffer>"}],"source":"packages/xy-node/src/geo-tiles.js"},
    "packages/xy-node/src/geo-tiles.js#httpTileLoader":{"declarations":[{"defaultTypes":[null,null],"kind":"FunctionDeclaration","modifiers":["async","export"],"parameters":["receipt","signal"]}],"signatures":[{"parameters":[{"name":"receipt","type":"any"},{"name":"signal","type":"any"}],"returns":"Promise<Uint8Array<any>>"}],"source":"packages/xy-node/src/geo-tiles.js"},
    "packages/xy-node/src/geo-tiles.js#nativeGeoTileBridge":{"declarations":[{"defaultTypes":[null],"kind":"FunctionDeclaration","modifiers":["export"],"parameters":["limit"]}],"signatures":[{"parameters":[{"name":"limit","type":"any"}],"returns":"{ execute: (request: any) => Promise<ArrayBuffer>; read: (p: any) => Promise<ArrayBuffer>; }"}],"source":"packages/xy-node/src/geo-tiles.js"},
-   "packages/xy-node/src/geo-webview.d.ts#attachGeoWebview":{"declarations":[{"defaultTypes":[null,null],"kind":"FunctionDeclaration","modifiers":["declare","export"],"parameters":["panel: unknown","adapter: GeoHostAdapter"],"returnOrFieldType":"unknown"}],"runtimeParameters":["panel","adapter"],"signatures":[{"parameters":[{"name":"panel","type":"unknown"},{"name":"adapter","type":"GeoHostAdapter"}],"returns":"unknown"}],"source":"packages/xy-node/src/geo-webview.d.ts"},
+   "packages/xy-node/src/geo-webview.d.ts#attachGeoWebview":{"declarations":[{"defaultTypes":[null,null],"kind":"FunctionDeclaration","modifiers":["declare","export"],"parameters":["panel: unknown","adapter: GeoHostAdapter"],"returnOrFieldType":"GeoWebviewHost"}],"runtimeParameters":["panel","adapter"],"signatures":[{"parameters":[{"name":"panel","type":"unknown"},{"name":"adapter","type":"GeoHostAdapter"}],"returns":"GeoWebviewHost"}],"source":"packages/xy-node/src/geo-webview.d.ts"},
    "packages/xy-node/src/geoarrow.js#geoDescriptorFromGeoArrow":{"declarations":[{"defaultTypes":[null],"kind":"FunctionDeclaration","literalDefaultBindings":{"packages/xy-node/src/geoarrow.js#featureIds":"null","packages/xy-node/src/geoarrow.js#offsets":"[]","packages/xy-node/src/geoarrow.js#validity":"null"},"modifiers":["export"],"parameters":["{ extensionName, extensionMetadata, x, y, validity = null, offsets = [], featureIds = null, }: {\n    extensionName: string;\n    extensionMetadata: string;\n    x: ArrayLike<number>;\n    y: ArrayLike<number>;\n    validity?: ArrayLike<number | boolean> | null;\n    offsets?: ArrayLike<number>[];\n    featureIds?: ArrayLike<number | bigint> | null;\n}"],"returnOrFieldType":"{\n    geometry: number;\n    crs: number;\n    xy: Float64Array;\n    validity: Uint8Array;\n    featureIds: BigUint64Array | null;\n    offsets0: Uint32Array | null;\n    offsets1: Uint32Array | null;\n    offsets2: Uint32Array | null;\n}"}],"signatures":[{"parameters":[{"name":"__0","type":"{ extensionName: string; extensionMetadata: string; x: ArrayLike<number>; y: ArrayLike<number>; validity?: ArrayLike<number | boolean> | null | undefined; offsets?: ArrayLike<number>[] | undefined; featureIds?: ArrayLike<number | bigint> | null | undefined; }"}],"returns":"{ geometry: number; crs: number; xy: Float64Array<ArrayBufferLike>; validity: Uint8Array<ArrayBufferLike>; featureIds: BigUint64Array<ArrayBufferLike> | null; offsets0: Uint32Array<ArrayBufferLike> | null; offsets1: Uint32Array<ArrayBufferLike> | null; offsets2: Uint32Array<ArrayBufferLike> | null; }"}],"source":"packages/xy-node/src/geoarrow.js"},
    "packages/xy-node/src/geocatalog.js#decodeGeoCatalogResponse":{"declarations":[{"defaultTypes":[null],"kind":"FunctionDeclaration","modifiers":["export"],"parameters":["buffer"]}],"signatures":[{"parameters":[{"name":"buffer","type":"any"}],"returns":"{ camera: { crs: number; worldWrap: boolean; centerX: number; centerY: number; zoom: number; width: number; height: number; bearing: number; pitch: number; }; rebuildKey: Uint8Array<ArrayBuffer>; scene: any; styleOwners: BigUint64Array<any> | Uint32Array<any> | Uint8Array<ArrayBuffer>; layers: { layerId: bigint; kind: number; sourceDigest: Uint8Array<ArrayBuffer>; featureIds: BigUint64Array<any> | Uint32Array<any> | Uint8Array<ArrayBuffer>; validity: BigUint64Array<any> | Uint32Array<any> | Uint8Array<ArrayBuffer>; stateFlags: BigUint64Array<any> | Uint32Array<any> | Uint8Array<ArrayBuffer>; visibleFeatureIndices: BigUint64Array<any> | Uint32Array<any> | Uint8Array<ArrayBuffer>; bounds: number[] | null; density: { columns: number; rows: number; counts: BigUint64Array<any> | Uint32Array<any> | Uint8Array<ArrayBuffer>; offsets: BigUint64Array<any> | Uint32Array<any> | Uint8Array<ArrayBuffer>; featureIndices: BigUint64Array<any> | Uint32Array<any> | Uint8Array<ArrayBuffer>; } | null; droppedChannels: number; }[]; focus: { layerId: bigint; featureId: bigint; } | null; hits: { layerId: bigint; featureId: bigint; featureIndices: BigUint64Array<any> | Uint32Array<any> | Uint8Array<ArrayBuffer>; }[]; }"}],"source":"packages/xy-node/src/geocatalog.js"},
    "packages/xy-node/src/geocatalog.js#encodeGeoCatalogRequest":{"declarations":[{"defaultTypes":[null,"number"],"kind":"FunctionDeclaration","modifiers":["export"],"parameters":["input","budget = MAX"]}],"signatures":[{"parameters":[{"name":"input","type":"any"},{"name":"budget","type":"number"}],"returns":"ArrayBuffer"}],"source":"packages/xy-node/src/geocatalog.js"},
@@ -1213,7 +1213,7 @@
  "releaseLine":"0.6.0",
  "schema":"xyg.release-api-inventory/v1",
  "sourceProvenance":{
-  "baseCommit":"c90fcd3047e4cac69c307ffe1f27c37c4d69c0f8",
+  "baseCommit":"81519ef76f7ace4d6ab1801c9e4ab1dd21f81427",
   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
  },
  "sourceSha256":{
@@ -1267,7 +1267,7 @@
   "js/src/63_graph_gpu.ts":"a6c0df5ba0584524c18e78a5f490816e8ad9f7e21fe56554918d430a059478f8",
   "js/src/63_graph_session_wire.ts":"2cbbc8471322040377e0e56f16641edd075c20766f1d5f0e93c16dfa21e1c693",
   "js/src/64_geo_retained_controller.ts":"3be21ad483015b40d220e21279ee9bf3565e3f561554ea4be9388504e9cf4c3d",
-  "js/src/65_geo_host.ts":"3949d02581cbf254b92beae731b2cf17ca05c982086dfe53029e7e39ddbb9702",
+  "js/src/65_geo_host.ts":"a4321e69e64a1e937e0a4d0ae453bc043e7b2f57afe2f11459bbe281b2c3d453",
   "js/src/66_geo_mixed.ts":"fba49e7364553580f6ed8fab98f856ee53395ba23e705f95a76734419ef51ed7",
   "js/src/66_graph_host.ts":"287f8e775bfd349538da3803625d92f7e410a190959af1735d4731253214973a",
   "js/src/67_geo_overview.ts":"6990a84272572c44b9bd6d080ed3b60ad30f41a4b4d625c15467d659e68099f0",
@@ -1286,7 +1286,7 @@
   "package-lock.json":"8d8fd757c65329343e3e212f540bf6dfd5a7950b3af321787a649b94ab15a5d8",
   "packages/xy-client/package.json":"9882b8097e9f05153bb95fd3373470fc18a01c55c2dd30d017672a93aeb6a042",
   "packages/xy-node/README.md":"531b67fd93a7cd9574443a75b50049053cefde97651bde9b334e7d1be5f5a7ce",
-  "packages/xy-node/package.json":"409e383e1fa0e120ec6d76670f58a8b79f361664ffb233c128d560c8e5b09e4b",
+  "packages/xy-node/package.json":"041affbfc0d8d0826713100e85c0481623c8d69bb6780309bf128b98007a4121",
   "packages/xy-node/src/_abi_generated.js":"572995b1f784551c0e1d69c02c588633e831e03c2ba3dec3ff4c1866a723eda5",
   "packages/xy-node/src/abi.js":"1cf0a2bb4411405ddd8ca3c1e881d29ce9aad139395dda7ae64dba8540c290f7",
   "packages/xy-node/src/charts.js":"291417e326d7f619ea24779260aa3681a246b94def7c5b0ed5a83edee639131a",
@@ -1303,7 +1303,7 @@
   "packages/xy-node/src/geo-hierarchy-wire.js":"59790b2236a200166a62177411df49ffb1c47edddea0f620f78893bb29124b96",
   "packages/xy-node/src/geo-hierarchy.d.ts":"74c4f060f01eebb49303c9d5c47744008663efefbf010020bb785d04dfc5999a",
   "packages/xy-node/src/geo-hierarchy.js":"0c28c07bf1105147fd0eb82edd2b579d219ebffd44ddf318a54762d3e905927d",
-  "packages/xy-node/src/geo-live-host.js":"6cb5001de9e9836e49e7957a730d1a1b34facbfa4706fad1cc9b4c8524f91123",
+  "packages/xy-node/src/geo-live-host.js":"22a3368c3981d93a392e4b6d766eaacfa67c3092a82371f45b1324a489961bd3",
   "packages/xy-node/src/geo-mixed-wire.js":"f573b2985aa28cf66d43ae90220a8372a91a900f216c04080eee509c36a7afcd",
   "packages/xy-node/src/geo-mixed.js":"d6072633fc1aa10f8777ffb466e7be3fbe2cb012de7ddaa4eab034f084396da2",
   "packages/xy-node/src/geo-overview-members.d.ts":"17eca996d454f3b61d651d0f345f1272adf76db18d47734fcea84079eaed240a",
@@ -1320,11 +1320,11 @@
   "packages/xy-node/src/geo-snapshot.js":"1e61f6fca02b6ea5acf2406d79eb0e6ceafa0ff71dcb27d5465e1b4b7f54968d",
   "packages/xy-node/src/geo-spatial.d.ts":"38ca6190ccea496d29d0c62cd17d4537d097ffd4c62fe55c43fe3308921bba9b",
   "packages/xy-node/src/geo-spatial.js":"83a7da0edb48f4ddcf7f61e02da8d36062fb3ce0b154ccd4c786b1d70cd49e7f",
-  "packages/xy-node/src/geo-temporal.js":"8fc67689c9a424704f6c661752864edaa62b11363aad1811ee6fb039f9448328",
+  "packages/xy-node/src/geo-temporal.js":"404c5c23f0341e2c6f299edbc4d0362afa92212cbc7439922c45847a73f32e79",
   "packages/xy-node/src/geo-tiles.d.ts":"6e138eb0602b8fc2c42b147314d6d79157f131a5f9175ec8a42f77a0da2f2dd6",
   "packages/xy-node/src/geo-tiles.js":"ad1dfd502f1e3b39ef2799d6d1ab9c3cdc924138ecb873d5744f01593de4fe50",
-  "packages/xy-node/src/geo-webview.d.ts":"71317fa4afaca94e0d2012c5650de5c4ed766e7d19e05206cfe238d28e339e24",
-  "packages/xy-node/src/geo-webview.js":"064226b45ce8225e9515ced5c53acf825d3e83769340ac14ebec902de3b00936",
+  "packages/xy-node/src/geo-webview.d.ts":"21f854bdd8e7a25dd9bbc80e7deafd330926bf6d430289024158202d32fa6506",
+  "packages/xy-node/src/geo-webview.js":"c904b85c2f17d3eb3a0b57e15930ec7fe0aea16ef593bfdc8cde3d39f9b93e62",
   "packages/xy-node/src/geoarrow.js":"11d556514842eea2fb6d5c9ac1f0e349707f8e3fecb3eec619d4ab443d5aea73",
   "packages/xy-node/src/geocatalog.js":"32880a05684b697cbcdff25ae7e3cbdf99dec8f6d5c43fbab1a753c53a6906d0",
   "packages/xy-node/src/geoscale.d.ts":"d48024ef22ee0267ff358dd1f78fc1098f4ff513ad8fba908b5a86241237dd97",

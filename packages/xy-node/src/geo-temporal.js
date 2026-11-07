@@ -112,3 +112,56 @@ export class GeoTemporalBinding {
     }).catch(error=>{this.disposing=undefined;throw error;});
   }
 }
+
+/** Private mounted scheduler. Uses the same source claim as snapshot binding. */
+export class MountedGeoTemporalBinding {
+  constructor(source,handle,host,mode='cursor') {
+    if(!['cursor','range'].includes(mode))throw TypeError('mode must be cursor or range');
+    if(source?.constructor!==RetainedGeoSource)throw TypeError('canonical retained source required');
+    if(temporalControllerState(handle).disposed)throw Error('controller disposed');
+    if(bindings.has(source))throw Error('source already has a temporal binding');
+    this.source=source;this.host=host;this.mode=mode;this.generation=0;this.sent=-1;this.serial=0;this.wake();
+    bindings.set(source,this);
+    try{this.unsubscribe=temporalControllerSubscribeState(handle,state=>this.accept(state));this.accept(temporalControllerState(handle));}
+    catch(error){this.unsubscribe?.();bindings.delete(source);throw error;}
+  }
+  wake(){this.changed?.resolve();let resolve;const promise=new Promise(r=>resolve=r);this.changed={promise,resolve};}
+  accept(state){
+    if(this.closed)return;
+    if(state.disposed){void this.dispose().catch(()=>{});return;}
+    const time=this.mode==='cursor'?[1,state.cursor,0n]:[2,state.rangeStart,state.rangeEnd];
+    if(this.time&&time.every((x,i)=>x===this.time[i]))return;
+    this.time=time;this.generation++;this.schedule();
+  }
+  schedule(){this.wake();if(!this.scheduled){this.scheduled=true;queueMicrotask(()=>this.pump());}}
+  packet(operation){const b=new ArrayBuffer(56),v=new DataView(b);v.setUint32(0,0x54485958,true);v.setUint32(4,1,true);v.setUint32(8,operation,true);if(operation<3){v.setBigInt64(16,this.time[1],true);v.setBigInt64(24,this.time[2],true);v.setBigUint64(32,this.source.sequence,true);v.setBigUint64(40,this.host.adapter.liveCandidate.timeFloor,true);v.setBigUint64(48,this.host.adapter.liveCandidate.cameraFloor,true);}return b;}
+  send(operation){
+    const {mount,request}=this.active;
+    try{return Promise.resolve(this.host.send({type:'geo_host_temporal',mount,request},[this.packet(operation)]));}catch(error){return Promise.reject(error);}
+  }
+  failed(error){this.error=error;this.blocked=!!this.active;this.wake();}
+  pump(){
+    this.scheduled=false;
+    if(this.active){if((this.closed||this.active.generation!==this.generation)&&!this.active.invalidated){const active=this.active;active.invalidated=true;this.send(3).catch(error=>{if(this.active===active)this.failed(error);});}this.wake();return;}
+    if(this.closed||!this.host.mount||this.sent===this.generation){this.wake();return;}
+    this.active={mount:this.host.mount,request:`temporal:${++this.host.serial}`,generation:this.generation,invalidated:false};
+    this.sent=this.generation;const active=this.active;this.send(this.time[0]).catch(error=>{if(this.active===active)this.failed(error);});this.wake();
+  }
+  message(message){
+    if(!this.active||message.mount!==this.active.mount||message.request!==this.active.request||!['accepted','superseded','failed'].includes(message.status))return;
+    if(message.drained!==true){this.failed(Error(message.error??'geographic drain unconfirmed'));return;}
+    this.active=undefined;this.blocked=false;this.error=message.status==='failed'?Error(message.error??'geographic update failed'):undefined;this.schedule();
+  }
+  released(mount){if(this.active?.mount===mount){this.active=undefined;this.blocked=false;}this.sent=-1;this.schedule();}
+  async whenIdle(){for(;;){if(this.blocked||!this.active&&!this.scheduled&&(this.closed||this.host.mount&&this.sent===this.generation))return;await this.changed.promise;}}
+  detach(){if(!this.closed){this.closed=true;this.unsubscribe();this.schedule();}}
+  dispose(){
+    if(this.disposing)return this.disposing;
+    const retry=this.blocked;this.detach();
+    return this.disposing=(async()=>{
+      if(retry&&this.active){this.blocked=false;try{await this.send(4);}catch(error){this.failed(error);}}
+      await this.whenIdle();if(this.blocked)throw this.error;
+      if(bindings.get(this.source)===this)bindings.delete(this.source);
+    })().catch(error=>{this.disposing=undefined;throw error;});
+  }
+}

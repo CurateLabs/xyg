@@ -7,12 +7,63 @@ from collections.abc import Mapping
 from copy import deepcopy
 from dataclasses import replace
 from functools import partial
+from threading import Lock
 from weakref import WeakKeyDictionary
 
 from ._geoscale import _settle
 
 _BINDINGS = WeakKeyDictionary()
 _MAX = (1 << 64) - 1
+
+
+class _TemporalNotificationInbox:
+    """Retain one native snapshot and one cross-thread wakeup per binding."""
+
+    def __init__(self, loop):
+        self._loop = loop
+        self._lock = Lock()
+        self._pending = None
+        self._scheduled = False
+        self._closed = False
+
+    def accept(self, state, deliver):
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        with self._lock:
+            if self._closed or self._loop.is_closed():
+                return None
+            # Terminal delivery cannot be replaced by an older nonterminal
+            # snapshot, including one arriving later on the owning loop.
+            if self._pending is None or not self._pending["disposed"]:
+                self._pending = state if loop is self._loop else deepcopy(state)
+            if loop is not self._loop:
+                if not self._scheduled:
+                    self._scheduled = True
+                    try:
+                        self._loop.call_soon_threadsafe(deliver)
+                    except RuntimeError:
+                        self._scheduled = False
+                        self._pending = None
+                        if not self._loop.is_closed():
+                            raise
+                return None
+            # Preserve immediate owner-loop admission. An already queued
+            # wakeup can serve the next arrival without retaining older intent.
+            state, self._pending = self._pending, None
+            return state
+
+    def take(self):
+        with self._lock:
+            self._scheduled = False
+            state, self._pending = self._pending, None
+            return state
+
+    def close(self):
+        with self._lock:
+            self._closed = True
+            self._pending = None
 
 
 def _copy_chart(chart):
@@ -68,6 +119,7 @@ class GeoTemporalBinding:
         }
         self._sequence = sequence
         self._mode, self._closed, self._generation = mode, False, 0
+        self._notifications = _TemporalNotificationInbox(self._loop)
         self._frame = self._chart = self._task = None
         self._retiring = None
         self._lock = asyncio.Lock()
@@ -79,6 +131,7 @@ class GeoTemporalBinding:
             self._unsubscribe = controller.subscribe_state(self._accept)
             self._accept(controller.state)
         except BaseException:
+            self._notifications.close()
             self._closed = True
             self._unsubscribe()
             if _BINDINGS.get(self._source) is self:
@@ -86,19 +139,16 @@ class GeoTemporalBinding:
             raise
 
     def _accept(self, state):
-        # Native controller notifications run on the mutating thread. Only the
-        # binding's owning loop may update intent or create coroutine tasks.
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
-        if loop is not self._loop:
-            try:
-                self._loop.call_soon_threadsafe(self._accept, deepcopy(state))
-            except RuntimeError:
-                if not self._loop.is_closed():
-                    raise
-            return
+        state = self._notifications.accept(state, self._deliver_notification)
+        if state is not None:
+            self._apply_state(state)
+
+    def _deliver_notification(self):
+        state = self._notifications.take()
+        if state is not None:
+            self._apply_state(state)
+
+    def _apply_state(self, state):
         if self._closed:
             return
         if state["disposed"]:
@@ -238,6 +288,7 @@ class GeoTemporalBinding:
             return _copy_chart(self._chart), await self._frame.retain_async()
 
     def _detach(self):
+        self._notifications.close()
         self._closed = True
         self._generation += 1
         self._unsubscribe()
@@ -280,5 +331,232 @@ class GeoTemporalBinding:
                 del _BINDINGS[self._source]
         finally:
             self._lock.release()
+        if interrupted:
+            raise asyncio.CancelledError
+
+
+class MountedGeoTemporalBinding:
+    """One active XYGH transaction and one latest native temporal intent."""
+
+    def __init__(self, widget, controller, mode="cursor"):
+        from ._geo_retained import RetainedGeoSource
+
+        if mode not in ("cursor", "range"):
+            raise ValueError("mode must be cursor or range")
+        self._loop = asyncio.get_running_loop()
+        self._source = widget._adapter._source
+        if type(self._source) is not RetainedGeoSource:
+            raise ValueError("mounted binding requires a canonical retained source")
+        if widget._close_requested or controller.state["disposed"]:
+            raise RuntimeError("widget or controller disposed")
+        if self._source in _BINDINGS:
+            raise RuntimeError("source already has a temporal binding")
+        self._widget, self._mode = widget, mode
+        self._closed = self._scheduled = self._blocked = False
+        self._notifications = _TemporalNotificationInbox(self._loop)
+        self._generation, self._sent = 0, -1
+        self._time = self._active = None
+        self._changed = asyncio.Event()
+        self._closing = None
+        self.error = None
+        self._unsubscribe = lambda: None
+        _BINDINGS[self._source] = self
+        try:
+            widget._enable_geo_executor(self._loop)
+            self._unsubscribe = controller.subscribe_state(self._accept)
+            self._accept(controller.state)
+        except BaseException:
+            self._notifications.close()
+            self._closed = True
+            self._unsubscribe()
+            del _BINDINGS[self._source]
+            raise
+
+    def _accept(self, state):
+        state = self._notifications.accept(state, self._deliver_notification)
+        if state is not None:
+            self._apply_state(state)
+
+    def _deliver_notification(self):
+        state = self._notifications.take()
+        if state is not None:
+            self._apply_state(state)
+
+    def _apply_state(self, state):
+        if self._closed:
+            return
+        if state["disposed"]:
+            self._detach()
+            self._closing = self._loop.create_task(self._finish())
+            self._closing.add_done_callback(
+                lambda task: None if task.cancelled() else task.exception()
+            )
+            return
+        time = (
+            (1, state["cursor"], 0)
+            if self._mode == "cursor"
+            else (2, state["range_start"], state["range_end"])
+        )
+        if time != self._time:
+            self._time = time
+            self._generation += 1
+            self._schedule()
+
+    def _schedule(self):
+        self._changed.set()
+        if not self._scheduled:
+            self._scheduled = True
+            self._loop.call_soon(self._pump)
+
+    def _send(self, operation):
+        import struct
+
+        active = self._active
+        assert active is not None
+        if operation in (1, 2):
+            assert self._time is not None
+            start, end = self._time[1:]
+        else:
+            start = end = 0
+        self._widget.send(
+            dict(type="geo_host_temporal", mount=active["mount"], request=active["request"]),
+            buffers=[
+                struct.pack(
+                    "<4sIIIqq3Q",
+                    b"XYHT",
+                    1,
+                    operation,
+                    0,
+                    start,
+                    end,
+                    self._source._sequence if operation in (1, 2) else 0,
+                    self._widget._adapter._live_candidate.time_floor if operation in (1, 2) else 0,
+                    self._widget._adapter._live_candidate.camera_floor
+                    if operation in (1, 2)
+                    else 0,
+                )
+            ],
+        )
+
+    def _invalidate(self):
+        if self._active is not None and not self._active["invalidated"]:
+            self._send(3)
+            self._active["invalidated"] = True
+
+    def _pump(self):
+        self._scheduled = False
+        try:
+            if self._active is not None:
+                if self._closed or self._active["generation"] != self._generation:
+                    self._invalidate()
+                return
+            if (
+                self._closed
+                or self._widget._geo_mount is None
+                or self._sent == self._generation
+                or self._time is None
+            ):
+                return
+            self._widget._geo_update_serial += 1
+            self._active = dict(
+                mount=self._widget._geo_mount,
+                request=f"temporal:{self._widget._geo_update_serial}",
+                generation=self._generation,
+                invalidated=False,
+            )
+            self._send(self._time[0])
+            self._sent = self._generation
+        except Exception as error:
+            # Delivery is uncertain. Retain the exact active correlation and
+            # source claim for an explicit drain retry or native release ACK.
+            self.error = error.with_traceback(None)
+            self._blocked = self._active is not None
+        finally:
+            self._changed.set()
+
+    def _message(self, message):
+        active = self._active
+        if active is None or any(message.get(key) != active[key] for key in ("mount", "request")):
+            return
+        if message.get("status") not in ("accepted", "superseded", "failed"):
+            return
+        if message.get("drained") is not True:
+            self._blocked = True
+            self.error = RuntimeError(message.get("error", "geographic drain unconfirmed"))
+        else:
+            self._active = None
+            self._blocked = False
+            self.error = (
+                RuntimeError(message.get("error", "geographic update failed"))
+                if message["status"] == "failed"
+                else None
+            )
+            self._schedule()
+        self._changed.set()
+
+    def _released(self, mount):
+        if self._active is not None and self._active["mount"] == mount:
+            self._active = None
+            self._blocked = False
+        self._sent = -1
+        self._schedule()
+
+    async def when_idle(self):
+        """Wait for latest intent; error retains the exact last accepted picture."""
+        while True:
+            self._changed.clear()
+            if self._blocked:
+                return
+            if (
+                self._active is None
+                and not self._scheduled
+                and (
+                    self._closed
+                    or (self._widget._geo_mount is not None and self._sent == self._generation)
+                )
+            ):
+                return
+            await self._changed.wait()
+
+    def _detach(self):
+        if self._closed:
+            return
+        self._notifications.close()
+        self._closed = True
+        self._unsubscribe()
+        self._schedule()
+
+    def _close_from_host(self):
+        self._detach()
+        if self._closing is None or self._closing.done():
+            self._closing = self._loop.create_task(self._finish())
+            self._closing.add_done_callback(
+                lambda task: None if task.cancelled() else task.exception()
+            )
+
+    async def _finish(self, retry=False):
+        if retry and self._blocked:
+            self._blocked = False
+            try:
+                self._send(4)
+            except BaseException as error:
+                # Delivery is uncertain; a later cleanup call must retry the
+                # same correlation unless a reentrant ACK already drained it.
+                self._blocked = self._active is not None
+                self.error = error.with_traceback(None)
+                self._changed.set()
+                raise
+        await self.when_idle()
+        if self._blocked:
+            raise RuntimeError(str(self.error))
+        if _BINDINGS.get(self._source) is self:
+            del _BINDINGS[self._source]
+
+    async def aclose(self):
+        """Drain actual browser ownership before releasing the source claim."""
+        self._detach()
+        if self._closing is None or self._closing.done():
+            self._closing = self._loop.create_task(self._finish(retry=self._blocked))
+        _, interrupted = await _settle(self._closing)
         if interrupted:
             raise asyncio.CancelledError

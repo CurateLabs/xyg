@@ -185,3 +185,7 @@ Native drag input uses the existing shared `captureGesturePointer` acquisition,
 loss, trusted buttonless-move and guarded release policy. Its capture owner is
 the stable host element, so replacing the child painter does not end a drag.
 Actual capture loss ends the drag without issuing another camera request.
+
+Automatic native controller replacement now uses the same mounted lane; see
+[mounted temporal hosts](geo-mounted-temporal-hosts.md) for exact framing,
+readiness, executor ownership, supersession and drain/rebind rules.

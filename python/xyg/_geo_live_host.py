@@ -21,9 +21,12 @@ class GeoLiveCandidate:
 
     def __init__(self, adapter):
         self.adapter = adapter
+        self.camera_floor = adapter._query["camera_revision"]
+        self.time_floor = adapter._query["time_revision"]
         self.nonce = 0
         self.frame = self.retired = None
         self.cleanup_frame = None
+        self.cleanup_canonical = None
         self.cleanup_operation = None
         self.cleanup_state = None
         self.cleanup_allocation = None
@@ -37,6 +40,7 @@ class GeoLiveCandidate:
             self.frame is not None
             or self.retired is not None
             or self.cleanup_frame is not None
+            or self.cleanup_canonical is not None
             or self.cleanup_operation is not None
             or self.cleanup_state is not None
             or self.cleanup_allocation is not None
@@ -54,6 +58,7 @@ class GeoLiveCandidate:
         return (
             (self.frame is not None and not self.committed)
             or self.cleanup_frame is not None
+            or self.cleanup_canonical is not None
             or self.cleanup_operation is not None
             or self.cleanup_state is not None
             or self.cleanup_allocation is not None
@@ -62,6 +67,7 @@ class GeoLiveCandidate:
     def prepare(self, raw):
         if (
             self.cleanup_frame is not None
+            or self.cleanup_canonical is not None
             or self.cleanup_operation is not None
             or self.cleanup_state is not None
             or self.cleanup_allocation is not None
@@ -104,6 +110,8 @@ class GeoLiveCandidate:
             or (time_kind == 1 and end)
         ):
             raise ValueError("invalid signed time framing")
+        self.camera_floor = max(self.camera_floor, camera_rev)
+        self.time_floor = max(self.time_floor, time_rev)
         camera_request = bytes(raw[96:224])
         operation = struct.unpack_from("<I", camera_request, 8)[0]
         if (
@@ -187,6 +195,9 @@ class GeoLiveCandidate:
         return state
 
     def _settle_operation(self):
+        if self.cleanup_canonical is not None:
+            self.cleanup_canonical.cancel()
+            self.cleanup_canonical = None
         if self.cleanup_operation is not None:
             self.adapter._close_owner(self.cleanup_operation)
             self.cleanup_operation = None
@@ -254,6 +265,8 @@ class GeoLiveCandidate:
                     raise GeoSpatialFullScanRequired(operation["reason"])
                 if operation.indexed:
                     self.cleanup_operation = operation
+                else:
+                    self.cleanup_canonical = operation
                 operation.drive()
                 frame = operation.prepare(style)
                 self.cleanup_frame = frame
