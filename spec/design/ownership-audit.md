@@ -1378,6 +1378,8 @@ These additions use the existing ownership policies without adding a host policy
 
 | `crates/xyg-engine/src/filter_tier_c_linked.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `js/src/49_filter_dashboard.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
+| `python/xyg/_geo_temporal.py` | Python host | `python-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-temporal.js` | Node host | `node-host` | `keep-host` | — |
 
 ## Contributor rule
 

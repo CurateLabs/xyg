@@ -291,7 +291,7 @@ class RetainedGeoSource:
             g.execute(g.encode_request(dict(command=10, handle=data_handle)))
             raise
 
-    def update(self, query: dict, *, sequence: int, style: bytes):
+    def update(self, query: dict, *, sequence: int, style: bytes, _publish=True):
         self._check()
         if not isinstance(style, bytes) or len(style) != 48:
             raise ValueError("style must be exact 48-byte Rust framing")
@@ -305,7 +305,8 @@ class RetainedGeoSource:
             self._drive(sequence, 4)
             frame = self._prepare(11, self.handle, sequence, style)
             _attach_frame(self, frame, sequence, query_packet, style)
-            self.current = frame
+            if _publish:
+                self.current = frame
             return frame
         finally:
             self._busy = False
@@ -409,7 +410,7 @@ class RetainedGeoSource:
             await self.aclose()
             raise
 
-    async def aupdate(self, query, *, sequence, style):
+    async def aupdate(self, query, *, sequence, style, _publish=True):
         self._check(True)
         if not isinstance(style, bytes) or len(style) != 48:
             raise ValueError("style must be exact 48-byte Rust framing")
@@ -440,13 +441,15 @@ class RetainedGeoSource:
             frame = OwnedGeoData(prepared.handle, prepared.data, self._bridge)
             prepared = None
             _attach_frame(self, frame, sequence, query_packet, style)
-            self.current = frame
+            if _publish:
+                self.current = frame
             return frame
         finally:
             self._busy, self._active = False, None
 
     async def acancel(self):
         if self._active is not None and self._active is not asyncio.current_task():
+            self._cancel_generation += 1
             self._active.cancel()
         if not self._closed:
             await self._bridge.execute(
@@ -515,6 +518,7 @@ class RetainedGeoSource:
             return
         active = self._active
         if active is not None and active is not asyncio.current_task():
+            self._cancel_generation += 1
             active.cancel()
             with suppress(BaseException):
                 await g._settle(active)

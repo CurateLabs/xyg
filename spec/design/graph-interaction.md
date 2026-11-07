@@ -1057,8 +1057,37 @@ S=min(R,10,000), Q=min((2n+11m)*4096,1,048,576), W coordination watermarks:
 | watermarks | 128W | retained/cloned coordination gate |
 | expanded document text | 128T | T = per-row label bytes + layer ID bytes + m × longest layer ID byte length |
 | retained request/reply caches | 3 × each actual byte length | opening, Open reply, last request and last reply |
-| next request/staging | 128 × actual request bytes + external | decoded request identity copies, codec work; WASM arena/output/other owner retention is external |
+| next request/staging | 128(A−Dᵢ) + 6Dᵢ + external | A = actual request bytes; Dᵢ = borrowed document.bytes length for Open/Update, otherwise zero; WASM arena/output/other owner retention is external |
 | replacement | full new document envelope | Update retains old while admitting new |
+
+Open/Update do not decode document bytes as event reference text. Before
+allocation they reserve the full document envelope above (replacement additionally
+retains the old envelope). `Container` and `ComposedDocument` borrow section
+payloads; typed vectors, identity tables, label Strings, hierarchy, styles and
+projection/layout expansions remain covered by 48D, row/GPU/state and 128T
+reservations. TextList offsets partition the encoded pool, so no dictionary
+expansion escapes T; repeated exact derived IDs still reserve m times the longest
+ID. Compounds retain the existing row, eleven-piece route and bounded grid
+reservations. Unknown document sections remain charged by 48D.
+
+The additional serialized ingress ownership is two request caches at Open
+(`opening`, `last_request`), or one new `last_request` at Update. Each is reserved
+at the existing three-times-byte cache allowance, hence 6Dᵢ; Update conservatively
+uses the same bound while its old caches remain in retained_budget. Non-document
+request bytes keep the 128× bound for load planes, event refs, UTF-8 escaping and
+codec metadata. Host staging is counted separately by actual arena capacity;
+old output capacity and foreign retained owners remain external. Open only
+acknowledges ingress and never overlaps a rendered publication; later commands
+admit against the full retained envelope before cloning. All arithmetic and
+failure-atomic installation checks remain unchanged. This phase distinction
+replaces the former 128× charge on document ingress; it changes no resource cap
+and makes no measured-heap-as-general-bound claim.
+The committed UPDATE boundary regression calculates this envelope for a
+three-node replacement independently of the admission helper, rejects one byte
+below the exact limit without changing reply/revision/publication/work, then
+retries the same sequence at the exact limit and checks the replacement output
+and cached retry. Removing either the document discount or the complete
+replacement charge fails this regression.
 
 Current Owned state is charged additionally. Inside the authoritative owner
 lock, before cloning bound state, actual state items and exact UTF-8 bytes are
@@ -1423,3 +1452,11 @@ layout is unfinished, with two isolated public attachments. The host pan button
 calls `refreshRender(camera)`; this supplies no canvas pan gesture or additional
 keyboard/focus acceptance. Explicit 384 MiB arenas and the default-arena refusal
 are disclosed. Full #36 scale and host semantics remain open.
+
+The [public 10k admission candidate](../performance/graph-public10k-admission-2026-11-07/README.md)
+separates borrowed document ingress from event text expansion as specified above.
+Its new browser harness qualifies a 10k primary with a 1k peer at explicit
+384 MiB each, preserving the existing 1k proof. Repeated concurrent two-10k
+completion remains unqualified at the unchanged wall limit. The receipt records
+historical failures, exact full-reply native/WASM replay, memory scope and remaining
+ladder/host acceptance; this does not close #35/#36/#1015 or M4.

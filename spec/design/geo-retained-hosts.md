@@ -22,7 +22,12 @@ Query updates receive the complete frozen camera, time predicate, all revision
 counters, source identity, row/work bounds, and tier profile. Style is the exact
 48-byte typed Rust framing. Commands 5/6/7/8 drive the bounded point processor;
 11 prepares a durable Scene snapshot and 23 reads it. The coordinator replaces
-its `current` reference only after the new snapshot is parsed successfully.
+its `current` reference only after the new snapshot is parsed successfully. Canonical,
+spatial-index and hierarchy source overrides all honor the internal private-frame
+publication flag on synchronous and asynchronous compilation. A private compile
+returns an independent frame without replacing `current`; ordinary compilation
+retains its default publication behavior. This flag grants no temporal-binding
+admission to indexed or hierarchical sources.
 A failed update preserves the previous frame. Every published frame also retains its immutable semantic LOD, validated source,
 and exact style binding. Frame membership and picking address the frame Data
 handle and its sequence, so an old visible frame remains queryable after a
@@ -224,3 +229,63 @@ The existing retained-source strict-CSP smoke now exercises real temporal Worker
 commands, direct identity, aggregate membership, cursor/range updates, an unsettled
 read racing viewport/time, failed-read recovery and independent disposal. See
 [the implementation receipt](../performance/geo-temporal-binding-2026-11-06/README.md).
+
+## Automatic native temporal binding
+
+`chart.bind_temporal(controller, mode="cursor")` in Python (a running asyncio
+loop is required) and `chart.bindTemporal(handle, mode="cursor")` in Node bind
+one canonical retained points composition to native temporal snapshots. `range`
+selects the existing half-open Rust predicate. No temporal values or feature
+identities are converted to floating point. Each time change advances the
+geographic time revision independently of controller revisions, including remote
+applies. Selection/playback-only changes with the same effective predicate do
+not query geography. Initial binding always schedules one query.
+
+The binding admits one running query and one latest desired snapshot. `set_camera`
+/ `setCamera` replaces the complete authored camera and advances its revision.
+A newer camera or time invalidates running work at publication; admitted native
+reads finish before the latest query runs. This is bounded stale suppression,
+not immediate interruption of a storage callback. Failures leave the accepted
+frame and its exact provenance intact and are available as `binding.error`.
+A notification arriving between pump completion and its completion reaction still schedules the newest intent; idle waits include that successor. No automatic retry of the same failed intent runs. Revision exhaustion fails closed.
+
+Python `await binding.snapshot()` returns `(chart, frame)`; Node returns
+`{chart, frame}`. The chart is the exact public composition that produced this
+frame, so existing export and native host adapters consume it without a second
+renderer. Frames are independently retained Rust Data owners. Consumers must drop
+borrowed views before closing them. The binding copies authored query, camera and style values at construction.
+Each snapshot returns isolated nested composition values while retaining the
+same opaque source owner; mutating one snapshot cannot change later snapshots
+or future styles. The binding never exposes or transfers its
+private accepted owner, never publishes into the source's batch `current`, and
+releases only its own superseded frames. Failed cleanup retains its owner for
+retry before admitting another query. One binding per source prevents competing
+sequence ownership; independently constructed sources can run concurrently.
+
+`when_idle` / `whenIdle` drains latest work. `aclose` / `dispose` unsubscribes,
+suppresses pending publication, drains admitted reads, and releases private
+owners. Controller disposal also initiates this cleanup; explicit binding cleanup
+awaits it. Independent snapshots survive either controller or binding disposal. Python controller notifications arriving from another thread dispatch to the
+binding's creating event loop before changing desired state or creating tasks.
+Source-initiated cancellation settles as a binding operation error and preserves
+the accepted snapshot; explicit binding cleanup still releases its private owner
+and source registration. Cancelling a caller waiting for idle does not cancel the
+admitted pump. Reader-raised cancellation is an operation failure that retains
+the accepted frame. A terminally cancelled pump does not block private-owner
+teardown, including cleanup from a caller cancellation handler. Native Node
+unsubscribe closures are idempotent and cannot remove
+a later observer set for the same controller handle.
+The source remains caller-owned. Source disposal can make future queries fail
+without invalidating accepted snapshots. Static/batch compilation stays synchronous.
+Python sync readers run in a worker thread so the notebook event loop can accept
+new snapshots while native work proceeds. Async readers retain their existing
+loop and cancellation semantics.
+
+This slice supports canonical retained points (including Rust cluster/density
+reduction). Indexed/overview/hierarchy/mixed-tile automatic bindings, direct
+low-level Python ABI mutations outside the controller wrapper, and automatically
+replacing an already mounted notebook/VS Code renderer are not covered. A caller
+acquires an exact snapshot and uses the existing host/view or export route;
+frontend XYGH replacement still uses its existing CAS and retirement ACK contract.
+This does not establish all-host accessibility, complete attributed frozen
+exports, massive/five-view/competitor acceptance or M6/#50/#39 closure.

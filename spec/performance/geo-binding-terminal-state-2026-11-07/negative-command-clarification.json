@@ -1,0 +1,35 @@
+{
+  "note": "The negative command fields in checks.json describe selections; these are the exact argv arrays used, with reviewed-parent runtime source and newly added regressions. The preserved logs are unchanged.",
+  "checksSha256": "130488fe5a73a5e182faf261678bf9bc78aeb37baa4ef81effaf2d84a868ed20",
+  "negativeRuns": [
+    {
+      "log": "before-python.log.gz",
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "tests/test_geo_temporal_binding.py",
+        "-k",
+        "reader_cancelled_error or snapshots_and_authored",
+        "-q"
+      ],
+      "exitCode": 1,
+      "rawSha256": "670603d3ed1e7731223fae3eda7c64e5a6fb7cca0f473ca0a8081e4c950c9607"
+    },
+    {
+      "log": "before-node.log.gz",
+      "argv": [
+        "node",
+        "--test",
+        "--test-name-pattern=normalize Number|reentrant destroy|terminal observer",
+        "packages/xy-node/test/geo-temporal-binding.test.mjs"
+      ],
+      "exitCode": 1,
+      "rawSha256": "92efca5d0433d02da18fdd62bcac0fd125c13d0ef55e98fe82f02d51cc4dead2"
+    }
+  ],
+  "environment": {
+    "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-6e94436c/target/release/libxyg_core.so",
+    "node": "v22.23.4"
+  }
+}

@@ -1,0 +1,263 @@
+{
+  "producerWorkspace": "/home/ubuntu/.t3/worktrees/xyg/t3-6e94436c",
+  "branch": "t3/native-temporal-geo-binding",
+  "mergeHead": "06f2e1d0d44d45d496d4b43307e0c7c52b991ba0",
+  "originalTip": "74195403",
+  "acceptedMain": "9a75c4c00588eef20fdbf5c97952bb2d8f46beb4",
+  "browserCandidate": "b9b59a60103fe9729da1b552700d82f0c81caf1f",
+  "environment": {
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+    "cpuCount": 8,
+    "node": "v22.23.4",
+    "rust": "1.96.0",
+    "CARGO_BUILD_JOBS": 2
+  },
+  "nativeAndPackage": {
+    "node": "v22.23.4",
+    "nativeAbi": 399,
+    "raw": 1926555,
+    "gzip6": 785542,
+    "rawGate": 1927168,
+    "gzipGate": 786432
+  },
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6121112,
+      "sha256": "f0fb0c738d2cfa98295dae50a8804fb801c21e1be82c2cff30a183576fcd74ff"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 2124514,
+      "sha256": "f323d12e662abf2ef97a57e0606941147453d5d4306c2cde3a1b41f8d1ac4e05"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1926555,
+      "sha256": "0ba71b670ceae0459935ca04f6004670bac327a3c05cea4e99e7dca89ff538b7"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 803663,
+      "sha256": "a153c45ab04a5ae8a923bfc3b005c9986a966660f2aa292e95112313c68e6359"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 803690,
+      "sha256": "507cce3ff73e1c0b69360fc547d90e663abbddd922f702965e0514e061c238b1"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "df39ed30ac859444711c74242602b428c70b6f2cb90026b79101f81e3e0a9b31"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2587929,
+      "sha256": "371e0f5e68307054a3f4d9260f79c5eaceafda20948e4817d4695d192f108947"
+    }
+  },
+  "changedSourcePaths": {
+    ".gitattributes": "a3e353a48d709a3ef1921584cb626d3d3004f5f582b99db4cf07b5987d0e1757",
+    "packages/xy-node/package.json": "3525d9304d260c3a3bdcf64c9b0a0f98381d7cf6dedd663c7362eabab4321727",
+    "packages/xy-node/src/abi.js": "c87cd3011234562be4edcb1eae30ee9b657e2efb04bae1141eda66542da8e72d",
+    "packages/xy-node/src/charts.js": "b7419dbc01c96fbf7a5328c0d2542074498c5c2dd51bbbf21c4d7b3b7284975c",
+    "packages/xy-node/src/geo-retained.js": "a17b92ee9e41cf28af66556cccbb271839d6a224f2bc2ba00035e0c192754378",
+    "packages/xy-node/src/geo-temporal.js": "71259b0f834fd4911fa36d5a6ab7128db394d08520eb0bdee2ae9c604b0e0993",
+    "packages/xy-node/src/index.js": "1b82aad8ee473c8d36bbe5a172c315652807584ae288d1d230b6f3211f91804b",
+    "packages/xy-node/test/geo-temporal-binding.test.mjs": "0eba8d0bde0642b157e8c8afd347db412cbda8ab2a2507699434f264d8a7b858",
+    "python/xyg/_geo_retained.py": "cbd50f094c1a96b68320f7b6405baf96f677adde7c86c975d011813055a06658",
+    "python/xyg/_geo_temporal.py": "4e16974067a8b2f0ee6de9b3d604bcf818fee5c15c636286e4f9be0864e021d2",
+    "python/xyg/components.py": "8271f7039288f69317da6248c28510e2d83ef1f23d17843525d8e69f81dc5372",
+    "python/xyg/temporal_controller.py": "812c4fdc93c2414b7d168de4694dd355b47e5eb18bc24bc3838f59845e670e6b",
+    "spec/design/geo-retained-hosts.md": "ec67dcaa82af5b445bc737bf388cd2b2438a7db200391ff99bab8dbfc5162325",
+    "spec/design/host-parity.md": "3c46b74264a5e482d15d5cf592337f6847e0be6dd09e48818987f9ae2ef24ccf",
+    "spec/design/ownership-audit.json": "d03a4e7cd74c8fcd0d2a4991d4044ca033b4500285f4728b62680790d0a8c19c",
+    "spec/design/ownership-audit.md": "5fd0b976e28dd363659451aa21986eefeabb1c01002f9fb5e8dccb274f03cd00",
+    "spec/design/temporal-controller.md": "28a42aee65604c20e32936850d30af00265a3d6565a478583a1fe35c3aed24fe",
+    "spec/releases/0.6.0-api-inventory.json": "1d5afc19d25ebc3c9e527a262fd017d552d6bf6ca2f8cac19a13e4f547fa11e9",
+    "tests/test_geo_temporal_binding.py": "82cdd794db4bea4b11cf4a5facdb40d75da01f1552eb4a0e9406a1daae8d8c7b",
+    "tests/test_graphforge_contract_corpus.py": "b3f83ae2fb9a81fc94595e254dabb433be725f39daf98b7cf7efe5418019dd6c"
+  },
+  "sourcePatch": {
+    "command": "git diff --binary --full-index 06f2e1d0 -- . :!spec/performance/geo-native-temporal-binding-2026-11-06",
+    "rawBytes": 417067,
+    "rawSha256": "01881117c78c13cbdbd3109a3e75a7f0c225a182ea77df22415634f570269ec6"
+  },
+  "losslessLogs": {
+    "build": {
+      "rawBytes": 597,
+      "rawSha256": "0959788f2230e1a95b01f05725621ce4179d25993fb1761621f3269eb6297f35",
+      "gzipSha256": "bd14040cfcf4b73cc836db44fa53cbec88e74562200d39b22e42fea2cb5fb9b8"
+    },
+    "npm": {
+      "rawBytes": 141,
+      "rawSha256": "0271cd0ca723a1b70f4e12c55194acb3eb0f0a4de2f1b1a908903d1e28247c4c",
+      "gzipSha256": "b6ed1843c89fe49e3ff6da35d7c0985adc732b576f8c6e0de31e89f3def6a503"
+    },
+    "client-build": {
+      "rawBytes": 5448,
+      "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+      "gzipSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c"
+    },
+    "wasm-build": {
+      "rawBytes": 4267,
+      "rawSha256": "8be8e7b866334f784687699dc12f9c5b7860fcc804606168fafed6e2f40db074",
+      "gzipSha256": "26f4283a90dfa679425b8e5826d4831ef887df766868e9ca4e6cc69bb5445120"
+    },
+    "wasm-package": {
+      "rawBytes": 493,
+      "rawSha256": "0f17c90eb78f70de5146bd69676d17660b5cb7fe43e168e4a347baf3f10de0f6",
+      "gzipSha256": "7b6f8a8e79a44882a2a447a0f066af3ca0e5877fecfe7c4f76e84a9199f83fa8"
+    },
+    "python-final": {
+      "rawBytes": 340,
+      "rawSha256": "8647cfaf5018f6694668f862fa23bb30a25ee4a209a04b706a9b4c9373c47430",
+      "gzipSha256": "baeb7a1de83fed2779e86de269d1e04988a48d2419ebdbeb66424f09af3039c6"
+    },
+    "node-final": {
+      "rawBytes": 5333,
+      "rawSha256": "069aa7e796cb48cb84b282e8cd95977556983eabdbd8d447f3691b4dca92e475",
+      "gzipSha256": "1275d77ba5c6f040e60506dd3584683179fb84a8837b6b1f2493a8c78b876940"
+    },
+    "rust": {
+      "rawBytes": 10143,
+      "rawSha256": "f6536abee00133a53fdd988f13b3e2ecf4267838e8b94990e23664d8e5a68e1e",
+      "gzipSha256": "d55dcd6cad4816451199b51b2ab169b2b75468dc45cea56ea6ebb4fcb817782b"
+    },
+    "parity": {
+      "rawBytes": 238,
+      "rawSha256": "fbfa12fa47d7327ebb12c172ab32c2e23cbfd58cc8f072a17103b4023d126eb9",
+      "gzipSha256": "64838c9ca6100e92ab7401886943f4aa3f6b9688fed6698528f666dd5fd2ffea"
+    },
+    "membership-parity": {
+      "rawBytes": 138,
+      "rawSha256": "7d782acebb38d08506e8f5c4dd899185a69ecd1e145a6ef0b8eb50e4c417840d",
+      "gzipSha256": "0ad71e73829958b920c2b8b1bc12995a2d2e183934f49b2c2f827aea81e379a3"
+    },
+    "browser": {
+      "rawBytes": 402,
+      "rawSha256": "e8eead754dd5cf6c939458c2754ec64eca5dd4e45320257e6b7c08fb2ade6d66",
+      "gzipSha256": "27d5e7f4779bba0fd876ccf40fc4fa327c0e68be2a18165e024850808633f312"
+    },
+    "ownership": {
+      "rawBytes": 60,
+      "rawSha256": "1922a4131386e6f348a3bbe13211dd9c52f09958462fd79cd79e3ad9f6d7740a",
+      "gzipSha256": "27b298d0c60a433bf4b597c273b581d2bba92a01f1d1b2b13d488dd44c08ee98"
+    },
+    "inventory-write": {
+      "rawBytes": 89,
+      "rawSha256": "5007bf087b7f76fea24b0f6770cabd078b1a83b26987c391b0f19af64a4a57bb",
+      "gzipSha256": "a2277e48bd10ba89748088135de9346e064ed73e274ba49c37aee9442587f308"
+    },
+    "inventory-check": {
+      "rawBytes": 97,
+      "rawSha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c",
+      "gzipSha256": "061e29d38894e10e9f9982462538fadbdf9051697515ec1315b4fc2b4d20e9f2"
+    },
+    "assets": {
+      "rawBytes": 88,
+      "rawSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+      "gzipSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730"
+    },
+    "artifact": {
+      "rawBytes": 101,
+      "rawSha256": "818be92bb6d5425a9b41190fae1baa7ff88709a8f897452c0674a1baaa4560e1",
+      "gzipSha256": "9a769a4175ad50155ccd678a5e13126e3623f2ce65e164d64a5f2550c8960734"
+    },
+    "core-bindings": {
+      "rawBytes": 98,
+      "rawSha256": "04da4a1ef16d2966b66b717dcd535d2104616be8ba69a5d926074d78f2d8946f",
+      "gzipSha256": "bac5ced57f79ab62ebcccbb8a112f24b5e18efe027bd7bf86fbf2ce77f5b8c04"
+    },
+    "hooks": {
+      "rawBytes": 240,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "gzipSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "ruff": {
+      "rawBytes": 19,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "gzipSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "format": {
+      "rawBytes": 29,
+      "rawSha256": "b3bd53498812eda8c91a01914562d4b74e08bdafc4de2ec40aea7cc9dbe045db",
+      "gzipSha256": "4225aea207b9d1e47b596f2fda688897c435cc3a4f93e28f470663856263ba86"
+    },
+    "base-hooks": {
+      "rawBytes": 240,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "gzipSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "base-ruff": {
+      "rawBytes": 19,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "gzipSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "base-format": {
+      "rawBytes": 29,
+      "rawSha256": "0be8ae93d50c615562bd0773d2904372d5886f19435a0936b6402f9fad55f102",
+      "gzipSha256": "53cdfeb3a1d2dcc20325af24fcb40f97146b32589012eedb102bd2256aa06181"
+    },
+    "browser-hooks": {
+      "rawBytes": 240,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "gzipSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "browser-ruff": {
+      "rawBytes": 19,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "gzipSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "browser-format": {
+      "rawBytes": 29,
+      "rawSha256": "0be8ae93d50c615562bd0773d2904372d5886f19435a0936b6402f9fad55f102",
+      "gzipSha256": "53cdfeb3a1d2dcc20325af24fcb40f97146b32589012eedb102bd2256aa06181"
+    },
+    "python": {
+      "rawBytes": 38124,
+      "rawSha256": "e1d9dcb66fe62731128d7b1680d50552ace361beb74742df9f485bd6aa6379d3",
+      "gzipSha256": "cfa2a0b2a5ede45975c0179b67fa8433d6ac82616efafc485763424365d6d42a"
+    },
+    "python2": {
+      "rawBytes": 98,
+      "rawSha256": "c45e78d927aa6cc86c3af7ffebe1bb506dc10d7ca7110009debbb589f0b63aac",
+      "gzipSha256": "0fe154ac44530a7f608857d2bb5cbb1c1aa9f2637c372beaf09c4a5feffbee27"
+    },
+    "node": {
+      "rawBytes": 2769,
+      "rawSha256": "19694333ef7c99bf56391b620337119b9483c0f012612cda1b8dd157b93d511c",
+      "gzipSha256": "e8b4ebdc8b411da13f9613d320287cae832c0e36a87d4bcdc984fea3f349522a"
+    },
+    "node2": {
+      "rawBytes": 3481,
+      "rawSha256": "2a93f55ab0fbe2baea0b402ff0b08dc8b8afddcfc025d24da49394e4bee2590c",
+      "gzipSha256": "1d0e87b199a4323f7d00e354b4a12de1f2a120f5f49334d267a0835afc0402ed"
+    },
+    "node4": {
+      "rawBytes": 1430,
+      "rawSha256": "e4daec6547908ebed1cdb921730f63b3afed942d7c9d80587a741633d34fefca",
+      "gzipSha256": "887a2f2e4a804d965a292672a6ca43285c4a0954cc3c0c803e087bf180035963"
+    }
+  },
+  "passed": {
+    "python": 63,
+    "node": 24,
+    "rustTemporal": 75,
+    "coreProvenanceIncludingRealCRLF": 7,
+    "ownership": 517,
+    "nativeWasmFrameLeases": true,
+    "nativeWasmMembership": true,
+    "offlineStrictCSPBrowser": true,
+    "fullWorktreeHooks": true,
+    "ruffCheck": true,
+    "ruffFormatCheck": true,
+    "apiInventory": true,
+    "assetsVerified": true
+  },
+  "remaining": [
+    "independent final review",
+    "parent PR/CI/queue",
+    "automatic mounted-native view replacement",
+    "indexed/overview/hierarchy/mixed-tile automatic binding",
+    "complete frozen attributed exports",
+    "all-host/accessibility",
+    "massive/five-view/competitor acceptance",
+    "M6/#50/#39 and broader M5/#108 remain open"
+  ]
+}

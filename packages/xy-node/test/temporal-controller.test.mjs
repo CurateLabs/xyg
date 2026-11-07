@@ -20,6 +20,7 @@ import {
   temporalControllerSetReducedMotion,
   temporalControllerSetSelection,
   temporalControllerState,
+  temporalControllerSubscribeState,
   temporalControllerStep,
   temporalControllerTick,
   temporalCoordinateDeliver,
@@ -234,4 +235,72 @@ test("host rejects every temporal scalar before native coercion", () => {
   } finally {
     temporalControllerDestroy(handle);
   }
+});
+
+
+test("coordination captures observer handles before callbacks renew subscriptions", () => {
+  const a=make(301n,71n),b=make(302n,71n);let calls=0,stop=()=>{};
+  const observe=()=>{
+    calls++;stop();
+    // Bound the original live-Map failure instead of hanging this test forever.
+    if(calls<4)stop=temporalControllerSubscribeState(b,observe);
+  };
+  try {
+    temporalControllerSetCursor(a,200_000n);const event=temporalControllerPollEvent(a);
+    stop=temporalControllerSubscribeState(b,observe);
+    assert.equal(temporalCoordinateDeliver(event),1);
+    assert.equal(calls,1,"one coordinated mutation notifies each original handle once");
+    assert.equal(temporalControllerState(b).cursor,200_000n);
+  } finally {stop();temporalControllerDestroy(a);temporalControllerDestroy(b);}
+});
+
+test("coordination does not notify a handle subscribed during the current delivery", () => {
+  const a=make(303n,72n),b=make(304n,72n),c=make(305n,72n);let observed=0,stopC=()=>{};
+  let stopB=()=>{};
+  try {
+    temporalControllerSetCursor(a,200_000n);const event=temporalControllerPollEvent(a);
+    stopB=temporalControllerSubscribeState(b,()=>{stopC=temporalControllerSubscribeState(c,()=>observed++);});
+    assert.equal(temporalCoordinateDeliver(event),2);
+    assert.equal(observed,0,"new subscriptions observe future notifications");
+    assert.equal(temporalControllerState(c).cursor,200_000n);
+  } finally {stopB();stopC();temporalControllerDestroy(a);temporalControllerDestroy(b);temporalControllerDestroy(c);}
+});
+
+
+for (const sameCallback of [false,true]) test(`coordination retains subscription identities across replacement (${sameCallback})`, () => {
+  const a=make(811n,918n),b=make(812n,918n),c=make(813n,918n);
+  let previousCalls=0,replacementCalls=0,stopC=()=>{},stopNew=()=>{},replaced=false;
+  const previous=()=>previousCalls++;
+  const next=sameCallback?previous:()=>replacementCalls++;
+  const stopB=temporalControllerSubscribeState(b,()=>{
+    if(replaced)return;
+    replaced=true;stopC();stopNew=temporalControllerSubscribeState(c,next);
+  });
+  stopC=temporalControllerSubscribeState(c,previous);
+  try {
+    temporalControllerSetCursor(a,200_000n);
+    temporalCoordinateDeliver(temporalControllerPollEvent(a));
+    assert.equal(previousCalls,0,"a removed/re-added subscription is not the original recipient");
+    assert.equal(replacementCalls,0,"replacement observers start on a future delivery");
+    temporalControllerSetCursor(a,300_000n);
+    temporalCoordinateDeliver(temporalControllerPollEvent(a));
+    assert.equal(previousCalls+replacementCalls,1,"the replacement receives the next delivery once");
+  } finally {stopB();stopC();stopNew();for(const h of [a,b,c])temporalControllerDestroy(h);}
+});
+
+test("queued reentrant coordination preserves captured subscription identities", () => {
+  const a=make(911n,918n),c=make(913n,918n);let entered=false,calls=[],stopNew=()=>{},stopOld=()=>{};
+  temporalControllerSetCursor(a,200_000n);const event=temporalControllerPollEvent(a);
+  const stop=temporalControllerSubscribeState(c,()=>{
+    if(entered)return;
+    entered=true;temporalCoordinateDeliver(event);
+    stopOld();stopNew=temporalControllerSubscribeState(c,s=>calls.push(s.cursor));
+  });
+  stopOld=temporalControllerSubscribeState(c,()=>{});
+  try {
+    temporalControllerSetCursor(c,150_000n);
+    assert.deepEqual(calls,[],"queued delivery must retain its original recipients");
+    temporalControllerSetCursor(c,300_000n);
+    assert.deepEqual(calls,[300_000n],"replacement receives only a future notification");
+  } finally {stop();stopOld();stopNew();temporalControllerDestroy(a);temporalControllerDestroy(c);}
 });

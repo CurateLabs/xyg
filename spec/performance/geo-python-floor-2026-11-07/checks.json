@@ -1,0 +1,103 @@
+{
+  "parent": "4b026baae37c48610eae66d439415dca91f4c411",
+  "currentBindingsSha256": "bfe41a7b5a096314d3c0593f81512cc87d7275847d9bc1581f1b0a677bb8ab22",
+  "previousChecksSha256": "2189d6ba7900df747c339a8bf09f607907b302f1792da106b1595f3716793026",
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6127864,
+      "sha256": "09b2571980a8c1d97ac4478fc51b346fb9356d07916bc8b38e84c072b531b895"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 2124856,
+      "sha256": "dbae96bb9f476d5368a9ca966e554d2dea36df7bb8ff739a5d3e712e9aefa41d"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1927032,
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 804132,
+      "sha256": "09144e0e40a7c278a7a103a96bdde3b7ae73e3d71b3fdf367a1353ddbad1b80d"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 804159,
+      "sha256": "97ae3d73b9b09435550781fa79a26480a6c15ce2bcab42ec40ca60854d18afe4"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 56051,
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2588565,
+      "sha256": "8bed6f41e9d60e41010b069cfd18bbb896a799bd733649e74deaf6dbf68ac5e7"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "303b39e33590f6b2dd65aefeaefd1714088414cb515a0817c6d3fa04c7489d3e"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 804132,
+      "sha256": "09144e0e40a7c278a7a103a96bdde3b7ae73e3d71b3fdf367a1353ddbad1b80d"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 804159,
+      "sha256": "97ae3d73b9b09435550781fa79a26480a6c15ce2bcab42ec40ca60854d18afe4"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1927032,
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1"
+    }
+  },
+  "logs": {
+    "before.log": {
+      "archive": "spec/performance/geo-python-floor-2026-11-07/before.log.gz",
+      "archiveSha256": "983b78c14b4206cae3e709c7ae0ddf5b4bbd941f3900f4c9a35860f12ef631bb",
+      "rawSha256": "e89e9fd9aebfa15c29cfc406e731c2efb91034b8ccc8abfc6cfff71d141acbbd"
+    },
+    "after.log": {
+      "archive": "spec/performance/geo-python-floor-2026-11-07/after.log.gz",
+      "archiveSha256": "4652456836415472c91bf0db9100a6d492591d06ecd7fde0f5832056a1f73ebf",
+      "rawSha256": "b74c6582357e4cc55f2da8b24b4db3eba9c166d307177c0acd0a422cdcbd8551"
+    },
+    "metadata.log": {
+      "archive": "spec/performance/geo-python-floor-2026-11-07/metadata.log.gz",
+      "archiveSha256": "667d6f6c6ad9b5fe6b11c8017d1b8dc5e8b4559a8b08313bd4abb13710ca0b24",
+      "rawSha256": "1228658d0973e1e9869fec2985f6afc3d0c3cdb9435f0d0c4c3b95eb9fe5564a"
+    },
+    "python311.log": {
+      "archive": "spec/performance/geo-python-floor-2026-11-07/python311.log.gz",
+      "archiveSha256": "e6f9afd80d12a55f17787158432b566fb52a7462e8d68c2f82b095d981bc4288",
+      "rawSha256": "3c526ebf1a759a771e11a6c692794e05e308a075dc0b7059b4a1978b4f066d45"
+    },
+    "hooks": {
+      "archive": "spec/performance/geo-python-floor-2026-11-07/hooks.log.gz",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "exit": 0
+    },
+    "ruff": {
+      "archive": "spec/performance/geo-python-floor-2026-11-07/ruff.log.gz",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "exit": 0
+    },
+    "format": {
+      "archive": "spec/performance/geo-python-floor-2026-11-07/format.log.gz",
+      "archiveSha256": "4431b3457e40a51416b413ff4a6fbd1c215a6fda4b83698ee84321270b829bc6",
+      "rawSha256": "a36db4b65ebb65eae3421e27e0165b35f14b0f0a2331509733b518869c1b5219",
+      "exit": 0
+    }
+  },
+  "results": {
+    "beforeFloor": "fail missing futureannotations import",
+    "afterFloor": "pass unchanged checker",
+    "actual311Lifecycle": 112,
+    "floorCoreInventory": 41
+  },
+  "actual311Command": "PYTHONPATH=$PWD/python:$PWD/tests XYG_NATIVE_LIB=$PWD/target/release/libxyg_core.so TMPDIR=/home/ubuntu/.t3tmp/1111 uv run --no-project /home/ubuntu/.t3/worktrees/xyg/t3-3cad2042/.venv/bin/python -m pytest -q tests/test_geo_temporal_binding.py tests/test_geoscale.py tests/test_temporal_controller.py tests/test_geo_frame_leases.py tests/test_geo_spatial.py tests/test_geo_host.py tests/test_geo_rows.py",
+  "environment": {
+    "testPython": "3.11.17",
+    "selectedSource": "this worktree confirmed by xyg.__file__",
+    "native": "09b2571980a8c1d97ac4478fc51b346fb9356d07916bc8b38e84c072b531b895"
+  }
+}

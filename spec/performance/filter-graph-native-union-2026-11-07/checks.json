@@ -1,0 +1,791 @@
+{
+  "captures": {
+    "foundation.json.esm-malformed-inline-artifact.png": {
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    "foundation.json.esm-missing-inline-artifact.png": {
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    "foundation.json.esm-missing-retained-source.png": {
+      "bytes": 11315,
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+    },
+    "foundation.json.iife-malformed-inline-artifact.png": {
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    "foundation.json.iife-missing-inline-artifact.png": {
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    "foundation.json.iife-missing-retained-source.png": {
+      "bytes": 11315,
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+    },
+    "foundation.json.retained-temporal.json.boundary.png": {
+      "bytes": 44546,
+      "sha256": "e47464cd85a30210f9cbe6ec12af0aee391c3aa8ec4c01afdc2b814b823a7d6d"
+    },
+    "foundation.json.retained-temporal.json.initial.png": {
+      "bytes": 44231,
+      "sha256": "a03d81a62746e81bbc035d278d5ebc73be03be673f7fee0a4e3a9ca31fa0eceb"
+    },
+    "linked.png": {
+      "bytes": 37630,
+      "sha256": "c48c85076ce9bc19bfa5cdd712e86016fad4c7e2201e9ea19e120c6896f433cd"
+    },
+    "linked.png.indexed.png": {
+      "bytes": 34706,
+      "sha256": "de87a57085d2543e07f7ea78554ed5ca3bdcec62645d1eb7ac00d797c0a0cdc1"
+    },
+    "public10k.json.7101.final.png": {
+      "bytes": 8122,
+      "sha256": "e7f41105975657ce7808cfc1e67d233683a28f388b43db42cfdb9c3e5723b1b3"
+    },
+    "public10k.json.7101.initial.png": {
+      "bytes": 12258,
+      "sha256": "3efa8ea35d7493873f7e1b3ef40579afb78e5923eca4f3c82799c3ec9b1d8c80"
+    },
+    "public10k.json.7101.intermediate.png": {
+      "bytes": 9205,
+      "sha256": "b5f626bb7be916ff42278b4ec273f54a5e9a10156d28fc890ae72f9979a82aaa"
+    },
+    "public10k.json.7102.final.png": {
+      "bytes": 8695,
+      "sha256": "4453d9610a62a79b6a900bf2a3d67145ea2e95cf799286690cff9365a63ff06b"
+    },
+    "public10k.json.7102.initial.png": {
+      "bytes": 16340,
+      "sha256": "d378702d8644f2616909d71978479b0b684f4477871e68316d5c9280d88a52e9"
+    },
+    "public10k.json.7102.intermediate.png": {
+      "bytes": 9175,
+      "sha256": "86b4b1cb20b0aa65ade77479d6b17599e09123b660ceb57eae6bbd0054f4f5db"
+    },
+    "scheduling.json.7101.final.png": {
+      "bytes": 9218,
+      "sha256": "ab52f8b21edf99ed47d8d8e117e859f52e75bcd9e776b944bab01bb73e811225"
+    },
+    "scheduling.json.7101.initial.png": {
+      "bytes": 16340,
+      "sha256": "d378702d8644f2616909d71978479b0b684f4477871e68316d5c9280d88a52e9"
+    },
+    "scheduling.json.7101.intermediate.png": {
+      "bytes": 9720,
+      "sha256": "92bd17cb68576bb1d9f3e9a52b2d3881992ce731034891e38156d27287b29c90"
+    },
+    "scheduling.json.7102.final.png": {
+      "bytes": 8695,
+      "sha256": "4453d9610a62a79b6a900bf2a3d67145ea2e95cf799286690cff9365a63ff06b"
+    },
+    "scheduling.json.7102.initial.png": {
+      "bytes": 16340,
+      "sha256": "d378702d8644f2616909d71978479b0b684f4477871e68316d5c9280d88a52e9"
+    },
+    "scheduling.json.7102.intermediate.png": {
+      "bytes": 9175,
+      "sha256": "86b4b1cb20b0aa65ade77479d6b17599e09123b660ceb57eae6bbd0054f4f5db"
+    }
+  },
+  "diagnostic": {
+    "archive": "public10k-diagnostic.mjs.gz",
+    "archiveBytes": 5556,
+    "archiveSha256": "612f75b5ff94e774b31655c669ee28d98c2491ef8e6afb4bf96eb41d25b4149e",
+    "initialRunExit": 1,
+    "onlyChange": "Expand the thrown missing-reply error text; assertions and control flow unchanged.",
+    "originalSourceSha256": "7732918da1509b394ac2b180f1f34d8934c2f81bb16ff7714aa8e6266040e418",
+    "rawBytes": 16334,
+    "rawSha256": "bc74adbaa3c9b7f7c7769c1811879ca4f7b20631c728ae5c5bf812fafe796ef6",
+    "repeatExit": 0,
+    "rootCause": "Unresolved; no repaired reliability or product-defect claim."
+  },
+  "limits": [
+    "No whole issue or milestone acceptance.",
+    "First public10k capture failure remains a failed run with unresolved cause.",
+    "No all-host, massive scale, performance, accessibility or competitor acceptance.",
+    "Mounted native geographic replacement remains separate work.",
+    "Catalog and frozen-export ABI integration remains separate work.",
+    "Fresh hosted CI and required merge queue remain delivery prerequisites."
+  ],
+  "logs": {
+    "abi-generated.log": {
+      "archive": "abi-generated.log.gz",
+      "archiveBytes": 62,
+      "archiveSha256": "690871738f57552561385ec3d682ff3b5461b0981c2286296626950c736f9243",
+      "command": [
+        "python3",
+        "scripts/gen_abi_manifest.py",
+        "--check"
+      ],
+      "elapsedSeconds": 2.104201528709382,
+      "exitCode": 0,
+      "rawBytes": 42,
+      "rawSha256": "1e5253747b0eb8297a88a998a59f3a9e19241e6c56be151cc28a65f347c03a79"
+    },
+    "abi-smoke.log": {
+      "archive": "abi-smoke.log.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "135de4fa46245b623c5d8acfa3e621c9374a4c0229b173222340fff45c526965",
+      "command": [
+        "python3",
+        "scripts/abi_smoke.py"
+      ],
+      "elapsedSeconds": 0.2778197177685797,
+      "exitCode": 0,
+      "rawBytes": 52,
+      "rawSha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306"
+    },
+    "assets.log": {
+      "archive": "assets.log.gz",
+      "archiveBytes": 104,
+      "archiveSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730",
+      "command": [
+        "python3",
+        "scripts/verify_wasm_assets.py"
+      ],
+      "elapsedSeconds": 0.49119192035868764,
+      "exitCode": 0,
+      "rawBytes": 88,
+      "rawSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef"
+    },
+    "capability.log": {
+      "archive": "capability.log.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "b767dcba961ec36088a4508e2fc578c781b10bfd553f305c9afc72fb495506b6",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_capability_matrix.py",
+        "--check"
+      ],
+      "elapsedSeconds": 0.21286659594625235,
+      "exitCode": 0,
+      "rawBytes": 29,
+      "rawSha256": "42b8d4d87753f9103ac02d0b33f9a3c6f6e68193684dd88198095d247c8e7392"
+    },
+    "client-build.log": {
+      "archive": "client-build.log.gz",
+      "archiveBytes": 1056,
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "command": [
+        "node",
+        "js/build.mjs"
+      ],
+      "elapsedSeconds": 1.6706454600207508,
+      "exitCode": 0,
+      "rawBytes": 5448,
+      "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "clippy.log": {
+      "archive": "clippy.log.gz",
+      "archiveBytes": 159,
+      "archiveSha256": "3e0fb47433ee4c2f180dbedf1290227ef28ffbfb4ce3a1d2950acf731393dd50",
+      "command": [
+        "cargo",
+        "clippy",
+        "-p",
+        "xyg-engine",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "elapsedSeconds": 29.09491788595915,
+      "exitCode": 0,
+      "rawBytes": 167,
+      "rawSha256": "6cc877bfd3b204b86cfd95dde717fdb3f12ec7cd0c2f18d0879ad5f30f1e0626"
+    },
+    "commit-format.log": {
+      "archive": "commit-format.log.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "8d61b8a2c21f0141ec4ab436b50ed0ca9863a70435f65bcf54b85cb117fac992",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "elapsedSeconds": 0.038570788223296404,
+      "exitCode": 0,
+      "rawBytes": 29,
+      "rawSha256": "0b674d7cbd2e71023e28c9130b58266e7a648fbd509949e2b170f1fc05a40bd1"
+    },
+    "commit-hooks.log": {
+      "archive": "commit-hooks.log.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "elapsedSeconds": 0.6680682031437755,
+      "exitCode": 0,
+      "rawBytes": 240,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "commit-ruff.log": {
+      "archive": "commit-ruff.log.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "elapsedSeconds": 0.03960631042718887,
+      "exitCode": 0,
+      "rawBytes": 19,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "core-bound-final.log": {
+      "archive": "core-bound-final.log.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "19d03d629415d90ffec4a287b194be9ee6c0af76684842bad308cddb276e3042",
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_release_inventory.py",
+        "tests/test_verify_ownership.py"
+      ],
+      "elapsedSeconds": 8.797601966187358,
+      "exitCode": 0,
+      "rawBytes": 99,
+      "rawSha256": "d45ae295de654b0b8400e5eb1f648552422bbc28fc9ef34373c61dc6067d73b1"
+    },
+    "core-final.log": {
+      "archive": "core-final.log.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "e6f5eba65d3c1c9a5daa65808295d16736b980d35fdf3719fff65b1a2a733e42",
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_release_inventory.py",
+        "tests/test_verify_ownership.py"
+      ],
+      "elapsedSeconds": 10.08027698006481,
+      "exitCode": 0,
+      "rawBytes": 99,
+      "rawSha256": "db1dd02b5bc269c1baba55923f7c0f9b7d552af0bc856c685a339bc9bfbd45a4"
+    },
+    "core-inventory.log": {
+      "archive": "core-inventory.log.gz",
+      "archiveBytes": 53,
+      "archiveSha256": "9b37f81c201bd53e05fd48fc5511a6e3125815b1410eca5403219333930f9d10",
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_release_inventory.py",
+        "tests/test_verify_ownership.py"
+      ],
+      "elapsedSeconds": 11.484286561142653,
+      "exitCode": 0,
+      "rawBytes": 100,
+      "rawSha256": "f7847bbea4947dfabbdc4073aada46748d8e52c74841df09fe2135de71e7c75e"
+    },
+    "filter-browser.log": {
+      "archive": "filter-browser.log.gz",
+      "archiveBytes": 628,
+      "archiveSha256": "0f24878fc0a6277168f3f60cf6e57db9b7d48dca13a0da583de0f4b9f3e4fa44",
+      "command": [
+        "node",
+        "scripts/filter_tier_c_conformance.mjs",
+        "--capture",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-a6fec95d/target/task-tmp/filter-graph-native-union/linked.png"
+      ],
+      "elapsedSeconds": 7.75761170592159,
+      "exitCode": 0,
+      "rawBytes": 1408,
+      "rawSha256": "d0761a15cbcaec93c9c0826a74afa2099fe63f36750cbfc8cf1f94e5067ad5d2"
+    },
+    "format.log": {
+      "archive": "format.log.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "8d61b8a2c21f0141ec4ab436b50ed0ca9863a70435f65bcf54b85cb117fac992",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "elapsedSeconds": 0.058391436003148556,
+      "exitCode": 0,
+      "rawBytes": 29,
+      "rawSha256": "0b674d7cbd2e71023e28c9130b58266e7a648fbd509949e2b170f1fc05a40bd1"
+    },
+    "foundation.log": {
+      "archive": "foundation.log.gz",
+      "archiveBytes": 1282,
+      "archiveSha256": "e8160c5448319ad9f8d070603ae15ca63ccba5d941fcde98ef8e84517223105b",
+      "command": [
+        "node",
+        "scripts/wasm_foundation_smoke.mjs"
+      ],
+      "elapsedSeconds": 56.681696550920606,
+      "exitCode": 0,
+      "rawBytes": 4120,
+      "rawSha256": "d37cc1c6c04e7e800efae5780806b54be38b5a59c48d46e8c063d8eefb516e32"
+    },
+    "hooks.log": {
+      "archive": "hooks.log.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "elapsedSeconds": 3.463565329089761,
+      "exitCode": 0,
+      "rawBytes": 240,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "inventory-write.log": {
+      "archive": "inventory-write.log.gz",
+      "archiveBytes": 100,
+      "archiveSha256": "4431342bd17b414aece6dc8120cb3a74169352ddddfce8b990cd74faa5f4f348",
+      "exit": 0,
+      "rawBytes": 89,
+      "rawSha256": "8b043adcc89614100a657020191c2265839136101ab2b19de8a75d90f97dbcfa"
+    },
+    "naming-final.log": {
+      "archive": "naming-final.log.gz",
+      "archiveBytes": 94,
+      "archiveSha256": "bd47d19181357f113c52042975e1880e45d56b95a7da5d63ebbddcd631955bd5",
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_naming.py"
+      ],
+      "elapsedSeconds": 0.5155545813031495,
+      "exitCode": 4,
+      "rawBytes": 81,
+      "rawSha256": "91129a2b230acf7909bf0d82eedeee456bc8c959a86fd2ab4aebee9d392f0557"
+    },
+    "naming-qualified.log": {
+      "archive": "naming-qualified.log.gz",
+      "archiveBytes": 81,
+      "archiveSha256": "02f30067cc09376b61d75bcca94a467e9b0bc56c87683000071471da356b841b",
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_stale_names.py"
+      ],
+      "elapsedSeconds": 127.21266324585304,
+      "exitCode": 0,
+      "rawBytes": 272,
+      "rawSha256": "9135c67991e9e4aebaf670aaac73e37833cf730194f1cb55b146588b9534e4aa"
+    },
+    "native-build.log": {
+      "archive": "native-build.log.gz",
+      "archiveBytes": 172,
+      "archiveSha256": "5c90701e11168778795528c4fc6ba5e106d5d20a274e17dcdd23b79db952a147",
+      "command": [
+        "cargo",
+        "build",
+        "--release"
+      ],
+      "elapsedSeconds": 147.78633952420205,
+      "exitCode": 0,
+      "rawBytes": 337,
+      "rawSha256": "dad6b97d0aabe831c6232144653e1b790d33c80d2b00757695048ab6ade12bc1"
+    },
+    "node-full.log": {
+      "archive": "node-full.log.gz",
+      "archiveBytes": 38767,
+      "archiveSha256": "35439ee1175995aa0c166ec29b037a624e8cc07e88484c4eff15b0ec688b2ba0",
+      "command": [
+        "npm",
+        "test",
+        "--prefix",
+        "packages/xy-node"
+      ],
+      "elapsedSeconds": 28.045270033180714,
+      "exitCode": 0,
+      "rawBytes": 231567,
+      "rawSha256": "d03285918c24eee4567fd99b7091e7423c70b3526791f5726deb039e5a0f6f0f"
+    },
+    "protection.log": {
+      "archive": "protection.log.gz",
+      "archiveBytes": 68,
+      "archiveSha256": "dd15a09750822e37ca95e3da2908436e27a4d146b4c917a3608c7b18fb00b7e8",
+      "qualification": "Auxiliary observation; individual shell exit not inferred.",
+      "rawBytes": 48,
+      "rawSha256": "f92735b00f14f67280aeedadf231e91bc576fdce7010ddfb57934dc049ca5a4a"
+    },
+    "public10k-diagnostic.log": {
+      "archive": "public10k-diagnostic.log.gz",
+      "archiveBytes": 182,
+      "archiveSha256": "24238ffba6de8089070467464aeef744fd6d4e4ef0063742438726783c5084f2",
+      "command": [
+        "node",
+        "scripts/.filter_union_public10k_diagnostic.mjs"
+      ],
+      "elapsedSeconds": 20.65517239505425,
+      "exitCode": 0,
+      "rawBytes": 293,
+      "rawSha256": "9504f682bea23919bfbc3913c6a4fd6411cfc35a4c1b22a692ed226f95f5a7e8"
+    },
+    "public10k-replay.log": {
+      "archive": "public10k-replay.log.gz",
+      "archiveBytes": 129,
+      "archiveSha256": "2280ea642e2b9a7fbd9501f3d8c27d04ec67860b744eb3c1974b6889456cff20",
+      "command": [
+        "node",
+        "scripts/graph_session_public10k_replay.mjs",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-a6fec95d/target/task-tmp/filter-graph-native-union/public10k.json"
+      ],
+      "elapsedSeconds": 9.354061552789062,
+      "exitCode": 0,
+      "rawBytes": 206,
+      "rawSha256": "ca6da8d85c0cf5b43e97d0b09aea12fc6ff3d991b393520b0b768a5a35f55191"
+    },
+    "public10k.log": {
+      "archive": "public10k.log.gz",
+      "archiveBytes": 431,
+      "archiveSha256": "59417976a842e577287971c5fff23f54e1836a654234135dbf4b2153ed62844a",
+      "command": [
+        "node",
+        "scripts/graph_session_public10k_smoke.mjs"
+      ],
+      "elapsedSeconds": 27.036375837866217,
+      "exitCode": 1,
+      "rawBytes": 951,
+      "rawSha256": "efb5c16c3cf4c9f81794673c26e96ec22b73df25ac276ba6fd6b24624ba5b243"
+    },
+    "python-floor.log": {
+      "archive": "python-floor.log.gz",
+      "archiveBytes": 42,
+      "archiveSha256": "4652456836415472c91bf0db9100a6d492591d06ecd7fde0f5832056a1f73ebf",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_python_floor.py"
+      ],
+      "elapsedSeconds": 2.705838160123676,
+      "exitCode": 0,
+      "rawBytes": 22,
+      "rawSha256": "b74c6582357e4cc55f2da8b24b4db3eba9c166d307177c0acd0a422cdcbd8551"
+    },
+    "python-host.log": {
+      "archive": "python-host.log.gz",
+      "archiveBytes": 383,
+      "archiveSha256": "ac32c650280367642e9a6521e3a9ea57e6a398c5dc298cabf4a3ab220c63ee69",
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_filter_tier_c.py",
+        "tests/test_filter_tier_c_density.py",
+        "tests/test_geo_temporal_binding.py",
+        "tests/test_temporal_controller.py",
+        "tests/test_graph_session_python_transport.py",
+        "tests/test_chunked_columns.py"
+      ],
+      "elapsedSeconds": 15.18791952682659,
+      "exitCode": 0,
+      "rawBytes": 917,
+      "rawSha256": "63baab994626099cdd6068db78ff1c720a0d13e4721e52345caec1d504838925"
+    },
+    "ruff.log": {
+      "archive": "ruff.log.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "elapsedSeconds": 0.06808907212689519,
+      "exitCode": 0,
+      "rawBytes": 19,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "rust-filter.log": {
+      "archive": "rust-filter.log.gz",
+      "archiveBytes": 593,
+      "archiveSha256": "ad11aeb63770e8ef2c7db29e4bbf5d4f2ddaf470d6f8e99e612932bfd327348b",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "xyg-engine",
+        "filter_tier_c"
+      ],
+      "elapsedSeconds": 32.42434561531991,
+      "exitCode": 0,
+      "rawBytes": 1673,
+      "rawSha256": "d157b3fb99de5ba4491ca6142be4e1e773e34d1a07cf3fc8ec7ce8acbddbd837"
+    },
+    "rust-interaction.log": {
+      "archive": "rust-interaction.log.gz",
+      "archiveBytes": 4619,
+      "archiveSha256": "3079a6e82b31d402dd89d6188cd842845c0fcaed277260ae4ec54e10f64d8979",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "xyg-engine",
+        "graphforge::interaction"
+      ],
+      "elapsedSeconds": 7.206991095095873,
+      "exitCode": 0,
+      "rawBytes": 18741,
+      "rawSha256": "16eb3a65e2d34ccae23bc7696690bead3cbc71f227f9b29f90c8e097556e38ae"
+    },
+    "rust-memory.log": {
+      "archive": "rust-memory.log.gz",
+      "archiveBytes": 242,
+      "archiveSha256": "fb0e13a48c5a9a370dec6d5e72c87d9ac7e64744cb9cd20ea4493e9b30ac99c2",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "xyg-engine",
+        "--test",
+        "graph_session_memory"
+      ],
+      "elapsedSeconds": 0.6821398767642677,
+      "exitCode": 0,
+      "rawBytes": 344,
+      "rawSha256": "2ba1497a2057ee972ffddbe9859e720b66282844b88e0eedb1b4b5df799f8f97"
+    },
+    "test-environment.log": {
+      "archive": "test-environment.log.gz",
+      "archiveBytes": 199,
+      "archiveSha256": "210393039726c05c99c07d50cb7254761106b20d50b75779bc9e5a3557995ae9",
+      "qualification": "Auxiliary observation; individual shell exit not inferred.",
+      "rawBytes": 206,
+      "rawSha256": "f7e7e8ddfa18112edf8eb0ac8ddb09022584375f688335c5d5cb450153fa8b12"
+    },
+    "wasm-abi.log": {
+      "archive": "wasm-abi.log.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "command": [
+        "python3",
+        "scripts/gen_wasm_abi.py",
+        "--check"
+      ],
+      "elapsedSeconds": 0.07538713794201612,
+      "exitCode": 0,
+      "rawBytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "wasm-build.log": {
+      "archive": "wasm-build.log.gz",
+      "archiveBytes": 1155,
+      "archiveSha256": "7d37ca9809ab90be97beb894f121255fe67e33e8e778aee0dc73531e23c42dae",
+      "command": [
+        "npm",
+        "run",
+        "build:wasm"
+      ],
+      "elapsedSeconds": 131.75232837395743,
+      "exitCode": 0,
+      "rawBytes": 4267,
+      "rawSha256": "05441cc01bce3706f662307f144e61f0a436bade23752fb457366145b1af7532"
+    },
+    "wasm-size.log": {
+      "archive": "wasm-size.log.gz",
+      "archiveBytes": 92,
+      "archiveSha256": "9c7e23dbd7fca9510d56284e72bf5483fbd9acda22e32f7170f92e14c6e1a055",
+      "qualification": "Auxiliary observation; individual shell exit not inferred.",
+      "rawBytes": 87,
+      "rawSha256": "6c83601322834dbc16c6b6fee0ee58f931a227d55df5c76561732c468ba3f4f6"
+    },
+    "wasm-tests.log": {
+      "archive": "wasm-tests.log.gz",
+      "archiveBytes": 2125,
+      "archiveSha256": "850a674cb0d3c6a41e9cfe0f897e8f9e93fca8848f0fa7ea7fb30c74f6aa3f36",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "xyg-wasm",
+        "--lib"
+      ],
+      "elapsedSeconds": 7.985949685331434,
+      "exitCode": 0,
+      "rawBytes": 6550,
+      "rawSha256": "04beb00013552a58c30bcd640be52454ee8e546ee9f482bfcd8a32b9b4ae64d8"
+    },
+    "workflow.log": {
+      "archive": "workflow.log.gz",
+      "archiveBytes": 182,
+      "archiveSha256": "e863c28d04ddba9f5d4b95616ac4dff5cd588f4d575af16131276c020bb346c5",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_ci_workflow.py"
+      ],
+      "elapsedSeconds": 1.6181252128444612,
+      "exitCode": 0,
+      "rawBytes": 567,
+      "rawSha256": "2c1d328b9270af0980276af82c66c26ea22f230cd20eb1b2583795e0b1d355ea"
+    }
+  },
+  "nativeAbi": 402,
+  "nativeSymbols": 544,
+  "parents": [
+    "81c4ba55bb23a858b8f3dd8dd4ecbbf4e97377e5",
+    "0a85b8da98ceb5dd0f2ef308f51c85a46f22460e"
+  ],
+  "receiptEnvironment": {
+    "chromium": "156.0.8078.4",
+    "interpreter": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+    "nativeSelection": "explicit producer/target/release/libxyg_core.so",
+    "node": "22.23.4",
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "testPython": "CPython 3.12.15 via uv project environment; see test-environment log.",
+    "tmpdir": "/var/tmp"
+  },
+  "reports": {
+    "foundation.json": {
+      "archive": "foundation.json.gz",
+      "archiveBytes": 2312,
+      "archiveSha256": "b33998a6030089e2479d3b97409420d9742d1071fb682128f7bdd7ead743fa56",
+      "rawBytes": 25639,
+      "rawSha256": "899091849ae906f3064692ec79e9b724fa4882f3bd97ba4d63c2d70db1178bd9"
+    },
+    "foundation.json.retained-temporal.json": {
+      "archive": "foundation.json.retained-temporal.json.gz",
+      "archiveBytes": 5236,
+      "archiveSha256": "b28038b03a58ba437fff9db9cd95b2c28ce4fc313231a3b5e5f24699fd706f39",
+      "rawBytes": 102508,
+      "rawSha256": "028cf790fbe8574e9b863dd49828b9ff42ad3b2aa4331e7dae54b28f5a8313d6"
+    },
+    "foundation.json.retained-temporal.json.wire.json": {
+      "archive": "foundation.json.retained-temporal.json.wire.json.gz",
+      "archiveBytes": 103944,
+      "archiveSha256": "7a7d7eb722faa9f0a551cd617252446d8cf06b0a1dfe53e1b8461f8eb64a61ab",
+      "rawBytes": 2914513,
+      "rawSha256": "e3e56c9607a6e5516de0542355a0bb564ca95f115fe622206b7de6cc917683c6"
+    },
+    "linked.png.requests.bin": {
+      "archive": "linked.png.requests.bin.gz",
+      "archiveBytes": 848,
+      "archiveSha256": "10e1b8f1c9bafcaf179bfa91af088d91c3cf0c824d9cd7fbd81d36f9b2bd4551",
+      "rawBytes": 16884,
+      "rawSha256": "a1947057b3116230b2a5aab557cc5de1175e68854ec20d8d08d92d78777dbc82"
+    },
+    "public10k.json": {
+      "archive": "public10k.json.gz",
+      "archiveBytes": 121808,
+      "archiveSha256": "b8000296437ba0d79f3dd3a06aa9218873d695b5e740d79921835d5a6ccb2bba",
+      "rawBytes": 1317328,
+      "rawSha256": "6dfb12aa000017151b5b09b4c6599e5395c42e6d4fec427a1ea7629b2f6f29b1"
+    },
+    "scheduling.json": {
+      "archive": "scheduling.json.gz",
+      "archiveBytes": 14554,
+      "archiveSha256": "c283f1a874e67ed9c7cde5437127c847c7a1c980dce28ae10de1b7d35873b117",
+      "rawBytes": 234033,
+      "rawSha256": "88d5d0cc5f487c0c0c24a057504bd0b3b87d5d3ca601ef6b839602b8e54d4deb"
+    }
+  },
+  "review": "Independent combined-diff review pending; parent product approvals limited to unchanged material.",
+  "runtimeArtifacts": {
+    "packages/xy-client/dist/index.js": {
+      "bytes": 826318,
+      "sha256": "68b2f176b2aed11e0b68303289583aa422c38186a4469ddb0c99d470a0f112f0"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 826340,
+      "sha256": "0348855a007ab1e4b45fca0cd003f1868df85ad5282abdae42aec3684372d271"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 56942,
+      "sha256": "98f47be50de12a26a6132fad7c956bc8ec2d052e1e4b8664f37ea4a5975dae87"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2568396,
+      "sha256": "a8f42fdd0094791963830a2161164742274364f5cd3a85e7ca91c55e1d4a79cc"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "85435ed9cbc045795cf4d2b30a58b669f1502234428121fb1d1ab209c5682318"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1911775,
+      "sha256": "b262993164c6b55c5c8571b209df423e1d554708440d8629e2db5a5cd3a18680"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 826318,
+      "sha256": "68b2f176b2aed11e0b68303289583aa422c38186a4469ddb0c99d470a0f112f0"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 826340,
+      "sha256": "0348855a007ab1e4b45fca0cd003f1868df85ad5282abdae42aec3684372d271"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "bytes": 56942,
+      "sha256": "98f47be50de12a26a6132fad7c956bc8ec2d052e1e4b8664f37ea4a5975dae87"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1911775,
+      "sha256": "b262993164c6b55c5c8571b209df423e1d554708440d8629e2db5a5cd3a18680"
+    },
+    "target/release/libxyg_core.so": {
+      "bytes": 6211256,
+      "sha256": "347ca67b5eb09aed8b8f6d6578f1f21913c195ab197ce70a68ba6a2e1dac35f6"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 2107983,
+      "sha256": "11220859630a1f77d30d29955b2916bc9c1ea54e19a4005cdd65c1051e2c5034"
+    }
+  },
+  "schema": "xyg.filter-graph-native-union/v1",
+  "sourceSha256": {
+    "spec/performance/filter-graph-native-union-2026-11-07/README.md": "830cab82eff0c3b4c589bd13aa4336b856eda208e136bf888648fe56b6879569",
+    "spec/performance/filter-graph-native-union-2026-11-07/composition-union.json": "3af889dd6feb0959da80126f0013cc4baed00a0b0a99466c630266e3bc85d136",
+    "spec/performance/filter-graph-native-union-2026-11-07/current-bindings.json": "018e82bc76641f29037138838f44513052ddc5572d7409ee3c8844a07f4a325d",
+    "spec/performance/filter-graph-native-union-2026-11-07/producer-inputs.json": "eba1a2b56c9b07d4ec3d9319d2d2af06c2c90d21cc5e69026e60881f1882167f",
+    "spec/performance/filter-graph-native-union-2026-11-07/protection-binding.json": "c9b1811ae3595105ad286fb0adda246e7efb46ab11ad607c9ed979cb2abcc058"
+  },
+  "wasmAbi": 36,
+  "wasmMeasured": {
+    "caps": {
+      "gzip6": 786432,
+      "raw": 1927168
+    },
+    "gzip6": 782244,
+    "node": "v22.23.4",
+    "raw": 1911775
+  }
+}

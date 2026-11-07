@@ -1,0 +1,162 @@
+{
+  "reviewedParent": "f173d55a09fac511676802090aaa5005a7e4fa36",
+  "previousChecksSha256": "bd12335fde31f597a7ff5201bb5ba79e2b6fce85e86ca15b709a789478b9da1f",
+  "currentBindingsSha256": "5db86266129201ed9f846335ea140e1d41474983cdc7ff23188a483124c15dba",
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6127864,
+      "sha256": "09b2571980a8c1d97ac4478fc51b346fb9356d07916bc8b38e84c072b531b895"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 2124856,
+      "sha256": "dbae96bb9f476d5368a9ca966e554d2dea36df7bb8ff739a5d3e712e9aefa41d"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1927032,
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 804132,
+      "sha256": "09144e0e40a7c278a7a103a96bdde3b7ae73e3d71b3fdf367a1353ddbad1b80d"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 804159,
+      "sha256": "97ae3d73b9b09435550781fa79a26480a6c15ce2bcab42ec40ca60854d18afe4"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 56051,
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2588565,
+      "sha256": "8bed6f41e9d60e41010b069cfd18bbb896a799bd733649e74deaf6dbf68ac5e7"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "303b39e33590f6b2dd65aefeaefd1714088414cb515a0817c6d3fa04c7489d3e"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 804132,
+      "sha256": "09144e0e40a7c278a7a103a96bdde3b7ae73e3d71b3fdf367a1353ddbad1b80d"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 804159,
+      "sha256": "97ae3d73b9b09435550781fa79a26480a6c15ce2bcab42ec40ca60854d18afe4"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1927032,
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1"
+    }
+  },
+  "environment": {
+    "node": "v22.23.4",
+    "systemPython": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+    "testPython": "3.12.15 (main, Oct  1 2026, 20:59:04) [Clang 22.1.3 ]",
+    "nativeSelection": "Explicit XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-6e94436c/target/release/libxyg_core.so"
+  },
+  "logs": {
+    "before-final-python": {
+      "archive": "spec/performance/geo-disposal-recipients-2026-11-07/before-final-python.log.gz",
+      "archiveSha256": "6ce4fcdcfa7278a909cf9ad86d1922f4a8d2da94b1a43a861ba35bcd31393050",
+      "rawSha256": "d8ff0d2f1720d95e543d8fef15f69a8819a258606e0fa43e8133d189726765e5"
+    },
+    "before-node": {
+      "archive": "spec/performance/geo-disposal-recipients-2026-11-07/before-node.log.gz",
+      "archiveSha256": "785e7f2b99f6442fafa9d982d03214625a871ef934e006afe8882c10864e6b4d",
+      "rawSha256": "119a708d1b423eb9e48b16a8ea23b857153665dc5f5fbbf11b53a3ae755e73d7"
+    },
+    "before-python": {
+      "archive": "spec/performance/geo-disposal-recipients-2026-11-07/before-python.log.gz",
+      "archiveSha256": "b6172c37bd777e4d0e9b8b628ebc4e07750ce279d074981e61a247ac4771a8fe",
+      "rawSha256": "18e650ffcc675dd392be7b8e652c1e95004c5ab0d997863b58311d8917413186"
+    },
+    "metadata-final": {
+      "archive": "spec/performance/geo-disposal-recipients-2026-11-07/metadata-final.log.gz",
+      "archiveSha256": "5c2daedd854828f93a2ecd1f761827acbe6647b993d1051cd9c9dec55461315a",
+      "rawSha256": "163940ded7ea562a7564c87b482db235081c8b7c248935035e5cb99e596fd94f"
+    },
+    "metadata": {
+      "archive": "spec/performance/geo-disposal-recipients-2026-11-07/metadata.log.gz",
+      "archiveSha256": "90347744c534be7b5d3ecbd1bf750ec0cb351c9f81302e3ca4505878783d4f94",
+      "rawSha256": "e4b1f391de81b4709823f0502716c06af0510fe25eccc91178a5216eaee00841"
+    },
+    "node": {
+      "archive": "spec/performance/geo-disposal-recipients-2026-11-07/node.log.gz",
+      "archiveSha256": "8ff5ac50748e85fd5d3b0fcbb56c865ab6c377bdce6df6f99839124e4bd64ff3",
+      "rawSha256": "fbd19e6263074fdfc8019b02dc3e532ba9092284c42fc5369a471ceaef5552ab"
+    },
+    "python-final": {
+      "archive": "spec/performance/geo-disposal-recipients-2026-11-07/python-final.log.gz",
+      "archiveSha256": "ee2c05cee3d9d5d411c53c04abee269def7ee4466178fcd77d83651adc9cba59",
+      "rawSha256": "02083f0ab23d2e68f3805786895eb36d7d00463e9cdec143dc63df0c306d2928"
+    },
+    "python": {
+      "archive": "spec/performance/geo-disposal-recipients-2026-11-07/python.log.gz",
+      "archiveSha256": "b03c30e815e37f10310fb561eec5980ee23923fd60af9fd606b429010540038d",
+      "rawSha256": "8f6aeecf6df57c80030a5f93832709cdc89b52e46caa425374b26210bf164a7b"
+    },
+    "types": {
+      "archive": "spec/performance/geo-disposal-recipients-2026-11-07/types.log.gz",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "hooks-import-order-fix": {
+      "archive": "spec/performance/geo-disposal-recipients-2026-11-07/hooks-import-order-fix.log.gz",
+      "archiveSha256": "7de227d4c763289ebefaf8cd84446a41e7235f8f24b15f4a8e1d664600e7f74f",
+      "rawSha256": "0cab761b89e622dc82711b27d61a735bf864387d47bc0420a5fb58c495d8be2d"
+    },
+    "hooks": {
+      "archive": "spec/performance/geo-disposal-recipients-2026-11-07/hooks.log.gz",
+      "archiveSha256": "7de227d4c763289ebefaf8cd84446a41e7235f8f24b15f4a8e1d664600e7f74f",
+      "rawSha256": "0cab761b89e622dc82711b27d61a735bf864387d47bc0420a5fb58c495d8be2d"
+    },
+    "python-all-final": {
+      "archive": "spec/performance/geo-disposal-recipients-2026-11-07/python-all-final.log.gz",
+      "archiveSha256": "9fa13eeefa0580bf1f9b34cf085a1c35bdd935e14468f74748ab6963966cadf9",
+      "rawSha256": "497ad75bdbf8347fdda6faf2a43d607237ac7eeda7086b2e255ea6faf4cabc67"
+    },
+    "types-final": {
+      "archive": "spec/performance/geo-disposal-recipients-2026-11-07/types-final.log.gz",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "commit-hooks": {
+      "archive": "spec/performance/geo-disposal-recipients-2026-11-07/commit-hooks.log.gz",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "exit": 0
+    },
+    "commit-ruff": {
+      "archive": "spec/performance/geo-disposal-recipients-2026-11-07/commit-ruff.log.gz",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "exit": 0
+    },
+    "commit-format": {
+      "archive": "spec/performance/geo-disposal-recipients-2026-11-07/commit-format.log.gz",
+      "archiveSha256": "e82aa05e80a206efc84c5d8486467f750e1ce9c246fccdb262baa57243d597d5",
+      "rawSha256": "1780393f095db4a6b5c8e0faa84b71681c2dae2daa05ee27d35629c0290bde6c",
+      "exit": 0
+    }
+  },
+  "results": {
+    "beforePythonFinal": {
+      "failed": 4
+    },
+    "beforeNode": {
+      "failed": 2
+    },
+    "pythonFinal": 112,
+    "node": 43,
+    "metadataFinal": 33,
+    "types": "pass",
+    "pythonAllFinal": 145,
+    "hooksInitial": "ruff hook corrected an import separator; initial hook exits1, final gates run separately"
+  },
+  "commands": {
+    "python": "XYG_NATIVE_LIB=$PWD/target/release/libxyg_core.so uv run --no-sync pytest -q tests/test_geo_temporal_binding.py tests/test_geoscale.py tests/test_temporal_controller.py tests/test_geo_frame_leases.py tests/test_geo_spatial.py tests/test_geo_host.py tests/test_geo_rows.py",
+    "node": "Node 22; XYG_NATIVE_LIB=$PWD/target/release/libxyg_core.so node --test packages/xy-node/test/geo-temporal-binding.test.mjs packages/xy-node/test/temporal-controller.test.mjs packages/xy-node/test/geo-frame-leases.test.mjs packages/xy-node/test/temporal-graph-publication.test.mjs",
+    "metadata": "uv run --no-sync pytest -q tests/test_graphforge_contract_corpus.py tests/test_release_inventory.py",
+    "types": "uv run --no-sync ty check"
+  }
+}
