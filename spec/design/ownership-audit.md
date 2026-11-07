@@ -1370,6 +1370,9 @@ These additions use the existing ownership policies without adding a host policy
 | `crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 
+| `python/xyg/_geo_temporal.py` | Python host | `python-host` | `keep-host` | — |
+| `packages/xy-node/src/geo-temporal.js` | Node host | `node-host` | `keep-host` | — |
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.

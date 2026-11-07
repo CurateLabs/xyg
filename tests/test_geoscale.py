@@ -389,3 +389,52 @@ def test_prepare_failure_drops_decoder_and_packet_before_disposal(failure: str) 
         assert calls == [11, 10]
 
     asyncio.run(run())
+
+
+@pytest.mark.parametrize("cancelled", [False, True])
+def test_settle_propagates_completed_future_cancellation(cancelled):
+    async def run():
+        future = asyncio.get_running_loop().create_future()
+        if cancelled:
+            future.cancel()
+        else:
+            future.set_exception(asyncio.CancelledError())
+        with pytest.raises(asyncio.CancelledError):
+            await g._settle(future)
+
+    asyncio.run(run())
+
+
+def test_settle_drains_executor_future_through_repeated_waiter_cancellation():
+    async def run():
+        future = asyncio.get_running_loop().create_future()
+        cancellations = []
+        owner = object()
+        waiter = asyncio.create_task(g._settle(future, lambda: cancellations.append(True)))
+        await asyncio.sleep(0)
+        for _ in range(2):
+            waiter.cancel()
+            await asyncio.sleep(0)
+            assert not waiter.done()
+            assert not future.cancelled()
+        future.set_result(owner)
+        value, interrupted = await waiter
+        assert value is owner and interrupted
+        assert len(cancellations) == 2
+
+    asyncio.run(run())
+
+
+def test_settle_transfers_result_when_completion_races_waiter_cancellation():
+    async def run():
+        future = asyncio.get_running_loop().create_future()
+        owner = object()
+        waiter = asyncio.create_task(g._settle(future))
+        await asyncio.sleep(0)
+        future.set_result(owner)
+        waiter.cancel()
+        value, interrupted = await waiter
+        assert value is owner and interrupted
+        assert not future.cancelled()
+
+    asyncio.run(run())

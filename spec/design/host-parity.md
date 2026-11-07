@@ -2134,6 +2134,17 @@ declaration adds exact `0.6.0-rc.7`; it declares no interval or final `0.6.0`.
 This Linux x64 GNU qualification is not an installed XYG release cohort, complete
 platform matrix, or notebook/frontend acceptance. #936/#884/#108 remain open.
 
+## Native automatic temporal/geographic snapshots
+
+Python `GeoChart.bind_temporal` and Node `GeoChart.bindTemporal` schedule the
+same native retained-point composition from exact temporal snapshots. Both
+retain independently leased public chart/frame pairs, coalesce desired snapshots,
+suppress stale camera/time results, skip selection-only requery and retain the
+last accepted frame after failed reads. The complete ownership, synchronous batch
+compatibility and remaining mounted-view/indexed/mixed-source limitations are
+normative in [geo-retained-hosts.md](geo-retained-hosts.md). This bounded slice
+advances M6; #50/#39/M6 and broader M5/#108 remain open.
+
 
 ### Python notebook identity projection (2026-11-06)
 

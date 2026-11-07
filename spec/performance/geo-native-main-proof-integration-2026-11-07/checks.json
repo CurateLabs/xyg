@@ -1,0 +1,123 @@
+{
+  "parents": [
+    "212ed378e46592b32ac67a317d73fbe67bdb1b71",
+    "084b3c1b7c393e135476aab9610bf8334767b2ac"
+  ],
+  "previousChecksSha256": "c35785af030e10e60e39907b2477bf757b10452d2a7dfe42fc272709b6feea48",
+  "currentBindingsSha256": "eee02337786656d24c90cb48b7e1496edbd7b75fe575607704b50f5c8ad4ec1e",
+  "protectedEvidenceCounts": {
+    "212ed378e46592b32ac67a317d73fbe67bdb1b71": 12061,
+    "084b3c1b7c393e135476aab9610bf8334767b2ac": 12000
+  },
+  "productionRelativeToParent": "exact bytes (js/src,crates,python,packages/xy-node/src)",
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6127864,
+      "sha256": "09b2571980a8c1d97ac4478fc51b346fb9356d07916bc8b38e84c072b531b895"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 2124856,
+      "sha256": "dbae96bb9f476d5368a9ca966e554d2dea36df7bb8ff739a5d3e712e9aefa41d"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1927032,
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 804132,
+      "sha256": "09144e0e40a7c278a7a103a96bdde3b7ae73e3d71b3fdf367a1353ddbad1b80d"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 804159,
+      "sha256": "97ae3d73b9b09435550781fa79a26480a6c15ce2bcab42ec40ca60854d18afe4"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 56051,
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2588565,
+      "sha256": "8bed6f41e9d60e41010b069cfd18bbb896a799bd733649e74deaf6dbf68ac5e7"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "303b39e33590f6b2dd65aefeaefd1714088414cb515a0817c6d3fa04c7489d3e"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 804132,
+      "sha256": "09144e0e40a7c278a7a103a96bdde3b7ae73e3d71b3fdf367a1353ddbad1b80d"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 804159,
+      "sha256": "97ae3d73b9b09435550781fa79a26480a6c15ce2bcab42ec40ca60854d18afe4"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1927032,
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1"
+    }
+  },
+  "logs": {
+    "node.log": {
+      "archive": "spec/performance/geo-native-main-proof-integration-2026-11-07/node.log.gz",
+      "archiveSha256": "ce2eb40838b44539aeb6a00cf2156d5f534def063a0fe9bfce2722f1c3732e35",
+      "rawSha256": "2e91295a220c9f631dd5651a88144d00b222dd0a46dc0429296c2ce505fbd77e"
+    },
+    "metadata.log": {
+      "archive": "spec/performance/geo-native-main-proof-integration-2026-11-07/metadata.log.gz",
+      "archiveSha256": "59aa507770d35b5bc701ad410b9bb98b4bbabaaab670fb7a6957236adbe208d8",
+      "rawSha256": "5ea77a279670a49d274d8cf8669360372c5e38c56d4e5c0e30043b23e5a38024"
+    },
+    "foundation.json": {
+      "archive": "spec/performance/geo-native-main-proof-integration-2026-11-07/foundation.json.gz",
+      "archiveSha256": "084f06e874fc1689c67035daa0e8dbafa02644635e7638e0d24e3f609b029525",
+      "rawSha256": "63bd4e6df9dadcddbb8c3f76b95500d3499c156fc3fa8bc534f2187c34cad97b"
+    },
+    "inventory.log": {
+      "archive": "spec/performance/geo-native-main-proof-integration-2026-11-07/inventory.log.gz",
+      "archiveSha256": "a2277e48bd10ba89748088135de9346e064ed73e274ba49c37aee9442587f308",
+      "rawSha256": "5007bf087b7f76fea24b0f6770cabd078b1a83b26987c391b0f19af64a4a57bb"
+    },
+    "foundation.log": {
+      "archive": "spec/performance/geo-native-main-proof-integration-2026-11-07/foundation.log.gz",
+      "archiveSha256": "1583a4bce4ccc5560db2c3fd0042c2dc9f4fd89307ac5aef16d7be8fa817e952",
+      "rawSha256": "7d9c6660dcdf16ce489c03f4cfee360ad61e1d82532b55a48d7b6a6838e8a56b"
+    },
+    "hooks": {
+      "archive": "spec/performance/geo-native-main-proof-integration-2026-11-07/hooks.log.gz",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "exit": 0
+    },
+    "ruff": {
+      "archive": "spec/performance/geo-native-main-proof-integration-2026-11-07/ruff.log.gz",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "exit": 0
+    },
+    "format": {
+      "archive": "spec/performance/geo-native-main-proof-integration-2026-11-07/format.log.gz",
+      "archiveSha256": "4431b3457e40a51416b413ff4a6fbd1c215a6fda4b83698ee84321270b829bc6",
+      "rawSha256": "a36db4b65ebb65eae3421e27e0165b35f14b0f0a2331509733b518869c1b5219",
+      "exit": 0
+    }
+  },
+  "captures": {
+    "foundation.json.esm-missing-inline-artifact.png": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+    "foundation.json.iife-malformed-inline-artifact.png": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+    "foundation.json.iife-missing-inline-artifact.png": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+    "foundation.json.iife-missing-retained-source.png": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66",
+    "foundation.json.esm-missing-retained-source.png": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66",
+    "foundation.json.esm-malformed-inline-artifact.png": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+  },
+  "environment": {
+    "node": "v22.23.4",
+    "systemPython": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+    "testPython": "3.12.15 (main, Oct  1 2026, 20:59:04) [Clang 22.1.3 ]",
+    "nativeSelection": "Explicit XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-6e94436c/target/release/libxyg_core.so"
+  },
+  "results": {
+    "node": 44,
+    "metadata": 33,
+    "foundation": "pass including16camera+2scheduling"
+  }
+}
