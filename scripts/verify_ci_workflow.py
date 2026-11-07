@@ -2113,6 +2113,16 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "node scripts/graph_notebook_progressive_smoke.mjs",
         '.venv/bin/python scripts/verify_graph_notebook_report.py "$RUNNER_TEMP/graph-notebook.json"',
     )
+    _require_step_runs_exactly(
+        errors,
+        jobs.get("test", ""),
+        "Python tests (native core)",
+        "native Python suite including required chunked chart rendered snapshots",
+        'export XYG_CHROMIUM="$(node -e "console.log(require(\'playwright\').chromium.executablePath())")"',
+        'export XYG_TEST_CHROMIUM="$XYG_CHROMIUM"',
+        "export XY_REQUIRE_BROWSER=1",
+        ".venv/bin/pytest -q",
+    )
     graph_step = "GraphForge native/WASM equivalence"
     step_order = list(test_steps)
     for prerequisite in ("Build native core", "Build JS client", "Install package + dev deps"):

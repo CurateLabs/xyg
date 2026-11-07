@@ -1,0 +1,1102 @@
+{
+  "parents": {
+    "main": "084b3c1b7c393e135476aab9610bf8334767b2ac",
+    "source": "6c81d68e93378429c4549442b8700091e22e128d"
+  },
+  "commands": {
+    "abi-generated-check": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_abi_manifest.py",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 1.9072761535644531,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/abi-generated-check.log.gz",
+        "sha256": "cb10c3f314d3683cc8b113b490bea1ed1e520625e2459c9ecd51390902050569",
+        "rawSha256": "b291311f1f3b01cb293dccb8c2cceb076dfc02d46c04bb59207615a1672807c4",
+        "rawBytes": 42
+      }
+    },
+    "abi-manifest": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_abi_manifest.py"
+      ],
+      "exit": 0,
+      "seconds": 1.101473331451416,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/abi-manifest.log.gz",
+        "sha256": "83f25123f02e1008faa64bb7bc45e7d26e620c8c56417ae1c49f504131e2fc4f",
+        "rawSha256": "be90ad3d75e7e94180d1a6b467036a670f43f727401f5f53bea7b63c6977c352",
+        "rawBytes": 2238846
+      }
+    },
+    "abi-smoke": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/abi_smoke.py"
+      ],
+      "exit": 0,
+      "seconds": 0.2668724060058594,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/abi-smoke.log.gz",
+        "sha256": "135de4fa46245b623c5d8acfa3e621c9374a4c0229b173222340fff45c526965",
+        "rawSha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306",
+        "rawBytes": 52
+      }
+    },
+    "affected-final": {
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_graph_notebook_report.py",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_release_inventory.py",
+        "tests/test_cross_host_abi_transition.py",
+        "tests/test_graph_session_python_transport.py",
+        "tests/test_chunked_columns.py"
+      ],
+      "exit": 0,
+      "seconds": 13.254330396652222,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/affected-final.log.gz",
+        "sha256": "3977e5b1d82b296b854608264ad0a30688ac1f0c04b6d39d6ebd1aa775c3acdc",
+        "rawSha256": "095128198cbdf220e570b2bd1b3e6cd0324e4019aa52d4cc87d80c70a9dbf35b",
+        "rawBytes": 272
+      }
+    },
+    "build": {
+      "command": [
+        "node",
+        "js/build.mjs"
+      ],
+      "exit": 0,
+      "seconds": 4.692168474197388,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/build.log.gz",
+        "sha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+        "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+        "rawBytes": 5448
+      }
+    },
+    "capability": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_capability_matrix.py",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.18738412857055664,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/capability.log.gz",
+        "sha256": "b767dcba961ec36088a4508e2fc578c781b10bfd553f305c9afc72fb495506b6",
+        "rawSha256": "42b8d4d87753f9103ac02d0b33f9a3c6f6e68193684dd88198095d247c8e7392",
+        "rawBytes": 29
+      }
+    },
+    "chunked-render": {
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_chunked_columns.py::test_rendered_chart_snapshot_navigation"
+      ],
+      "exit": 0,
+      "seconds": 7.677581548690796,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/chunked-render.log.gz",
+        "sha256": "41b8f303e205c0b3498ef83e89e816a7b0d024c06a013004ff2fa384ec53a686",
+        "rawSha256": "29a8b353da6f7e830cd38a3b93c9c54ed38a376cd262340db254fd05db0b5122",
+        "rawBytes": 834
+      }
+    },
+    "ci": {
+      "command": [
+        "make",
+        "check-ci"
+      ],
+      "exit": 0,
+      "seconds": 432.2174596786499,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/ci.log.gz",
+        "sha256": "7f8e4c38919904f38035cbf683b947a2a8444bae0ee71d663903b0f28783d88f",
+        "rawSha256": "014c14056a4c2454e84a5e027465a7f253cb9245d510f723dff56da0b76f0c0e",
+        "rawBytes": 1786
+      }
+    },
+    "core-final": {
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_graphforge_contract_corpus.py"
+      ],
+      "exit": 0,
+      "seconds": 1.3469359874725342,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/core-final.log.gz",
+        "sha256": "968d113ed556c799eb2216a4103ba04aca9be4360a90a720af7e33a6dbcdc258",
+        "rawSha256": "5fba704ce67a9a77c05e6385d95f0f3ea27cbb3486b5c2b870755a32c83d8c4e",
+        "rawBytes": 98
+      }
+    },
+    "deps": {
+      "command": [
+        "uv",
+        "pip",
+        "install",
+        "--python",
+        ".venv/bin/python",
+        "jupyterlab==4.6.5",
+        "ipykernel==7.4.0"
+      ],
+      "exit": 0,
+      "seconds": 3.234889030456543,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/deps.log.gz",
+        "sha256": "5d06e38e585bd55e5bd9fe7ad3df5446cb13435289df96e63d007954e22363b2",
+        "rawSha256": "84c5602f6b35c544f515ecb0044d3cdbd4a58ba536a1eaf682592dd7b9e8aebd",
+        "rawBytes": 1653
+      }
+    },
+    "environment": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "-c",
+        "import sys,ctypes,hashlib,os,xyg.kernels as k; from pathlib import Path; p=Path(os.environ['XYG_NATIVE_LIB']); print(sys.version); print(k.BACKEND); print(p); print(hashlib.sha256(p.read_bytes()).hexdigest()); print(ctypes.CDLL(str(p)).xyg_abi_version())"
+      ],
+      "exit": 0,
+      "seconds": 0.1676928997039795,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/environment.log.gz",
+        "sha256": "e0906807b7be1412ed4ed52cb01c7e06fd04ea727c450394a77d16479ce4fec8",
+        "rawSha256": "56538365255e61b3b947ad02e5ffd0e053cb128b117f498fe1d6e3af057b0b05",
+        "rawBytes": 203
+      }
+    },
+    "final-core": {
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_cross_host_abi_transition.py"
+      ],
+      "exit": 0,
+      "seconds": 0.9893655776977539,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/final-core.log.gz",
+        "sha256": "6503717402216844cef6e7de5f4adc61b496e50bc87481cc69e204e615206f5a",
+        "rawSha256": "758dde47a7016034b02ec75bb5b861187414b8667e11df06d9cb12f354e9eace",
+        "rawBytes": 99
+      }
+    },
+    "final-format": {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exit": 0,
+      "seconds": 0.03216099739074707,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/final-format.log.gz",
+        "sha256": "835bc8532114b6a7e9f391e3929452866c2a68c7909bda183e373cc290b3dac9",
+        "rawSha256": "c08417703e235fbcd31aab1bd271c50f17753bb4753bfc0f65bcf7b8139f4bfa",
+        "rawBytes": 29
+      }
+    },
+    "final-hooks": {
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exit": 0,
+      "seconds": 0.7323687076568604,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/final-hooks.log.gz",
+        "sha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+        "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+        "rawBytes": 240
+      }
+    },
+    "final-ruff": {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exit": 0,
+      "seconds": 0.03205704689025879,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/final-ruff.log.gz",
+        "sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+        "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+        "rawBytes": 19
+      }
+    },
+    "format": {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exit": 0,
+      "seconds": 0.3089792728424072,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/format.log.gz",
+        "sha256": "835bc8532114b6a7e9f391e3929452866c2a68c7909bda183e373cc290b3dac9",
+        "rawSha256": "c08417703e235fbcd31aab1bd271c50f17753bb4753bfc0f65bcf7b8139f4bfa",
+        "rawBytes": 29
+      }
+    },
+    "hooks": {
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exit": 0,
+      "seconds": 1.5190486907958984,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/hooks.log.gz",
+        "sha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+        "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+        "rawBytes": 240
+      }
+    },
+    "inventory": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_release_inventory.py"
+      ],
+      "exit": 0,
+      "seconds": 5.453657865524292,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/inventory.log.gz",
+        "sha256": "061e29d38894e10e9f9982462538fadbdf9051697515ec1315b4fc2b4d20e9f2",
+        "rawSha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c",
+        "rawBytes": 97
+      }
+    },
+    "metadata-final": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_release_inventory.py"
+      ],
+      "exit": 0,
+      "seconds": 4.624304533004761,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/metadata-final.log.gz",
+        "sha256": "061e29d38894e10e9f9982462538fadbdf9051697515ec1315b4fc2b4d20e9f2",
+        "rawSha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c",
+        "rawBytes": 97
+      }
+    },
+    "metadata": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_release_inventory.py",
+        "--write"
+      ],
+      "exit": 0,
+      "seconds": 6.72396183013916,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/metadata.log.gz",
+        "sha256": "829f2c1074a4f38acde3d22c1ecb789a662925c5c59afe71127d27c0648c42c7",
+        "rawSha256": "4ca8047382029cc6877337002694d1d92024329a5dc830334e8379f4ab8c70c9",
+        "rawBytes": 89
+      }
+    },
+    "node-affected": {
+      "command": [
+        "node",
+        "--test",
+        "packages/xy-node/test/chunked-columns.test.mjs",
+        "packages/xy-node/test/geo-column.test.mjs",
+        "packages/xy-node/test/native-path.test.mjs",
+        "packages/xy-node/test/graphforge-layout.test.mjs"
+      ],
+      "exit": 0,
+      "seconds": 14.23442268371582,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/node-affected.log.gz",
+        "sha256": "4055f0754592cf9fc4a8da98e4bc373e1ef5f304b3ee01f8f04941b29968cefe",
+        "rawSha256": "5411aabea67ab320bfadb83e8ed2cd9179f04d48be9c7b428189ae464b2cbf92",
+        "rawBytes": 8147
+      }
+    },
+    "node-host": {
+      "command": [
+        "npm",
+        "test",
+        "--prefix",
+        "packages/xy-node"
+      ],
+      "exit": 1,
+      "seconds": 38.92171382904053,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/node-host.log.gz",
+        "sha256": "b075ca0a5b0df32c2e0bb702a666f0e69f9aaaf9df5b6f675c9c6a93d4dca660",
+        "rawSha256": "1523cc0ceb8ebca84394f2ba8995d636472c4fcdb4c609d83934869b08ca2abd",
+        "rawBytes": 222907
+      }
+    },
+    "node-transport": {
+      "command": [
+        "node",
+        "--test",
+        "js/test/graph-host-transport.test.mjs"
+      ],
+      "exit": 0,
+      "seconds": 0.19938921928405762,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/node-transport.log.gz",
+        "sha256": "10cb29efdfffb3bde3a56bffe7fc93cdfc81f8c37f007c1213bfde24e974970c",
+        "rawSha256": "dacffe4060064048496f6a40e57e56ce41fa395b75cff1e985eb58db0ab26fbf",
+        "rawBytes": 1616
+      }
+    },
+    "node-version": {
+      "command": [
+        "node",
+        "--version"
+      ],
+      "exit": 0,
+      "seconds": 0.004117250442504883,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/node-version.log.gz",
+        "sha256": "a18c235ae688c268a755be98bec42ac852b8a59b798f514d749a1c0a39577638",
+        "rawSha256": "2266957ed9a639bd7264d714bfa798a961510bf2e50695c668ab8fc0c3f4e906",
+        "rawBytes": 9
+      }
+    },
+    "node-workers-isolated": {
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern",
+        "real workers only",
+        "packages/xy-node/test/graphforge-layout.test.mjs"
+      ],
+      "exit": 0,
+      "seconds": 3.7848150730133057,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/node-workers-isolated.log.gz",
+        "sha256": "2801b8d5fa3586094c8d2d4f69fe9af4155e4e4ce3a386b15a434712fd5736c6",
+        "rawSha256": "492c5e5916c3da45aa230238c2182347794f52ed219608f689896f452e77162c",
+        "rawBytes": 402
+      }
+    },
+    "notebook-final": {
+      "command": [
+        "node",
+        "scripts/graph_notebook_progressive_smoke.mjs"
+      ],
+      "exit": 0,
+      "seconds": 15.048089981079102,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/notebook-final.log.gz",
+        "sha256": "b3c6976cd14bd881921530c02ebdafe3d52b07be75c3c5035b261cf1db587fdc",
+        "rawSha256": "f0703079b8cee780e662b005c9f072c3714aa2c0606716ff97624e0ab8fcf5a6",
+        "rawBytes": 13407
+      }
+    },
+    "notebook-tests": {
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_graph_notebook_report.py",
+        "tests/test_graph_widget.py"
+      ],
+      "exit": 0,
+      "seconds": 7.462004899978638,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/notebook-tests.log.gz",
+        "sha256": "bd462a50c9f5f8408318781dea5c91ce59e614e6ee2a937d48c55eed016bb47f",
+        "rawSha256": "b5ecbdca60d8b9f9bec160dd3b86467da5d11bcb312548b1c86789d3dbca9e5f",
+        "rawBytes": 99
+      }
+    },
+    "notebook": {
+      "command": [
+        "node",
+        "scripts/graph_notebook_progressive_smoke.mjs"
+      ],
+      "exit": 0,
+      "seconds": 26.59229850769043,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/notebook.log.gz",
+        "sha256": "ee90da69df6696d89c0052f4ba09dc5e06befdd8479a72660ea05b9cc51c0669",
+        "rawSha256": "11a393839c9593b84d6730ca6d3cc7369fa7c389931db48a673e9f53f4dbb012",
+        "rawBytes": 13438
+      }
+    },
+    "pytest": {
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_graph_notebook_report.py",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_release_inventory.py",
+        "tests/test_cross_host_abi_transition.py",
+        "tests/test_graph_session_python_transport.py",
+        "tests/test_chunked_columns.py",
+        "tests/test_verify_ci_workflow.py"
+      ],
+      "exit": 2,
+      "seconds": 236.65479564666748,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/pytest.log.gz",
+        "sha256": "adbfa04b2d3ef36c46a4c1455fe2f69343fb9a2b546f7b90a23c7315bfa6303d",
+        "rawSha256": "abd236379a9736f3468908a26e93074135315a584d5c384c85cfa2b1d3a5ea01",
+        "rawBytes": 4844
+      }
+    },
+    "report-verifier-final": {
+      "command": [
+        ".venv/bin/python",
+        "scripts/verify_graph_notebook_report.py",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      ],
+      "exit": 0,
+      "seconds": 0.046762943267822266,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/report-verifier-final.log.gz",
+        "sha256": "1b5876660f05201ed95aa742feaad51ce4a9b40450a89c0c792fafeb04096d14",
+        "rawSha256": "8a0083ab43cb0f83117637cfeef43d13eaa95c5dd16bd8b35d4cf08da8ffa754",
+        "rawBytes": 71
+      }
+    },
+    "report-verifier": {
+      "command": [
+        ".venv/bin/python",
+        "scripts/verify_graph_notebook_report.py",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      ],
+      "exit": 0,
+      "seconds": 0.11233258247375488,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/report-verifier.log.gz",
+        "sha256": "1b5876660f05201ed95aa742feaad51ce4a9b40450a89c0c792fafeb04096d14",
+        "rawSha256": "8a0083ab43cb0f83117637cfeef43d13eaa95c5dd16bd8b35d4cf08da8ffa754",
+        "rawBytes": 71
+      }
+    },
+    "ruff": {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exit": 0,
+      "seconds": 0.26361632347106934,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/ruff.log.gz",
+        "sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+        "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+        "rawBytes": 19
+      }
+    },
+    "staged-format": {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exit": 0,
+      "seconds": 0.036512136459350586,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/staged-format.log.gz",
+        "sha256": "835bc8532114b6a7e9f391e3929452866c2a68c7909bda183e373cc290b3dac9",
+        "rawSha256": "c08417703e235fbcd31aab1bd271c50f17753bb4753bfc0f65bcf7b8139f4bfa",
+        "rawBytes": 29
+      }
+    },
+    "staged-hooks": {
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exit": 0,
+      "seconds": 1.0164220333099365,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/staged-hooks.log.gz",
+        "sha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+        "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+        "rawBytes": 240
+      }
+    },
+    "staged-ruff": {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exit": 0,
+      "seconds": 0.043622732162475586,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/staged-ruff.log.gz",
+        "sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+        "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+        "rawBytes": 19
+      }
+    },
+    "wasm-from-raw": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs",
+        "target/task-tmp/integration/reused-raw.wasm"
+      ],
+      "exit": 0,
+      "seconds": 54.333914279937744,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/wasm-from-raw.log.gz",
+        "sha256": "04376b27df3cc7a7e9773f196756a572b86111c2646bfecd325c25acb0f2bf02",
+        "rawSha256": "2051ec46e0edf7b809ea29953a133601de84a371a757e989f6ce147ee2b64099",
+        "rawBytes": 493
+      }
+    },
+    "wasm": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs",
+        "target/task-tmp/integration/reused.wasm"
+      ],
+      "exit": 0,
+      "seconds": 19.992175102233887,
+      "environment": {
+        "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/python:/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/tests",
+        "UV_NO_SYNC": "1",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "TMPDIR": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/ct",
+        "XYG_GRAPH_NOTEBOOK_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/task-tmp/integration/graph-notebook.json"
+      },
+      "log": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/wasm.log.gz",
+        "sha256": "04376b27df3cc7a7e9773f196756a572b86111c2646bfecd325c25acb0f2bf02",
+        "rawSha256": "2051ec46e0edf7b809ea29953a133601de84a371a757e989f6ce147ee2b64099",
+        "rawBytes": 493
+      }
+    }
+  },
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "sha256": "7a513d1f98212a39e50132ba3b24dc83a76af0d9192635eab248fa3816fc898b",
+      "bytes": 6137112
+    },
+    "packages/xy-client/dist/index.js": {
+      "sha256": "09144e0e40a7c278a7a103a96bdde3b7ae73e3d71b3fdf367a1353ddbad1b80d",
+      "bytes": 804132
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "sha256": "97ae3d73b9b09435550781fa79a26480a6c15ce2bcab42ec40ca60854d18afe4",
+      "bytes": 804159
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "sha256": "e6ea3f78a54fc1fa0ee61b6d2f2881d1ee3bd694a1239b39b9dc6027ababbf95",
+      "bytes": 19000
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+      "bytes": 56051
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "sha256": "8bed6f41e9d60e41010b069cfd18bbb896a799bd733649e74deaf6dbf68ac5e7",
+      "bytes": 2588565
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "sha256": "303b39e33590f6b2dd65aefeaefd1714088414cb515a0817c6d3fa04c7489d3e",
+      "bytes": 226
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1",
+      "bytes": 1927032
+    },
+    "python/xyg/static/index.js": {
+      "sha256": "09144e0e40a7c278a7a103a96bdde3b7ae73e3d71b3fdf367a1353ddbad1b80d",
+      "bytes": 804132
+    },
+    "python/xyg/static/standalone.js": {
+      "sha256": "97ae3d73b9b09435550781fa79a26480a6c15ce2bcab42ec40ca60854d18afe4",
+      "bytes": 804159
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+      "bytes": 56051
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "sha256": "8bed6f41e9d60e41010b069cfd18bbb896a799bd733649e74deaf6dbf68ac5e7",
+      "bytes": 2588565
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "sha256": "303b39e33590f6b2dd65aefeaefd1714088414cb515a0817c6d3fa04c7489d3e",
+      "bytes": 226
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1",
+      "bytes": 1927032
+    }
+  },
+  "captures": {
+    "notebook": {
+      "report": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/notebook-capture.json.gz",
+        "sha256": "3f01bce836ac79abe4a0ce1fb679eabeaba62eb148167d99a40bd8233f412bc2",
+        "rawSha256": "38083d0264bc89a8f823b9ab8141268d7208bf0dc96796aecd4b5d3871180730",
+        "rawBytes": 22947
+      },
+      "screenshots": {
+        "notebook-final.png": {
+          "sha256": "de67b1bea47ecb08b3930cc0c90c7f68742f401afadde0e34744b3042711ba19",
+          "bytes": 6770
+        },
+        "notebook-initial.png": {
+          "sha256": "f3b0741ed2333d427ac232677738a94c79955b030050a2c248ac2193d16f7829",
+          "bytes": 18479
+        }
+      }
+    },
+    "notebook-final": {
+      "report": {
+        "archive": "spec/performance/pr1110-main-integration-2026-11-07/notebook-final-capture.json.gz",
+        "sha256": "db3d22748bd6dda5d1d8aa367e53e3a0ccac4a65741303a79bde740046a9e7b7",
+        "rawSha256": "4963cc10b638773b56911286adc7e1f4db2dbc45d4e6bce550531328c4283fe4",
+        "rawBytes": 22916
+      },
+      "screenshots": {
+        "notebook-final-final.png": {
+          "sha256": "de67b1bea47ecb08b3930cc0c90c7f68742f401afadde0e34744b3042711ba19",
+          "bytes": 6770
+        },
+        "notebook-final-initial.png": {
+          "sha256": "f3b0741ed2333d427ac232677738a94c79955b030050a2c248ac2193d16f7829",
+          "bytes": 18479
+        }
+      }
+    }
+  },
+  "protections": {
+    "rust-inputs.json": {
+      "archive": "spec/performance/pr1110-main-integration-2026-11-07/rust-inputs.json.gz",
+      "sha256": "9c8e0ad0a5620a6ad4cfa118fedaa83d297d8b0f3a0b5941bb79018505e00560",
+      "rawSha256": "d331b1b2774620b57668d6c07f286ed823496ce3e86734b6ae84ac0c5ee828a8",
+      "rawBytes": 28566
+    },
+    "protected-evidence.json": {
+      "archive": "spec/performance/pr1110-main-integration-2026-11-07/protected-evidence.json.gz",
+      "sha256": "f5b064573f17dbb0dd7bf01122f99354df7edb33a735142d69034580e843f494",
+      "rawSha256": "358960cc4499a02384aea172381d2b046042ca7510bee044e8f9cde66566029e",
+      "rawBytes": 2044355
+    },
+    "raw-wasm-provenance.json": {
+      "archive": "spec/performance/pr1110-main-integration-2026-11-07/raw-wasm-provenance.json.gz",
+      "sha256": "9e150ac2b1310b6f66313fab5809e8102d34efa95af779e4a6da2f5031e99551",
+      "rawSha256": "1100f7d0f63d39e8c886a76ff3559a9da27d126d6832e53ee68be264a95e88e8",
+      "rawBytes": 220
+    },
+    "setup-correction.json": {
+      "archive": "spec/performance/pr1110-main-integration-2026-11-07/setup-correction.json.gz",
+      "sha256": "d5293009c05b2eb9031ccd876d773444eba4f8dc5a45ce32b9a81b9bb22dd62e",
+      "rawSha256": "0f7ad284545a09d4560e9707137c5f00c0a06a036d92932de0cfac219e011218",
+      "rawBytes": 549
+    },
+    "combined-tracked-source.json": {
+      "archive": "spec/performance/pr1110-main-integration-2026-11-07/combined-tracked-source.json.gz",
+      "sha256": "d4c04311f147bb9ae216be60c1b89ab86799ce9cd4fdb70dcce3753a49b3c5a4",
+      "rawSha256": "e70992e18f336a158f60a93536286dc73d9156615202ba550cf040e7205d2f35",
+      "rawBytes": 2352577
+    }
+  },
+  "currentBindingsSha256": "307320873e84bf3c26db2f837c197e6e6f91896f0d6e425eb5a81183a4bbe543",
+  "notes": [
+    "Independent parent review pending; no delivery actions performed.",
+    "Initial pytest batch interrupted after LF failure to avoid duplicating make check-ci: 341 passed, 5 skipped, 1 failed; final affected batch is separate.",
+    "Initial full Node suite failed pack expectation under contention; unchanged isolated worker case passed.",
+    "Initial optimized-WASM packaging input corrected to verified raw producer input; final shipping hash matches.",
+    "The chunked-render command also sets XYG_TEST_CHROMIUM to the same XYG_CHROMIUM path.",
+    "UV_NO_SYNC preserves local notebook dependencies; uv is used for Python tooling."
+  ]
+}

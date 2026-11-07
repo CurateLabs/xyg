@@ -18,6 +18,7 @@ if (artifactCommit !== null && !/^[0-9a-f]{40}$/.test(artifactCommit)) throw new
 const allowed = new Set([
   "/tests/browser/wasm_foundation_page.mjs",
   "/spec/wasm/abi.json",
+  "/tests/fixtures/temporal/assertion-history.json",
   "/tests/fixtures/figure_scene_v3.json",
   "/tests/fixtures/authored_scene_v20.json",
   "/tests/fixtures/xyts_cross_host.json",
@@ -205,6 +206,7 @@ try {
       artifactSource: browserPackage ? "staged-package" : "source-dist", assets, harness,
       package: browserPackage ? JSON.parse(await readFile(join(browserPackage, "package.json"), "utf8")).version : null,
       csp, externalRequests: external, densityNoRefinement: cases,
+      temporalControllerProof: result.temporalControllerProof,
       limitations: [
         "Three bounded generated-file cases through each packaged ESM/IIFE entry: absent inline bootstrap, malformed inline bootstrap rejected before Worker allocation, and absent retained source.",
         "Rust produces the overview through the packaged XYAG/XYAO Worker; fixture framing supplies the painter envelope.",
@@ -225,4 +227,13 @@ try {
   releaseManifest();
   await browser.close();
   await new Promise((resolve) => server.close(resolve));
+}
+
+// Keep the bounded retained temporal presentation journey in the existing
+// source-dist foundation CI command. Staged-package runs keep their own scope.
+if (!only && !browserPackage) {
+  execFileSync(process.execPath, [join(root, "scripts/graph_session_controller_wasm_smoke.mjs")], {
+    cwd: root, stdio: "inherit",
+    env: { ...process.env, XYG_GRAPH_TEMPORAL_ONLY: "1", ...(reportPath ? { XYG_GRAPH_SESSION_REPORT: `${reportPath}.retained-temporal.json` } : {}) },
+  });
 }

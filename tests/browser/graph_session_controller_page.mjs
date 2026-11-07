@@ -1,6 +1,6 @@
 // Actual shipped ESM/Worker/WASM under strict CSP. All hooks below are test-only
 // transport fault injection/observations; production graph policy stays Rust.
-import { attachWasmGraphSession, composeWasmGraphForge, createXygWasmWorker, renderWasmGraphForge } from "/packages/xy-client/dist/index.js";
+import { attachWasmGraphSession, composeWasmGraphForge, createXygWasmWorker, renderWasmGraphForge, XygWasmTemporalController } from "/packages/xy-client/dist/index.js";
 import { encodeContainer, decodeContainer, DTYPE } from "/packages/xy-node/src/graphforge-container.js";
 const state = window.__graphSession = { stage: "boot", products: [], commands: [], replies: [], gl: [], errors: [], inject: null, hold: false, held: [], events: [], legacyCalls: [] };
 state.json = value => JSON.stringify(value, (_, v) => typeof v === "bigint" ? v.toString() : v);
@@ -17,6 +17,12 @@ const view = (a) => new DataView(a.buffer, a.byteOffset, a.byteLength);
 const post = Worker.prototype.postMessage;
 Worker.prototype.postMessage = function(message, transfer) {
   state.products.push(message.type);
+  if (state.inject === "temporal-budget" && message.type === "graph.session.temporal-frame") {
+    new DataView(message.request).setBigUint64(48,0n,true); state.inject=null;
+  }
+  if (state.inject === "temporal-render-invalid" && message.type === "graph.session.render") {
+    view(section(message.request,"camera.f64")).setFloat64(0,NaN,true); state.inject=null;
+  }
   if (message.type?.startsWith("graph.session.")) {
     if (state.inject === "seed-highlight" && message.request) {
       const parts = decodeContainer(message.request, "XYGI"), words = parts.get("header.u32#0").value;
@@ -28,7 +34,7 @@ Worker.prototype.postMessage = function(message, transfer) {
         state.inject = null;
       }
     }
-    if (message.request instanceof ArrayBuffer) {
+    if (message.request instanceof ArrayBuffer && !message.type.includes("temporal-")) {
       const h = view(section(message.request, "header.u64")), words = view(section(message.request, "header.u32"));
       if (state.inject === "stale") { words.setUint32(0, words.getUint32(0, true) + 1, true); state.inject = null; }
       if (state.inject === "refuse-clear" && words.getUint32(4, true) === 4) { h.setBigUint64(0, h.getBigUint64(0, true) + 1n, true); state.inject = null; }
@@ -41,6 +47,10 @@ Worker.prototype.postMessage = function(message, transfer) {
     state.inject = null;
     queueMicrotask(() => this.onmessage({data:{requestId:message.requestId,ok:false,error:{code,message:"test-only pre-execution typed refusal seam",status}}}));
     return;
+  }
+  if (this.__temporalCapture && message.type?.startsWith("graph.session.")) {
+    state.temporalWire ??= [];
+    state.temporalWire.push({kind:"request",owner:this.__graphOwner,type:message.type,requestId:message.requestId,sequence:message.sequence,lifetime:message.lifetime,bytes:message.request instanceof ArrayBuffer?Array.from(new Uint8Array(message.request)):null});
   }
   return post.call(this, message, transfer);
 };
@@ -55,8 +65,13 @@ const makeWorker = (wasm = "/packages/xy-client/dist/xyg-wasm.wasm", maxArenaByt
   const worker = createXygWasmWorker({ workerUrl: "/packages/xy-client/dist/wasm-worker.js", wasm, maxArenaBytes });
   const actual = worker.worker, deliver = actual.onmessage; actual.__graphOwner = state.nextOwner = (state.nextOwner ?? 0)+1;
   actual.onmessage = event => {
+    if (actual.__temporalCapture) {
+      state.temporalWire ??= [];
+      const raw=event.data.value?.bytes;
+      state.temporalWire.push({kind:"reply",owner:actual.__graphOwner,requestId:event.data.requestId,ok:event.data.ok,error:event.data.error,bytes:raw instanceof ArrayBuffer?Array.from(new Uint8Array(raw)):null});
+    }
     const value = event.data.value;
-    if (value?.bytes instanceof ArrayBuffer && value.bytes.byteLength) {
+    if (value?.bytes instanceof ArrayBuffer && value.bytes.byteLength && String.fromCharCode(...new Uint8Array(value.bytes,0,4)) === "XYGR") {
       if (state.inject === "malformed-gpu") { view(section(value.bytes, "gpu.node.coord.bytes")).setFloat32(0, NaN, true); state.inject = null; }
       if (state.inject === "malformed-clear") { view(section(value.bytes, "clear.action.u32")).setUint32(4, 2, true); state.inject = null; }
       if (state.inject === "missing-clear") {
@@ -327,4 +342,24 @@ state.progressiveFixture = async (count, id, load = {}, arena = count===1000 ? 3
   p.handle=state.attach({el,worker,instanceId:id,document,load:p.load,camera:p.camera});
   try { await p.handle.ready; } catch(error) { clearInterval(p.timer); await p.handle.dispose(); await worker.dispose(); el.remove(); throw error; }
   return {revision:p.handle.snapshot().revision,progress:p.handle.snapshot().relayout};
+};
+
+// Public retained temporal fixture. XYGF is canonical authoring ingress only;
+// Rust creates the retained document, computes membership, geometry and picks.
+state.temporalFixture = async (progressive = false) => {
+  const history = await fetch("/tests/fixtures/temporal/assertion-history.json").then(r=>r.json());
+  const ids = values => Uint8Array.from(values.flatMap(v=>Array(16).fill(v)));
+  const f=(name,type,values)=>({name,dtype:DTYPE[type],values});
+  const binding={nodeIds:ids(history.nodes),edgeIds:ids(history.edges),sourceIds:ids(history.sources),targetIds:ids(history.targets)};
+  for(const name of ["nodeValidFrom","nodeValidTo","edgeValidFrom","edgeValidTo","edgeEventAt"]) binding[name]={values:BigInt64Array.from(history[name],BigInt),validity:new Uint8Array(history[name].length).fill(1)};
+  const document=encodeContainer("XYGF",[f("status","u32",[0]),f("kind","utf8","graph"),f("composition.version","u32",[2]),f("node.uuid","uuid",binding.nodeIds),f("edge.uuid","uuid",binding.edgeIds),f("edge.derived","u8",[0,0]),f("edge.layer","u32",[0xffffffff,0xffffffff]),f("edge.order","i64",[-1n,-1n]),f("edge.path","u64",[0xffffffffffffffffn,0xffffffffffffffffn]),f("edge.source","u64",[0n,0n]),f("edge.target","u64",[1n,2n]),f("graph.directed","u8",[1])]);
+  const original=document.slice(), worker=makeWorker(), clockWorker=makeWorker();worker.worker.__temporalCapture=true;await Promise.all([worker.ready,clockWorker.ready]);
+  const controller=await XygWasmTemporalController.create(clockWorker,{instanceId:950n,groupId:951n,domain:[0n,40n],cursor:10n,step:1n,reducedMotion:false});await controller.setRange(0n,40n);
+  const el=container(), publications=[], failures=[];
+  el.dataset.temporalFixture='';
+  el.addEventListener('xy:graph-render',e=>publications.push(e.detail));el.addEventListener('xy:graph-error',e=>failures.push(e.detail));
+  const handle=state.attach({el,worker,instanceId:950n,document,load:{x:[100,300,500],y:[160,160,160],progressive},camera:[1,1,0,0,640,320,1],temporal:{controller,binding,budget:14n}});
+  await handle.ready;await handle.whenIdle();
+  state.retainedTime={el,worker,clockWorker,controller,handle,document,original,history,publications,failures};
+  return true;
 };

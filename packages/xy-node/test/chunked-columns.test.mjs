@@ -113,3 +113,53 @@ test("resident overlap reuses native chunks across read modes", () => {
     assert.throws(() => columns.read([4, 11], { budgetBytes: 64, generation: 4 }), /needs 128 bytes/);
   } finally { columns.close(); rmSync(dir, { recursive: true }); }
 });
+
+
+test("chart overview, paged viewport, reuse, generation and disposal", () => {
+  const dir = mkdtempSync(join(tmpdir(), "xyg-chart-")), path = join(dir, "chart.xygc");
+  const rows = overviewArtifact(path), columns = new ChunkedColumns(path);
+  try {
+    const overview = columns.chart(null, {maxPoints: 5});
+    assert.equal(overview.sourceRowIds.length, 5);
+    assert.equal(overview.sourceProvenance.detailRowsRead, 0n);
+    for (const [generation, bounds] of [[1,[2,9]], [2,[5,10]], [3,[6,7]]]) {
+      const chart = columns.chart(bounds, {generation, budgetBytes:256, pageBytes:128});
+      assert.deepEqual(Array.from(chart.sourceRowIds, Number), rows.flatMap(([x],i)=>x>=bounds[0] && x<=bounds[1] ? [i]:[]));
+      chart.buildPayload();
+    }
+    const warm = columns.chart([6,7], {generation:4, budgetBytes:256, pageBytes:128});
+    assert.equal(warm.sourceProvenance.bytesRead, 0n);
+    assert.throws(()=>columns.chart([6,7], {generation:3}), /cancelled/);
+    assert.throws(()=>columns.chart([0,11], {generation:5,budgetBytes:64,pageBytes:64}), /exceeding/);
+    columns.close();
+    assert.throws(()=>columns.chart(), /stale/);
+  } finally { columns.close(); rmSync(dir,{recursive:true}); }
+});
+
+test("chart overview rejects superseded generations while static overview remains usable", () => {
+  const dir=mkdtempSync(join(tmpdir(),"xyg-overview-generation-")),path=join(dir,"chart.xygc");
+  overviewArtifact(path);const columns=new ChunkedColumns(path);
+  try {
+    columns.cancelBefore(5);
+    assert.throws(()=>columns.chart(null,{generation:4,maxPoints:5}),/cancelled by newer viewport/);
+    const current=columns.chart(null,{generation:5,maxPoints:5});
+    assert.equal(current.sourceProvenance.generation,5n);
+    assert.equal(current.sourceProvenance.detailRowsRead,0n);
+    assert.equal(current.sourceRowIds.length,5);
+    columns.cancelBefore(6);
+    assert.throws(()=>columns.chart(null,{generation:5,maxPoints:5}),/cancelled by newer viewport/);
+    assert.equal(columns.overview({maxPoints:5}).rowIds.length,5);
+  } finally {columns.close();rmSync(dir,{recursive:true});}
+});
+
+test("chart chunk candidate counts are independent of page boundaries", () => {
+  const dir=mkdtempSync(join(tmpdir(),"xyg-chart-chunks-")),path=join(dir,"chart.xygc");
+  overviewArtifact(path);const columns=new ChunkedColumns(path);
+  try {
+    for(const pageBytes of [64,128,192]) {
+      const chart=columns.chart([0,11],{budgetBytes:192,pageBytes});
+      assert.equal(chart.sourceProvenance.chunksConsidered,3n);
+      assert.deepEqual(Array.from(chart.sourceRowIds,Number),Array.from({length:12},(_,i)=>i));
+    }
+  } finally {columns.close();rmSync(dir,{recursive:true});}
+});

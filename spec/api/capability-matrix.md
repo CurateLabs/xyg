@@ -35,6 +35,13 @@ retains native-coordinate/full-byte parity and capability refusal evidence.
 This adds exact Rust-owned selection to that opt-in browser attachment;
 it does not establish hover/gesture, public-host, scale or competitor acceptance.
 
+Direct-browser temporal graphs have an [automatic controller coordinator](../design/temporal-graph.md#automatic-browser-controller-coordinator-bounded-45-slice)
+for Rust membership and CoSE with bounded latest-intent scheduling. The retained
+[temporal attachment](../design/temporal-graph.md#retained-automatic-presentation-bounded-45-slice)
+also uses the existing painter/pick/layout and preserves UUID state in bounded
+browser tests. Aggregate, export, accessibility, scale and comparative
+performance acceptance remain open; this does not close #45.
+
 Python notebooks expose a bounded [typed graph identity/UUID highlight slice](../design/graph-session-python-transport.md#notebook-typed-identity-slice-2026-11-06).
 Its focused Rust provenance and small JupyterLab journey evidence does not
 qualify all frontends, exact geometric UUID sets, exports or scale budgets.
@@ -191,3 +198,10 @@ uv run python scripts/gen_capability_matrix.py --write
 ```
 
 `--check` fails if this file is stale, and the test suite runs it.
+
+Local ordered XYGC files additionally support bounded **programmatic scatter
+snapshots** in Python and Node: stored overview and Rust-selected exact viewport
+pages, canonical row identity and auditable physical reads. This uses the existing
+scatter renderer; it introduces no chart family or competitor performance claim.
+It does not qualify automatic live refinement, direct browser/WASM file access,
+or larger-than-RAM scale. See [the scoped contract](../design/tier3-phase4-roadmap.md#bounded-local-chart-snapshots-110-continuation).

@@ -1,0 +1,422 @@
+{
+  "reviewedParent": "ce94d542514ea93fd2857458412bf65538e2f07f",
+  "currentBindingsSha256": "7e4ab5ee7e71aa33b59d88b20db4059b3bbcb1a7e7fa5a096f49ef0a2c297a2d",
+  "reviewComments": [
+    4500256905,
+    4500256913,
+    4500256919
+  ],
+  "logs": {
+    "before-python": {
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "tests/test_chunked_columns.py",
+        "-k",
+        "distinct_candidate or no_browser_skips",
+        "-q"
+      ],
+      "exitCode": 1,
+      "rawSha256": "42de361e4f26fd91497cf30678357c4bfbc91b22549609ac9386869b3a533398",
+      "archiveSha256": "bef70e12491cbce3ff782b08e330db236076896d5e48a57488e3db5fcfee14fc"
+    },
+    "before-node": {
+      "argv": [
+        "node",
+        "--test",
+        "--test-name-pattern=candidate counts",
+        "packages/xy-node/test/chunked-columns.test.mjs"
+      ],
+      "exitCode": 1,
+      "rawSha256": "9b16df1ccff1660fd6b5f7e3910b8b5846197361d692be602bfe2df78a4895a9",
+      "archiveSha256": "f6fc5a5c690f62f65d0f233a4ca239448e269c83c56256dbeab03aa0b34aaf0f"
+    },
+    "before-publication": {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xyg-core",
+        "chunked_chart_publication",
+        "--lib"
+      ],
+      "exitCode": 101,
+      "rawSha256": "12bbea2d8bf4996c098590435b089f59a65fabdd461ac2e4e1f83261c82f64cb",
+      "archiveSha256": "1b6140d28fb57cc5bea084fb5f624d2e5f2b10c68045c018dc36f6ac4199ade2"
+    },
+    "core-publication": {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xyg-core",
+        "chunked_chart_publication",
+        "--lib"
+      ],
+      "exitCode": 0,
+      "rawSha256": "71154119b9d40548e8b73bcf86061fb312ccfc0ce3020d0f6215b626e5cf6fc9",
+      "archiveSha256": "985ab70e370fdb386a15933a3652da0dd2eff9bbfd26b0f33f784037d3c127b4"
+    },
+    "engine": {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "xyg-engine",
+        "chunked_columns",
+        "--lib"
+      ],
+      "exitCode": 0,
+      "rawSha256": "899dba660b3c3539a605649a3090dca09e22f71bd341e5888cb98fe13ff81bb6",
+      "archiveSha256": "846e0c5fa3301e3a3175f54d51a3b2cfc97faf93266de8939af965b7d2df0009"
+    },
+    "native-build": {
+      "argv": [
+        "cargo",
+        "build",
+        "--release"
+      ],
+      "exitCode": 0,
+      "rawSha256": "78ca311d19ea29dbb4680a2b2e807c3774926cc7a34cbca46f2ead078842a047",
+      "archiveSha256": "a720e44940f614b1ffe9aed5a98334829c907d54b09c87ec09605adc054e9b2d"
+    },
+    "lean-import": {
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "tests/test_chunked_columns.py",
+        "-k",
+        "no_browser_skips",
+        "-q"
+      ],
+      "exitCode": 0,
+      "rawSha256": "503e649048658188b60cd9f677886b922da065ae2a387298f2d0b31f05044bf6",
+      "archiveSha256": "a65ba73cac0dc1fa9091fa34c6587e7dc861a07b86a0d1edd17952babe305e75"
+    },
+    "resource-unavailable": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "-"
+      ],
+      "exitCode": 0,
+      "rawSha256": "58a17b50bb6b83c6a191d9561d69c0762df3402294a976c23bd12b75d5635f17",
+      "archiveSha256": "bb5f4090c678d6e736ac1c7c4b81fcab08025ebe59eb42e8b7a7b8213ed906bb",
+      "stdin": "import sys; sys.modules[\"resource\"]=None; from scripts import chunked_chart_evidence; assert chunked_chart_evidence.resource is None; assert chunked_chart_evidence._host_peak_rss_kib() is None; print(\"Rendering helper imports with resource unavailable; RSS is explicitly unavailable\")"
+    },
+    "python": {
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "tests/test_chunked_columns.py",
+        "-q"
+      ],
+      "exitCode": 0,
+      "rawSha256": "6a76bf784961e70a6bced3fa79bb4d576eb2038179b2a1f1e05ac3cd93f3d72e",
+      "archiveSha256": "303c260689660ec392cd0a4cc90c7d8a9db071ef0d321836fd9b6ee473f5a6d4"
+    },
+    "node": {
+      "argv": [
+        "node",
+        "--test",
+        "packages/xy-node/test/chunked-columns.test.mjs"
+      ],
+      "exitCode": 0,
+      "rawSha256": "b79b716983570dc7629596af179b560fafa097016c78028f711c281387abf96e",
+      "archiveSha256": "98912070230efe7093601a0551a75cf94e99d53a5e64d133f920d91f8b5e79e5"
+    },
+    "abi-smoke": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/abi_smoke.py"
+      ],
+      "exitCode": 0,
+      "rawSha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306",
+      "archiveSha256": "135de4fa46245b623c5d8acfa3e621c9374a4c0229b173222340fff45c526965"
+    },
+    "abi-generation": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/gen_abi_manifest.py",
+        "--check"
+      ],
+      "exitCode": 0,
+      "rawSha256": "b291311f1f3b01cb293dccb8c2cceb076dfc02d46c04bb59207615a1672807c4",
+      "archiveSha256": "cb10c3f314d3683cc8b113b490bea1ed1e520625e2459c9ecd51390902050569"
+    },
+    "wasm-build": {
+      "argv": [
+        "cargo",
+        "build",
+        "--release",
+        "--target",
+        "wasm32-unknown-unknown",
+        "-p",
+        "xyg-wasm"
+      ],
+      "exitCode": 0,
+      "rawSha256": "31ff6a082fbebe91df14028b03b39bdc60a086f7ac75050c8175f286a228efe6",
+      "archiveSha256": "a34a44068606ddae1de40e0a98ebd22c0285c63e7823bd99254746cf1b560aaf"
+    },
+    "wasm-package": {
+      "argv": [
+        "node",
+        "js/package-wasm.mjs"
+      ],
+      "exitCode": 0,
+      "rawSha256": "69a57125d144266a38002cc99663992da07455a2a494983602066c8402cb5ca3",
+      "archiveSha256": "c966ddfdb0abaef9f56fc2d8dd64cdc566159fee7e44baf036d5728df39cc746"
+    },
+    "clippy": {
+      "argv": [
+        "cargo",
+        "clippy",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exitCode": 0,
+      "rawSha256": "584d0e85c6081ac18523c41e66d56e463e47a112af3cf90a84acd0f5eb7e4c49",
+      "archiveSha256": "5ecdbf69241466f4703960b3b3c96f2538cab9ec566844f13699632dd2deda22"
+    },
+    "types": {
+      "argv": [
+        "uv",
+        "run",
+        "ty",
+        "check"
+      ],
+      "exitCode": 0,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "metadata": {
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_release_inventory.py",
+        "-q"
+      ],
+      "exitCode": 0,
+      "rawSha256": "a9fd14990924e52118a80e7151f4841305b9a5e542e29b001e82534c9657a2ac",
+      "archiveSha256": "aaa56c16ee41fd354c1eaf4d6ebf47d25d6b2eb39b1ec1148305864c23279d84"
+    },
+    "ci": {
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "tests/test_verify_ci_workflow.py",
+        "-k",
+        "chunked_chart_rendering or accepts_current_gates",
+        "-q"
+      ],
+      "exitCode": 0,
+      "rawSha256": "ebd7d17f99dbfc1b4da3da10ce21b4a08b3873544583129676e7bb9c2cc054b9",
+      "archiveSha256": "832131b58983e4af25aad0a5bc8bd39019e09d149dce3773a773f99f3d7c9725"
+    },
+    "assets": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_wasm_assets.py"
+      ],
+      "exitCode": 0,
+      "rawSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+      "archiveSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730"
+    },
+    "rendered-no-resource": {
+      "argv": [
+        "uv",
+        "run",
+        "python",
+        "spec/performance/chunked-chart-postcopy-portability-2026-11-07/render_without_resource.py",
+        "target/task-tmp/chunked-review-r3/rendered-no-resource",
+        "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      ],
+      "exitCode": 0,
+      "rawSha256": "6dafeb203ed9783752bc8dce3897ff6bb9b69dce64e3e886df8bf83644b85582",
+      "archiveSha256": "c8cca4811b350334fa60a316383a9f1bd98c715c8d541298fd7945ffcc15465c"
+    },
+    "metadata-final": {
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_release_inventory.py",
+        "-q"
+      ],
+      "exitCode": 0,
+      "rawSha256": "3640191b07788e9b7032be13fcb2e9aa7bb8b0d9fca63ab79fd52cabd0a5dd77",
+      "archiveSha256": "37ffa7a9e7f2a595d36990a05e8b0932896618caded98efb2424c7da6e27dca4"
+    },
+    "hooks": {
+      "argv": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exitCode": 0,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "ruff": {
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exitCode": 0,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "format": {
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exitCode": 0,
+      "rawSha256": "1780393f095db4a6b5c8e0faa84b71681c2dae2daa05ee27d35629c0290bde6c",
+      "archiveSha256": "e82aa05e80a206efc84c5d8486467f750e1ce9c246fccdb262baa57243d597d5"
+    },
+    "check-ci-quota-failed": {
+      "argv": [
+        "make",
+        "check-ci"
+      ],
+      "exitCode": 2,
+      "rawSha256": "8e51848a298458dd08a79cb6b489f1ffdfcde3a3a6eba0a40afc411c847b4988",
+      "archiveSha256": "810220be9bacc9ee0cb45935c97e022c8099634373fa78912e11167ff3e5daa4",
+      "disposition": "Failed: /tmp EDQUOT; 155 failures/35 errors; no aggregate pass credit"
+    },
+    "check-ci-disk-temp": {
+      "argv": [
+        "make",
+        "check-ci"
+      ],
+      "exitCode": 0,
+      "rawSha256": "ebaa02faa0020608e89b46be6bf8491fc584e2dde6a29972e99515cda01d2988",
+      "archiveSha256": "6b654ef97f5ccf76b71593b5b0790154a7c60f80db41983ad20ccfa0290873ad",
+      "environmentOverrides": {
+        "TMPDIR": "target/task-tmp/chunked-review-r3/ci-disk-temp"
+      },
+      "result": "772 passed; unchanged commands and checks"
+    }
+  },
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6137112,
+      "sha256": "7a513d1f98212a39e50132ba3b24dc83a76af0d9192635eab248fa3816fc898b"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 2124856,
+      "sha256": "dbae96bb9f476d5368a9ca966e554d2dea36df7bb8ff739a5d3e712e9aefa41d"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1927032,
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 804132,
+      "sha256": "09144e0e40a7c278a7a103a96bdde3b7ae73e3d71b3fdf367a1353ddbad1b80d"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 804159,
+      "sha256": "97ae3d73b9b09435550781fa79a26480a6c15ce2bcab42ec40ca60854d18afe4"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 56051,
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "303b39e33590f6b2dd65aefeaefd1714088414cb515a0817c6d3fa04c7489d3e"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 804132,
+      "sha256": "09144e0e40a7c278a7a103a96bdde3b7ae73e3d71b3fdf367a1353ddbad1b80d"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 804159,
+      "sha256": "97ae3d73b9b09435550781fa79a26480a6c15ce2bcab42ec40ca60854d18afe4"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1927032,
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1"
+    }
+  },
+  "captures": {
+    "viewport.png": {
+      "bytes": 10817,
+      "sha256": "1cf47cb053de7cba4cc799cefab1f830b55a1854c806e7daf9b07029cb11adb6"
+    },
+    "deepzoom.png": {
+      "bytes": 2986,
+      "sha256": "e308af2818571f6ecf19038138f3aa7ab002e0922ce444771673f8027faf2c14"
+    },
+    "viewport-oracle.png": {
+      "bytes": 10817,
+      "sha256": "1cf47cb053de7cba4cc799cefab1f830b55a1854c806e7daf9b07029cb11adb6"
+    },
+    "pan-oracle.png": {
+      "bytes": 10924,
+      "sha256": "7374cdc0574480287fa19356201d955bda821cec62d97b18c9f082b4733ee4fb"
+    },
+    "report.json": {
+      "rawSha256": "88bd6ebacc63a04f95d7d8f6f028614de0a06681b7aff126270c48df31199f6c",
+      "archiveSha256": "50a35fddc6e97d5d97bcfa30ceb615dda3a3f712aa63b990de454d5add2e6dd2"
+    },
+    "deepzoom-oracle.png": {
+      "bytes": 2986,
+      "sha256": "e308af2818571f6ecf19038138f3aa7ab002e0922ce444771673f8027faf2c14"
+    },
+    "source.xygc": {
+      "bytes": 9432,
+      "sha256": "4cb907b816e7333c5e0ec38a39b9cec5cf7b2f5c7c2b0f59e5022e8f2dba9bb2"
+    },
+    "pan.png": {
+      "bytes": 10924,
+      "sha256": "7374cdc0574480287fa19356201d955bda821cec62d97b18c9f082b4733ee4fb"
+    },
+    "overview.png": {
+      "bytes": 4513,
+      "sha256": "809e0b426d7b537ad4a74728a398445fbf2f8433a2c7ea923f9c03890cd4f6d5"
+    },
+    "overview-oracle.png": {
+      "bytes": 4513,
+      "sha256": "809e0b426d7b537ad4a74728a398445fbf2f8433a2c7ea923f9c03890cd4f6d5"
+    }
+  },
+  "environment": {
+    "node": "v22.23.4",
+    "testPython": "3.12.15",
+    "XYG_NATIVE_LIB": "target/release/libxyg_core.so",
+    "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "XY_REQUIRE_BROWSER": "1"
+  },
+  "limitations": "Pre-publication negative is extracted original C output logic, not a timed concurrent C ABI reproduction. Missing resource and optional dependency probes run on Linux, not actual Windows. Prior whole-workspace tests remain historical.",
+  "producerInputsSha256": "d6ff418954be8c0685ec51786ef9d37305b4ace2ebdb544c066dbd9001b7435a"
+}

@@ -1,0 +1,94 @@
+{
+  "parents": [
+    "2cb7f0a13ec0af3a00b9dcfd2b104a2c579b7ac9",
+    "181967e1c8ede618555fb0bc45ba09b5424cba9d"
+  ],
+  "logs": {
+    "js-build.log.gz": {
+      "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "rawBytes": 5448,
+      "exit": 0
+    },
+    "node.log.gz": {
+      "rawSha256": "c6e2c4ebf122802631d5031ed561be776370e7b480187f7a9095271475c77c94",
+      "archiveSha256": "0ccf0c0e71da313ef67673ef1bc74b7804a467bd145517218a63d920fa266df6",
+      "rawBytes": 4378,
+      "exit": 0
+    },
+    "hooks.log.gz": {
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "rawBytes": 240,
+      "exit": 0
+    },
+    "python.log.gz": {
+      "rawSha256": "bff0ea0ad85de8880227ba3d0dc0d4ddffdedecc25547b58415578130b3cafc0",
+      "archiveSha256": "8ed28043db45b6252bc825bcb00dd1588db6a912ec4fbf085d7ccdb379a3d7e8",
+      "rawBytes": 192,
+      "exit": 0
+    },
+    "ruff.log.gz": {
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "rawBytes": 19,
+      "exit": 0
+    },
+    "assets.log.gz": {
+      "rawSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+      "archiveSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730",
+      "rawBytes": 88,
+      "exit": 0
+    },
+    "format.log.gz": {
+      "rawSha256": "6a2dcd08730c3b2aaa10664f59c1d9aaec2dfa6296ab7d7769ef2c650f879994",
+      "archiveSha256": "8a11cce923847d2466836ee61ac3626c7bcee604cd4ce92fbaaf8a9f10d96853",
+      "rawBytes": 29,
+      "exit": 0
+    },
+    "render.log.gz": {
+      "rawSha256": "1e2149be4ef81f57a1e9a949d6d803a0cf51f65cfd52b44d32aecb2b0625b9bd",
+      "archiveSha256": "b0ddb4c59992dd663ef4906c6e9bd23f9180ea26e4ec99c804d3faece0386b3c",
+      "rawBytes": 834,
+      "exit": 0
+    },
+    "foundation.log.gz": {
+      "rawSha256": "bec45a7d0bb13dcc0b4dc148e59a2a9c287e67dac9fd8848f698c91b984e6006",
+      "archiveSha256": "d7e3ad77d1975b8f390407ed39ff13107b687e5e00926072f3724b6a4145b117",
+      "rawBytes": 3849,
+      "exit": 0
+    }
+  },
+  "artifacts": {
+    "packages/xy-client/dist/index.js": {
+      "sha256": "279ac3767ee8b9dedf91698018f71441d143767ad940e887d3cc0fadbd29b056",
+      "bytes": 808602
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "sha256": "147a3dbd091c75782567f6bb44c32190366948a0481fb548f5b40bdb1676dc8a",
+      "bytes": 808631
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "sha256": "cc65e16ea9d59dcee9a339ff7ead857c71c8507771e5cddc24ab2cd090ffd555",
+      "bytes": 56634
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1",
+      "bytes": 1927032
+    },
+    "python/xyg/static/index.js": {
+      "sha256": "279ac3767ee8b9dedf91698018f71441d143767ad940e887d3cc0fadbd29b056",
+      "bytes": 808602
+    },
+    "python/xyg/static/standalone.js": {
+      "sha256": "147a3dbd091c75782567f6bb44c32190366948a0481fb548f5b40bdb1676dc8a",
+      "bytes": 808631
+    },
+    "/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so": {
+      "sha256": "7a513d1f98212a39e50132ba3b24dc83a76af0d9192635eab248fa3816fc898b",
+      "bytes": 6137112
+    }
+  },
+  "protectionSha256": "94eb02b27aadfd62e521f70c80db8328928feffa4981d418a45f469d00dbf796",
+  "scope": "local combination of reviewed queued candidates; accepted-main freshness, independent review, current CI and queue still required"
+}
