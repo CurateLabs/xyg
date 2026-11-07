@@ -1,3 +1,4 @@
+import { GPUAdmissionPending } from "./41_gpu_storage";
 /** GPU-v1 boundary and generic screen-space paint adapter (§29; graph-interaction S5b).
  * Rust owns all geometry, style, membership, clipping and reference decisions. */
 import { makeProgram, MARKER_SDF_GLSL, uniformOf } from "./40_gl";
@@ -183,16 +184,29 @@ export function createGraphGpuPainter(surface: HTMLElement) {
   if (!present || !staging) throw new Error("xy: graph presentation canvas unavailable");
   let disposed = false, program: WebGLProgram | null = null;
   let buffers: WebGLBuffer[] = [], textures: WebGLTexture[] = [], vaos: WebGLVertexArrayObject[] = [];
+  let visible = true;
   let accepted: { gpu: GraphGpuSnapshot; camera: readonly number[] } | null = null;
   const client: GLHostClient = {
+    _dashboardResourceState() { return { derivedBytes: host.clientResourceBytes(client), visible, interacting: false }; },
+    _applyDashboardResidency(retained) {
+      if (!retained) { host.releaseClientStorage(client); program = null; buffers = []; textures = []; vaos = []; }
+      else if (!program && accepted) queueMicrotask(() => { if (!disposed && accepted) {
+        try { paint(accepted.gpu, accepted.camera); } catch (error) { if (!(error instanceof GPUAdmissionPending)) throw error; }
+      } });
+    },
     _onGlHostContextLost() { program = null; buffers = []; textures = []; vaos = []; },
     _onGlHostContextRestored() { if (!disposed && accepted) paint(accepted.gpu, accepted.camera); },
   };
   let host = acquireGLHost(doc, client);
   if (!host) { host = new GLHost(doc, () => {}); host._register(client); }
+  const visibility = typeof IntersectionObserver === "undefined" ? null : new IntersectionObserver(entries => {
+    const next = entries[entries.length - 1]?.isIntersecting === true;
+    if (next !== visible) { visible = next; host.dashboardResourceChanged(client); }
+  });
+  visibility?.observe(surface);
   surface.appendChild(canvas);
   function releaseObjects() {
-    const gl = host.gl;
+    const gl = host.clientContext(client);
     if (!gl.isContextLost()) {
       for (const buffer of buffers) gl.deleteBuffer(buffer);
       for (const texture of textures) gl.deleteTexture(texture);
@@ -204,9 +218,13 @@ export function createGraphGpuPainter(surface: HTMLElement) {
     if (disposed) return;
     if (camera.length !== 7 || !camera.every(Number.isFinite) || !camera[0] || !camera[1]
         || camera[4]! <= 0 || camera[5]! <= 0 || camera[6]! <= 0) invalid("camera");
+    // Report demand even when admission currently blocks the pass. Rust alone
+    // ranks the updated last-use identity when a budget watcher re-plans.
+    host.markDashboardResourceUsed(client);
     const width = Math.max(1, Math.round(camera[4]! * camera[6]!)), height = Math.max(1, Math.round(camera[5]! * camera[6]!));
     stage.width = width; stage.height = height;
-    const completed = host.render(client, staging, width, height, (gl) => {
+    const completed = host.render(client, staging, width, height, () => {
+      const gl = host.clientContext(client);
       releaseObjects();
       if (!program) program = makeProgram(gl, VERTEX, FRAGMENT, (kind, source) => host.getOrCreateShader(kind, source));
       gl.useProgram(program);
@@ -276,9 +294,9 @@ export function createGraphGpuPainter(surface: HTMLElement) {
     canvas, paint,
     dispose() {
       if (disposed) return;
-      disposed = true; accepted = null;
+      disposed = true; accepted = null; visibility?.disconnect();
       releaseObjects();
-      if (program && !host.gl.isContextLost()) host.gl.deleteProgram(program);
+      if (program && !host.gl.isContextLost()) host.clientContext(client).deleteProgram(program);
       program = null; host.release(client); canvas.remove();
     },
   };

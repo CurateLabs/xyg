@@ -1,0 +1,38 @@
+{
+  "uv run --with pre-commit pre-commit run --all-files": {
+    "exit": 0,
+    "log": "gate-0.log"
+  },
+  "uv run ruff check .": {
+    "exit": 0,
+    "log": "gate-1.log"
+  },
+  "uv run ruff format --check .": {
+    "exit": 0,
+    "log": "gate-2.log"
+  },
+  "uv run python scripts/verify_ownership.py": {
+    "exit": 0,
+    "log": "gate-3.log"
+  },
+  "uv run python scripts/check_release_inventory.py": {
+    "exit": 0,
+    "log": "gate-4.log"
+  },
+  "uv run python scripts/gen_capability_matrix.py --check": {
+    "exit": 0,
+    "log": "gate-5.log"
+  },
+  "uv run python scripts/gen_abi_manifest.py --check": {
+    "exit": 0,
+    "log": "gate-6.log"
+  },
+  "uv run python scripts/verify_wasm_assets.py": {
+    "exit": 0,
+    "log": "gate-7.log"
+  },
+  "uv run python scripts/abi_smoke.py": {
+    "exit": 0,
+    "log": "gate-8.log"
+  }
+}

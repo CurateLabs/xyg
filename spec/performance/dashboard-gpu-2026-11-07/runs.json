@@ -1,0 +1,23 @@
+{
+  "cargo test --workspace": 0,
+  "node js/build.mjs": 0,
+  "pytest tests/test_shared_glhost.py -q": {
+    "exit": 0,
+    "passed": 9
+  },
+  "node scripts/dashboard_gpu_smoke.mjs": 0,
+  "node scripts/wasm_foundation_smoke.mjs": 0,
+  "render_smoke_nonumpy.py explicit-chromium": 0,
+  "append_stream_smoke.py explicit-chromium": 0,
+  "focused Node html/scene/stream/no_browser_globals": {
+    "exit": 0,
+    "passed": 141,
+    "skipped": 1
+  },
+  "first Rust suite": {
+    "exit": 101,
+    "failures": 32,
+    "reason": "TMPDIR quota"
+  },
+  "full pytest": "not run; focused browser suite covers change"
+}

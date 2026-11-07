@@ -1501,6 +1501,9 @@ def _supervise(args: argparse.Namespace) -> int:
                 companion["failure"] = "browser_report_validation: " + "; ".join(errors)
                 failed = True
         _atomic_write_json(args.colored_browser_report.resolve(), companion)
+    if failed:
+        failure = companion.get("failure") if companion else report.get("failure")
+        print(f"density harness failed: {failure}; host report: {output}", file=sys.stderr)
     return int(failed)
 
 

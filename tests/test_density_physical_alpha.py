@@ -29,6 +29,15 @@ from xyg.export import find_chromium
 _RENDER_CALL = 'xy.renderStandalone(document.getElementById("chart"), spec, buf);'
 
 _PROBE = """
+  let uploaded = null;
+  const proto = WebGL2RenderingContext.prototype;
+  const realTexImage = proto.texImage2D;
+  // Observe the actual driver boundary before accounting captures GL methods.
+  proto.texImage2D = function (...args) {
+    const data = args[args.length - 1];
+    if (data && data.length === 16) uploaded = new Uint8Array(data);
+    return realTexImage.apply(this, args);
+  };
   const view = xy.renderStandalone(document.getElementById("chart"), spec, buf);
   try {
     view._drawNow();
@@ -47,14 +56,7 @@ _PROBE = """
       rgba[i * 4] = 200; rgba[i * 4 + 1] = 60; rgba[i * 4 + 2] = 30;
       rgba[i * 4 + 3] = 255;
     }
-    let uploaded = null;
-    const gl = view.gl;
-    const realTexImage = gl.texImage2D.bind(gl);
-    gl.texImage2D = function (...args) {
-      const data = args[args.length - 1];
-      if (data && data.length === gw * gh * 4) uploaded = new Uint8Array(data);
-      return realTexImage(...args);
-    };
+    uploaded = null;
     view._onKernelMsg({
       type: "density_update", seq: view.seq, trace: g.trace.id,
       traces: [{
@@ -66,7 +68,7 @@ _PROBE = """
         },
       }],
     }, [counts.buffer, rgba.buffer]);
-    gl.texImage2D = realTexImage;
+    proto.texImage2D = realTexImage;
 
     const a = uploaded ? [uploaded[3], uploaded[7], uploaded[11], uploaded[15]] : null;
     const expect = (k) => Math.round(255 * (1 - Math.pow(1 - abar, k)));

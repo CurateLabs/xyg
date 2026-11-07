@@ -658,6 +658,35 @@ export async function runLinkedDensityBrowser(page, indexedCapture = null) {
   });
   if (!lifecycle.aria)
     throw new Error("assistive completion announcement missing");
+  const gpuRecovery = await page.evaluate(async () => {
+    const f = window.filterDensity, view = f.bindings[0].view;
+    const key = Object.getOwnPropertySymbols(globalThis).find(symbol =>
+      symbol.description?.endsWith(".xy.shared-webgl-host.v2"));
+    const host = key && globalThis[key].get(document);
+    if (!host) throw new Error("linked density shared host missing");
+    const budget = host.sharedResourceBytes() + host.dashboardResourceSnapshot()
+      .resources.reduce((sum, resource) => sum + resource.derivedBytes, 0n) * 8n + 1048576n;
+    const hash = f.dashboard.latest.filterHash.toString();
+    const evicted = await view.applyDashboardResourceBudget(f.tickWorker, budget, 0n);
+    if (!evicted.applied || !f.bindings.every(binding => binding.view._glLost &&
+        host.clientResourceBytes(binding.view) === 0n)) {
+      throw new Error("linked density zero-cap eviction incomplete");
+    }
+    const admitted = await view.applyDashboardResourceBudget(f.tickWorker, budget);
+    if (!admitted.applied) throw new Error("linked density readmission not applied");
+    return { hash, budget: budget.toString(), evictedViews: f.bindings.length };
+  });
+  await page.waitForFunction(() => window.filterDensity.bindings.every(binding =>
+    !binding.view._glLost));
+  await page.evaluate(async expectedHash => {
+    const f = window.filterDensity;
+    await f.dashboard.ready();
+    if (f.dashboard.error || f.dashboard.latest.filterHash.toString() !== expectedHash) {
+      throw new Error("linked density recovery changed the accepted filter");
+    }
+    await f.oracle([["a", 0, 1]]);
+    f.pixels();
+  }, gpuRecovery.hash);
   return {
     rendered: true,
     paintedViews: 5,
@@ -665,6 +694,7 @@ export async function runLinkedDensityBrowser(page, indexedCapture = null) {
     pointerCancel: true,
     keyboardOtherDimension: true,
     publicationFailureAtomic: true,
+    gpuRecovery,
     pointer,
     keyboard,
     lifecycle,

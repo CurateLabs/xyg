@@ -122,6 +122,18 @@ spec/performance/graph-notebook-identity-order-2026-11-06/*.json text eol=lf
 spec/performance/graph-notebook-identity-order-2026-11-06/*.md text eol=lf
 spec/performance/graph-notebook-identity-order-2026-11-06/*.gz -text
 
+# Dashboard GPU successor proof and current-source newline identity.
+tests/test_shared_glhost.py text eol=lf
+spec/performance/dashboard-gpu-parent-repair-2026-11-07/*.json text eol=lf
+spec/performance/dashboard-gpu-parent-repair-2026-11-07/*.md text eol=lf
+spec/performance/dashboard-gpu-parent-repair-2026-11-07/*.gz -text
+
+# Dashboard admission generation correction source and receipt identities.
+spec/design/dashboard-compositor.md text eol=lf
+spec/performance/dashboard-admission-races-2026-11-07/*.json text eol=lf
+spec/performance/dashboard-admission-races-2026-11-07/*.md text eol=lf
+spec/performance/dashboard-admission-races-2026-11-07/*.gz -text
+spec/performance/dashboard-admission-races-2026-11-07/*.png -text
 # Combined native geographic and notebook current bindings.
 spec/performance/geo-native-main-integration-2026-11-07/*.json text eol=lf
 spec/performance/geo-native-main-integration-2026-11-07/*.md text eol=lf
@@ -404,6 +416,11 @@ spec/performance/temporal-graph-main-integration-2026-11-07/*.png -text
 spec/design/build-ci.md text eol=lf
 spec/design/graph-interaction.md text eol=lf
 
+# Dashboard GPU integration with accepted temporal presentation.
+spec/performance/dashboard-accepted-temporal-main-2026-11-07/*.json text eol=lf
+spec/performance/dashboard-accepted-temporal-main-2026-11-07/*.md text eol=lf
+spec/performance/dashboard-accepted-temporal-main-2026-11-07/*.gz -text
+spec/performance/dashboard-accepted-temporal-main-2026-11-07/*.png -text
 # Native geographic integration with accepted temporal main.
 spec/performance/geo-native-accepted-temporal-main-2026-11-07/*.json text eol=lf
 spec/performance/geo-native-accepted-temporal-main-2026-11-07/*.md text eol=lf
@@ -499,6 +516,22 @@ spec/temporal/evidence/46-export-repair/*.json text eol=lf
 spec/temporal/evidence/46-export-repair/*.md text eol=lf
 spec/temporal/evidence/46-export-repair/*.gz -text
 spec/temporal/evidence/46-export-repair/*.png -text
+# Combined GPU temporal/chunked qualification identities.
+spec/performance/gpu-temporal-chunked-union-2026-11-07/*.json text eol=lf
+spec/performance/gpu-temporal-chunked-union-2026-11-07/*.md text eol=lf
+spec/performance/gpu-temporal-chunked-union-2026-11-07/*.gz -text
+spec/performance/gpu-temporal-chunked-union-2026-11-07/*.png -text
+
+# Current dashboard recovery source and receipt bindings.
+scripts/density_tile_smoke.py text eol=lf
+spec/performance/dashboard-recovery-2026-11-07/README.md text eol=lf
+tests/test_benchmark_environment.py text eol=lf
+tests/test_density_physical_alpha.py text eol=lf
+tests/test_static_client_security.py text eol=lf
+spec/performance/dashboard-recovery-2026-11-07/*.json text eol=lf
+spec/performance/dashboard-recovery-2026-11-07/*.md text eol=lf
+spec/performance/dashboard-recovery-2026-11-07/*.gz -text
+spec/performance/dashboard-recovery-2026-11-07/*.png -text
 # Combined native geographic and queued M7 evidence.
 spec/performance/geo-native-queued-m7-union-2026-11-07/*.json text eol=lf
 spec/performance/geo-native-queued-m7-union-2026-11-07/*.md text eol=lf
@@ -833,3 +866,21 @@ spec/performance/default1k-mounted-filter-catalog-union-2026-11-07/*.json text e
 spec/performance/default1k-mounted-filter-catalog-union-2026-11-07/*.md text eol=lf
 spec/performance/default1k-mounted-filter-catalog-union-2026-11-07/*.gz -text
 spec/performance/default1k-mounted-filter-catalog-union-2026-11-07/*.png -text
+# Dashboard recovery union with accepted native geographic main.
+spec/performance/dashboard-native-main-integration-2026-11-07/*.json text eol=lf
+spec/performance/dashboard-native-main-integration-2026-11-07/*.md text eol=lf
+spec/performance/dashboard-native-main-integration-2026-11-07/*.gz -text
+spec/performance/dashboard-native-main-integration-2026-11-07/*.png -text
+
+# GPU with default-arena graph and mounted/filter/catalog union.
+spec/performance/gpu-default1k-mounted-filter-catalog-union-2026-11-07/*.json text eol=lf
+spec/performance/gpu-default1k-mounted-filter-catalog-union-2026-11-07/*.md text eol=lf
+spec/performance/gpu-default1k-mounted-filter-catalog-union-2026-11-07/*.gz -text
+spec/performance/gpu-default1k-mounted-filter-catalog-union-2026-11-07/*.png -text
+
+# New combined colored-spill current-source byte bindings.
+benchmarks/bench_density_e2e.py text eol=lf
+scripts/density_spill_browser_smoke.py text eol=lf
+spec/design/density-spill-browser-evidence.md text eol=lf
+tests/test_density_spill_browser.py text eol=lf
+tests/test_density_spill_browser_report.py text eol=lf

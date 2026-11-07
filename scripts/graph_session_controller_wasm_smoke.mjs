@@ -219,6 +219,90 @@ try {
       assert.equal(result.graphCommands,0,'terminal attachments must ignore further time notifications');
       return result;
     });
+    await run('retained-temporal-dashboard-refusal-and-recovery', async () => {
+      const result = await page.evaluate(async () => {
+        const state = window.__graphSession;
+        await state.temporalFixture();
+        const view = state.retainedTime;
+        await state.temporalFixture();
+        const peer = state.retainedTime;
+        const {applyWasmDashboardResourceBudget, watchWasmDashboardResourceBudget} = await import('/packages/xy-client/dist/index.js');
+        const registryKey = Object.getOwnPropertySymbols(globalThis).find(key =>
+          key.description?.endsWith('.xy.shared-webgl-host.v2'));
+        const host = registryKey && globalThis[registryKey].get(document);
+        if (!host) throw new Error('actual shared graph host is missing');
+        const resources = host.dashboardResourceSnapshot().resources;
+        const budget = host.sharedResourceBytes() + resources.reduce(
+          (sum, resource) => sum + resource.derivedBytes, 0n) * 4n + 65536n;
+        // Both fixtures were created consecutively and fully awaited above;
+        // the host registers exactly one painter for each. Earlier fixture
+        // demand must not enlarge this single-graph budget.
+        const peers = resources.slice(-2);
+        if (peers.length !== 2 || peers[0].derivedBytes !== peers[1].derivedBytes) {
+          throw new Error('activity fixtures must have equal measured demand');
+        }
+        const oneGraph = host.sharedResourceBytes() + peers[0].derivedBytes;
+        const activity = watchWasmDashboardResourceBudget(view.clockWorker, host, oneGraph);
+        await activity.settled;
+        await new Promise(resolve => setTimeout(resolve, 50));
+        await activity.settled;
+        let initiallyRefused = false;
+        try { await view.handle.refreshRender(); }
+        catch (error) { initiallyRefused = String(error).includes('graph GPU context unavailable'); }
+        if (!initiallyRefused) throw new Error('older graph was not evicted for the activity control');
+        await new Promise(resolve => setTimeout(resolve, 50));
+        await activity.settled;
+        await view.handle.refreshRender();
+        activity.dispose();
+        await applyWasmDashboardResourceBudget(view.clockWorker, host, budget);
+        await peer.handle.dispose();
+        await peer.controller.dispose();
+        await peer.clockWorker.dispose();
+        await peer.worker.dispose();
+        peer.el.remove();
+        const before = view.handle.snapshot();
+        const pixels = state.pixel(view.el);
+        const publications = view.publications.length;
+        const eviction = await applyWasmDashboardResourceBudget(view.clockWorker, host, budget, 0n);
+        if (!eviction.applied || eviction.plan.retained.some(Boolean)
+            || host.dashboardResourceSnapshot().clients.some(client => host.clientResourceBytes(client) !== 0n)) {
+          throw new Error('zero per-chart budget did not evict actual graph GPU storage');
+        }
+        const camera = Array.from(before.camera);
+        camera[2] += 12;
+        let refusal;
+        try { await view.handle.refreshRender(camera); }
+        catch (error) { refusal = String(error); }
+        const refused = view.handle.snapshot();
+        const retainedPixels = state.pixel(view.el);
+        if (refusal !== 'Error: xy: graph GPU context unavailable'
+            || refused.camera.join(',') !== before.camera.join(',')
+            || refused.revision !== before.revision
+            || view.publications.length !== publications
+            || !pixels.every((value, index) => value === retainedPixels[index])) {
+          throw new Error('dashboard refusal changed the accepted temporal graph: ' + JSON.stringify({refusal, beforeCamera: before.camera, refusedCamera: refused.camera, beforeRevision: String(before.revision), refusedRevision: String(refused.revision), publications, afterPublications: view.publications.length, pixelsEqual: pixels.every((value, index) => value === retainedPixels[index])}));
+        }
+        await applyWasmDashboardResourceBudget(view.clockWorker, host, budget);
+        await view.handle.refreshRender(camera);
+        await view.controller.setCursor(20n);
+        await view.handle.whenIdle();
+        const accepted = view.handle.snapshot();
+        if (accepted.camera[2] !== camera[2]
+            || accepted.temporal.cursor !== 20n
+            || Array.from(accepted.temporal.nodeVisibility).join(',') !== '1,0,1') {
+          throw new Error('temporal graph did not recover after dashboard admission');
+        }
+        await view.handle.dispose();
+        await view.controller.dispose();
+        await view.clockWorker.dispose();
+        await view.worker.dispose();
+        view.el.remove();
+        return {refusal, beforeRevision: before.revision, acceptedRevision: accepted.revision,
+          camera: accepted.camera, cursor: accepted.temporal.cursor, budget};
+      });
+      assert.equal(result.cursor, 20n);
+      return result;
+    });
     assert.deepEqual(violations,[]);assert.deepEqual(errors,[]);
     if(process.env.XYG_GRAPH_SESSION_REPORT){await writeFile(process.env.XYG_GRAPH_SESSION_REPORT+'.wire.json',JSON.stringify(await page.evaluate(()=>window.__graphSession.temporalWire),null,2)+'\n');await writeFile(process.env.XYG_GRAPH_SESSION_REPORT,JSON.stringify({...evidence,status:'passed',requests,cspViolations:violations,pageErrors:errors},(_,v)=>typeof v==='bigint'?v.toString():v,2)+'\n');
     }

@@ -1,0 +1,118 @@
+TAP version 13
+# Subtest: packaged standalone client wins over a separately installed client
+ok 1 - packaged standalone client wins over a separately installed client
+  ---
+  duration_ms: 2.423821
+  type: 'test'
+  ...
+# Subtest: standalone client falls back to a separately installed client
+ok 2 - standalone client falls back to a separately installed client
+  ---
+  duration_ms: 0.498412
+  type: 'test'
+  ...
+# Subtest: toHtml inlines the host-neutral standalone client
+ok 3 - toHtml inlines the host-neutral standalone client
+  ---
+  duration_ms: 14.538688
+  type: 'test'
+  ...
+# Subtest: toHtml writes a destination path when given
+not ok 4 - toHtml writes a destination path when given
+  ---
+  duration_ms: 13.722487
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-e9a88b98/packages/xy-node/test/html.test.mjs:67:1'
+  failureType: 'testCodeFailure'
+  error: 'Unknown system error -122: Unknown system error -122, write'
+  code: 'Unknown system error -122'
+  stack: |-
+    writeFileSync (node:fs:2430:20)
+    toHtml (file:///home/ubuntu/.t3/worktrees/xyg/t3-e9a88b98/packages/xy-node/src/html.js:202:5)
+    TestContext.<anonymous> (file:///home/ubuntu/.t3/worktrees/xyg/t3-e9a88b98/packages/xy-node/test/html.test.mjs:71:17)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: toHtml rejects customCss that could break out of <style>
+ok 5 - toHtml rejects customCss that could break out of <style>
+  ---
+  duration_ms: 6.275205
+  type: 'test'
+  ...
+# Subtest: @curatelabs/xyg-node modules do not reference browser globals
+ok 6 - @curatelabs/xyg-node modules do not reference browser globals
+  ---
+  duration_ms: 42.364429
+  type: 'test'
+  ...
+# file:///home/ubuntu/.t3/worktrees/xyg/t3-e9a88b98/packages/xy-node/src/native-path.js:200
+#   throw new XygNativeError(
+#         ^
+# XygNativeError: Unable to find XYG native library (libxyg_core). Expected optional dependency @curatelabs/xyg-node-linux-x64 with its bundled library, or set XYG_NATIVE_LIB to one explicit development build. Lookup never searches repository, working-directory, or system library paths and never falls back to Python. Checked 0 candidate path(s); see the error's `searched` property.
+#     at resolveNativeLibrary (file:///home/ubuntu/.t3/worktrees/xyg/t3-e9a88b98/packages/xy-node/src/native-path.js:200:9)
+#     at resolvePackageNativeLibrary (file:///home/ubuntu/.t3/worktrees/xyg/t3-e9a88b98/packages/xy-node/src/native.js:21:10)
+#     at file:///home/ubuntu/.t3/worktrees/xyg/t3-e9a88b98/packages/xy-node/src/native.js:24:21
+#     at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+#     at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+#     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+#   code: 'XYG_NATIVE_LIBRARY_MISSING',
+#   platform: 'linux',
+#   arch: 'x64',
+#   packageName: '@curatelabs/xyg-node-linux-x64',
+#   searched: []
+# }
+# Node.js v22.23.4
+# Subtest: packages/xy-node/test/scene.test.mjs
+not ok 3 - packages/xy-node/test/scene.test.mjs
+  ---
+  duration_ms: 273.790098
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-e9a88b98/packages/xy-node/test/scene.test.mjs:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# file:///home/ubuntu/.t3/worktrees/xyg/t3-e9a88b98/packages/xy-node/src/native-path.js:200
+#   throw new XygNativeError(
+#         ^
+# XygNativeError: Unable to find XYG native library (libxyg_core). Expected optional dependency @curatelabs/xyg-node-linux-x64 with its bundled library, or set XYG_NATIVE_LIB to one explicit development build. Lookup never searches repository, working-directory, or system library paths and never falls back to Python. Checked 0 candidate path(s); see the error's `searched` property.
+#     at resolveNativeLibrary (file:///home/ubuntu/.t3/worktrees/xyg/t3-e9a88b98/packages/xy-node/src/native-path.js:200:9)
+#     at resolvePackageNativeLibrary (file:///home/ubuntu/.t3/worktrees/xyg/t3-e9a88b98/packages/xy-node/src/native.js:21:10)
+#     at file:///home/ubuntu/.t3/worktrees/xyg/t3-e9a88b98/packages/xy-node/src/native.js:24:21
+#     at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+#     at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+#     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+#   code: 'XYG_NATIVE_LIBRARY_MISSING',
+#   platform: 'linux',
+#   arch: 'x64',
+#   packageName: '@curatelabs/xyg-node-linux-x64',
+#   searched: []
+# }
+# Node.js v22.23.4
+# Subtest: packages/xy-node/test/stream.test.mjs
+not ok 4 - packages/xy-node/test/stream.test.mjs
+  ---
+  duration_ms: 258.573542
+  type: 'test'
+  location: '/home/ubuntu/.t3/worktrees/xyg/t3-e9a88b98/packages/xy-node/test/stream.test.mjs:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 5
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 300.145025

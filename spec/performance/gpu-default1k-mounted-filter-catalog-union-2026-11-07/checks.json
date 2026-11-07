@@ -1,0 +1,670 @@
+{
+  "allCommandResults": {
+    "abi.exit.json": {
+      "command": [
+        "python3",
+        "scripts/gen_abi_manifest.py",
+        "--check"
+      ],
+      "exit": 0,
+      "log": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/abi.log",
+      "seconds": 1.7431011199951172
+    },
+    "assets.exit.json": {
+      "command": [
+        "python3",
+        "scripts/verify_wasm_assets.py"
+      ],
+      "exit": 0,
+      "log": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/assets.log",
+      "seconds": 0.12406229972839355
+    },
+    "before-lf-pins-python.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_shared_glhost.py",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_release_inventory.py",
+        "tests/test_verify_ownership.py",
+        "tests/test_geo_mounted_temporal.py",
+        "tests/test_geo_temporal_binding.py",
+        "tests/test_temporal_catalog.py",
+        "tests/test_temporal_catalog_geo_integration.py",
+        "tests/test_filter_tier_c_density.py"
+      ],
+      "exit": 1,
+      "log": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/python.log",
+      "seconds": 57.62624192237854
+    },
+    "ci.exit.json": {
+      "command": [
+        "make",
+        "check-ci"
+      ],
+      "exit": 0,
+      "log": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/ci.log",
+      "seconds": 438.63563799858093
+    },
+    "client-build.exit.json": {
+      "command": [
+        "node",
+        "js/build.mjs"
+      ],
+      "exit": 0,
+      "log": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/client-build.log",
+      "seconds": 1.7872002124786377
+    },
+    "colored-browser-verify.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_density_spill_browser_report.py",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/colored-browser.json",
+        "--host-report",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/colored-host.json",
+        "--sha",
+        "cf5581e681524451e0e99806c8aa26a40b2b3760",
+        "--artifact-root",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836"
+      ],
+      "exit": 0,
+      "log": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/colored-browser-verify.log",
+      "seconds": 0.2508516311645508
+    },
+    "colored-host-verify.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_density_spill_report.py",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/colored-host.json",
+        "--artifact-root",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836"
+      ],
+      "exit": 0,
+      "log": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/colored-host-verify.log",
+      "seconds": 0.151092529296875
+    },
+    "colored.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "benchmarks/bench_density_e2e.py",
+        "--workload",
+        "colored-spill",
+        "--points",
+        "16384",
+        "--chunk-points",
+        "4096",
+        "--chrome",
+        "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "--timeout",
+        "180",
+        "--max-rss-gib",
+        "4",
+        "--max-disk-gib",
+        "1",
+        "--output",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/colored-host.json",
+        "--colored-browser-report",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/colored-browser.json"
+      ],
+      "exit": 0,
+      "log": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/colored.log",
+      "seconds": 27.012600660324097
+    },
+    "core-final.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_release_inventory.py",
+        "tests/test_verify_ownership.py"
+      ],
+      "exit": 0,
+      "log": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/core-final.log",
+      "seconds": 8.90908432006836
+    },
+    "filter-gpu-probe.exit.json": {
+      "command": [
+        "node",
+        "--input-type=module",
+        "-"
+      ],
+      "exit": 0,
+      "seconds": 6.984169960021973,
+      "source": "filter-gpu-probe.mjs.txt"
+    },
+    "filter.exit.json": {
+      "command": [
+        "node",
+        "scripts/filter_tier_c_conformance.mjs",
+        "--capture",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/filter.png"
+      ],
+      "exit": 0,
+      "log": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/filter.log",
+      "seconds": 6.427270174026489
+    },
+    "format.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exit": 0,
+      "log": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/format.log",
+      "seconds": 0.04545760154724121
+    },
+    "foundation.exit.json": {
+      "command": [
+        "node",
+        "scripts/wasm_foundation_smoke.mjs"
+      ],
+      "exit": 0,
+      "log": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/foundation.log",
+      "seconds": 71.5203742980957
+    },
+    "gpu.exit.json": {
+      "command": [
+        "node",
+        "scripts/dashboard_gpu_smoke.mjs"
+      ],
+      "exit": 0,
+      "log": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/gpu.log",
+      "seconds": 12.799920558929443
+    },
+    "hooks.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exit": 0,
+      "log": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/hooks.log",
+      "seconds": 1.3554577827453613
+    },
+    "node-full.exit.json": {
+      "command": [
+        "npm",
+        "test",
+        "--prefix",
+        "packages/xy-node"
+      ],
+      "exit": 0,
+      "log": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/node-full.log",
+      "seconds": 27.75503182411194
+    },
+    "package.exit.json": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs",
+        "target/milestone-integration-build/wasm32-unknown-unknown/release/xyg_wasm.wasm"
+      ],
+      "exit": 0,
+      "log": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/package.log",
+      "seconds": 44.27969145774841
+    },
+    "python.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_shared_glhost.py",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_release_inventory.py",
+        "tests/test_verify_ownership.py",
+        "tests/test_geo_mounted_temporal.py",
+        "tests/test_geo_temporal_binding.py",
+        "tests/test_temporal_catalog.py",
+        "tests/test_temporal_catalog_geo_integration.py",
+        "tests/test_filter_tier_c_density.py"
+      ],
+      "exit": 0,
+      "log": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/python.log",
+      "seconds": 57.9531786441803
+    },
+    "ruff.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exit": 0,
+      "log": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/ruff.log",
+      "seconds": 0.06577134132385254
+    },
+    "types.exit.json": {
+      "command": [
+        "uv",
+        "run",
+        "ty",
+        "check"
+      ],
+      "exit": 0,
+      "log": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/types.log",
+      "seconds": 2.0120930671691895
+    },
+    "wasm-abi.exit.json": {
+      "command": [
+        "python3",
+        "scripts/gen_wasm_abi.py",
+        "--check"
+      ],
+      "exit": 0,
+      "log": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/wasm-abi.log",
+      "seconds": 0.06922125816345215
+    }
+  },
+  "artifacts": {
+    "packages/xy-client/dist/index.js": {
+      "archive": "index.js.gz",
+      "archiveSha256": "a19ae229f156642123733c3de928c949b1e49355bbfe2eeea5ba29c470e89639",
+      "bytes": 841631,
+      "immutableLocalPin": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/artifacts/index.js",
+      "sha256": "5b797d9c865d1a9f717bbd925375f0a00326b00262e283430ba068f47262ebec"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "archive": "standalone.js.gz",
+      "archiveSha256": "6eb379f4c44c56e2a10f8ee8db1e72352d801321d316dae238928f32376a467f",
+      "bytes": 841655,
+      "immutableLocalPin": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/artifacts/standalone.js",
+      "sha256": "aa579cbf6687dead1ec53aec36b0ed373c41e38c655e32d33426181c0499a3d6"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "archive": "wasm-inline-worker.js.gz",
+      "archiveSha256": "f1558e2a7fb142166336bb11e29955711479fafdf8ea8cc9b4ef3c52816222bb",
+      "bytes": 19366,
+      "immutableLocalPin": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/artifacts/wasm-inline-worker.js",
+      "sha256": "bd9244d25618101170f853df7471d37521ff80499feb8590f758379d2c6d1bd6"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "archive": "wasm-worker.js.gz",
+      "archiveSha256": "1d33df2d9fa7b8026df61d9c6d28208f8ecececff454c8b60e044d0f921f1c96",
+      "bytes": 57317,
+      "immutableLocalPin": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/artifacts/wasm-worker.js",
+      "sha256": "26d6835131f17990779c0384bb42b7898414fbd8311648b3c403ca15dd9ead3b"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "archive": "xyg-wasm-inline.js.gz",
+      "archiveSha256": "7c76a63d3a3e872d58c319ed1a257d318e21b6e61d1e667efd9526157c1ec4e4",
+      "bytes": 2515191,
+      "immutableLocalPin": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/artifacts/xyg-wasm-inline.js",
+      "sha256": "01475498325c1d3ff7fcebaef8045270ce814f1c628ece6ec156578b2657dab3"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "archive": "xyg-wasm.manifest.json.gz",
+      "archiveSha256": "426202018f27da45acae623a539ef7cc3381e8cc4b5915dab6594a868be4d260",
+      "bytes": 226,
+      "immutableLocalPin": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/artifacts/xyg-wasm.manifest.json",
+      "sha256": "3662e8fdb1f423da37c6e88e1bae176275a56269d11de4c27fe4c9d05916d62a"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "archive": "xyg-wasm.wasm.gz",
+      "archiveSha256": "5e221c2004f138fa04a24f3b7d41bdbc3d1f77b80a873f3a2d825a1b8089fc18",
+      "bytes": 1871727,
+      "immutableLocalPin": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/artifacts/xyg-wasm.wasm",
+      "sha256": "f264ff6512bd499fa9e1045effa2f153c885193dc97825477fb3861fb2f91ede"
+    },
+    "target/milestone-integration-build/release/libxyg_core.so": {
+      "archive": "libxyg_core.so.gz",
+      "archiveSha256": "a454446809fa41882db59311a4330ff45898e2cfabcaa5391cbc38dc50eff5de",
+      "bytes": 6233864,
+      "immutableLocalPin": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-default1k-union/artifacts/libxyg_core.so",
+      "sha256": "c2f6450f73935f96194b768d282e80c2ab55370fe5da243cf023900692d71941"
+    }
+  },
+  "binaryCaptures": {
+    "filter.png.requests.bin": {
+      "archive": "filter.png.requests.bin.gz",
+      "archiveSha256": "7228aaece08c4626cfc79aa2b18d14fb47f33f222916f9731683eed5d8e14a89",
+      "bytes": 17484,
+      "sha256": "f03981ce4fccce28eb1af4425ef588d8ec07abd60181be4756de5a9f5fb330b1"
+    }
+  },
+  "captures": {
+    "filter.png": {
+      "bytes": 37630,
+      "file": "filter.png",
+      "sha256": "c48c85076ce9bc19bfa5cdd712e86016fad4c7e2201e9ea19e120c6896f433cd"
+    },
+    "filter.png.indexed.png": {
+      "bytes": 34706,
+      "file": "filter.png.indexed.png",
+      "sha256": "de87a57085d2543e07f7ea78554ed5ca3bdcec62645d1eb7ac00d797c0a0cdc1"
+    },
+    "foundation.json.esm-malformed-inline-artifact.png": {
+      "bytes": 11369,
+      "file": "foundation.json.esm-malformed-inline-artifact.png",
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    "foundation.json.esm-missing-inline-artifact.png": {
+      "bytes": 11369,
+      "file": "foundation.json.esm-missing-inline-artifact.png",
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    "foundation.json.esm-missing-retained-source.png": {
+      "bytes": 11315,
+      "file": "foundation.json.esm-missing-retained-source.png",
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+    },
+    "foundation.json.iife-malformed-inline-artifact.png": {
+      "bytes": 11369,
+      "file": "foundation.json.iife-malformed-inline-artifact.png",
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    "foundation.json.iife-missing-inline-artifact.png": {
+      "bytes": 11369,
+      "file": "foundation.json.iife-missing-inline-artifact.png",
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    "foundation.json.iife-missing-retained-source.png": {
+      "bytes": 11315,
+      "file": "foundation.json.iife-missing-retained-source.png",
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+    },
+    "foundation.json.retained-temporal.json.boundary.png": {
+      "bytes": 44546,
+      "file": "foundation.json.retained-temporal.json.boundary.png",
+      "sha256": "e47464cd85a30210f9cbe6ec12af0aee391c3aa8ec4c01afdc2b814b823a7d6d"
+    },
+    "foundation.json.retained-temporal.json.initial.png": {
+      "bytes": 44231,
+      "file": "foundation.json.retained-temporal.json.initial.png",
+      "sha256": "a03d81a62746e81bbc035d278d5ebc73be03be673f7fee0a4e3a9ca31fa0eceb"
+    },
+    "gpu/dashboard.png": {
+      "bytes": 6363,
+      "file": "gpu__dashboard.png",
+      "sha256": "4082a9d85536efdf03feedae58651252d87393acfdb016422c87a64cb8715c7f"
+    },
+    "gpu/pressure.png": {
+      "bytes": 8545,
+      "file": "gpu__pressure.png",
+      "sha256": "845659eb9c1cf9d326b03deeb1e571f30e8376828d3a718c02614da7296c9fbb"
+    },
+    "gpu/restored.png": {
+      "bytes": 10586,
+      "file": "gpu__restored.png",
+      "sha256": "b7e43b00491bf49fde791a4af031f53b82607a5bf5984a573ff94ab8e8f11276"
+    }
+  },
+  "failures": {
+    "beforeLfPins": "140 passed, one actual Git CRLF failure on five newly bound sources; explicit LF pins resolve without checker changes",
+    "reviewRequest": "T3 worktree preparation failed before reviewer started; no approval credit"
+  },
+  "freshCounts": {
+    "ci": 775,
+    "node": 1118,
+    "nodeExistingSkips": 2,
+    "python": 141
+  },
+  "inherited": "Prior default16MiB pointer/keyboard/10k replays, mounted Jupyter/VSCode, Rust workspace and Clippy remain identity-verified historical results; new client qualification is separate",
+  "limits": [
+    "No whole milestone/issue acceptance",
+    "Logical GPU storage only; no global CPU/source/WASM/process budget",
+    "No scale, latency, competitor, all-host or accessibility qualification",
+    "Frozen-PNG ABI/source combination not yet integrated",
+    "Current main, hosted CI and merge queue remain root-owned"
+  ],
+  "logs": {
+    "abi.log": {
+      "archive": "abi.log.gz",
+      "archiveSha256": "87a2cd81d4c2ad9b5794988cd6d4d64aa56cb40a2e4408d3d2ad0eb067bf9465",
+      "bytes": 42,
+      "sha256": "066d9f50b25f44955bcd6f0a52325d7f897972c9e32659fa5c3dde200b267d39"
+    },
+    "assets.log": {
+      "archive": "assets.log.gz",
+      "archiveSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730",
+      "bytes": 88,
+      "sha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef"
+    },
+    "before-lf-pins-python.log": {
+      "archive": "before-lf-pins-python.log.gz",
+      "archiveSha256": "71dc8b2b97819714c6e3375af1768adb36cab7a860a55c56cca7d3dd4b84fb8b",
+      "bytes": 3910,
+      "sha256": "906c26281cc9c250a709acce12f57e8bc3fd9b43cfec1492f1d98fc61fbc2fa7"
+    },
+    "ci.log": {
+      "archive": "ci.log.gz",
+      "archiveSha256": "87a336bc723f2d368737d00ed540c5eb2971ca598cb1e6e4bddd2f61e23d5e46",
+      "bytes": 1786,
+      "sha256": "aa32e8375a1d1247ac9cdca230af6ecc1f59a526f8bd2d5b88a291e43af11d3c"
+    },
+    "client-build.log": {
+      "archive": "client-build.log.gz",
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "bytes": 5448,
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "colored-browser-verify.log": {
+      "archive": "colored-browser-verify.log.gz",
+      "archiveSha256": "b1c0ca6b95b2778f966b344bc7322d4c6715faacb310e3fe6bb1f8b3a2c8e031",
+      "bytes": 80,
+      "sha256": "3af3b7fd448ffc8653d81078d2ee6052853fb8c8783846b33657230bdeb6212f"
+    },
+    "colored-host-verify.log": {
+      "archive": "colored-host-verify.log.gz",
+      "archiveSha256": "0fb892de55b69027f7f8dc2294308e21707ece71bf6a2b6ea7896364ab3a18ad",
+      "bytes": 83,
+      "sha256": "1fee0ba26b155d94f4ce06d1c1e6ed860782ec6c80f7af90ca2e754300788e32"
+    },
+    "colored.log": {
+      "archive": "colored.log.gz",
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "core-final.log": {
+      "archive": "core-final.log.gz",
+      "archiveSha256": "8b6cfc1b1636fc3db8e1325df7c9f053cf89c4bb53f3ed7ddf407a5f7c77285d",
+      "bytes": 99,
+      "sha256": "0166f9feb22b68c5f4149980106414ae75e23400141e5090ec87c67fb4132a51"
+    },
+    "filter-gpu-probe.log": {
+      "archive": "filter-gpu-probe.log.gz",
+      "archiveSha256": "0f24878fc0a6277168f3f60cf6e57db9b7d48dca13a0da583de0f4b9f3e4fa44",
+      "bytes": 1408,
+      "sha256": "d0761a15cbcaec93c9c0826a74afa2099fe63f36750cbfc8cf1f94e5067ad5d2"
+    },
+    "filter.log": {
+      "archive": "filter.log.gz",
+      "archiveSha256": "d8bc72fb2fa6c5d1d1e00266afaf6c1fee97853f0de649b7cd7b28d62df3d0af",
+      "bytes": 1489,
+      "sha256": "65ab234fcf9f518e2663960f297245128624d2d277a299721a3a83f32369684b"
+    },
+    "format.log": {
+      "archive": "format.log.gz",
+      "archiveSha256": "9e72ac3541224e400c89c64b58f6bb0b8a7ab7f313ca65f3ffa7f10e769bb3cd",
+      "bytes": 29,
+      "sha256": "411680debd0d596aa12e98d65d3757028f1cec1e7f99eddca22c1644a59ad0dc"
+    },
+    "foundation.log": {
+      "archive": "foundation.log.gz",
+      "archiveSha256": "a202de8ba3881ad5a3a250071b0c0ca2103d8fb75c879c18efd6d8a755251de2",
+      "bytes": 7311,
+      "sha256": "a4c56d6f221c458fdcea5d7374001388056a0ad9156a25ecae68580d3a231a93"
+    },
+    "gpu.log": {
+      "archive": "gpu.log.gz",
+      "archiveSha256": "da34e19a38ffb19d2c4df3eb7a9d3326545b6691051e74f15c32c21a509b635a",
+      "bytes": 765,
+      "sha256": "d05d6a50ba4e480d1ca0f96208ed2bb0a7d9497b4f239b4bedcae738e1c0a805"
+    },
+    "gpu/browser.log": {
+      "archive": "gpu__browser.log.gz",
+      "archiveSha256": "05ba22df418e7a0a83284d81e9884b7eeb7e061a4cef425c42fa68c50c41e1de",
+      "bytes": 7071,
+      "sha256": "86d4ad95a1a287b8ad40d2aa423d4538bcb44837c009061769b336f1b215d412"
+    },
+    "hooks.log": {
+      "archive": "hooks.log.gz",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "node-full.log": {
+      "archive": "node-full.log.gz",
+      "archiveSha256": "f3af7271825aeda66434a2fc3b6178bfb2d32a702e6a68d97ae6e8249efb98f7",
+      "bytes": 233962,
+      "sha256": "72913166e38716f2fb2c6a6c017a98bc47d4d209a51274f1453685cfe3c296c8"
+    },
+    "package.log": {
+      "archive": "package.log.gz",
+      "archiveSha256": "563cc9e3668fad336427bc3073208f88a4323513b29551b1c2975d6fcabc5846",
+      "bytes": 493,
+      "sha256": "d5a7ed6ddf82e93777c24d1041899e10525e1f8974db5d8c7a4ae4cdcaf8204d"
+    },
+    "python.log": {
+      "archive": "python.log.gz",
+      "archiveSha256": "712deea661f99f6833c76b04a8755e7a2135fcaf3847c68c43c34355564547c4",
+      "bytes": 181,
+      "sha256": "d8bdc30c3a9541e5c7746c19239a14f88887bff267c5fddae8a31ef847b93061"
+    },
+    "ruff.log": {
+      "archive": "ruff.log.gz",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "types.log": {
+      "archive": "types.log.gz",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "wasm-abi.log": {
+      "archive": "wasm-abi.log.gz",
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "parents": [
+    "cf5581e681524451e0e99806c8aa26a40b2b3760",
+    "f072b5ad28b1775b13065ded1bb17cb01c099b35"
+  ],
+  "preservation": {
+    "combined": [
+      ".gitattributes",
+      "js/src/50_chartview.ts",
+      "js/src/54_kernel.ts",
+      "scripts/filter_density_browser.mjs",
+      "scripts/graph_session_controller_wasm_smoke.mjs",
+      "spec/design-dossier.md",
+      "spec/design/build-ci.md",
+      "spec/design/dashboard-compositor.md",
+      "spec/design/host-parity.md",
+      "spec/design/ownership-audit.json",
+      "spec/design/ownership-audit.md",
+      "spec/releases/0.6.0-api-inventory.json",
+      "tests/browser/wasm_foundation_page.mjs",
+      "tests/test_graphforge_contract_corpus.py"
+    ],
+    "protected": 17800,
+    "rustInputsExactCf5581": 250
+  },
+  "reports": {
+    "colored-browser.json": {
+      "archive": "colored-browser.json.gz",
+      "archiveSha256": "641fd755b62ba2e15834c46b4599a97b2b187029cf96d5bd85a85839dd91e39a",
+      "bytes": 1192923,
+      "sha256": "9c211bfd709def334d91d30997d33c7856b5f329a5cefc88820f02bd1bcc2d0e"
+    },
+    "colored-host.json": {
+      "archive": "colored-host.json.gz",
+      "archiveSha256": "ab66472471d082ee6d29a5b05a3aebc68446ff3233b9d94dee0cf8081226f37d",
+      "bytes": 418087,
+      "sha256": "77c8c33cac30ceb4af23b2a69c779598f3b2c4d883027bfcaa10f9cb2c191196"
+    },
+    "foundation.json": {
+      "archive": "foundation.json.gz",
+      "archiveSha256": "2411ab8f2f8fdf2010af8e777213d6f123249fb95ba2cf154e11895f2b8f0dc7",
+      "bytes": 28335,
+      "sha256": "685624052ff92cf80cdbb1ff019d2d4b4e4a1b356e12dd01eb3ec3ba2b4ea332"
+    },
+    "foundation.json.retained-temporal.json": {
+      "archive": "foundation.json.retained-temporal.json.gz",
+      "archiveSha256": "033d635b7c120b30ae376eff87033c24d7e75df9691bc94bbcc26fec0c18ecab",
+      "bytes": 103395,
+      "sha256": "0761a7419b6003491592ec81e828eb4691a622c6ba5bcfe04d29d347e729dca9"
+    },
+    "foundation.json.retained-temporal.json.wire.json": {
+      "archive": "foundation.json.retained-temporal.json.wire.json.gz",
+      "archiveSha256": "c7ef2e06140261989d49fe67253e3ba965a95aad74c9d7b53d9118c0f537e3df",
+      "bytes": 3631391,
+      "sha256": "d6fb84e9446930ee2ef7fd88c3cd1451f621089ec17d7ef17042e8390814fa73"
+    },
+    "gpu/report.json": {
+      "archive": "gpu__report.json.gz",
+      "archiveSha256": "8cc7bbe1312b3d69597942bc8e03be102b74474f4eda59db17dc67b613bf5636",
+      "bytes": 1996,
+      "sha256": "50e9de2b9766689582080c476e7f8ea729f49ceacaf2d895729fc3388317acee"
+    }
+  },
+  "requiredSuccessfulCommands": [
+    "client-build",
+    "package",
+    "assets",
+    "python",
+    "node-full",
+    "types",
+    "abi",
+    "wasm-abi",
+    "foundation",
+    "gpu",
+    "filter",
+    "filter-gpu-probe",
+    "colored",
+    "colored-host-verify",
+    "colored-browser-verify",
+    "ci",
+    "core-final",
+    "hooks",
+    "ruff",
+    "format"
+  ],
+  "schemaVersion": 1,
+  "scope": "Fresh GPU/default1k/mounted/filter/catalog integration; independent final review and hosted delivery pending",
+  "scripts": {
+    "filter-gpu-probe.mjs.txt": {
+      "archive": "filter-gpu-probe.mjs.txt.gz",
+      "archiveSha256": "1840d7b208a3ba5d5685460a795790a08d8ee5ad619cffa3b40e5b36157c606a",
+      "bytes": 9859,
+      "sha256": "06b0ac93b6919c4d0611b8b9e8f7aaf4af956a66bdc136495e61b50bc9ca66ec"
+    },
+    "run.py": {
+      "archive": "run.py.gz",
+      "archiveSha256": "674c67363c3e24fdcec404580fcb46662c194f86f0dfb0b8bf163bb091144b50",
+      "bytes": 3220,
+      "sha256": "af3281f46cc7998f7b4e549a26bc528df54b9bcde582db2fdc1706525ead746f"
+    }
+  },
+  "sourceBindingSha256": "69b2da54bd9fc925000e40922b0cf31242d30db2b414040d573da73d5b4a6039",
+  "sourceCounts": {
+    "current": 419,
+    "historical": 87
+  },
+  "versions": {
+    "native": 403,
+    "wasm": 37
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "result": {
+    "charts": 32,
+    "budget": "705680",
+    "rows": [
+      {
+        "label": "32 initial",
+        "bytes": "2509088",
+        "objects": 194
+      },
+      {
+        "label": "admission ownership races",
+        "bytes": "2509088",
+        "objects": 194
+      },
+      {
+        "label": "pressure",
+        "bytes": "627296",
+        "objects": 50
+      },
+      {
+        "label": "active rebuild",
+        "bytes": "627296",
+        "objects": 50
+      },
+      {
+        "label": "capacity refused",
+        "bytes": "627296",
+        "objects": 50
+      },
+      {
+        "label": "per-chart zero cap",
+        "bytes": "32",
+        "objects": 2
+      },
+      {
+        "label": "all rebuilt",
+        "bytes": "2509088",
+        "objects": 194
+      },
+      {
+        "label": "32 appends",
+        "bytes": "2517504",
+        "objects": 194
+      },
+      {
+        "label": "context restored",
+        "bytes": "2509344",
+        "objects": 194
+      },
+      {
+        "label": "DPR backing growth",
+        "bytes": "2767344",
+        "objects": 194
+      },
+      {
+        "label": "hide show",
+        "bytes": "2767344",
+        "objects": 194
+      },
+      {
+        "label": "rapid replacement",
+        "bytes": "2509312",
+        "objects": 194
+      }
+    ],
+    "remainingAllocations": 0
+  },
+  "hashes": {
+    "packages/xy-client/dist/index.js": "57acb9abedb7d42c1e4c5442f7bf93cd69721bb84aecfa159ad1c6b72cd8672a",
+    "packages/xy-client/dist/xyg-wasm.wasm": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1",
+    "/home/ubuntu/.t3tmp/1111/pytest-of-ubuntu/pytest-22/test_dashboard_gpu_allocation_0/dashboard-gpu/pressure.png": "57a1829a85af7545680a0b2d2cc734ff7d845f6ec57cc539ca21374334a7f4ef",
+    "/home/ubuntu/.t3tmp/1111/pytest-of-ubuntu/pytest-22/test_dashboard_gpu_allocation_0/dashboard-gpu/restored.png": "3292f54683d32a03b622b16a02be2e9af63e5a564f2ec5c666f8c45c019619e6"
+  },
+  "node": "v22.23.4",
+  "browser": "156.0.8078.4",
+  "platform": "linux"
+}

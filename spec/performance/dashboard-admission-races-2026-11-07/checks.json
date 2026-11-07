@@ -1,0 +1,142 @@
+{
+  "reviewedParent": "254cafd313494c409971f4545bac69e3b53085aa",
+  "commands": [
+    "node js/build.mjs",
+    "node scripts/dashboard_gpu_smoke.mjs (exact predecessor and removed-cancellation negative controls, then restored final production)",
+    "uv run pytest tests/test_shared_glhost.py tests/test_graphforge_contract_corpus.py tests/test_release_inventory.py -q",
+    "node scripts/wasm_foundation_smoke.mjs"
+  ],
+  "logs": {
+    "races-build.log.gz": {
+      "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "rawBytes": 5448,
+      "exit": 0
+    },
+    "predecessor-controlled-build.log.gz": {
+      "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "rawBytes": 5448,
+      "exit": 0
+    },
+    "predecessor-controlled.log.gz": {
+      "rawSha256": "134388edae63334cb784b4dfa240121121a363f711921b8a80c446b5932e6381",
+      "archiveSha256": "9bbd6d74d2c2f707236dd9765e7beb5f2b9615c40ee83089962c6b67e0e70c9e",
+      "rawBytes": 413,
+      "exit": 1
+    },
+    "without-cancellation-controlled-build.log.gz": {
+      "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "rawBytes": 5448,
+      "exit": 0
+    },
+    "without-cancellation-controlled.log.gz": {
+      "rawSha256": "5a853bdcda34cf4d8c722ce131f52757e91f2b164e3d1684bf2b747aace809c3",
+      "archiveSha256": "1c38d0314757993504d6946efa4a0e7b42ad8f890740d20a5358bb64de6e2aae",
+      "rawBytes": 418,
+      "exit": 1
+    },
+    "final-races-build.log.gz": {
+      "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "rawBytes": 5448,
+      "exit": 0
+    },
+    "races-final.log.gz": {
+      "rawSha256": "8bcf775e57df65e09a419a721295ef2ed7c92d8ed15a366fe721b6a21e1d62c9",
+      "archiveSha256": "32293831ee3796196c548ba715ebdf24538e1548b6d3aa24a59f44ddeae134ca",
+      "rawBytes": 765,
+      "exit": 0
+    },
+    "races-python.log.gz": {
+      "rawSha256": "19f5ab50691cfc8eab6f16b283d3926e1ec9dbeec9e6e6983bae805de049a9ff",
+      "archiveSha256": "77c530946ecd5fe515573866ce307f131fa8416266b5c78d731866e8b14f07f9",
+      "rawBytes": 5252,
+      "exit": 1
+    },
+    "races-foundation.log.gz": {
+      "rawSha256": "93e657fa9a8dae0c968bfc908ad8a6fc6a88a4ad5c262759d41422f35dfb4405",
+      "archiveSha256": "6117209e8e6748bc82cc5ad1eb8c7596ec93f2b51b386e6044ed4cb500ca21da",
+      "rawBytes": 435,
+      "exit": 1
+    },
+    "races-python-final.log.gz": {
+      "rawSha256": "c8d56959cb22471e03b69881f9fd7aa28b451eaa97822b730a40a8fc730e1188",
+      "archiveSha256": "b8197a319f9049433fc1f1cd74bf8c04a36269e24eecccf08a2e71d2597c3917",
+      "rawBytes": 100,
+      "exit": 0
+    },
+    "races-foundation-final.log.gz": {
+      "rawSha256": "2e70f2b8d79acd4418fd13204bf3e5af3dd0887a85a1af6ecddea6a858d07180",
+      "archiveSha256": "563b36e2ad6fba159e7dc13745491fa64e9f044bd868b44fd87927c7dde93890",
+      "rawBytes": 2871,
+      "exit": 0
+    },
+    "races-inventory.log.gz": {
+      "rawSha256": "4ca8047382029cc6877337002694d1d92024329a5dc830334e8379f4ab8c70c9",
+      "archiveSha256": "829f2c1074a4f38acde3d22c1ecb789a662925c5c59afe71127d27c0648c42c7",
+      "rawBytes": 89,
+      "exit": 0
+    },
+    "races-hooks.log.gz": {
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "rawBytes": 240,
+      "exit": 0
+    },
+    "races-ruff.log.gz": {
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "rawBytes": 19,
+      "exit": 0
+    },
+    "races-format.log.gz": {
+      "rawSha256": "71828415ae7956717bbef7f9bd1683393e137b6b7b3f2ae381407f4327456e23",
+      "archiveSha256": "2c6ab4aea7deb473cb03120e197b035f027d28e416affb553cf4b8dc275d80b7",
+      "rawBytes": 29,
+      "exit": 0
+    }
+  },
+  "artifacts": {
+    "packages/xy-client/dist/index.js": {
+      "sha256": "aebaea91d093dab06d054d748b73dc57a556ba0141eaef3e962b7d7596676787",
+      "bytes": 812110
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "sha256": "7c2b567455db2e117d7d2ecdc53a62332b91a162c851bb3a1d686bf65a5bac82",
+      "bytes": 812126
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+      "bytes": 56051
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1",
+      "bytes": 1927032
+    },
+    "python/xyg/static/index.js": {
+      "sha256": "aebaea91d093dab06d054d748b73dc57a556ba0141eaef3e962b7d7596676787",
+      "bytes": 812110
+    },
+    "python/xyg/static/standalone.js": {
+      "sha256": "7c2b567455db2e117d7d2ecdc53a62332b91a162c851bb3a1d686bf65a5bac82",
+      "bytes": 812126
+    },
+    "target/release/libxyg_core.so": {
+      "sha256": "09b2571980a8c1d97ac4478fc51b346fb9356d07916bc8b38e84c072b531b895",
+      "bytes": 6127864
+    }
+  },
+  "captures": {
+    "report.json": "86ca64947be1c1d199cd6df0aa5a5eeedc7403598272f9f7552713754ed6d52f",
+    "pressure.png": "57a1829a85af7545680a0b2d2cc734ff7d845f6ec57cc539ca21374334a7f4ef",
+    "restored.png": "3292f54683d32a03b622b16a02be2e9af63e5a564f2ec5c666f8c45c019619e6"
+  },
+  "limits": [
+    "Initial held-retry harness interrupted and excluded.",
+    "Original 32-chart receipt and raw logs preserve previous source identities.",
+    "Logical GPU accounting excludes driver VRAM and Canvas2D.",
+    "No CPU/source/WASM/default/mixed-large/host-matrix/latency acceptance."
+  ]
+}

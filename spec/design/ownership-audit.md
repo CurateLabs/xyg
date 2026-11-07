@@ -873,6 +873,7 @@ Forbidden:
 | `js/src/20_theme.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/30_ticks.ts` | Shared TypeScript browser presentation | `browser-tick-presentation` | `keep-shared-client`; tooltip/presentation formatting only | — |
 | `js/src/40_gl.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
+| `js/src/41_gpu_storage.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/42_glhost.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/43_external_gl.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/45_lod.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |

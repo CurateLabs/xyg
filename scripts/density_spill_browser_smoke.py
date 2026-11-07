@@ -262,7 +262,9 @@ BROWSER_PROOF = r"""
   const host=document.createElement('div');document.body.append(host);
   const hooks=auditNextChart();
   let v;try{v=xy.renderStandalone(host,structuredClone(input.spec),Uint8Array.from(atob(input.blob),c=>c.charCodeAt(0)));}finally{hooks.restore();}
-  const g=v.gpuTraces[0],gl=v.gl,audit=hooks.for(gl);
+  // Chart operations retain the owner-accounted proxy. The pre-render audit
+  // is installed on its raw host context, where all proxy calls are observed.
+  const g=v.gpuTraces[0],gl=v.gl,audit=hooks.for(v._glHost?.gl??gl);
   audit.label(v.pickTex,'pick');for(const tex of v._lutCache.values())audit.label(tex,'LUT');audit.phase='chart';
   assert(gl&&g.tier==='density','public density not admitted');
   const normal=mode==='normal';
@@ -354,7 +356,7 @@ BROWSER_PROOF = r"""
     assert(adoption.length===1&&adoption[0].level===stats.level,'normal async adoption missing');
     for(const frame of frames){frame.pixelSha256=await digest(frame.pixels);frame.ink=ink(frame.pixels,new Uint8Array(frame.pixels.length));delete frame.pixels;assert(frame.drawn.length&&frame.drawn.every(d=>d.sourceAlive),'normal draw lost owned outgoing source');}
     const transitions=step.kind==='zoom'?frames.filter(f=>f.drawn.some(d=>d.level===oldLevel&&d.opacity>0&&d.opacity<1)&&f.drawn.some(d=>d.level===stats.level&&d.opacity>0&&d.opacity<1)):[];
-    if(step.kind==='zoom')assert(transitions.length>0&&transitions.every(f=>f.drawn.filter(d=>d.level===oldLevel).every(d=>d.keys.every(k=>[...previousOwned].some(tex=>audit.objects.get(tex)&&[...g._tileTextures.values()].some(t=>t.key===k&&t.tex===tex))))),'normal adjacent transition/source missing');
+    if(step.kind==='zoom')assert(transitions.length>0&&transitions.every(f=>f.drawn.filter(d=>d.level===oldLevel).every(d=>d.keys.every(k=>[...previousOwned].some(tex=>audit.objects.get(tex)&&[...g._tileTextures.values()].some(t=>t.key===k&&t.tex===tex))))),'normal adjacent transition/source missing '+JSON.stringify({index,oldLevel,level:stats.level,frames:frames.map(({pixels,...f})=>f),transitionFrames:transitions.length}));
     const end=frames.at(-1),cached=runs.cached.samples[index+1];
     assert(end.pixelSha256===cached.pixelSha256,'normal settled framebuffer differs from deterministic oracle '+index);
     samples.push({index,...step,stats,startedAt,adoption:adoption[0],frames:frames.map(({pixels,...f})=>f),transitionFrames:transitions.length,settledPixelSha256:end.pixelSha256,cachedPixelEquality:true});
