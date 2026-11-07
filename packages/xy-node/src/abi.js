@@ -1003,15 +1003,16 @@ function publishTemporalState(handle, disposed = false, recipients = null) {
   if(temporalDestroying.get(handle)?.nativeDone || !temporalObservers.has(handle))return;
   const raw=temporalControllerState(handle);
   const state=Object.freeze({...raw, disposed:disposed || raw.disposed, selection:Object.freeze([...raw.selection])});
-  temporalPending.set(handle,state);
+  temporalPending.set(handle, {
+    state,
+    recipients: recipients ?? [...(temporalObservers.get(handle) ?? [])],
+  });
   if(temporalPublishing.has(handle))return;
   temporalPublishing.add(handle);
   try { while(temporalPending.has(handle)) {
-    const next=temporalPending.get(handle);temporalPending.delete(handle);
-    const delivery = recipients ?? [...(temporalObservers.get(handle)??[])];
-    recipients = null;
+    const {state: next, recipients: delivery}=temporalPending.get(handle);temporalPending.delete(handle);
     for(const subscription of delivery) {
-      if(temporalPending.get(handle)?.disposed && !next.disposed)break;
+      if(temporalPending.get(handle)?.state.disposed && !next.disposed)break;
       if(!temporalObservers.get(handle)?.has(subscription))continue;
       try { Promise.resolve(subscription.observer(next)).catch(()=>{}); } catch {}
     }

@@ -287,3 +287,20 @@ for (const sameCallback of [false,true]) test(`coordination retains subscription
     assert.equal(previousCalls+replacementCalls,1,"the replacement receives the next delivery once");
   } finally {stopB();stopC();stopNew();for(const h of [a,b,c])temporalControllerDestroy(h);}
 });
+
+test("queued reentrant coordination preserves captured subscription identities", () => {
+  const a=make(911n,918n),c=make(913n,918n);let entered=false,calls=[],stopNew=()=>{},stopOld=()=>{};
+  temporalControllerSetCursor(a,200_000n);const event=temporalControllerPollEvent(a);
+  const stop=temporalControllerSubscribeState(c,()=>{
+    if(entered)return;
+    entered=true;temporalCoordinateDeliver(event);
+    stopOld();stopNew=temporalControllerSubscribeState(c,s=>calls.push(s.cursor));
+  });
+  stopOld=temporalControllerSubscribeState(c,()=>{});
+  try {
+    temporalControllerSetCursor(c,150_000n);
+    assert.deepEqual(calls,[],"queued delivery must retain its original recipients");
+    temporalControllerSetCursor(c,300_000n);
+    assert.deepEqual(calls,[300_000n],"replacement receives only a future notification");
+  } finally {stop();stopOld();stopNew();temporalControllerDestroy(a);temporalControllerDestroy(c);}
+});
