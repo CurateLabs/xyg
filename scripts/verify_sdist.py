@@ -35,6 +35,14 @@ REQUIRED_FILES = {
     "CHANGELOG.md",
     "CONTRIBUTING.md",
     "Cargo.lock",
+    "vendor/png/Cargo.toml",
+    "vendor/crc32fast/Cargo.toml",
+    "vendor/crc32fast/src/table.rs",
+    "vendor/crc32fast/LICENSE-MIT",
+    "vendor/crc32fast/LICENSE-APACHE",
+    "vendor/png/src/encoder.rs",
+    "vendor/png/LICENSE-MIT",
+    "vendor/png/LICENSE-APACHE",
     "Cargo.toml",
     "LICENSE",
     "PKG-INFO",
@@ -126,6 +134,7 @@ FORBIDDEN_PARTS = {
 }
 FORBIDDEN_SUFFIXES = {".dll", ".dylib", ".pyd", ".pyc", ".pyo", ".so", ".whl"}
 ALLOWED_TOP_LEVEL = {
+    "vendor",
     # Hatchling force-includes the active VCS exclusion file so builds from the
     # unpacked sdist preserve the source-selection rules.
     ".gitignore",

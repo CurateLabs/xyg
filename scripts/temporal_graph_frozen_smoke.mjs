@@ -18,9 +18,30 @@ assert.deepEqual(Array.from(native.metadata['render.focus.rgba']),[77,110,159,19
  for(const format of ['scene','painter','svg','html']){const artifact=native.export(format);assert.deepEqual(Buffer.from(artifact),Buffer.from(result[format],'base64'),`${format} native/WASM shape ${shape}`);await writeFile(resolve(output,`${tag}.${format}`),artifact);}
  const html2=native.export('html',{scale:2});assert.deepEqual(Buffer.from(html2),Buffer.from(result.html2,'base64'));await writeFile(resolve(output,`${tag}.scale2.html`),html2);const png2=native.export('png',{scale:2});await writeFile(resolve(output,`${tag}.scale2.png`),png2);const recoveredPng2=FrozenTemporalGraph.fromArtifact(png2);try{assert.deepEqual(Buffer.from(recoveredPng2.toBytes()),bytes);}finally{recoveredPng2.close();}
  const png=native.export('png');await writeFile(resolve(output,`${tag}.png`),png);await writeFile(resolve(output,`${tag}.xyfg`),bytes);
- assert.equal(result.pngError?.code,'XYG_WASM_RESOURCE_LIMIT');assert.match(result.pngError?.message,/XYG_FROZEN_PNG_UNAVAILABLE/);
+ assert.deepEqual(Buffer.from(result.png,'base64'),Buffer.from(png),'Worker PNG native parity');assert.deepEqual(Buffer.from(result.png2,'base64'),Buffer.from(png2),'Worker scale2 PNG native parity');
  report.push({shape,parent,snapshotSha256:createHash('sha256').update(bytes).digest('hex')});}finally{native.close();}
  for(const scale of [1,2]){const suffix=scale===1?'':'.scale2';const offline=await browser.newPage({viewport:{width:600,height:500}});await offline.route('http://**',route=>route.abort());await offline.route('https://**',route=>route.abort());offline.on('pageerror',e=>errors.push(String(e)));await offline.goto('file://'+resolve(output,`${tag}${suffix}.html`));await offline.waitForFunction(()=>document.documentElement.dataset.xyFrozenReady==='true');await offline.waitForFunction(()=>window.__xyFrozenView?.gpuTraces?.length>0);const dimensions=await offline.evaluate(()=>Array.from(document.querySelectorAll('#chart canvas'),c=>[c.width,c.height]));assert.ok(dimensions.length);for(const d of dimensions)assert.deepEqual(d,[480*scale,360*scale]);await offline.screenshot({path:resolve(output,`${tag}${suffix}.offline.png`)});await offline.close();}}
+ // Exercise the public frozen API from a single strict-CSP file and Blob Worker.
+ const offlineRaw=await readFile(resolve(output,'shape-5-parent.xyfg'));
+ const offlineNative=FrozenTemporalGraph.fromBytes(offlineRaw);let offlineExpected;
+ try{offlineExpected=Buffer.from(offlineNative.export('png',{scale:2})).toString('base64');}finally{offlineNative.close();}
+ const standalone=(await readFile(resolve(root,'packages/xy-client/dist/standalone.js'),'utf8')).replace(/<\/script/gi,'<\\/script');
+ const inline=(await readFile(resolve(root,'packages/xy-client/dist/xyg-wasm-inline.js'),'utf8')).replace(/<\/script/gi,'<\\/script');
+ const offlineHarness=standalone+'\n'+inline+`\n(async()=>{let worker;try{
+ const options={inline:globalThis.__xygInlineWasm,maxArenaBytes:384*1024*1024};
+ const decode=s=>Uint8Array.from(atob(s),v=>v.charCodeAt(0));const encode=a=>{let s='';for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode(...a.subarray(i,i+32768));return btoa(s);};
+ worker=xy.createXygWasmWorker(options);await worker.ready;
+ const original=decode(${JSON.stringify(offlineRaw.toString('base64'))});const f=await xy.XygFrozenTemporalGraph.fromBytes(original,worker);
+ const png=await f.export('png',{worker,scale:2});if(encode(png)!==${JSON.stringify(offlineExpected)})throw Error('offline public PNG bytes differ');
+ const recovered=await xy.XygFrozenTemporalGraph.fromArtifact(png,worker);if(encode(recovered.toBytes())!==encode(original))throw Error('offline PNG recovery differs');
+ const pending=f.export('png',{worker,scale:2});await Promise.resolve();worker.dispose();let cancelled=false;try{await pending;}catch{cancelled=true;}if(!cancelled)throw Error('disposed PNG promise did not reject');
+ worker=xy.createXygWasmWorker(options);await worker.ready;const again=await f.export('png',{worker,scale:2});if(encode(again)!==encode(png))throw Error('disposal changed immutable PNG');
+ window.offlinePng={ok:true};
+ }catch(error){window.offlinePng={ok:false,error:String(error)}}finally{worker?.dispose()}})();`;
+ const cspHash=createHash('sha256').update(offlineHarness).digest('base64');const offlineFile=resolve(output,'inline-worker-png.html');
+ await writeFile(offlineFile,`<!doctype html><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-${cspHash}' 'wasm-unsafe-eval'; worker-src blob:; connect-src 'none'; object-src 'none'; base-uri 'none'"><script>${offlineHarness}</script>`);
+ const offlinePng=await browser.newPage();offlinePng.on('pageerror',e=>errors.push(String(e)));await offlinePng.route('http://**',route=>route.abort());await offlinePng.route('https://**',route=>route.abort());await offlinePng.goto('file://'+offlineFile);await offlinePng.waitForFunction(()=>window.offlinePng);assert.deepEqual(await offlinePng.evaluate(()=>window.offlinePng),{ok:true});await offlinePng.close();
+ console.log('strict-CSP single-file public Blob Worker PNG, exact recovery and disposal passed');
  const vectors=spawnSync(process.env.UV??'uv',['run','python','scripts/verify_temporal_frozen_artifacts.py',output],{cwd:root,env:process.env,encoding:'utf8'});assert.equal(vectors.status,0,vectors.stdout+vectors.stderr);console.log(vectors.stdout);
- assert.deepEqual(errors,[]);await writeFile(resolve(output,'report.json'),JSON.stringify({report,errors},null,2));console.log('7 real Worker freezes, native/WASM Scene/XYPB/SVG/HTML parity, exact recovery and offline ChartView renders passed');
+ assert.deepEqual(errors,[]);await writeFile(resolve(output,'report.json'),JSON.stringify({report,errors},null,2));console.log('7 real Worker freezes, native/WASM Scene/XYPB/SVG/HTML/PNG parity, real PNG refusals, exact recovery and offline ChartView renders passed');
 }finally{await browser.close();await new Promise(r=>server.close(r));}

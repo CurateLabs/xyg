@@ -585,7 +585,7 @@ pub fn rebuild_composed_graph_scene(
     // order.
     let label_cap = MAX_SCENE_LABELS.saturating_sub(annotations.label_count());
     let text_cap = MAX_SCENE_LABEL_TEXT_BYTES.saturating_sub(annotations.label_text_bytes());
-    labels.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.1.cmp(&b.1)));
+    crate::shared_sort::by(&mut labels, |a, b| a.0.total_cmp(&b.0).then(a.1.cmp(&b.1)));
     let mut text_bytes = 0usize;
     let mut kept = 0usize;
     for entry in &labels {
@@ -596,7 +596,7 @@ pub fn rebuild_composed_graph_scene(
         kept += 1;
     }
     labels.truncate(kept);
-    labels.sort_by_key(|entry| entry.1);
+    crate::shared_sort::by_key(&mut labels, |entry| entry.1);
     let labels: Vec<SceneLabel> = labels.into_iter().map(|entry| entry.2).collect();
 
     // 5. Explicit legend, else the base legend.

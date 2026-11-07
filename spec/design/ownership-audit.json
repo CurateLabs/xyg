@@ -4521,6 +4521,30 @@
       "disposition": "implement-rust-wasm",
       "follow_up_issue": 59,
       "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation."
+    },
+    {
+      "path": "crates/xyg-engine/src/retained_png.rs",
+      "current_owner": "Rust safe engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "policy": "rust-engine",
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/shared_sort.rs",
+      "current_owner": "Rust safe engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "policy": "rust-engine",
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "js/src/wasm_frozen_graph.ts",
+      "current_owner": "Shared TypeScript WASM lifecycle adapter",
+      "policy": "browser-wasm-adapter",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation."
     }
   ]
 }

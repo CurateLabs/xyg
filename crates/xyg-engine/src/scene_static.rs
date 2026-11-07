@@ -131,19 +131,7 @@ pub(crate) fn rasterize_png(
     width: usize,
     height: usize,
 ) -> Result<Vec<u8>, SceneStaticExportError> {
-    let raw = width
-        .checked_mul(height)
-        .and_then(|count| count.checked_mul(4))
-        .ok_or(SceneStaticExportError::Size)?;
-    let cap = raw.saturating_add(raw / 8).saturating_add(65_536);
-    let mut out = vec![0u8; cap.max(1)];
-    let written = raster::rasterize_png_into(cmds, width, height, &mut out)
-        .ok_or(SceneStaticExportError::Raster)?;
-    if written > out.len() {
-        return Err(SceneStaticExportError::Raster);
-    }
-    out.truncate(written);
-    Ok(out)
+    crate::retained_png::rasterize_png_full(cmds,width,height).map_err(|e|match e {crate::retained_png::PngError::Size=>SceneStaticExportError::Size,crate::retained_png::PngError::Raster=>SceneStaticExportError::Raster})
 }
 
 /// Composite straight-alpha RGBA8 over white using the public JPEG rounding.

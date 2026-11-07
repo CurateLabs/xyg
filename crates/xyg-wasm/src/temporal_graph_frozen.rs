@@ -15,7 +15,6 @@ pub(super) fn execute(i: &mut Instance, offset: usize, length: usize) -> i32 {
     }
     i.output = Vec::new();
     let arena = std::mem::take(&mut i.arena);
-    let mut unavailable = false;
     let mut resource = false;
     let result = (|| {
         let bytes = arena
@@ -39,13 +38,11 @@ pub(super) fn execute(i: &mut Instance, offset: usize, length: usize) -> i32 {
         if u32at(8) != 0 {
             return xyg_engine::temporal_graph_export::execute_packet(bytes, available).map_err(
                 |e| {
-                    unavailable = e == xyg_engine::temporal::TemporalError::UnitUnsupported;
                     resource = matches!(
                         e,
                         xyg_engine::temporal::TemporalError::BudgetExceeded
                             | xyg_engine::temporal::TemporalError::CapacityExceeded
                     );
-                    ()
                 },
             );
         }
@@ -102,7 +99,6 @@ pub(super) fn execute(i: &mut Instance, offset: usize, length: usize) -> i32 {
             STATUS_RESOURCE_LIMIT,
             "frozen graph output exceeds Worker budget",
         ),
-        Err(()) if unavailable=>fail(i,STATUS_RESOURCE_LIMIT,"XYG_FROZEN_PNG_UNAVAILABLE: shared Rust PNG cannot fit the unchanged browser artifact caps"),
         Err(()) if resource=>fail(i,STATUS_RESOURCE_LIMIT,"frozen export exceeds the operation reservation"),
         Err(()) => fail(i, STATUS_INVALID_ARGUMENT, "frozen graph request rejected"),
     }

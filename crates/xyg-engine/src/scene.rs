@@ -1990,7 +1990,7 @@ pub fn symlog_ticks(
             return Err(SceneError::Limit);
         }
         ticks.push(0.0);
-        ticks.sort_by(|a, b| {
+        crate::shared_sort::by(&mut ticks, |a, b| {
             if lo > hi {
                 b.total_cmp(a)
             } else {
@@ -14694,7 +14694,7 @@ impl SceneDocument {
         }
     }
 
-    fn push_raster_poly_fill(
+    fn push_raster_poly_fill<const RETAINED: bool>(
         &self,
         out: &mut Vec<u8>,
         points: &[(f64, f64)],
@@ -14705,7 +14705,7 @@ impl SceneDocument {
         if points.len() < 3 {
             return Ok(());
         }
-        if let Some(gradient) = self.style_gradient(style_ref) {
+        if let Some(gradient) = self.style_gradient(style_ref).filter(|_| !RETAINED) {
             let bbox = points_bbox(points);
             let (g0x, g0y, g1x, g1y) = gradient_raster_line(gradient, bbox, self.layout);
             let stops = rewrite_transparent_stops(&gradient.stops);
@@ -16677,7 +16677,7 @@ impl SceneDocument {
     }
 
     #[inline(never)]
-    fn append_raster_marks(&self, out: &mut Vec<u8>, scale: f64) -> Result<(), SceneError> {
+    fn append_raster_marks<const RETAINED:bool>(&self, out: &mut Vec<u8>, scale: f64) -> Result<(), SceneError> {
         let mut index = 0;
         while index < self.records.len() {
             let record = self.records[index];
@@ -16686,6 +16686,7 @@ impl SceneDocument {
                 continue;
             }
             let style = self.styles[record.style_ref];
+            if RETAINED && !matches!(record.kind,SceneRecordKind::Scatter|SceneRecordKind::Rect|SceneRecordKind::Triangle|SceneRecordKind::Segment){return Err(SceneError::Length);}
             match record.kind {
                 SceneRecordKind::Scatter => {
                     let geometry = MarkerGeometry::new(
@@ -16693,7 +16694,7 @@ impl SceneDocument {
                         record.diameter,
                         style.stroke_width,
                     );
-                    if let Some(glyph) = self.style_glyph(record.style_ref) {
+                    if let Some(glyph) = self.style_glyph(record.style_ref).filter(|_|!RETAINED) {
                         let font_size = geometry.radius * 2.0;
                         out.push(6);
                         push_raster_f32(out, record.coordinates[0], scale)?;
@@ -16722,7 +16723,7 @@ impl SceneDocument {
                         (record.coordinates[2], record.coordinates[3]),
                         (record.coordinates[0], record.coordinates[3]),
                     ];
-                    self.push_raster_poly_fill(out, &points, style, record.style_ref, scale)?;
+                    self.push_raster_poly_fill::<RETAINED>(out, &points, style, record.style_ref, scale)?;
                     if style.stroke_width > 0.0 {
                         out.push(3);
                         out.extend_from_slice(&4u32.to_le_bytes());
@@ -16739,6 +16740,7 @@ impl SceneDocument {
                     index += 1;
                 }
                 SceneRecordKind::Image => {
+                    if RETAINED { return Err(SceneError::Length); }
                     if let Some(image) = scene_image_by_id(&self.images, record.stable_id) {
                         out.push(5); // OP_IMAGE
                         push_raster_f32(out, record.coordinates[0], scale)?;
@@ -16753,6 +16755,7 @@ impl SceneDocument {
                     index += 1;
                 }
                 SceneRecordKind::Band => {
+                    if RETAINED { return Err(SceneError::Length); }
                     let start = index;
                     let style_ref = record.style_ref;
                     while index < self.records.len() {
@@ -16776,7 +16779,7 @@ impl SceneDocument {
                         for point in run.iter().rev() {
                             points.push((point.coordinates[2], point.coordinates[3]));
                         }
-                        self.push_raster_poly_fill(out, &points, style, style_ref, scale)?;
+                        self.push_raster_poly_fill::<RETAINED>(out, &points, style, style_ref, scale)?;
                         if record.symbol != BandOutline::None as u8 {
                             let perimeter = record.symbol == BandOutline::Perimeter as u8;
                             let stroke_count = if perimeter { count } else { run.len() as u32 };
@@ -16809,7 +16812,7 @@ impl SceneDocument {
                         scale,
                         &|style_ref| self.style_gradient(style_ref).is_some(),
                         &mut |out, points, style, style_ref| {
-                            self.push_raster_poly_fill(out, points, style, style_ref, scale)
+                            self.push_raster_poly_fill::<RETAINED>(out, points, style, style_ref, scale)
                         },
                     )?;
                 }
@@ -16848,22 +16851,46 @@ impl SceneDocument {
         Ok(())
     }
 
-    pub fn to_raster_commands(&self, scale: f64) -> Result<Vec<u8>, SceneError> {
+    pub fn to_raster_commands(&self, scale: f64) -> Result<Vec<u8>, SceneError> {self.to_raster_commands_policy::<false>(scale)}
+    /// The retained adapter admits only the literal, chromeless Scene vocabulary.
+    /// Refuse unexpected decorations before allocating commands; never silently
+    /// omit an authored text/glyph/gradient/image from a full Scene.
+    pub(crate) fn to_raster_commands_retained(&self, scale: f64) -> Result<Vec<u8>, SceneError> {
+        if self.y2.is_some() || self.polar.is_some() || self.legend.is_some()
+            || self.colorbar.is_some() || !self.labels.is_empty() || !self.images.is_empty()
+            || self.text != SceneChromeText::default()
+            || self.gradients.iter().any(Option::is_some)
+            || self.marker_glyphs.iter().any(Option::is_some)
+            || [&self.chrome.x_axis, &self.chrome.y_axis].iter().any(|a|
+                a.tick_sides != 0 || a.tick_label_sides != 0 || a.axis_rgba[3] != 0)
+            || self.chrome.x_major_ticks.as_deref() != Some(&[])
+            || self.chrome.y_major_ticks.as_deref() != Some(&[])
+            || !self.chrome.x_minor_ticks.is_empty() || !self.chrome.y_minor_ticks.is_empty()
+            || self.records.iter().any(|r| !matches!(r.kind,
+                SceneRecordKind::Scatter | SceneRecordKind::Rect | SceneRecordKind::Triangle | SceneRecordKind::Segment)
+                || (r.kind == SceneRecordKind::Scatter && r.symbol > 1)
+                || (matches!(r.kind, SceneRecordKind::Rect | SceneRecordKind::Triangle) && self.styles[r.style_ref].stroke_width != 0.0)
+                || (r.kind == SceneRecordKind::Segment && (self.styles[r.style_ref].dash_count != 0 || self.styles[r.style_ref].linecap != 0))) {
+            return Err(SceneError::Length);
+        }
+        self.to_raster_commands_policy::<true>(scale)
+    }
+    fn to_raster_commands_policy<const RETAINED:bool>(&self,scale:f64)->Result<Vec<u8>,SceneError>{
         if !scale.is_finite() || scale <= 0.0 {
             return Err(SceneError::NonFinite);
         }
         self.check_mesh_budgets(true)?;
-        let x_ticks = self.resolved_axis_ticks(true)?;
-        let y_ticks = self.resolved_axis_ticks(false)?;
+        let x_ticks = if RETAINED {AxisTicks{ticks:vec![],labeled:vec![],step:1.}}else{self.resolved_axis_ticks(true)?};
+        let y_ticks = if RETAINED {AxisTicks{ticks:vec![],labeled:vec![],step:1.}}else{self.resolved_axis_ticks(false)?};
         let y2_ticks = self
             .y2
-            .as_ref()
+            .as_ref().filter(|_|!RETAINED)
             .map(|_| self.resolved_axis_ticks(AxisSlot::Y2))
             .transpose()?;
         // Grid strokes are 35 bytes each. Labeled ticks add another stroke
         // plus a bounded text command; reserve their space up front so adding
         // constant-size chrome never copies the full mark command buffer.
-        let reserved_capacity = self.raster_command_capacity(&x_ticks, &y_ticks);
+        let reserved_capacity = if RETAINED {self.raster_mark_capacity.checked_add(256).ok_or(SceneError::Limit)?}else{self.raster_command_capacity(&x_ticks,&y_ticks)};
         let mut out = Vec::with_capacity(reserved_capacity);
         let f32_push = |out: &mut Vec<u8>, value: f64| -> Result<(), SceneError> {
             let scaled = value * scale;
@@ -16914,8 +16941,8 @@ impl SceneDocument {
         f32_push(&mut out, self.layout.top)?;
         f32_push(&mut out, self.layout.right - self.layout.left)?;
         f32_push(&mut out, self.layout.bottom - self.layout.top)?;
-        self.append_raster_grid(&mut out, scale, &x_ticks, &y_ticks)?;
-        if let Some(polar) = &self.polar {
+        if !RETAINED {self.append_raster_grid(&mut out, scale, &x_ticks, &y_ticks)?;}
+        if let Some(polar) = self.polar.as_ref().filter(|_|!RETAINED) {
             // Existing analytic annular-sector opcode; coordinates/radii scale,
             // while angles remain radians. Axes reset the clip before chrome.
             out.push(18);
@@ -16928,7 +16955,8 @@ impl SceneDocument {
                 out.extend_from_slice(&(angle as f32).to_le_bytes());
             }
         }
-        self.append_raster_marks(&mut out, scale)?;
+        self.append_raster_marks::<RETAINED>(&mut out, scale)?;
+        if RETAINED {if out.len()>reserved_capacity{return Err(SceneError::Limit);}return Ok(out);}
         // Reset the plot clip before chrome, then draw the canonical bottom
         // and left axes through the same display-list primitive as line marks.
         self.append_raster_axes(&mut out, scale, &x_ticks, &y_ticks, y2_ticks.as_ref())?;
@@ -18442,7 +18470,7 @@ pub(crate) mod tests {
         assert!(validate_scene_batch(&scene).is_ok());
         assert_eq!(document.to_svg().matches(" Z ").count(), 12);
         let mut commands = Vec::new();
-        document.append_raster_marks(&mut commands, 1.0).unwrap();
+        document.append_raster_marks::<false>(&mut commands, 1.0).unwrap();
         let mut cursor = 0;
         let mut primitives = 0;
         let mut groups = 0;
@@ -20757,6 +20785,7 @@ pub(crate) mod tests {
                     dashes.checked_mul(4)?.checked_add(1)?
                 }
                 4 => 25,
+                19 => read_u32(&mut offset)?.checked_mul(24)?.checked_add(4)?,
                 6 => {
                     offset = offset.checked_add(17)?;
                     texts += 1;
@@ -25029,6 +25058,22 @@ pub(crate) mod tests {
             assert_eq!(raster_labels, Some(svg_labels));
             assert!(svg_labels >= 4);
         }
+    }
+
+    #[test]
+    fn retained_raster_rejects_unexpected_full_scene_decoration() {
+        let raw = include_bytes!("../../../spec/performance/temporal-native-render-2026-11-07/artifacts/retained-later.xyfg");
+        let encoded = crate::temporal_graph_export::canonical_scene(raw, [77,110,159,191], 384*1024*1024).unwrap();
+        let mut document = SceneDocument::decode(&encoded).unwrap();
+        assert!(document.to_raster_commands_retained(1.0).is_ok());
+        document.text.title = "Native text must remain visible".into();
+        assert!(document.to_raster_commands_retained(1.0).is_err());
+        let full = document.to_raster_commands(1.0).unwrap();
+        assert!(raster_text_count(&full).unwrap() > 0);
+        document.text.title.clear();
+        document.marker_glyphs = vec![Some("A".into()); document.styles.len()];
+        assert!(document.to_raster_commands_retained(1.0).is_err());
+        assert!(raster_text_count(&document.to_raster_commands(1.0).unwrap()).unwrap() > 0);
     }
 
     #[test]

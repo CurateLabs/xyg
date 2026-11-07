@@ -11,9 +11,9 @@ name = "xyg_wasm"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-# The browser adapter deliberately excludes native raster/PNG export. Browser
-# painting stays in the existing TypeScript/WebGL client.
-xyg-engine = { path = "../xyg-engine", default-features = false }
+# Retained PNG shares the native raster/encoder implementation. Full native
+# formats stay disabled; interactive paint uses the existing ChartView client.
+xyg-engine = { path = "../xyg-engine", default-features = false, features = ["frozen-raster"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 # Native-only ABI parity tests call the shipped C seam. Keep xyg-core and its

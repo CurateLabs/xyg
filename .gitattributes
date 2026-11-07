@@ -288,3 +288,17 @@ spec/performance/temporal-worker-export-2026-11-07/predecessor403/** -text
 scripts/gen_capability_matrix.py text eol=lf
 spec/performance/temporal-worker-export-2026-11-07/*.txt text eol=lf
 spec/performance/temporal-worker-export-2026-11-07/*.patch whitespace=-blank-at-eol,-blank-at-eof
+
+# Shared PNG source/dependency bindings and append-only continuation evidence.
+vendor/** text eol=lf
+# Preserve the upstream Apache license verbatim, including its final blank line.
+vendor/crc32fast/LICENSE-APACHE whitespace=-blank-at-eof
+spec/performance/temporal-shared-png-2026-11-07/*.json text eol=lf
+spec/performance/temporal-shared-png-2026-11-07/*.md text eol=lf
+spec/performance/temporal-shared-png-2026-11-07/*.txt text eol=lf
+spec/performance/temporal-shared-png-2026-11-07/*.gz -text
+spec/performance/temporal-shared-png-2026-11-07/artifacts/** -text
+spec/performance/temporal-shared-png-2026-11-07/*.patch -text
+spec/performance/temporal-shared-png-2026-11-07/*.patch whitespace=-blank-at-eol,-blank-at-eof
+pyproject.toml text eol=lf
+scripts/verify_sdist.py text eol=lf

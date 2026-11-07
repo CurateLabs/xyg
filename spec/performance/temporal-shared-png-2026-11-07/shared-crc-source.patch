@@ -1,0 +1,1575 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 1c7cc61baa30aa0d051671a8c9af0fd6dc0d4516..504a4fdb4047f6cc08ac13f32baf4e2254ec920d 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -176,8 +176,6 @@ checksum = "baf0a07a401f374238ab8e2f11a104d2851bf9ce711ec69804834de8af45c7af"
+ [[package]]
+ name = "crc32fast"
+ version = "1.5.0"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "9481c1c90cbf2ac953f07c8d4a58aa3945c425b7185c9154d67a65e4230da511"
+ dependencies = [
+  "cfg-if",
+ ]
+@@ -383,8 +381,6 @@ dependencies = [
+ [[package]]
+ name = "png"
+ version = "0.18.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "60769b8b31b2a9f263dae2776c37b1b28ae246943cf719eb6946a1db05128a61"
+ dependencies = [
+  "bitflags",
+  "crc32fast",
+diff --git a/Cargo.toml b/Cargo.toml
+index 77d654969a2f84bf6a09573c0bcd08b048bf68c7..682c2fac2e6d8d67f8e919e59960c882e254d8ae 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -1,5 +1,6 @@
+ [workspace]
+ resolver = "2"
++exclude = ["vendor/png", "vendor/crc32fast"]
+ members = ["crates/xyg-engine", "crates/xyg-core", "crates/xyg-wasm"]
+ 
+ # Whole-program optimization; `strip` keeps .dynsym, which ctypes binds
+@@ -10,3 +11,8 @@ members = ["crates/xyg-engine", "crates/xyg-core", "crates/xyg-wasm"]
+ lto = "fat"
+ codegen-units = 1
+ strip = true
++
++# Auditable upstream 0.18.1 with shared compile-time encoder capability.
++[patch.crates-io]
++png = { path = "vendor/png" }
++crc32fast = { path = "vendor/crc32fast" }
+diff --git a/crates/xyg-engine/Cargo.toml b/crates/xyg-engine/Cargo.toml
+index 713ea179bc2c7e325d1695aa2217e2d312caf74d..eb7af34030309c7fd94d18d4860e1c00effa436d 100644
+--- a/crates/xyg-engine/Cargo.toml
++++ b/crates/xyg-engine/Cargo.toml
+@@ -11,16 +11,18 @@ name = "xyg_engine"
+ 
+ [features]
+ # Native hosts keep the complete raster/PNG exporter. The direct-browser WASM
+-# adapter disables defaults so browser compute does not carry an unused PNG
+-# encoder or the baked raster font atlas.
++# adapter disables defaults and admits only the chromeless retained raster
++# capability; the same renderer/PNG encoder can dead strip unused native formats.
+ default = ["raster"]
+ raster = ["dep:png", "dep:flate2"]
++# Same raster/PNG implementation, restricted to retained paint command capabilities.
++frozen-raster = ["dep:png"]
+ 
+ # Static chart export uses the focused `png` crate's fdeflate fast path;
+ # compression belongs beside rasterization so the hot path never round-trips
+ # a full framebuffer through a host language. PDF FlateDecode streams use the
+ # already-locked `flate2` (miniz_oxide) crate so native PDF needs no crates.io
+-# fetch; WASM keeps default-features off and does not carry either encoder.
++# fetch. WASM retains the shared PNG capability, without native PDF/JPEG/WebP.
+ [dependencies]
+ png = { version = "0.18.1", optional = true }
+ flate2 = { version = "1.1.9", optional = true, default-features = false, features = ["rust_backend"] }
+diff --git a/crates/xyg-engine/src/dashboard.rs b/crates/xyg-engine/src/dashboard.rs
+index 1937624312eb17d4a91532d9de3278e57130502e..efe7dbc86e6d88cd6496b071c0c8ee20a3c682d3 100644
+--- a/crates/xyg-engine/src/dashboard.rs
++++ b/crates/xyg-engine/src/dashboard.rs
+@@ -41,7 +41,7 @@ pub fn plan_dashboard_resources(
+         return None;
+     }
+     let mut order: Vec<usize> = (0..resources.len()).collect();
+-    order.sort_by_key(|&index| {
++    crate::shared_sort::by_key(&mut order, |&index| {
+         let resource = resources[index];
+         (
+             std::cmp::Reverse(resource.flags & DASHBOARD_INTERACTING != 0),
+diff --git a/crates/xyg-engine/src/geo_fill.rs b/crates/xyg-engine/src/geo_fill.rs
+index e5420ab9bf7a47a41753b54eb97c6b0d77a4e219..17d0f74cdd76ff7e8052c9ced32be38f4b1997b1 100644
+--- a/crates/xyg-engine/src/geo_fill.rs
++++ b/crates/xyg-engine/src/geo_fill.rs
+@@ -59,7 +59,7 @@ pub fn tessellate(rings: &[(&[f64], bool)]) -> Result<Vec<[f64; 6]>, GeoError> {
+             }
+         }
+     }
+-    ys.sort_by(f64::total_cmp);
++    crate::shared_sort::by(&mut ys, f64::total_cmp);
+     ys.dedup();
+     if ys.len().saturating_mul(edges.len()) > MAX_FILL_WORK {
+         return Err(GeoError::ResourceLimit);
+@@ -77,7 +77,7 @@ pub fn tessellate(rings: &[(&[f64], bool)]) -> Result<Vec<[f64; 6]>, GeoError> {
+                 .copied()
+                 .filter(|e| mid > e.a.1.min(e.b.1) && mid < e.a.1.max(e.b.1)),
+         );
+-        active.sort_by(|a, b| a.x(mid).total_cmp(&b.x(mid)).then(a.ring.cmp(&b.ring)));
++        crate::shared_sort::by(&mut active, |a, b| a.x(mid).total_cmp(&b.x(mid)).then(a.ring.cmp(&b.ring)));
+         for pair in active.windows(2) {
+             for y in [y0, y1] {
+                 let (left, right) = (pair[0].x(y), pair[1].x(y));
+diff --git a/crates/xyg-engine/src/geo_viewport.rs b/crates/xyg-engine/src/geo_viewport.rs
+index 52844529dca04a96a0520a0aaf14815eafdaf949..c396f81dcc4f9c43002ab40cf5094cbce4e48db7 100644
+--- a/crates/xyg-engine/src/geo_viewport.rs
++++ b/crates/xyg-engine/src/geo_viewport.rs
+@@ -1381,7 +1381,7 @@ fn clip_ring_components(
+                 crossings.push((position, p));
+             }
+         }
+-        crossings.sort_by(|a, b| a.0.total_cmp(&b.0));
++        crate::shared_sort::by(&mut crossings, |a, b| a.0.total_cmp(&b.0));
+         if crossings.len() % 2 != 0 {
+             return Err(GeoError::InvalidArgument);
+         }
+@@ -1435,7 +1435,7 @@ impl RingGraph {
+         for &(a, b) in &self.edges {
+             nodes.extend([a, b]);
+         }
+-        nodes.sort_by(cmp);
++        crate::shared_sort::by(&mut nodes, cmp);
+         nodes.dedup();
+         let mut edges = Vec::with_capacity(self.edges.len());
+         for (a, b) in self.edges {
+diff --git a/crates/xyg-engine/src/graph.rs b/crates/xyg-engine/src/graph.rs
+index 4812a9b89410d5111a989588589a2d6b39dda15a..ba38580caa40aeaa31949c0e06199a4505a0c155 100644
+--- a/crates/xyg-engine/src/graph.rs
++++ b/crates/xyg-engine/src/graph.rs
+@@ -2166,7 +2166,7 @@ pub fn layout_concentric(n: usize, degrees: &[u64], out_x: &mut [f64], out_y: &m
+         return false;
+     }
+     let mut order: Vec<usize> = (0..n).collect();
+-    order.sort_by_key(|&i| std::cmp::Reverse(degrees[i]));
++    crate::shared_sort::by_key(&mut order, |&i| std::cmp::Reverse(degrees[i]));
+     let rings = ((n as f64).sqrt().ceil() as usize).max(1);
+     let mut idx = 0;
+     for ring in 0..rings {
+diff --git a/crates/xyg-engine/src/graph_marker_contour.rs b/crates/xyg-engine/src/graph_marker_contour.rs
+index 71c79a708937e0655cde3b5030a46ca7edaccdf2..c3925c761d498f63302570ced1e8efa688c3e2d3 100644
+--- a/crates/xyg-engine/src/graph_marker_contour.rs
++++ b/crates/xyg-engine/src/graph_marker_contour.rs
+@@ -121,7 +121,7 @@ fn directions(size: f64, shape: u8, lo: f64, hi: f64) -> Vec<[f64; 2]> {
+             3
+         }
+     };
+-    a.sort_by(|a, b| {
++    crate::shared_sort::by(&mut a, |a, b| {
+         quadrant(a)
+             .cmp(&quadrant(b))
+             .then_with(|| (b[0] * a[1]).total_cmp(&(a[0] * b[1])))
+diff --git a/crates/xyg-engine/src/graph_scene.rs b/crates/xyg-engine/src/graph_scene.rs
+index efa2a34461dfb44dec261d8b4ad7154511d3ebb1..a0b712d779156535bd58555c4b08b58e8df581be 100644
+--- a/crates/xyg-engine/src/graph_scene.rs
++++ b/crates/xyg-engine/src/graph_scene.rs
+@@ -585,7 +585,7 @@ pub fn rebuild_composed_graph_scene(
+     // order.
+     let label_cap = MAX_SCENE_LABELS.saturating_sub(annotations.label_count());
+     let text_cap = MAX_SCENE_LABEL_TEXT_BYTES.saturating_sub(annotations.label_text_bytes());
+-    labels.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.1.cmp(&b.1)));
++    crate::shared_sort::by(&mut labels, |a, b| a.0.total_cmp(&b.0).then(a.1.cmp(&b.1)));
+     let mut text_bytes = 0usize;
+     let mut kept = 0usize;
+     for entry in &labels {
+@@ -596,7 +596,7 @@ pub fn rebuild_composed_graph_scene(
+         kept += 1;
+     }
+     labels.truncate(kept);
+-    labels.sort_by_key(|entry| entry.1);
++    crate::shared_sort::by_key(&mut labels, |entry| entry.1);
+     let labels: Vec<SceneLabel> = labels.into_iter().map(|entry| entry.2).collect();
+ 
+     // 5. Explicit legend, else the base legend.
+diff --git a/crates/xyg-engine/src/graph_style.rs b/crates/xyg-engine/src/graph_style.rs
+index 9d3afb4789a4e85625ef15e4245be22dc3bd9043..450a554952e480302f1a46d70eca52c7f011d70b 100644
+--- a/crates/xyg-engine/src/graph_style.rs
++++ b/crates/xyg-engine/src/graph_style.rs
+@@ -191,6 +191,7 @@ fn metric_unit(value: f64, domain: (f64, f64)) -> f32 {
+ /// Resolve canonical GraphForge class/epistemic/status/metric fields to paint.
+ /// Input vocabularies are closed (0..=7), outputs are all-or-nothing, and the
+ /// same routine serves nodes and edges (`edge=true`).
++#[cfg_attr(target_arch = "wasm32", inline(never))]
+ pub fn resolve_semantic_styles(
+     input: SemanticStyleInput<'_>,
+     out: &mut [ResolvedGraphStyle],
+@@ -487,6 +488,7 @@ fn label_collision(
+ /// Zooming in therefore only adds labels, and no two painted labels overlap.
+ /// Hosts evaluate `s = min(sx, sy)`; with anisotropic scales that is
+ /// conservative, never overlapping.
++#[cfg_attr(target_arch = "wasm32", inline(never))]
+ pub fn graph_label_plan(
+     input: &GraphLabelPlanInput<'_>,
+     out: &mut [GraphLabelPlan],
+@@ -553,7 +555,7 @@ pub fn graph_label_plan(
+         };
+     }
+     let mut order: Vec<usize> = (0..n).filter(|&i| accepted[i] != 0).collect();
+-    order.sort_by(|&a, &b| {
++    crate::shared_sort::by(&mut order, |&a, &b| {
+         input.states[b]
+             .cmp(&input.states[a])
+             .then_with(|| priorities[b].total_cmp(&priorities[a]))
+@@ -775,6 +777,7 @@ pub struct SemanticPaintLayers {
+     pub head: bool,
+ }
+ 
++#[cfg_attr(target_arch = "wasm32", inline(never))]
+ pub fn semantic_paint_layers(
+     style: &ResolvedGraphStyle,
+     class: u8,
+@@ -998,7 +1001,7 @@ fn encode_semantic_graph_scene_internal(
+         ];
+     }
+     let mut hierarchy_order: Vec<usize> = (0..n).collect();
+-    hierarchy_order.sort_by_key(|&index| (std::cmp::Reverse(hierarchy.depth[index]), index));
++    crate::shared_sort::by_key(&mut hierarchy_order, |&index| (std::cmp::Reverse(hierarchy.depth[index]), index));
+     for index in hierarchy_order {
+         let Some(parent) = hierarchy.direct_parent[index] else {
+             continue;
+@@ -1258,7 +1261,7 @@ fn encode_semantic_graph_scene_internal(
+             });
+         }
+     }
+-    candidates.sort_by_key(|candidate| (std::cmp::Reverse(candidate.state), candidate.stable_id));
++    crate::shared_sort::by_key(&mut candidates, |candidate| (std::cmp::Reverse(candidate.state), candidate.stable_id));
+     let mut occupied: Vec<(f64, f64, f64, f64)> = Vec::new();
+     let mut labels = Vec::new();
+     for candidate in candidates {
+@@ -1532,7 +1535,7 @@ fn encode_semantic_graph_scene_internal(
+             descriptors.push(descriptor);
+         }
+     }
+-    descriptors.sort_by_key(|item| (item.field, item.value));
++    crate::shared_sort::by_key(&mut descriptors, |item| (item.field, item.value));
+     let mut legend_entries = Vec::with_capacity(descriptors.len());
+     if let Some(custom) = legend_override {
+         descriptors.clear();
+@@ -1666,7 +1669,7 @@ pub fn label_accept(priorities: &[f64], budget: u64, floor: f64, out: &mut [u8])
+         .enumerate()
+         .filter(|(_, p)| p.is_finite() && (!floor.is_finite() || *p >= floor))
+         .collect();
+-    ranked.sort_by(|a, b| b.1.total_cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
++    crate::shared_sort::by(&mut ranked, |a, b| b.1.total_cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+     let take = usize::try_from(budget)
+         .unwrap_or(usize::MAX)
+         .min(ranked.len());
+@@ -1686,6 +1689,7 @@ struct CompoundHierarchy {
+     depth: Vec<usize>,
+ }
+ 
++#[cfg_attr(target_arch = "wasm32", inline(never))]
+ fn compound_hierarchy(
+     parents: &[u64],
+     validity: &[u8],
+@@ -1754,7 +1758,7 @@ fn compound_hierarchy(
+         }
+     }
+     let mut order: Vec<usize> = (0..n).collect();
+-    order.sort_by_key(|&index| (depth[index], index));
++    crate::shared_sort::by_key(&mut order, |&index| (depth[index], index));
+     let mut representative: Vec<usize> = (0..n).collect();
+     let mut visible = vec![true; n];
+     for &index in &order {
+@@ -1854,6 +1858,7 @@ pub struct CompoundCollapse {
+ /// routes it: collapsed groups stay visible, descendants hide, crossing edges
+ /// route to the nearest visible collapsed ancestor, newly internal edges drop,
+ /// and hidden interaction state propagates to the representative.
++#[cfg_attr(target_arch = "wasm32", inline(never))]
+ pub fn compound_collapse(
+     parents: &[u64],
+     validity: &[u8],
+@@ -1913,7 +1918,7 @@ fn compound_frame_pads(hierarchy: &CompoundHierarchy, radius_px: &[f64]) -> Vec<
+         })
+         .collect();
+     let mut order: Vec<usize> = (0..n).collect();
+-    order.sort_by_key(|&index| (std::cmp::Reverse(hierarchy.depth[index]), index));
++    crate::shared_sort::by_key(&mut order, |&index| (std::cmp::Reverse(hierarchy.depth[index]), index));
+     for index in order {
+         if let Some(parent) = hierarchy.direct_parent[index] {
+             reach[parent] = reach[parent].max(reach[index]);
+@@ -1941,6 +1946,7 @@ pub struct CompoundFrame {
+ /// Frames for every visible compound node (#34). `stroke` / `opacity` are the
+ /// node's resolved paint; an all-zero stroke takes the theme's neutral.
+ #[allow(clippy::too_many_arguments)]
++#[cfg_attr(target_arch = "wasm32", inline(never))]
+ pub fn compound_frames(
+     x: &[f64],
+     y: &[f64],
+@@ -1971,7 +1977,7 @@ pub fn compound_frames(
+         hierarchy.bounds[index] = [x[index], x[index], y[index], y[index]];
+     }
+     let mut order: Vec<usize> = (0..n).collect();
+-    order.sort_by_key(|&index| (std::cmp::Reverse(hierarchy.depth[index]), index));
++    crate::shared_sort::by_key(&mut order, |&index| (std::cmp::Reverse(hierarchy.depth[index]), index));
+     for index in order {
+         let Some(parent) = hierarchy.direct_parent[index] else {
+             continue;
+@@ -2033,6 +2039,7 @@ fn collapsed_node_flags(flags: &[u32], hierarchy: &CompoundHierarchy) -> Option<
+ #[allow(clippy::too_many_arguments)]
+ /// Validate one parent forest and emit direct membership plus transitive bounds.
+ /// Outputs remain untouched when any shape, validity, parent, or cycle is invalid.
++#[cfg_attr(target_arch = "wasm32", inline(never))]
+ pub fn compound_bounds(
+     x: &[f64],
+     y: &[f64],
+@@ -2090,7 +2097,7 @@ pub fn compound_bounds(
+         is_compound[i] = u8::from(hierarchy.is_compound[i]);
+     }
+     let mut order: Vec<usize> = (0..n).collect();
+-    order.sort_by_key(|&index| (std::cmp::Reverse(hierarchy.depth[index]), index));
++    crate::shared_sort::by_key(&mut order, |&index| (std::cmp::Reverse(hierarchy.depth[index]), index));
+     for index in order {
+         let Some(parent) = hierarchy.direct_parent[index] else {
+             continue;
+diff --git a/crates/xyg-engine/src/graphforge/container.rs b/crates/xyg-engine/src/graphforge/container.rs
+index e28c1cbec241692225212f38f1df24117d34d9d9..b8c7088af6c5f5328a91d6698711a6864659ddc1 100644
+--- a/crates/xyg-engine/src/graphforge/container.rs
++++ b/crates/xyg-engine/src/graphforge/container.rs
+@@ -103,6 +103,7 @@ impl Builder {
+         }
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub(crate) fn push(&mut self, name: &str, index: usize, dtype: Dtype, count: usize, payload: Vec<u8>) {
+         debug_assert!(valid_name(name), "section name {name}");
+         self.sections.push(Pending {
+@@ -114,38 +115,46 @@ impl Builder {
+         });
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn u8s(&mut self, name: &str, index: usize, values: &[u8]) {
+         self.push(name, index, Dtype::U8, values.len(), values.to_vec());
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn u32s(&mut self, name: &str, index: usize, values: &[u32]) {
+         let payload = values.iter().flat_map(|v| v.to_le_bytes()).collect();
+         self.push(name, index, Dtype::U32, values.len(), payload);
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn u64s(&mut self, name: &str, index: usize, values: &[u64]) {
+         let payload = values.iter().flat_map(|v| v.to_le_bytes()).collect();
+         self.push(name, index, Dtype::U64, values.len(), payload);
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn i64s(&mut self, name: &str, index: usize, values: &[i64]) {
+         let payload = values.iter().flat_map(|v| v.to_le_bytes()).collect();
+         self.push(name, index, Dtype::I64, values.len(), payload);
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn f64s(&mut self, name: &str, index: usize, values: &[f64]) {
+         let payload = values.iter().flat_map(|v| v.to_le_bytes()).collect();
+         self.push(name, index, Dtype::F64, values.len(), payload);
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn bytes(&mut self, name: &str, index: usize, value: &[u8]) {
+         self.push(name, index, Dtype::Bytes, value.len(), value.to_vec());
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn uuids(&mut self, name: &str, index: usize, values: &[Uuid]) {
+         self.push(name, index, Dtype::Uuid, values.len(), values.concat());
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn utf8(&mut self, name: &str, index: usize, value: &str) {
+         self.push(
+             name,
+@@ -183,6 +192,7 @@ impl Builder {
+         }
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn finish(self) -> Vec<u8> {
+         let count = self.sections.len();
+         let mut names = Vec::new();
+@@ -245,16 +255,19 @@ impl<'a> Section<'a> {
+         }
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn as_u8(&self, name: &str) -> GfResult<&'a [u8]> {
+         self.expect(Dtype::U8, name)?;
+         Ok(self.payload)
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn as_bytes(&self, name: &str) -> GfResult<&'a [u8]> {
+         self.expect(Dtype::Bytes, name)?;
+         Ok(self.payload)
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn as_u32(&self, name: &str) -> GfResult<Vec<u32>> {
+         self.expect(Dtype::U32, name)?;
+         Ok(self
+@@ -264,6 +277,7 @@ impl<'a> Section<'a> {
+             .collect())
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn as_i64(&self, name: &str) -> GfResult<Vec<i64>> {
+         self.expect(Dtype::I64, name)?;
+         Ok(self
+@@ -273,6 +287,7 @@ impl<'a> Section<'a> {
+             .collect())
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn as_u64(&self, name: &str) -> GfResult<Vec<u64>> {
+         self.expect(Dtype::U64, name)?;
+         Ok(self
+@@ -282,6 +297,7 @@ impl<'a> Section<'a> {
+             .collect())
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn as_f64(&self, name: &str) -> GfResult<Vec<f64>> {
+         self.expect(Dtype::F64, name)?;
+         Ok(self
+@@ -291,6 +307,7 @@ impl<'a> Section<'a> {
+             .collect())
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn as_uuids(&self, name: &str) -> GfResult<Vec<Uuid>> {
+         self.expect(Dtype::Uuid, name)?;
+         Ok(self
+@@ -300,6 +317,7 @@ impl<'a> Section<'a> {
+             .collect())
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn as_utf8(&self, name: &str) -> GfResult<&'a str> {
+         self.expect(Dtype::Utf8, name)?;
+         std::str::from_utf8(self.payload).map_err(|_| {
+@@ -449,6 +467,7 @@ impl<'a> Container<'a> {
+         Ok(Self { sections })
+     }
+ 
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     pub fn get(&self, name: &str, index: u32) -> Option<Section<'a>> {
+         self.sections
+             .iter()
+diff --git a/crates/xyg-engine/src/graphforge/interaction.rs b/crates/xyg-engine/src/graphforge/interaction.rs
+index 3f07ce1477bb61560b8e62092b8073b98411d8b4..504750fd0a1b64361e0a21b9aadd7030d94e5788 100644
+--- a/crates/xyg-engine/src/graphforge/interaction.rs
++++ b/crates/xyg-engine/src/graphforge/interaction.rs
+@@ -539,6 +539,33 @@ impl GraphSession {
+         &mut self,
+         validate: impl FnOnce(&Self, &TemporalGraph)->Result<(), InteractionStatus>,
+         f: impl FnOnce(&mut Self, World<'_>)->R,
++    )->Result<R, InteractionStatus> {
++        #[cfg(target_arch = "wasm32")]
++        {
++            let (mut validate, mut f) = (Some(validate), Some(f));
++            self.locked_validated_erased(
++                &mut |s, g| validate.take().expect("one owner validation")(s, g),
++                &mut |s, w| f.take().expect("one owner operation")(s, w),
++            )
++        }
++        #[cfg(not(target_arch = "wasm32"))]
++        self.locked_validated_impl(validate, f)
++    }
++
++    #[cfg(target_arch = "wasm32")]
++    #[inline(never)]
++    fn locked_validated_erased<R>(
++        &mut self,
++        validate: &mut dyn FnMut(&Self, &TemporalGraph) -> Result<(), InteractionStatus>,
++        f: &mut dyn FnMut(&mut Self, World<'_>) -> R,
++    ) -> Result<R, InteractionStatus> {
++        self.locked_validated_impl(validate, f)
++    }
++
++    fn locked_validated_impl<R>(
++        &mut self,
++        validate: impl FnOnce(&Self, &TemporalGraph)->Result<(), InteractionStatus>,
++        f: impl FnOnce(&mut Self, World<'_>)->R,
+     )->Result<R, InteractionStatus> {
+         let bound = match &self.slot {
+             StateSlot::Bound { host, handle } => Some((Arc::clone(host), *handle)),
+@@ -672,6 +699,30 @@ impl GraphSession {
+         &mut self,
+         header: OpHeader,
+         apply: impl FnOnce(&mut Self, &mut World<'_>) -> Result<OpOutcome, InteractionStatus>,
++    ) -> Result<OpOutcome, InteractionStatus> {
++        #[cfg(target_arch = "wasm32")]
++        {
++            let mut apply = Some(apply);
++            self.operate_erased(header, &mut |s, w| apply.take().expect("one graph operation")(s, w))
++        }
++        #[cfg(not(target_arch = "wasm32"))]
++        self.operate_impl(header, apply)
++    }
++
++    #[cfg(target_arch = "wasm32")]
++    #[inline(never)]
++    fn operate_erased(
++        &mut self,
++        header: OpHeader,
++        apply: &mut dyn FnMut(&mut Self, &mut World<'_>) -> Result<OpOutcome, InteractionStatus>,
++    ) -> Result<OpOutcome, InteractionStatus> {
++        self.operate_impl(header, apply)
++    }
++
++    fn operate_impl(
++        &mut self,
++        header: OpHeader,
++        apply: impl FnOnce(&mut Self, &mut World<'_>) -> Result<OpOutcome, InteractionStatus>,
+     ) -> Result<OpOutcome, InteractionStatus> {
+         match &self.last_op {
+             _ if header.op_seq == 0 => return invalid(),
+diff --git a/crates/xyg-engine/src/graphforge/interaction/wire.rs b/crates/xyg-engine/src/graphforge/interaction/wire.rs
+index 145272706e3c4d7d6f2d8dbce3d4d6c63db156b7..2b65d054abd91296c91a714c5ce28bf7633385cb 100644
+--- a/crates/xyg-engine/src/graphforge/interaction/wire.rs
++++ b/crates/xyg-engine/src/graphforge/interaction/wire.rs
+@@ -1345,6 +1345,7 @@ fn selection_projection(b: &mut Builder, s: &GraphSession, state: &GraphInteract
+     Ok(())
+ }
+ 
++#[cfg_attr(target_arch = "wasm32", inline(never))]
+ fn serialize(s: &mut GraphSession, r: &Request<'_>, out: &OpOutcome, document: &[u8]) -> Result<Vec<u8>> {
+     let mut b = Builder::new(RESULT_MAGIC);
+     b.u32s("status.u32", 0, &[0]);
+diff --git a/crates/xyg-engine/src/hexbin.rs b/crates/xyg-engine/src/hexbin.rs
+index ab93112ab31d0162fde3afc3a871cd8120417acc..8c7d59f453529be3dad7d6453316a0497eb77a42 100644
+--- a/crates/xyg-engine/src/hexbin.rs
++++ b/crates/xyg-engine/src/hexbin.rs
+@@ -529,7 +529,7 @@ pub fn hexbin_groups(
+     let mut lengths = Vec::new();
+     let mut indices = Vec::new();
+ 
+-    members.sort_by_key(|&(lattice, flat, index)| (lattice, flat, index));
++    crate::shared_sort::by_key(&mut members, |&(lattice, flat, index)| (lattice, flat, index));
+     let mut cursor = 0usize;
+     for (lattice, n, grid_w_lat) in [(0u8, n1, grid_w + 1), (1u8, n2, grid_w)] {
+         let counts_lat = if lattice == 0 { &count1 } else { &count2 };
+diff --git a/crates/xyg-engine/src/kernels.rs b/crates/xyg-engine/src/kernels.rs
+index 6b30c811eca4bb34679f27f02c26900297a33b8b..307af5bf44a6e0f10b53803d78371b89f88a2301 100644
+--- a/crates/xyg-engine/src/kernels.rs
++++ b/crates/xyg-engine/src/kernels.rs
+@@ -1830,7 +1830,7 @@ fn resolve_host_stop_positions(positions: &[Option<f64>]) -> Vec<f64> {
+     if positions[count - 1].is_none() {
+         anchors.push((count - 1, 1.0));
+     }
+-    anchors.sort_by_key(|(index, _)| *index);
++    crate::shared_sort::by_key(&mut anchors, |(index, _)| *index);
+     let mut prev = 0.0;
+     for anchor in &mut anchors {
+         prev = anchor.1.max(prev);
+@@ -9204,7 +9204,7 @@ pub fn argsort_stable_f64(data: &[f64]) -> Option<Vec<u32>> {
+         return None;
+     }
+     let mut indices: Vec<u32> = (0..data.len() as u32).collect();
+-    indices.sort_by(|&i, &j| {
++    crate::shared_sort::by(&mut indices, |&i, &j| {
+         let a = data[i as usize];
+         let b = data[j as usize];
+         match (a.is_nan(), b.is_nan()) {
+diff --git a/crates/xyg-engine/src/lib.rs b/crates/xyg-engine/src/lib.rs
+index 9b424ed5eccab3cbfa654addd8203df435e665e8..d4c50d4ba5db102ff2c1881b49c40bb5ff700707 100644
+--- a/crates/xyg-engine/src/lib.rs
++++ b/crates/xyg-engine/src/lib.rs
+@@ -33,7 +33,7 @@
+     clippy::useless_vec
+ )] // Scene/kernel ABI-shaped numerical code; CI clippy uses `-D warnings`.
+ 
+-#[cfg(feature = "raster")]
++#[cfg(any(feature = "raster", feature = "frozen-raster"))]
+ #[allow(dead_code)] // generated by scripts/gen_font.py; some metrics unused by the rasterizer
+ mod font;
+ mod simd;
+@@ -126,7 +126,7 @@ pub mod pdf;
+ pub mod png_encode;
+ pub mod polar;
+ pub mod projection;
+-#[cfg(feature = "raster")]
++#[cfg(any(feature = "raster", feature = "frozen-raster"))]
+ pub mod raster;
+ pub mod sankey;
+ pub mod scene;
+@@ -299,3 +299,8 @@ pub mod coordination;
+ pub mod temporal_graph_export;
+ 
+ mod graph_marker_contour;
++
++#[cfg(any(feature="raster",feature="frozen-raster"))]
++mod retained_png;
++
++mod shared_sort;
+diff --git a/crates/xyg-engine/src/marker_geometry.rs b/crates/xyg-engine/src/marker_geometry.rs
+index 616b3d1e0ef3174b8ad724948e89f90e9b36fd73..bc3132f937efed526b26cf9b5d77334da6222afd 100644
+--- a/crates/xyg-engine/src/marker_geometry.rs
++++ b/crates/xyg-engine/src/marker_geometry.rs
+@@ -130,7 +130,7 @@ pub(crate) fn symbol_sdf(px: f32, py: f32, r: f32, sym: u8) -> f32 {
+ }
+ 
+ #[inline]
+-#[cfg(feature = "raster")]
++#[cfg(any(feature = "raster", feature = "frozen-raster"))]
+ pub(crate) fn symbol_extent(r: f32, sym: u8) -> f32 {
+     crate::scene::marker_symbol_extent(f64::from(r), sym) as f32
+ }
+diff --git a/crates/xyg-engine/src/raster.rs b/crates/xyg-engine/src/raster.rs
+index a4a9d5e0bfa38689b3b74b03f097a926d3c7e303..0053024e2c1a0084d0420422758206456eedd8c1 100644
+--- a/crates/xyg-engine/src/raster.rs
++++ b/crates/xyg-engine/src/raster.rs
+@@ -490,8 +490,8 @@ fn fill_rect(cv: &mut Canvas<'_>, pts: &[(f32, f32)], rgba: [f32; 4]) -> bool {
+     }
+     let mut xs = [pts[0].0, pts[1].0, pts[2].0, pts[3].0];
+     let mut ys = [pts[0].1, pts[1].1, pts[2].1, pts[3].1];
+-    xs.sort_by(f32::total_cmp);
+-    ys.sort_by(f32::total_cmp);
++    crate::shared_sort::by(&mut xs, f32::total_cmp);
++    crate::shared_sort::by(&mut ys, f32::total_cmp);
+     let (x0, x1, y0, y1) = (xs[0], xs[3], ys[0], ys[3]);
+     let eps = 1e-4;
+     if xs[1] - x0 > eps || x1 - xs[2] > eps || ys[1] - y0 > eps || y1 - ys[2] > eps {
+@@ -537,16 +537,17 @@ fn fill_rect(cv: &mut Canvas<'_>, pts: &[(f32, f32)], rgba: [f32; 4]) -> bool {
+ /// Per-row coverage in [0,1] over the polygon's x-span, with `color_at` giving
+ /// the paint per pixel (flat or gradient). Non-zero winding, `SS` vertical
+ /// samples, analytic horizontal endpoint coverage.
+-fn fill_poly(cv: &mut Canvas<'_>, pts: &[(f32, f32)], color_at: impl FnMut(f32, f32) -> [f32; 4]) {
+-    fill_contours(cv, pts, pts.len(), false, color_at);
++fn fill_poly(cv: &mut Canvas<'_>, pts: &[(f32, f32)], mut color_at: impl FnMut(f32, f32) -> [f32; 4]) {
++    fill_contours(cv, pts, pts.len(), false, &mut color_at);
+ }
+ 
++#[inline(never)]
+ fn fill_contours(
+     cv: &mut Canvas<'_>,
+     pts: &[(f32, f32)],
+     contour_size: usize,
+     canonical_edges: bool,
+-    mut color_at: impl FnMut(f32, f32) -> [f32; 4],
++    color_at: &mut dyn FnMut(f32, f32) -> [f32; 4],
+ ) {
+     if contour_size < 3 || pts.len() < contour_size || pts.len() % contour_size != 0 {
+         return;
+@@ -597,7 +598,7 @@ fn fill_contours(
+             if xs.len() < 2 {
+                 continue;
+             }
+-            xs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
++            crate::shared_sort::by(&mut xs, |a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+             let mut wind = 0;
+             for i in 0..xs.len() - 1 {
+                 wind += xs[i].1;
+@@ -779,9 +780,29 @@ fn stroke_shaped(
+     dash: &[f32],
+     cap: u8,
+ ) {
++    stroke_shaped_policy::<false>(cv, pts, width, rgba, closed, dash, cap);
++}
++
++fn stroke_shaped_policy<const RETAINED: bool>(
++    cv: &mut Canvas,
++    pts: &[(f32, f32)],
++    width: f32,
++    rgba: [f32; 4],
++    closed: bool,
++    dash: &[f32],
++    cap: u8,
++) -> bool {
++    // A retained shaft is already phase-split into one solid butt segment.
++    // Share the existing box coverage/composite implementation, avoiding only
++    // the general polyline/dash/join dispatcher and its temporary run vectors.
++    if pts.len() == 2 && !closed && dash.is_empty() && cap == CAP_BUTT && width > 0.0 {
++        paint_stroke_pieces(cv, &[StrokePiece::Box((pts[0], pts[1]))], width * 0.5, rgba);
++        return true;
++    }
++    if RETAINED { return width == 0.0; } // admitted before paint/output allocation
+     if cap == CAP_ROUND || pts.len() < 2 || width <= 0.0 {
+         stroke(cv, pts, width, rgba, closed, dash);
+-        return;
++        return true;
+     }
+     let hw = width * 0.5;
+     let dash: &[f32] = if usable_dash(dash) { dash } else { &[] };
+@@ -881,6 +902,7 @@ fn stroke_shaped(
+         }
+     }
+     paint_stroke_pieces(cv, &pieces, hw, rgba);
++    true
+ }
+ 
+ /// Max-combine every piece's coverage into one scratch buffer, then composite
+@@ -2385,9 +2407,54 @@ fn read_affine_axis<'a>(
+     Some((values, decode_scale, decode_offset))
+ }
+ 
++/// Validate the retained command vocabulary without allocating paint buffers.
++/// Full native dispatch keeps its existing vocabulary and behavior.
++pub(crate) fn retained_commands_valid(cmds: &[u8]) -> bool {
++    fn finite(r: &mut Reader<'_>, count: usize) -> Option<()> {
++        let bytes = r.bytes(count.checked_mul(4)?)?;
++        bytes.chunks_exact(4).all(|v| f32::from_le_bytes(v.try_into().unwrap()).is_finite()).then_some(())
++    }
++    let check = || -> Option<()> {
++        let mut r = Reader { b: cmds, i: 0 };
++        while r.i < cmds.len() {
++            match r.u8()? {
++                OP_CLIP => { finite(&mut r, 4)?; }
++                OP_FILL_POLY => {
++                    let n = r.u32()? as usize;
++                    if !(3..=crate::scene::MAX_SCENE_MARKS).contains(&n) { return None; }
++                    finite(&mut r, n.checked_mul(2)?)?; r.bytes(4)?;
++                }
++                OP_STROKE => {
++                    let n = r.u32()? as usize;
++                    if n != 2 { return None; }
++                    finite(&mut r, n.checked_mul(2)?)?;
++                    let width = r.f32()?;
++                    if !width.is_finite() || width < 0.0 { return None; }
++                    r.bytes(4)?; if r.u8()? != 0 { return None; }
++                    let nd = r.u32()? as usize;
++                    if nd != 0 { return None; }
++                    finite(&mut r, nd)?; if r.u8()? != CAP_BUTT { return None; }
++                }
++                OP_POINT => {
++                    finite(&mut r, 3)?; if r.u8()? > 1 { return None; }
++                    r.bytes(4)?; finite(&mut r, 1)?; r.bytes(4)?;
++                }
++                OP_UNION_TRIANGLES => {
++                    let n = r.u32()? as usize;
++                    if !(1..=MAX_UNION_TRIANGLES).contains(&n) { return None; }
++                    r.bytes(4)?; finite(&mut r, n.checked_mul(6)?)?;
++                }
++                _ => return None,
++            }
++        }
++        Some(())
++    };
++    check().is_some()
++}
++
+ /// Parse and paint a display list, retaining the native byte framebuffer so a
+ /// latency-oriented PNG export can feed it straight into the encoder.
+-fn rasterize_with_spans<'a>(
++fn rasterize_with_spans<'a, const RETAINED: bool>(
+     cmds: &[u8],
+     spans: &[&[u8]],
+     w: usize,
+@@ -2402,6 +2469,18 @@ fn rasterize_with_spans<'a>(
+     let mut r = Reader { b: cmds, i: 0 };
+     while r.i < cmds.len() {
+         let op = r.u8()?;
++        if RETAINED
++            && !matches!(
++                op,
++                OP_CLIP
++                    | OP_FILL_POLY
++                    | OP_STROKE
++                    | OP_POINT
++                    | OP_UNION_TRIANGLES
++            )
++        {
++            return None;
++        }
+         let ok = (|| -> Option<()> {
+             match op {
+                 OP_CLIP => {
+@@ -2415,6 +2494,7 @@ fn rasterize_with_spans<'a>(
+                     cv.polar_clip = None;
+                 }
+                 OP_POLAR_CLIP => {
++                    if RETAINED { return None; }
+                     let (cx, cy, inner, outer) = (r.f32()?, r.f32()?, r.f32()?, r.f32()?);
+                     let (start, sweep) = (r.f32()?, r.f32()?);
+                     let polar = PolarClip::new(cx, cy, inner, outer, start, sweep)?;
+@@ -2438,6 +2518,7 @@ fn rasterize_with_spans<'a>(
+                     }
+                 }
+                 OP_FILL_POLY_GRAD => {
++                    if RETAINED { return None; }
+                     let n = r.u32()? as usize;
+                     let pts = r.pts(n)?;
+                     let (g0x, g0y, g1x, g1y) = (r.f32()?, r.f32()?, r.f32()?, r.f32()?);
+@@ -2465,7 +2546,7 @@ fn rasterize_with_spans<'a>(
+                         dash.push(r.f32()?);
+                     }
+                     let cap = r.u8()?;
+-                    stroke_shaped(&mut cv, &pts, width, c, closed, &dash, cap);
++                    if !stroke_shaped_policy::<RETAINED>(&mut cv, &pts, width, c, closed, &dash, cap) { return None; }
+                 }
+                 OP_POINT => {
+                     let (cx, cy, rr) = (r.f32()?, r.f32()?, r.f32()?);
+@@ -2476,6 +2557,7 @@ fn rasterize_with_spans<'a>(
+                     point(&mut cv, cx, cy, rr, sym, fill, sw, st);
+                 }
+                 OP_IMAGE => {
++                    if RETAINED { return None; }
+                     let (dx, dy, dw, dh) = (r.f32()?, r.f32()?, r.f32()?, r.f32()?);
+                     let (iw, ih) = (r.u32()? as usize, r.u32()? as usize);
+                     let nearest = r.u8()? != 0;
+@@ -2483,6 +2565,7 @@ fn rasterize_with_spans<'a>(
+                     blit(&mut cv, dx, dy, dw, dh, iw, ih, src, nearest);
+                 }
+                 OP_DENSITY_IMAGE => {
++                    if RETAINED { return None; }
+                     let (dx, dy, dw, dh) = (r.f32()?, r.f32()?, r.f32()?, r.f32()?);
+                     let (iw, ih) = (r.u32()? as usize, r.u32()? as usize);
+                     let span = r.u32()? as usize;
+@@ -2503,6 +2586,7 @@ fn rasterize_with_spans<'a>(
+                     blit_density(&mut cv, dx, dy, dw, dh, iw, ih, encoded, &lut);
+                 }
+                 OP_HEATMAP_IMAGE => {
++                    if RETAINED { return None; }
+                     let (dx, dy, dw, dh) = (r.f32()?, r.f32()?, r.f32()?, r.f32()?);
+                     let (iw, ih) = (r.u32()? as usize, r.u32()? as usize);
+                     let span = r.u32()? as usize;
+@@ -2551,6 +2635,7 @@ fn rasterize_with_spans<'a>(
+                     );
+                 }
+                 OP_TEXT => {
++                    if RETAINED { return None; }
+                     let (x, y) = (r.f32()?, r.f32()?);
+                     let anchor = r.u8()?;
+                     let size = r.f32()?;
+@@ -2560,6 +2645,7 @@ fn rasterize_with_spans<'a>(
+                     text(&mut cv, x, y, anchor, size, c, s);
+                 }
+                 OP_STYLED_TEXT => {
++                    if RETAINED { return None; }
+                     let (x, y) = (r.f32()?, r.f32()?);
+                     let anchor = r.u8()?;
+                     let size = r.f32()?;
+@@ -2587,6 +2673,7 @@ fn rasterize_with_spans<'a>(
+                     );
+                 }
+                 OP_POINTS => {
++                    if RETAINED { return None; }
+                     // Batched marks, struct-of-arrays: one header (symbol +
+                     // shared stroke) then cx/cy/r f32 arrays and per-point
+                     // RGBA8 fills. Lets Python pack whole NumPy columns in one
+@@ -2622,6 +2709,7 @@ fn rasterize_with_spans<'a>(
+                     paint_points(&mut cv, &batch, raster_fanout(est_px, POINTS_FANOUT_PX, h));
+                 }
+                 OP_AFFINE_POINTS => {
++                    if RETAINED { return None; }
+                     // Borrow offset-encoded x/y payload columns and fuse their
+                     // f64 decode + affine projection into native point paint.
+                     let n = r.u32()? as usize;
+@@ -2684,6 +2772,7 @@ fn rasterize_with_spans<'a>(
+                     );
+                 }
+                 OP_AFFINE_CHANNEL_POINTS => {
++                    if RETAINED { return None; }
+                     let n = r.u32()? as usize;
+                     let sym = r.u8()?;
+                     let sw = r.f32()?;
+@@ -2839,6 +2928,7 @@ fn rasterize_with_spans<'a>(
+                     );
+                 }
+                 OP_SEGMENTS => {
++                    if RETAINED { return None; }
+                     let n = r.u32()? as usize;
+                     let width = r.f32()?;
+                     let bytes4 = n.checked_mul(4)?;
+@@ -2871,6 +2961,7 @@ fn rasterize_with_spans<'a>(
+                     );
+                 }
+                 OP_RECTS => {
++                    if RETAINED { return None; }
+                     let n = r.u32()? as usize;
+                     let bytes4 = n.checked_mul(4)?;
+                     let x0 = r.bytes(bytes4)?;
+@@ -2936,9 +3027,10 @@ fn rasterize_with_spans<'a>(
+                         }
+                         points.extend_from_slice(&triangle);
+                     }
+-                    fill_contours(&mut cv, &points, 3, true, |_, _| color);
++                    fill_contours(&mut cv, &points, 3, true, &mut |_, _| color);
+                 }
+                 OP_TRIANGLES | OP_STROKED_TRIANGLES => {
++                    if RETAINED { return None; }
+                     let n = r.u32()? as usize;
+                     let (stroke_width, stroke_color) = if op == OP_STROKED_TRIANGLES {
+                         let width = r.f32()?;
+@@ -2977,6 +3069,7 @@ fn rasterize_with_spans<'a>(
+                     }
+                 }
+                 OP_SMOOTH_STROKE => {
++                    if RETAINED { return None; }
+                     let n = r.u32()? as usize;
+                     if n < 2 {
+                         return None;
+@@ -3020,7 +3113,7 @@ pub fn rasterize_rgb_into(cmds: &[u8], w: usize, h: usize, out: &mut [u8]) -> bo
+     if out.len() != w.checked_mul(h).and_then(|n| n.checked_mul(3)).unwrap_or(0) {
+         return false;
+     }
+-    rasterize_with_spans(cmds, &[], w, h, true, out).is_some()
++    rasterize_with_spans::<false>(cmds, &[], w, h, true, out).is_some()
+ }
+ 
+ /// Parse and paint a display list whose commands may reference `data` for the
+@@ -3044,7 +3137,7 @@ pub fn rasterize_spans_into(
+     // which is exactly what the owned `vec![0; w * h * 4]` did, and straight
+     // alpha is already the canvas's own layout — so the export step that used
+     // to `copy_from_slice` a whole frame is now nothing at all.
+-    rasterize_with_spans(cmds, spans, w, h, false, out).is_some()
++    rasterize_with_spans::<false>(cmds, spans, w, h, false, out).is_some()
+ }
+ 
+ /// Fused low-latency raster + PNG path. `Fast` uses fdeflate's PNG-tuned
+@@ -3072,15 +3165,37 @@ pub fn rasterize_png_spans_into(
+     w: usize,
+     h: usize,
+     out: &mut [u8],
++) -> Option<usize> {
++    rasterize_png_spans_policy::<false>(cmds, spans, w, h, out)
++}
++pub(crate) fn rasterize_retained_png_into(
++    cmds: &[u8],
++    w: usize,
++    h: usize,
++    out: &mut [u8],
++) -> Option<usize> {
++    rasterize_png_spans_policy::<true>(cmds, &[], w, h, out)
++}
++fn rasterize_png_spans_policy<const RETAINED: bool>(
++    cmds: &[u8],
++    spans: &[&[u8]],
++    w: usize,
++    h: usize,
++    out: &mut [u8],
+ ) -> Option<usize> {
+     let (wu, hu) = (u32::try_from(w).ok()?, u32::try_from(h).ok()?);
+     // The PNG path is 3-channel and the destination is the encoded stream, so
+     // this one still owns its framebuffer — but it is a plane fewer than the
+     // RGBA path, and nothing is copied out of it.
+     let mut px = vec![0u8; w.checked_mul(h)?.checked_mul(3)?];
+-    let cv = rasterize_with_spans(cmds, spans, w, h, true, &mut px)?;
++    let cv = rasterize_with_spans::<RETAINED>(cmds, spans, w, h, true, &mut px)?;
+     let mut cursor = Cursor::new(out);
+     {
++        if RETAINED {
++            let mut writer=png::Encoder::write_plain_rgb8(&mut cursor,wu,hu).ok()?;
++            writer.write_image_data(cv.px).ok()?;
++            writer.finish().ok()?;
++        } else {
+         let mut encoder = png::Encoder::new(&mut cursor, wu, hu);
+         encoder.set_color(if cv.opaque {
+             png::ColorType::Rgb
+@@ -3093,6 +3208,8 @@ pub fn rasterize_png_spans_into(
+         let mut writer = encoder.write_header().ok()?;
+         writer.write_image_data(cv.px).ok()?;
+         writer.finish().ok()?;
++        }
++
+     }
+     usize::try_from(cursor.position()).ok()
+ }
+@@ -3208,7 +3325,7 @@ mod tests {
+         opaque: bool,
+     ) -> Option<Vec<u8>> {
+         let mut px = canvas_px(w, h, opaque);
+-        rasterize_with_spans(cmds, spans, w, h, opaque, &mut px)?;
++        rasterize_with_spans::<false>(cmds, spans, w, h, opaque, &mut px)?;
+         Some(px)
+     }
+ 
+diff --git a/crates/xyg-engine/src/sankey.rs b/crates/xyg-engine/src/sankey.rs
+index bbae0844cb260ebd564a98d6de59de677d596914..fa740eb1b361cd99bc19b5f590e175999420e8ce 100644
+--- a/crates/xyg-engine/src/sankey.rs
++++ b/crates/xyg-engine/src/sankey.rs
+@@ -371,7 +371,7 @@ fn order_layers(
+         let mut pos = positions(&columns);
+         for layer in order {
+             let incoming = forward;
+-            columns[layer].sort_by(|&a, &b| {
++            crate::shared_sort::by(&mut columns[layer], |&a, &b| {
+                 let ba = barycentre(a, incoming, nodes, links, &pos);
+                 let bb = barycentre(b, incoming, nodes, links, &pos);
+                 ba.partial_cmp(&bb).unwrap_or(std::cmp::Ordering::Equal)
+@@ -476,7 +476,7 @@ fn place(
+ fn stack_endpoints(nodes: &[Node], links: &mut [Link]) {
+     for node in nodes {
+         let mut outgoing = node.outgoing.clone();
+-        outgoing.sort_by(|&a, &b| {
++        crate::shared_sort::by(&mut outgoing, |&a, &b| {
+             let ya = nodes[links[a].target].y0;
+             let yb = nodes[links[b].target].y0;
+             ya.partial_cmp(&yb)
+@@ -496,7 +496,7 @@ fn stack_endpoints(nodes: &[Node], links: &mut [Link]) {
+         }
+ 
+         let mut incoming = node.incoming.clone();
+-        incoming.sort_by(|&a, &b| {
++        crate::shared_sort::by(&mut incoming, |&a, &b| {
+             let ya = nodes[links[a].source].y0;
+             let yb = nodes[links[b].source].y0;
+             ya.partial_cmp(&yb)
+diff --git a/crates/xyg-engine/src/scene.rs b/crates/xyg-engine/src/scene.rs
+index 5992dd6fe74058def0a654f8d0623258fe055657..e95edc5598c586c987d67791478cbd36e8b26172 100644
+--- a/crates/xyg-engine/src/scene.rs
++++ b/crates/xyg-engine/src/scene.rs
+@@ -1990,7 +1990,7 @@ pub fn symlog_ticks(
+             return Err(SceneError::Limit);
+         }
+         ticks.push(0.0);
+-        ticks.sort_by(|a, b| {
++        crate::shared_sort::by(&mut ticks, |a, b| {
+             if lo > hi {
+                 b.total_cmp(a)
+             } else {
+@@ -9538,6 +9538,7 @@ impl<'a> SceneBatch<'a> {
+     /// Mark records, the edge `style_ref`s whose arrowheads need a derived
+     /// filled style (appended after arrow/callout styles in `encode`, #33),
+     /// and the exact arcs of plain polar wedges (`XYWA`).
++    #[cfg_attr(target_arch = "wasm32", inline(never))]
+     fn prepared_mark_records(&self) -> (Vec<PreparedMarkRecord>, Vec<u32>, Option<SceneWedgeArcs>) {
+         let mut out = Vec::with_capacity(self.kinds.len());
+         let mut wedges: Vec<SceneWedgeArc> = Vec::new();
+@@ -14694,7 +14695,7 @@ impl SceneDocument {
+         }
+     }
+ 
+-    fn push_raster_poly_fill(
++    fn push_raster_poly_fill<const RETAINED: bool>(
+         &self,
+         out: &mut Vec<u8>,
+         points: &[(f64, f64)],
+@@ -14705,7 +14706,7 @@ impl SceneDocument {
+         if points.len() < 3 {
+             return Ok(());
+         }
+-        if let Some(gradient) = self.style_gradient(style_ref) {
++        if let Some(gradient) = self.style_gradient(style_ref).filter(|_| !RETAINED) {
+             let bbox = points_bbox(points);
+             let (g0x, g0y, g1x, g1y) = gradient_raster_line(gradient, bbox, self.layout);
+             let stops = rewrite_transparent_stops(&gradient.stops);
+@@ -16677,7 +16678,7 @@ impl SceneDocument {
+     }
+ 
+     #[inline(never)]
+-    fn append_raster_marks(&self, out: &mut Vec<u8>, scale: f64) -> Result<(), SceneError> {
++    fn append_raster_marks<const RETAINED:bool>(&self, out: &mut Vec<u8>, scale: f64) -> Result<(), SceneError> {
+         let mut index = 0;
+         while index < self.records.len() {
+             let record = self.records[index];
+@@ -16686,6 +16687,7 @@ impl SceneDocument {
+                 continue;
+             }
+             let style = self.styles[record.style_ref];
++            if RETAINED && !matches!(record.kind,SceneRecordKind::Scatter|SceneRecordKind::Rect|SceneRecordKind::Triangle|SceneRecordKind::Segment){return Err(SceneError::Length);}
+             match record.kind {
+                 SceneRecordKind::Scatter => {
+                     let geometry = MarkerGeometry::new(
+@@ -16693,7 +16695,7 @@ impl SceneDocument {
+                         record.diameter,
+                         style.stroke_width,
+                     );
+-                    if let Some(glyph) = self.style_glyph(record.style_ref) {
++                    if let Some(glyph) = self.style_glyph(record.style_ref).filter(|_|!RETAINED) {
+                         let font_size = geometry.radius * 2.0;
+                         out.push(6);
+                         push_raster_f32(out, record.coordinates[0], scale)?;
+@@ -16722,7 +16724,7 @@ impl SceneDocument {
+                         (record.coordinates[2], record.coordinates[3]),
+                         (record.coordinates[0], record.coordinates[3]),
+                     ];
+-                    self.push_raster_poly_fill(out, &points, style, record.style_ref, scale)?;
++                    self.push_raster_poly_fill::<RETAINED>(out, &points, style, record.style_ref, scale)?;
+                     if style.stroke_width > 0.0 {
+                         out.push(3);
+                         out.extend_from_slice(&4u32.to_le_bytes());
+@@ -16739,6 +16741,7 @@ impl SceneDocument {
+                     index += 1;
+                 }
+                 SceneRecordKind::Image => {
++                    if RETAINED { return Err(SceneError::Length); }
+                     if let Some(image) = scene_image_by_id(&self.images, record.stable_id) {
+                         out.push(5); // OP_IMAGE
+                         push_raster_f32(out, record.coordinates[0], scale)?;
+@@ -16753,6 +16756,7 @@ impl SceneDocument {
+                     index += 1;
+                 }
+                 SceneRecordKind::Band => {
++                    if RETAINED { return Err(SceneError::Length); }
+                     let start = index;
+                     let style_ref = record.style_ref;
+                     while index < self.records.len() {
+@@ -16776,7 +16780,7 @@ impl SceneDocument {
+                         for point in run.iter().rev() {
+                             points.push((point.coordinates[2], point.coordinates[3]));
+                         }
+-                        self.push_raster_poly_fill(out, &points, style, style_ref, scale)?;
++                        self.push_raster_poly_fill::<RETAINED>(out, &points, style, style_ref, scale)?;
+                         if record.symbol != BandOutline::None as u8 {
+                             let perimeter = record.symbol == BandOutline::Perimeter as u8;
+                             let stroke_count = if perimeter { count } else { run.len() as u32 };
+@@ -16809,7 +16813,7 @@ impl SceneDocument {
+                         scale,
+                         &|style_ref| self.style_gradient(style_ref).is_some(),
+                         &mut |out, points, style, style_ref| {
+-                            self.push_raster_poly_fill(out, points, style, style_ref, scale)
++                            self.push_raster_poly_fill::<RETAINED>(out, points, style, style_ref, scale)
+                         },
+                     )?;
+                 }
+@@ -16848,22 +16852,46 @@ impl SceneDocument {
+         Ok(())
+     }
+ 
+-    pub fn to_raster_commands(&self, scale: f64) -> Result<Vec<u8>, SceneError> {
++    pub fn to_raster_commands(&self, scale: f64) -> Result<Vec<u8>, SceneError> {self.to_raster_commands_policy::<false>(scale)}
++    /// The retained adapter admits only the literal, chromeless Scene vocabulary.
++    /// Refuse unexpected decorations before allocating commands; never silently
++    /// omit an authored text/glyph/gradient/image from a full Scene.
++    pub(crate) fn to_raster_commands_retained(&self, scale: f64) -> Result<Vec<u8>, SceneError> {
++        if self.y2.is_some() || self.polar.is_some() || self.legend.is_some()
++            || self.colorbar.is_some() || !self.labels.is_empty() || !self.images.is_empty()
++            || self.text != SceneChromeText::default()
++            || self.gradients.iter().any(Option::is_some)
++            || self.marker_glyphs.iter().any(Option::is_some)
++            || [&self.chrome.x_axis, &self.chrome.y_axis].iter().any(|a|
++                a.tick_sides != 0 || a.tick_label_sides != 0 || a.axis_rgba[3] != 0)
++            || self.chrome.x_major_ticks.as_deref() != Some(&[])
++            || self.chrome.y_major_ticks.as_deref() != Some(&[])
++            || !self.chrome.x_minor_ticks.is_empty() || !self.chrome.y_minor_ticks.is_empty()
++            || self.records.iter().any(|r| !matches!(r.kind,
++                SceneRecordKind::Scatter | SceneRecordKind::Rect | SceneRecordKind::Triangle | SceneRecordKind::Segment)
++                || (r.kind == SceneRecordKind::Scatter && r.symbol > 1)
++                || (matches!(r.kind, SceneRecordKind::Rect | SceneRecordKind::Triangle) && self.styles[r.style_ref].stroke_width != 0.0)
++                || (r.kind == SceneRecordKind::Segment && (self.styles[r.style_ref].dash_count != 0 || self.styles[r.style_ref].linecap != 0))) {
++            return Err(SceneError::Length);
++        }
++        self.to_raster_commands_policy::<true>(scale)
++    }
++    fn to_raster_commands_policy<const RETAINED:bool>(&self,scale:f64)->Result<Vec<u8>,SceneError>{
+         if !scale.is_finite() || scale <= 0.0 {
+             return Err(SceneError::NonFinite);
+         }
+         self.check_mesh_budgets(true)?;
+-        let x_ticks = self.resolved_axis_ticks(true)?;
+-        let y_ticks = self.resolved_axis_ticks(false)?;
++        let x_ticks = if RETAINED {AxisTicks{ticks:vec![],labeled:vec![],step:1.}}else{self.resolved_axis_ticks(true)?};
++        let y_ticks = if RETAINED {AxisTicks{ticks:vec![],labeled:vec![],step:1.}}else{self.resolved_axis_ticks(false)?};
+         let y2_ticks = self
+             .y2
+-            .as_ref()
++            .as_ref().filter(|_|!RETAINED)
+             .map(|_| self.resolved_axis_ticks(AxisSlot::Y2))
+             .transpose()?;
+         // Grid strokes are 35 bytes each. Labeled ticks add another stroke
+         // plus a bounded text command; reserve their space up front so adding
+         // constant-size chrome never copies the full mark command buffer.
+-        let reserved_capacity = self.raster_command_capacity(&x_ticks, &y_ticks);
++        let reserved_capacity = if RETAINED {self.raster_mark_capacity.checked_add(256).ok_or(SceneError::Limit)?}else{self.raster_command_capacity(&x_ticks,&y_ticks)};
+         let mut out = Vec::with_capacity(reserved_capacity);
+         let f32_push = |out: &mut Vec<u8>, value: f64| -> Result<(), SceneError> {
+             let scaled = value * scale;
+@@ -16914,8 +16942,8 @@ impl SceneDocument {
+         f32_push(&mut out, self.layout.top)?;
+         f32_push(&mut out, self.layout.right - self.layout.left)?;
+         f32_push(&mut out, self.layout.bottom - self.layout.top)?;
+-        self.append_raster_grid(&mut out, scale, &x_ticks, &y_ticks)?;
+-        if let Some(polar) = &self.polar {
++        if !RETAINED {self.append_raster_grid(&mut out, scale, &x_ticks, &y_ticks)?;}
++        if let Some(polar) = self.polar.as_ref().filter(|_|!RETAINED) {
+             // Existing analytic annular-sector opcode; coordinates/radii scale,
+             // while angles remain radians. Axes reset the clip before chrome.
+             out.push(18);
+@@ -16928,7 +16956,8 @@ impl SceneDocument {
+                 out.extend_from_slice(&(angle as f32).to_le_bytes());
+             }
+         }
+-        self.append_raster_marks(&mut out, scale)?;
++        self.append_raster_marks::<RETAINED>(&mut out, scale)?;
++        if RETAINED {if out.len()>reserved_capacity{return Err(SceneError::Limit);}return Ok(out);}
+         // Reset the plot clip before chrome, then draw the canonical bottom
+         // and left axes through the same display-list primitive as line marks.
+         self.append_raster_axes(&mut out, scale, &x_ticks, &y_ticks, y2_ticks.as_ref())?;
+@@ -18442,7 +18471,7 @@ pub(crate) mod tests {
+         assert!(validate_scene_batch(&scene).is_ok());
+         assert_eq!(document.to_svg().matches(" Z ").count(), 12);
+         let mut commands = Vec::new();
+-        document.append_raster_marks(&mut commands, 1.0).unwrap();
++        document.append_raster_marks::<false>(&mut commands, 1.0).unwrap();
+         let mut cursor = 0;
+         let mut primitives = 0;
+         let mut groups = 0;
+@@ -25031,6 +25060,22 @@ pub(crate) mod tests {
+         }
+     }
+ 
++    #[test]
++    fn retained_raster_rejects_unexpected_full_scene_decoration() {
++        let raw = include_bytes!("../../../spec/performance/temporal-native-render-2026-11-07/artifacts/retained-later.xyfg");
++        let encoded = crate::temporal_graph_export::canonical_scene(raw, [77,110,159,191], 384*1024*1024).unwrap();
++        let mut document = SceneDocument::decode(&encoded).unwrap();
++        assert!(document.to_raster_commands_retained(1.0).is_ok());
++        document.text.title = "Native text must remain visible".into();
++        assert!(document.to_raster_commands_retained(1.0).is_err());
++        let full = document.to_raster_commands(1.0).unwrap();
++        assert!(raster_text_count(&full).unwrap() > 0);
++        document.text.title.clear();
++        document.marker_glyphs = vec![Some("A".into()); document.styles.len()];
++        assert!(document.to_raster_commands_retained(1.0).is_err());
++        assert!(raster_text_count(&document.to_raster_commands(1.0).unwrap()).unwrap() > 0);
++    }
++
+     #[test]
+     fn identity_axis_keeps_retained_css_bits() {
+         let axis = AxisScale::new(ScaleKind::Linear, 0., 180., 0., 180., 1., false).unwrap();
+diff --git a/crates/xyg-engine/src/scene_static.rs b/crates/xyg-engine/src/scene_static.rs
+index 38538203330cd74f9156d56afe2eaa38693a6861..b9c566b4192d0fb1d353d6d89e524c3216703d5d 100644
+--- a/crates/xyg-engine/src/scene_static.rs
++++ b/crates/xyg-engine/src/scene_static.rs
+@@ -131,19 +131,7 @@ pub(crate) fn rasterize_png(
+     width: usize,
+     height: usize,
+ ) -> Result<Vec<u8>, SceneStaticExportError> {
+-    let raw = width
+-        .checked_mul(height)
+-        .and_then(|count| count.checked_mul(4))
+-        .ok_or(SceneStaticExportError::Size)?;
+-    let cap = raw.saturating_add(raw / 8).saturating_add(65_536);
+-    let mut out = vec![0u8; cap.max(1)];
+-    let written = raster::rasterize_png_into(cmds, width, height, &mut out)
+-        .ok_or(SceneStaticExportError::Raster)?;
+-    if written > out.len() {
+-        return Err(SceneStaticExportError::Raster);
+-    }
+-    out.truncate(written);
+-    Ok(out)
++    crate::retained_png::rasterize_png_full(cmds,width,height).map_err(|e|match e {crate::retained_png::PngError::Size=>SceneStaticExportError::Size,crate::retained_png::PngError::Raster=>SceneStaticExportError::Raster})
+ }
+ 
+ /// Composite straight-alpha RGBA8 over white using the public JPEG rounding.
+diff --git a/crates/xyg-engine/src/scene_trace_compile.rs b/crates/xyg-engine/src/scene_trace_compile.rs
+index 5780f92b8ec3911e5deca199f342f5ec4a67eb5f..91afc475b3673c4e3893ec204994f2117d678e0b 100644
+--- a/crates/xyg-engine/src/scene_trace_compile.rs
++++ b/crates/xyg-engine/src/scene_trace_compile.rs
+@@ -531,7 +531,7 @@ fn resolve_stop_positions(positions: &[Option<f64>]) -> Option<Vec<f64>> {
+     if !positions[count - 1].is_some() {
+         anchors.push((count - 1, 1.0));
+     }
+-    anchors.sort_by_key(|(index, _)| *index);
++    crate::shared_sort::by_key(&mut anchors, |(index, _)| *index);
+     let mut prev = 0.0;
+     for anchor in &mut anchors {
+         prev = anchor.1.max(prev);
+diff --git a/crates/xyg-engine/src/stats.rs b/crates/xyg-engine/src/stats.rs
+index 013fe247644e479f78faf8f51c70805850a8f68e..7c74ea3603f515a9345a3ea062a40051e9998c38 100644
+--- a/crates/xyg-engine/src/stats.rs
++++ b/crates/xyg-engine/src/stats.rs
+@@ -105,7 +105,7 @@ pub fn quantiles(data: &[f64], probs: &[f64]) -> Option<Vec<f64>> {
+     if finite.is_empty() {
+         return Some(vec![f64::NAN; probs.len()]);
+     }
+-    finite.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
++    crate::shared_sort::by(&mut finite, |a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+     Some(probs.iter().map(|&p| quantile_sorted(&finite, p)).collect())
+ }
+ 
+@@ -143,7 +143,7 @@ pub fn box_stats(data: &[f64]) -> BoxStats {
+             outliers: Vec::new(),
+         };
+     }
+-    finite.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
++    crate::shared_sort::by(&mut finite, |a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+     let q1 = quantile_sorted(&finite, 0.25);
+     let median = quantile_sorted(&finite, 0.5);
+     let q3 = quantile_sorted(&finite, 0.75);
+@@ -631,7 +631,7 @@ pub fn contour_levels(data: &[f64], n_levels: usize) -> Option<Vec<f64>> {
+             return None;
+         }
+         let mut out = data.to_vec();
+-        out.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
++        crate::shared_sort::by(&mut out, |a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+         return Some(out);
+     }
+     if n_levels > MAX_CONTOUR_LEVELS {
+@@ -866,7 +866,7 @@ fn sturges_width(data: &[f64]) -> f64 {
+ 
+ fn fd_width(data: &[f64]) -> f64 {
+     let mut sorted = data.to_vec();
+-    sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
++    crate::shared_sort::by(&mut sorted, |a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+     let q1 = quantile_sorted(&sorted, 0.25);
+     let q3 = quantile_sorted(&sorted, 0.75);
+     2.0 * (q3 - q1) * (data.len() as f64).powf(-1.0 / 3.0)
+@@ -1018,7 +1018,7 @@ fn round_3g(value: f64) -> f64 {
+ }
+ 
+ fn unique_sorted_f64(values: &mut Vec<f64>) {
+-    values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
++    crate::shared_sort::by(&mut *values, |a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+     values.dedup_by(|a, b| a == b);
+ }
+ 
+diff --git a/crates/xyg-engine/src/temporal.rs b/crates/xyg-engine/src/temporal.rs
+index b47d1b40c2e9dbfad384371522ea4f69c171f389..1fb93bd96ef3ebbe0d7ea44f19abc237a42f165b 100644
+--- a/crates/xyg-engine/src/temporal.rs
++++ b/crates/xyg-engine/src/temporal.rs
+@@ -326,7 +326,7 @@ impl IntervalIndex {
+             }
+         }
+         let mut order: Vec<u32> = (0..n as u32).collect();
+-        order.sort_by_key(|&idx| {
++        crate::shared_sort::by_key(&mut order, |&idx| {
+             let i = idx as usize;
+             // Unbounded starts sort before all finite starts.
+             if endpoints.start_valid[i] == 0 {
+diff --git a/crates/xyg-engine/src/temporal_graph_export.rs b/crates/xyg-engine/src/temporal_graph_export.rs
+index e182452bcd01719c7243a057ddb373ba65cf6404..64e965b487ab770c546f28e75f8cc7598d667f4d 100644
+--- a/crates/xyg-engine/src/temporal_graph_export.rs
++++ b/crates/xyg-engine/src/temporal_graph_export.rs
+@@ -523,12 +523,12 @@ pub fn export(
+     let document = SceneDocument::decode(&scene).map_err(bad)?;
+     document.check_mesh_budgets(format == 1).map_err(bad)?;
+     let body = if format == 1 {
+-        #[cfg(feature = "raster")]
++        #[cfg(any(feature = "raster", feature = "frozen-raster"))]
+         {
+-            let commands = document.to_raster_commands(resolution).map_err(bad)?;
+-            crate::scene_static::rasterize_png(&commands, w as usize, h as usize).map_err(bad)?
++            let commands = document.to_raster_commands_retained(resolution).map_err(bad)?;
++            crate::retained_png::rasterize_png(&commands, w as usize, h as usize).map_err(bad)?
+         }
+-        #[cfg(not(feature = "raster"))]
++        #[cfg(not(any(feature = "raster", feature = "frozen-raster")))]
+         {
+             return Err(E::UnitUnsupported);
+         }
+diff --git a/crates/xyg-engine/src/tick_layout.rs b/crates/xyg-engine/src/tick_layout.rs
+index fe51c54f5a328bf306fe84f3ef194ad0a181fc82..635625d9f495e1d32268555b0fad0fc57ea2e882 100644
+--- a/crates/xyg-engine/src/tick_layout.rs
++++ b/crates/xyg-engine/src/tick_layout.rs
+@@ -110,7 +110,7 @@ fn collide(
+         if row.is_empty() {
+             continue;
+         }
+-        row.sort_by(|a, b| a.pos.total_cmp(&b.pos));
++        crate::shared_sort::by(&mut *row, |a, b| a.pos.total_cmp(&b.pos));
+         if is_x && anchor != ANCHOR_CENTER {
+             for pair in row.windows(2) {
+                 let prev = pair[0];
+diff --git a/crates/xyg-engine/src/tile_store.rs b/crates/xyg-engine/src/tile_store.rs
+index 5f0e4b92ef258e37012c554b5d989e988738588a..8b9932b37e967f6ecf93fe02214a42f4e3b9d9fc 100644
+--- a/crates/xyg-engine/src/tile_store.rs
++++ b/crates/xyg-engine/src/tile_store.rs
+@@ -909,7 +909,7 @@ fn registry_entries_excluding(exclude: u64) -> Vec<(u64, Arc<Mutex<TileStore>>)>
+             .filter(|(handle, _)| **handle != exclude)
+             .map(|(handle, store)| (*handle, Arc::clone(store)))
+             .collect();
+-    entries.sort_by_key(|(handle, _)| *handle);
++    crate::shared_sort::by_key(&mut entries, |(handle, _)| *handle);
+     entries
+ }
+ 
+diff --git a/crates/xyg-engine/src/tile_store/paint.rs b/crates/xyg-engine/src/tile_store/paint.rs
+index 9982f7f13cb966f3458b7b235223e5fade69d0d0..4deab22346b90d856312c311bcab9ad504dbf82f 100644
+--- a/crates/xyg-engine/src/tile_store/paint.rs
++++ b/crates/xyg-engine/src/tile_store/paint.rs
+@@ -151,7 +151,7 @@ impl TileStore {
+             .copied()
+             .filter(|k| !keys.contains(k) && k.0.abs_diff(level as u32) <= 1)
+             .collect();
+-        candidates.sort_by_key(|k| {
++        crate::shared_sort::by_key(&mut candidates, |k| {
+             (
+                 u32::from(Some(k.0 as usize) != previous),
+                 req.known
+diff --git a/crates/xyg-wasm/Cargo.toml b/crates/xyg-wasm/Cargo.toml
+index d2b0c5580fcd7146d0f4bcd367ac4e2f69aa9ba5..fc89dc2924061174e2dc46a7537e11691328e686 100644
+--- a/crates/xyg-wasm/Cargo.toml
++++ b/crates/xyg-wasm/Cargo.toml
+@@ -11,9 +11,9 @@ name = "xyg_wasm"
+ crate-type = ["cdylib", "rlib"]
+ 
+ [dependencies]
+-# The browser adapter deliberately excludes native raster/PNG export. Browser
+-# painting stays in the existing TypeScript/WebGL client.
+-xyg-engine = { path = "../xyg-engine", default-features = false }
++# Retained PNG shares the native raster/encoder implementation. Full native
++# formats stay disabled; interactive paint uses the existing ChartView client.
++xyg-engine = { path = "../xyg-engine", default-features = false, features = ["frozen-raster"] }
+ 
+ [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+ # Native-only ABI parity tests call the shipped C seam. Keep xyg-core and its
+diff --git a/crates/xyg-wasm/src/lib.rs b/crates/xyg-wasm/src/lib.rs
+index 493a240f12e9a3fe476049436629feea6b26ab77..24e1b234522195809a4c31f7801f1be8bcc4a4b4 100644
+--- a/crates/xyg-wasm/src/lib.rs
++++ b/crates/xyg-wasm/src/lib.rs
+@@ -529,6 +529,22 @@ fn with_ordinary_instance_mut(
+ }
+ 
+ fn with_instance_mut<T>(handle: u32, operation: impl FnOnce(&mut Instance) -> T) -> Result<T, i32> {
++    #[cfg(target_arch = "wasm32")]
++    {
++        let mut operation = Some(operation);
++        with_instance_mut_erased(handle, &mut |i| operation.take().expect("one instance operation")(i))
++    }
++    #[cfg(not(target_arch = "wasm32"))]
++    with_instance_mut_impl(handle, operation)
++}
++
++#[cfg(target_arch = "wasm32")]
++#[inline(never)]
++fn with_instance_mut_erased<T>(handle: u32, operation: &mut dyn FnMut(&mut Instance) -> T) -> Result<T, i32> {
++    with_instance_mut_impl(handle, operation)
++}
++
++fn with_instance_mut_impl<T>(handle: u32, operation: impl FnOnce(&mut Instance) -> T) -> Result<T, i32> {
+     let mut registry = registry();
+     let instance = registry
+         .slot_mut(handle)
+diff --git a/crates/xyg-wasm/src/temporal_graph_frozen.rs b/crates/xyg-wasm/src/temporal_graph_frozen.rs
+index ecb10559b4e7deb01c3234b7ffba6c1024abbfb2..c06df5d1a329b002ba6d8cf5f76357703b9fbc28 100644
+--- a/crates/xyg-wasm/src/temporal_graph_frozen.rs
++++ b/crates/xyg-wasm/src/temporal_graph_frozen.rs
+@@ -15,7 +15,6 @@ pub(super) fn execute(i: &mut Instance, offset: usize, length: usize) -> i32 {
+     }
+     i.output = Vec::new();
+     let arena = std::mem::take(&mut i.arena);
+-    let mut unavailable = false;
+     let mut resource = false;
+     let result = (|| {
+         let bytes = arena
+@@ -39,7 +38,6 @@ pub(super) fn execute(i: &mut Instance, offset: usize, length: usize) -> i32 {
+         if u32at(8) != 0 {
+             return xyg_engine::temporal_graph_export::execute_packet(bytes, available).map_err(
+                 |e| {
+-                    unavailable = e == xyg_engine::temporal::TemporalError::UnitUnsupported;
+                     resource = matches!(
+                         e,
+                         xyg_engine::temporal::TemporalError::BudgetExceeded
+@@ -102,7 +100,6 @@ pub(super) fn execute(i: &mut Instance, offset: usize, length: usize) -> i32 {
+             STATUS_RESOURCE_LIMIT,
+             "frozen graph output exceeds Worker budget",
+         ),
+-        Err(()) if unavailable=>fail(i,STATUS_RESOURCE_LIMIT,"XYG_FROZEN_PNG_UNAVAILABLE: shared Rust PNG cannot fit the unchanged browser artifact caps"),
+         Err(()) if resource=>fail(i,STATUS_RESOURCE_LIMIT,"frozen export exceeds the operation reservation"),
+         Err(()) => fail(i, STATUS_INVALID_ARGUMENT, "frozen graph request rejected"),
+     }
+diff --git a/packages/xy-node/test/temporal-graph-frozen-wasm.test.mjs b/packages/xy-node/test/temporal-graph-frozen-wasm.test.mjs
+index 188442e94f44688aec66132f13c0801707c005b0..39c1f950d75ad39e87ced7579130a6e5f449873f 100644
+--- a/packages/xy-node/test/temporal-graph-frozen-wasm.test.mjs
++++ b/packages/xy-node/test/temporal-graph-frozen-wasm.test.mjs
+@@ -1,8 +1,43 @@
+-import test from 'node:test';import assert from 'node:assert/strict';import{readFileSync}from'node:fs';import{FrozenTemporalGraph}from'../src/index.js';
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import {readFileSync} from 'node:fs';
++import {FrozenTemporalGraph} from '../src/index.js';
+ const raw=readFileSync(new URL('../../../spec/performance/temporal-native-render-2026-11-07/artifacts/retained-later.xyfg',import.meta.url));
++const edge=readFileSync(new URL('../../../spec/performance/temporal-worker-export-2026-11-07/artifacts/edge-focus-dpr2.xyfg',import.meta.url));
+ const bundle=readFileSync(new URL('../../xy-client/dist/standalone.js',import.meta.url));
+-function packet(data,format,client=new Uint8Array()){const out=new Uint8Array(64+data.length+client.length),v=new DataView(out.buffer);out.set([88,89,70,88]);v.setUint32(4,1,true);v.setUint32(8,1,true);v.setUint32(12,format,true);v.setFloat64(24,1,true);v.setBigUint64(32,BigInt(data.length),true);v.setBigUint64(40,BigInt(client.length),true);v.setBigUint64(48,384n*1024n*1024n,true);out.set(data,64);out.set(client,64+data.length);return out;}
+-test('actual wasm32 frozen Scene/XYPB/SVG/HTML match public native import; PNG refuses explicitly',async()=>{
+- const{instance}=await WebAssembly.instantiate(readFileSync(new URL('../../xy-client/dist/xyg-wasm.wasm',import.meta.url)),{}),x=instance.exports,h=x.xyg_wasm_instance_new(384*1024*1024);assert.ok(h);
+- for(const input of [raw,readFileSync(new URL('../../../spec/performance/temporal-worker-export-2026-11-07/artifacts/edge-focus-dpr2.xyfg',import.meta.url))]){const source=FrozenTemporalGraph.fromBytes(input),f=source.captureFocus([77,110,159,191]);source.close();try{for(const [format,code]of[['scene',3],['painter',4],['svg',0],['html',2],['png',1]]){const p=packet(f.toBytes(),code,code===2?bundle:undefined);assert.equal(x.xyg_wasm_arena_resize(h,p.length),0);new Uint8Array(x.memory.buffer,x.xyg_wasm_arena_ptr(h),p.length).set(p);const status=x.xyg_wasm_frozen_graph_execute(h,0,p.length);if(format==='png'){assert.equal(status,3);assert.equal(x.xyg_wasm_output_len(h),0);const message=new TextDecoder().decode(new Uint8Array(x.memory.buffer,x.xyg_wasm_last_error_ptr(h),x.xyg_wasm_last_error_len(h)));assert.match(message,/XYG_FROZEN_PNG_UNAVAILABLE/);}else{assert.equal(status,0);assert.deepEqual(Buffer.from(new Uint8Array(x.memory.buffer,x.xyg_wasm_output_ptr(h),x.xyg_wasm_output_len(h))),Buffer.from(f.export(format)));}}}finally{f.close();}}assert.equal(x.xyg_wasm_instance_dispose(h),0);
++function packet(data,format,{client=new Uint8Array(),operation=1,scale=1}={}) {
++ const out=new Uint8Array(64+data.length+client.length),v=new DataView(out.buffer);
++ out.set([88,89,70,88]);v.setUint32(4,1,true);v.setUint32(8,operation,true);v.setUint32(12,format,true);v.setFloat64(24,scale,true);v.setBigUint64(32,BigInt(data.length),true);v.setBigUint64(40,BigInt(client.length),true);v.setBigUint64(48,384n*1024n*1024n,true);out.set(data,64);out.set(client,64+data.length);return out;
++}
++async function wasm() {
++ const {instance}=await WebAssembly.instantiate(readFileSync(new URL('../../xy-client/dist/xyg-wasm.wasm',import.meta.url)),{});
++ const x=instance.exports;
++ return {x,run(h,p){assert.equal(x.xyg_wasm_arena_resize(h,p.length),0);new Uint8Array(x.memory.buffer,x.xyg_wasm_arena_ptr(h),p.length).set(p);const status=x.xyg_wasm_frozen_graph_execute(h,0,p.length);const bytes=Buffer.from(new Uint8Array(x.memory.buffer,x.xyg_wasm_output_ptr(h),x.xyg_wasm_output_len(h)));return {status,bytes};}};
++}
++test('actual wasm32 frozen Scene/XYPB/SVG/HTML/PNG match public native import at scales1/2',async()=>{
++ const {x,run}=await wasm(),h=x.xyg_wasm_instance_new(384*1024*1024);assert.ok(h);
++ try {for(const input of [raw,edge]) {
++  const source=FrozenTemporalGraph.fromBytes(input),f=source.captureFocus([77,110,159,191]);source.close();
++  try {for(const scale of [1,2])for(const [format,code] of [['scene',3],['painter',4],['svg',0],['html',2],['png',1]]) {
++   const {status,bytes}=run(h,packet(f.toBytes(),code,{client:code===2?bundle:undefined,scale}));assert.equal(status,0,`${format} scale${scale}`);assert.deepEqual(bytes,Buffer.from(f.export(format,{scale})));
++   if(format==='png') {const recovered=run(h,packet(bytes,0,{operation:2}));assert.equal(recovered.status,0);assert.deepEqual(recovered.bytes,Buffer.from(f.toBytes()));}
++  }} finally {f.close();}
++ }} finally {assert.equal(x.xyg_wasm_instance_dispose(h),0);}
++});
++test('real PNG malformed carriers and output reservations refuse without poisoning later exports',async()=>{
++ const {x,run}=await wasm(),h=x.xyg_wasm_instance_new(384*1024*1024),bounded=x.xyg_wasm_instance_new(16*1024*1024);assert.ok(h);assert.ok(bounded);
++ const source=FrozenTemporalGraph.fromBytes(raw),f=source.captureFocus([77,110,159,191]);source.close();
++ try {
++  const png=run(h,packet(f.toBytes(),1));assert.equal(png.status,0);assert.ok(png.bytes.length>100);
++  const metadata=[];for(let i=8;i<png.bytes.length;){const end=i+png.bytes.readUInt32BE(i)+12;if(png.bytes.toString('ascii',i+4,i+8)==='iTXt')metadata.push(png.bytes.subarray(i,end));i=end;}assert.equal(metadata.length,1);
++  const duplicate=Buffer.concat([png.bytes.subarray(0,-12),metadata[0],png.bytes.subarray(-12)]);
++  const corrupt=Buffer.from(png.bytes);corrupt[40]^=1;
++  for(const data of [new Uint8Array(),png.bytes.subarray(0,-1),duplicate,corrupt]) {
++   const bad=run(h,packet(data,0,{operation:2}));assert.equal(bad.status,2);assert.equal(bad.bytes.length,0);
++   const good=run(h,packet(f.toBytes(),0));assert.equal(good.status,0);assert.deepEqual(good.bytes,Buffer.from(f.export('svg')));
++  }
++  const refused=run(bounded,packet(f.toBytes(),1,{scale:8}));assert.equal(refused.status,3);assert.equal(refused.bytes.length,0);
++  const good=run(bounded,packet(f.toBytes(),1));assert.equal(good.status,0);assert.deepEqual(good.bytes,png.bytes);
++  assert.deepEqual(Buffer.from(f.toBytes()),run(h,packet(png.bytes,0,{operation:2})).bytes);
++ } finally {f.close();assert.equal(x.xyg_wasm_instance_dispose(h),0);assert.equal(x.xyg_wasm_instance_dispose(bounded),0);}
+ });
+diff --git a/pyproject.toml b/pyproject.toml
+index 6eb36d90c6231bf463e3eb94ce96c762c59aae00..80d84ba94a2594a5a114f12c90b21d25174ea54c 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -129,6 +129,9 @@ include = [
+     # The framework-free Python package is the only published namespace.
+     "/python/xyg/**",
+     "/crates/**",
++    # The existing PNG encoder is vendored with a shared capability specialization.
++    "/vendor/png/**",
++    "/vendor/crc32fast/**",
+     # Engine `[[bench]]` sources live under crates/xyg-engine/benches/; they
+     # ride this glob so `cargo clippy --all-targets` and `cargo bench` from an
+     # unpacked sdist still see the bench targets.
+diff --git a/scripts/temporal_graph_frozen_smoke.mjs b/scripts/temporal_graph_frozen_smoke.mjs
+index 325775c979411e1fbf6e0879a7010d26ee3e0580..b85149a02c2c3ff864a2f0d4a6ae81cb8b283d85 100644
+--- a/scripts/temporal_graph_frozen_smoke.mjs
++++ b/scripts/temporal_graph_frozen_smoke.mjs
+@@ -18,9 +18,9 @@ assert.deepEqual(Array.from(native.metadata['render.focus.rgba']),[77,110,159,19
+  for(const format of ['scene','painter','svg','html']){const artifact=native.export(format);assert.deepEqual(Buffer.from(artifact),Buffer.from(result[format],'base64'),`${format} native/WASM shape ${shape}`);await writeFile(resolve(output,`${tag}.${format}`),artifact);}
+  const html2=native.export('html',{scale:2});assert.deepEqual(Buffer.from(html2),Buffer.from(result.html2,'base64'));await writeFile(resolve(output,`${tag}.scale2.html`),html2);const png2=native.export('png',{scale:2});await writeFile(resolve(output,`${tag}.scale2.png`),png2);const recoveredPng2=FrozenTemporalGraph.fromArtifact(png2);try{assert.deepEqual(Buffer.from(recoveredPng2.toBytes()),bytes);}finally{recoveredPng2.close();}
+  const png=native.export('png');await writeFile(resolve(output,`${tag}.png`),png);await writeFile(resolve(output,`${tag}.xyfg`),bytes);
+- assert.equal(result.pngError?.code,'XYG_WASM_RESOURCE_LIMIT');assert.match(result.pngError?.message,/XYG_FROZEN_PNG_UNAVAILABLE/);
++ assert.deepEqual(Buffer.from(result.png,'base64'),Buffer.from(png),'Worker PNG native parity');assert.deepEqual(Buffer.from(result.png2,'base64'),Buffer.from(png2),'Worker scale2 PNG native parity');
+  report.push({shape,parent,snapshotSha256:createHash('sha256').update(bytes).digest('hex')});}finally{native.close();}
+  for(const scale of [1,2]){const suffix=scale===1?'':'.scale2';const offline=await browser.newPage({viewport:{width:600,height:500}});await offline.route('http://**',route=>route.abort());await offline.route('https://**',route=>route.abort());offline.on('pageerror',e=>errors.push(String(e)));await offline.goto('file://'+resolve(output,`${tag}${suffix}.html`));await offline.waitForFunction(()=>document.documentElement.dataset.xyFrozenReady==='true');await offline.waitForFunction(()=>window.__xyFrozenView?.gpuTraces?.length>0);const dimensions=await offline.evaluate(()=>Array.from(document.querySelectorAll('#chart canvas'),c=>[c.width,c.height]));assert.ok(dimensions.length);for(const d of dimensions)assert.deepEqual(d,[480*scale,360*scale]);await offline.screenshot({path:resolve(output,`${tag}${suffix}.offline.png`)});await offline.close();}}
+  const vectors=spawnSync(process.env.UV??'uv',['run','python','scripts/verify_temporal_frozen_artifacts.py',output],{cwd:root,env:process.env,encoding:'utf8'});assert.equal(vectors.status,0,vectors.stdout+vectors.stderr);console.log(vectors.stdout);
+- assert.deepEqual(errors,[]);await writeFile(resolve(output,'report.json'),JSON.stringify({report,errors},null,2));console.log('7 real Worker freezes, native/WASM Scene/XYPB/SVG/HTML parity, exact recovery and offline ChartView renders passed');
++ assert.deepEqual(errors,[]);await writeFile(resolve(output,'report.json'),JSON.stringify({report,errors},null,2));console.log('7 real Worker freezes, native/WASM Scene/XYPB/SVG/HTML/PNG parity, real PNG refusals, exact recovery and offline ChartView renders passed');
+ }finally{await browser.close();await new Promise(r=>server.close(r));}
+diff --git a/scripts/verify_sdist.py b/scripts/verify_sdist.py
+index e6b9ccbb60aa09eb0a85a25185684be5312a1520..b6d6f28155582dbab1e20d259f7d76a5a63d2983 100644
+--- a/scripts/verify_sdist.py
++++ b/scripts/verify_sdist.py
+@@ -35,6 +35,14 @@ REQUIRED_FILES = {
+     "CHANGELOG.md",
+     "CONTRIBUTING.md",
+     "Cargo.lock",
++    "vendor/png/Cargo.toml",
++    "vendor/crc32fast/Cargo.toml",
++    "vendor/crc32fast/src/table.rs",
++    "vendor/crc32fast/LICENSE-MIT",
++    "vendor/crc32fast/LICENSE-APACHE",
++    "vendor/png/src/encoder.rs",
++    "vendor/png/LICENSE-MIT",
++    "vendor/png/LICENSE-APACHE",
+     "Cargo.toml",
+     "LICENSE",
+     "PKG-INFO",
+@@ -126,6 +134,7 @@ FORBIDDEN_PARTS = {
+ }
+ FORBIDDEN_SUFFIXES = {".dll", ".dylib", ".pyd", ".pyc", ".pyo", ".so", ".whl"}
+ ALLOWED_TOP_LEVEL = {
++    "vendor",
+     # Hatchling force-includes the active VCS exclusion file so builds from the
+     # unpacked sdist preserve the source-selection rules.
+     ".gitignore",
+diff --git a/tests/browser/temporal_graph_frozen_page.mjs b/tests/browser/temporal_graph_frozen_page.mjs
+index cc93eeb3651b80d652bc147c873d5ee28b8d982d..0fdb47850036279ac777d15b320fd6948a625863 100644
+--- a/tests/browser/temporal_graph_frozen_page.mjs
++++ b/tests/browser/temporal_graph_frozen_page.mjs
+@@ -19,11 +19,14 @@ window.frozenTest.capture=async(pin=true)=>{
+  const frozen=await p.session.freeze({timezone:'America/New_York',window:[0n,40n]});const before=frozen.toBytes();
+  await p.controller.setCursor(10n);await p.session.whenIdle();await p.session.dispose();await p.controller.dispose();p.worker.dispose();p.clockWorker.dispose();p.el.remove();
+  const worker=makeWorker();await worker.ready;const imported=await XygFrozenTemporalGraph.fromBytes(before,worker);const explicit=await imported.captureFocus([77,110,159,191],worker);const explicitBytes=explicit.toBytes();const scene=await imported.export('scene',{worker}),painter=await imported.export('painter',{worker}),svg=await imported.export('svg',{worker});
+- let pngError;try{await imported.export('png',{worker});}catch(e){pngError={code:e.code,message:e.message};}
++ const png=await imported.export('png',{worker}),png2=await imported.export('png',{worker,scale:2});
++ for(const artifact of [png,png2]){const recovered=await XygFrozenTemporalGraph.fromArtifact(artifact,worker);if(recovered.toBytes().length!==before.length||!recovered.toBytes().every((v,i)=>v===before[i]))throw new Error('PNG recovery changed XYFG');}
++ for(const artifact of [new Uint8Array(),png.subarray(0,png.length-1),Uint8Array.from(png,(v,i)=>i===40?v^1:v)]){let rejected=false;try{await XygFrozenTemporalGraph.fromArtifact(artifact,worker);}catch{rejected=true;}if(!rejected)throw new Error('malformed PNG accepted');}
++ const bounded=createXygWasmWorker({workerUrl:'/packages/xy-client/dist/wasm-worker.js',wasm:'/packages/xy-client/dist/xyg-wasm.wasm'});await bounded.ready;try{const limited=await XygFrozenTemporalGraph.fromBytes(before,bounded);let rejected=false;try{await limited.export('png',{worker:bounded,scale:2});}catch(e){if(e.code!=='XYG_WASM_RESOURCE_LIMIT')throw e;rejected=true;}if(!rejected)throw new Error('default 16MiB PNG reservation bypassed');const again=await limited.export('scene',{worker:bounded});if(!again.every((v,i)=>v===scene[i])||again.length!==scene.length)throw new Error('PNG refusal changed last good state');}finally{bounded.dispose();}
+  const client=new Uint8Array(await(await fetch('/packages/xy-client/dist/standalone.js')).arrayBuffer());const html=await imported.export('html',{worker,client}),html2=await imported.export('html',{worker,client,scale:2});
+  const recovered=await XygFrozenTemporalGraph.fromArtifact(html,worker,client);const after=recovered.toBytes();const recovered2=await XygFrozenTemporalGraph.fromArtifact(html2,worker,client);if(!recovered2.toBytes().every((v,i)=>v===before[i])||recovered2.toBytes().length!==before.length)throw new Error('scaled HTML recovery changed XYFG');worker.dispose();
+  const encode=a=>{let s='';for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode(...a.subarray(i,i+32768));return btoa(s);};
+- return {explicit:encode(explicitBytes),snapshot:encode(before),recovered:encode(after),scene:encode(scene),painter:encode(painter),svg:encode(svg),html:encode(html),html2:encode(html2),pngError};
++ return {explicit:encode(explicitBytes),snapshot:encode(before),recovered:encode(after),scene:encode(scene),painter:encode(painter),svg:encode(svg),html:encode(html),html2:encode(html2),png:encode(png),png2:encode(png2)};
+ };
+ 
+ window.frozenTest.legacy=async()=>{const worker=makeWorker();await worker.ready;try{const raw=new Uint8Array(await(await fetch('/spec/performance/temporal-native-render-2026-11-07/artifacts/retained-later.xyfg')).arrayBuffer());const original=await XygFrozenTemporalGraph.fromBytes(raw,worker);const svg=await original.export('svg',{worker,focusRgba:[77,110,159,191]});const explicit=await original.captureFocus([77,110,159,191],worker);const recovered=await XygFrozenTemporalGraph.fromArtifact(svg,worker);const encode=a=>{let s='';for(let i=0;i<a.length;i+=32768)s+=String.fromCharCode(...a.subarray(i,i+32768));return btoa(s);};return {raw:encode(raw),svg:encode(svg),explicit:encode(explicit.toBytes()),recovered:encode(recovered.toBytes())};}finally{worker.dispose();}};

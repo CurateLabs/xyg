@@ -3802,5 +3802,8 @@ The unchanged single-module raw/gzip caps govern the target-only O2/inline50
 profile; native flags and the pinned optimizer stay unchanged. Same-source
 bytes/runtime and full preservation evidence are in the
 [continuation receipt](performance/temporal-worker-export-2026-11-07/README.md).
-WASM PNG remains an explicit unavailable resource error after over-cap shared
-raster probes. Native/WASM rendered PNG and full #45 acceptance stay OPEN.
+The [shared PNG continuation](performance/temporal-shared-png-2026-11-07/README.md)
+adds real retained PNG through the same raster/encoder within those unchanged
+single-module caps. Earlier over-cap/unavailable receipts remain historical.
+Full #45 and milestone acceptance stay OPEN; future combined-source module fit
+and global process budgets (#111) are not certified by this standalone candidate.

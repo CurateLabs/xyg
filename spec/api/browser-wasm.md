@@ -473,11 +473,12 @@ see [temporal graph contracts](../design/temporal-graph.md).
 After an accepted idle temporal publication, `await session.freeze({timezone,
 window?, budgetBytes?})` returns an immutable `XygFrozenTemporalGraph`. Dispose
 the producer or use a fresh/drained Worker for `.fromBytes(bytes, worker)` and
-`frozen.export('scene'|'painter'|'svg'|'html', {worker, client?, scale?, focusRgba?})`. HTML
+`frozen.export('scene'|'painter'|'svg'|'html'|'png', {worker, client?, scale?, focusRgba?})`. HTML
 requires the shipped standalone client bytes and paints offline through the
 same ChartView. `.fromArtifact(bytes, worker, client?)` validates complete output;
-HTML recovery requires the expected shipped client. PNG rejects explicitly
-with `XYG_WASM_RESOURCE_LIMIT` / `XYG_FROZEN_PNG_UNAVAILABLE`. Exact ingress,
+HTML recovery requires the expected shipped client. PNG uses the native shared
+Rust raster/PNG path in the same bounded module; resource reservations can
+reject with `XYG_WASM_RESOURCE_LIMIT` before allocating paint buffers. Exact ingress,
 CSS capture, ownership and remaining #45 gaps are in the
 [frozen graph contract](../design/temporal-graph-frozen.md).
 

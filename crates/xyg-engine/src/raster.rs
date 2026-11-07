@@ -490,8 +490,8 @@ fn fill_rect(cv: &mut Canvas<'_>, pts: &[(f32, f32)], rgba: [f32; 4]) -> bool {
     }
     let mut xs = [pts[0].0, pts[1].0, pts[2].0, pts[3].0];
     let mut ys = [pts[0].1, pts[1].1, pts[2].1, pts[3].1];
-    xs.sort_by(f32::total_cmp);
-    ys.sort_by(f32::total_cmp);
+    crate::shared_sort::by(&mut xs, f32::total_cmp);
+    crate::shared_sort::by(&mut ys, f32::total_cmp);
     let (x0, x1, y0, y1) = (xs[0], xs[3], ys[0], ys[3]);
     let eps = 1e-4;
     if xs[1] - x0 > eps || x1 - xs[2] > eps || ys[1] - y0 > eps || y1 - ys[2] > eps {
@@ -537,16 +537,17 @@ fn fill_rect(cv: &mut Canvas<'_>, pts: &[(f32, f32)], rgba: [f32; 4]) -> bool {
 /// Per-row coverage in [0,1] over the polygon's x-span, with `color_at` giving
 /// the paint per pixel (flat or gradient). Non-zero winding, `SS` vertical
 /// samples, analytic horizontal endpoint coverage.
-fn fill_poly(cv: &mut Canvas<'_>, pts: &[(f32, f32)], color_at: impl FnMut(f32, f32) -> [f32; 4]) {
-    fill_contours(cv, pts, pts.len(), false, color_at);
+fn fill_poly(cv: &mut Canvas<'_>, pts: &[(f32, f32)], mut color_at: impl FnMut(f32, f32) -> [f32; 4]) {
+    fill_contours(cv, pts, pts.len(), false, &mut color_at);
 }
 
+#[inline(never)]
 fn fill_contours(
     cv: &mut Canvas<'_>,
     pts: &[(f32, f32)],
     contour_size: usize,
     canonical_edges: bool,
-    mut color_at: impl FnMut(f32, f32) -> [f32; 4],
+    color_at: &mut dyn FnMut(f32, f32) -> [f32; 4],
 ) {
     if contour_size < 3 || pts.len() < contour_size || pts.len() % contour_size != 0 {
         return;
@@ -597,7 +598,7 @@ fn fill_contours(
             if xs.len() < 2 {
                 continue;
             }
-            xs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+            crate::shared_sort::by(&mut xs, |a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
             let mut wind = 0;
             for i in 0..xs.len() - 1 {
                 wind += xs[i].1;
@@ -779,9 +780,29 @@ fn stroke_shaped(
     dash: &[f32],
     cap: u8,
 ) {
+    stroke_shaped_policy::<false>(cv, pts, width, rgba, closed, dash, cap);
+}
+
+fn stroke_shaped_policy<const RETAINED: bool>(
+    cv: &mut Canvas,
+    pts: &[(f32, f32)],
+    width: f32,
+    rgba: [f32; 4],
+    closed: bool,
+    dash: &[f32],
+    cap: u8,
+) -> bool {
+    // A retained shaft is already phase-split into one solid butt segment.
+    // Share the existing box coverage/composite implementation, avoiding only
+    // the general polyline/dash/join dispatcher and its temporary run vectors.
+    if pts.len() == 2 && !closed && dash.is_empty() && cap == CAP_BUTT && width > 0.0 {
+        paint_stroke_pieces(cv, &[StrokePiece::Box((pts[0], pts[1]))], width * 0.5, rgba);
+        return true;
+    }
+    if RETAINED { return width == 0.0; } // admitted before paint/output allocation
     if cap == CAP_ROUND || pts.len() < 2 || width <= 0.0 {
         stroke(cv, pts, width, rgba, closed, dash);
-        return;
+        return true;
     }
     let hw = width * 0.5;
     let dash: &[f32] = if usable_dash(dash) { dash } else { &[] };
@@ -881,6 +902,7 @@ fn stroke_shaped(
         }
     }
     paint_stroke_pieces(cv, &pieces, hw, rgba);
+    true
 }
 
 /// Max-combine every piece's coverage into one scratch buffer, then composite
@@ -2385,9 +2407,54 @@ fn read_affine_axis<'a>(
     Some((values, decode_scale, decode_offset))
 }
 
+/// Validate the retained command vocabulary without allocating paint buffers.
+/// Full native dispatch keeps its existing vocabulary and behavior.
+pub(crate) fn retained_commands_valid(cmds: &[u8]) -> bool {
+    fn finite(r: &mut Reader<'_>, count: usize) -> Option<()> {
+        let bytes = r.bytes(count.checked_mul(4)?)?;
+        bytes.chunks_exact(4).all(|v| f32::from_le_bytes(v.try_into().unwrap()).is_finite()).then_some(())
+    }
+    let check = || -> Option<()> {
+        let mut r = Reader { b: cmds, i: 0 };
+        while r.i < cmds.len() {
+            match r.u8()? {
+                OP_CLIP => { finite(&mut r, 4)?; }
+                OP_FILL_POLY => {
+                    let n = r.u32()? as usize;
+                    if !(3..=crate::scene::MAX_SCENE_MARKS).contains(&n) { return None; }
+                    finite(&mut r, n.checked_mul(2)?)?; r.bytes(4)?;
+                }
+                OP_STROKE => {
+                    let n = r.u32()? as usize;
+                    if n != 2 { return None; }
+                    finite(&mut r, n.checked_mul(2)?)?;
+                    let width = r.f32()?;
+                    if !width.is_finite() || width < 0.0 { return None; }
+                    r.bytes(4)?; if r.u8()? != 0 { return None; }
+                    let nd = r.u32()? as usize;
+                    if nd != 0 { return None; }
+                    finite(&mut r, nd)?; if r.u8()? != CAP_BUTT { return None; }
+                }
+                OP_POINT => {
+                    finite(&mut r, 3)?; if r.u8()? > 1 { return None; }
+                    r.bytes(4)?; finite(&mut r, 1)?; r.bytes(4)?;
+                }
+                OP_UNION_TRIANGLES => {
+                    let n = r.u32()? as usize;
+                    if !(1..=MAX_UNION_TRIANGLES).contains(&n) { return None; }
+                    r.bytes(4)?; finite(&mut r, n.checked_mul(6)?)?;
+                }
+                _ => return None,
+            }
+        }
+        Some(())
+    };
+    check().is_some()
+}
+
 /// Parse and paint a display list, retaining the native byte framebuffer so a
 /// latency-oriented PNG export can feed it straight into the encoder.
-fn rasterize_with_spans<'a>(
+fn rasterize_with_spans<'a, const RETAINED: bool>(
     cmds: &[u8],
     spans: &[&[u8]],
     w: usize,
@@ -2402,6 +2469,18 @@ fn rasterize_with_spans<'a>(
     let mut r = Reader { b: cmds, i: 0 };
     while r.i < cmds.len() {
         let op = r.u8()?;
+        if RETAINED
+            && !matches!(
+                op,
+                OP_CLIP
+                    | OP_FILL_POLY
+                    | OP_STROKE
+                    | OP_POINT
+                    | OP_UNION_TRIANGLES
+            )
+        {
+            return None;
+        }
         let ok = (|| -> Option<()> {
             match op {
                 OP_CLIP => {
@@ -2415,6 +2494,7 @@ fn rasterize_with_spans<'a>(
                     cv.polar_clip = None;
                 }
                 OP_POLAR_CLIP => {
+                    if RETAINED { return None; }
                     let (cx, cy, inner, outer) = (r.f32()?, r.f32()?, r.f32()?, r.f32()?);
                     let (start, sweep) = (r.f32()?, r.f32()?);
                     let polar = PolarClip::new(cx, cy, inner, outer, start, sweep)?;
@@ -2438,6 +2518,7 @@ fn rasterize_with_spans<'a>(
                     }
                 }
                 OP_FILL_POLY_GRAD => {
+                    if RETAINED { return None; }
                     let n = r.u32()? as usize;
                     let pts = r.pts(n)?;
                     let (g0x, g0y, g1x, g1y) = (r.f32()?, r.f32()?, r.f32()?, r.f32()?);
@@ -2465,7 +2546,7 @@ fn rasterize_with_spans<'a>(
                         dash.push(r.f32()?);
                     }
                     let cap = r.u8()?;
-                    stroke_shaped(&mut cv, &pts, width, c, closed, &dash, cap);
+                    if !stroke_shaped_policy::<RETAINED>(&mut cv, &pts, width, c, closed, &dash, cap) { return None; }
                 }
                 OP_POINT => {
                     let (cx, cy, rr) = (r.f32()?, r.f32()?, r.f32()?);
@@ -2476,6 +2557,7 @@ fn rasterize_with_spans<'a>(
                     point(&mut cv, cx, cy, rr, sym, fill, sw, st);
                 }
                 OP_IMAGE => {
+                    if RETAINED { return None; }
                     let (dx, dy, dw, dh) = (r.f32()?, r.f32()?, r.f32()?, r.f32()?);
                     let (iw, ih) = (r.u32()? as usize, r.u32()? as usize);
                     let nearest = r.u8()? != 0;
@@ -2483,6 +2565,7 @@ fn rasterize_with_spans<'a>(
                     blit(&mut cv, dx, dy, dw, dh, iw, ih, src, nearest);
                 }
                 OP_DENSITY_IMAGE => {
+                    if RETAINED { return None; }
                     let (dx, dy, dw, dh) = (r.f32()?, r.f32()?, r.f32()?, r.f32()?);
                     let (iw, ih) = (r.u32()? as usize, r.u32()? as usize);
                     let span = r.u32()? as usize;
@@ -2503,6 +2586,7 @@ fn rasterize_with_spans<'a>(
                     blit_density(&mut cv, dx, dy, dw, dh, iw, ih, encoded, &lut);
                 }
                 OP_HEATMAP_IMAGE => {
+                    if RETAINED { return None; }
                     let (dx, dy, dw, dh) = (r.f32()?, r.f32()?, r.f32()?, r.f32()?);
                     let (iw, ih) = (r.u32()? as usize, r.u32()? as usize);
                     let span = r.u32()? as usize;
@@ -2551,6 +2635,7 @@ fn rasterize_with_spans<'a>(
                     );
                 }
                 OP_TEXT => {
+                    if RETAINED { return None; }
                     let (x, y) = (r.f32()?, r.f32()?);
                     let anchor = r.u8()?;
                     let size = r.f32()?;
@@ -2560,6 +2645,7 @@ fn rasterize_with_spans<'a>(
                     text(&mut cv, x, y, anchor, size, c, s);
                 }
                 OP_STYLED_TEXT => {
+                    if RETAINED { return None; }
                     let (x, y) = (r.f32()?, r.f32()?);
                     let anchor = r.u8()?;
                     let size = r.f32()?;
@@ -2587,6 +2673,7 @@ fn rasterize_with_spans<'a>(
                     );
                 }
                 OP_POINTS => {
+                    if RETAINED { return None; }
                     // Batched marks, struct-of-arrays: one header (symbol +
                     // shared stroke) then cx/cy/r f32 arrays and per-point
                     // RGBA8 fills. Lets Python pack whole NumPy columns in one
@@ -2622,6 +2709,7 @@ fn rasterize_with_spans<'a>(
                     paint_points(&mut cv, &batch, raster_fanout(est_px, POINTS_FANOUT_PX, h));
                 }
                 OP_AFFINE_POINTS => {
+                    if RETAINED { return None; }
                     // Borrow offset-encoded x/y payload columns and fuse their
                     // f64 decode + affine projection into native point paint.
                     let n = r.u32()? as usize;
@@ -2684,6 +2772,7 @@ fn rasterize_with_spans<'a>(
                     );
                 }
                 OP_AFFINE_CHANNEL_POINTS => {
+                    if RETAINED { return None; }
                     let n = r.u32()? as usize;
                     let sym = r.u8()?;
                     let sw = r.f32()?;
@@ -2839,6 +2928,7 @@ fn rasterize_with_spans<'a>(
                     );
                 }
                 OP_SEGMENTS => {
+                    if RETAINED { return None; }
                     let n = r.u32()? as usize;
                     let width = r.f32()?;
                     let bytes4 = n.checked_mul(4)?;
@@ -2871,6 +2961,7 @@ fn rasterize_with_spans<'a>(
                     );
                 }
                 OP_RECTS => {
+                    if RETAINED { return None; }
                     let n = r.u32()? as usize;
                     let bytes4 = n.checked_mul(4)?;
                     let x0 = r.bytes(bytes4)?;
@@ -2936,9 +3027,10 @@ fn rasterize_with_spans<'a>(
                         }
                         points.extend_from_slice(&triangle);
                     }
-                    fill_contours(&mut cv, &points, 3, true, |_, _| color);
+                    fill_contours(&mut cv, &points, 3, true, &mut |_, _| color);
                 }
                 OP_TRIANGLES | OP_STROKED_TRIANGLES => {
+                    if RETAINED { return None; }
                     let n = r.u32()? as usize;
                     let (stroke_width, stroke_color) = if op == OP_STROKED_TRIANGLES {
                         let width = r.f32()?;
@@ -2977,6 +3069,7 @@ fn rasterize_with_spans<'a>(
                     }
                 }
                 OP_SMOOTH_STROKE => {
+                    if RETAINED { return None; }
                     let n = r.u32()? as usize;
                     if n < 2 {
                         return None;
@@ -3020,7 +3113,7 @@ pub fn rasterize_rgb_into(cmds: &[u8], w: usize, h: usize, out: &mut [u8]) -> bo
     if out.len() != w.checked_mul(h).and_then(|n| n.checked_mul(3)).unwrap_or(0) {
         return false;
     }
-    rasterize_with_spans(cmds, &[], w, h, true, out).is_some()
+    rasterize_with_spans::<false>(cmds, &[], w, h, true, out).is_some()
 }
 
 /// Parse and paint a display list whose commands may reference `data` for the
@@ -3044,7 +3137,7 @@ pub fn rasterize_spans_into(
     // which is exactly what the owned `vec![0; w * h * 4]` did, and straight
     // alpha is already the canvas's own layout — so the export step that used
     // to `copy_from_slice` a whole frame is now nothing at all.
-    rasterize_with_spans(cmds, spans, w, h, false, out).is_some()
+    rasterize_with_spans::<false>(cmds, spans, w, h, false, out).is_some()
 }
 
 /// Fused low-latency raster + PNG path. `Fast` uses fdeflate's PNG-tuned
@@ -3073,14 +3166,36 @@ pub fn rasterize_png_spans_into(
     h: usize,
     out: &mut [u8],
 ) -> Option<usize> {
+    rasterize_png_spans_policy::<false>(cmds, spans, w, h, out)
+}
+pub(crate) fn rasterize_retained_png_into(
+    cmds: &[u8],
+    w: usize,
+    h: usize,
+    out: &mut [u8],
+) -> Option<usize> {
+    rasterize_png_spans_policy::<true>(cmds, &[], w, h, out)
+}
+fn rasterize_png_spans_policy<const RETAINED: bool>(
+    cmds: &[u8],
+    spans: &[&[u8]],
+    w: usize,
+    h: usize,
+    out: &mut [u8],
+) -> Option<usize> {
     let (wu, hu) = (u32::try_from(w).ok()?, u32::try_from(h).ok()?);
     // The PNG path is 3-channel and the destination is the encoded stream, so
     // this one still owns its framebuffer — but it is a plane fewer than the
     // RGBA path, and nothing is copied out of it.
     let mut px = vec![0u8; w.checked_mul(h)?.checked_mul(3)?];
-    let cv = rasterize_with_spans(cmds, spans, w, h, true, &mut px)?;
+    let cv = rasterize_with_spans::<RETAINED>(cmds, spans, w, h, true, &mut px)?;
     let mut cursor = Cursor::new(out);
     {
+        if RETAINED {
+            let mut writer=png::Encoder::write_plain_rgb8(&mut cursor,wu,hu).ok()?;
+            writer.write_image_data(cv.px).ok()?;
+            writer.finish().ok()?;
+        } else {
         let mut encoder = png::Encoder::new(&mut cursor, wu, hu);
         encoder.set_color(if cv.opaque {
             png::ColorType::Rgb
@@ -3093,6 +3208,8 @@ pub fn rasterize_png_spans_into(
         let mut writer = encoder.write_header().ok()?;
         writer.write_image_data(cv.px).ok()?;
         writer.finish().ok()?;
+        }
+
     }
     usize::try_from(cursor.position()).ok()
 }
@@ -3208,7 +3325,7 @@ mod tests {
         opaque: bool,
     ) -> Option<Vec<u8>> {
         let mut px = canvas_px(w, h, opaque);
-        rasterize_with_spans(cmds, spans, w, h, opaque, &mut px)?;
+        rasterize_with_spans::<false>(cmds, spans, w, h, opaque, &mut px)?;
         Some(px)
     }
 

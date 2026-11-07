@@ -2,9 +2,9 @@
 
 Native Python/Node export SVG, PNG and offline HTML through retained canonical
 Scene geometry. Public browser sessions capture XYFG v2 through their actual
-Worker and export Scene, XYPB, SVG and the same offline HTML. Browser PNG is
-explicitly unavailable under the unchanged single-module packaging caps; full
-#45 and milestones 4–7 acceptance remain open. Composition remains the only
+Worker and export Scene, XYPB, SVG, PNG and the same offline HTML. PNG uses the
+same Rust raster/encoder in the single module under the unchanged packaging
+caps. Full #45 and milestones 4–7 acceptance remain open. Composition remains the only
 chart-building surface. No host owns graph filtering, layout or style policy.
 
 The v1 acquisition and ABI403 checkpoint descriptions below retain their
@@ -314,15 +314,59 @@ Client input is capped at8 MiB; HTML preflight reserves client*12 + snapshot*8
 Recovery's four-times-input admission remains. Per-operation limits do not solve
 the outstanding #111 global process budget.
 
+### Shared retained PNG capability
+
+The browser keeps `default-features=false` and enables `frozen-raster` only.
+`SceneDocument::to_raster_commands_retained` validates the complete decoded
+Scene before allocating commands: no text, glyph sidecars, gradients, images,
+legend/colorbar, axes/ticks or unsupported record kinds can be silently skipped.
+All supported retained graph input remains representable: circle/square marks
+use existing point SDF paint; the other four graph symbols and focus bands were
+already lowered by the shared retained contour policy into independent triangles.
+Frames are solid rectangles; phase-split shafts are solid butt segments.
+Unexpected full-Scene commands reject before output/framebuffer allocation.
+
+The existing Scene mark writer and raster dispatcher are const-specialized;
+primitive coverage, SDF, clipping, alpha and draw order have one implementation.
+A solid two-point butt segment calls the same existing box-coverage compositor
+without materializing generic dash/polyline run vectors. The full native Scene
+route retains text, image, gradients, general strokes and other commands.
+The checked PNG adapter reserves the encoded buffer after command admission;
+the existing export reservation of snapshot*8 + backingpixels*32 covers command,
+RGB framebuffer, encoder/filter/compression/output and provenance temporaries.
+Checked arithmetic, 384MiB ceiling, default16MiB Worker refusals, cancellation by
+Worker disposal and owned-instance lifetimes remain. Caller-retained/global
+process budgets remain #111; this change does not resolve them.
+
+The vendored existing png0.18.1 encoder has one const-generic implementation.
+Its restricted RGB8 writer fixes exactly the prior nonanimated, noninterlaced,
+metadata-free `Fast`/`Up` configuration. The ordinary writer keeps every option.
+Fdeflate, its larger-than-stored fallback, CRC and chunk framing are unchanged.
+The existing crc32fast1.5.0 dependency uses its existing byte-at-a-time update on
+wasm32 with only the first IEEE table retained; native keeps SIMD/slicing-by-16.
+This trades browser CRC speed for module space, without changing PNG bytes or
+compression. Original licenses, source hashes and patch notes live in `vendor/`.
+
+To reduce code duplication, wasm32 shares standard-library stable-sort bodies
+per record type and callback-independent instance/graph transaction dispatch.
+Native retains comparator/callback specialization; ordering, allocations,
+validation/locking sequence and the standard-library sort algorithm remain.
+No exported ABI signature, capability, guard, resource cap or encoder is removed.
+The target-only O2/inline50 profile and Binaryen132 packaging pass stay fixed.
+Module and offline classic Workers share the same bounded XYFX byte staging
+helper. Both call the same Rust export/recovery entry; the classic entry refuses
+active/queued aggregate work before touching the arena. A single strict-CSP file
+embeds the checked module plus shipped classic Worker and exercises the public
+frozen API without network access. Disposal rejects pending PNG work before the
+Worker acknowledgement and an immutable snapshot exports identically through a
+fresh Worker.
+
 ### Remaining acceptance
 
-WASM retains `default-features=false`; the shared Rust PNG/raster implementation
-cannot yet fit the unchanged 1,927,168 raw / 786,432 gzip6 single-module caps.
-PNG requests return `XYG_WASM_RESOURCE_LIMIT` with
-`XYG_FROZEN_PNG_UNAVAILABLE`; output is empty and subsequent exports remain usable.
-No optional module, cap increase, alternative geometry, removed existing export,
-or PNG parity acceptance is implied. Full native/WASM rendered PNG acceptance
-and full #45 scale/aggregate/accessibility evidence remain OPEN. The append-only
-[continuation receipt](../performance/temporal-worker-export-2026-11-07/README.md)
-separates fresh actual Worker/offline tests, code-size attempts and inherited
-historical evidence. No comparative performance victory is claimed.
+The append-only [shared PNG receipt](../performance/temporal-shared-png-2026-11-07/README.md)
+separates fresh single-module/actual Worker/native PNG proofs from inherited
+history and over-cap probes. Prior unavailable-PNG receipts remain authentic
+historical checkpoints. Standalone module fit does not certify a future union
+with other features or ABI additions. Full #45 scale/aggregate/accessibility
+and whole-milestone acceptance remain OPEN. No comparative performance victory
+or global process budget completion is claimed.

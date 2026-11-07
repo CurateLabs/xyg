@@ -326,7 +326,7 @@ impl IntervalIndex {
             }
         }
         let mut order: Vec<u32> = (0..n as u32).collect();
-        order.sort_by_key(|&idx| {
+        crate::shared_sort::by_key(&mut order, |&idx| {
             let i = idx as usize;
             // Unbounded starts sort before all finite starts.
             if endpoints.start_valid[i] == 0 {

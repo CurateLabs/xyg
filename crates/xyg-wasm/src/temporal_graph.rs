@@ -84,6 +84,8 @@ impl WasmTemporalGraph {
         (self.owner.clone(), TemporalHandle(self.owner.generation))
     }
 
+    // Typed acquisition facts mirror the existing XYFX owner/capture ingress.
+    #[allow(clippy::too_many_arguments)]
     pub(super) fn freeze(
         &self,
         session: &xyg_engine::graphforge::interaction::wire::WireSession,

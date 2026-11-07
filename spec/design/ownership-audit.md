@@ -908,6 +908,7 @@ Forbidden:
 | `js/src/63_graph_gpu.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client`; GPU-v1 validation/raw-buffer paint through GLHost | — |
 | `js/src/63_graph_session_wire.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; internal XYGI/XYGR framing, no graph policy | #59 |
 | `js/src/wasm_abi_generated.ts` | Generated cross-host WASM contract binding | `browser-wasm-generated` | `generate` | #59 |
+| `js/src/wasm_frozen_graph.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; Shared raw byte staging only. | #59 |
 | `js/src/wasm_inline_worker.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `js/src/wasm_worker.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 | `packages/xy-node/src/_abi_generated.js` | Node low-level ABI binding | `node-abi-generated` | `generate` | #57 |
@@ -1370,6 +1371,8 @@ These additions use the existing ownership policies without adding a host policy
 | `crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 
 | `crates/xyg-engine/src/graph_marker_contour.rs` | Rust safe engine | `rust-engine` | `keep-rust`; The safe engine is the single implementation of parity-affecting behavior. | — |
+| `crates/xyg-engine/src/retained_png.rs` | Rust safe engine | `rust-engine` | `keep-rust`; Shared checked raster/PNG capability adapter. | — |
+| `crates/xyg-engine/src/shared_sort.rs` | Rust safe engine | `rust-engine` | `keep-rust`; Shared standard-library stable-sort bodies for the bounded browser module. | — |
 | `crates/xyg-engine/src/temporal_graph_export.rs` | Rust safe engine | `rust-engine` | `keep-rust`; The safe engine is the single implementation of parity-affecting behavior. | — |
 | `crates/xyg-engine/src/temporal_graph_frozen.rs` | Rust safe engine | `rust-engine` | `keep-rust`; The safe engine is the single implementation of parity-affecting behavior. | — |
 | `crates/xyg-core/src/temporal_graph_frozen_ffi.rs` | Rust C ABI shell | `rust-c-abi` | `keep-rust`; One versioned cdylib serves ctypes, Koffi, and future browser-facing adapters. | — |
@@ -1502,3 +1505,16 @@ copies only. The controller captures computed CSS through the existing painter
 parser. Python/Node frozen modules are **python-host**/**node-host** package
 client discovery, scalar marshaling and native ownership. No second chart
 builder, layout, routing, semantic style resolver or renderer is introduced.
+
+The shared retained PNG continuation adds `retained_png.rs` (checked allocation
+and command capability admission) and `shared_sort.rs` (one standard-library
+stable-sort body per browser record type). Both are **rust-engine**. The existing
+raster/PNG implementation, draw policy and full native text routes remain shared.
+`vendor/png` and `vendor/crc32fast` retain the existing dependency algorithms and
+licenses with auditable compile-time capability/table changes; they do not move
+product policy into hosts. Callback sharing keeps the same Rust transaction
+validation, locking and lifetime sequence.
+
+Both Worker entries call `wasm_frozen_graph.ts` for bounded XYFX byte staging
+and owned output copying. The module and strict-CSP offline classic Worker
+invoke the same Rust export/recovery operation; no export policy enters JS.

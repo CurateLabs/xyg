@@ -1,4 +1,5 @@
 /// <reference lib="webworker" />
+import {executeFrozenGraph} from "./wasm_frozen_graph";
 
 import {
   bindXygWasmExports,
@@ -987,6 +988,12 @@ function runTemporalGraphCommand(message: any) {
   if (!exports || !handle || lifecycle !== "initialized") { error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return; }
   try {
     if(message.type==='frozen_graph.command'&&(activeCompile||activeGraph||activeAggregate||activeAggregateStream||activeTick||tickQueue.length)){error(message.requestId,'XYG_WASM_BUSY','Frozen export requires a drained Worker');return;}
+    if (message.type === 'frozen_graph.command') {
+      const result = executeFrozenGraph(exports, handle, message.command, operationBudgetBytes);
+      if (result.status !== XYG_WASM_STATUS.OK) rustError(message.requestId, statusCode(result.status), result.detail!, result.status);
+      else reply(message.requestId, result.response!, [result.response!]);
+      return;
+    }
     if (activeCompile) terminateActiveCompile("a temporal graph frame");
     if (activeGraph) {
       clearTimeout(activeGraph.timer); exports.xyg_wasm_cancel(handle, activeGraph.sequence);
@@ -1000,7 +1007,7 @@ function runTemporalGraphCommand(message: any) {
     const ptr = exports.xyg_wasm_arena_ptr(handle) >>> 0; const end = ptr + message.command.byteLength;
     if (!ptr || end > exports.memory.buffer.byteLength) throw new Error("invalid temporal graph staging range");
     new Uint8Array(exports.memory.buffer, ptr, message.command.byteLength).set(new Uint8Array(message.command));
-    status = message.type==="frozen_graph.command" ? exports.xyg_wasm_frozen_graph_execute(handle,0,message.command.byteLength) : exports.xyg_wasm_temporal_graph_execute(handle, 0, message.command.byteLength);
+    status = exports.xyg_wasm_temporal_graph_execute(handle, 0, message.command.byteLength);
     if (status !== XYG_WASM_STATUS.OK) { const detail = readXygWasmError(exports, handle); exports.xyg_wasm_arena_resize(handle, 0); rustError(message.requestId, statusCode(status), detail, status); return; }
     const outputPtr = exports.xyg_wasm_output_ptr(handle) >>> 0; const outputLen = exports.xyg_wasm_output_len(handle) >>> 0; const outputEnd = outputPtr + outputLen;
     if (outputLen !== 0 && (!outputPtr || outputLen < 64 || outputLen > operationBudgetBytes || outputEnd > exports.memory.buffer.byteLength)) throw new Error("Rust temporal graph response returned an invalid range");

@@ -253,9 +253,10 @@ record the bounded contract and actual proof.
 | `js/src/49_wasm_ticks.ts` | XYTK/XYTO codec plus latest-wins primary Cartesian ChartView attachment |
 | `dist/xyg-wasm.wasm` | Separately built direct-browser engine adapter; never copied into the Python static tree |
 
-The WASM adapter disables `xyg-engine`'s default `raster` feature. Native PNG/PDF export remains a native-host concern; frozen graph
-Scene/XYPB/SVG/HTML exports share Rust lowering and the shipped painter.
-WASM PNG remains an explicit unavailable resource error. The raw module must request no ambient WebAssembly imports.
+The WASM adapter disables `xyg-engine`'s default full `raster` feature and enables
+its shared `frozen-raster` capability for retained graph PNG. Native full-scene
+formats remain unchanged; frozen Scene/XYPB/SVG/HTML/PNG share Rust lowering,
+and HTML uses the shipped painter. The raw module must request no ambient WebAssembly imports.
 
 **Historical artifact size.** Through ABI35, `dist/xyg-wasm.wasm` used the workspace release
 profile (`opt-level = 3`, fat LTO, one codegen unit, stripped) and is about

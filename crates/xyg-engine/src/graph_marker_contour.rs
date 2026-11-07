@@ -121,7 +121,7 @@ fn directions(size: f64, shape: u8, lo: f64, hi: f64) -> Vec<[f64; 2]> {
             3
         }
     };
-    a.sort_by(|a, b| {
+    crate::shared_sort::by(&mut a, |a, b| {
         quadrant(a)
             .cmp(&quadrant(b))
             .then_with(|| (b[0] * a[1]).total_cmp(&(a[0] * b[1])))

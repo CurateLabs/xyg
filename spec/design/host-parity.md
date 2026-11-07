@@ -2152,6 +2152,6 @@ retained paint-to-canonical-Scene lowering. Hosts marshal typed scalars, capture
 computed CSS presentation and frame HTML with the shipped client; Rust owns
 validation, membership, styles, geometry, dash phase, stable-ID mapping,
 provenance and full-artifact consistency. Native SVG/PNG/HTML and browser
-Scene/XYPB/SVG/HTML share these paths. WASM PNG explicitly remains unavailable
-under the unchanged package caps. See [the versioned frozen contract](temporal-graph-frozen.md).
+Scene/XYPB/SVG/HTML/PNG share these paths under the unchanged single-module
+package caps. PNG is byte-identical through the shared Rust raster/encoder. See [the versioned frozen contract](temporal-graph-frozen.md).
 Historical ABI402/403 acquisition/native receipts remain immutable.

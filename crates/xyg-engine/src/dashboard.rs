@@ -41,7 +41,7 @@ pub fn plan_dashboard_resources(
         return None;
     }
     let mut order: Vec<usize> = (0..resources.len()).collect();
-    order.sort_by_key(|&index| {
+    crate::shared_sort::by_key(&mut order, |&index| {
         let resource = resources[index];
         (
             std::cmp::Reverse(resource.flags & DASHBOARD_INTERACTING != 0),

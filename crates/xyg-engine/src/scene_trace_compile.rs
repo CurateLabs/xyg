@@ -531,7 +531,7 @@ fn resolve_stop_positions(positions: &[Option<f64>]) -> Option<Vec<f64>> {
     if !positions[count - 1].is_some() {
         anchors.push((count - 1, 1.0));
     }
-    anchors.sort_by_key(|(index, _)| *index);
+    crate::shared_sort::by_key(&mut anchors, |(index, _)| *index);
     let mut prev = 0.0;
     for anchor in &mut anchors {
         prev = anchor.1.max(prev);

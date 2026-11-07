@@ -151,7 +151,7 @@ impl TileStore {
             .copied()
             .filter(|k| !keys.contains(k) && k.0.abs_diff(level as u32) <= 1)
             .collect();
-        candidates.sort_by_key(|k| {
+        crate::shared_sort::by_key(&mut candidates, |k| {
             (
                 u32::from(Some(k.0 as usize) != previous),
                 req.known

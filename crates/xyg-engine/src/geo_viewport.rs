@@ -1381,7 +1381,7 @@ fn clip_ring_components(
                 crossings.push((position, p));
             }
         }
-        crossings.sort_by(|a, b| a.0.total_cmp(&b.0));
+        crate::shared_sort::by(&mut crossings, |a, b| a.0.total_cmp(&b.0));
         if crossings.len() % 2 != 0 {
             return Err(GeoError::InvalidArgument);
         }
@@ -1435,7 +1435,7 @@ impl RingGraph {
         for &(a, b) in &self.edges {
             nodes.extend([a, b]);
         }
-        nodes.sort_by(cmp);
+        crate::shared_sort::by(&mut nodes, cmp);
         nodes.dedup();
         let mut edges = Vec::with_capacity(self.edges.len());
         for (a, b) in self.edges {

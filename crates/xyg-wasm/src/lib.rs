@@ -529,6 +529,22 @@ fn with_ordinary_instance_mut(
 }
 
 fn with_instance_mut<T>(handle: u32, operation: impl FnOnce(&mut Instance) -> T) -> Result<T, i32> {
+    #[cfg(target_arch = "wasm32")]
+    {
+        let mut operation = Some(operation);
+        with_instance_mut_erased(handle, &mut |i| operation.take().expect("one instance operation")(i))
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    with_instance_mut_impl(handle, operation)
+}
+
+#[cfg(target_arch = "wasm32")]
+#[inline(never)]
+fn with_instance_mut_erased<T>(handle: u32, operation: &mut dyn FnMut(&mut Instance) -> T) -> Result<T, i32> {
+    with_instance_mut_impl(handle, operation)
+}
+
+fn with_instance_mut_impl<T>(handle: u32, operation: impl FnOnce(&mut Instance) -> T) -> Result<T, i32> {
     let mut registry = registry();
     let instance = registry
         .slot_mut(handle)
@@ -1860,6 +1876,18 @@ pub extern "C" fn xyg_wasm_last_scene_records(handle: u32) -> usize {
 #[no_mangle]
 pub extern "C" fn xyg_wasm_last_scene_styles(handle: u32) -> usize {
     with_instance_mut(handle, |instance| instance.last_scene_styles).unwrap_or(0)
+}
+
+/// Shared XYFX frozen graph acquisition, native-equivalent export and recovery.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_frozen_graph_execute(handle: u32, offset: usize, length: usize) -> i32 {
+    with_instance_mut(handle, |i| {
+        if i.geo_transport.is_some() {
+            return STATUS_INVALID_ARGUMENT;
+        }
+        temporal_graph_frozen::execute(i, offset, length)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
 }
 
 #[cfg(test)]
@@ -3458,16 +3486,4 @@ mod tests {
         .unwrap();
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
     }
-}
-
-/// Shared XYFX frozen graph acquisition, native-equivalent export and recovery.
-#[no_mangle]
-pub extern "C" fn xyg_wasm_frozen_graph_execute(handle: u32, offset: usize, length: usize) -> i32 {
-    with_instance_mut(handle, |i| {
-        if i.geo_transport.is_some() {
-            return STATUS_INVALID_ARGUMENT;
-        }
-        temporal_graph_frozen::execute(i, offset, length)
-    })
-    .unwrap_or(STATUS_INVALID_HANDLE)
 }

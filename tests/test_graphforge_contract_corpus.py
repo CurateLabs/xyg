@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-CURRENT_BINDINGS = Path("spec/performance/temporal-worker-export-2026-11-07/current-bindings.json")
+CURRENT_BINDINGS = Path("spec/performance/temporal-shared-png-2026-11-07/current-bindings.json")
 
 
 def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> None:
@@ -60,7 +60,9 @@ def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> N
     git("init", "--quiet")
     git("config", "core.autocrlf", "true")
     git("config", "core.eol", "crlf")
-    git("add", "--all")
+    # Pinned upstream files may match their own ignore rules; reproduce the
+    # actual tracked source set before exercising real checkout conversion.
+    git("add", "--force", "--all")
     for path in original:
         (tmp_path / path).unlink()
     git("checkout-index", "--all", "--force")

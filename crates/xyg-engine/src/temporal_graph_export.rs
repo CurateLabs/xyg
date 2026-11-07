@@ -523,12 +523,12 @@ pub fn export(
     let document = SceneDocument::decode(&scene).map_err(bad)?;
     document.check_mesh_budgets(format == 1).map_err(bad)?;
     let body = if format == 1 {
-        #[cfg(feature = "raster")]
+        #[cfg(any(feature = "raster", feature = "frozen-raster"))]
         {
-            let commands = document.to_raster_commands(resolution).map_err(bad)?;
-            crate::scene_static::rasterize_png(&commands, w as usize, h as usize).map_err(bad)?
+            let commands = document.to_raster_commands_retained(resolution).map_err(bad)?;
+            crate::retained_png::rasterize_png(&commands, w as usize, h as usize).map_err(bad)?
         }
-        #[cfg(not(feature = "raster"))]
+        #[cfg(not(any(feature = "raster", feature = "frozen-raster")))]
         {
             return Err(E::UnitUnsupported);
         }
