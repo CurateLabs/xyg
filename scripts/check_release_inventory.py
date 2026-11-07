@@ -462,7 +462,13 @@ def environment_inventory(root: Path, python: PythonInventory) -> list[dict[str,
         for path in sorted((root / "crates" / crate / "src").rglob("*.rs")):
             if "bin" in path.parts:
                 continue
-            text = re.split(r"#\[cfg\(test\)\]\s*mod\s+\w+", path.read_text(), maxsplit=1)[0]
+            text = path.read_text()
+            # This exact leading inner attribute gates the entire module,
+            # even if its parent declares it unconditionally. A directory
+            # name, outer attribute or changed/missing guard proves nothing.
+            if text.startswith("#![cfg(test)]\n"):
+                continue
+            text = re.split(r"#\[cfg\(test\)\]\s*mod\s+\w+", text, maxsplit=1)[0]
             for match in re.finditer(
                 r'(?:std::)?env::var(?:_os)?\("((?:XYG?_[A-Z0-9_]+)|CODSPEED_ENV)"\)', text
             ):

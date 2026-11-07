@@ -1,0 +1,46 @@
+{
+  "python/xyg/_graph_widget.py": {
+    "sha256": "5773315f0022d623d7d5f9636eb6756ed3489bc34cc8988a06cd794373fb50d0",
+    "bytes": 4768
+  },
+  "python/xyg/_graphforge.py": {
+    "sha256": "451e8fb9857c359c8bbcb09ad2a31c7b0cea86e2ecf40044243e82e3a8ae8037",
+    "bytes": 37501
+  },
+  "python/xyg/components.py": {
+    "sha256": "b5ec21b4343176efbddd1a3c4462aa1fe8a32e61d9d5a6de8bfef3d4cbe9e311",
+    "bytes": 312506
+  },
+  "js/src/60_entries.ts": {
+    "sha256": "f22973e25a466e0631819ff20c5b7c96b7141e60de094304e38e0c419ca55cd9",
+    "bytes": 19268
+  },
+  "js/src/66_graph_host.ts": {
+    "sha256": "378e0966fb84e7b3a466718c7643041155dd949b89480fdef44cbd884c0f5062",
+    "bytes": 3065
+  },
+  "scripts/graph_notebook_progressive_smoke.mjs": {
+    "sha256": "131a9d6160438f0b5b0a6ed996554f094f22543462adb2c0cbc93646db1ba2c1",
+    "bytes": 5508
+  },
+  "tests/test_graph_widget.py": {
+    "sha256": "fa7b6b258b2a9b38a00da8829f2a8da8fca03f8b8b76ff9371ec63e7dbdc2092",
+    "bytes": 4252
+  },
+  "tests/notebook_graph_progressive.ipynb": {
+    "sha256": "22497b6d13ca661f50e72045caa652997cba9e22e2327cbc64aa67902c174c37",
+    "bytes": 1163
+  },
+  "target/release/libxyg_core.so": {
+    "sha256": "d1758cf111c09add3bb5a0aed107eb623d9e2035e5f5461068eb32b3a8ce0949",
+    "bytes": 6119880
+  },
+  "packages/xy-client/dist/index.js": {
+    "sha256": "4a563a12c14eb5349ea6a9d8f10af061044c54ed1b45c535cde523f2059de9b9",
+    "bytes": 798410
+  },
+  "packages/xy-client/dist/standalone.js": {
+    "sha256": "d02d00fc069457a8718949db7cbe24b2718d7ee958752d0b24657dca8a200b74",
+    "bytes": 798437
+  }
+}

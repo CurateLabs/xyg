@@ -2387,6 +2387,14 @@
       "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
     },
     {
+      "path": "js/src/66_graph_host.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    {
       "path": "js/src/63_graph_gpu.ts",
       "current_owner": "Shared TypeScript browser client",
       "policy": "browser-client",
@@ -4339,6 +4347,22 @@
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
+      "path": "python/xyg/_graph_widget.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_graph_widget_identity.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
       "path": "crates/xyg-core/src/graphforge_session_ffi.rs",
       "current_owner": "Rust C ABI shell",
       "policy": "rust-c-abi",
@@ -4393,6 +4417,46 @@
       "disposition": "keep-host",
       "follow_up_issue": null,
       "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
+      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_probe.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
     }
   ]
 }

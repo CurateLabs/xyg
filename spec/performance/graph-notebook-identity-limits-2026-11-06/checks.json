@@ -1,0 +1,154 @@
+{
+  "reviewedBefore": "2c8349edfd34f7cb8f81a9edce37f312fc13e90d",
+  "checks": {
+    "report": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_graph_notebook_report.py",
+        "spec/performance/graph-notebook-identity-limits-2026-11-06/notebook.json"
+      ],
+      "exitCode": 0,
+      "rawSha256": "8a0083ab43cb0f83117637cfeef43d13eaa95c5dd16bd8b35d4cf08da8ffa754",
+      "archiveSha256": "1b5876660f05201ed95aa742feaad51ce4a9b40450a89c0c792fafeb04096d14"
+    },
+    "types": {
+      "command": [
+        "uv",
+        "run",
+        "ty",
+        "check"
+      ],
+      "exitCode": 0,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "inventory": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_release_inventory.py"
+      ],
+      "exitCode": 0,
+      "rawSha256": "bf0f6a94e21bd4a384ebcc6ca9c48263941fb2d5d04660c16597a4d95ba92106",
+      "archiveSha256": "5da83ee884873fb958349c0d3c27cdca14f82d27b8d0a81562957b5ac5152869"
+    },
+    "ownership": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_ownership.py"
+      ],
+      "exitCode": 0,
+      "rawSha256": "05bc4e08ec18b45b65e6d57b56638a446616e313033b4454dac2a20eb6881f92",
+      "archiveSha256": "8d374b3086416aa738b0f9db79a959e696d1a00a65105f8d73006a30d53edd8b"
+    }
+  },
+  "retainedAttempts": {
+    "repro.py": {
+      "rawSha256": "8d5a334b14b26b5f015e749f01bcb0db15f0115e7f562c698bc19896903e2768",
+      "archiveSha256": "8050ab987e4b47af5cc38e04f6315f3c4439dbce4071a9e77943ff5d82644bc4"
+    },
+    "before.log": {
+      "rawSha256": "350e5cd535339728b5d348837dad860d8fc36e3f548e04464db6224b2882e843",
+      "archiveSha256": "76de888917a05bb30f50422138fb356df14648dabb6048e77eb166651bb7ebd9"
+    },
+    "after-initial.log": {
+      "rawSha256": "b8caf2d0a1a1098893d0effcde2df83241c0cd70acaaa4e7aeeb63efdb6af575",
+      "archiveSha256": "fd64dc1cf27f9491b4059f74ea2ac8443c5d837ccd642e3655c874162ccb5aaf"
+    },
+    "widget-initial.log": {
+      "rawSha256": "aff1c7838c3e378e25d559b30431a99c30cdfc5dbd04c1f503a62853d8224b81",
+      "archiveSha256": "caacc132cb7523ecfd072cfc57020f810b14d84f694827e04a326b88e8dce8a6"
+    },
+    "widget-fixed.log": {
+      "rawSha256": "193c2e03f8c6ef91dfc98ddc9b8a8de1bd17a47f007c0a1ad17ef43cc6b04163",
+      "archiveSha256": "6c8a11f664e84918f4ba06e801e40f7a25d04490e0ce76d470fa04b883994c0b"
+    },
+    "widget-large.log": {
+      "rawSha256": "4839e4fbfd0136e27c48389c77af88e605bb7170de52712f703c73b99da18e7f",
+      "archiveSha256": "b5c893ae597fff01a746aca4aef76253151ad943ecb77cde4e37a32900c9ae16"
+    },
+    "widget-complete.log": {
+      "rawSha256": "f8d412318aa9642f222e0b9c4030bf9afa8111ff66fa36b878af935a1d7446f3",
+      "archiveSha256": "aa021eb1c41abe42804e0961e12c14575413c62ca80bdd441ac9eb705d1f617e"
+    },
+    "focused.log": {
+      "rawSha256": "5f8ad60318fa57796d5cd48aad86e8b1c05eb28d113e5aaf1479daeaed2b9e58",
+      "archiveSha256": "858056454cfae15183ea11fcb83262e375f06346f2989b17d17d8833e8e82011"
+    },
+    "types.log": {
+      "rawSha256": "3c1cfffc83892274cc7245a7be3098f8f795580429570c487ce6f3af929e9589",
+      "archiveSha256": "160b995059f352271dfb50af29d00ca76380c4a3b483c8c3105d8d7c2bc665f9"
+    },
+    "types-final.log": {
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "inventory.log": {
+      "rawSha256": "bf0f6a94e21bd4a384ebcc6ca9c48263941fb2d5d04660c16597a4d95ba92106",
+      "archiveSha256": "5da83ee884873fb958349c0d3c27cdca14f82d27b8d0a81562957b5ac5152869"
+    },
+    "notebook.log": {
+      "rawSha256": "3957ff231c3692fbaaedbf859c101625d3e030b63238704c1299f251f084c348",
+      "archiveSha256": "b71d669b1f83f4bab1dfb3f32eb7a9836d7a924abb97144ec7ea1f7602f0d561"
+    }
+  },
+  "artifactSha256": {
+    "target/release/libxyg_core.so": "d1758cf111c09add3bb5a0aed107eb623d9e2035e5f5461068eb32b3a8ce0949",
+    "packages/xy-client/dist/index.js": "484490d3f263c1ca4c4d4c54c483650d4b23c431b30aa2b53a762628e31d0db9",
+    "packages/xy-client/dist/standalone.js": "472b3bc27c661d9c47664d1aa570a60392215b69fd71f23208da2f62352a3811",
+    "python/xyg/static/index.js": "484490d3f263c1ca4c4d4c54c483650d4b23c431b30aa2b53a762628e31d0db9",
+    "python/xyg/static/standalone.js": "472b3bc27c661d9c47664d1aa570a60392215b69fd71f23208da2f62352a3811"
+  },
+  "capture": {
+    "frames": 39,
+    "first": "1",
+    "last": "300",
+    "uuidSelection": {
+      "requested": [
+        "01000000-0000-0000-0000-000000000001",
+        "02000000-0000-0000-0000-000000000001"
+      ],
+      "identities": [
+        {
+          "kind": "node",
+          "index": 0,
+          "uuid": "01000000-0000-0000-0000-000000000001",
+          "layers": []
+        },
+        {
+          "kind": "edge",
+          "index": 0,
+          "uuid": "02000000-0000-0000-0000-000000000001",
+          "layers": [],
+          "derived": false,
+          "type": "KNOWS",
+          "source": "01000000-0000-0000-0000-000000000001",
+          "target": "01000000-0000-0000-0000-000000000002"
+        }
+      ]
+    },
+    "finalPointer": {
+      "before": 2,
+      "after": 3,
+      "id": "01000000-0000-0000-0000-000000000001",
+      "expectedId": "01000000-0000-0000-0000-000000000001"
+    },
+    "pageErrors": [],
+    "notebookSha256": "79d28cc52e36baefee3e2ae3e2505e273507cdd9fc9d0f41ecade38e7caec0f1",
+    "images": {
+      "initial": "4495fb6c24c71a0828a30bb0f84812f9e5c99cced1fbae6311e6c25a66503afb",
+      "final": "de67b1bea47ecb08b3930cc0c90c7f68742f401afadde0e34744b3042711ba19"
+    }
+  },
+  "environment": {
+    "uvPython": "Python 3.12.15",
+    "browser": "156.0.8078.4",
+    "node": "v22.23.4"
+  },
+  "currentBindingsSha256": "6eed61b2b510601799a67db4bb273cb3c945728231de10eda94eb4129d08ec37"
+}

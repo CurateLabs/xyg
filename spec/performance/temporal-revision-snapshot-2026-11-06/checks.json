@@ -1,0 +1,81 @@
+{
+  "repairBase": "c90fd9a0292d7be2d7d0598123bcd0e2e41be37e",
+  "sourceSha256": {
+    "js/src/49_wasm_temporal_graph.ts": "974fe2881e63ac07dd7af89a129247d83a9a245fa18a988c56ec3f905823a87d",
+    "packages/xy-node/test/temporal-graph-publication.test.mjs": "1c32af3af686ca5ad39af57d2ff727d5f74d8bfaee8a53012b1396b49c7a5772",
+    "spec/design/temporal-graph.md": "fc656e9ae5aa4f7ad15b879b0da55f75fab7c2f1187f8ce417ba32ae92124c4d",
+    "spec/performance/temporal-revision-snapshot-2026-11-06/README.md": "24e7a1d4397a0b49c558c4b331d83255ea46b7e40c88bb83c10a8036a9d2053c",
+    "spec/performance/temporal-revision-snapshot-2026-11-06/.gitattributes": "bd33c8ef5fb33950a4e41c61028c5665f6d5ee395ff6f17d8fb3e2dad2d9ff12"
+  },
+  "artifacts": {
+    "/home/ubuntu/.t3/worktrees/xyg/t3-4585b57b/target/release/libxyg_core.so": {
+      "sha256": "02f0edf9c79ae1408821c197981b37ebe8f5746a4e1a8df4f8a3ccf468f6519e",
+      "bytes": 6119720
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1",
+      "bytes": 1927032
+    },
+    "packages/xy-client/dist/index.js": {
+      "sha256": "c17c48d5821551d54220336638b6d4ca80efd484214c7c5bf8b931ee33c02daa",
+      "bytes": 802032
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "sha256": "585c0043608f810632575c5fb34159b85416aec6550e2d955fbc3c91ad524728",
+      "bytes": 802059
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+      "bytes": 56051
+    }
+  },
+  "logs": {
+    "before": {
+      "exitCode": 1,
+      "rawSha256": "587e46981c19a1a06fc484efbd39329b834f7754a81d474c728dea4e3ab4468e",
+      "archiveSha256": "f0d2a16c2cda76c1bd07efdcd8c608f12b4a600df36d90fd2967f20f445a5733"
+    },
+    "build": {
+      "exitCode": 0,
+      "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c"
+    },
+    "after": {
+      "exitCode": 0,
+      "rawSha256": "73904b85f2f5ad2020cdf9a66fd3dbe5483799ea8391119c5cc7f4932482583d",
+      "archiveSha256": "e42c56705476a7c8ca7c13c0455046c40fda7c2acf52f225d7d92168f2387357"
+    },
+    "after-final": {
+      "exitCode": 0,
+      "rawSha256": "43813b9bb2b5a1692d546d6c36ed4ffe39fb62d330f7130ecddbbec235c0fbbe",
+      "archiveSha256": "ab1a104dbe75d40a1b0ba93b0d2eddd322c0ad748f64088d012e891d13476b54"
+    },
+    "assets": {
+      "exitCode": 0,
+      "rawSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+      "archiveSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730"
+    },
+    "browser": {
+      "exitCode": 0,
+      "rawSha256": "680236881e4e32eddbeaa5046291d58f1c867844c1c942bfce1a0e7643fc558f",
+      "archiveSha256": "910de06976c36bde0b3e9e7a5e6b7a9fbecf61c6f363907f9be862d0c81ad425"
+    },
+    "hooks": {
+      "exitCode": 0,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "ruff": {
+      "exitCode": 0,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "format": {
+      "exitCode": 0,
+      "rawSha256": "0be8ae93d50c615562bd0773d2904372d5886f19435a0936b6402f9fad55f102",
+      "archiveSha256": "53cdfeb3a1d2dcc20325af24fcb40f97146b32589012eedb102bd2256aa06181"
+    }
+  },
+  "beforeCommand": "node --test --test-name-pattern=submitted revision is immutable packages/xy-node/test/temporal-graph-publication.test.mjs",
+  "scope": "public temporal frame identity/retry correctness; not full #45 acceptance"
+}

@@ -1,0 +1,7 @@
+HEAD: 207ebdbdaa2ec8b0360c571683eb0fa6165e02c0
+Tracked 207 baseline restored; full R4 source/test patch applies cleanly.
+?? spec/performance/graph-picked-target-checkpoint-2026-11-04/
+?? spec/performance/graph-picked-target-r2-2026-11-04/
+?? spec/performance/graph-picked-target-r3-2026-11-04/
+?? spec/performance/graph-picked-target-r4-2026-11-04/
+

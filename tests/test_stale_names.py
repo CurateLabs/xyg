@@ -29,6 +29,49 @@ def test_repository_has_no_stale_native_identity() -> None:
     assert check_stale_names.check_stale_names() == []
 
 
+@pytest.mark.parametrize(
+    "relative",
+    [
+        "spec/performance/chunked-read-validation-2026-11-06/issue-11-blocked-by.json",
+        "spec/performance/chunked-read-validation-2026-11-06/issue-5-blocked-by.json",
+        "spec/performance/chunked-column-reuse-2026-11-06/rust-tests.json",
+    ],
+)
+def test_frozen_evidence_requires_exact_path_and_content(tmp_path: Path, relative: str) -> None:
+    relative = Path(relative)
+    payload = (ROOT / relative).read_text()
+    path = tmp_path / relative
+    path.parent.mkdir(parents=True)
+    path.write_text(payload)
+    assert check_stale_names.check_stale_names(tmp_path) == []
+    path.write_text(payload + "\nimport xy\n")
+    assert any(
+        "stale import xy:" in error for error in check_stale_names.check_stale_names(tmp_path)
+    )
+    path.write_text(payload)
+    renamed = path.with_name("copied-issue.json")
+    path.rename(renamed)
+    assert check_stale_names.check_stale_names(tmp_path)
+
+
+@pytest.mark.parametrize(
+    "relative",
+    [
+        "spec/performance/chunked-read-validation-2026-11-06/issue-11-blocked-by.json",
+        "spec/performance/chunked-read-validation-2026-11-06/issue-5-blocked-by.json",
+        "spec/performance/chunked-column-reuse-2026-11-06/rust-tests.json",
+    ],
+)
+def test_frozen_evidence_uses_same_line_normalization_as_scanner(
+    tmp_path: Path, relative: str
+) -> None:
+    relative = Path(relative)
+    path = tmp_path / relative
+    path.parent.mkdir(parents=True)
+    path.write_bytes((ROOT / relative).read_text().replace("\n", "\r\n").encode("utf-8"))
+    assert check_stale_names.check_stale_names(tmp_path) == []
+
+
 def test_flags_retired_artifact_and_env_names(tmp_path: Path) -> None:
     (tmp_path / "note.md").write_text(
         "load libxy_core.so via XY_NATIVE_LIB; never XY_BROWSER or XY_CHROMIUM\n",

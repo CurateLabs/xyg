@@ -277,3 +277,13 @@ requirements: installed tick admission, local CSP/assets, missing/invalid
 modules, unsupported refinement, overview retention and resource cleanup.
 This disposition does not claim exhaustive source-family/axis combinations,
 complete #108 acceptance or #54's final-candidate artifact qualification.
+
+## Consumer smoke loopback ports
+
+The installed-consumer runner allocates all four loopback host ports while the
+allocation sockets are simultaneously bound, then releases them before launching
+the application processes. This prevents reuse within the runner's own batch;
+selecting and closing each port separately can return the same port repeatedly.
+This is not an exclusive lease through packaging and process startup: an external
+process can still race later binding, which remains a failing startup. No browser
+assertion, timeout, host-isolation check or release gate is relaxed.

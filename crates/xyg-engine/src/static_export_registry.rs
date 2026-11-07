@@ -250,9 +250,27 @@ pub const REQUIRED_EDGE_CONCERNS: &[&str] = &[
     // #1006: data rasterized in Rust to one Image record (density blit,
     // dense triangle mesh above the 1,024 PolyFill-group budget).
     "image-tier",
+    "hidden-tick-labels",
+    "empty-ticks",
 ];
 
 pub const STATIC_EXPORT_EDGE_CASES: &[StaticExportEdgeCase] = &[
+    StaticExportEdgeCase {
+        // #889: NullFormatter hides labels without invalid empty XYTL text;
+        // NullLocator retains an authored empty major-tick list.
+        name: "line_hidden_tick_labels",
+        shape: "line",
+        axis_mode: "authored-linear-xy",
+        concerns: &["hidden-tick-labels", "empty-ticks"],
+        reason_prefix: "",
+    },
+    StaticExportEdgeCase {
+        name: "scatter_hidden_tick_labels",
+        shape: "scatter",
+        axis_mode: "autorange-linear-xy",
+        concerns: &["hidden-tick-labels", "empty-ticks"],
+        reason_prefix: "",
+    },
     StaticExportEdgeCase {
         name: "line_authored_style",
         shape: "line",
@@ -272,7 +290,7 @@ pub const STATIC_EXPORT_EDGE_CASES: &[StaticExportEdgeCase] = &[
         shape: "step",
         axis_mode: "authored-linear-x-log-y",
         concerns: &["nonfinite", "authored-domain"],
-        reason_prefix: "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates",
+        reason_prefix: "XYG_SCENE_UNSUPPORTED_NONFINITE_COORDINATES: Scene v12 does not yet encode missing-data breaks or nonfinite coordinates",
     },
     StaticExportEdgeCase {
         name: "bar_categorical_style",
@@ -300,7 +318,7 @@ pub const STATIC_EXPORT_EDGE_CASES: &[StaticExportEdgeCase] = &[
         shape: "area",
         axis_mode: "authored-linear-xy",
         concerns: &["nonfinite", "linear-scale"],
-        reason_prefix: "Scene v12 does not yet encode missing-data breaks or nonfinite coordinates",
+        reason_prefix: "XYG_SCENE_UNSUPPORTED_NONFINITE_COORDINATES: Scene v12 does not yet encode missing-data breaks or nonfinite coordinates",
     },
     StaticExportEdgeCase {
         name: "histogram_empty_categorical",
@@ -354,6 +372,38 @@ pub struct StaticExportFailClose {
 }
 
 pub const STATIC_EXPORT_FAIL_CLOSES: &[StaticExportFailClose] = &[
+    StaticExportFailClose {
+        name: "annotation_text_x_nonfinite",
+        reason_prefix: "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: wrapped x must be numeric",
+    },
+    StaticExportFailClose {
+        name: "annotation_text_y_nonfinite",
+        reason_prefix: "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: wrapped y must be numeric",
+    },
+    StaticExportFailClose {
+        name: "annotation_text_x_nonnumeric",
+        reason_prefix: "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: wrapped x must be numeric",
+    },
+    StaticExportFailClose {
+        name: "annotation_text_y_nonnumeric",
+        reason_prefix: "XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: wrapped y must be numeric",
+    },
+    StaticExportFailClose {
+        name: "annotation_callout_style",
+        reason_prefix: "XYG_SCENE_UNSUPPORTED_ANNOTATION_STYLE: callout unsupported keys head_size",
+    },
+    StaticExportFailClose {
+        name: "annotation_arrow_style",
+        reason_prefix: "XYG_SCENE_UNSUPPORTED_ANNOTATION_STYLE: arrow unsupported keys head_size",
+    },
+    StaticExportFailClose {
+        name: "annotation_rule_style",
+        reason_prefix: "XYG_SCENE_UNSUPPORTED_ANNOTATION_STYLE: rule unsupported keys span_start",
+    },
+    StaticExportFailClose {
+        name: "annotation_text_style",
+        reason_prefix: "XYG_SCENE_UNSUPPORTED_ANNOTATION_STYLE: text unsupported keys width",
+    },
     StaticExportFailClose {
         name: "fluid_viewport",
         reason_prefix: "XYG_SCENE_UNSUPPORTED_FLUID_VIEWPORT",
@@ -754,6 +804,41 @@ pub struct StaticDocumentCase {
 /// case names and run every declared format. These are explicit XYST authoring,
 /// not a claim that Node automatically projects Figure/facet objects to XYST.
 pub const STATIC_DOCUMENT_CASES: &[StaticDocumentCase] = &[
+    StaticDocumentCase {
+        name: "document_authored_frame",
+        vocabulary: &["panel.x-chrome-metrics", "panel.y-chrome-metrics"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_legend_relabel",
+        vocabulary: &["legend.line"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_legend_frameless",
+        vocabulary: &["legend.line"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_polar_annulus",
+        vocabulary: &["panel.multiple"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_scatter_colormap_alpha",
+        vocabulary: &["panel.x-chrome-metrics", "panel.y-chrome-metrics"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_overlap_red_blue",
+        vocabulary: &["panel.overlap", "panel.multiple"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
+    StaticDocumentCase {
+        name: "document_overlap_blue_red",
+        vocabulary: &["panel.overlap", "panel.multiple"],
+        formats: STATIC_DOCUMENT_FORMATS,
+    },
     StaticDocumentCase {
         name: "document_title_x_center",
         vocabulary: &[

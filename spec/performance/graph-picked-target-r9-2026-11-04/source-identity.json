@@ -1,0 +1,24 @@
+{
+  "base": "8b231d70d03e53e380f7198b4f618c0f33ec9ddf",
+  "diff_argv": [
+    "git",
+    "diff",
+    "--binary",
+    "--full-index",
+    "8b231d70d03e53e380f7198b4f618c0f33ec9ddf",
+    "--",
+    ".",
+    ":(exclude)spec/performance/**"
+  ],
+  "nonreceipt_patch_sha256": "817972d474d7261b84d8fb1665f3395af57f657e10b3a9ce21ae2fb0034128cd",
+  "paths": {
+    ".github/workflows/ci.yml": "477cc75eac50937cfd39ccbf76090b4090642e03108c3c5067a2b404912ba397",
+    "crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs": "e05dcf451e014dcde9e220fd840e159c1fedcc8a21cc9cf5c6b02fac118cc490",
+    "scripts/verify_ci_workflow.py": "4a626b929febb2833f17aa7f8ccefcfd677ee544b772aabacf418708b7670a6a",
+    "spec/design/graph-interaction.md": "24803e72d38d998b591e556b385268d754954fb13703b6f5bb684b9cd5b6173b",
+    "spec/process/production-readiness.md": "d94f73d548a4d907e93a20eb8c547dfc77bd488ee220d265955c7811eb5f4b1c",
+    "spec/releases/0.6.0-api-inventory.json": "b70d245214aaa39b29424c9d4a530f513b968e1e0e76d0e0229aa1b15809d597",
+    "tests/test_verify_ci_workflow.py": "bb7b7c839e66ccef5d9262e7bf2609c7b6b6ef536e5d037769fea954e8478b3c"
+  },
+  "scope": "Two Rust assertion-only replacements; active existing CI compatibility command plus fail-closed workflow regression coverage, current specs and official inventory provenance; no runtime/producer inputs changed."
+}

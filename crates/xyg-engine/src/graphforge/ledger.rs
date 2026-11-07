@@ -755,6 +755,7 @@ mod tests {
     fn pinned_core_schemas_and_descriptors_match_the_runtime_ledger_and_real_ipc() {
         check_core_corpus("core", "results", 94);
         check_core_corpus("core/0.6.0-rc.5", "results-0.6.0-rc.5", 96);
+        check_core_corpus("core/0.6.0-rc.7", "results-0.6.0-rc.7", 96);
     }
 
     fn check_core_corpus(corpus_dir: &str, results_dir: &str, expected_count: usize) {

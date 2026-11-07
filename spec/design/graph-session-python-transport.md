@@ -3,8 +3,8 @@
 Status: **P0 internal S6 foundation for #1015 / #36 only**. This does not
 establish acceptance for #108, M4, a public Python session wrapper, notebooks,
 or the browser painter. The authoritative protocol remains
-[graph-interaction.md §3](graph-interaction.md#3-abi--wasm); native ABI
-398 and its generated declarations are unchanged.
+[graph-interaction.md §3](graph-interaction.md#3-abi--wasm); the original foundation used native ABI 398. Accepted main now requires ABI
+399; the R2 notebook consumer changes no ABI export or generated declaration.
 
 ## Boundary and ownership
 
@@ -148,3 +148,234 @@ foundation does not prove performance leadership, chart breadth, complete
 selection projection, or publication readiness; it changes no capability or
 competitor acceptance claim, ABI/WASM/source policy, package gate, workflow,
 dependency, generated API inventory, or public API.
+
+## Public notebook scheduling through the existing Figure channel (R2, 2026-11-06)
+
+R1's geometry-only default renderer is superseded. Its immutable
+[historical receipt](../performance/graph-widget-progressive-2026-11-06/README.md)
+records the rejected regression; it is not acceptance. The current
+`graphforge_chart(composition).widget()` / widget-mode `.show()` route uses
+`GraphWidget`, a `FigureWidget` consumer, for **every graph composition**, including
+layers, explicit themes/styles, CSS dimensions, legends, annotations and axis
+controls. Non-graph GraphForge charts retain their existing hosts.
+
+### Why this seam
+
+The existing notebook contract is the declarative Figure compiler plus
+`ChartView` and `channel.handle_message`: it already owns all accepted generic
+presentation, hover/click, pan/zoom, keyboard readout, selection, programmatic
+view/row selection and event callbacks. The explicit WASM attachment in
+`63_graph_controller.ts` uses a separate GPU-v1/companion presentation contract;
+replacing ChartView with it would still lose authored notebook presentation.
+The notebook therefore reuses `GraphLayoutController`'s retained native
+`ForceState` and the ordinary presentation stack. The later typed identity slice
+below adds an optional GraphSession readout without replacing that renderer or
+layout owner. Full retained interaction and scale acceptance remain separate
+#36/#1015 work.
+
+### Data and scheduling
+
+`_graphforge._graph_chart` attaches the original declarative mark and defers
+composition legend installation until explicit Figure compilation. `Chart.widget`
+passes its ordinary callbacks and optional WASM tick configuration to GraphWidget
+without calling `Chart.figure()`. Mount starts the existing native layout
+controller on its dedicated worker, using the mark's algorithm, seed, iteration
+count, CoSE options and pins unchanged (default force, 300 iterations).
+
+Rust returns immutable complete source-f64 checkpoints: one tick initially,
+then existing eight-tick chunks, with the original completion/wall-budget rules.
+The asynchronous progress observer is awaited. A separate single-worker executor
+compiles the **same** declarative chart from a copied mark/data descriptor with
+those source positions and `layout="preset"`; this performs no second force run.
+The existing Rust graph render/LOD, multigraph routing, style, labels, membership
+and offset-f32/u8 payload kernels remain the only product implementation.
+Theme/style, composition legend and all other children use the existing compiler.
+The original chart and static Figure cache are not mutated. The latest accepted
+picture is mirrored into ordinary saved-widget spec/buffer state without a
+second buffer transfer: Python uses the widget property lock and the browser
+updates its local model silently. Reloaded outputs can paint that snapshot
+while a fresh mount establishes ownership. Checkpoint metadata
+records the actual algorithm, scheduled native ticks and native alpha. Step
+numbers retain the existing controller's requested-tick counter; this route does
+not expose opcode-15 exact completed-step reports for empty/settled states.
+
+The kernel loop only publishes the complete spec and raw split buffers. The
+browser uses the existing ChartView mount and full affected-trace append refresh,
+which retains view navigation, keyboard/modebar, legend state and callbacks.
+Cached selection masks are reused only while the ordered native identity and
+membership planes compare equal; changed row spaces revoke the old mask rather
+than guessing new identities. Complete source selection persistence through a
+changing Aggregate row space is not established by this bounded slice.
+
+Only one frame publication is outstanding: its paint ACK releases the next
+native chunk. An in-flight exact readout or geometric selection may retain that one pending frame until
+the matching reply returns; there is no inspection hold or accumulating position
+queue. The existing 30-second native job budget includes host delivery waits;
+the paint wait also refuses after 30 seconds. Slow/hidden frontends may therefore
+fail explicitly rather than continue unbounded work. No budget is increased.
+
+### Ownership, callbacks and lifetime
+
+Each widget has an explicit random instance token; each frontend mount has a
+fresh epoch; each publication has a monotonically increasing revision. Every
+control, generic request and reply carries these stamps. A displayed Figure and
+one pending Figure are retained at most. An event resolves against its exact
+compiled snapshot until the replacement's ACK retires that snapshot. Afterwards
+its revision is rejected. The browser rejects foreign epochs/instances/replies,
+and never applies an older reply to a newer picture. Replacing GPU traces clears
+the old hover/neighborhood handles before drawing and rebinds the target only
+when the ordered native row space is unchanged; no freed GPU handle survives
+a refresh. Routed segment identity
+uses the existing Rust route and source-edge membership planes; callbacks retain
+the existing `id`, `edge_id`, provenance and `Selection.rows()` contracts. No
+Python/JS UUID matching or inferred per-layer identity policy is added.
+
+Jupyter comm/cell execution can enter different event loops. Mount records the
+owning loop; subsequent messages, cancellation and Python-origin mutations are
+marshaled with `call_soon_threadsafe`. This matters for asyncio Event wakeup,
+not just locking: R2 reproduced an ACK recorded by another loop that only woke
+the layout observer at the old timeout. Callback execution now stays on the
+owner loop. Programmatic mutations before the first picture queue until it is
+published. View-state reads remain eventually consistent: before the first
+computed picture they return the version-1 state with empty ranges, and during
+a remount they retain the prior committed cache. They do not run layout merely
+to guess an initial domain. Once a picture exists the ordinary Figure view-state
+cache is used.
+
+Rerender invalidates the old epoch, cancels its controller/task and starts a
+fresh native lifetime. Disposal cancels before first paint as well as during
+progress; closure rejects further host work and shuts down the build executor.
+Native work is cooperatively retired at bounded chunk boundaries. Failure emits
+only `XYG_GRAPH_WORKER_FAILED`, retains the last picture and uses no layout
+fallback. Two widgets have separate controllers, native state, builders,
+revisions, callbacks and caches. This establishes isolation, not a throughput
+leadership or unlimited concurrency claim.
+
+### Proof and remaining acceptance
+
+[The append-only R2 receipt](../performance/graph-widget-progressive-r2-2026-11-06/README.md)
+records real JupyterLab/IPython/anywidget/Chromium evidence: two public widgets,
+nonterminal screenshots, trusted keyboard/pointer/navigation input while native
+steps continue, exact kernel node callbacks, Python-origin row selection and
+closure. Native tests cover every source edge including loops/parallel edges,
+layered/custom presentation, final batch parity, stale/foreign ownership,
+rerender, cancellation, failure and the cross-loop regression. The bounded smoke
+and receipt verifier run in the existing CI `test` job under Release surfaces;
+no new required status is added.
+
+This does not close #1015/#35/#36/#108. Full kind/UUID/per-layer result-id/row
+GraphSession callback projection, UUID-origin selection, exact box/lasso UUID
+sets, selected/annotated export parity, Notebook 7 and VS Code qualification,
+trusted routed-edge notebook pointer coverage and the required 1k/10k/100k/1M
+rendered ladder remain. The five-node property fixture and current composition
+ceilings do not establish any ladder rung, first-paint budget, scale win or
+competitor lead. Static `.figure()` / `.to_html()` and HTML-mode `.show()` remain
+explicit synchronous batch snapshots; HTML has no kernel return channel.
+
+
+### Notebook mutation ordering and remount state
+
+Python view/selection/append commands wait for the intended published frame's
+paint acknowledgement; commands arriving during compilation wait as well. A
+queued command belongs to its mount epoch and is cancelled when that mount is
+superseded. Commands authored before a mount target its first accepted picture.
+Generic readout replies retain their original revision. Older messages propagate
+only facets they actually changed, and cannot replace a facet already owned by
+a newer Python mutation. Selection clears participate in the same browser
+request backpressure as box/lasso selection, so a pending checkpoint cannot
+restore a mask while the clear's exact reply is outstanding.
+
+Streaming append uses the existing Figure append and browser refresh contract,
+retains the graph notebook state envelope, and carries appended native canonical
+columns into later checkpoint compilation. No host append-history replay or
+layout/identity implementation is added. Restored committed ranges and durable
+geometric selection are applied before the first remounted picture is ACKed;
+opaque row-selection markers are not reconstructed into a durable mask.
+The deterministic ordering regressions run in the existing notebook CI step.
+
+
+Remount also retains each trace's legend visibility and hidden categories, which
+are renderer controls outside the durable ranges/selection document. Native
+Figure visibility is restored before compiling the first replacement payload.
+The same exact trace IDs seed the replacement browser's legend maps, GPU state
+and row controls before its paint acknowledgement. Legend changes update saved
+widget snapshots as well, including changes after terminal layout. The bounded
+notebook proof requires a new exact kernel callback after the final pointer
+baseline; earlier keyboard or pointer callbacks cannot satisfy that check.
+
+
+### Notebook typed identity slice (2026-11-06)
+
+The ordinary Figure compiler and ChartView remain authoritative for painting.
+Each compiled checkpoint owns a private identity adapter. A native GraphSession
+is created only when identity callbacks or a UUID command need it; a chart
+without these requests does not open the extra session. Callback preparation
+runs in the existing compile executor and no initial session render is requested.
+A derived-reference companion query may prepare native companion data. Any
+session render revision is private and distinct from the displayed notebook
+envelope revision. The ordinary Figure remains the renderer. Native admission
+still uses the existing 384-MiB envelope and 10,000-ref selection cap; neither
+limit is increased to accommodate the identity adapter.
+
+Identity admission cannot reject an otherwise supported Figure frame. If the
+extra identity envelope is unavailable, callbacks still receive their ordinary
+row or full canonical Selection, with `graphforge=[]` and
+`graphforge_error="XYG_GRAPH_IDENTITY_RESOURCE_LIMIT"`. The normal reply and
+subsequent layout frames continue. This explicitly signals unavailable typed
+metadata; it is not a successful empty identity result or complete #1015 scale
+acceptance. An explicit UUID command that cannot be admitted fails before
+applying a view mask; ordinary rendering and row/geometric selection remain
+available. Closed/retired adapters cannot lazily open a new session.
+
+The adapter encodes canonical kind-qualified refs from the composition and the
+original compiler's Rust source/render membership planes. SelectRefs resolves
+callback identity and all per-layer rows in Rust; SelectUuids resolves Python
+UUID input in Rust. Python decodes selection refs, indices and provenance CSR
+without matching UUID strings or inferring result rows. Derived refs transport
+the exact canonical result id/layer/path/order. Non-graph traces project no
+GraphForge refs. The readout session's private selection is scratch resolution
+state, independent of the public view's ordinary selection masks.
+
+Ref and UUID resolution uses at most 1,000 transport inputs per request, each
+replacing the scratch selection. Rust still enforces its original caps on each
+operation; the adapter never accumulates a native selection beyond them. The
+callback merges native-sorted runs using only Rust-returned binary reference
+keys and deduplicates repeated keys across batches. This preserves the single-
+request Rust order: node UUID bytes, persisted edge UUID bytes, then exact
+derived optional result-id bytes/layer/path/order. Per-reply string-pool offsets
+are never merge keys, and absent versus empty result IDs remain distinct.
+Python does not infer identities or provenance during this transport merge.
+Explicit UUID masks apply only after all batches succeed. Node source/render joins cache an inverse
+of the existing Rust member plane, preserving its one-to-one highlight refusal
+without rescanning all source rows for each selected element. Host projection
+and callback output memory is additional and is not qualified at scale here.
+
+Callback dictionaries add a `graphforge` list; Selection objects add the same
+attribute. Each entry has kind, UUID (null for derived edges), composed index,
+and layer/result_id/row records. These four fields match the corresponding
+Node graphforgePick composition identity projection; Node's additional edge and
+compound detail fields are not promised by this callback projection. No public
+GraphForgeComposition API or ABI signature changes.
+
+The existing instance/epoch/displayed-revision guard runs before resolution.
+Displayed old checkpoints resolve against their own session until replacement
+paint ACK; that ACK closes retired sessions. Remount, dispose and close release
+sessions even when application callbacks retain old Figure/Selection objects.
+Late compiler completion is discarded and its session finalizer releases it.
+UUID masks use ordinary selection_rows and are non-durable across remount;
+exact aggregate/compound highlight routing, graph-specific box/lasso edge policy,
+all browser pointer journeys, accessibility and the full ladder remain open.
+
+Focused tests and the public notebook proof are recorded in the
+[identity receipt](../performance/graph-notebook-identity-2026-11-06/README.md).
+
+### Notebook identity report contract
+
+The bounded typed-identity notebook proof records its node/edge UUID request
+and Rust composition identity records as `uuidSelection`. The report verifier
+requires that distinct canonical pair and exactly two delivered browser rows.
+Historical row-only reports retain their original one-row requirement; typed
+callback reports without request metadata cannot satisfy the new proof. This
+checks request identity and delivery cardinality, not complete geometric UUID
+sets or scale/frontend/export acceptance. The append-only correction and fresh
+capture are in [the report receipt](../performance/graph-notebook-identity-report-2026-11-06/README.md).

@@ -159,7 +159,7 @@ def installed_consumers(
     if not counts["tests"] or any(counts[key] for key in ("failures", "errors", "skipped")):
         raise RuntimeError(f"required installed Streamlit AppTests did not all execute: {counts}")
 
-    version = "0.0.0-test.1063"  # local-only candidate; never published
+    version = "0.0.0-rc.1063"  # local-only candidate; never published
     platform_id = subprocess.check_output(
         ["node", "-p", "process.platform+'-'+process.arch"],
         text=True,
@@ -247,10 +247,14 @@ def installed_consumers(
     )
 
 
-def free_port() -> int:
-    with socket.socket() as sock:
-        sock.bind(("127.0.0.1", 0))
-        return int(sock.getsockname()[1])
+def free_ports(count: int) -> tuple[int, ...]:
+    # Keep all allocations bound together: an OS may immediately reuse a port
+    # after close. These sockets are released before the consumer processes bind.
+    with contextlib.ExitStack() as stack:
+        sockets = [stack.enter_context(socket.socket()) for _ in range(count)]
+        for sock in sockets:
+            sock.bind(("127.0.0.1", 0))
+        return tuple(int(sock.getsockname()[1]) for sock in sockets)
 
 
 def wait_for(url: str, process: subprocess.Popen[str]) -> None:
@@ -297,7 +301,7 @@ def main() -> None:
     output = ROOT / "consumer-apps-smoke"
     output.mkdir(exist_ok=True)
     (output / "packaged-consumers.failed.json").unlink(missing_ok=True)
-    ports = tuple(free_port() for _ in range(4))
+    ports = free_ports(4)
     commands = [
         [
             sys.executable,

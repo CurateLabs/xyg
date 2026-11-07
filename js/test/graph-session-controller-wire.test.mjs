@@ -213,6 +213,14 @@ test("actual default-arena WASM composition/session bytes decode through focus/s
     assert.equal(result.clearAction.applicable, false);
     result = run(4);
     assert.equal(result.outcome.stateChanged, false, "empty Escape outcome propagates");
+    result = run(1, { coordinates: [10, 100], mode: 0 });
+    const picked = result.sections.get("pick.header.u32#0");
+    assert.ok(picked, "actual SelectAt publication carries additive receipt sections");
+    assert.deepEqual(Array.from(picked.bytes.subarray(0, 12)), [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]);
+    for (const name of ["pick.query.u64", "pick.ref.bytes", "pick.layers.u32", "pick.rows.u64"]) {
+      assert.ok(result.sections.has(`${name}#0`), `${name} retained as a raw unknown section`);
+    }
+    assert.equal(Object.hasOwn(result, "pick"), false, "existing semantic decoder exposes no new public hover/pick property");
     const wrong = wire.encodeGraphSessionRequest({ instanceId: instanceId + 1n, opSeq: sequence + 1n, revision, operation: 4 });
     assert.equal(call(x, handle, "xyg_wasm_graphforge_session_interact", wrong).status, -3);
     const stale = wire.encodeGraphSessionRequest({ instanceId, opSeq: sequence + 1n, revision: revision + 1, operation: 4 });
@@ -222,4 +230,19 @@ test("actual default-arena WASM composition/session bytes decode through focus/s
     if (opened) assert.equal(x.xyg_wasm_graphforge_session_close(handle), 0);
     assert.equal(x.xyg_wasm_instance_dispose(handle), 0);
   }
+});
+
+
+test("retained continuation frames exact bounded opcode 15 and validates Rust progress", () => {
+  const base = { instanceId: 1n, opSeq: 2n, revision: 17, operation: 15, steps: 8 };
+  const encoded = wire.encodeGraphSessionRequest(base);
+  assert.deepEqual([...decodeContainer(encoded, "XYGI").get("header.u32#0").value], [17,15,0,0,0,0,0,8,0]);
+  for (const steps of [undefined, 0, -1, 65, 1.5, NaN, "8"]) assert.throws(() => wire.encodeGraphSessionRequest({...base, steps}));
+  assert.throws(() => wire.encodeGraphSessionRequest({...base, operation: 4}));
+  const progress = [field("relayout.steps.u64", "u64", [9007199254740993n]), field("relayout.alpha.f64", "f64", [.5]), field("relayout.done.u8", "u8", [0])];
+  assert.deepEqual(wire.decodeGraphSessionResult(encodeContainer("XYGR", fixture().concat(progress))).relayout, {steps:9007199254740993n,alpha:.5,done:false});
+  for (const part of progress) invalid(fixture().concat(progress.filter(s => s !== part)));
+  for (const [name, values] of [["relayout.alpha.f64",[NaN]],["relayout.alpha.f64",[2]],["relayout.done.u8",[2]]]) invalid(fixture().concat(progress.map(s=>s.name===name?{...s,values}:s)));
+  invalid(fixture().concat(progress, {...progress[0], index:1}));
+  assert.equal(wire.decodeGraphSessionResult(encodeContainer("XYGR", fixture())).relayout, null);
 });

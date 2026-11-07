@@ -1,0 +1,54 @@
+{
+  "node": "v22.23.4",
+  "rawCompiledWasm": {
+    "bytes": 2126290,
+    "sha256": "efd99dc7040ac06e3adc084105eb10812282fd46fc9cf6e4dbd32e6e7c3d2b0b"
+  },
+  "native": {
+    "bytes": 6116312,
+    "sha256": "1574d281e525fbb7595143759bcdd59df6058386bed5c248485934da3a4479f1"
+  },
+  "optimized": {
+    "bytes": 1928323,
+    "sha256": "165eaae5341c31c68ad83d178219242ac406185f413d39935ad700156f63a5e6",
+    "limit": 1923072,
+    "overage": 5251
+  },
+  "gzip6": {
+    "bytes": 785601,
+    "sha256": "99ed6705112fdda3bf9c9775e0b81864dcc4d389c029f700a5103fa044107ab3",
+    "limit": 783360,
+    "overage": 2241
+  },
+  "comparison": {
+    "r1": {
+      "raw": 1927577,
+      "gzip6": 785926,
+      "rawDelta": 746,
+      "gzip6Delta": -325
+    },
+    "r2": {
+      "raw": 1926555,
+      "gzip6": 785546,
+      "rawDelta": 1768,
+      "gzip6Delta": 55
+    },
+    "parentSuppliedBaseline": {
+      "raw": 1922723,
+      "gzip6": 783181,
+      "rawDelta": 5600,
+      "gzip6Delta": 2420
+    }
+  },
+  "packaged": [
+    {
+      "path": "packages/xy-client/dist/xyg-wasm.wasm",
+      "exists": false
+    },
+    {
+      "path": "python/xyg/static/xyg-wasm.wasm",
+      "exists": false
+    }
+  ],
+  "note": "Separate same-input invocation of js/optimize-wasm.mjs after normal production package gate; no shipping qualification."
+}

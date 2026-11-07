@@ -1,0 +1,181 @@
+{
+  "schema": "xyg.cache-integration/v1",
+  "reviewedCandidate": "4c3c15f79bfda597f1896383ca110b5908e484cb",
+  "acceptedMain": "9a75c4c00588eef20fdbf5c97952bb2d8f46beb4",
+  "exactMergeParents": [
+    "4c3c15f79bfda597f1896383ca110b5908e484cb",
+    "9a75c4c00588eef20fdbf5c97952bb2d8f46beb4"
+  ],
+  "reviewedProductTree": "17b5dc46f5856b8c86e1528e993f6d00fe4cbc2a",
+  "acceptedMainTree": "c5d5b069b79630985e9efc86d5e1c1d5e80cf36b",
+  "resolution": "Accepted main has exactly the already-included 43b99beb tree. All nine conflicted files retain reviewed candidate bytes. Entire resolved index equals reviewed tree before adding this receipt. Both ancestries preserved by normal merge.",
+  "sourceManifest": {
+    "path": "reviewed-source-sha256.json.gz",
+    "rawSha256": "9e04e4bfa112defb7465e6682b5f008f97e9a2bb37474e488d4e43bd3600de14",
+    "archiveSha256": "df9331730b13b1af382821988a31ce4b04fa1b8933a84c3a7ba4b0a218022a21",
+    "rawBytes": 2259166
+  },
+  "mainToReviewedCanonicalPatch": {
+    "path": "main-to-reviewed.patch.gz",
+    "rawSha256": "e8c492bdb2b19b9cbd6a940e6225b078a96339cf313a94bc08279a4b5c0e8117",
+    "archiveSha256": "a9dbb03f04851ae718bcc72025320a801187802ced1954c2180d777a200bd395",
+    "rawBytes": 106905
+  },
+  "historicalEvidence": "All pre-existing tracked files, including every historical evidence blob and the three path/hash frozen-scanner exceptions, preserved byte-for-byte from reviewed candidate; no current Core input changes or corrections required.",
+  "native": {
+    "path": "target/release/libxyg_core.so",
+    "sha256": "6323c123a0b129a0081e369a632a0b027ee0d9bca10d3ff5bc0016866bc098a6",
+    "bytes": 6128056,
+    "qualification": "Fresh local cargo build --release -p xyg-core; exact reviewed artifact hash; explicitly selected for both host tests"
+  },
+  "environment": {
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "python": "Python 3.12.15",
+    "node": "v22.23.4",
+    "nodeSha256": "94efd062ed066c1a0b332e18249859c905e920eeada5df55d24c99b919629a90",
+    "rust": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "cargoBuildJobs": 2,
+    "workspace": "/home/ubuntu/.t3/worktrees/xyg/t3-4e11f06a"
+  },
+  "checks": {
+    "rustChunkTests": 18,
+    "pythonChunkTests": 9,
+    "nodeChunkTests": 6,
+    "namingModule": 155,
+    "contracts": "tests/test_stale_names.py tests/test_graphforge_contract_corpus.py tests/test_release_inventory.py tests/test_verify_ownership.py tests/test_audit_python_host_core.py; see contracts.log.gz for aggregate result",
+    "clippy": "cargo clippy -p xyg-engine -p xyg-core --all-targets -- -D warnings",
+    "ownership": "515 tracked production files classified",
+    "releaseInventory": "standard declaration comparison passes; --require-classified additionally reports existing 1046 unclassified entries; no acceptance/classification closure claimed",
+    "hooks": "Full-worktree pre-commit --all-files, ruff check ., ruff format --check . passed on staged integration receipt; repeated immediately before normal merge commit.",
+    "contractsPassed": 204
+  },
+  "shippingBudgets": "No combined Rust/WASM/JS producer inputs differ from reviewed 4c3; no packaging changes. Existing 1882/768 KiB budgets unchanged, no waiver or rebuild required.",
+  "reviewUnion": "Per task handoff: baseline caeff + keyed-LRU d86875e approved; naming 4c3 approved (155 tests and negative controls). Final independent integration review pending with parent.",
+  "limits": "Bounded native correctness only; immutable sources; 8 MiB raw retained slab cap plus declared metadata/output overhead; no ABI, admission, cap, tolerance or gate changes.",
+  "remainingAcceptance": "Parent independent integration review, push of final candidate, PR1104 CI and queue delivery pending. Main push CI42303414186 was queued in handoff; its result was not queried or assumed. #110/M7/larger-than-RAM/browser-WASM/100M/full-host/#111/#112/#113 remain open. No GitHub writes, pushes, children, producer workspace writes, reset, rebase or checkout creation.",
+  "logs": {
+    "clippy": {
+      "path": "clippy.log.gz",
+      "rawSha256": "10949fc526d42fa89becf8f08db64fefc91eedc5b6b7724a863aaf1b04b7c27d",
+      "archiveSha256": "361235de6de698eee0bbb627eb49845cfe5ac89464d96b065937d5abeecb7266",
+      "rawBytes": 1519
+    },
+    "contracts": {
+      "path": "contracts.log.gz",
+      "rawSha256": "d2fec6a1fcadfac3caaac171223e03debec759e50120a8940cdfca276fb9a681",
+      "archiveSha256": "f9860c010a9ae78a7c715d76fbfd4ed0aad2bb819e919bf50f1b3a6341fddac7",
+      "rawBytes": 272
+    },
+    "format": {
+      "path": "format.log.gz",
+      "rawSha256": "0be8ae93d50c615562bd0773d2904372d5886f19435a0936b6402f9fad55f102",
+      "archiveSha256": "53cdfeb3a1d2dcc20325af24fcb40f97146b32589012eedb102bd2256aa06181",
+      "rawBytes": 29
+    },
+    "hooks": {
+      "path": "hooks.log.gz",
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "rawBytes": 240
+    },
+    "native-build": {
+      "path": "native-build.log.gz",
+      "rawSha256": "5806ce8c62b3e60eae3efedaa998873c6a10af3cc3455ecb9c9743e536d403a1",
+      "archiveSha256": "11554b890eb89fc49f747385cb44cb7bf10784520d670768cab6406a1c6c89d1",
+      "rawBytes": 663
+    },
+    "node-tests": {
+      "path": "node-tests.log.gz",
+      "rawSha256": "2f003867b6931ea4febb3aeb8995026cba3b5fa3b772422294aa3f52d6ad596e",
+      "archiveSha256": "e4b01ccb5bd60e9b7a0bd44229796c42a1bb05aa5bc15625d82fc524b9a1d911",
+      "rawBytes": 1314
+    },
+    "node22": {
+      "path": "node22.log.gz",
+      "rawSha256": "fe512bbdff99ae34e846e33553c8b23fe7d7b573220aef851f920bc9895cb563",
+      "archiveSha256": "4fbecae484a0178a5f9be4d5dc9dd66843271f99086fa6207b584c151a9f25a3",
+      "rawBytes": 60
+    },
+    "npm-node": {
+      "path": "npm-node.log.gz",
+      "rawSha256": "947cc2cb5fee10211e5d9c608371a3b39c94338f19e565292d18fdf28d84010a",
+      "archiveSha256": "d199f20ab0a5961f4b6b77a027fb73c9501b569d0cdd925e1ff9f77707cfacaa",
+      "rawBytes": 495
+    },
+    "npm-root": {
+      "path": "npm-root.log.gz",
+      "rawSha256": "c3a5dce9595056e682663963d3749e3fb8fa981bc8433e142b89c35c344e8835",
+      "archiveSha256": "9fa8b887b5cb218aa096b676246b34f75a9b250e76e801b65cdc6fb8834232d3",
+      "rawBytes": 222
+    },
+    "ownership": {
+      "path": "ownership.log.gz",
+      "rawSha256": "35a6c199dcb3f20c32f4706147eede039bcb52c616c265a75d5bd09fc2fcdc6e",
+      "archiveSha256": "e4075cccd048512afe0428360f6e0b30e108ba8d3bfaccae3139158284ccb764",
+      "rawBytes": 60
+    },
+    "python-tests": {
+      "path": "python-tests.log.gz",
+      "rawSha256": "da10f07aa25800e90268af362630961afcb599ae03b0f11d17c7bd8e880fbab0",
+      "archiveSha256": "02933324385ce0030144ff393a67a37e829657e5d1c0a0c75f22f1ecd989a202",
+      "rawBytes": 98
+    },
+    "release-inventory-final": {
+      "path": "release-inventory-final.log.gz",
+      "rawSha256": "9ead53d41cbfb3a9df5bb99cdddd1d3e55ca2879030dc6c4a14a92ce211213b5",
+      "archiveSha256": "632b7e1ab84b6b9daba8e3ffe706af802d17e0af13de6317c6bb8acf531f60f3",
+      "rawBytes": 183
+    },
+    "release-inventory-standard": {
+      "path": "release-inventory-standard.log.gz",
+      "rawSha256": "bf0f6a94e21bd4a384ebcc6ca9c48263941fb2d5d04660c16597a4d95ba92106",
+      "archiveSha256": "5da83ee884873fb958349c0d3c27cdca14f82d27b8d0a81562957b5ac5152869",
+      "rawBytes": 201
+    },
+    "release-inventory": {
+      "path": "release-inventory.log.gz",
+      "rawSha256": "daa53ee0d390d8bc11ad34e8990a21d9b3667a74e2ecbb52511d6108117da9ad",
+      "archiveSha256": "94b0e2f23adee38f7161312c087f3eac5d1435c68d9334cca3a570cd84885f99",
+      "rawBytes": 139
+    },
+    "ruff": {
+      "path": "ruff.log.gz",
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "rawBytes": 19
+    },
+    "rust-tests": {
+      "path": "rust-tests.log.gz",
+      "rawSha256": "14e429e0eed7600d809356ddf898d131e61db906319dbd24e5bcd1c7c8034e79",
+      "archiveSha256": "b5f707595a3565d07de010638c3d236963bf72a1e34594af09644457d0f5c589",
+      "rawBytes": 4657
+    },
+    "uv-sync": {
+      "path": "uv-sync.log.gz",
+      "rawSha256": "476a13b0bcdec513505d0cc8a017b822ebda4a947009928198875c0c09fc3b54",
+      "archiveSha256": "e7c83fada6c23cda10e314dcdc26287d12e7d1b6d0213ed34954324886cd3434",
+      "rawBytes": 1196
+    },
+    "final-hooks": {
+      "path": "final-hooks.log.gz",
+      "exitCode": 0,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "rawBytes": 240
+    },
+    "final-ruff": {
+      "path": "final-ruff.log.gz",
+      "exitCode": 0,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "rawBytes": 19
+    },
+    "final-format": {
+      "path": "final-format.log.gz",
+      "exitCode": 0,
+      "rawSha256": "0be8ae93d50c615562bd0773d2904372d5886f19435a0936b6402f9fad55f102",
+      "archiveSha256": "53cdfeb3a1d2dcc20325af24fcb40f97146b32589012eedb102bd2256aa06181",
+      "rawBytes": 29
+    }
+  }
+}

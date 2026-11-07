@@ -1,0 +1,75 @@
+{
+  "repairBase": "823db2ca7d20ca447ac12358cb44c57dfc8ae4fd",
+  "sourceSha256": {
+    "js/src/49_wasm_temporal_graph.ts": "a83f95332cc62c3e7513ceae80f161f2e76752508cfb30c0f38a01b6b6a67d8a",
+    "packages/xy-node/test/temporal-graph-publication.test.mjs": "a5f6ed8fbf2d06f4ee4a60c33dff87408db3e511e602759689133862f592f5c4",
+    "spec/design/temporal-graph.md": "6274080766ca407d7644281b2a835eb2e9d8c71822eb1a0e7f7695dfa81eca29",
+    "spec/performance/temporal-layout-revision-snapshot-2026-11-06/README.md": "ff4543fe20a2c4900a10c1c8a54545e299120bf4d79d34597c9e571e0d81ba7b",
+    "spec/performance/temporal-layout-revision-snapshot-2026-11-06/.gitattributes": "bd33c8ef5fb33950a4e41c61028c5665f6d5ee395ff6f17d8fb3e2dad2d9ff12"
+  },
+  "artifacts": {
+    "/home/ubuntu/.t3/worktrees/xyg/t3-4585b57b/target/release/libxyg_core.so": {
+      "sha256": "02f0edf9c79ae1408821c197981b37ebe8f5746a4e1a8df4f8a3ccf468f6519e",
+      "bytes": 6119720
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1",
+      "bytes": 1927032
+    },
+    "packages/xy-client/dist/index.js": {
+      "sha256": "f25b3d10079fd8d10933a534d933ebb9b38a7a6a546ce59ccd2b83504fa470c5",
+      "bytes": 802108
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "sha256": "cc15faa42e2b9bac873689e24e20ee3caae2fb744889978d1280aad4c535d3e7",
+      "bytes": 802135
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+      "bytes": 56051
+    }
+  },
+  "logs": {
+    "before": {
+      "exitCode": 1,
+      "rawSha256": "76a9ea7e168f61bf858df377548f32b387ce4ab6cc9e08f9c7a0ea77aa8b3687",
+      "archiveSha256": "d4d95734cb55adf1c0c4c05c1b78c46684fe3bb5795808052bf4c82dc6ab14ad"
+    },
+    "build": {
+      "exitCode": 0,
+      "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c"
+    },
+    "after": {
+      "exitCode": 0,
+      "rawSha256": "cf98b80d20872717389413396f6a185fafbc0af89b9f5c7e72b285ff9923c30e",
+      "archiveSha256": "39c696aad4274aa1eee3dc736413a545e8c8cc47825e77d94b8148ff05309acb"
+    },
+    "assets": {
+      "exitCode": 0,
+      "rawSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+      "archiveSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730"
+    },
+    "browser": {
+      "exitCode": 0,
+      "rawSha256": "680236881e4e32eddbeaa5046291d58f1c867844c1c942bfce1a0e7643fc558f",
+      "archiveSha256": "910de06976c36bde0b3e9e7a5e6b7a9fbecf61c6f363907f9be862d0c81ad425"
+    },
+    "hooks": {
+      "exitCode": 0,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "ruff": {
+      "exitCode": 0,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "format": {
+      "exitCode": 0,
+      "rawSha256": "0be8ae93d50c615562bd0773d2904372d5886f19435a0936b6402f9fad55f102",
+      "archiveSha256": "53cdfeb3a1d2dcc20325af24fcb40f97146b32589012eedb102bd2256aa06181"
+    }
+  },
+  "scope": "frameAndLayout immutable revision admission; no full M5 acceptance"
+}

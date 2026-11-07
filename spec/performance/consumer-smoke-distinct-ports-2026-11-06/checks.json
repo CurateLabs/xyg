@@ -1,0 +1,142 @@
+{
+  "repairBase": "3069881d49ebe59c2e4d01940fa39d69610b6a46",
+  "reviewedCacheHead": "4c3c15f79bfda597f1896383ca110b5908e484cb",
+  "acceptedMain": "9a75c4c00588eef20fdbf5c97952bb2d8f46beb4",
+  "sourceSha256": {
+    "scripts/consumer_apps_smoke.py": "42adc0d1fbde151958ca1ceb5065837dfb45f305c96929c294c79a8b1647dea5",
+    "scripts/consumer_apps_smoke.mjs": "35c0e242b2d15f2f2a2fed955e287e1272572ef0e07b14317d5eb6dc8c9dae24",
+    "tests/test_consumer_smoke_ports.py": "c8332f50ddc9b093b0444a006397cb710177fdd93ee59d34d953ffb340fa7f07",
+    "spec/design/application-consumers.md": "a811de67b5badcd7253c016f95804f0a6d74780b6d9f88524d1a66023cc87d7a",
+    "crates/xyg-engine/src/chunked_columns.rs": "2f14fee24e6bab44f7b82403c64ad391baf7b551188585814d05f8db51ab58cc",
+    "scripts/check_stale_names.py": "215fe4f6047ce01feec47d08531996c5920702ac1278497dbe31146b48b70f5a",
+    "spec/performance/consumer-smoke-distinct-ports-2026-11-06/README.md": "6a2d67d305d8b1a843dac07d4b30d9c31579afb81eaf531f9aadd3047309427b",
+    "spec/performance/consumer-smoke-distinct-ports-2026-11-06/.gitattributes": "bd33c8ef5fb33950a4e41c61028c5665f6d5ee395ff6f17d8fb3e2dad2d9ff12"
+  },
+  "reviewedFileCount": 14632,
+  "changedPriorPaths": [
+    "scripts/consumer_apps_smoke.py",
+    "spec/design/application-consumers.md"
+  ],
+  "priorManifest": {
+    "sha256": "df9331730b13b1af382821988a31ce4b04fa1b8933a84c3a7ba4b0a218022a21",
+    "bytes": 513019
+  },
+  "logs": {
+    "before": {
+      "exitCode": 0,
+      "rawSha256": "6fbacc2ddfa2dda8c1f2d0dd062cef7355d98612258afa69b425bda7de1daf37",
+      "archiveSha256": "0abe9579e5749b973221f7685449b84761688b3a0deb675b24b695b2e36313ec"
+    },
+    "format-edits": {
+      "exitCode": 0,
+      "rawSha256": "10869b88a75066aa23546ef1f95fcd4678c3fb92a56ed46ef91688052b67976a",
+      "archiveSha256": "9e034aaa1899b92e6331269cd6d05434c6c7961950b18d5a76245a92c9cd89fe"
+    },
+    "tests": {
+      "exitCode": 0,
+      "rawSha256": "247ed6e008e308c1bd612d6524a18d6307d5cc6187403c28fea7f618a6c2107b",
+      "archiveSha256": "1dcad6e859a775e6d8c1d66cb2c10ff9d9a1e8a0ab6e5637a8fab98af1de79b3"
+    },
+    "missing-wasm-attempt": {
+      "exitCode": 1,
+      "rawSha256": "2f6339a2bc1408d5fbb2cbdd0fbb59a38d585f2a60b1f457288f3ebac7807b4c",
+      "archiveSha256": "7dcb2ef61cefdf438b7be629d0d38d60dcc57aef83c3a03b80600e6d5d44b6cd"
+    },
+    "wasm-build": {
+      "exitCode": 0,
+      "rawSha256": "96e72b1b9682499a76cae6b5b13e96c289df3c1f70e3375279ecf7cbc51cdbe5",
+      "archiveSha256": "0b63fbf8674bed38d58e2e8dffaa097a105a8649912a06d60d5d393b4401d580"
+    },
+    "wasm-package": {
+      "exitCode": 0,
+      "rawSha256": "03dd1c28369525ecf4f1b62f3842b82bfda2b18ed950caf1542fc7da563b02b8",
+      "archiveSha256": "88b6f85e8f9a330cc4df67d34bfa257ac6dfb6998896aa4cccd692e3288068d1"
+    },
+    "installed-smoke": {
+      "exitCode": 0,
+      "rawSha256": "6f34f1603fd1fd2e3205dd16bf8626a43f4765db17ff6db8bf3d4ad43bdef662",
+      "archiveSha256": "2f36652518764fb57f6cf1efc50aded14ef4b4729fdcafd9100fa01cead76384"
+    },
+    "contracts": {
+      "exitCode": 0,
+      "rawSha256": "b522d71f5fd012bec57d7a8149d2d7f0cdc0cdab8dc82fdd878202afd8d65769",
+      "archiveSha256": "dca30cd9c2221089e83c4a3532298e9c3dbe12b138aa030ddbaa88b91863b5d3"
+    },
+    "hooks": {
+      "exitCode": 0,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "ruff": {
+      "exitCode": 0,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "format": {
+      "exitCode": 0,
+      "rawSha256": "cc538e17af1940ec0a16ea7e360b3a394df9e1fd9caed2d2c4e109c351bbf919",
+      "archiveSha256": "2fcae89e25dc749f40d4412386be8a25a0aa586cb706f4e99c2e7391641c33b7"
+    },
+    "ci-failure": {
+      "jobId": 128184209481,
+      "head": "4c3c15f79bfda597f1896383ca110b5908e484cb",
+      "rawSha256": "c77be4db0368144a5e03de9836f77acac4404def72759ab21f4073dd65d455ac",
+      "archiveSha256": "69f5ddb4389f6abb03d6217bd79f59782524bccf6dce6351dc98d095194020e0"
+    }
+  },
+  "consumerReport": {
+    "rawSha256": "5db9d97a54e47ca0ea9b586324dc20f95fa4219c5a4a0cea6ac0daf119c4e967",
+    "archiveSha256": "3ea395fe9e3fbc2e947f591ca7ebfffbf9db5e808fd55d922d6cf238c694a0c2",
+    "checkoutCommit": "3069881d49ebe59c2e4d01940fa39d69610b6a46",
+    "qualificationSourceSha256": {
+      "scripts/consumer_apps_smoke.py": "42adc0d1fbde151958ca1ceb5065837dfb45f305c96929c294c79a8b1647dea5",
+      "scripts/consumer_apps_smoke.mjs": "35c0e242b2d15f2f2a2fed955e287e1272572ef0e07b14317d5eb6dc8c9dae24",
+      "scripts/packaged_consumer_browser.mjs": "3470a40e65a23fa79111cc1c3d435ad567410e1f8712b271c76b4cdbc4ac6dfa",
+      "tests/fixtures/packaged_consumer_ticks.py": "5bea079580985e93ef83a8da53a4518dc3d5d54e48399ecb6191a68fd70edc10",
+      "tests/fixtures/packaged_consumer_server.mjs": "86ae8c824944e0d1a04402342fb6c3f74b3a224f7cf198c4dd82403fadda1898",
+      "tests/fixtures/packaged_density_consumer.mjs": "06382ff2ff4f5060b9131e03cceee70a607d821b9327d11e1fc7fabb3de797a5",
+      "tests/fixtures/packaged_streamlit_graphforge.py": "66459ac3bc058e2d38747838aadf938dabe8e5f10880d50fbc35f1c85da0bfc4",
+      "tests/test_streamlit_consumer.py": "90735e4706ea3d7b404191639166854a963f210f430364d3cab41ddc5a66dcae",
+      "tests/test_streamlit_package_boundary.py": "aa4a74d3945ee880876495be6ac827dc930ebbc53da24ca9a29f0c41b9c06c1e",
+      "examples/streamlit/app.py": "81d98ff84dc58c67b019f026b2d5d3aa8405744818a2da63c7a8ee7b023b4839",
+      "scripts/streamlit_graphforge_browser.mjs": "981f87a2c719cdc74471920f043a374e3b1cf47b4fabffa3763b51c699d82a74",
+      "uv.lock": "9c897f644d4b241ab192c38d0afc26f4a49665dbf7734410e893b763ed9a0bef",
+      "pyproject.toml": "07f8799e3d616e73c24bd3ef5a7c679d190855d82f65d853467a7343ee90e825"
+    },
+    "appTests": {
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "packagedCaseCount": 9,
+    "hostIsolation": {
+      "python_without_node": true,
+      "node_without_python": true
+    },
+    "recordedInstalledArtifacts": {
+      "xyg-0.0.1.dev3041+3069881d-py3-none-linux_x86_64.whl": "1b7c9487efcb10c34866edc93ef83c2684f038595949b8bfe36782848a31dcec",
+      "curatelabs-xyg-node-linux-x64-0.0.0-rc.1063.tgz": "1ad23445540a5e965f9324bf961ba87de3b347f0077253469eb8504349a2fb88",
+      "curatelabs-xyg-node-0.0.0-rc.1063.tgz": "45f148b25b80a224cffdbef18d3590eca08be0799b5291e2f068f44aff3efa46",
+      "curatelabs-xyg-0.0.0-rc.1063.tgz": "ea11def9cd3e6b232b9735ef8099dfd499f1174d9802997c71164c0aa13d1e57"
+    },
+    "temporaryArchivesRetained": false
+  },
+  "native": {
+    "sha256": "6323c123a0b129a0081e369a632a0b027ee0d9bca10d3ff5bc0016866bc098a6",
+    "bytes": 6128056
+  },
+  "wasm": {
+    "rawBytes": 1926555,
+    "nodeGzip6Bytes": 785542,
+    "sha256": "0ba71b670ceae0459935ca04f6004670bac327a3c05cea4e99e7dca89ff538b7"
+  },
+  "environment": {
+    "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+    "node": "v22.23.4",
+    "browser": "156.0.8078.4",
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "load": "concurrent development, no timing claim"
+  },
+  "scope": "main/cache integration plus own-batch port collision repair; not release cohort or whole M7 acceptance"
+}

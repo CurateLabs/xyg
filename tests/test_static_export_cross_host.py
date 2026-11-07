@@ -174,7 +174,25 @@ def _base_figure(name: str) -> Figure:
 
 def _edge_figure(name: str) -> Figure:
     figure = Figure(width=320, height=240)
-    if name == "line_authored_style":
+    if name == "line_hidden_tick_labels":
+        _fixed_domains(figure).line([0, 1, 2], [1, 3, 2])
+        figure.axis_options["x"]["tick_label_strategy"] = "off"
+        figure.axis_options["y"].update(
+            tick_values=[],
+            tick_label_strategy="off",
+            style={"tick_length": 0, "grid_width": 0},
+            minor_style={"tick_length": 0, "grid_width": 0},
+        )
+    elif name == "scatter_hidden_tick_labels":
+        figure.scatter([0, 1, 2], [1, 3, 2])
+        figure.axis_options["x"].update(
+            tick_values=[],
+            tick_label_strategy="off",
+            style={"tick_length": 0, "grid_width": 0},
+            minor_style={"tick_length": 0, "grid_width": 0},
+        )
+        figure.axis_options["y"]["tick_label_strategy"] = "off"
+    elif name == "line_authored_style":
         _fixed_domains(figure).line([0, 1, 2], [1, 3, 2], color="#f97316", width=3, opacity=0.7)
     elif name == "scatter_single_log":
         figure.set_axis("x", type_="log")
@@ -247,7 +265,38 @@ def _dense_mesh_columns() -> tuple[np.ndarray, ...]:
 def _fail_close_figure(name: str) -> Figure:
     figure = Figure(width=320, height=240)
     figure.line([0, 1], [0, 1])
-    if name == "fluid_viewport":
+    if name in {
+        "annotation_text_x_nonnumeric",
+        "annotation_text_y_nonnumeric",
+        "annotation_text_x_nonfinite",
+        "annotation_text_y_nonfinite",
+    }:
+        _fixed_domains(figure)
+        coordinate = "x" if "_x_" in name else "y"
+        figure.annotations = [
+            {
+                "kind": "text",
+                "x": 0.5,
+                "y": 0.5,
+                "text": "label",
+                coordinate: float("inf") if name.endswith("nonfinite") else "category",
+            }
+        ]
+    elif name.startswith("annotation_") and name.endswith("_style"):
+        _fixed_domains(figure)
+        kind = name.removeprefix("annotation_").removesuffix("_style")
+        key = {"callout": "head_size", "arrow": "head_size", "rule": "span_start", "text": "width"}[
+            kind
+        ]
+        geometry = (
+            {"x0": 0.0, "y0": 0.0, "x1": 1.0, "y1": 1.0}
+            if kind == "arrow"
+            else {"axis": "y", "value": 0.5}
+            if kind == "rule"
+            else {"x": 0.5, "y": 0.5, "text": "label"}
+        )
+        figure.annotations = [{"kind": kind, **geometry, "style": {key: 8.0}}]
+    elif name == "fluid_viewport":
         figure.width = "100%"
     elif name == "browser_css":
         figure.class_name = "browser-only"
@@ -454,6 +503,23 @@ def test_python_and_node_scene_svg_raster_and_decoded_png_are_identical(
     node_png = base64.b64decode(node_case["png_b64"])
     node_document_svg = base64.b64decode(node_case["document_svg_b64"])
     node_document_png = base64.b64decode(node_case["document_png_b64"])
+    if case_name in {"line_hidden_tick_labels", "scatter_hidden_tick_labels"}:
+        import xml.etree.ElementTree as ET
+
+        axes = ET.fromstring(svg).find('.//{*}g[@data-xy-chrome="axes"]')
+        assert axes is not None
+        assert not axes.findall("{*}text"), (
+            "explicit-empty majors and hidden labels must render no labels"
+        )
+        lines = [
+            tuple(float(line.attrib[k]) for k in ("x1", "y1", "x2", "y2"))
+            for line in axes.findall("{*}line")
+        ]
+        vertical = any(x1 == x2 and 0 < abs(y2 - y1) < 20 for x1, y1, x2, y2 in lines)
+        horizontal = any(y1 == y2 and 0 < abs(x2 - x1) < 20 for x1, y1, x2, y2 in lines)
+        assert (vertical, horizontal) == (
+            (True, False) if case_name == "line_hidden_tick_labels" else (False, True)
+        )
     assert node_scene == scene
     assert node_svg == svg
     assert node_document_svg == figure.to_svg().encode()
@@ -486,4 +552,11 @@ def test_unsupported_feature_families_fail_closed_in_both_hosts(
         reason = scene_export_support_reason(_fail_close_figure(case["name"]))
         assert reason is not None and reason.startswith(case["reason_prefix"]), case["name"]
         assert reason == node_cases[case["name"]]["reason"]
+        if case["name"] in {
+            "annotation_text_x_nonnumeric",
+            "annotation_text_y_nonnumeric",
+            "annotation_text_x_nonfinite",
+            "annotation_text_y_nonfinite",
+        }:
+            assert reason == case["reason_prefix"]
         assert public_static_export(_fail_close_figure(case["name"]), "svg") is None

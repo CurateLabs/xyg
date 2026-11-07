@@ -1,0 +1,43 @@
+{
+  "definition": "js/src/49_wasm_temporal.ts#XygWasmTemporalController",
+  "addedMember": {
+    "defaultTypes": [
+      null
+    ],
+    "kind": "MethodDeclaration",
+    "name": "subscribeState",
+    "parameters": [
+      "observer: (state: XygTemporalState) => void"
+    ],
+    "returnOrFieldType": "() => void",
+    "signatures": [
+      {
+        "parameters": [
+          {
+            "name": "observer",
+            "type": "(state: XygTemporalState) => void"
+          }
+        ],
+        "returns": "() => void"
+      }
+    ],
+    "type": "(observer: (state: XygTemporalState) => void) => () => void"
+  },
+  "allOtherContractsIdentical": true,
+  "acceptance": "preparation-only-not-a-freeze",
+  "updatedSourceHashes": [
+    "js/src/49_wasm_temporal.ts",
+    "js/src/50_chartview.ts",
+    "js/src/60_entries.ts",
+    "js/src/64_geo_retained_controller.ts",
+    "js/src/66_graph_host.ts",
+    "python/xyg/_graphforge.py",
+    "python/xyg/components.py",
+    "python/xyg/graph_layout.py",
+    "scripts/publish_node_packages.py",
+    "scripts/stage_browser_package.py",
+    "scripts/stage_node_packages.py",
+    "spec/design/host-parity.md",
+    "spec/process/production-readiness.md"
+  ]
+}
