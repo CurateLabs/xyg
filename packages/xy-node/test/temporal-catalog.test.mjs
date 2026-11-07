@@ -75,3 +75,18 @@ test('extreme finite temporal values remain visible at distinct projected height
   }
  }
 });
+
+for(const kind of ['event','interval','gantt','line','bar','scatter'])test(`dense public ${kind} membership, bounds and disposal`,()=>{
+ const n=10000,rows=Array.from({length:n},(_,i)=>[BigInt(i),BigInt(i+1),0,2n**63n+BigInt(i)]);
+ const chart=temporalChart(kind,rows,{domain:[0n,BigInt(n)],timezone:'UTC',dense:true,width:900,height:420});
+ const metadata=chart.temporalMetadata(),m=new DataView(metadata.buffer,metadata.byteOffset,metadata.byteLength);
+ assert.equal(m.getBigUint64(44,true),BigInt(n));
+ const key=Number(m.getBigUint64(64,true)),count=Number(m.getBigUint64(72,true));
+ const members=chart.temporalMembers(metadata,key),v=new DataView(members.buffer,members.byteOffset,members.byteLength);
+ const columns=Math.floor((900-89)/4);
+ const expected=rows.filter(([start,end])=>kind==='interval'||kind==='gantt'?start*BigInt(columns)<10000n&&end>0n:start*BigInt(columns)/10000n===0n).map(r=>r[3]);
+ assert.equal(count,expected.length);assert.deepEqual(Array.from({length:(members.length-64)/8},(_,i)=>v.getBigUint64(64+i*8,true)),expected);
+ assert.ok(chart.toScene().length<2e6);assert.match(Buffer.from(chart.toSvg()).toString(),/<rect/);
+ chart.temporalViewport([1n,BigInt(n)]);assert.throws(()=>chart.temporalMembers(metadata,key));
+ chart.temporalDispose();assert.throws(()=>chart.toScene(),/disposed/);
+});

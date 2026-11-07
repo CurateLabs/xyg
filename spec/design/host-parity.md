@@ -2174,8 +2174,14 @@ include synchronous Worker cancellation limits and logical memory accounting.
 ## Temporal catalog candidate (#46)
 
 [Temporal catalog](temporal-catalog.md) records the exact XYTM framing and
-bounded Python/Node Figure and browser WASM entry points. Package size, full
-parity and accessible controller journeys remain release blockers.
+bounded Python/Node Figure and browser WASM entry points. Opt-in XYTM v2 adds
+Rust-owned occupancy/envelope Scenes, binary metadata and exact paged canonical
+membership through public composition viewport/query/disposal methods. Native,
+Python, Node and six actual packaged Worker/painter journeys have bounded parity
+evidence in `spec/performance/temporal-dense-lod-2026-11-07/`. The combined module
+passes the unchanged package caps. Reviewed crossing-segment line clipping still
+needs integration; full installed-host, source-residency, scale and accessible
+controller journeys remain release blockers. This is not #46 completion.
 ### Immutable temporal graph snapshots and retained exports
 
 Python/Node and the actual browser Worker use Rust-owned XYFG snapshots and

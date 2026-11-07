@@ -7940,6 +7940,7 @@ class TemporalChart(Chart):
         timezone,
         precision=2,
         controller=None,
+        dense=False,
         color=(31, 119, 180, 255),
         stroke=(31, 119, 180, 255),
         stroke_width=1.0,
@@ -7955,19 +7956,74 @@ class TemporalChart(Chart):
         self.timezone = timezone
         self.precision = precision
         self.controller = controller
+        self.dense = dense
+        self._temporal_disposed = False
         self.temporal_color = color
         self.temporal_stroke = stroke
         self.temporal_width = stroke_width
         self.temporal_budget = budget
+        self._dense_source = None
+        if dense:
+            from ._temporal_scene import request
+
+            self._dense_source = request(
+                kind,
+                self.rows,
+                domain=self.domain,
+                timezone=timezone,
+                precision=precision,
+                title=self.title,
+                width=self.width,
+                height=self.height,
+                cursor=self.domain[0],
+                color=color,
+                stroke=stroke,
+                stroke_width=stroke_width,
+                dense=True,
+            )
+            self.rows = ()
 
     def figure(self):
         figure = super().figure()
         figure._temporal_composition = self
         return figure
 
-    def _compile_temporal(self, width=None, height=None):
+    def temporal_viewport(self, domain, *, width=None, height=None):
+        """Set the exact next compile viewport; source identity remains immutable."""
+        if self._temporal_disposed:
+            raise ValueError("temporal composition disposed")
+        self.domain = tuple(domain)
+        if width is not None:
+            self.width = width
+        if height is not None:
+            self.height = height
+        return self
+
+    def temporal_dispose(self):
+        """Release the retained source and prohibit subsequent queries/compilation."""
+        self._temporal_disposed = True
+        self.rows = ()
+        self._dense_source = None
+
+    def temporal_metadata(self):
+        """Return binary XYTL tier/count/provenance/resource metadata."""
+        return self._compile_temporal(operation=2)
+
+    def temporal_members(self, metadata, cell, *, offset=0, limit=256):
+        """Return a bounded XYTL page of literal canonical source IDs."""
+        return self._compile_temporal(
+            operation=1, cell=cell, offset=offset, limit=limit, metadata=metadata
+        )
+
+    def _compile_temporal(
+        self, width=None, height=None, *, operation=0, cell=0, offset=0, limit=0, metadata=None
+    ):
         from . import _temporal_scene
 
+        if self._temporal_disposed:
+            raise ValueError("temporal composition disposed")
+        if operation and not self.dense:
+            raise ValueError("membership requires dense=True")
         state = self.controller.state if self.controller is not None else None
         domain = (state["range_start"], state["range_end"]) if state else self.domain
         packet = _temporal_scene.request(
@@ -7983,7 +8039,30 @@ class TemporalChart(Chart):
             color=self.temporal_color,
             stroke=self.temporal_stroke,
             stroke_width=self.temporal_width,
+            dense=self.dense,
+            operation=operation,
+            cell=cell,
+            offset=offset,
+            limit=limit,
         )
+        if self.dense:
+            import struct
+
+            source = self._dense_source
+            if source is None:
+                raise ValueError("temporal source disposed")
+            start = 128 + sum(struct.unpack_from("<2I", source, 56))
+            framed = bytearray(packet)
+            framed[12:16] = source[12:16]
+            framed.extend(memoryview(source)[start:])
+            packet = bytes(framed)
+            del framed
+        if operation == 1:
+            if not isinstance(metadata, bytes) or metadata[:4] != b"XYTL" or len(metadata) < 64:
+                raise ValueError("membership requires XYTL publication metadata")
+            packet = bytearray(packet)
+            packet[104:120] = metadata[20:36]
+            packet = bytes(packet)
         return _temporal_scene.compile_request(packet, self.temporal_budget)
 
 

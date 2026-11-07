@@ -1022,3 +1022,12 @@ tests/test_geo_host.py text eol=lf
 # Current temporal PNG status and successor evidence.
 spec/performance/temporal-png-status-2026-11-07/** text eol=lf
 spec/performance/temporal-png-status-2026-11-07/**/*.gz -text
+
+# Dense temporal candidate and append-only evidence.
+spec/performance/temporal-dense-lod-2026-11-07/** text eol=lf
+spec/performance/temporal-dense-lod-2026-11-07/**/*.gz -text
+spec/performance/temporal-dense-lod-2026-11-07/**/*.png -text
+crates/xyg-engine/src/temporal_scene_dense.rs text eol=lf
+spec/performance/temporal-dense-lod-2026-11-07/**/*.scene -text
+spec/performance/temporal-dense-lod-2026-11-07/**/*.xyfg -text
+spec/performance/temporal-dense-lod-2026-11-07/**/*.painter -text

@@ -61,6 +61,11 @@ def request(
     color,
     stroke,
     stroke_width,
+    dense=False,
+    operation=0,
+    cell=0,
+    offset=0,
+    limit=0,
 ):
     lo, hi = (integer(v) for v in domain)
     zone = timezone.encode("utf-8")
@@ -74,7 +79,7 @@ def request(
         out,
         0,
         b"XYTM",
-        1,
+        2 if dense else 1,
         KINDS[kind],
         count,
         width,
@@ -86,6 +91,8 @@ def request(
         len(heading),
         precision,
     )
+    if dense:
+        struct.pack_into("<4I", out, 88, operation, cell, offset, limit)
     out[72:76] = bytes(color)
     out[76:80] = bytes(stroke)
     if len(color) != 4 or len(stroke) != 4:

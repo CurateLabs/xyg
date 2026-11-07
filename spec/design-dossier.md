@@ -3835,3 +3835,11 @@ adds real retained PNG through the same raster/encoder within those unchanged
 single-module caps. Earlier over-cap/unavailable receipts remain historical.
 Full #45 and milestone acceptance stay OPEN; future combined-source module fit
 and global process budgets (#111) are not certified by this standalone candidate.
+
+### Dense temporal composition candidate (#46)
+
+Opt-in XYTM v2 shares the ordinary Scene painter and leaves v1 unchanged.
+The exact time-cell, lane-occupancy, line/bar envelope, paged membership and
+resource refusal contracts are in [temporal-catalog.md](design/temporal-catalog.md#dense-opt-in-candidate-xytm-v2).
+This candidate has bounded derived output; full admitted source retention is
+still data-sized. It is not 100M/out-of-core evidence or #46 completion.

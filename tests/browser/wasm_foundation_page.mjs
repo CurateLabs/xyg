@@ -15,6 +15,7 @@ import {
   encodeWasmDashboardPlan,
   encodeWasmTickBatch,
   encodeTemporalScene,
+  TemporalComposition,
   hydrateWasmPainter,
   layoutWasmCose,
   planWasmDashboardResources,
@@ -2297,6 +2298,7 @@ async function run() {
   if (catalogOracle.schema !== "xyg.temporal-catalog-native-oracle/v1" || catalogOracle.cases.length !== 6) throw Error("temporal oracle fixture is incomplete");
   const temporalCatalogProof = [];
   const temporalExtremeProof = [];
+  const temporalDenseProof = [];
   const catalogWorker = createXygWasmWorker({workerUrl:"/packages/xy-client/dist/wasm-worker.js", wasm:wasmModule, maxArenaBytes:16*1024*1024});
   const digest = async bytes => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), b=>b.toString(16).padStart(2,"0")).join("");
   await catalogWorker.ready;
@@ -2321,6 +2323,33 @@ async function run() {
         if (!ink) throw Error(`temporal ${oracle.kind} has no source-colored painted marks`);
         temporalCatalogProof.push({kind:oracle.kind,sceneSha256,sceneBytes:scene.byteLength,sourceIds:ids,sourceColorPixels:ink});
       } finally { view?.destroy();host.remove(); }
+    }
+    for (const kind of ['event','interval','gantt','line','bar','scatter']) {
+      const rows=Array.from({length:10000},(_,i)=>[BigInt(i),BigInt(i+1),0,2n**63n+BigInt(i)]);
+      const composition=new TemporalComposition(catalogWorker,{kind,rows,domain:[0n,10000n],timezone:'UTC'});
+      const meta=await composition.metadata(), m=new DataView(meta);
+      const key=Number(m.getBigUint64(64,true)), count=m.getBigUint64(72,true);
+      const members=await composition.members(meta,key), v=new DataView(members);
+      if(v.getUint32(60,true)!==Number(count)||v.getBigUint64(64,true)!==2n**63n)throw Error('dense temporal membership mismatch');
+      const scene=await composition.scene();
+      const host=document.body.appendChild(document.createElement('div'));
+      const view=await renderWasmScene({el:host,scene,worker:catalogWorker,transfer:false});
+      view._drawNow();
+      const pixels=view.canvas.getContext('2d').getImageData(0,0,view.canvas.width,view.canvas.height).data;
+      let ink=0;for(let at=0;at<pixels.length;at+=4)if(pixels[at]+5<pixels[at+2]&&pixels[at+1]<pixels[at+2])ink++;
+      if(!ink)throw Error(`dense temporal paint missing: ${kind}`);
+      temporalDenseProof.push({kind,sceneBytes:scene.byteLength,sceneSha256:await digest(scene),metadataSha256:await digest(meta),memberSha256:await digest(members),sourceColorPixels:ink,members:Number(count)});
+      view.destroy();host.remove();
+      composition.viewport([1n,10000n]);
+      let stale=false;try{await composition.members(meta,key);}catch{stale=true;}
+      if(!stale)throw Error('stale temporal members published');
+      const old=composition.scene();
+      let busy=false;try{await composition.scene();}catch(e){busy=String(e).includes('in flight');}
+      if(!busy)throw Error('temporal in-flight source copies were not bounded');
+      composition.cancel();
+      let cancelled=false;try{await old;}catch{cancelled=true;}
+      if(!cancelled)throw Error('cancelled temporal publication escaped');
+      composition.dispose();
     }
     for (const extent of [1e308, Number.MAX_VALUE]) {
       const request = encodeTemporalScene({kind:"scatter",rows:[[-1n,null,-extent,1n],[0n,null,0,2n],[1n,null,extent,3n]],domain:[-2n,8n],timezone:"UTC",width:900,height:420});
@@ -4984,7 +5013,7 @@ async function run() {
   } catch (error) {
     if (!(error instanceof TypeError)) throw error;
   }
-  return { ok: true, densityPolicy, densityNoRefinement, temporalControllerProof, filterDensityProof, temporalCatalogProof, temporalExtremeProof };
+  return { ok: true, densityPolicy, densityNoRefinement, temporalControllerProof, filterDensityProof, temporalCatalogProof, temporalExtremeProof, temporalDenseProof };
 }
 
 globalThis.__xygWasmFoundation = run().catch((error) => ({

@@ -401,6 +401,6 @@ export { attachWasmGraphSession } from "./63_graph_controller";
 export type { XygWasmGraphSession, XygWasmGraphSessionOptions, XygWasmGraphSnapshot, XygWasmGraphCamera, XygWasmGraphLoad } from "./63_graph_controller";
 
 export { createWasmFilterSession, filterRequest, decodeFilterReply, FilterTierCError } from "./49_filter_session";
-export { encodeTemporalScene } from "./75_temporal_scene";
+export { encodeTemporalScene, TemporalComposition } from "./75_temporal_scene";
 export type { TemporalSceneInput } from "./75_temporal_scene";
 export {XygFrozenTemporalGraph} from './67_frozen_graph';

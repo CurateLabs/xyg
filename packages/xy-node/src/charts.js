@@ -1,4 +1,4 @@
-import {temporalSceneCompile} from "./temporal-scene.js";
+import {temporalSceneCompile,encodeTemporalScene} from "./temporal-scene.js";
 /**
  * Chart convenience constructors — all dual-host mark families.
  * Thin wrappers over mark composers + the minimal Node Figure.
@@ -622,8 +622,23 @@ export function temporalChart(kind, rows, opts) {
   const count=rows.length;
   temporalSceneSize(count, opts.timezone, opts.title);
   const fig=figure({width:opts.width,height:opts.height,title:opts.title});
-  const source=Array.from({length:count},(_,i)=>Object.freeze([...rows[i]]));
-  fig._temporalCompile=(width=fig.width,height=fig.height)=>temporalSceneCompile({...opts,kind,rows:source,width,height});
+  let disposed=false;
+  let source=Array.from({length:count},(_,i)=>Object.freeze([...rows[i]]));
+  let packed=opts.dense?encodeTemporalScene({...opts,kind,rows:source}):null;
+  if(packed)source=[];
+  const compile=(extra={})=>{
+    if(disposed)throw new Error('temporal composition disposed');
+    if(!packed)return temporalSceneCompile({...opts,width:fig.width,height:fig.height,kind,rows:source,...extra},opts.budget);
+    const header=encodeTemporalScene({...opts,width:fig.width,height:fig.height,kind,rows:[],...extra});
+    const packet=packed.slice(0),bytes=new Uint8Array(packet);
+    bytes.set(new Uint8Array(header,0,128));bytes.set(new Uint8Array(packed,12,4),12);
+    return temporalSceneCompile(packet,opts.budget);
+  };
+  fig.temporalViewport=(domain,size={})=>{if(disposed)throw new Error('temporal composition disposed');opts={...opts,domain:[...domain]};if(size.width!==undefined)fig.width=size.width;if(size.height!==undefined)fig.height=size.height;return fig;};
+  fig.temporalMetadata=()=>compile({operation:2});
+  fig.temporalMembers=(metadata,cell,offset=0,limit=256)=>compile({operation:1,cell,offset,limit,publication:metadata.buffer.slice(metadata.byteOffset,metadata.byteOffset+metadata.byteLength)});
+  fig.temporalDispose=()=>{disposed=true;source=[];packed=null;};
+  fig._temporalCompile=(width=fig.width,height=fig.height)=>compile({width,height});
   fig._temporalPainter=()=>sceneBrowserPainter(fig.toScene());
   return fig;
 }

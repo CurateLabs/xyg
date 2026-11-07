@@ -22,13 +22,20 @@ export function encodeTemporalScene(input                    )              {
   const zone=new TextEncoder().encode(input.timezone), title=new TextEncoder().encode(input.title??'');
   const n=input.rows.length, size=temporalSceneSize(n,input.timezone,input.title);
   const out=new ArrayBuffer(size), b=new Uint8Array(out), v=new DataView(out);
-  b.set([88,89,84,77]);v.setUint32(4,1,true);v.setUint32(8,kind,true);v.setUint32(12,n,true);
+  b.set([88,89,84,77]);v.setUint32(4,input.dense?2:1,true);v.setUint32(8,kind,true);v.setUint32(12,n,true);
   v.setFloat64(16,input.width??900,true);v.setFloat64(24,input.height??420,true);
   v.setBigInt64(32,exact(input.domain[0]),true);v.setBigInt64(40,exact(input.domain[1]),true);v.setBigInt64(48,exact(input.cursor??input.domain[0]),true);
   v.setUint32(56,zone.length,true);v.setUint32(60,title.length,true);
   const precision=input.precision??2;if(!Number.isInteger(precision)||precision<0||precision>3)throw new TypeError('invalid source precision');
   v.setUint32(64,precision,true);
   for(const [at,paint] of [[72,input.color],[76,input.stroke]]         ){const p=paint??new Uint8Array([31,119,180,255]);if(!(p instanceof Uint8Array)||p.length!==4)throw new TypeError('paint requires RGBA8');b.set(p,at);}
+  if(input.dense) {
+    for(const [at,value] of [[88,input.operation??0],[92,input.cell??0],[96,input.offset??0],[100,input.limit??0]]) {
+      if(!Number.isInteger(value)||value<0||value>0xffffffff)throw new RangeError('dense query fields require u32');
+      v.setUint32(at,value,true);
+    }
+  }
+  if(input.operation===1){if(!input.publication||input.publication.byteLength<64)throw new TypeError('membership requires XYTL publication');b.set(new Uint8Array(input.publication,20,16),104);}
   v.setFloat64(80,input.strokeWidth??1,true);b.set(zone,128);b.set(title,128+zone.length);
   input.rows.forEach(([start,end,value,id],i)=>{const at=128+zone.length+title.length+i*40;
     v.setBigInt64(at,start===null?0n:exact(start),true);v.setBigInt64(at+8,end===null?0n:exact(end),true);

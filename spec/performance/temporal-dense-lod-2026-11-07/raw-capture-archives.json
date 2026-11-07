@@ -1,0 +1,163 @@
+[
+  {
+    "rawPath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-5-parent.scale2.html",
+    "rawBytes": 3224440,
+    "rawSha256": "68a2734de0b0997345293fa22fb8c57e3de92fc6c1969f6916e6456d358fcaaf",
+    "archivePath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-5-parent.scale2.html.gz",
+    "archiveSha256": "db10252fad952a877ed20654edb25bc3a4f33ffe26967bce7830c7d8fc3a6c85"
+  },
+  {
+    "rawPath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-2.html",
+    "rawBytes": 3222700,
+    "rawSha256": "c3ebcbf0f85423e737ec87aab6521055b690d4012612da232353069747319753",
+    "archivePath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-2.html.gz",
+    "archiveSha256": "ea4cef314a3c26e623472ba5973d16d987de5e442542021fd75af498d7bfacd1"
+  },
+  {
+    "rawPath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-5-parent.html",
+    "rawBytes": 3224440,
+    "rawSha256": "04846cc73a2f0eb6e2f9b09a22f4d936b3356dff283dd372153f95fd8adee0cd",
+    "archivePath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-5-parent.html.gz",
+    "archiveSha256": "6cac699d3207f6805e242ae8a0634a63ea049a6afe1b5a6a4796ad61204b431c"
+  },
+  {
+    "rawPath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-4.html",
+    "rawBytes": 3208768,
+    "rawSha256": "c131aaaffe8bfc650f2f4a902e83807f148ae874ee92569a8617c6278b9dc615",
+    "archivePath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-4.html.gz",
+    "archiveSha256": "8af5a1952289f88117545ac9ecb1c8621499c218071192ac8a7e6426a2a6f8cb"
+  },
+  {
+    "rawPath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-1.html",
+    "rawBytes": 3204812,
+    "rawSha256": "ecfa030fe36092375e2d17f319a31f00be007d45dc20f630293646c8f09456d7",
+    "archivePath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-1.html.gz",
+    "archiveSha256": "c234badc2f890298915544a144ab0c33193e6888cc88fc781b28d3324c7d85ef"
+  },
+  {
+    "rawPath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-5.scale2.html",
+    "rawBytes": 3224000,
+    "rawSha256": "6a604c9830e28a7e5dddf3e2016271de72df39d985a57406b6b755383b48d6cf",
+    "archivePath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-5.scale2.html.gz",
+    "archiveSha256": "04ea9564bec950822162b6edd1c9def1a50d36dfcfb86ccee143c5ce933d02d0"
+  },
+  {
+    "rawPath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-4.scale2.html",
+    "rawBytes": 3208768,
+    "rawSha256": "7e3a7d1b7021811ea6ac582204e2a320d418bb9dfcd1ee13899d581146814018",
+    "archivePath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-4.scale2.html.gz",
+    "archiveSha256": "c8482c6c03495c049e8aba77409d3826c9fefc75073bd3e6ba1cff22dfa864ae"
+  },
+  {
+    "rawPath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-5.html",
+    "rawBytes": 3224000,
+    "rawSha256": "c64cb471fd557b9dfb76eeb108e1618f90198cb75ac82418432742910b7f8b01",
+    "archivePath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-5.html.gz",
+    "archiveSha256": "deec1187337d8d09f1f31a8a5fe1c1c94a7357052db46bbdd6d61c1cf3f6561b"
+  },
+  {
+    "rawPath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-0.scale2.html",
+    "rawBytes": 4027360,
+    "rawSha256": "613d8cb4f975ec317ad97929bb90c11f92c990fe142a0c4a6424c0c82dc29ee7",
+    "archivePath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-0.scale2.html.gz",
+    "archiveSha256": "5fb79ff6184be5a93d7b9cbecb5a95a379a0494a729dba09c8ef973fd00687c8"
+  },
+  {
+    "rawPath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-2.scale2.html",
+    "rawBytes": 3222700,
+    "rawSha256": "485daf5369fabcacd0b8ceae00929db3d117aecbdfdd945f0f827824dfe968a7",
+    "archivePath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-2.scale2.html.gz",
+    "archiveSha256": "cb6260f56760bfa78d65a915c1b8d57fca251922ecd1eef10b0b19a8f3af3c57"
+  },
+  {
+    "rawPath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-0.html",
+    "rawBytes": 4027360,
+    "rawSha256": "ffb4d85aa54e511b273ba56e785f583e31ad781c85776977175cd10f6b652f60",
+    "archivePath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-0.html.gz",
+    "archiveSha256": "8e7b3220ea34d7f329185ce7297b20727772c82c5dd1388eb2fe1aa6fd4dc2c7"
+  },
+  {
+    "rawPath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-3.scale2.html",
+    "rawBytes": 3212556,
+    "rawSha256": "3ef2a593e389474f4d9e37b4ba58926f59a24668a80fd729bdd3e4a1ee3e3288",
+    "archivePath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-3.scale2.html.gz",
+    "archiveSha256": "f2124fa324c223afd7d0813d1c13905c5df2334ecb9cdac6959755b02c4f154b"
+  },
+  {
+    "rawPath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-1.scale2.html",
+    "rawBytes": 3204812,
+    "rawSha256": "4b097f1f1aed0ba5830bbc113c381ddf88a891ee68360c69a786c5e8ebdf96da",
+    "archivePath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-1.scale2.html.gz",
+    "archiveSha256": "5f29db7845eb3f96b9ffbf610e632f48e2140b576e729759b659cecdc2e36d19"
+  },
+  {
+    "rawPath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/inline-worker-png.html",
+    "rawBytes": 3509891,
+    "rawSha256": "70648039fdc5463d7d99e90ab1f52a97a3faff4316c3b47b189b2ffc98af6898",
+    "archivePath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/inline-worker-png.html.gz",
+    "archiveSha256": "ad0735130a6b85f0f16c68709a1d92194dbf48f29bed667f93a84e52f4e550be"
+  },
+  {
+    "rawPath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-3.html",
+    "rawBytes": 3212556,
+    "rawSha256": "c5bf17ad3d5d494593995a12b86d5a643dc5655fed0331aa55afb0d42346cb15",
+    "archivePath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-3.html.gz",
+    "archiveSha256": "82d2ba5d25753d171f93551f5101d6cd44780b4d240ae760b4025544a5e872e7"
+  },
+  {
+    "rawPath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-0.scene",
+    "rawBytes": 725400,
+    "rawSha256": "a9c38d638994ed878589264f5d624a95589dc199f0fee0153a22f557658fceaf",
+    "archivePath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-0.scene.gz",
+    "archiveSha256": "7c992617f678da0997212f926c191e17e6c61f87595ef47111578f2449f8ff5a"
+  },
+  {
+    "rawPath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-1.scene",
+    "rawBytes": 217352,
+    "rawSha256": "4a56d93214ec747ad9eccbba82577d3f6c5e84f91e8f4867f135c4fe1760f868",
+    "archivePath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-1.scene.gz",
+    "archiveSha256": "ed15f11b3801e8d912cbd5453e91dbe34fa51c5b2d303cd46ecb0015ff8f6ed0"
+  },
+  {
+    "rawPath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-5-parent.scene",
+    "rawBytes": 229520,
+    "rawSha256": "e45efa91f78d3471c5dba207002668eb2cb2d9e2173fa488d58000f0704a5f60",
+    "archivePath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-5-parent.scene.gz",
+    "archiveSha256": "1f4f1f3ccee09699e17dd7bddd198c8ecc854e5ce07a50dc95e213b61af2950f"
+  },
+  {
+    "rawPath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-5.scene",
+    "rawBytes": 229296,
+    "rawSha256": "986b036c7ac0f009f07b74defd82cba2db13e7a5ee379522cb78b23f61c7f028",
+    "archivePath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-5.scene.gz",
+    "archiveSha256": "803997c132a44df661a203da432fe2992ba74049732d4819756d5994fe4e0aa5"
+  },
+  {
+    "rawPath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-2.scene",
+    "rawBytes": 228608,
+    "rawSha256": "19c425b85267e5f5d5308503947928fcd8fb2456c0be0a19fbbe304e54cc8d5f",
+    "archivePath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-2.scene.gz",
+    "archiveSha256": "a3a058739ffd3c0aaabc4557a5aaf66e576d6168b94ed7dcc5ad44d7e41795a7"
+  },
+  {
+    "rawPath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-3.scene",
+    "rawBytes": 222224,
+    "rawSha256": "f1cb4edecb943da69a3ad2bad3e65fb578c73e6e7145ecff35d81d04fe01ce99",
+    "archivePath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-3.scene.gz",
+    "archiveSha256": "720499a218cf532554a9c6b3adda4007c96c4ee28efd2d732ad71fc51571e98e"
+  },
+  {
+    "rawPath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-4.scene",
+    "rawBytes": 219888,
+    "rawSha256": "4b75b363d3abfe8633de8e4a372dcb06ed26a8317483f9a630b20ad0aab4303f",
+    "archivePath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.frozen-graph/shape-4.scene.gz",
+    "archiveSha256": "ad2a6ac9fd91bf2fe7f3bd461fcc8f618ed25c603f5fb1f51622d4746dbf0a09"
+  },
+  {
+    "rawPath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.retained-temporal.json.wire.json",
+    "rawBytes": 3567548,
+    "rawSha256": "8dc9943a220c5b4d5a951a30f4b39bec2a8e30c834c9c8bef40e749002f59e58",
+    "archivePath": "spec/performance/temporal-dense-lod-2026-11-07/foundation.json.retained-temporal.json.wire.json.gz",
+    "archiveSha256": "45961ad360bb9daeea6e57ebc3a2f4a5e70813808e2cbf7e45d013c50f9ee5b1"
+  }
+]

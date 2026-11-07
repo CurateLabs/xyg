@@ -133,3 +133,82 @@ fixtures remain intact; current fixtures are officially regenerated with only
 ABI metadata changed. XYTM v1/XYFC v1 and existing Scene/painter contracts,
 request/operation caps, runtime limits and packaging gates remain unchanged.
 No issue or milestone completion follows from this integration.
+
+## Dense opt-in candidate: XYTM v2
+
+This checkout adds a **partial candidate** with passing bounded package and
+cross-host checks recorded in `spec/performance/temporal-dense-lod-2026-11-07/`.
+Reviewed crossing-segment line clipping integration and independent final review
+remain required.
+It does not complete #46, #38 or milestones 4–7. Version 1 and its six-family
+fixtures retain the direct-tier contract above. Python `dense=True`, Node
+`dense:true`, and browser `TemporalComposition(worker,input)` request v2.
+
+V2 keeps the 128-byte header and source row layout. New u32 fields at 88/92/96/100
+are operation (0 Scene, 1 member page, 2 metadata), cell index, member offset and
+page capacity (1..256). Member queries copy the metadata source/view fingerprints
+into 104..112/112..120. Bytes 120..128 remain zero. All timestamps and member IDs
+remain exact i64/u64. Rust validates the entire source, including culled rows,
+finite values, unique IDs, endpoint validity and line ordering before publication.
+
+Rust chooses `columns=max(1,floor((floor(width)-89)/4))`. Event, interval, Gantt
+and scatter use 16 value bands across the full source value extent (including
+zero and one); line and bar use one band. Cell IDs are `column*bands+band`, scoped
+to the source and viewport publication. They are **aggregate IDs**, never
+representative source IDs. Literal canonical IDs are returned only by exact
+membership pages in source order; they remain unchanged across viewport changes.
+No Scene contains an N-member list. The source remains retained and immutable
+in the public composition until disposal; every operation resubmits that bounded
+source through the existing native/Worker compiler. This is an admitted in-memory
+path, not out-of-core storage or a screen-bounded canonical residency claim.
+
+Instant bins use exact rational i128 time comparisons. Interval cells contain
+all source intervals whose half-open extent intersects the cell and whose lane
+maps to its value band; null endpoints are unbounded. Coverage is quantized to
+the occupied 4px-time/value-band cell, explicitly an occupancy summary rather
+than literal interval outlines. Line cells paint the source-value min/max envelope
+in each time bin without joining bins or inventing connections across null gaps;
+a constant envelope has a two-pixel visible footprint. Bar cells include zero
+in their vertical envelope. These are envelope/occupancy summaries, not sampled
+source marks. The ordinary Scene Rect path paints all six dense families, with
+the original UTC axis ticks, cursor annotation, style and title. No host bins,
+decimates or projects source timestamps.
+
+The XYTL binary reply has a 64-byte little-endian header: magic at 0; u64
+version=2 at 4, operation at 12, source FNV-1a64 at 20, view/header FNV-1a64 at
+28, admitted peak bytes at 36, source row count at 44, lattice cell capacity at
+52. Metadata rows are 40 bytes: u64 cell/count/member hash, f64 min/max. Rows
+are increasing occupied cells; member hash folds source-order exact-ID hashes.
+The source hash covers source rows; view hash covers XYTM bytes 8..88. These
+are reproducibility/stale-token checks, not cryptographic authentication.
+Member replies have u32 total membership at 60, followed by at most 256 exact
+u64 IDs. Offset beyond membership returns an empty page with the total intact.
+The query rejects changed source or viewport fingerprints atomically. XYTL v2
+identifies the dense lattice/envelope tier; it never implies a direct-tier fallback.
+
+Admission precedes source index/grid allocation: `3*request_bytes + 16*N +
+4096*cells + 131072 <= operation_budget <= 64MiB`. This conservative reservation
+covers packed source retention, staging/transport copies, unique-ID validation
+index, grid, Scene construction scratch and two publication buffers. Dense compositions retain only their packed immutable source after construction;
+caller-owned authoring objects and constructor transients are outside this compile
+working-set reservation. At most 64Mi cell contributions execute per operation; exhaustion
+refuses without output. A 100k source at 900px fits; a 1M source at that size
+refuses the declared working set even though its wire request alone fits.
+No 100M/1B allocation is part of the regression tests.
+
+Python exposes `temporal_viewport`, `temporal_metadata`, `temporal_members` and
+`temporal_dispose`; Node exposes the corresponding camelCase methods. Browser
+`TemporalComposition` retains a private packed source, checks metadata ownership
+and revision, invalidates publication on viewport changes/disposal, and suppresses
+stale replies. Each composition admits one source-bearing operation in flight;
+additional calls refuse before cloning the source. Cancellation retains this
+credit until the real Worker reply drains, preventing cancel/retry loops from
+queuing unbounded source copies. Viewport updates mutate only private header
+fields; canonical row bytes remain immutable. The shared Worker remains caller-owned. Cancellation does not
+preempt a synchronous Rust scan; it prevents obsolete publication. A retained
+Rust source/chunked scan/session and cooperative cancellation remain further work.
+
+Still open: brush/controller binding, cursor marks, coordinated tables,
+keyboard/reduced-motion/accessibility journeys, streaming, richer customization,
+100M+ storage/residency, competitor comparisons, five-view budgets and the full
+installed-host matrix. No FPS, scale victory or competitor lead is asserted.

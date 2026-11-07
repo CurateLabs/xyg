@@ -220,6 +220,7 @@ try {
       temporalControllerProof: result.temporalControllerProof,
       filterDensityProof: result.filterDensityProof,
       temporalCatalogProof: result.temporalCatalogProof,
+      temporalDenseProof: result.temporalDenseProof,
       temporalExtremeProof: result.temporalExtremeProof,
       limitations: [
         "Three bounded generated-file cases through each packaged ESM/IIFE entry: absent inline bootstrap, malformed inline bootstrap rejected before Worker allocation, and absent retained source.",

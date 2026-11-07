@@ -220,3 +220,123 @@ def test_public_constructor_bounds_unsized_and_understated_sources(monkeypatch):
             xyg.temporal_chart("event", source, domain=(0, 10), timezone="UTC", title=title)
     with pytest.raises(ValueError, match="framing budget"):
         xyg.temporal_chart("event", rows, domain=(0, 10), timezone="UTC", title=title + "é")
+
+
+@pytest.mark.parametrize("kind", _temporal_scene.KINDS)
+def test_dense_exact_public_membership_and_paint(kind):
+    # Independent rational-time oracle; source identities intentionally exceed 2**53.
+    count = 100_000
+    rows = [(i, i + 11, i % 7 - 3, (1 << 63) + i) for i in range(count)]
+    chart = xyg.temporal_chart(kind, rows, domain=(0, count), timezone="UTC", dense=True, width=900)
+    meta = chart.temporal_metadata()
+    assert meta[:4] == b"XYTL"
+    assert struct.unpack_from("<Q", meta, 44)[0] == count
+    columns = (900 - 89) // 4
+    lanes = 1 if kind in ("line", "bar") else 16
+    records = [struct.unpack_from("<QQQdd", meta, at) for at in range(64, len(meta), 40)]
+    assert len(records) <= columns * lanes
+    for key, members, _, low, high in records[:: max(1, len(records) // 7)]:
+        column, lane = divmod(key, lanes)
+        expected = []
+        for start, end, value, identity in rows:
+            if min(int((value + 3) / 6 * lanes), lanes - 1) != lane:
+                continue
+            if kind in ("interval", "gantt"):
+                included = start * columns < (column + 1) * count and end * columns > column * count
+            else:
+                included = start * columns // count == column
+            if included:
+                expected.append(identity)
+        assert members == len(expected)
+        actual = []
+        for offset in range(0, len(expected), 256):
+            page = chart.temporal_members(meta, key, offset=offset)
+            assert struct.unpack_from("<I", page, 60)[0] == len(expected)
+            actual.extend(struct.unpack_from("<Q", page, at)[0] for at in range(64, len(page), 8))
+        assert actual == expected
+        # Mutate an actual reply while retaining the independently scanned oracle.
+        # Loss, duplication and a stale foreign identity must each be detected.
+        for mutated in [actual[:-1], actual + actual[:1], [0] + actual[1:]]:
+            with pytest.raises(AssertionError):
+                assert mutated == expected
+        values = [rows[identity - (1 << 63)][2] for identity in expected]
+        assert low == min(values)
+        assert high == max(values)
+    scene = chart.figure().to_scene()
+    assert len(scene) < 2_000_000
+    assert "<rect" in chart.to_svg()
+    chart.temporal_viewport((1, count))
+    with pytest.raises(ValueError):
+        chart.temporal_members(meta, records[0][0])
+    chart.temporal_dispose()
+    with pytest.raises(ValueError, match="disposed"):
+        chart.figure().to_scene()
+
+
+def test_dense_atomic_admission_and_source_mutation():
+    rows = [(i, i + 1, 1, i) for i in range(1000)]
+    chart = xyg.temporal_chart("line", rows, domain=(0, 1000), timezone="UTC", dense=True)
+    meta = chart.temporal_metadata()
+    other = xyg.temporal_chart("line", rows[:-1], domain=(0, 1000), timezone="UTC", dense=True)
+    with pytest.raises(ValueError):
+        other.temporal_members(meta, 0)
+    # A 1M-row source does not fit the declared 64MiB source/staging/scratch model.
+    # Repeated immutable tuples bound test-side memory; duplicate validation must
+    # never start because admission refuses before any source/index allocation.
+    large = xyg.temporal_chart(
+        "event", [rows[0]] * 1_000_000, domain=(0, 1000), timezone="UTC", dense=True
+    )
+    with pytest.raises(ValueError, match="rejected"):
+        large.figure().to_scene()
+
+
+@pytest.mark.parametrize("kind", _temporal_scene.KINDS)
+def test_dense_extreme_null_empty_and_invalid(kind):
+    lo, hi = -(1 << 63), (1 << 63) - 1
+    rows = [(None, None, -1e308, 1), (lo, lo + 1, 0, 2), (hi - 1, hi, 1e308, (1 << 64) - 1)]
+    chart = xyg.temporal_chart(kind, rows, domain=(lo, hi), timezone="UTC", dense=True)
+    meta = chart.temporal_metadata()
+    assert b"NaN" not in chart.to_svg().encode()
+    assert struct.unpack_from("<Q", meta, 44)[0] == 3
+    empty = xyg.temporal_chart(kind, [], domain=(lo, hi), timezone="UTC", dense=True)
+    assert len(empty.temporal_metadata()) == 64
+    assert empty.figure().to_scene()[:4] == b"XYGS"
+    for invalid in [float("nan"), float("inf"), -float("inf")]:
+        with pytest.raises(ValueError):
+            xyg.temporal_chart(
+                kind, [(0, 1, invalid, 1)], domain=(lo, hi), timezone="UTC", dense=True
+            ).to_svg()
+    with pytest.raises(ValueError):
+        xyg.temporal_chart(
+            kind, [(0, 1, 0, 1)] * 2, domain=(lo, hi), timezone="UTC", dense=True
+        ).to_svg()
+
+
+def test_dense_output_capacity_is_atomic():
+    import ctypes
+
+    from xyg import _native
+
+    packet = _temporal_scene.request(
+        "event",
+        [(0, 1, 0, 42)],
+        domain=(0, 10),
+        timezone="UTC",
+        precision=2,
+        title="",
+        width=900,
+        height=420,
+        cursor=0,
+        color=(1, 2, 3, 255),
+        stroke=(1, 2, 3, 255),
+        stroke_width=1,
+        dense=True,
+    )
+    source = ctypes.create_string_buffer(packet)
+    sentinel = (ctypes.c_uint8 * 64)(*([0xA5] * 64))
+    length = ctypes.c_size_t()
+    status = _native._lib.xyg_temporal_scene_compile(
+        source, len(packet), 64 * 1024 * 1024, sentinel, 64, ctypes.byref(length)
+    )
+    assert status != 0
+    assert bytes(sentinel) == bytes([0xA5] * 64)

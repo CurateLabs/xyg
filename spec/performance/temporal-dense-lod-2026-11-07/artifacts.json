@@ -1,0 +1,123 @@
+{
+  "node": "v22.23.4",
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6362680,
+      "sha256": "7b76ac792f30b1119eeaa48bb1d0c528bd2c56c9f01b4c75e2800156b2d96399"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 4077279,
+      "sha256": "d5ab04f895f70eb59b2ea8685ede8fceab9206b98a5bb96b408fb51de9dd7884"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1899996,
+      "sha256": "27b05ebec8f9595579777fb16be7955bdb39d4fa9c665b980b26f0b5567d9b31"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 847657,
+      "sha256": "80593d8d3dce2ec1e1899899a831cea784a27640dcb3c0c422b3970296642c26"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 847677,
+      "sha256": "ca60a5653537a1aa6d34aad7749bad5cc1890566b029a6d76e5a94b54b676081"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 58827,
+      "sha256": "dbc7007bc40ef1ccd4963b2e0c4c9f15bb6808649c5bd609329df889d9056b3e"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2554450,
+      "sha256": "2162526ea4471d925d8fd9c186534bcc2ee1374ac2ac36e407880fc3d87bd699"
+    }
+  },
+  "module": {
+    "raw": 1899996,
+    "gzip6": 786272,
+    "functionExports": [
+      "xyg_wasm_abi_version",
+      "xyg_wasm_aggregate_bin2d",
+      "xyg_wasm_aggregate_step",
+      "xyg_wasm_aggregate_stream_begin",
+      "xyg_wasm_aggregate_stream_finish",
+      "xyg_wasm_aggregate_stream_push",
+      "xyg_wasm_arena_high_water",
+      "xyg_wasm_arena_len",
+      "xyg_wasm_arena_ptr",
+      "xyg_wasm_arena_resize",
+      "xyg_wasm_cancel",
+      "xyg_wasm_compound_transition",
+      "xyg_wasm_copy_bytes_hi",
+      "xyg_wasm_copy_bytes_lo",
+      "xyg_wasm_copy_count",
+      "xyg_wasm_dashboard_plan",
+      "xyg_wasm_default_palette_rgba8",
+      "xyg_wasm_default_palette_rows",
+      "xyg_wasm_default_palette_version",
+      "xyg_wasm_density_first_paint_plan",
+      "xyg_wasm_filter_execute",
+      "xyg_wasm_frozen_graph_execute",
+      "xyg_wasm_geo_catalog_compile",
+      "xyg_wasm_geo_column_ingest",
+      "xyg_wasm_geo_frame_prepare",
+      "xyg_wasm_geo_scale_execute",
+      "xyg_wasm_geo_scale_read",
+      "xyg_wasm_geo_scene_compile",
+      "xyg_wasm_geo_snapshot_execute",
+      "xyg_wasm_geo_snapshot_read",
+      "xyg_wasm_geo_tile_execute",
+      "xyg_wasm_geo_tile_frame_prepare",
+      "xyg_wasm_geo_tile_read",
+      "xyg_wasm_geo_transport_acquire",
+      "xyg_wasm_geo_viewport_execute",
+      "xyg_wasm_graph_begin",
+      "xyg_wasm_graph_step",
+      "xyg_wasm_graphforge_compose",
+      "xyg_wasm_graphforge_composition_version",
+      "xyg_wasm_graphforge_session_close",
+      "xyg_wasm_graphforge_session_interact",
+      "xyg_wasm_graphforge_session_open",
+      "xyg_wasm_graphforge_session_render",
+      "xyg_wasm_graphforge_session_update",
+      "xyg_wasm_instance_dispose",
+      "xyg_wasm_instance_new",
+      "xyg_wasm_last_error_len",
+      "xyg_wasm_last_error_ptr",
+      "xyg_wasm_last_scene_records",
+      "xyg_wasm_last_scene_styles",
+      "xyg_wasm_max_arena_bytes",
+      "xyg_wasm_output_len",
+      "xyg_wasm_output_ptr",
+      "xyg_wasm_scene_compile",
+      "xyg_wasm_scene_compile_begin",
+      "xyg_wasm_scene_compile_phase",
+      "xyg_wasm_scene_compile_prepare",
+      "xyg_wasm_scene_compile_records_processed",
+      "xyg_wasm_scene_compile_step",
+      "xyg_wasm_scene_prepare",
+      "xyg_wasm_scene_prepare_annotations",
+      "xyg_wasm_scene_validate",
+      "xyg_wasm_scene_version",
+      "xyg_wasm_temporal_execute",
+      "xyg_wasm_temporal_graph_execute",
+      "xyg_wasm_temporal_scene_compile",
+      "xyg_wasm_ticks_resolve",
+      "xyg_wasm_geo_metadata_version"
+    ],
+    "otherExports": [
+      {
+        "name": "memory",
+        "kind": "memory"
+      },
+      {
+        "name": "__data_end",
+        "kind": "global"
+      },
+      {
+        "name": "__heap_base",
+        "kind": "global"
+      }
+    ],
+    "rawCap": 1927168,
+    "gzipCap": 786432
+  }
+}
