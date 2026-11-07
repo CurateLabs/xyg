@@ -2155,3 +2155,9 @@ unit proofs for loops/parallel edges/layered provenance from actual small
 JupyterLab node-callback/UUID-selection delivery. Prior receipts remain historical.
 Full notebook frontend, exact geometric UUID sets, export and rendered size
 ladder acceptance for #1015/#36/#35 remains open.
+
+## Temporal catalog candidate (#46)
+
+[Temporal catalog](temporal-catalog.md) records the exact XYTM framing and
+bounded Python/Node Figure and browser WASM entry points. Package size, full
+parity and accessible controller journeys remain release blockers.

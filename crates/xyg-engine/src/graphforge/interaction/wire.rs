@@ -738,21 +738,27 @@ impl WireSession {
             .and_then(|n| n.checked_add(self.last_reply.len().checked_mul(3)?))
             .unwrap_or(usize::MAX)
     }
+    // OPEN/UPDATE borrow document.bytes throughout decoding. Its expansions
+    // (including labels and repeated derived IDs) are reserved by document_charge,
+    // not by the generic event/ref text envelope. The only additional document
+    // ownership is serialized retry caches: OPEN retains opening + last_request;
+    // UPDATE replaces last_request. Reserve both, at the existing 3x cache bound.
+    fn request_charge(request_bytes: usize, document_bytes: usize) -> Result<usize> {
+        request_bytes.checked_mul(128)
+            .and_then(|v| v.checked_sub(document_bytes.checked_mul(122)?))
+            .ok_or(InteractionStatus::Budget)
+    }
     fn admit(&self, request: &[u8], external: usize) -> Result<usize> {
         let r = Request::decode(request)?;
-        let replacement = if r.operation == UPDATE {
-            Self::document_charge(r.document()?, 0)?
+        let (replacement, document_bytes) = if r.operation == UPDATE {
+            let document = r.document()?;
+            (Self::document_charge(document, 0)?, document.len())
         } else {
-            0
+            (0, 0)
         };
         let charge = self
             .retained_budget()
-            .checked_add(
-                request
-                    .len()
-                    .checked_mul(128)
-                    .ok_or(InteractionStatus::Budget)?,
-            )
+            .checked_add(Self::request_charge(request.len(), document_bytes)?)
             .and_then(|v| v.checked_add(external))
             .and_then(|v| v.checked_add(replacement))
             .ok_or(InteractionStatus::Budget)?;
@@ -768,12 +774,7 @@ impl WireSession {
         }
         let document = r.document()?;
         let charge = Self::document_charge(document, 0)?
-            .checked_add(
-                bytes
-                    .len()
-                    .checked_mul(128)
-                    .ok_or(InteractionStatus::Budget)?,
-            )
+            .checked_add(Self::request_charge(bytes.len(), document.len())?)
             .and_then(|v| v.checked_add(external))
             .ok_or(InteractionStatus::Budget)?;
         if charge > max_bytes {

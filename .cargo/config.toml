@@ -1,5 +1,6 @@
 # Keep the safe engine at O3. Bound inlining for the direct-browser artifact;
-# same-source correctness/ABBA evidence: spec/benchmarks/wasm-geographic-profile-local.json.
+# Same-source correctness/ABBA and unchanged-cap qualification:
+# spec/temporal/evidence/46-inline50/README.md.
 # This target-specific setting never affects the native cdylib.
 [target.wasm32-unknown-unknown]
-rustflags = ["-C", "llvm-args=--inline-threshold=100"]
+rustflags = ["-C", "llvm-args=--inline-threshold=50"]

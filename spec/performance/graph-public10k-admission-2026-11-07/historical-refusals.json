@@ -1,0 +1,6954 @@
+{
+  "schema": "xyg.graph-s5b-pointer-selection/v1",
+  "node": "v22.23.4",
+  "browser": "156.0.8078.4",
+  "cases": [
+    {
+      "name": "public-resource-refusals-unchanged-arenas",
+      "result": [
+        {
+          "count": 1000,
+          "arena": 16777216,
+          "status": "refused",
+          "code": "GF_INTERACTION_BUDGET",
+          "message": "GF_INTERACTION_BUDGET",
+          "ms": 41.09999990463257
+        },
+        {
+          "count": 10000,
+          "arena": 402653184,
+          "status": "refused",
+          "code": "GF_INTERACTION_BUDGET",
+          "message": "GF_INTERACTION_BUDGET",
+          "ms": 58.60000038146973
+        }
+      ]
+    }
+  ],
+  "refusals": [
+    {
+      "count": 1000,
+      "arena": 16777216,
+      "status": "refused",
+      "code": "GF_INTERACTION_BUDGET",
+      "message": "GF_INTERACTION_BUDGET",
+      "ms": 41.09999990463257
+    },
+    {
+      "count": 10000,
+      "arena": 402653184,
+      "status": "refused",
+      "code": "GF_INTERACTION_BUDGET",
+      "message": "GF_INTERACTION_BUDGET",
+      "ms": 58.60000038146973
+    }
+  ],
+  "heapDuring": {
+    "metrics": [
+      {
+        "name": "Timestamp",
+        "value": 3762256.050861
+      },
+      {
+        "name": "AudioHandlers",
+        "value": 0
+      },
+      {
+        "name": "AudioWorkletProcessors",
+        "value": 0
+      },
+      {
+        "name": "Documents",
+        "value": 3
+      },
+      {
+        "name": "Frames",
+        "value": 1
+      },
+      {
+        "name": "JSEventListeners",
+        "value": 280
+      },
+      {
+        "name": "LayoutObjects",
+        "value": 1563
+      },
+      {
+        "name": "MediaKeySessions",
+        "value": 0
+      },
+      {
+        "name": "MediaKeys",
+        "value": 0
+      },
+      {
+        "name": "Nodes",
+        "value": 1743
+      },
+      {
+        "name": "Resources",
+        "value": 10
+      },
+      {
+        "name": "ContextLifecycleStateObservers",
+        "value": 16
+      },
+      {
+        "name": "V8PerContextDatas",
+        "value": 4
+      },
+      {
+        "name": "WorkerGlobalScopes",
+        "value": 3
+      },
+      {
+        "name": "UACSSResources",
+        "value": 0
+      },
+      {
+        "name": "RTCPeerConnections",
+        "value": 0
+      },
+      {
+        "name": "ResourceFetchers",
+        "value": 9
+      },
+      {
+        "name": "AdSubframes",
+        "value": 0
+      },
+      {
+        "name": "DetachedScriptStates",
+        "value": 2
+      },
+      {
+        "name": "ArrayBufferContents",
+        "value": 230
+      },
+      {
+        "name": "LayoutCount",
+        "value": 0
+      },
+      {
+        "name": "RecalcStyleCount",
+        "value": 0
+      },
+      {
+        "name": "LayoutDuration",
+        "value": 0
+      },
+      {
+        "name": "RecalcStyleDuration",
+        "value": 0
+      },
+      {
+        "name": "DevToolsCommandDuration",
+        "value": 0.000023
+      },
+      {
+        "name": "ScriptDuration",
+        "value": 0.000219
+      },
+      {
+        "name": "V8CompileDuration",
+        "value": 0
+      },
+      {
+        "name": "TaskDuration",
+        "value": 0.001465
+      },
+      {
+        "name": "TaskOtherDuration",
+        "value": 0.001223
+      },
+      {
+        "name": "ThreadTime",
+        "value": 0.001497
+      },
+      {
+        "name": "ProcessTime",
+        "value": 1.07
+      },
+      {
+        "name": "JSHeapUsedSize",
+        "value": 48508464
+      },
+      {
+        "name": "JSHeapTotalSize",
+        "value": 68734976
+      },
+      {
+        "name": "FirstMeaningfulPaint",
+        "value": 0
+      },
+      {
+        "name": "DomContentLoaded",
+        "value": 3762254.838474
+      },
+      {
+        "name": "NavigationStart",
+        "value": 3762254.745677
+      }
+    ]
+  },
+  "views": [
+    {
+      "id": "7101",
+      "arena": 402653184,
+      "painted": [
+        {
+          "at": 1038.4000000953674,
+          "progress": {
+            "steps": "1",
+            "alpha": 0.985,
+            "done": false
+          },
+          "hash": 2792628579,
+          "pixels": 10255
+        },
+        {
+          "at": 1427.2000002861023,
+          "progress": {
+            "steps": "9",
+            "alpha": 0.8728227840194346,
+            "done": false
+          },
+          "hash": 546525392,
+          "pixels": 11425
+        },
+        {
+          "at": 1668.2000002861023,
+          "progress": {
+            "steps": "17",
+            "alpha": 0.773420926196382,
+            "done": false
+          },
+          "hash": 2133567440,
+          "pixels": 12148
+        },
+        {
+          "at": 1924.4000000953674,
+          "progress": {
+            "steps": "25",
+            "alpha": 0.6853394984991023,
+            "done": false
+          },
+          "hash": 4120394773,
+          "pixels": 8227
+        },
+        {
+          "at": 2298.4000000953674,
+          "progress": {
+            "steps": "33",
+            "alpha": 0.607289268099969,
+            "done": false
+          },
+          "hash": 1405295244,
+          "pixels": 7763
+        },
+        {
+          "at": 2583.7000002861023,
+          "progress": {
+            "steps": "41",
+            "alpha": 0.538127827094558,
+            "done": false
+          },
+          "hash": 2770842636,
+          "pixels": 6161
+        },
+        {
+          "at": 2893.6000003814697,
+          "progress": {
+            "steps": "49",
+            "alpha": 0.47684287127208225,
+            "done": false
+          },
+          "hash": 1261640295,
+          "pixels": 5803
+        },
+        {
+          "at": 3237.6000003814697,
+          "progress": {
+            "steps": "57",
+            "alpha": 0.42253738319139056,
+            "done": false
+          },
+          "hash": 3215471208,
+          "pixels": 5872
+        },
+        {
+          "at": 3418.1000003814697,
+          "progress": {
+            "steps": "65",
+            "alpha": 0.3744165026897423,
+            "done": false
+          },
+          "hash": 760219027,
+          "pixels": 5693
+        },
+        {
+          "at": 3770.1000003814697,
+          "progress": {
+            "steps": "73",
+            "alpha": 0.3317758926502345,
+            "done": false
+          },
+          "hash": 1241418518,
+          "pixels": 5427
+        },
+        {
+          "at": 4202.700000286102,
+          "progress": {
+            "steps": "81",
+            "alpha": 0.2939914297396048,
+            "done": false
+          },
+          "hash": 297456626,
+          "pixels": 5193
+        },
+        {
+          "at": 4437.400000095367,
+          "progress": {
+            "steps": "89",
+            "alpha": 0.2605100692214983,
+            "done": false
+          },
+          "hash": 3623293359,
+          "pixels": 5023
+        },
+        {
+          "at": 4587.5,
+          "progress": {
+            "steps": "97",
+            "alpha": 0.23084175013502917,
+            "done": false
+          },
+          "hash": 1015179738,
+          "pixels": 4862
+        },
+        {
+          "at": 4909.200000286102,
+          "progress": {
+            "steps": "105",
+            "alpha": 0.20455222235611656,
+            "done": false
+          },
+          "hash": 873689172,
+          "pixels": 4655
+        },
+        {
+          "at": 5157.300000190735,
+          "progress": {
+            "steps": "113",
+            "alpha": 0.1812566905525158,
+            "done": false
+          },
+          "hash": 1353478100,
+          "pixels": 4474
+        },
+        {
+          "at": 5314.700000286102,
+          "progress": {
+            "steps": "113",
+            "alpha": 0.1812566905525158,
+            "done": false
+          },
+          "hash": 1425063060,
+          "pixels": 4474
+        },
+        {
+          "at": 5565.800000190735,
+          "progress": {
+            "steps": "121",
+            "alpha": 0.16061418200019895,
+            "done": false
+          },
+          "hash": 864308716,
+          "pixels": 4354
+        },
+        {
+          "at": 5801.10000038147,
+          "progress": {
+            "steps": "129",
+            "alpha": 0.1423225558237744,
+            "done": false
+          },
+          "hash": 595775010,
+          "pixels": 4280
+        },
+        {
+          "at": 6055.700000286102,
+          "progress": {
+            "steps": "137",
+            "alpha": 0.1261140806120489,
+            "done": false
+          },
+          "hash": 2371993529,
+          "pixels": 4228
+        },
+        {
+          "at": 6319.60000038147,
+          "progress": {
+            "steps": "145",
+            "alpha": 0.11175151567904561,
+            "done": false
+          },
+          "hash": 2595545357,
+          "pixels": 4226
+        },
+        {
+          "at": 6565.800000190735,
+          "progress": {
+            "steps": "153",
+            "alpha": 0.09902463861256457,
+            "done": false
+          },
+          "hash": 173915050,
+          "pixels": 4203
+        },
+        {
+          "at": 6799.300000190735,
+          "progress": {
+            "steps": "161",
+            "alpha": 0.08774716828460608,
+            "done": false
+          },
+          "hash": 4284820804,
+          "pixels": 4199
+        },
+        {
+          "at": 7048.800000190735,
+          "progress": {
+            "steps": "169",
+            "alpha": 0.07775403828628598,
+            "done": false
+          },
+          "hash": 2423553924,
+          "pixels": 4211
+        },
+        {
+          "at": 7297.10000038147,
+          "progress": {
+            "steps": "177",
+            "alpha": 0.06889898087897443,
+            "done": false
+          },
+          "hash": 634343791,
+          "pixels": 4214
+        },
+        {
+          "at": 7562.800000190735,
+          "progress": {
+            "steps": "185",
+            "alpha": 0.06105238609836369,
+            "done": false
+          },
+          "hash": 3468337237,
+          "pixels": 4217
+        },
+        {
+          "at": 7866.5,
+          "progress": {
+            "steps": "193",
+            "alpha": 0.054099404675536256,
+            "done": false
+          },
+          "hash": 3185025674,
+          "pixels": 4230
+        },
+        {
+          "at": 8184.200000286102,
+          "progress": {
+            "steps": "201",
+            "alpha": 0.04793826700781276,
+            "done": false
+          },
+          "hash": 2998377061,
+          "pixels": 4232
+        },
+        {
+          "at": 8466.5,
+          "progress": {
+            "steps": "209",
+            "alpha": 0.042478793574442786,
+            "done": false
+          },
+          "hash": 1887338106,
+          "pixels": 4224
+        },
+        {
+          "at": 8838.900000095367,
+          "progress": {
+            "steps": "217",
+            "alpha": 0.03764107499434722,
+            "done": false
+          },
+          "hash": 940477401,
+          "pixels": 4219
+        },
+        {
+          "at": 9162,
+          "progress": {
+            "steps": "225",
+            "alpha": 0.0333543024061426,
+            "done": false
+          },
+          "hash": 1174492030,
+          "pixels": 4220
+        },
+        {
+          "at": 9468.5,
+          "progress": {
+            "steps": "233",
+            "alpha": 0.0295557310509193,
+            "done": false
+          },
+          "hash": 683326774,
+          "pixels": 4217
+        },
+        {
+          "at": 9731.900000095367,
+          "progress": {
+            "steps": "241",
+            "alpha": 0.026189761887911705,
+            "done": false
+          },
+          "hash": 3490949017,
+          "pixels": 4224
+        },
+        {
+          "at": 10001,
+          "progress": {
+            "steps": "249",
+            "alpha": 0.02320712780082556,
+            "done": false
+          },
+          "hash": 3674210886,
+          "pixels": 4223
+        },
+        {
+          "at": 10295.400000095367,
+          "progress": {
+            "steps": "257",
+            "alpha": 0.02056417248346333,
+            "done": false
+          },
+          "hash": 360722299,
+          "pixels": 4223
+        },
+        {
+          "at": 10594.5,
+          "progress": {
+            "steps": "265",
+            "alpha": 0.01822221144981961,
+            "done": false
+          },
+          "hash": 3630201657,
+          "pixels": 4222
+        },
+        {
+          "at": 10846.700000286102,
+          "progress": {
+            "steps": "273",
+            "alpha": 0.01614696581586027,
+            "done": false
+          },
+          "hash": 2409153392,
+          "pixels": 4220
+        },
+        {
+          "at": 11100.5,
+          "progress": {
+            "steps": "281",
+            "alpha": 0.014308060565345991,
+            "done": false
+          },
+          "hash": 624476671,
+          "pixels": 4219
+        },
+        {
+          "at": 11429.200000286102,
+          "progress": {
+            "steps": "289",
+            "alpha": 0.012678579955902509,
+            "done": false
+          },
+          "hash": 2856406416,
+          "pixels": 4217
+        },
+        {
+          "at": 11639.200000286102,
+          "progress": {
+            "steps": "297",
+            "alpha": 0.01123467355789221,
+            "done": false
+          },
+          "hash": 4266753292,
+          "pixels": 4218
+        },
+        {
+          "at": 11842.700000286102,
+          "progress": {
+            "steps": "305",
+            "alpha": 0.009955207159745181,
+            "done": false
+          },
+          "hash": 206504190,
+          "pixels": 4221
+        },
+        {
+          "at": 12054.700000286102,
+          "progress": {
+            "steps": "313",
+            "alpha": 0.008821453430110655,
+            "done": false
+          },
+          "hash": 2057835174,
+          "pixels": 4215
+        },
+        {
+          "at": 12301.10000038147,
+          "progress": {
+            "steps": "321",
+            "alpha": 0.007816817809103524,
+            "done": false
+          },
+          "hash": 3345921375,
+          "pixels": 4217
+        },
+        {
+          "at": 12514.800000190735,
+          "progress": {
+            "steps": "329",
+            "alpha": 0.006926595616562877,
+            "done": false
+          },
+          "hash": 2008980626,
+          "pixels": 4218
+        },
+        {
+          "at": 12765.400000095367,
+          "progress": {
+            "steps": "337",
+            "alpha": 0.006137756822157585,
+            "done": false
+          },
+          "hash": 1170132827,
+          "pixels": 4220
+        },
+        {
+          "at": 13057.60000038147,
+          "progress": {
+            "steps": "345",
+            "alpha": 0.005438755327055696,
+            "done": false
+          },
+          "hash": 3880202084,
+          "pixels": 4218
+        },
+        {
+          "at": 13393.700000286102,
+          "progress": {
+            "steps": "353",
+            "alpha": 0.0048193599656459725,
+            "done": false
+          },
+          "hash": 610213270,
+          "pixels": 4222
+        },
+        {
+          "at": 13788.400000095367,
+          "progress": {
+            "steps": "361",
+            "alpha": 0.004270504753712614,
+            "done": false
+          },
+          "hash": 986897976,
+          "pixels": 4217
+        },
+        {
+          "at": 14038.800000190735,
+          "progress": {
+            "steps": "369",
+            "alpha": 0.0037841561911712415,
+            "done": false
+          },
+          "hash": 3634723537,
+          "pixels": 4213
+        },
+        {
+          "at": 14300.10000038147,
+          "progress": {
+            "steps": "377",
+            "alpha": 0.003353195677098946,
+            "done": false
+          },
+          "hash": 3419996729,
+          "pixels": 4221
+        },
+        {
+          "at": 14548.200000286102,
+          "progress": {
+            "steps": "385",
+            "alpha": 0.0029713153159872433,
+            "done": false
+          },
+          "hash": 1884876174,
+          "pixels": 4217
+        },
+        {
+          "at": 14834.900000095367,
+          "progress": {
+            "steps": "393",
+            "alpha": 0.002632925590151849,
+            "done": false
+          },
+          "hash": 125518420,
+          "pixels": 4222
+        },
+        {
+          "at": 15090.200000286102,
+          "progress": {
+            "steps": "401",
+            "alpha": 0.002333073546916091,
+            "done": false
+          },
+          "hash": 2676958776,
+          "pixels": 4221
+        },
+        {
+          "at": 15440.800000190735,
+          "progress": {
+            "steps": "409",
+            "alpha": 0.002067370303087715,
+            "done": false
+          },
+          "hash": 2236125378,
+          "pixels": 4221
+        },
+        {
+          "at": 15860,
+          "progress": {
+            "steps": "417",
+            "alpha": 0.0018319268056244888,
+            "done": false
+          },
+          "hash": 3556089739,
+          "pixels": 4224
+        },
+        {
+          "at": 16275.700000286102,
+          "progress": {
+            "steps": "425",
+            "alpha": 0.0016232969082284221,
+            "done": false
+          },
+          "hash": 2816941587,
+          "pixels": 4220
+        },
+        {
+          "at": 16564,
+          "progress": {
+            "steps": "433",
+            "alpha": 0.0014384269306904282,
+            "done": false
+          },
+          "hash": 773208623,
+          "pixels": 4218
+        },
+        {
+          "at": 16945.700000286102,
+          "progress": {
+            "steps": "441",
+            "alpha": 0.001274610962694162,
+            "done": false
+          },
+          "hash": 3316512796,
+          "pixels": 4219
+        },
+        {
+          "at": 17318,
+          "progress": {
+            "steps": "449",
+            "alpha": 0.0011294512578684367,
+            "done": false
+          },
+          "hash": 4089827133,
+          "pixels": 4221
+        },
+        {
+          "at": 17673.700000286102,
+          "progress": {
+            "steps": "457",
+            "alpha": 0.0010008231383827218,
+            "done": false
+          },
+          "hash": 3880564543,
+          "pixels": 4221
+        },
+        {
+          "at": 18022.300000190735,
+          "progress": {
+            "steps": "458",
+            "alpha": 0.000985810791306981,
+            "done": true
+          },
+          "hash": 3660530337,
+          "pixels": 4220
+        }
+      ],
+      "clicks": [
+        {
+          "at": 2995.5,
+          "trusted": true,
+          "prevented": false,
+          "progress": {
+            "steps": "49",
+            "alpha": 0.47684287127208225,
+            "done": false
+          }
+        },
+        {
+          "at": 3380.5,
+          "trusted": true,
+          "prevented": true,
+          "progress": {
+            "steps": "65",
+            "alpha": 0.3744165026897423,
+            "done": false
+          }
+        },
+        {
+          "at": 3730.7000002861023,
+          "trusted": true,
+          "prevented": true,
+          "progress": {
+            "steps": "73",
+            "alpha": 0.3317758926502345,
+            "done": false
+          }
+        }
+      ],
+      "payloadBytes": {
+        "requests": 82872,
+        "replies": 22500696
+      },
+      "frames": [
+        {
+          "at": 933.4000000953674,
+          "revision": 1,
+          "progress": {
+            "steps": "1",
+            "alpha": 0.985,
+            "done": false
+          },
+          "pixels": 10255
+        },
+        {
+          "at": 1336.8000001907349,
+          "revision": 2,
+          "progress": {
+            "steps": "9",
+            "alpha": 0.8728227840194346,
+            "done": false
+          },
+          "pixels": 11425
+        },
+        {
+          "at": 1549.6000003814697,
+          "revision": 3,
+          "progress": {
+            "steps": "17",
+            "alpha": 0.773420926196382,
+            "done": false
+          },
+          "pixels": 12148
+        },
+        {
+          "at": 1801.8000001907349,
+          "revision": 4,
+          "progress": {
+            "steps": "25",
+            "alpha": 0.6853394984991023,
+            "done": false
+          },
+          "pixels": 8227
+        },
+        {
+          "at": 2195,
+          "revision": 5,
+          "progress": {
+            "steps": "33",
+            "alpha": 0.607289268099969,
+            "done": false
+          },
+          "pixels": 7763
+        },
+        {
+          "at": 2437.800000190735,
+          "revision": 6,
+          "progress": {
+            "steps": "41",
+            "alpha": 0.538127827094558,
+            "done": false
+          },
+          "pixels": 6161
+        },
+        {
+          "at": 2774.2000002861023,
+          "revision": 7,
+          "progress": {
+            "steps": "49",
+            "alpha": 0.47684287127208225,
+            "done": false
+          },
+          "pixels": 5803
+        },
+        {
+          "at": 3081.300000190735,
+          "revision": 8,
+          "progress": {
+            "steps": "57",
+            "alpha": 0.42253738319139056,
+            "done": false
+          },
+          "pixels": 5872
+        },
+        {
+          "at": 3338,
+          "revision": 9,
+          "progress": {
+            "steps": "65",
+            "alpha": 0.3744165026897423,
+            "done": false
+          },
+          "pixels": 5693
+        },
+        {
+          "at": 3673.7000002861023,
+          "revision": 10,
+          "progress": {
+            "steps": "73",
+            "alpha": 0.3317758926502345,
+            "done": false
+          },
+          "pixels": 5427
+        },
+        {
+          "at": 3991.300000190735,
+          "revision": 11,
+          "progress": {
+            "steps": "81",
+            "alpha": 0.2939914297396048,
+            "done": false
+          },
+          "pixels": 5193
+        },
+        {
+          "at": 4285.700000286102,
+          "revision": 12,
+          "progress": {
+            "steps": "89",
+            "alpha": 0.2605100692214983,
+            "done": false
+          },
+          "pixels": 5023
+        },
+        {
+          "at": 4513.5,
+          "revision": 13,
+          "progress": {
+            "steps": "97",
+            "alpha": 0.23084175013502917,
+            "done": false
+          },
+          "pixels": 4862
+        },
+        {
+          "at": 4748.300000190735,
+          "revision": 14,
+          "progress": {
+            "steps": "105",
+            "alpha": 0.20455222235611656,
+            "done": false
+          },
+          "pixels": 4655
+        },
+        {
+          "at": 4983.200000286102,
+          "revision": 15,
+          "progress": {
+            "steps": "113",
+            "alpha": 0.1812566905525158,
+            "done": false
+          },
+          "pixels": 4474
+        },
+        {
+          "at": 5243.10000038147,
+          "revision": 16,
+          "progress": {
+            "steps": "113",
+            "alpha": 0.1812566905525158,
+            "done": false
+          },
+          "pixels": 4474
+        },
+        {
+          "at": 5451.800000190735,
+          "revision": 17,
+          "progress": {
+            "steps": "121",
+            "alpha": 0.16061418200019895,
+            "done": false
+          },
+          "pixels": 4354
+        },
+        {
+          "at": 5687.400000095367,
+          "revision": 18,
+          "progress": {
+            "steps": "129",
+            "alpha": 0.1423225558237744,
+            "done": false
+          },
+          "pixels": 4280
+        },
+        {
+          "at": 5970.400000095367,
+          "revision": 19,
+          "progress": {
+            "steps": "137",
+            "alpha": 0.1261140806120489,
+            "done": false
+          },
+          "pixels": 4228
+        },
+        {
+          "at": 6245,
+          "revision": 20,
+          "progress": {
+            "steps": "145",
+            "alpha": 0.11175151567904561,
+            "done": false
+          },
+          "pixels": 4226
+        },
+        {
+          "at": 6494.800000190735,
+          "revision": 21,
+          "progress": {
+            "steps": "153",
+            "alpha": 0.09902463861256457,
+            "done": false
+          },
+          "pixels": 4203
+        },
+        {
+          "at": 6726.800000190735,
+          "revision": 22,
+          "progress": {
+            "steps": "161",
+            "alpha": 0.08774716828460608,
+            "done": false
+          },
+          "pixels": 4199
+        },
+        {
+          "at": 6978.5,
+          "revision": 23,
+          "progress": {
+            "steps": "169",
+            "alpha": 0.07775403828628598,
+            "done": false
+          },
+          "pixels": 4211
+        },
+        {
+          "at": 7206.700000286102,
+          "revision": 24,
+          "progress": {
+            "steps": "177",
+            "alpha": 0.06889898087897443,
+            "done": false
+          },
+          "pixels": 4214
+        },
+        {
+          "at": 7462.5,
+          "revision": 25,
+          "progress": {
+            "steps": "185",
+            "alpha": 0.06105238609836369,
+            "done": false
+          },
+          "pixels": 4217
+        },
+        {
+          "at": 7764.900000095367,
+          "revision": 26,
+          "progress": {
+            "steps": "193",
+            "alpha": 0.054099404675536256,
+            "done": false
+          },
+          "pixels": 4230
+        },
+        {
+          "at": 8058.5,
+          "revision": 27,
+          "progress": {
+            "steps": "201",
+            "alpha": 0.04793826700781276,
+            "done": false
+          },
+          "pixels": 4232
+        },
+        {
+          "at": 8363.300000190735,
+          "revision": 28,
+          "progress": {
+            "steps": "209",
+            "alpha": 0.042478793574442786,
+            "done": false
+          },
+          "pixels": 4224
+        },
+        {
+          "at": 8719.10000038147,
+          "revision": 29,
+          "progress": {
+            "steps": "217",
+            "alpha": 0.03764107499434722,
+            "done": false
+          },
+          "pixels": 4219
+        },
+        {
+          "at": 9063.60000038147,
+          "revision": 30,
+          "progress": {
+            "steps": "225",
+            "alpha": 0.0333543024061426,
+            "done": false
+          },
+          "pixels": 4220
+        },
+        {
+          "at": 9358.10000038147,
+          "revision": 31,
+          "progress": {
+            "steps": "233",
+            "alpha": 0.0295557310509193,
+            "done": false
+          },
+          "pixels": 4217
+        },
+        {
+          "at": 9642.5,
+          "revision": 32,
+          "progress": {
+            "steps": "241",
+            "alpha": 0.026189761887911705,
+            "done": false
+          },
+          "pixels": 4224
+        },
+        {
+          "at": 9909.400000095367,
+          "revision": 33,
+          "progress": {
+            "steps": "249",
+            "alpha": 0.02320712780082556,
+            "done": false
+          },
+          "pixels": 4223
+        },
+        {
+          "at": 10216,
+          "revision": 34,
+          "progress": {
+            "steps": "257",
+            "alpha": 0.02056417248346333,
+            "done": false
+          },
+          "pixels": 4223
+        },
+        {
+          "at": 10514.400000095367,
+          "revision": 35,
+          "progress": {
+            "steps": "265",
+            "alpha": 0.01822221144981961,
+            "done": false
+          },
+          "pixels": 4222
+        },
+        {
+          "at": 10758.200000286102,
+          "revision": 36,
+          "progress": {
+            "steps": "273",
+            "alpha": 0.01614696581586027,
+            "done": false
+          },
+          "pixels": 4220
+        },
+        {
+          "at": 11015,
+          "revision": 37,
+          "progress": {
+            "steps": "281",
+            "alpha": 0.014308060565345991,
+            "done": false
+          },
+          "pixels": 4219
+        },
+        {
+          "at": 11335.400000095367,
+          "revision": 38,
+          "progress": {
+            "steps": "289",
+            "alpha": 0.012678579955902509,
+            "done": false
+          },
+          "pixels": 4217
+        },
+        {
+          "at": 11570.60000038147,
+          "revision": 39,
+          "progress": {
+            "steps": "297",
+            "alpha": 0.01123467355789221,
+            "done": false
+          },
+          "pixels": 4218
+        },
+        {
+          "at": 11773,
+          "revision": 40,
+          "progress": {
+            "steps": "305",
+            "alpha": 0.009955207159745181,
+            "done": false
+          },
+          "pixels": 4221
+        },
+        {
+          "at": 11981,
+          "revision": 41,
+          "progress": {
+            "steps": "313",
+            "alpha": 0.008821453430110655,
+            "done": false
+          },
+          "pixels": 4215
+        },
+        {
+          "at": 12225.60000038147,
+          "revision": 42,
+          "progress": {
+            "steps": "321",
+            "alpha": 0.007816817809103524,
+            "done": false
+          },
+          "pixels": 4217
+        },
+        {
+          "at": 12444.800000190735,
+          "revision": 43,
+          "progress": {
+            "steps": "329",
+            "alpha": 0.006926595616562877,
+            "done": false
+          },
+          "pixels": 4218
+        },
+        {
+          "at": 12672.200000286102,
+          "revision": 44,
+          "progress": {
+            "steps": "337",
+            "alpha": 0.006137756822157585,
+            "done": false
+          },
+          "pixels": 4220
+        },
+        {
+          "at": 12979.10000038147,
+          "revision": 45,
+          "progress": {
+            "steps": "345",
+            "alpha": 0.005438755327055696,
+            "done": false
+          },
+          "pixels": 4218
+        },
+        {
+          "at": 13263.5,
+          "revision": 46,
+          "progress": {
+            "steps": "353",
+            "alpha": 0.0048193599656459725,
+            "done": false
+          },
+          "pixels": 4222
+        },
+        {
+          "at": 13673.700000286102,
+          "revision": 47,
+          "progress": {
+            "steps": "361",
+            "alpha": 0.004270504753712614,
+            "done": false
+          },
+          "pixels": 4217
+        },
+        {
+          "at": 13962.10000038147,
+          "revision": 48,
+          "progress": {
+            "steps": "369",
+            "alpha": 0.0037841561911712415,
+            "done": false
+          },
+          "pixels": 4213
+        },
+        {
+          "at": 14225.60000038147,
+          "revision": 49,
+          "progress": {
+            "steps": "377",
+            "alpha": 0.003353195677098946,
+            "done": false
+          },
+          "pixels": 4221
+        },
+        {
+          "at": 14461.60000038147,
+          "revision": 50,
+          "progress": {
+            "steps": "385",
+            "alpha": 0.0029713153159872433,
+            "done": false
+          },
+          "pixels": 4217
+        },
+        {
+          "at": 14747.10000038147,
+          "revision": 51,
+          "progress": {
+            "steps": "393",
+            "alpha": 0.002632925590151849,
+            "done": false
+          },
+          "pixels": 4222
+        },
+        {
+          "at": 15017.800000190735,
+          "revision": 52,
+          "progress": {
+            "steps": "401",
+            "alpha": 0.002333073546916091,
+            "done": false
+          },
+          "pixels": 4221
+        },
+        {
+          "at": 15319.60000038147,
+          "revision": 53,
+          "progress": {
+            "steps": "409",
+            "alpha": 0.002067370303087715,
+            "done": false
+          },
+          "pixels": 4221
+        },
+        {
+          "at": 15723.200000286102,
+          "revision": 54,
+          "progress": {
+            "steps": "417",
+            "alpha": 0.0018319268056244888,
+            "done": false
+          },
+          "pixels": 4224
+        },
+        {
+          "at": 16126.5,
+          "revision": 55,
+          "progress": {
+            "steps": "425",
+            "alpha": 0.0016232969082284221,
+            "done": false
+          },
+          "pixels": 4220
+        },
+        {
+          "at": 16484.400000095367,
+          "revision": 56,
+          "progress": {
+            "steps": "433",
+            "alpha": 0.0014384269306904282,
+            "done": false
+          },
+          "pixels": 4218
+        },
+        {
+          "at": 16820.200000286102,
+          "revision": 57,
+          "progress": {
+            "steps": "441",
+            "alpha": 0.001274610962694162,
+            "done": false
+          },
+          "pixels": 4219
+        },
+        {
+          "at": 17186.5,
+          "revision": 58,
+          "progress": {
+            "steps": "449",
+            "alpha": 0.0011294512578684367,
+            "done": false
+          },
+          "pixels": 4221
+        },
+        {
+          "at": 17556,
+          "revision": 59,
+          "progress": {
+            "steps": "457",
+            "alpha": 0.0010008231383827218,
+            "done": false
+          },
+          "pixels": 4221
+        },
+        {
+          "at": 17888.400000095367,
+          "revision": 60,
+          "progress": {
+            "steps": "458",
+            "alpha": 0.000985810791306981,
+            "done": true
+          },
+          "pixels": 4220
+        }
+      ],
+      "errors": [],
+      "heartbeats": [
+        757.3000001907349,
+        763.1000003814697,
+        766.7000002861023,
+        1303.2000002861023,
+        1446.7000002861023,
+        1680.6000003814697,
+        1946.4000000953674,
+        2306.6000003814697,
+        2591.800000190735,
+        2901.800000190735,
+        3120.300000190735,
+        3299.5,
+        3504.800000190735,
+        3634.4000000953674,
+        3848.7000002861023,
+        3953.7000002861023,
+        4248.10000038147,
+        4471.700000286102,
+        4667.5,
+        4789.300000190735,
+        4945.10000038147,
+        5196.700000286102,
+        5320,
+        5569.10000038147,
+        5804.800000190735,
+        6016.5,
+        6190.800000190735,
+        6407.200000286102,
+        6532.60000038147,
+        6687.900000095367,
+        6888.400000095367,
+        7013.60000038147,
+        7163.900000095367,
+        7385.300000190735,
+        7565.5,
+        7816,
+        8013.5,
+        8279,
+        8406.300000190735,
+        8662.10000038147,
+        9004.200000286102,
+        9252.10000038147,
+        9472.200000286102,
+        9734.400000095367,
+        9947.10000038147,
+        10167.200000286102,
+        10468.900000095367,
+        10671.200000286102,
+        10809.300000190735,
+        10974.5,
+        11296.800000190735,
+        11502.400000095367,
+        11605.400000095367,
+        11710.400000095367,
+        11809.900000095367,
+        11948.900000095367,
+        12142,
+        12303.60000038147,
+        12480.5,
+        12595.5,
+        12728.800000190735,
+        12932.60000038147,
+        13141.5,
+        13397.900000095367,
+        13791.10000038147,
+        14005.5,
+        14177.700000286102,
+        14379.800000190735,
+        14510.10000038147,
+        14696.300000190735,
+        14919.400000095367,
+        15054.400000095367,
+        15191.400000095367,
+        15444.700000286102,
+        15863.800000190735,
+        16279.60000038147,
+        16522.400000095367,
+        16762,
+        17130.200000286102,
+        17507.300000190735,
+        17840.300000190735,
+        18026
+      ],
+      "selections": [
+        {
+          "at": 3542,
+          "snapshot": {
+            "relayout": {
+              "steps": "65",
+              "alpha": 0.3744165026897423,
+              "done": false
+            },
+            "revision": 9,
+            "degraded": false,
+            "unmatched": 0,
+            "dropped": 0,
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "e8030000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "999"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "changed": [
+              {
+                "kind": 0,
+                "uuid": "e8030000-0000-0000-0000-000000000000"
+              }
+            ],
+            "focus": [],
+            "focusRing": {},
+            "focusAction": {
+              "refs": [],
+              "disclosureEligible": false,
+              "collapsed": false,
+              "pinEligible": false,
+              "pinned": false,
+              "moveCapability": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "disclosure": {
+              "refs": [],
+              "collapsed": []
+            },
+            "companion": {
+              "rows": [
+                [
+                  "Node",
+                  "01000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "02000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "03000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "04000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "05000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "06000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "07000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "08000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "09000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "0a000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "0b000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "0c000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "0d000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "0e000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "0f000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "10000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "11000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "12000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "13000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "14000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "15000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "16000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "17000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "18000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "19000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "1a000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "1b000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "1c000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "1d000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "1e000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "1f000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "20000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "21000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "22000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "23000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "24000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "25000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "26000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "27000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "28000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "29000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "2a000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "2b000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "2c000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "2d000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "2e000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "2f000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "30000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "31000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "32000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ]
+              ],
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "02000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "03000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "04000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "05000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "06000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "07000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "08000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "09000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "0a000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "0b000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "0c000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "0d000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "0e000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "0f000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "10000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "11000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "12000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "13000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "14000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "15000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "16000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "17000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "18000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "19000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "1a000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "1b000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "1c000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "1d000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "1e000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "1f000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "20000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "21000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "22000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "23000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "24000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "25000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "26000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "27000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "28000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "29000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "2a000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "2b000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "2c000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "2d000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "2e000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "2f000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "30000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "31000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "32000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "total": 2000
+            },
+            "summary": "Graph, 1000 nodes, 1000 edges, 1 selected",
+            "camera": [
+              0.25,
+              0.25,
+              320,
+              160,
+              640,
+              320,
+              1
+            ]
+          }
+        },
+        {
+          "at": 3887.2000002861023,
+          "snapshot": {
+            "relayout": {
+              "steps": "73",
+              "alpha": 0.3317758926502345,
+              "done": false
+            },
+            "revision": 10,
+            "degraded": false,
+            "unmatched": 0,
+            "dropped": 0,
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "e8030000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "999"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "changed": [],
+            "focus": [],
+            "focusRing": {},
+            "focusAction": {
+              "refs": [],
+              "disclosureEligible": false,
+              "collapsed": false,
+              "pinEligible": false,
+              "pinned": false,
+              "moveCapability": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "outcome": {
+              "stateChanged": false,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "disclosure": {
+              "refs": [],
+              "collapsed": []
+            },
+            "companion": {
+              "rows": [
+                [
+                  "Node",
+                  "01000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "02000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "03000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "04000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "05000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "06000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "07000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "08000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "09000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "0a000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "0b000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "0c000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "0d000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "0e000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "0f000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "10000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "11000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "12000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "13000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "14000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "15000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "16000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "17000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "18000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "19000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "1a000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "1b000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "1c000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "1d000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "1e000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "1f000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "20000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "21000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "22000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "23000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "24000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "25000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "26000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "27000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "28000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "29000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "2a000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "2b000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "2c000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "2d000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "2e000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "2f000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "30000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "31000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "32000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ]
+              ],
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "02000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "03000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "04000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "05000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "06000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "07000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "08000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "09000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "0a000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "0b000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "0c000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "0d000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "0e000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "0f000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "10000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "11000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "12000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "13000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "14000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "15000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "16000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "17000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "18000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "19000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "1a000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "1b000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "1c000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "1d000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "1e000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "1f000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "20000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "21000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "22000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "23000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "24000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "25000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "26000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "27000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "28000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "29000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "2a000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "2b000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "2c000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "2d000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "2e000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "2f000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "30000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "31000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "32000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "total": 2000
+            },
+            "summary": "Graph, 1000 nodes, 1000 edges, 1 selected",
+            "camera": [
+              0.25,
+              0.25,
+              320,
+              160,
+              640,
+              320,
+              1
+            ]
+          }
+        }
+      ],
+      "pans": [
+        {
+          "trusted": true,
+          "at": 5125.900000095367,
+          "returned": 5280.5,
+          "before": {
+            "relayout": {
+              "steps": "113",
+              "alpha": 0.1812566905525158,
+              "done": false
+            },
+            "revision": 15,
+            "degraded": false,
+            "unmatched": 0,
+            "dropped": 0,
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "e8030000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "999"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "changed": [],
+            "focus": [],
+            "focusRing": {},
+            "focusAction": {
+              "refs": [],
+              "disclosureEligible": false,
+              "collapsed": false,
+              "pinEligible": false,
+              "pinned": false,
+              "moveCapability": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "disclosure": {
+              "refs": [],
+              "collapsed": []
+            },
+            "companion": {
+              "rows": [
+                [
+                  "Node",
+                  "01000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "02000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "03000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "04000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "05000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "06000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "07000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "08000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "09000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "0a000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "0b000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "0c000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "0d000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "0e000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "0f000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "10000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "11000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "12000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "13000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "14000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "15000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "16000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "17000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "18000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "19000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "1a000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "1b000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "1c000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "1d000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "1e000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "1f000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "20000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "21000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "22000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "23000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "24000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "25000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "26000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "27000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "28000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "29000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "2a000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "2b000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "2c000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "2d000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "2e000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "2f000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "30000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "31000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "32000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ]
+              ],
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "02000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "03000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "04000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "05000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "06000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "07000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "08000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "09000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "0a000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "0b000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "0c000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "0d000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "0e000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "0f000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "10000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "11000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "12000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "13000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "14000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "15000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "16000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "17000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "18000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "19000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "1a000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "1b000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "1c000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "1d000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "1e000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "1f000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "20000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "21000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "22000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "23000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "24000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "25000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "26000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "27000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "28000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "29000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "2a000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "2b000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "2c000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "2d000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "2e000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "2f000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "30000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "31000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "32000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "total": 2000
+            },
+            "summary": "relayout, alpha 0.1812566905525158",
+            "camera": [
+              0.25,
+              0.25,
+              320,
+              160,
+              640,
+              320,
+              1
+            ]
+          },
+          "after": {
+            "relayout": {
+              "steps": "113",
+              "alpha": 0.1812566905525158,
+              "done": false
+            },
+            "revision": 16,
+            "degraded": false,
+            "unmatched": 0,
+            "dropped": 0,
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "e8030000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "999"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "changed": [],
+            "focus": [],
+            "focusRing": {},
+            "focusAction": {
+              "refs": [],
+              "disclosureEligible": false,
+              "collapsed": false,
+              "pinEligible": false,
+              "pinned": false,
+              "moveCapability": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "outcome": {
+              "stateChanged": false,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "disclosure": {
+              "refs": [],
+              "collapsed": []
+            },
+            "companion": {
+              "rows": [
+                [
+                  "Node",
+                  "01000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "02000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "03000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "04000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "05000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "06000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "07000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "08000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "09000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "0a000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "0b000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "0c000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "0d000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "0e000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "0f000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "10000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "11000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "12000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "13000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "14000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "15000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "16000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "17000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "18000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "19000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "1a000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "1b000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "1c000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "1d000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "1e000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "1f000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "20000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "21000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "22000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "23000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "24000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "25000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "26000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "27000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "28000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "29000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "2a000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "2b000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "2c000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "2d000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "2e000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "2f000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "30000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "31000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ],
+                [
+                  "Node",
+                  "32000000000000000000000000000000",
+                  "",
+                  "2 relationships",
+                  "not selected"
+                ]
+              ],
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "02000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "03000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "04000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "05000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "06000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "07000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "08000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "09000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "0a000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "0b000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "0c000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "0d000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "0e000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "0f000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "10000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "11000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "12000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "13000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "14000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "15000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "16000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "17000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "18000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "19000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "1a000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "1b000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "1c000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "1d000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "1e000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "1f000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "20000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "21000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "22000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "23000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "24000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "25000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "26000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "27000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "28000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "29000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "2a000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "2b000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "2c000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "2d000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "2e000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "2f000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "30000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "31000000-0000-0000-0000-000000000000"
+                },
+                {
+                  "kind": 0,
+                  "uuid": "32000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "total": 2000
+            },
+            "summary": "Graph, 1000 nodes, 1000 edges, 1 selected",
+            "camera": [
+              0.25,
+              0.25,
+              332,
+              160,
+              640,
+              320,
+              1
+            ]
+          }
+        }
+      ],
+      "keys": [],
+      "commands": [
+        {
+          "owner": 5,
+          "at": 752.2000002861023,
+          "type": "graph.session.open",
+          "requestId": 2,
+          "sequence": 1,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "1",
+          "revision": 0,
+          "operation": 19
+        },
+        {
+          "owner": 5,
+          "at": 756.5,
+          "type": "graph.session.render",
+          "requestId": 3,
+          "sequence": 2,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "2",
+          "revision": 0,
+          "operation": 21
+        },
+        {
+          "owner": 5,
+          "at": 1247.4000000953674,
+          "type": "graph.session.interact",
+          "requestId": 4,
+          "sequence": 3,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "3",
+          "revision": 1,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 1427.5,
+          "type": "graph.session.interact",
+          "requestId": 5,
+          "sequence": 4,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "4",
+          "revision": 2,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 1668.5,
+          "type": "graph.session.interact",
+          "requestId": 6,
+          "sequence": 5,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "5",
+          "revision": 3,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 1924.7000002861023,
+          "type": "graph.session.interact",
+          "requestId": 7,
+          "sequence": 6,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "6",
+          "revision": 4,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 2298.800000190735,
+          "type": "graph.session.interact",
+          "requestId": 8,
+          "sequence": 7,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "7",
+          "revision": 5,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 2584.2000002861023,
+          "type": "graph.session.interact",
+          "requestId": 9,
+          "sequence": 8,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "8",
+          "revision": 6,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 2893.800000190735,
+          "type": "graph.session.interact",
+          "requestId": 10,
+          "sequence": 9,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "9",
+          "revision": 7,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 3237.9000000953674,
+          "type": "graph.session.interact",
+          "requestId": 11,
+          "sequence": 10,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "10",
+          "revision": 8,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 3380.4000000953674,
+          "type": "graph.session.interact",
+          "requestId": 12,
+          "sequence": 11,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "11",
+          "revision": 9,
+          "operation": 1
+        },
+        {
+          "owner": 5,
+          "at": 3542.5,
+          "type": "graph.session.interact",
+          "requestId": 13,
+          "sequence": 12,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "12",
+          "revision": 9,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 3730.7000002861023,
+          "type": "graph.session.interact",
+          "requestId": 14,
+          "sequence": 13,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "13",
+          "revision": 10,
+          "operation": 1
+        },
+        {
+          "owner": 5,
+          "at": 3887.6000003814697,
+          "type": "graph.session.interact",
+          "requestId": 15,
+          "sequence": 14,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "14",
+          "revision": 10,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 4202.900000095367,
+          "type": "graph.session.interact",
+          "requestId": 16,
+          "sequence": 15,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "15",
+          "revision": 11,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 4437.60000038147,
+          "type": "graph.session.interact",
+          "requestId": 17,
+          "sequence": 16,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "16",
+          "revision": 12,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 4587.800000190735,
+          "type": "graph.session.interact",
+          "requestId": 18,
+          "sequence": 17,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "17",
+          "revision": 13,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 4909.700000286102,
+          "type": "graph.session.interact",
+          "requestId": 19,
+          "sequence": 18,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "18",
+          "revision": 14,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 5126.10000038147,
+          "type": "graph.session.render",
+          "requestId": 20,
+          "sequence": 19,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "19",
+          "revision": 15,
+          "operation": 21
+        },
+        {
+          "owner": 5,
+          "at": 5280.700000286102,
+          "type": "graph.session.interact",
+          "requestId": 21,
+          "sequence": 20,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "20",
+          "revision": 16,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 5566.10000038147,
+          "type": "graph.session.interact",
+          "requestId": 22,
+          "sequence": 21,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "21",
+          "revision": 17,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 5801.300000190735,
+          "type": "graph.session.interact",
+          "requestId": 23,
+          "sequence": 22,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "22",
+          "revision": 18,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 6055.900000095367,
+          "type": "graph.session.interact",
+          "requestId": 24,
+          "sequence": 23,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "23",
+          "revision": 19,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 6319.900000095367,
+          "type": "graph.session.interact",
+          "requestId": 25,
+          "sequence": 24,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "24",
+          "revision": 20,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 6566.10000038147,
+          "type": "graph.session.interact",
+          "requestId": 26,
+          "sequence": 25,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "25",
+          "revision": 21,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 6799.60000038147,
+          "type": "graph.session.interact",
+          "requestId": 27,
+          "sequence": 26,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "26",
+          "revision": 22,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 7049,
+          "type": "graph.session.interact",
+          "requestId": 28,
+          "sequence": 27,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "27",
+          "revision": 23,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 7297.5,
+          "type": "graph.session.interact",
+          "requestId": 29,
+          "sequence": 28,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "28",
+          "revision": 24,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 7563.10000038147,
+          "type": "graph.session.interact",
+          "requestId": 30,
+          "sequence": 29,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "29",
+          "revision": 25,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 7866.800000190735,
+          "type": "graph.session.interact",
+          "requestId": 31,
+          "sequence": 30,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "30",
+          "revision": 26,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 8184.5,
+          "type": "graph.session.interact",
+          "requestId": 32,
+          "sequence": 31,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "31",
+          "revision": 27,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 8467.10000038147,
+          "type": "graph.session.interact",
+          "requestId": 33,
+          "sequence": 32,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "32",
+          "revision": 28,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 8839.300000190735,
+          "type": "graph.session.interact",
+          "requestId": 34,
+          "sequence": 33,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "33",
+          "revision": 29,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 9162.300000190735,
+          "type": "graph.session.interact",
+          "requestId": 35,
+          "sequence": 34,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "34",
+          "revision": 30,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 9468.800000190735,
+          "type": "graph.session.interact",
+          "requestId": 36,
+          "sequence": 35,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "35",
+          "revision": 31,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 9732.200000286102,
+          "type": "graph.session.interact",
+          "requestId": 37,
+          "sequence": 36,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "36",
+          "revision": 32,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 10001.60000038147,
+          "type": "graph.session.interact",
+          "requestId": 38,
+          "sequence": 37,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "37",
+          "revision": 33,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 10295.60000038147,
+          "type": "graph.session.interact",
+          "requestId": 39,
+          "sequence": 38,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "38",
+          "revision": 34,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 10594.800000190735,
+          "type": "graph.session.interact",
+          "requestId": 40,
+          "sequence": 39,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "39",
+          "revision": 35,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 10847,
+          "type": "graph.session.interact",
+          "requestId": 41,
+          "sequence": 40,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "40",
+          "revision": 36,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 11100.700000286102,
+          "type": "graph.session.interact",
+          "requestId": 42,
+          "sequence": 41,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "41",
+          "revision": 37,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 11429.5,
+          "type": "graph.session.interact",
+          "requestId": 43,
+          "sequence": 42,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "42",
+          "revision": 38,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 11639.5,
+          "type": "graph.session.interact",
+          "requestId": 44,
+          "sequence": 43,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "43",
+          "revision": 39,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 11842.900000095367,
+          "type": "graph.session.interact",
+          "requestId": 45,
+          "sequence": 44,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "44",
+          "revision": 40,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 12054.900000095367,
+          "type": "graph.session.interact",
+          "requestId": 46,
+          "sequence": 45,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "45",
+          "revision": 41,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 12301.400000095367,
+          "type": "graph.session.interact",
+          "requestId": 47,
+          "sequence": 46,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "46",
+          "revision": 42,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 12515,
+          "type": "graph.session.interact",
+          "requestId": 48,
+          "sequence": 47,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "47",
+          "revision": 43,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 12765.700000286102,
+          "type": "graph.session.interact",
+          "requestId": 49,
+          "sequence": 48,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "48",
+          "revision": 44,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 13057.900000095367,
+          "type": "graph.session.interact",
+          "requestId": 50,
+          "sequence": 49,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "49",
+          "revision": 45,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 13394.10000038147,
+          "type": "graph.session.interact",
+          "requestId": 51,
+          "sequence": 50,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "50",
+          "revision": 46,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 13788.700000286102,
+          "type": "graph.session.interact",
+          "requestId": 52,
+          "sequence": 51,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "51",
+          "revision": 47,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 14039.10000038147,
+          "type": "graph.session.interact",
+          "requestId": 53,
+          "sequence": 52,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "52",
+          "revision": 48,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 14300.300000190735,
+          "type": "graph.session.interact",
+          "requestId": 54,
+          "sequence": 53,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "53",
+          "revision": 49,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 14548.5,
+          "type": "graph.session.interact",
+          "requestId": 55,
+          "sequence": 54,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "54",
+          "revision": 50,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 14835.300000190735,
+          "type": "graph.session.interact",
+          "requestId": 56,
+          "sequence": 55,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "55",
+          "revision": 51,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 15090.5,
+          "type": "graph.session.interact",
+          "requestId": 57,
+          "sequence": 56,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "56",
+          "revision": 52,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 15441.200000286102,
+          "type": "graph.session.interact",
+          "requestId": 58,
+          "sequence": 57,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "57",
+          "revision": 53,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 15860.300000190735,
+          "type": "graph.session.interact",
+          "requestId": 59,
+          "sequence": 58,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "58",
+          "revision": 54,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 16276.10000038147,
+          "type": "graph.session.interact",
+          "requestId": 60,
+          "sequence": 59,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "59",
+          "revision": 55,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 16564.200000286102,
+          "type": "graph.session.interact",
+          "requestId": 61,
+          "sequence": 60,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "60",
+          "revision": 56,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 16946.10000038147,
+          "type": "graph.session.interact",
+          "requestId": 62,
+          "sequence": 61,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "61",
+          "revision": 57,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 17318.400000095367,
+          "type": "graph.session.interact",
+          "requestId": 63,
+          "sequence": 62,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "62",
+          "revision": 58,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 17674.200000286102,
+          "type": "graph.session.interact",
+          "requestId": 64,
+          "sequence": 63,
+          "lifetime": 4,
+          "instanceId": "7101",
+          "opSeq": "63",
+          "revision": 59,
+          "operation": 15
+        },
+        {
+          "owner": 5,
+          "at": 18027.5,
+          "type": "graph.session.close",
+          "requestId": 65,
+          "sequence": 64,
+          "lifetime": 4
+        }
+      ],
+      "held": 0,
+      "cleanupMs": 4.799999713897705,
+      "attachmentChildren": 0,
+      "disposed": true,
+      "framesAtDispose": 60
+    },
+    {
+      "id": "7102",
+      "arena": 402653184,
+      "painted": [
+        {
+          "at": 1293.7000002861023,
+          "progress": {
+            "steps": "1",
+            "alpha": 0.985,
+            "done": false
+          },
+          "hash": 2792628579,
+          "pixels": 10255
+        },
+        {
+          "at": 1628.8000001907349,
+          "progress": {
+            "steps": "9",
+            "alpha": 0.8728227840194346,
+            "done": false
+          },
+          "hash": 546525392,
+          "pixels": 11425
+        },
+        {
+          "at": 1881.1000003814697,
+          "progress": {
+            "steps": "17",
+            "alpha": 0.773420926196382,
+            "done": false
+          },
+          "hash": 2133567440,
+          "pixels": 12148
+        },
+        {
+          "at": 2118.800000190735,
+          "progress": {
+            "steps": "25",
+            "alpha": 0.6853394984991023,
+            "done": false
+          },
+          "hash": 4120394773,
+          "pixels": 8227
+        },
+        {
+          "at": 2531.6000003814697,
+          "progress": {
+            "steps": "33",
+            "alpha": 0.607289268099969,
+            "done": false
+          },
+          "hash": 1405295244,
+          "pixels": 7763
+        },
+        {
+          "at": 2730,
+          "progress": {
+            "steps": "41",
+            "alpha": 0.538127827094558,
+            "done": false
+          },
+          "hash": 2770842636,
+          "pixels": 6161
+        },
+        {
+          "at": 3040.300000190735,
+          "progress": {
+            "steps": "49",
+            "alpha": 0.47684287127208225,
+            "done": false
+          },
+          "hash": 1261640295,
+          "pixels": 5803
+        },
+        {
+          "at": 3284.9000000953674,
+          "progress": {
+            "steps": "57",
+            "alpha": 0.42253738319139056,
+            "done": false
+          },
+          "hash": 3215471208,
+          "pixels": 5872
+        },
+        {
+          "at": 3618.300000190735,
+          "progress": {
+            "steps": "65",
+            "alpha": 0.3744165026897423,
+            "done": false
+          },
+          "hash": 760219027,
+          "pixels": 5693
+        },
+        {
+          "at": 3937.4000000953674,
+          "progress": {
+            "steps": "73",
+            "alpha": 0.3317758926502345,
+            "done": false
+          },
+          "hash": 3173097238,
+          "pixels": 5427
+        },
+        {
+          "at": 4244.400000095367,
+          "progress": {
+            "steps": "81",
+            "alpha": 0.2939914297396048,
+            "done": false
+          },
+          "hash": 720191797,
+          "pixels": 5193
+        },
+        {
+          "at": 4468.10000038147,
+          "progress": {
+            "steps": "89",
+            "alpha": 0.2605100692214983,
+            "done": false
+          },
+          "hash": 4250527642,
+          "pixels": 5023
+        },
+        {
+          "at": 4702.5,
+          "progress": {
+            "steps": "97",
+            "alpha": 0.23084175013502917,
+            "done": false
+          },
+          "hash": 867028793,
+          "pixels": 4862
+        },
+        {
+          "at": 4941.5,
+          "progress": {
+            "steps": "105",
+            "alpha": 0.20455222235611656,
+            "done": false
+          },
+          "hash": 4285524457,
+          "pixels": 4655
+        },
+        {
+          "at": 5192.800000190735,
+          "progress": {
+            "steps": "113",
+            "alpha": 0.1812566905525158,
+            "done": false
+          },
+          "hash": 2524965880,
+          "pixels": 4474
+        },
+        {
+          "at": 5526.300000190735,
+          "progress": {
+            "steps": "121",
+            "alpha": 0.16061418200019895,
+            "done": false
+          },
+          "hash": 955418168,
+          "pixels": 4354
+        },
+        {
+          "at": 5762.200000286102,
+          "progress": {
+            "steps": "129",
+            "alpha": 0.1423225558237744,
+            "done": false
+          },
+          "hash": 4257014183,
+          "pixels": 4280
+        },
+        {
+          "at": 5924.700000286102,
+          "progress": {
+            "steps": "137",
+            "alpha": 0.1261140806120489,
+            "done": false
+          },
+          "hash": 3671259936,
+          "pixels": 4228
+        },
+        {
+          "at": 6185.300000190735,
+          "progress": {
+            "steps": "145",
+            "alpha": 0.11175151567904561,
+            "done": false
+          },
+          "hash": 188446561,
+          "pixels": 4226
+        },
+        {
+          "at": 6440.900000095367,
+          "progress": {
+            "steps": "153",
+            "alpha": 0.09902463861256457,
+            "done": false
+          },
+          "hash": 2023917867,
+          "pixels": 4203
+        },
+        {
+          "at": 6685.400000095367,
+          "progress": {
+            "steps": "161",
+            "alpha": 0.08774716828460608,
+            "done": false
+          },
+          "hash": 2328241335,
+          "pixels": 4199
+        },
+        {
+          "at": 6933.60000038147,
+          "progress": {
+            "steps": "169",
+            "alpha": 0.07775403828628598,
+            "done": false
+          },
+          "hash": 2447290800,
+          "pixels": 4211
+        },
+        {
+          "at": 7161.400000095367,
+          "progress": {
+            "steps": "177",
+            "alpha": 0.06889898087897443,
+            "done": false
+          },
+          "hash": 4180636376,
+          "pixels": 4214
+        },
+        {
+          "at": 7418.900000095367,
+          "progress": {
+            "steps": "185",
+            "alpha": 0.06105238609836369,
+            "done": false
+          },
+          "hash": 523809254,
+          "pixels": 4217
+        },
+        {
+          "at": 7718.900000095367,
+          "progress": {
+            "steps": "193",
+            "alpha": 0.054099404675536256,
+            "done": false
+          },
+          "hash": 4239240693,
+          "pixels": 4230
+        },
+        {
+          "at": 8009.800000190735,
+          "progress": {
+            "steps": "201",
+            "alpha": 0.04793826700781276,
+            "done": false
+          },
+          "hash": 2586103209,
+          "pixels": 4232
+        },
+        {
+          "at": 8316.200000286102,
+          "progress": {
+            "steps": "209",
+            "alpha": 0.042478793574442786,
+            "done": false
+          },
+          "hash": 1411497352,
+          "pixels": 4224
+        },
+        {
+          "at": 8655.5,
+          "progress": {
+            "steps": "217",
+            "alpha": 0.03764107499434722,
+            "done": false
+          },
+          "hash": 3995954481,
+          "pixels": 4219
+        },
+        {
+          "at": 9000.300000190735,
+          "progress": {
+            "steps": "225",
+            "alpha": 0.0333543024061426,
+            "done": false
+          },
+          "hash": 3505494874,
+          "pixels": 4220
+        },
+        {
+          "at": 9295.10000038147,
+          "progress": {
+            "steps": "233",
+            "alpha": 0.0295557310509193,
+            "done": false
+          },
+          "hash": 2158207171,
+          "pixels": 4217
+        },
+        {
+          "at": 9590.900000095367,
+          "progress": {
+            "steps": "241",
+            "alpha": 0.026189761887911705,
+            "done": false
+          },
+          "hash": 1001892141,
+          "pixels": 4224
+        },
+        {
+          "at": 9866.900000095367,
+          "progress": {
+            "steps": "249",
+            "alpha": 0.02320712780082556,
+            "done": false
+          },
+          "hash": 3627066054,
+          "pixels": 4223
+        },
+        {
+          "at": 10163.900000095367,
+          "progress": {
+            "steps": "257",
+            "alpha": 0.02056417248346333,
+            "done": false
+          },
+          "hash": 718191699,
+          "pixels": 4223
+        },
+        {
+          "at": 10465,
+          "progress": {
+            "steps": "265",
+            "alpha": 0.01822221144981961,
+            "done": false
+          },
+          "hash": 351200703,
+          "pixels": 4222
+        },
+        {
+          "at": 10706.700000286102,
+          "progress": {
+            "steps": "273",
+            "alpha": 0.01614696581586027,
+            "done": false
+          },
+          "hash": 1591477586,
+          "pixels": 4220
+        },
+        {
+          "at": 10971.900000095367,
+          "progress": {
+            "steps": "281",
+            "alpha": 0.014308060565345991,
+            "done": false
+          },
+          "hash": 1254880000,
+          "pixels": 4219
+        },
+        {
+          "at": 11293,
+          "progress": {
+            "steps": "289",
+            "alpha": 0.012678579955902509,
+            "done": false
+          },
+          "hash": 1673358713,
+          "pixels": 4217
+        },
+        {
+          "at": 11537.700000286102,
+          "progress": {
+            "steps": "297",
+            "alpha": 0.01123467355789221,
+            "done": false
+          },
+          "hash": 3829024314,
+          "pixels": 4218
+        },
+        {
+          "at": 11743.60000038147,
+          "progress": {
+            "steps": "305",
+            "alpha": 0.009955207159745181,
+            "done": false
+          },
+          "hash": 1221901456,
+          "pixels": 4221
+        },
+        {
+          "at": 11946.300000190735,
+          "progress": {
+            "steps": "313",
+            "alpha": 0.008821453430110655,
+            "done": false
+          },
+          "hash": 3607990460,
+          "pixels": 4215
+        },
+        {
+          "at": 12187.900000095367,
+          "progress": {
+            "steps": "321",
+            "alpha": 0.007816817809103524,
+            "done": false
+          },
+          "hash": 1670379377,
+          "pixels": 4217
+        },
+        {
+          "at": 12404.300000190735,
+          "progress": {
+            "steps": "329",
+            "alpha": 0.006926595616562877,
+            "done": false
+          },
+          "hash": 1666686061,
+          "pixels": 4218
+        },
+        {
+          "at": 12633.60000038147,
+          "progress": {
+            "steps": "337",
+            "alpha": 0.006137756822157585,
+            "done": false
+          },
+          "hash": 903677944,
+          "pixels": 4220
+        },
+        {
+          "at": 12929.300000190735,
+          "progress": {
+            "steps": "345",
+            "alpha": 0.005438755327055696,
+            "done": false
+          },
+          "hash": 4073882133,
+          "pixels": 4218
+        },
+        {
+          "at": 13207.400000095367,
+          "progress": {
+            "steps": "353",
+            "alpha": 0.0048193599656459725,
+            "done": false
+          },
+          "hash": 4128688944,
+          "pixels": 4222
+        },
+        {
+          "at": 13593.200000286102,
+          "progress": {
+            "steps": "361",
+            "alpha": 0.004270504753712614,
+            "done": false
+          },
+          "hash": 3243922661,
+          "pixels": 4217
+        },
+        {
+          "at": 13916.400000095367,
+          "progress": {
+            "steps": "369",
+            "alpha": 0.0037841561911712415,
+            "done": false
+          },
+          "hash": 146871665,
+          "pixels": 4213
+        },
+        {
+          "at": 14175,
+          "progress": {
+            "steps": "377",
+            "alpha": 0.003353195677098946,
+            "done": false
+          },
+          "hash": 1443041906,
+          "pixels": 4221
+        },
+        {
+          "at": 14418.900000095367,
+          "progress": {
+            "steps": "385",
+            "alpha": 0.0029713153159872433,
+            "done": false
+          },
+          "hash": 3799684231,
+          "pixels": 4217
+        },
+        {
+          "at": 14693.700000286102,
+          "progress": {
+            "steps": "393",
+            "alpha": 0.002632925590151849,
+            "done": false
+          },
+          "hash": 2012827941,
+          "pixels": 4222
+        },
+        {
+          "at": 14966.700000286102,
+          "progress": {
+            "steps": "401",
+            "alpha": 0.002333073546916091,
+            "done": false
+          },
+          "hash": 1623624881,
+          "pixels": 4221
+        },
+        {
+          "at": 15248.5,
+          "progress": {
+            "steps": "409",
+            "alpha": 0.002067370303087715,
+            "done": false
+          },
+          "hash": 1686920985,
+          "pixels": 4221
+        },
+        {
+          "at": 15633.5,
+          "progress": {
+            "steps": "417",
+            "alpha": 0.0018319268056244888,
+            "done": false
+          },
+          "hash": 1846063865,
+          "pixels": 4224
+        },
+        {
+          "at": 16065.700000286102,
+          "progress": {
+            "steps": "425",
+            "alpha": 0.0016232969082284221,
+            "done": false
+          },
+          "hash": 661283259,
+          "pixels": 4220
+        },
+        {
+          "at": 16425.10000038147,
+          "progress": {
+            "steps": "433",
+            "alpha": 0.0014384269306904282,
+            "done": false
+          },
+          "hash": 1465532121,
+          "pixels": 4218
+        },
+        {
+          "at": 16757.800000190735,
+          "progress": {
+            "steps": "441",
+            "alpha": 0.001274610962694162,
+            "done": false
+          },
+          "hash": 3496992742,
+          "pixels": 4219
+        },
+        {
+          "at": 17126.5,
+          "progress": {
+            "steps": "449",
+            "alpha": 0.0011294512578684367,
+            "done": false
+          },
+          "hash": 1904240603,
+          "pixels": 4221
+        },
+        {
+          "at": 17503.800000190735,
+          "progress": {
+            "steps": "457",
+            "alpha": 0.0010008231383827218,
+            "done": false
+          },
+          "hash": 593614861,
+          "pixels": 4221
+        },
+        {
+          "at": 17836.800000190735,
+          "progress": {
+            "steps": "458",
+            "alpha": 0.000985810791306981,
+            "done": true
+          },
+          "hash": 4050666111,
+          "pixels": 4220
+        }
+      ],
+      "clicks": [],
+      "payloadBytes": {
+        "requests": 81960,
+        "replies": 21393232
+      },
+      "frames": [
+        {
+          "at": 1193.4000000953674,
+          "revision": 1,
+          "progress": {
+            "steps": "1",
+            "alpha": 0.985,
+            "done": false
+          },
+          "pixels": 10255
+        },
+        {
+          "at": 1471.9000000953674,
+          "revision": 2,
+          "progress": {
+            "steps": "9",
+            "alpha": 0.8728227840194346,
+            "done": false
+          },
+          "pixels": 11425
+        },
+        {
+          "at": 1717.1000003814697,
+          "revision": 3,
+          "progress": {
+            "steps": "17",
+            "alpha": 0.773420926196382,
+            "done": false
+          },
+          "pixels": 12148
+        },
+        {
+          "at": 2015.5,
+          "revision": 4,
+          "progress": {
+            "steps": "25",
+            "alpha": 0.6853394984991023,
+            "done": false
+          },
+          "pixels": 8227
+        },
+        {
+          "at": 2346.6000003814697,
+          "revision": 5,
+          "progress": {
+            "steps": "33",
+            "alpha": 0.607289268099969,
+            "done": false
+          },
+          "pixels": 7763
+        },
+        {
+          "at": 2633.4000000953674,
+          "revision": 6,
+          "progress": {
+            "steps": "41",
+            "alpha": 0.538127827094558,
+            "done": false
+          },
+          "pixels": 6161
+        },
+        {
+          "at": 2942.9000000953674,
+          "revision": 7,
+          "progress": {
+            "steps": "49",
+            "alpha": 0.47684287127208225,
+            "done": false
+          },
+          "pixels": 5803
+        },
+        {
+          "at": 3154.9000000953674,
+          "revision": 8,
+          "progress": {
+            "steps": "57",
+            "alpha": 0.42253738319139056,
+            "done": false
+          },
+          "pixels": 5872
+        },
+        {
+          "at": 3457.7000002861023,
+          "revision": 9,
+          "progress": {
+            "steps": "65",
+            "alpha": 0.3744165026897423,
+            "done": false
+          },
+          "pixels": 5693
+        },
+        {
+          "at": 3808.5,
+          "revision": 10,
+          "progress": {
+            "steps": "73",
+            "alpha": 0.3317758926502345,
+            "done": false
+          },
+          "pixels": 5427
+        },
+        {
+          "at": 4091.1000003814697,
+          "revision": 11,
+          "progress": {
+            "steps": "81",
+            "alpha": 0.2939914297396048,
+            "done": false
+          },
+          "pixels": 5193
+        },
+        {
+          "at": 4360.60000038147,
+          "revision": 12,
+          "progress": {
+            "steps": "89",
+            "alpha": 0.2605100692214983,
+            "done": false
+          },
+          "pixels": 5023
+        },
+        {
+          "at": 4628.300000190735,
+          "revision": 13,
+          "progress": {
+            "steps": "97",
+            "alpha": 0.23084175013502917,
+            "done": false
+          },
+          "pixels": 4862
+        },
+        {
+          "at": 4830.10000038147,
+          "revision": 14,
+          "progress": {
+            "steps": "105",
+            "alpha": 0.20455222235611656,
+            "done": false
+          },
+          "pixels": 4655
+        },
+        {
+          "at": 5071.700000286102,
+          "revision": 15,
+          "progress": {
+            "steps": "113",
+            "alpha": 0.1812566905525158,
+            "done": false
+          },
+          "pixels": 4474
+        },
+        {
+          "at": 5369,
+          "revision": 16,
+          "progress": {
+            "steps": "121",
+            "alpha": 0.16061418200019895,
+            "done": false
+          },
+          "pixels": 4354
+        },
+        {
+          "at": 5612.200000286102,
+          "revision": 17,
+          "progress": {
+            "steps": "129",
+            "alpha": 0.1423225558237744,
+            "done": false
+          },
+          "pixels": 4280
+        },
+        {
+          "at": 5850.900000095367,
+          "revision": 18,
+          "progress": {
+            "steps": "137",
+            "alpha": 0.1261140806120489,
+            "done": false
+          },
+          "pixels": 4228
+        },
+        {
+          "at": 6101.300000190735,
+          "revision": 19,
+          "progress": {
+            "steps": "145",
+            "alpha": 0.11175151567904561,
+            "done": false
+          },
+          "pixels": 4226
+        },
+        {
+          "at": 6370.10000038147,
+          "revision": 20,
+          "progress": {
+            "steps": "153",
+            "alpha": 0.09902463861256457,
+            "done": false
+          },
+          "pixels": 4203
+        },
+        {
+          "at": 6613.10000038147,
+          "revision": 21,
+          "progress": {
+            "steps": "161",
+            "alpha": 0.08774716828460608,
+            "done": false
+          },
+          "pixels": 4199
+        },
+        {
+          "at": 6843.700000286102,
+          "revision": 22,
+          "progress": {
+            "steps": "169",
+            "alpha": 0.07775403828628598,
+            "done": false
+          },
+          "pixels": 4211
+        },
+        {
+          "at": 7090.700000286102,
+          "revision": 23,
+          "progress": {
+            "steps": "177",
+            "alpha": 0.06889898087897443,
+            "done": false
+          },
+          "pixels": 4214
+        },
+        {
+          "at": 7343.900000095367,
+          "revision": 24,
+          "progress": {
+            "steps": "185",
+            "alpha": 0.06105238609836369,
+            "done": false
+          },
+          "pixels": 4217
+        },
+        {
+          "at": 7610.700000286102,
+          "revision": 25,
+          "progress": {
+            "steps": "193",
+            "alpha": 0.054099404675536256,
+            "done": false
+          },
+          "pixels": 4230
+        },
+        {
+          "at": 7911.800000190735,
+          "revision": 26,
+          "progress": {
+            "steps": "201",
+            "alpha": 0.04793826700781276,
+            "done": false
+          },
+          "pixels": 4232
+        },
+        {
+          "at": 8240.400000095367,
+          "revision": 27,
+          "progress": {
+            "steps": "209",
+            "alpha": 0.042478793574442786,
+            "done": false
+          },
+          "pixels": 4224
+        },
+        {
+          "at": 8517.800000190735,
+          "revision": 28,
+          "progress": {
+            "steps": "217",
+            "alpha": 0.03764107499434722,
+            "done": false
+          },
+          "pixels": 4219
+        },
+        {
+          "at": 8901,
+          "revision": 29,
+          "progress": {
+            "steps": "225",
+            "alpha": 0.0333543024061426,
+            "done": false
+          },
+          "pixels": 4220
+        },
+        {
+          "at": 9211.700000286102,
+          "revision": 30,
+          "progress": {
+            "steps": "233",
+            "alpha": 0.0295557310509193,
+            "done": false
+          },
+          "pixels": 4217
+        },
+        {
+          "at": 9514.900000095367,
+          "revision": 31,
+          "progress": {
+            "steps": "241",
+            "alpha": 0.026189761887911705,
+            "done": false
+          },
+          "pixels": 4224
+        },
+        {
+          "at": 9776.700000286102,
+          "revision": 32,
+          "progress": {
+            "steps": "249",
+            "alpha": 0.02320712780082556,
+            "done": false
+          },
+          "pixels": 4223
+        },
+        {
+          "at": 10062.5,
+          "revision": 33,
+          "progress": {
+            "steps": "257",
+            "alpha": 0.02056417248346333,
+            "done": false
+          },
+          "pixels": 4223
+        },
+        {
+          "at": 10347.200000286102,
+          "revision": 34,
+          "progress": {
+            "steps": "265",
+            "alpha": 0.01822221144981961,
+            "done": false
+          },
+          "pixels": 4222
+        },
+        {
+          "at": 10633.200000286102,
+          "revision": 35,
+          "progress": {
+            "steps": "273",
+            "alpha": 0.01614696581586027,
+            "done": false
+          },
+          "pixels": 4220
+        },
+        {
+          "at": 10886.10000038147,
+          "revision": 36,
+          "progress": {
+            "steps": "281",
+            "alpha": 0.014308060565345991,
+            "done": false
+          },
+          "pixels": 4219
+        },
+        {
+          "at": 11149.800000190735,
+          "revision": 37,
+          "progress": {
+            "steps": "289",
+            "alpha": 0.012678579955902509,
+            "done": false
+          },
+          "pixels": 4217
+        },
+        {
+          "at": 11467.60000038147,
+          "revision": 38,
+          "progress": {
+            "steps": "297",
+            "alpha": 0.01123467355789221,
+            "done": false
+          },
+          "pixels": 4218
+        },
+        {
+          "at": 11675.200000286102,
+          "revision": 39,
+          "progress": {
+            "steps": "305",
+            "alpha": 0.009955207159745181,
+            "done": false
+          },
+          "pixels": 4221
+        },
+        {
+          "at": 11873.800000190735,
+          "revision": 40,
+          "progress": {
+            "steps": "313",
+            "alpha": 0.008821453430110655,
+            "done": false
+          },
+          "pixels": 4215
+        },
+        {
+          "at": 12091.60000038147,
+          "revision": 41,
+          "progress": {
+            "steps": "321",
+            "alpha": 0.007816817809103524,
+            "done": false
+          },
+          "pixels": 4217
+        },
+        {
+          "at": 12332.200000286102,
+          "revision": 42,
+          "progress": {
+            "steps": "329",
+            "alpha": 0.006926595616562877,
+            "done": false
+          },
+          "pixels": 4218
+        },
+        {
+          "at": 12552,
+          "revision": 43,
+          "progress": {
+            "steps": "337",
+            "alpha": 0.006137756822157585,
+            "done": false
+          },
+          "pixels": 4220
+        },
+        {
+          "at": 12809,
+          "revision": 44,
+          "progress": {
+            "steps": "345",
+            "alpha": 0.005438755327055696,
+            "done": false
+          },
+          "pixels": 4218
+        },
+        {
+          "at": 13103.400000095367,
+          "revision": 45,
+          "progress": {
+            "steps": "353",
+            "alpha": 0.0048193599656459725,
+            "done": false
+          },
+          "pixels": 4222
+        },
+        {
+          "at": 13449.900000095367,
+          "revision": 46,
+          "progress": {
+            "steps": "361",
+            "alpha": 0.004270504753712614,
+            "done": false
+          },
+          "pixels": 4217
+        },
+        {
+          "at": 13831.5,
+          "revision": 47,
+          "progress": {
+            "steps": "369",
+            "alpha": 0.0037841561911712415,
+            "done": false
+          },
+          "pixels": 4213
+        },
+        {
+          "at": 14085.400000095367,
+          "revision": 48,
+          "progress": {
+            "steps": "377",
+            "alpha": 0.003353195677098946,
+            "done": false
+          },
+          "pixels": 4221
+        },
+        {
+          "at": 14341.800000190735,
+          "revision": 49,
+          "progress": {
+            "steps": "385",
+            "alpha": 0.0029713153159872433,
+            "done": false
+          },
+          "pixels": 4217
+        },
+        {
+          "at": 14600,
+          "revision": 50,
+          "progress": {
+            "steps": "393",
+            "alpha": 0.002632925590151849,
+            "done": false
+          },
+          "pixels": 4222
+        },
+        {
+          "at": 14881.900000095367,
+          "revision": 51,
+          "progress": {
+            "steps": "401",
+            "alpha": 0.002333073546916091,
+            "done": false
+          },
+          "pixels": 4221
+        },
+        {
+          "at": 15133,
+          "revision": 52,
+          "progress": {
+            "steps": "409",
+            "alpha": 0.002067370303087715,
+            "done": false
+          },
+          "pixels": 4221
+        },
+        {
+          "at": 15504.10000038147,
+          "revision": 53,
+          "progress": {
+            "steps": "417",
+            "alpha": 0.0018319268056244888,
+            "done": false
+          },
+          "pixels": 4224
+        },
+        {
+          "at": 15931.400000095367,
+          "revision": 54,
+          "progress": {
+            "steps": "425",
+            "alpha": 0.0016232969082284221,
+            "done": false
+          },
+          "pixels": 4220
+        },
+        {
+          "at": 16336.700000286102,
+          "revision": 55,
+          "progress": {
+            "steps": "433",
+            "alpha": 0.0014384269306904282,
+            "done": false
+          },
+          "pixels": 4218
+        },
+        {
+          "at": 16636.800000190735,
+          "revision": 56,
+          "progress": {
+            "steps": "441",
+            "alpha": 0.001274610962694162,
+            "done": false
+          },
+          "pixels": 4219
+        },
+        {
+          "at": 17004.5,
+          "revision": 57,
+          "progress": {
+            "steps": "449",
+            "alpha": 0.0011294512578684367,
+            "done": false
+          },
+          "pixels": 4221
+        },
+        {
+          "at": 17381.800000190735,
+          "revision": 58,
+          "progress": {
+            "steps": "457",
+            "alpha": 0.0010008231383827218,
+            "done": false
+          },
+          "pixels": 4221
+        },
+        {
+          "at": 17727.300000190735,
+          "revision": 59,
+          "progress": {
+            "steps": "458",
+            "alpha": 0.000985810791306981,
+            "done": true
+          },
+          "pixels": 4220
+        }
+      ],
+      "errors": [],
+      "heartbeats": [
+        764.6000003814697,
+        1303.2000002861023,
+        1446.7000002861023,
+        1680.6000003814697,
+        1946.5,
+        2306.6000003814697,
+        2591.800000190735,
+        2901.800000190735,
+        3044.2000002861023,
+        3298.6000003814697,
+        3420.7000002861023,
+        3633.4000000953674,
+        3848.7000002861023,
+        3953.6000003814697,
+        4248.10000038147,
+        4471.60000038147,
+        4667.5,
+        4789.300000190735,
+        4945.10000038147,
+        5196.700000286102,
+        5320,
+        5569.10000038147,
+        5804.800000190735,
+        6016.5,
+        6190.800000190735,
+        6407.200000286102,
+        6532.60000038147,
+        6687.900000095367,
+        6888.400000095367,
+        7013.60000038147,
+        7126.700000286102,
+        7299.800000190735,
+        7519.200000286102,
+        7722.5,
+        7951,
+        8186.800000190735,
+        8406.200000286102,
+        8662.10000038147,
+        9004.200000286102,
+        9252.10000038147,
+        9472.10000038147,
+        9734.400000095367,
+        9947.10000038147,
+        10167.200000286102,
+        10468.900000095367,
+        10671.200000286102,
+        10849.5,
+        11059.300000190735,
+        11296.800000190735,
+        11502.400000095367,
+        11605.400000095367,
+        11745.900000095367,
+        11912.800000190735,
+        12021.5,
+        12191.300000190735,
+        12368.400000095367,
+        12480.5,
+        12636.60000038147,
+        12932.5,
+        13141.5,
+        13397.900000095367,
+        13791.10000038147,
+        14005.5,
+        14177.700000286102,
+        14379.800000190735,
+        14510.10000038147,
+        14696.300000190735,
+        14919.400000095367,
+        15093.700000286102,
+        15444.60000038147,
+        15863.800000190735,
+        16279.60000038147,
+        16522.400000095367,
+        16762,
+        17130.200000286102,
+        17507.300000190735,
+        17840.300000190735,
+        18026,
+        18031
+      ],
+      "selections": [],
+      "pans": [],
+      "keys": [],
+      "commands": [
+        {
+          "owner": 6,
+          "at": 759.8000001907349,
+          "type": "graph.session.open",
+          "requestId": 2,
+          "sequence": 1,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "1",
+          "revision": 0,
+          "operation": 19
+        },
+        {
+          "owner": 6,
+          "at": 761.2000002861023,
+          "type": "graph.session.render",
+          "requestId": 3,
+          "sequence": 2,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "2",
+          "revision": 0,
+          "operation": 21
+        },
+        {
+          "owner": 6,
+          "at": 1388.5,
+          "type": "graph.session.interact",
+          "requestId": 4,
+          "sequence": 3,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "3",
+          "revision": 1,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 1629.2000002861023,
+          "type": "graph.session.interact",
+          "requestId": 5,
+          "sequence": 4,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "4",
+          "revision": 2,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 1881.4000000953674,
+          "type": "graph.session.interact",
+          "requestId": 6,
+          "sequence": 5,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "5",
+          "revision": 3,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 2119.1000003814697,
+          "type": "graph.session.interact",
+          "requestId": 7,
+          "sequence": 6,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "6",
+          "revision": 4,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 2531.9000000953674,
+          "type": "graph.session.interact",
+          "requestId": 8,
+          "sequence": 7,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "7",
+          "revision": 5,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 2730.2000002861023,
+          "type": "graph.session.interact",
+          "requestId": 9,
+          "sequence": 8,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "8",
+          "revision": 6,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 3040.6000003814697,
+          "type": "graph.session.interact",
+          "requestId": 10,
+          "sequence": 9,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "9",
+          "revision": 7,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 3285.1000003814697,
+          "type": "graph.session.interact",
+          "requestId": 11,
+          "sequence": 10,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "10",
+          "revision": 8,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 3618.9000000953674,
+          "type": "graph.session.interact",
+          "requestId": 12,
+          "sequence": 11,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "11",
+          "revision": 9,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 3937.7000002861023,
+          "type": "graph.session.interact",
+          "requestId": 13,
+          "sequence": 12,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "12",
+          "revision": 10,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 4244.700000286102,
+          "type": "graph.session.interact",
+          "requestId": 14,
+          "sequence": 13,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "13",
+          "revision": 11,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 4468.400000095367,
+          "type": "graph.session.interact",
+          "requestId": 15,
+          "sequence": 14,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "14",
+          "revision": 12,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 4702.800000190735,
+          "type": "graph.session.interact",
+          "requestId": 16,
+          "sequence": 15,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "15",
+          "revision": 13,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 4941.700000286102,
+          "type": "graph.session.interact",
+          "requestId": 17,
+          "sequence": 16,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "16",
+          "revision": 14,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 5193,
+          "type": "graph.session.interact",
+          "requestId": 18,
+          "sequence": 17,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "17",
+          "revision": 15,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 5526.60000038147,
+          "type": "graph.session.interact",
+          "requestId": 19,
+          "sequence": 18,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "18",
+          "revision": 16,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 5762.400000095367,
+          "type": "graph.session.interact",
+          "requestId": 20,
+          "sequence": 19,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "19",
+          "revision": 17,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 5924.900000095367,
+          "type": "graph.session.interact",
+          "requestId": 21,
+          "sequence": 20,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "20",
+          "revision": 18,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 6185.5,
+          "type": "graph.session.interact",
+          "requestId": 22,
+          "sequence": 21,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "21",
+          "revision": 19,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 6441.200000286102,
+          "type": "graph.session.interact",
+          "requestId": 23,
+          "sequence": 22,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "22",
+          "revision": 20,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 6685.700000286102,
+          "type": "graph.session.interact",
+          "requestId": 24,
+          "sequence": 23,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "23",
+          "revision": 21,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 6933.800000190735,
+          "type": "graph.session.interact",
+          "requestId": 25,
+          "sequence": 24,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "24",
+          "revision": 22,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 7161.800000190735,
+          "type": "graph.session.interact",
+          "requestId": 26,
+          "sequence": 25,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "25",
+          "revision": 23,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 7419.10000038147,
+          "type": "graph.session.interact",
+          "requestId": 27,
+          "sequence": 26,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "26",
+          "revision": 24,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 7719.300000190735,
+          "type": "graph.session.interact",
+          "requestId": 28,
+          "sequence": 27,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "27",
+          "revision": 25,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 8010.10000038147,
+          "type": "graph.session.interact",
+          "requestId": 29,
+          "sequence": 28,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "28",
+          "revision": 26,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 8316.5,
+          "type": "graph.session.interact",
+          "requestId": 30,
+          "sequence": 29,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "29",
+          "revision": 27,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 8655.900000095367,
+          "type": "graph.session.interact",
+          "requestId": 31,
+          "sequence": 30,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "30",
+          "revision": 28,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 9000.700000286102,
+          "type": "graph.session.interact",
+          "requestId": 32,
+          "sequence": 31,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "31",
+          "revision": 29,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 9295.400000095367,
+          "type": "graph.session.interact",
+          "requestId": 33,
+          "sequence": 32,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "32",
+          "revision": 30,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 9591.200000286102,
+          "type": "graph.session.interact",
+          "requestId": 34,
+          "sequence": 33,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "33",
+          "revision": 31,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 9867.300000190735,
+          "type": "graph.session.interact",
+          "requestId": 35,
+          "sequence": 34,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "34",
+          "revision": 32,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 10164.200000286102,
+          "type": "graph.session.interact",
+          "requestId": 36,
+          "sequence": 35,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "35",
+          "revision": 33,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 10465.400000095367,
+          "type": "graph.session.interact",
+          "requestId": 37,
+          "sequence": 36,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "36",
+          "revision": 34,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 10707,
+          "type": "graph.session.interact",
+          "requestId": 38,
+          "sequence": 37,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "37",
+          "revision": 35,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 10972.200000286102,
+          "type": "graph.session.interact",
+          "requestId": 39,
+          "sequence": 38,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "38",
+          "revision": 36,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 11293.5,
+          "type": "graph.session.interact",
+          "requestId": 40,
+          "sequence": 39,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "39",
+          "revision": 37,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 11537.900000095367,
+          "type": "graph.session.interact",
+          "requestId": 41,
+          "sequence": 40,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "40",
+          "revision": 38,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 11743.800000190735,
+          "type": "graph.session.interact",
+          "requestId": 42,
+          "sequence": 41,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "41",
+          "revision": 39,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 11946.60000038147,
+          "type": "graph.session.interact",
+          "requestId": 43,
+          "sequence": 42,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "42",
+          "revision": 40,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 12188.200000286102,
+          "type": "graph.session.interact",
+          "requestId": 44,
+          "sequence": 43,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "43",
+          "revision": 41,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 12404.5,
+          "type": "graph.session.interact",
+          "requestId": 45,
+          "sequence": 44,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "44",
+          "revision": 42,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 12633.900000095367,
+          "type": "graph.session.interact",
+          "requestId": 46,
+          "sequence": 45,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "45",
+          "revision": 43,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 12929.5,
+          "type": "graph.session.interact",
+          "requestId": 47,
+          "sequence": 46,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "46",
+          "revision": 44,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 13207.800000190735,
+          "type": "graph.session.interact",
+          "requestId": 48,
+          "sequence": 47,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "47",
+          "revision": 45,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 13593.60000038147,
+          "type": "graph.session.interact",
+          "requestId": 49,
+          "sequence": 48,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "48",
+          "revision": 46,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 13916.700000286102,
+          "type": "graph.session.interact",
+          "requestId": 50,
+          "sequence": 49,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "49",
+          "revision": 47,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 14175.200000286102,
+          "type": "graph.session.interact",
+          "requestId": 51,
+          "sequence": 50,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "50",
+          "revision": 48,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 14419.10000038147,
+          "type": "graph.session.interact",
+          "requestId": 52,
+          "sequence": 51,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "51",
+          "revision": 49,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 14693.900000095367,
+          "type": "graph.session.interact",
+          "requestId": 53,
+          "sequence": 52,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "52",
+          "revision": 50,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 14967,
+          "type": "graph.session.interact",
+          "requestId": 54,
+          "sequence": 53,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "53",
+          "revision": 51,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 15249.10000038147,
+          "type": "graph.session.interact",
+          "requestId": 55,
+          "sequence": 54,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "54",
+          "revision": 52,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 15633.800000190735,
+          "type": "graph.session.interact",
+          "requestId": 56,
+          "sequence": 55,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "55",
+          "revision": 53,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 16066,
+          "type": "graph.session.interact",
+          "requestId": 57,
+          "sequence": 56,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "56",
+          "revision": 54,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 16425.300000190735,
+          "type": "graph.session.interact",
+          "requestId": 58,
+          "sequence": 57,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "57",
+          "revision": 55,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 16758.200000286102,
+          "type": "graph.session.interact",
+          "requestId": 59,
+          "sequence": 58,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "58",
+          "revision": 56,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 17126.900000095367,
+          "type": "graph.session.interact",
+          "requestId": 60,
+          "sequence": 59,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "59",
+          "revision": 57,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 17504.10000038147,
+          "type": "graph.session.interact",
+          "requestId": 61,
+          "sequence": 60,
+          "lifetime": 5,
+          "instanceId": "7102",
+          "opSeq": "60",
+          "revision": 58,
+          "operation": 15
+        },
+        {
+          "owner": 6,
+          "at": 18032.200000286102,
+          "type": "graph.session.close",
+          "requestId": 62,
+          "sequence": 61,
+          "lifetime": 5
+        }
+      ],
+      "held": 0,
+      "cleanupMs": 7.099999904632568,
+      "attachmentChildren": 0,
+      "disposed": true,
+      "framesAtDispose": 59
+    }
+  ],
+  "heapAfter": {
+    "metrics": [
+      {
+        "name": "Timestamp",
+        "value": 3762272.883631
+      },
+      {
+        "name": "AudioHandlers",
+        "value": 0
+      },
+      {
+        "name": "AudioWorkletProcessors",
+        "value": 0
+      },
+      {
+        "name": "Documents",
+        "value": 1
+      },
+      {
+        "name": "Frames",
+        "value": 1
+      },
+      {
+        "name": "JSEventListeners",
+        "value": 260
+      },
+      {
+        "name": "LayoutObjects",
+        "value": 2096
+      },
+      {
+        "name": "MediaKeySessions",
+        "value": 0
+      },
+      {
+        "name": "MediaKeys",
+        "value": 0
+      },
+      {
+        "name": "Nodes",
+        "value": 2274
+      },
+      {
+        "name": "Resources",
+        "value": 4
+      },
+      {
+        "name": "ContextLifecycleStateObservers",
+        "value": 11
+      },
+      {
+        "name": "V8PerContextDatas",
+        "value": 2
+      },
+      {
+        "name": "WorkerGlobalScopes",
+        "value": 1
+      },
+      {
+        "name": "UACSSResources",
+        "value": 0
+      },
+      {
+        "name": "RTCPeerConnections",
+        "value": 0
+      },
+      {
+        "name": "ResourceFetchers",
+        "value": 3
+      },
+      {
+        "name": "AdSubframes",
+        "value": 0
+      },
+      {
+        "name": "DetachedScriptStates",
+        "value": 0
+      },
+      {
+        "name": "ArrayBufferContents",
+        "value": 297
+      },
+      {
+        "name": "LayoutCount",
+        "value": 112
+      },
+      {
+        "name": "RecalcStyleCount",
+        "value": 129
+      },
+      {
+        "name": "LayoutDuration",
+        "value": 0.272576
+      },
+      {
+        "name": "RecalcStyleDuration",
+        "value": 0.094343
+      },
+      {
+        "name": "DevToolsCommandDuration",
+        "value": 0.029534
+      },
+      {
+        "name": "ScriptDuration",
+        "value": 10.573157
+      },
+      {
+        "name": "V8CompileDuration",
+        "value": 0
+      },
+      {
+        "name": "TaskDuration",
+        "value": 16.758358
+      },
+      {
+        "name": "TaskOtherDuration",
+        "value": 5.788748
+      },
+      {
+        "name": "ThreadTime",
+        "value": 11.754082
+      },
+      {
+        "name": "ProcessTime",
+        "value": 15.89
+      },
+      {
+        "name": "JSHeapUsedSize",
+        "value": 42095540
+      },
+      {
+        "name": "JSHeapTotalSize",
+        "value": 90218496
+      },
+      {
+        "name": "FirstMeaningfulPaint",
+        "value": 0
+      },
+      {
+        "name": "DomContentLoaded",
+        "value": 3762254.838474
+      },
+      {
+        "name": "NavigationStart",
+        "value": 3762254.745677
+      }
+    ]
+  }
+}

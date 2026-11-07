@@ -22,6 +22,14 @@ Geographic composition uses a separate literal-RGBA catalog contract:
 Its seven layer families reuse the same Rust Scene renderers; the CSS
 property table below does not imply geographic CSS input support.
 
+The bounded [temporal composition catalog](../design/temporal-catalog.md)
+adds UTC event, interval, Gantt, line, bar and scatter compositions through
+the existing Rust Scene primitives and painter. Uniform RGBA/stroke inputs,
+native static exports and packaged Worker rendering have focused evidence.
+This is an explicit direct tier, not dense LOD or full temporal styling:
+live controls, streaming, timezones, accessibility, hosts, massive-scale
+and competitor qualification remain open. It does not close #46.
+
 Experimental retained GraphForge interaction has a separate
 [bounded primary-click/keyboard capability contract](../design/graph-interaction.md#bounded-explicit-s5b-attachment)
 and [mouse/byte-replay evidence](../performance/graph-s5b-pointer-selection-2026-11-04/README.md).

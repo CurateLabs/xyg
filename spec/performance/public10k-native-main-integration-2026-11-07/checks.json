@@ -1,0 +1,481 @@
+{
+  "artifacts": {
+    "packages/xy-client/dist/index.js": {
+      "bytes": 808602,
+      "sha256": "279ac3767ee8b9dedf91698018f71441d143767ad940e887d3cc0fadbd29b056"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 808631,
+      "sha256": "147a3dbd091c75782567f6bb44c32190366948a0481fb548f5b40bdb1676dc8a"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 56634,
+      "sha256": "cc65e16ea9d59dcee9a339ff7ead857c71c8507771e5cddc24ab2cd090ffd555"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1927066,
+      "sha256": "06938b014a74528eb95a279971cb884b41a9dbcb094d3530a49a633ffd1e9792"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 808602,
+      "sha256": "279ac3767ee8b9dedf91698018f71441d143767ad940e887d3cc0fadbd29b056"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 808631,
+      "sha256": "147a3dbd091c75782567f6bb44c32190366948a0481fb548f5b40bdb1676dc8a"
+    },
+    "target/release/libxyg_core.so": {
+      "bytes": 6137240,
+      "sha256": "b93f21b8f19799897566a5447279f0a79729b7814c0391db302cd31a050a31bd"
+    }
+  },
+  "captures": {
+    "foundation.json.esm-malformed-inline-artifact.png": {
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    "foundation.json.esm-missing-inline-artifact.png": {
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    "foundation.json.esm-missing-retained-source.png": {
+      "bytes": 11315,
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+    },
+    "foundation.json.gz": {
+      "archiveSha256": "611f5373f692b1b9ff2cfa2cf631b0360574be40e79295bd037774d22552ca41",
+      "rawBytes": 25639,
+      "rawSha256": "d4e32d886a36d32b8e7b9000d1326787aed80aa050d7e05a42dc498816883411"
+    },
+    "foundation.json.iife-malformed-inline-artifact.png": {
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    "foundation.json.iife-missing-inline-artifact.png": {
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    "foundation.json.iife-missing-retained-source.png": {
+      "bytes": 11315,
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+    },
+    "foundation.json.retained-temporal.json.boundary.png": {
+      "bytes": 44546,
+      "sha256": "e47464cd85a30210f9cbe6ec12af0aee391c3aa8ec4c01afdc2b814b823a7d6d"
+    },
+    "foundation.json.retained-temporal.json.gz": {
+      "archiveSha256": "2595d25c9584aef5e5fb327872331f1577758d29698521ee35258c4e6eb851bc",
+      "rawBytes": 102508,
+      "rawSha256": "be3002a4f61321a38bef24843e87e1746d4c5c9c7251d80696ad014080f1cf5e"
+    },
+    "foundation.json.retained-temporal.json.initial.png": {
+      "bytes": 44231,
+      "sha256": "a03d81a62746e81bbc035d278d5ebc73be03be673f7fee0a4e3a9ca31fa0eceb"
+    },
+    "public10k.json.7101.final.png": {
+      "bytes": 8122,
+      "sha256": "e7f41105975657ce7808cfc1e67d233683a28f388b43db42cfdb9c3e5723b1b3"
+    },
+    "public10k.json.7101.initial.png": {
+      "bytes": 12258,
+      "sha256": "3efa8ea35d7493873f7e1b3ef40579afb78e5923eca4f3c82799c3ec9b1d8c80"
+    },
+    "public10k.json.7101.intermediate.png": {
+      "bytes": 9222,
+      "sha256": "3c6cc5531407af64bdd3250acdf0a9f497c53b90a89ee0208f5b301522f68dc2"
+    },
+    "public10k.json.7102.final.png": {
+      "bytes": 8695,
+      "sha256": "4453d9610a62a79b6a900bf2a3d67145ea2e95cf799286690cff9365a63ff06b"
+    },
+    "public10k.json.7102.initial.png": {
+      "bytes": 16340,
+      "sha256": "d378702d8644f2616909d71978479b0b684f4477871e68316d5c9280d88a52e9"
+    },
+    "public10k.json.7102.intermediate.png": {
+      "bytes": 9175,
+      "sha256": "86b4b1cb20b0aa65ade77479d6b17599e09123b660ceb57eae6bbd0054f4f5db"
+    },
+    "public10k.json.gz": {
+      "archiveSha256": "ffca6aaaa8438b3f606115576df3498d003e1e9084ba9432a47ae99001064dc1",
+      "rawBytes": 1301340,
+      "rawSha256": "887095ea95f15b3b349babeaafee2f2a522d459ea15e3e13db50a35295aad872"
+    }
+  },
+  "environment": {
+    "callbackPython": "3.12.15",
+    "chromium": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "nativeSelection": "explicit XYG_NATIVE_LIB=checkout/target/release/libxyg_core.so",
+    "node": "22.23.4",
+    "pythonFloor": "3.11.17",
+    "rust": "1.96.0; reused artifact after exact producer identity",
+    "tmpdir": "/var/tmp",
+    "wasm": {
+      "gzip6CapBytes": 786432,
+      "node22Gzip6Bytes": 786154,
+      "rawBytes": 1927066,
+      "rawCapBytes": 1927168
+    }
+  },
+  "limits": [
+    "Fresh evidence is bounded integration, not whole-issue or milestone acceptance.",
+    "Earlier Rust/admission/mutation evidence is inherited after source/artifact equality, not freshly rerun.",
+    "Two initial setup/receipt failures remain failures; complete final reruns are separate.",
+    "Supplied task AGENTS overlay is preserved outside commit; protection verifies its staged Git blob.",
+    "Exact final pre-commit hook/Ruff receipts may follow this manifest; they are returned separately to avoid recursive log binding."
+  ],
+  "logs": {
+    "abi.log.gz": {
+      "archiveSha256": "135de4fa46245b623c5d8acfa3e621c9374a4c0229b173222340fff45c526965",
+      "command": [
+        "python3",
+        "scripts/abi_smoke.py"
+      ],
+      "elapsedSeconds": 0.32329836999997497,
+      "env": {
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/python:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/tests",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/release/libxyg_core.so",
+        "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "exit": 0,
+      "rawBytes": 52,
+      "rawSha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306"
+    },
+    "core-final.log.gz": {
+      "archiveSha256": "ac09962694c2f92eae384bc2df032f833800669001e4b5432e9e2550d363cfc4",
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_release_inventory.py"
+      ],
+      "elapsedSeconds": 9.79675811715424,
+      "env": {
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/python:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/tests",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/release/libxyg_core.so",
+        "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "exit": 0,
+      "rawBytes": 99,
+      "rawSha256": "616d28d4f0414dfcb52365d22b1fa15a137bcbae9e8647aac096833e5ed6557e"
+    },
+    "environment-size.log.gz": {
+      "archiveSha256": "ed91cc2056f826971a5aa866430653ec2852189cd4231f66342d3ec8a520a89b",
+      "rawBytes": 49,
+      "rawSha256": "71533bdf441a4fdaa4d77fac0ebbb316ca0b95f64afa3ba60c685b82f69c0af0",
+      "status": "auxiliary output; no recovered shell exit is inferred"
+    },
+    "format-pointer.log.gz": {
+      "archiveSha256": "fdbb570eed2d1397c30742d976e1a9879bf5951822160c563735a983e98dfa92",
+      "rawBytes": 82,
+      "rawSha256": "7bc544b2fd36190dd9f81dab167a43a844e94e2b353994f40c183be984fd18e5",
+      "status": "auxiliary output; no recovered shell exit is inferred"
+    },
+    "format.log.gz": {
+      "archiveSha256": "d4160c99c20a19850835698ce6871704ebd3836d4c49d75c887d833168460224",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "elapsedSeconds": 0.4159728470258415,
+      "env": {
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/python:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/tests",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/release/libxyg_core.so",
+        "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "exit": 0,
+      "rawBytes": 29,
+      "rawSha256": "74c745446ab59b95d83eae0eb9ca8a207e3c8ae685adb44ba44d09729b09fd50"
+    },
+    "foundation.log.gz": {
+      "archiveSha256": "12ee61f4802fd96c95f122c08022e323db9f6372ac2942242a9bacb61091c900",
+      "command": [
+        "env",
+        "XYG_WASM_FOUNDATION_REPORT=target/task-tmp/public10k-native-main/foundation.json",
+        "node",
+        "scripts/wasm_foundation_smoke.mjs"
+      ],
+      "elapsedSeconds": 53.23783017415553,
+      "env": {
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/python:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/tests",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/release/libxyg_core.so",
+        "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "exit": 0,
+      "rawBytes": 3991,
+      "rawSha256": "5548940b9053f2c80e5a0997a39618b7f6280774bf72ace3c45e9f69ebc2a8e9"
+    },
+    "hooks.log.gz": {
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "elapsedSeconds": 2.212374359369278,
+      "env": {
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/python:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/tests",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/release/libxyg_core.so",
+        "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "exit": 0,
+      "rawBytes": 240,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "inventory-write.log.gz": {
+      "archiveSha256": "231a69ff8b1fd2b2ec8fce2e2aef254467cb5cc37ad1ff2ea9dbef98237ef0e1",
+      "rawBytes": 149,
+      "rawSha256": "8a0f332160bb51b632389a89abdadfc19e4dcd79754c126649fbb041ea2a3dab",
+      "status": "auxiliary output; no recovered shell exit is inferred"
+    },
+    "js-build.log.gz": {
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "exit": 0,
+      "rawBytes": 5448,
+      "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "metadata-final.log.gz": {
+      "archiveSha256": "921355920cc2f79ba0d2820debe0aea2b311771715f049dfab90f9b6b180d2b1",
+      "command": [
+        "python3",
+        "target/task-tmp/public10k-native-main/metadata.py"
+      ],
+      "elapsedSeconds": 10.893661031033844,
+      "env": {
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/python:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/tests",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/release/libxyg_core.so",
+        "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "exit": 0,
+      "rawBytes": 1259,
+      "rawSha256": "d010b0c8c9862c106f59b8e04b76998c1c08079d1724d9a3b799b7424ecddfa8"
+    },
+    "metadata.log.gz": {
+      "archiveSha256": "eca5a5c8ec10afb2046a8c5fe4fbd79ce40704876ed3b921a60adb77edcaf12b",
+      "command": [
+        "python3",
+        "target/task-tmp/public10k-native-main/metadata.py"
+      ],
+      "elapsedSeconds": 14.745006799232215,
+      "env": {
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/python:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/tests",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/release/libxyg_core.so",
+        "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "exit": 1,
+      "rawBytes": 1912,
+      "rawSha256": "ef12b51e8445fa01ac83164f171a32740dc38287d5327b3ec557366175593113"
+    },
+    "node-focused.log.gz": {
+      "archiveSha256": "e043a5d3f809d83fc804e1c50f152d342f0d4e43b2ffe4d1064968dbca1b688d",
+      "command": [
+        "node",
+        "--test",
+        "packages/xy-node/test/graph-session-wire.test.mjs",
+        "packages/xy-node/test/chunked-columns.test.mjs",
+        "packages/xy-node/test/geo-temporal-binding.test.mjs",
+        "packages/xy-node/test/temporal-controller.test.mjs",
+        "packages/xy-node/test/temporal-graph-publication.test.mjs"
+      ],
+      "elapsedSeconds": 2.0085880761034787,
+      "env": {
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/python:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/tests",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/release/libxyg_core.so",
+        "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "exit": 0,
+      "rawBytes": 13389,
+      "rawSha256": "a4bdb19b05ccc7fb35ea5ffe337dbefd96b06acdedfecba71c656420e441717d"
+    },
+    "protection-final.log.gz": {
+      "archiveSha256": "4059dd69061ae234842a7c2f004990bc867c64c42f2e41c27015a4ca3045c31f",
+      "rawBytes": 153,
+      "rawSha256": "61d698f34e97ddb29274fcbeb44cb3f0cecb1bd4a51476e04b8ba5867be85a4c",
+      "status": "auxiliary output; no recovered shell exit is inferred"
+    },
+    "protection.log.gz": {
+      "archiveSha256": "4059dd69061ae234842a7c2f004990bc867c64c42f2e41c27015a4ca3045c31f",
+      "rawBytes": 153,
+      "rawSha256": "61d698f34e97ddb29274fcbeb44cb3f0cecb1bd4a51476e04b8ba5867be85a4c",
+      "status": "auxiliary output; no recovered shell exit is inferred"
+    },
+    "public10k-replay.log.gz": {
+      "archiveSha256": "c8f531a726c6e2133f7a4e2f50d33027f7427a96138543cfa5ad00430e99e8bf",
+      "command": [
+        "node",
+        "scripts/graph_session_public10k_replay.mjs",
+        "target/task-tmp/public10k-native-main/public10k.json"
+      ],
+      "elapsedSeconds": 10.609313562978059,
+      "env": {
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/python:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/tests",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/release/libxyg_core.so",
+        "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "exit": 0,
+      "rawBytes": 206,
+      "rawSha256": "930064a076f6c44228f3389f868aa3a7e417c1c0369bbe59e0fc49127b50ab86"
+    },
+    "public10k.log.gz": {
+      "archiveSha256": "24238ffba6de8089070467464aeef744fd6d4e4ef0063742438726783c5084f2",
+      "command": [
+        "env",
+        "XYG_GRAPH_SESSION_REPORT=target/task-tmp/public10k-native-main/public10k.json",
+        "node",
+        "scripts/graph_session_public10k_smoke.mjs"
+      ],
+      "elapsedSeconds": 23.942991404794157,
+      "env": {
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/python:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/tests",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/release/libxyg_core.so",
+        "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "exit": 0,
+      "rawBytes": 293,
+      "rawSha256": "9504f682bea23919bfbc3913c6a4fd6411cfc35a4c1b22a692ed226f95f5a7e8"
+    },
+    "python311-final.log.gz": {
+      "archiveSha256": "020d2e55cc616afe340567c6d317ad9992e8ebd79010041c018483e621ba69fa",
+      "command": [
+        "/home/ubuntu/.t3/worktrees/xyg/t3-150befc0/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_geo_temporal_binding.py",
+        "tests/test_temporal_controller.py",
+        "tests/test_graph_session_python_transport.py",
+        "tests/test_graph_session_abi.py",
+        "tests/test_chunked_columns.py",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_release_inventory.py"
+      ],
+      "elapsedSeconds": 19.7858375296928,
+      "env": {
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/python:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/tests",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/release/libxyg_core.so",
+        "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "exit": 0,
+      "rawBytes": 1008,
+      "rawSha256": "cc8ff7deb8e837ca7960ba4f550d079941ec67846a727b9f3edceacb7dd24e34"
+    },
+    "python311.log.gz": {
+      "archiveSha256": "36b908072e6b2849e7f81cc6a4bec684110426104594a76364789dad69b7ff72",
+      "command": [
+        "/home/ubuntu/.t3/worktrees/xyg/t3-150befc0/.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_geo_temporal_binding.py",
+        "tests/test_temporal_controller.py",
+        "tests/test_graph_session_python_transport.py",
+        "tests/test_graph_session_abi.py",
+        "tests/test_chunked_columns.py",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_release_inventory.py"
+      ],
+      "elapsedSeconds": 18.97994774300605,
+      "env": {
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/python:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/tests",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/release/libxyg_core.so",
+        "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "exit": 1,
+      "rawBytes": 2599,
+      "rawSha256": "0f4cdb05266d74ad82d1301894b3db8245d235bafbb651e75f3057d4c721ae6c"
+    },
+    "python312-callbacks.log.gz": {
+      "archiveSha256": "b939e62bbd172f6090ad27ffa9586fe5d3d8dbf11593a6efb1c644cf457e887d",
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/test_graph_session_python_transport.py",
+        "-k",
+        "constructor_input_callbacks or command_buffer_callback"
+      ],
+      "elapsedSeconds": 2.4498608401045203,
+      "env": {
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/python:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/tests",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/release/libxyg_core.so",
+        "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "exit": 0,
+      "rawBytes": 113,
+      "rawSha256": "36ef62ae3f3e2fb5db9723a2c99166dcebb3deece744e2487e0ac8fca039c323"
+    },
+    "ruff.log.gz": {
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "elapsedSeconds": 0.8838295568712056,
+      "env": {
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/python:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/tests",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/release/libxyg_core.so",
+        "XYG_TEST_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+      },
+      "exit": 0,
+      "rawBytes": 19,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    }
+  },
+  "orderedParents": [
+    "bea7eab191e6ff54b1999087edf23b3d98695899",
+    "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+  ],
+  "schemaVersion": 1,
+  "sourceSha256": {
+    "spec/performance/public10k-native-main-integration-2026-11-07/README.md": "ad92fa72ae3bfc54033fac9a08a9e1f479733df21c3dd249631a408103c901c6",
+    "spec/performance/public10k-native-main-integration-2026-11-07/current-bindings.json": "80fb40f293b6a3f0e2660bf10478bd0d4e97899f565803735f156f377fdad6cc",
+    "spec/performance/public10k-native-main-integration-2026-11-07/inventory-union.json": "ba950257a987a2671368105499d255f605225878fc2521b66ab7980d41971887",
+    "spec/performance/public10k-native-main-integration-2026-11-07/producer-inputs.json": "c0f83e4fe08497d1997ca282a8ccfa94a9e98f1a75f27b87e2a4a84bad42cb12",
+    "spec/performance/public10k-native-main-integration-2026-11-07/protection.json": "c9199d7d06f5021a6d2eb5d0ecd78944c30317cefa6823c1b1a131018a59180f",
+    "spec/performance/public10k-native-main-integration-2026-11-07/test-union.json": "1cc4b800e78c0643d54b6b6d7945e34a1f0d3ef886c8e6be237ba74e40e3aa53"
+  }
+}

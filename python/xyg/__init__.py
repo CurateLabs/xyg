@@ -31,6 +31,8 @@ from typing import TYPE_CHECKING, Any
 __version__: str
 
 _EXPORTS = {
+    "TemporalChart": ".components",
+    "temporal_chart": ".components",
     "Annotation": ".components",
     "Animation": ".components",
     "Axis": ".components",
@@ -201,6 +203,7 @@ __all__ = [
     "RetainedGeoSource",
     "Selection",
     "Spring",
+    "TemporalChart",
     "TemporalController",
     "TemporalGraph",
     "TemporalGraphError",
@@ -279,6 +282,7 @@ __all__ = [
     "stem_chart",
     "step",
     "step_chart",
+    "temporal_chart",
     "text",
     "theme",
     "theta_axis",
@@ -378,6 +382,7 @@ if TYPE_CHECKING:
         Mark,
         Modebar,
         Spring,
+        TemporalChart,
         Theme,
         Tooltip,
         animation,
@@ -442,6 +447,7 @@ if TYPE_CHECKING:
         stem_chart,
         step,
         step_chart,
+        temporal_chart,
         text,
         theme,
         theta_axis,

@@ -1,0 +1,152 @@
+{
+  "cold": {
+    "default1k": {
+      "status": "refused",
+      "code": "GF_INTERACTION_BUDGET"
+    },
+    "views": [
+      {
+        "instance": "7101",
+        "sourceNodes": 10000,
+        "sourceEdges": 10000,
+        "arena": 402653184,
+        "firstPaintMs": 548.6999998092651,
+        "workerReadyMs": 30.59999990463257,
+        "progressionMs": 18273.699999809265,
+        "frames": 60,
+        "maxFrameGapMs": 575.8000001907349,
+        "maxHeartbeatGapMs": 539.0,
+        "completedSteps": "458",
+        "payloadBytes": {
+          "requests": 703600,
+          "replies": 217871136
+        },
+        "errors": [],
+        "disposed": true,
+        "held": 0,
+        "selected": [
+          {
+            "kind": 0,
+            "uuid": "10270000-0000-0000-0000-000000000000"
+          }
+        ],
+        "camera": [
+          0.01,
+          0.01,
+          332,
+          160,
+          640,
+          320,
+          1
+        ]
+      },
+      {
+        "instance": "7102",
+        "sourceNodes": 1000,
+        "sourceEdges": 1000,
+        "arena": 402653184,
+        "firstPaintMs": 188.69999980926514,
+        "workerReadyMs": 32.799999713897705,
+        "progressionMs": 13779.400000095367,
+        "frames": 59,
+        "maxFrameGapMs": 415.2000002861023,
+        "maxHeartbeatGapMs": 535.1999998092651,
+        "completedSteps": "458",
+        "payloadBytes": {
+          "requests": 81960,
+          "replies": 21393232
+        },
+        "errors": [],
+        "disposed": true,
+        "held": 0,
+        "selected": [],
+        "camera": [
+          0.25,
+          0.25,
+          320,
+          160,
+          640,
+          320,
+          1
+        ]
+      }
+    ],
+    "node": "v22.23.4",
+    "browser": "156.0.8078.4"
+  },
+  "warm": {
+    "default1k": {
+      "status": "refused",
+      "code": "GF_INTERACTION_BUDGET"
+    },
+    "views": [
+      {
+        "instance": "7101",
+        "sourceNodes": 10000,
+        "sourceEdges": 10000,
+        "arena": 402653184,
+        "firstPaintMs": 557.1999998092651,
+        "workerReadyMs": 30.300000190734863,
+        "progressionMs": 18308.400000095367,
+        "frames": 60,
+        "maxFrameGapMs": 592.8999996185303,
+        "maxHeartbeatGapMs": 536.9000000953674,
+        "completedSteps": "458",
+        "payloadBytes": {
+          "requests": 703600,
+          "replies": 217871280
+        },
+        "errors": [],
+        "disposed": true,
+        "held": 0,
+        "selected": [
+          {
+            "kind": 0,
+            "uuid": "10270000-0000-0000-0000-000000000000"
+          }
+        ],
+        "camera": [
+          0.01,
+          0.01,
+          332,
+          160,
+          640,
+          320,
+          1
+        ]
+      },
+      {
+        "instance": "7102",
+        "sourceNodes": 1000,
+        "sourceEdges": 1000,
+        "arena": 402653184,
+        "firstPaintMs": 178.80000019073486,
+        "workerReadyMs": 36.80000019073486,
+        "progressionMs": 15792.5,
+        "frames": 59,
+        "maxFrameGapMs": 432.09999990463257,
+        "maxHeartbeatGapMs": 537.8000001907349,
+        "completedSteps": "458",
+        "payloadBytes": {
+          "requests": 81960,
+          "replies": 21393232
+        },
+        "errors": [],
+        "disposed": true,
+        "held": 0,
+        "selected": [],
+        "camera": [
+          0.25,
+          0.25,
+          320,
+          160,
+          640,
+          320,
+          1
+        ]
+      }
+    ],
+    "node": "v22.23.4",
+    "browser": "156.0.8078.4"
+  }
+}

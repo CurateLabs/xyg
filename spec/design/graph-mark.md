@@ -454,6 +454,15 @@ Rules:
   still waits for exit. Emergency termination cannot guarantee cooperative
   handle destruction and is not the normal cancellation path. Native calls
   remain synchronous and cannot be interrupted cooperatively within a chunk.
+- The Node parent latches cancellation in a private four-byte shared atomic
+  flag before sending the port message. The Worker checks this flag before
+  native allocation and at each chunk boundary, so cancellation during module
+  initialization cannot be lost before its message listener exists. A cancel
+  after allocation but before the first tick destroys that handle without
+  ticking. The signal-registration and structured-clone paths retain the first
+  cause; a constructed Worker must exit before caller settlement even when a
+  clone getter synchronously cancels construction. The flag is lifecycle
+  metadata only; it carries no source or paint plane and changes no native ABI.
 - First paint: `grid`/`circle` seed or N quick ticks, then refine.
 - Same ABI for Python and Node → parity at scale.
 
@@ -469,6 +478,12 @@ complete-callback failure, native failure, no callback, callback-step mutation, 
 unresponsive checkpoint exercise the remaining lifecycle paths. The same
 callback/abort/timeout/completion cases also wrap the actual ABI/Koffi functions
 and observe real destroy return and worker exit, without a public debug API.
+Eight additional native/fake-ABI cases use explicit barriers for startup abort,
+startup timeout, constructor-getter abort and post-allocation abort. Queued
+startup cancellation must allocate no force handle; post-allocation cancellation
+must destroy its one handle before any native tick. Each requires cancellation
+receipt, real exit and only then settlement, with no emergency termination.
+The 250ms wall budget and 1000ms emergency grace remain unchanged.
 
 Reproduce against a freshly built native core with either supported Node binary:
 

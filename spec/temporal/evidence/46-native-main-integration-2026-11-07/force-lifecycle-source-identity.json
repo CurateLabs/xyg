@@ -1,0 +1,8 @@
+{
+  "parentExact": true,
+  "sourceSha256": {
+    "packages/xy-node/src/force_scheduler.js": "27d32cf47c236ddabb780667c0aa0c63f8eef3aedd2c39dc832a8a923697755c",
+    "packages/xy-node/test/force-worker-lifecycle.test.mjs": "b9897c0def45b28affd1d9c8c1089f7ddc7975bd104af5c13fad64bbf60eb17d"
+  },
+  "qualification": "The first concurrent full Node run hit emergency termination in the unchanged native timeout case. This identifies source preservation, not a resolved scheduling/cleanup concern or a passing run."
+}
