@@ -113,3 +113,25 @@ test("resident overlap reuses native chunks across read modes", () => {
     assert.throws(() => columns.read([4, 11], { budgetBytes: 64, generation: 4 }), /needs 128 bytes/);
   } finally { columns.close(); rmSync(dir, { recursive: true }); }
 });
+
+
+test("chart overview, paged viewport, reuse, generation and disposal", () => {
+  const dir = mkdtempSync(join(tmpdir(), "xyg-chart-")), path = join(dir, "chart.xygc");
+  const rows = overviewArtifact(path), columns = new ChunkedColumns(path);
+  try {
+    const overview = columns.chart(null, {maxPoints: 5});
+    assert.equal(overview.sourceRowIds.length, 5);
+    assert.equal(overview.sourceProvenance.detailRowsRead, 0n);
+    for (const [generation, bounds] of [[1,[2,9]], [2,[5,10]], [3,[6,7]]]) {
+      const chart = columns.chart(bounds, {generation, budgetBytes:256, pageBytes:128});
+      assert.deepEqual(Array.from(chart.sourceRowIds, Number), rows.flatMap(([x],i)=>x>=bounds[0] && x<=bounds[1] ? [i]:[]));
+      chart.buildPayload();
+    }
+    const warm = columns.chart([6,7], {generation:4, budgetBytes:256, pageBytes:128});
+    assert.equal(warm.sourceProvenance.bytesRead, 0n);
+    assert.throws(()=>columns.chart([6,7], {generation:3}), /cancelled/);
+    assert.throws(()=>columns.chart([0,11], {generation:5,budgetBytes:64,pageBytes:64}), /exceeding/);
+    columns.close();
+    assert.throws(()=>columns.chart(), /stale/);
+  } finally { columns.close(); rmSync(dir,{recursive:true}); }
+});

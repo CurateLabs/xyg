@@ -296,6 +296,20 @@ impl Registered {
             self.current_generation.load(Ordering::Acquire) == g
         })
     }
+    /// Admit the complete scene before paging; hosts never truncate or sample.
+    pub fn chart_view(
+        &self,
+        x: (f64, f64),
+        y: Option<(f64, f64)>,
+        budget: u64,
+        page_bytes: u64,
+        generation: u64,
+    ) -> Result<RangeRead, Error> {
+        self.store
+            .read_chart(x, y, budget, page_bytes, generation, |g| {
+                self.current_generation.load(Ordering::Acquire) == g
+            })
+    }
     pub fn read_page(
         &self,
         x0: f64,
@@ -678,6 +692,65 @@ impl ChunkedColumns {
         Ok(out)
     }
 
+    /// Exact chart snapshot assembled from existing bounded pages. Complete
+    /// canonical admission is independent of cache hits and happens before I/O.
+    pub fn read_chart<F>(
+        &self,
+        x: (f64, f64),
+        y: Option<(f64, f64)>,
+        budget: u64,
+        page_bytes: u64,
+        generation: u64,
+        mut current: F,
+    ) -> Result<RangeRead, Error>
+    where
+        F: FnMut(u64) -> bool,
+    {
+        if page_bytes == 0
+            || page_bytes > budget
+            || !x.0.is_finite()
+            || !x.1.is_finite()
+            || x.0 > x.1
+            || y.is_some_and(|(a, b)| !a.is_finite() || !b.is_finite() || a > b)
+        {
+            return Err(Error::InvalidRange);
+        }
+        if !current(generation) {
+            return Err(Error::Cancelled);
+        }
+        let first = self.metadata.partition_point(|m| m.x_max < x.0);
+        let end = self.metadata.partition_point(|m| m.x_min <= x.1);
+        let needed = self.metadata[first.min(end)..end]
+            .iter()
+            .filter(|m| !y.is_some_and(|(a, b)| m.y_max < a || m.y_min > b))
+            .try_fold(0u64, |n, m| {
+                n.checked_add(u64::from(m.row_count) * ROW_BYTES)
+            })
+            .ok_or(Error::Corrupt("chart size overflow"))?;
+        if needed > budget {
+            return Err(Error::BudgetExceeded { needed, budget });
+        }
+        let mut page = self.read_range_page(x, y, page_bytes, generation, 0, &mut current)?;
+        let mut result = page.read;
+        while !page.done {
+            page =
+                self.read_range_page(x, y, page_bytes, generation, page.next_chunk, &mut current)?;
+            result.x.append(&mut page.read.x);
+            result.y.append(&mut page.read.y);
+            result.row_ids.append(&mut page.read.row_ids);
+            result.accesses.append(&mut page.read.accesses);
+            result.evicted_chunks.append(&mut page.read.evicted_chunks);
+            result.chunks_considered += page.read.chunks_considered;
+            result.chunks_read += page.read.chunks_read;
+            result.bytes_read += page.read.bytes_read;
+            result.resident_bytes = page.read.resident_bytes;
+        }
+        if !current(generation) {
+            return Err(Error::Cancelled);
+        }
+        Ok(result)
+    }
+
     /// Read the next whole-chunk-bounded page of an exact viewport. `cursor`
     /// is an opaque absolute chunk position returned by the preceding page;
     /// zero starts at Rust's zone-map-selected first chunk. A page never reads
@@ -972,6 +1045,45 @@ mod tests {
                 .unwrap()
                 .as_nanos()
         ))
+    }
+
+    #[test]
+    fn chart_pages_keep_identity_admission_and_cancellation() {
+        let p = path("chart-pages");
+        let rows: Vec<_> = (0..40).map(|i| ((i / 2) as f64, (i % 7) as f64)).collect();
+        ChunkedColumns::create(&p, rows.iter().copied(), 4).unwrap();
+        let store = ChunkedColumns::open(&p).unwrap();
+        let read = store
+            .read_chart((2., 12.), Some((1., 5.)), 640, 128, 3, |_| true)
+            .unwrap();
+        let oracle: Vec<_> = rows
+            .iter()
+            .enumerate()
+            .filter(|(_, (x, y))| *x >= 2. && *x <= 12. && *y >= 1. && *y <= 5.)
+            .map(|(i, _)| i as u64)
+            .collect();
+        assert_eq!(read.row_ids, oracle);
+        assert!(read.accesses.len() > 1);
+        assert!(matches!(
+            store.read_chart((0., 19.), None, 64, 64, 4, |_| true),
+            Err(Error::BudgetExceeded {
+                needed: 640,
+                budget: 64
+            })
+        ));
+        assert!(matches!(
+            store.read_chart((0., 19.), None, 640, 64, 4, |_| false),
+            Err(Error::Cancelled)
+        ));
+        let mut checks = 0;
+        assert!(matches!(
+            store.read_chart((0., 19.), None, 640, 64, 4, |_| {
+                checks += 1;
+                checks < 20
+            }),
+            Err(Error::Cancelled)
+        ));
+        std::fs::remove_file(p).unwrap();
     }
 
     #[test]
@@ -1401,11 +1513,10 @@ mod tests {
         assert_eq!(full.points.last().unwrap().row, rows.len() as u64 - 1);
         assert_eq!(full.source_rows, rows.len() as u64);
         assert!(full.points.windows(2).all(|pair| pair[0].row < pair[1].row));
-        assert!(
-            full.points
-                .iter()
-                .all(|point| rows[point.row as usize] == (point.x, point.y))
-        );
+        assert!(full
+            .points
+            .iter()
+            .all(|point| rows[point.row as usize] == (point.x, point.y)));
 
         let bounded = store.overview(37).unwrap();
         assert_eq!(bounded.points.len(), 37);

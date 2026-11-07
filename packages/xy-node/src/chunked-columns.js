@@ -1,8 +1,9 @@
+import { scatterChart } from "./charts.js";
 /** Thin Node host for Rust-owned ordered Tier-3 XYGC range reads. */
 import {
   pointer, xyChunkedColumnsCancelBefore, xyChunkedColumnsFree,
   xyChunkedColumnsOpen, xyChunkedColumnsOverview, xyChunkedColumnsRead, xyChunkedColumnsReadPage,
-  xyChunkedColumnsRows,
+  xyChunkedColumnsRows, xyChunkedColumnsChart,
 } from "./native.js";
 
 export class ChunkedColumns {
@@ -10,6 +11,7 @@ export class ChunkedColumns {
     const bytes = Buffer.from(String(path), "utf8");
     this.handle = xyChunkedColumnsOpen(pointer(bytes, "uint8_t *"), bytes.length);
     if (this.handle === 0n) throw new Error(`cannot open checked XYGC artifact ${JSON.stringify(String(path))}`);
+    this.path = String(path);
     this.rows = xyChunkedColumnsRows(this.handle);
   }
   overview({ maxPoints = 2048 } = {}) {
@@ -58,6 +60,37 @@ export class ChunkedColumns {
       if (progress.done) return;
       cursor = Number(progress.nextCursor);
     }
+  }
+  /** Standard-renderer overview or exact viewport snapshot. No implicit truncation. */
+  chart(xRange = null, { yRange = null, budgetBytes = 4 << 20, pageBytes = 1 << 20, generation = 0, maxPoints = 2048 } = {}) {
+    if (!Number.isSafeInteger(budgetBytes) || budgetBytes < 16) throw new RangeError("budgetBytes must be at least 16");
+    if (!Number.isSafeInteger(pageBytes) || pageBytes < 16 || pageBytes > budgetBytes) throw new RangeError("pageBytes must be in [16, budgetBytes]");
+    this.cancelBefore(generation);
+    let result;
+    if (xRange === null) {
+      if (yRange !== null) throw new RangeError("yRange requires an explicit xRange");
+      result = this.overview({maxPoints});
+    } else {
+      const capacity = Math.floor(budgetBytes / 16), rowIds = new BigUint64Array(capacity);
+      const x = new Float64Array(capacity), y = new Float64Array(capacity), stats = new BigUint64Array(6);
+      const [y0, y1] = yRange ?? [0, 0];
+      const written = xyChunkedColumnsChart(this.handle, ...xRange, y0, y1, yRange === null ? 0 : 1,
+        BigInt(budgetBytes), BigInt(generation), BigInt(pageBytes), pointer(rowIds, "uint64_t *"),
+        pointer(x, "double *"), pointer(y, "double *"), capacity, pointer(stats, "uint64_t *"));
+      if (written === BigInt("18446744073709551615")) {
+        if (stats[5] === 4n) throw new Error(`chunked-column chart needs ${stats[4]} bytes, exceeding the ${stats[3]}-byte budget`);
+        const reason = ({1: "I/O failure", 2: "corrupt artifact", 3: "invalid viewport bounds", 5: "cancelled by newer viewport", 6: "output capacity too small"})[Number(stats[5])] ?? "invalid request";
+        throw new Error(`chunked-column chart failed: ${reason}`);
+      }
+      const n = Number(written);
+      result = {rowIds: rowIds.slice(0,n), x: x.slice(0,n), y: y.slice(0,n), provenance: {
+        generation: stats[0], firstChunk: stats[1], chunksConsidered: stats[2], chunksRead: stats[3], bytesRead: stats[4],
+      }};
+    }
+    const chart = scatterChart(result.x, result.y);
+    chart.sourceRowIds = result.rowIds;
+    chart.sourceProvenance = {...result.provenance, generation: BigInt(generation), path: this.path};
+    return chart;
   }
   cancelBefore(generation) {
     if (!Number.isSafeInteger(generation) || generation < 0) throw new RangeError("chunked-column generation must be a non-negative safe integer");

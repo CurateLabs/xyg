@@ -986,3 +986,16 @@ ABI 202 Scene product-path ABI 130 time/angular formats (`scene.rs` / `scene_chr
    ABI 201 Scene polar modular theta window / angular labels (`tick_layout.rs` / `scene_chrome.rs` / `scene.rs`) ✅.
    ABI 202 Scene product-path ABI 130 time/angular formats (`scene.rs` / `scene_chrome.rs`) ✅; ABI 203 Scene cartesian ABI 123 collision emit (`scene.rs` / `scene_chrome.rs`) ✅; annotation html fail-closed #305 (`scene_export.rs`) ✅; annotation class_name BROWSER_CSS pin #306 ✅; annotation collision fail-closed #307 (`scene_export.rs`) ✅; annotation markup fail-closed #308 (`scene_export.rs`) ✅; annotation custom typography CUSTOM_FONT pin #309 ✅; compatibility PNG ABI 121 kernels not `_scene.py` #310 ✅.
 5. `stream.rs` append ✅ (Arrow ingest already landed).
+
+
+### 5.1b Bounded chart snapshots (ABI 400)
+
+`Registered::chart_view` / `ChunkedColumns::read_chart` admit all selected chunk
+bytes before I/O, then consume existing `read_range_page` results under a separate
+page cap. Both caps are explicit; hits count toward admission. Rust returns exact
+canonical IDs and f64 values, with aggregate physical-read provenance, and checks
+generation again before final publication. The new C ABI
+`xyg_chunked_columns_chart` transports those IDs and values; its emscripten stub
+fails closed. No browser/WASM file reader is introduced. Existing XYGC versions,
+LRU accounting, overview construction and render kernels remain authoritative.
+See the [scoped chart snapshot contract](tier3-phase4-roadmap.md#bounded-local-chart-snapshots-110-continuation).

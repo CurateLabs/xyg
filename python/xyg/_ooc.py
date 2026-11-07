@@ -218,6 +218,45 @@ class ChunkedColumns:
                 return
             cursor = int(progress["next_cursor"])
 
+    def chart(
+        self,
+        x_range: tuple[float, float] | None = None,
+        y_range: tuple[float, float] | None = None,
+        *,
+        budget_bytes: int = 4 << 20,
+        page_bytes: int = 1 << 20,
+        generation: int = 0,
+        max_points: int = 2048,
+    ):
+        """Compose an overview or an exact bounded viewport with the standard renderer.
+
+        No range reads detail for the initial overview. Explicit ranges use
+        Rust admission and paged selection; an oversized scene fails closed.
+        Returned charts are snapshots. Keep this source open for navigation,
+        then close it deterministically. ``source_row_ids`` and
+        ``source_provenance`` describe the snapshot's canonical source.
+        """
+        from .components import scatter, scatter_chart
+
+        self.cancel_before(generation)
+        if x_range is None:
+            if y_range is not None:
+                raise ValueError("y_range requires an explicit x_range")
+            row_ids, x, y, provenance = self.overview(max_points=max_points)
+        else:
+            row_ids, x, y, provenance = _native.chunked_columns_chart(
+                self._handle,
+                x_range,
+                y_range,
+                budget_bytes=budget_bytes,
+                page_bytes=page_bytes,
+                generation=generation,
+            )
+        chart = scatter_chart(scatter(x, y))
+        chart.source_row_ids = row_ids
+        chart.source_provenance = {**provenance, "generation": generation, "path": self.path}
+        return chart
+
     def cancel_before(self, generation: int) -> None:
         _native.chunked_columns_cancel_before(self._handle, generation)
 

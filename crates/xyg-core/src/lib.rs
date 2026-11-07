@@ -203,7 +203,7 @@ pub use graphforge_session_ffi::*;
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 399;
+pub const ABI_VERSION: u32 = 400;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -5675,9 +5675,7 @@ pub unsafe extern "C" fn xyg_scene_artist_alpha_css(
     artist: f64,
     out_rgba: *mut u8,
 ) -> i32 {
-    if out_rgba.is_null()
-        || (len > 0 && css.is_null())
-        || len > kernels::MAX_ARTIST_ALPHA_CSS_BYTES
+    if out_rgba.is_null() || (len > 0 && css.is_null()) || len > kernels::MAX_ARTIST_ALPHA_CSS_BYTES
     {
         return -1;
     }
@@ -12375,7 +12373,8 @@ pub extern "C" fn xyg_canonical_drill_estimate(
     y0: f64,
     y1: f64,
 ) -> f64 {
-    xyg_engine::canonical_drill::estimate(rows, [ex0, ex1, ey0, ey1], [x0, x1, y0, y1]).unwrap_or(-1.0)
+    xyg_engine::canonical_drill::estimate(rows, [ex0, ex1, ey0, ey1], [x0, x1, y0, y1])
+        .unwrap_or(-1.0)
 }
 
 /// Approximate counts admit query work only, never certify exact counts.
@@ -13433,6 +13432,26 @@ mod wasm_tile_store_stubs {
         usize::MAX
     }
 
+    #[export_name = "xyg_chunked_columns_chart"]
+    pub unsafe extern "C" fn chunked_columns_chart(
+        _store: u64,
+        _x0: f64,
+        _x1: f64,
+        _y0: f64,
+        _y1: f64,
+        _use_y: i32,
+        _budget_bytes: u64,
+        _generation: u64,
+        _page_bytes: u64,
+        _out_rows: *mut u64,
+        _out_x: *mut f64,
+        _out_y: *mut f64,
+        _capacity: usize,
+        _out_stats: *mut u64,
+    ) -> usize {
+        usize::MAX
+    }
+
     #[export_name = "xyg_chunked_columns_free"]
     pub extern "C" fn chunked_columns_free(_store: u64) -> i32 {
         0
@@ -13580,6 +13599,75 @@ pub unsafe extern "C" fn xyg_chunked_columns_read(
         }
         std::ptr::copy_nonoverlapping(read.x.as_ptr(), out_x, read.x.len());
         std::ptr::copy_nonoverlapping(read.y.as_ptr(), out_y, read.y.len());
+        stats[0..5].copy_from_slice(&[
+            read.generation,
+            u64::from(read.first_chunk),
+            u64::from(read.chunks_considered),
+            u64::from(read.chunks_read),
+            read.bytes_read,
+        ]);
+        read.x.len()
+    })
+}
+
+/// Read an exact chart through bounded pages after complete canonical admission.
+/// `out_stats[0..6]` receives generation, first chunk, chunks considered,
+/// chunks read, bytes read and a stable error code (0 success, 1 I/O,
+/// 2 corrupt, 3 bounds, 4 budget, 5 cancelled, 6 output capacity). Returns rows written, or `usize::MAX` on any
+/// invalid/corrupt/cancelled/out-of-budget request. Hosts may retry with a
+/// larger output capacity; capacity never weakens the read budget.
+///
+/// # Safety
+/// `out_x` and `out_y` must each address `capacity` writable f64 values.
+/// `out_rows` must address `capacity` writable u64 values.
+/// `out_stats` must address six writable u64 values.
+#[cfg(not(target_os = "emscripten"))]
+#[no_mangle]
+pub unsafe extern "C" fn xyg_chunked_columns_chart(
+    store: u64,
+    x0: f64,
+    x1: f64,
+    y0: f64,
+    y1: f64,
+    use_y: i32,
+    budget_bytes: u64,
+    generation: u64,
+    page_bytes: u64,
+    out_rows: *mut u64,
+    out_x: *mut f64,
+    out_y: *mut f64,
+    capacity: usize,
+    out_stats: *mut u64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if out_rows.is_null() || out_x.is_null() || out_y.is_null() || out_stats.is_null() {
+            return usize::MAX;
+        }
+        let Some(s) = chunked_columns::reg_get(store) else {
+            return usize::MAX;
+        };
+        let stats = std::slice::from_raw_parts_mut(out_stats, 6);
+        stats.fill(0);
+        let y = if use_y == 0 { None } else { Some((y0, y1)) };
+        let read = match s.chart_view((x0, x1), y, budget_bytes, page_bytes, generation) {
+            Ok(v) => v,
+            Err(e) => {
+                if let chunked_columns::Error::BudgetExceeded { needed, budget } = &e {
+                    stats[3] = *budget;
+                    stats[4] = *needed;
+                }
+                stats[5] = e.code();
+                return usize::MAX;
+            }
+        };
+        if read.x.len() > capacity {
+            stats[4] = read.x.len() as u64;
+            stats[5] = 6;
+            return usize::MAX;
+        }
+        std::ptr::copy_nonoverlapping(read.x.as_ptr(), out_x, read.x.len());
+        std::ptr::copy_nonoverlapping(read.y.as_ptr(), out_y, read.y.len());
+        std::ptr::copy_nonoverlapping(read.row_ids.as_ptr(), out_rows, read.row_ids.len());
         stats[0..5].copy_from_slice(&[
             read.generation,
             u64::from(read.first_chunk),
@@ -16931,7 +17019,9 @@ pub unsafe extern "C" fn xyg_graph_edge_route_segments(
     }
     let n = n_nodes as usize;
     let e = n_edges as usize;
-    let Some(cap) = e.checked_mul(xyg_engine::edge_route::edge_route_segments_per_edge(curved != 0)) else {
+    let Some(cap) = e.checked_mul(xyg_engine::edge_route::edge_route_segments_per_edge(
+        curved != 0,
+    )) else {
         return -1;
     };
     if n > 0 && (x.is_null() || y.is_null()) {
@@ -24113,8 +24203,7 @@ pub extern "C" fn xyg_payload_axis_side_resolve(role: i32, authored: i32) -> i32
             0 | 1 => Some(authored as u8),
             _ => return -1,
         };
-        xyg_engine::scene_chrome_pack::resolve_axis_side_code(role, authored)
-            .map_or(-1, i32::from)
+        xyg_engine::scene_chrome_pack::resolve_axis_side_code(role, authored).map_or(-1, i32::from)
     })
 }
 
@@ -28529,25 +28618,37 @@ mod tests {
 
         // Null `out`: sentinel only, nothing to write.
         let mut none: [u8; 0] = [];
-        assert_eq!(export_static_document(&document, 0, &mut none, true), usize::MAX);
+        assert_eq!(
+            export_static_document(&document, 0, &mut none, true),
+            usize::MAX
+        );
 
         // Insufficient capacity and exact length (no room for the NUL):
         // sentinel, buffer untouched.
         for cap in [0, 1, len - 1, len] {
             let mut out = vec![0xa5u8; cap];
-            assert_eq!(export_static_document(&document, 0, &mut out, false), usize::MAX);
+            assert_eq!(
+                export_static_document(&document, 0, &mut out, false),
+                usize::MAX
+            );
             assert!(out.iter().all(|byte| *byte == 0xa5), "cap {cap}");
         }
 
         // `len + 1`: the diagnostic plus its NUL terminator, nothing past it.
         let mut out = vec![0xa5u8; len + 1];
-        assert_eq!(export_static_document(&document, 0, &mut out, false), usize::MAX);
+        assert_eq!(
+            export_static_document(&document, 0, &mut out, false),
+            usize::MAX
+        );
         assert_eq!(&out[..len], reason);
         assert_eq!(out[len], 0);
 
         // Larger buffers: same bytes, the tail stays untouched.
         let mut out = vec![0xa5u8; len + 8];
-        assert_eq!(export_static_document(&document, 4, &mut out, false), usize::MAX);
+        assert_eq!(
+            export_static_document(&document, 4, &mut out, false),
+            usize::MAX
+        );
         assert_eq!(&out[..len], reason);
         assert_eq!(out[len], 0);
         assert!(out[len + 1..].iter().all(|byte| *byte == 0xa5));
@@ -28558,16 +28659,35 @@ mod tests {
         let document = rejected_static_document();
         let mut out = vec![0xa5u8; 512];
         // Unknown format code, null/empty encoded input: no diagnostic.
-        assert_eq!(export_static_document(&document, 99, &mut out, false), usize::MAX);
+        assert_eq!(
+            export_static_document(&document, 99, &mut out, false),
+            usize::MAX
+        );
         assert_eq!(
             unsafe {
-                xyg_static_document_export(std::ptr::null(), 0, 0, 1.0, 90, out.as_mut_ptr(), out.len())
+                xyg_static_document_export(
+                    std::ptr::null(),
+                    0,
+                    0,
+                    1.0,
+                    90,
+                    out.as_mut_ptr(),
+                    out.len(),
+                )
             },
             usize::MAX
         );
         assert_eq!(
             unsafe {
-                xyg_static_document_export(document.as_ptr(), 0, 0, 1.0, 90, out.as_mut_ptr(), out.len())
+                xyg_static_document_export(
+                    document.as_ptr(),
+                    0,
+                    0,
+                    1.0,
+                    90,
+                    out.as_mut_ptr(),
+                    out.len(),
+                )
             },
             usize::MAX
         );
@@ -29802,8 +29922,14 @@ mod tests {
         // 50,000 hexbin cells plus 537 unoutlined 2,000,000-px heatmaps
         // exceed 4 GiB: never a wrapped or saturated "exact" size.
         for len in [max + 1, 1usize << 32, (1usize << 32) + 7, usize::MAX] {
-            assert_eq!(product_output_fit(len, 64), ProductOutputFit::Unrepresentable);
-            assert_eq!(product_output_fit(len, usize::MAX), ProductOutputFit::Unrepresentable);
+            assert_eq!(
+                product_output_fit(len, 64),
+                ProductOutputFit::Unrepresentable
+            );
+            assert_eq!(
+                product_output_fit(len, usize::MAX),
+                ProductOutputFit::Unrepresentable
+            );
         }
     }
 

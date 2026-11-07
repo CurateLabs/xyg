@@ -1,0 +1,2 @@
+/home/ubuntu/.t3/worktrees/xyg/t3-f7cba839/scripts/chunked_chart_evidence.py:84: DeprecationWarning: Image.Image.getdata is deprecated and will be removed in Pillow 14 (2027-10-15). Use get_flattened_data instead.
+  assert len(set(actual_pixels.getdata())) > 16, "blank screenshot"

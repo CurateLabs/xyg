@@ -178,3 +178,41 @@ def test_resident_overlap_reuses_native_chunks_across_read_modes(tmp_path):
         assert pages[0][2]["bytes_read"] == 0
         with pytest.raises(ValueError, match="needs 128 bytes"):
             columns.read((4.0, 11.0), budget_bytes=64, generation=4)
+
+
+def test_chart_overview_viewport_pan_and_disposal(tmp_path):
+    rows = [(float(i), float((i * 7) % 13)) for i in range(40)]
+    path = tmp_path / "chart.xygc"
+    _artifact_with_overview(path, rows)
+    with ChunkedColumns(path) as columns:
+        overview = columns.chart(max_points=7)
+        assert len(overview.source_row_ids) == 7
+        assert overview.source_provenance["detail_rows_read"] == 0
+        overview.figure().build_payload_split()
+        for generation, bounds in enumerate([(5, 15), (9, 19), (10, 11)], 1):
+            chart = columns.chart(bounds, page_bytes=256, budget_bytes=1024, generation=generation)
+            ids = [i for i, (x, _) in enumerate(rows) if bounds[0] <= x <= bounds[1]]
+            assert list(chart.source_row_ids) == ids
+            assert list(chart.children[0].x) == [rows[i][0] for i in ids]
+            chart.figure().build_payload_split()
+        warm = columns.chart((10, 11), page_bytes=256, budget_bytes=1024, generation=4)
+        assert warm.source_provenance["bytes_read"] == 0
+        with pytest.raises(ValueError, match="cancelled by newer viewport"):
+            columns.chart((10, 11), generation=3)
+        with pytest.raises(ValueError, match="exceeding"):
+            columns.chart((0, 39), budget_bytes=64, page_bytes=64, generation=5)
+    with pytest.raises(ValueError, match="stale chunked-column handle"):
+        columns.chart()
+
+
+def test_rendered_chart_snapshot_navigation(tmp_path):
+    import os
+
+    from scripts.chunked_chart_evidence import run
+
+    chromium = os.environ.get("XYG_TEST_CHROMIUM")
+    if not chromium:
+        pytest.skip("set XYG_TEST_CHROMIUM for the headless chart snapshot proof")
+    report = run(tmp_path, chromium)
+    assert len(report["requests"]) == 4
+    assert all(request["exact_pixel_match"] for request in report["requests"])
