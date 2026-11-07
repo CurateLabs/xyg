@@ -247,7 +247,7 @@ A newer camera or time invalidates running work at publication; admitted native
 reads finish before the latest query runs. This is bounded stale suppression,
 not immediate interruption of a storage callback. Failures leave the accepted
 frame and its exact provenance intact and are available as `binding.error`.
-No automatic retry loop runs. Revision exhaustion fails closed.
+A notification arriving between pump completion and its completion reaction still schedules the newest intent; idle waits include that successor. No automatic retry of the same failed intent runs. Revision exhaustion fails closed.
 
 Python `await binding.snapshot()` returns `(chart, frame)`; Node returns
 `{chart, frame}`. The chart is the exact public composition that produced this

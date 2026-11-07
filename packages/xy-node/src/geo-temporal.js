@@ -21,6 +21,15 @@ function copyChart(chart) {
   return new chart.constructor(layers,{camera:structuredClone(chart.camera),legend:structuredClone(chart.legend),budget:chart.budget,tileSession:chart.tileSession,tileVectorStyles:structuredClone(chart.tileVectorStyles),tileImageId:chart.tileImageId});
 }
 
+function startPump(binding) {
+  binding.pumping=true;
+  binding.running=binding.pump().then(drained=>{
+    binding.pumping=false;
+    // A notification may arrive after pump() returns but before this reaction.
+    // Restart only for a new intent; failures of the same intent are not retried.
+    if(!binding.closed && drained!==binding.generation)startPump(binding);
+  },error=>{binding.pumping=false;throw error;});
+}
 export class GeoTemporalBinding {
   #frame; #chart; #query; #retiring;
   constructor(chart, handle, mode = 'cursor') {
@@ -59,8 +68,7 @@ export class GeoTemporalBinding {
   schedule() {
     this.generation++;
     if(this.pumping)return;
-    this.pumping=true;
-    this.running=this.pump().finally(()=>{this.pumping=false;});
+    startPump(this);
   }
   async pump() {
     while(!this.closed) {
@@ -81,7 +89,7 @@ export class GeoTemporalBinding {
           }
         }catch(error){this.error=error;}
       });
-      if(generation===this.generation)return;
+      if(generation===this.generation)return generation;
     }
   }
   setCamera(camera) {

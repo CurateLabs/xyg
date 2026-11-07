@@ -168,3 +168,19 @@ test('binding refused during terminal notification leaves no source registration
   other=create(47n);binding=chart.bindTemporal(other);await binding.whenIdle();assert.equal(binding.error,undefined);
  }finally{stop();await binding?.dispose();await source.dispose();for(const handle of [h,other])if(handle!==undefined)try{temporalControllerDestroy(handle);}catch{}}
 });
+
+test('latest controller intent at the pump completion boundary is not lost',async()=>{
+ let q,style;const packets=await fixture(undefined,async(_,f)=>{q=f.query;style=f.style;});
+ const bytes=h=>Uint8Array.from(Buffer.from(h,'hex')).buffer;
+ const source=await RetainedGeoSource.create(bytes(packets.manifest),async()=>bytes(packets.chunk),{budget});
+ q={...q,timeRevision:0n,cameraRevision:0n};const chart=geoChart(geoLayer('points',{source,layerId:U64,query:q,sequence:1n,style}),{camera:q.camera});
+ const h=temporalControllerCreate({instanceId:48n,domainStart:-10n,domainEnd:10n,cursor:0n,window:0n,step:1n}),binding=chart.bindTemporal(h);let frame;
+ try{
+  await binding.whenIdle();temporalControllerSetCursor(h,1n);
+  // Arrange a real controller mutation when the admitted operation settles,
+  // before the pump's completion reaction. All computation remains native.
+  const changed=binding.lock.then(()=>temporalControllerSetCursor(h,2n));
+  await changed;await binding.whenIdle();({frame}=await binding.snapshot());
+  assert.equal(temporalControllerState(h).cursor,2n);assert.equal(frame.data.identity.time.instant,2n);
+ }finally{await binding.dispose();await frame?.dispose();await source.dispose();temporalControllerDestroy(h);}
+});

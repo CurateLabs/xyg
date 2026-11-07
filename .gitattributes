@@ -181,3 +181,7 @@ spec/design/temporal-controller.md text eol=lf
 spec/performance/geo-binding-terminal-state-2026-11-07/*.json text eol=lf
 spec/performance/geo-binding-terminal-state-2026-11-07/*.md text eol=lf
 spec/performance/geo-binding-terminal-state-2026-11-07/*.gz -text
+
+spec/performance/geo-binding-pump-boundary-2026-11-07/*.json text eol=lf
+spec/performance/geo-binding-pump-boundary-2026-11-07/*.md text eol=lf
+spec/performance/geo-binding-pump-boundary-2026-11-07/*.gz -text
