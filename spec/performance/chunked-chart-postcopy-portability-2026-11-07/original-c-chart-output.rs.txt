@@ -1,0 +1,55 @@
+pub unsafe extern "C" fn xyg_chunked_columns_chart(
+    store: u64,
+    x0: f64,
+    x1: f64,
+    y0: f64,
+    y1: f64,
+    use_y: i32,
+    budget_bytes: u64,
+    generation: u64,
+    page_bytes: u64,
+    out_rows: *mut u64,
+    out_x: *mut f64,
+    out_y: *mut f64,
+    capacity: usize,
+    out_stats: *mut u64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if out_rows.is_null() || out_x.is_null() || out_y.is_null() || out_stats.is_null() {
+            return usize::MAX;
+        }
+        let Some(s) = chunked_columns::reg_get(store) else {
+            return usize::MAX;
+        };
+        let stats = std::slice::from_raw_parts_mut(out_stats, 6);
+        stats.fill(0);
+        let y = if use_y == 0 { None } else { Some((y0, y1)) };
+        let read = match s.chart_view((x0, x1), y, budget_bytes, page_bytes, generation) {
+            Ok(v) => v,
+            Err(e) => {
+                if let chunked_columns::Error::BudgetExceeded { needed, budget } = &e {
+                    stats[3] = *budget;
+                    stats[4] = *needed;
+                }
+                stats[5] = e.code();
+                return usize::MAX;
+            }
+        };
+        if read.x.len() > capacity {
+            stats[4] = read.x.len() as u64;
+            stats[5] = 6;
+            return usize::MAX;
+        }
+        std::ptr::copy_nonoverlapping(read.x.as_ptr(), out_x, read.x.len());
+        std::ptr::copy_nonoverlapping(read.y.as_ptr(), out_y, read.y.len());
+        std::ptr::copy_nonoverlapping(read.row_ids.as_ptr(), out_rows, read.row_ids.len());
+        stats[0..5].copy_from_slice(&[
+            read.generation,
+            u64::from(read.first_chunk),
+            u64::from(read.chunks_considered),
+            u64::from(read.chunks_read),
+            read.bytes_read,
+        ]);
+        read.x.len()
+    })
+}

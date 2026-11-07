@@ -198,3 +198,10 @@ uv run python scripts/gen_capability_matrix.py --write
 ```
 
 `--check` fails if this file is stale, and the test suite runs it.
+
+Local ordered XYGC files additionally support bounded **programmatic scatter
+snapshots** in Python and Node: stored overview and Rust-selected exact viewport
+pages, canonical row identity and auditable physical reads. This uses the existing
+scatter renderer; it introduces no chart family or competitor performance claim.
+It does not qualify automatic live refinement, direct browser/WASM file access,
+or larger-than-RAM scale. See [the scoped contract](../design/tier3-phase4-roadmap.md#bounded-local-chart-snapshots-110-continuation).

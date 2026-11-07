@@ -118,3 +118,61 @@ spec/performance/temporal-graph-main-integration-2026-11-07/*.gz -text
 spec/performance/temporal-graph-main-integration-2026-11-07/*.png -text
 spec/design/build-ci.md text eol=lf
 spec/design/graph-interaction.md text eol=lf
+# Current-source bindings for the chart snapshot review correction.
+.github/workflows/ci.yml text eol=lf
+crates/xyg-core/src/lib.rs text eol=lf
+crates/xyg-engine/src/chunked_columns.rs text eol=lf
+packages/xy-node/src/_abi_generated.js text eol=lf
+packages/xy-node/src/chunked-columns.js text eol=lf
+packages/xy-node/test/chunked-columns.test.mjs text eol=lf
+python/xyg/_abi_generated.py text eol=lf
+python/xyg/_native.py text eol=lf
+python/xyg/_ooc.py text eol=lf
+scripts/verify_ci_workflow.py text eol=lf
+spec/abi/xyg-abi.json text eol=lf
+spec/abi/xyg.h text eol=lf
+spec/design/rust-engine.md text eol=lf
+spec/design/tier3-phase4-roadmap.md text eol=lf
+spec/releases/0.6.0-api-inventory.json text eol=lf
+tests/test_chunked_columns.py text eol=lf
+tests/test_graphforge_contract_corpus.py text eol=lf
+tests/test_verify_ci_workflow.py text eol=lf
+spec/performance/chunked-chart-review-repair-2026-11-07/*.json text eol=lf
+spec/performance/chunked-chart-review-repair-2026-11-07/*.md text eol=lf
+spec/performance/chunked-chart-review-repair-2026-11-07/*.gz -text
+
+scripts/chunked_chart_evidence.py text eol=lf
+spec/design/tier3-testing.md text eol=lf
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.json text eol=lf
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.md text eol=lf
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.txt text eol=lf
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.gz -text
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.py text eol=lf
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.png -text
+spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.xygc -text
+
+# Append-only PR1110 ABI fixture refresh and current source bindings.
+spec/performance/pr1110-abi-fixtures-2026-11-07/*.json text eol=lf
+spec/performance/pr1110-abi-fixtures-2026-11-07/*.md text eol=lf
+spec/performance/pr1110-abi-fixtures-2026-11-07/predecessor/*.json text eol=lf
+tests/test_cross_host_abi_transition.py text eol=lf
+tests/test_graph_session_python_transport.py text eol=lf
+spec/design/graph-session-python-transport.md text eol=lf
+tests/fixtures/*_cross_host.json text eol=lf
+
+# Current notebook verifier ABI correction evidence.
+spec/performance/pr1110-notebook-abi-2026-11-07/*.json text eol=lf
+spec/performance/pr1110-notebook-abi-2026-11-07/*.md text eol=lf
+spec/performance/pr1110-notebook-abi-2026-11-07/*.gz -text
+
+# Combined accepted-main / PR1110 integration evidence.
+spec/performance/pr1110-main-integration-2026-11-07/*.json text eol=lf
+spec/performance/pr1110-main-integration-2026-11-07/*.md text eol=lf
+spec/performance/pr1110-main-integration-2026-11-07/*.gz -text
+spec/performance/pr1110-main-integration-2026-11-07/*.png -text
+spec/design/build-ci.md text eol=lf
+spec/design/graph-interaction.md text eol=lf
+spec/design/graphforge-node-scheduling.md text eol=lf
+spec/performance/graph-browser-scheduling-1k-2026-11-07/*.md text eol=lf
+spec/performance/graph-browser-scheduling-1k-2026-11-07/*.json text eol=lf
+spec/performance/graph-browser-scheduling-1k-2026-11-07/*.py text eol=lf
