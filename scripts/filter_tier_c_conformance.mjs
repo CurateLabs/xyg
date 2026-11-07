@@ -1,13 +1,19 @@
 #!/usr/bin/env node
-// Bounded real Chromium Worker/programmatic journey. No renderer/FPS claim.
+// Bounded real Chromium Worker, composed density, pointer and keyboard journey.
+import {
+  densityAssets,
+  runLinkedDensityBrowser,
+} from "./filter_density_browser.mjs";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 const root = fileURLToPath(new URL("../", import.meta.url));
+const density = await densityAssets(new URL("../", import.meta.url));
 const allowed = new Set([
+  "/tests/fixtures/filter_tier_c/density.bin",
   "/packages/xy-client/dist/index.js",
   "/packages/xy-client/dist/wasm-worker.js",
   "/packages/xy-client/dist/xyg-wasm.wasm",
@@ -17,11 +23,17 @@ const server = createServer(async (req, res) => {
   const path = new URL(req.url, "http://localhost").pathname;
   res.setHeader(
     "Content-Security-Policy",
-    "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'",
+    "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; style-src 'unsafe-inline'",
   );
   if (path === "/") {
     res.setHeader("Content-Type", "text/html");
     res.end("<!doctype html><title>Filter session conformance</title>");
+    return;
+  }
+  if (density.has(path)) {
+    const asset = density.get(path);
+    res.setHeader("Content-Type", asset.type);
+    res.end(asset.data);
     return;
   }
   if (!allowed.has(path)) {
@@ -47,10 +59,17 @@ const flag = process.argv.indexOf("--chromium"),
   executablePath = flag < 0 ? process.env.XYG_CHROMIUM : process.argv[flag + 1];
 const browser = await chromium.launch({
   headless: true,
+  args: [
+    "--use-gl=angle",
+    "--use-angle=swiftshader",
+    "--enable-unsafe-swiftshader",
+  ],
   ...(executablePath ? { executablePath: resolve(executablePath) } : {}),
 });
 try {
-  const page = await browser.newPage();
+  const page = await browser.newPage({
+    viewport: { width: 1000, height: 1000 },
+  });
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`http://127.0.0.1:${server.address().port}/`);
@@ -100,6 +119,35 @@ try {
     } finally {
       await worker.dispose();
     }
+    const densityWorker = make();
+    let densityPackets = 0;
+    try {
+      const stream = await (
+          await fetch("/tests/fixtures/filter_tier_c/density.bin")
+        ).arrayBuffer(),
+        d = new DataView(stream);
+      let at = 0;
+      while (at < stream.byteLength) {
+        const n = d.getUint32(at, true),
+          status = d.getInt32(at + 8, true),
+          size = d.getUint32(at + 12, true);
+        at += 24;
+        const input = stream.slice(at, at + n);
+        at += n;
+        const expected = new Uint8Array(stream, at, size);
+        at += size;
+        if (status === -4) continue;
+        const actual = new Uint8Array(await densityWorker.filterCommand(input));
+        if (
+          actual.length !== expected.length ||
+          actual.some((b, i) => b !== expected[i])
+        )
+          throw new Error(`Worker density packet drift at ${densityPackets}`);
+        densityPackets++;
+      }
+    } finally {
+      await densityWorker.dispose();
+    }
     const live = make();
     let session;
     try {
@@ -146,6 +194,7 @@ try {
       if (after.selectedCount !== 2n) throw new Error("append/rebuild failed");
       return {
         packets,
+        densityPackets,
         passiveViews: result.views.length,
         selected: Number(after.selectedCount),
         rowsRead: Number(after.rowsRead),
@@ -156,10 +205,59 @@ try {
       else await live.dispose();
     }
   });
+  const out = process.argv.indexOf("--capture");
+  const linked = await runLinkedDensityBrowser(
+    page,
+    out >= 0 ? `${process.argv[out + 1]}.indexed.png` : null,
+  );
+  if (out >= 0) {
+    await page.screenshot({ path: process.argv[out + 1], fullPage: true });
+    const packets = await page.evaluate(() =>
+      window.filterDensity.packets.map((packet) =>
+        Array.from(new Uint8Array(packet)),
+      ),
+    );
+    const raw = packets.flatMap((packet) => {
+      const header = Buffer.alloc(4);
+      header.writeUInt32LE(packet.length);
+      return [header, Buffer.from(packet)];
+    });
+    await writeFile(
+      `${process.argv[out + 1]}.requests.bin`,
+      Buffer.concat(raw),
+    );
+  }
+  await page.evaluate(async () => {
+    const f = window.filterDensity;
+    f.bindings[0].view._applyAppend({ type: "append" }, []);
+    let refused = false;
+    try {
+      await f.dashboard.refresh();
+    } catch (e) {
+      refused = e.message.includes("canonical session");
+    }
+    if (
+      !refused ||
+      f.bindings.some((b) => b.view.canvas.style.visibility !== "hidden")
+    )
+      throw new Error("out-of-band source invalidation did not fail closed");
+  });
+  await page.evaluate(async () => {
+    const f = window.filterDensity;
+    f.dashboard.destroy();
+    for (const b of f.bindings) b.view.destroy();
+    await f.session.close();
+    await f.tickWorker.dispose();
+  });
   assert.deepEqual(errors, []);
   assert.equal(report.packets, 44);
+  assert.equal(report.densityPackets, 56);
   console.log(
-    JSON.stringify({ schema: "xyg.filter-tier-c-browser/v1", ...report }),
+    JSON.stringify({
+      schema: "xyg.filter-tier-c-browser/v1",
+      ...report,
+      ...linked,
+    }),
   );
 } finally {
   await browser.close();

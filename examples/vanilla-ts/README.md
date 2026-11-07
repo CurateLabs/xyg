@@ -42,3 +42,14 @@ presentation. Run the reproducible proof from
 `spec/performance/graph-node-scheduling-35-2026-10-31/README.md`; no WASM build is
 needed for this native/painter journey. It replaces the whole view, with the same
 viewport reset limitation as this example; it is not a retained graph controller.
+
+`filter-linked.ts` attaches existing composed scatter views to one explicitly
+owned canonical source with `attachFilterDashboard`. Rust returns exact 2D
+total/selected counts and resolved density paint; pointer and keyboard ranges
+share its revisioned protocol. Serve the ordinary packaged Worker/WASM assets
+from the application origin. The bounded Chromium journey is reproducible with
+`node scripts/filter_tier_c_conformance.mjs --chromium <chromium> --capture <png>`.
+It covers five different-dimensional views, live pointer preview/cancel,
+keyboard edit/commit/cancel/clear, exact counts/membership, texture pixels and
+context/append/rebuild. Full 100M/≥50 FPS, automatic native widget transport,
+assistive hardware and competitor qualification remain open under #112.

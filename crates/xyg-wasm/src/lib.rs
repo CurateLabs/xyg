@@ -3549,4 +3549,47 @@ mod filter_tier_c_tests {
         assert_eq!(super::xyg_wasm_instance_dispose(h), 0);
         assert_eq!(cases, 47);
     }
+    #[test]
+    fn filter_tier_c_linked_density_wasm_shared_packets() {
+        let b = include_bytes!("../../../tests/fixtures/filter_tier_c/density.bin");
+        let h = super::xyg_wasm_instance_new(1 << 20);
+        let mut at = 0;
+        let mut cases = 0;
+        while at < b.len() {
+            let u32_at = |at| u32::from_le_bytes(b[at..at + 4].try_into().unwrap());
+            let n = u32_at(at) as usize;
+            let cap = u32_at(at + 4) as usize;
+            let code = u32_at(at + 8) as i32;
+            let out_n = u32_at(at + 12) as usize;
+            at += 24;
+            let input = &b[at..at + n];
+            at += n;
+            let expected = &b[at..at + out_n];
+            at += out_n;
+            assert_eq!(super::xyg_wasm_arena_resize(h, n), 0);
+            unsafe {
+                std::ptr::copy_nonoverlapping(
+                    input.as_ptr(),
+                    super::xyg_wasm_arena_ptr(h) as *mut u8,
+                    n,
+                );
+            }
+            let status = super::xyg_wasm_filter_execute(h, 0, n, cap);
+            if code == 0 {
+                assert_eq!(status, 0);
+                let output = unsafe {
+                    std::slice::from_raw_parts(
+                        super::xyg_wasm_output_ptr(h) as *const u8,
+                        super::xyg_wasm_output_len(h),
+                    )
+                };
+                assert_eq!(output, expected, "case {cases}");
+            } else {
+                assert_eq!(status, 3);
+            }
+            cases += 1;
+        }
+        assert_eq!(super::xyg_wasm_instance_dispose(h), 0);
+        assert_eq!(cases, 57);
+    }
 }

@@ -145,3 +145,66 @@ def test_selection_rows_message_crossfilter(benchmark, crossfilter_figure):
     # dropped translation path ran, not the identity fast path.
     assert 0 < trace["count"] < len(rows)
     assert len(buffers[0]) == 4 * trace["count"]
+
+
+@pytest.fixture(params=[1_000, 10_000, 100_000], ids=["1k", "10k", "100k"])
+def linked_density_session(request):
+    """Setup/ingress excluded: five fixed 8×8 grids and 17 active cells."""
+    n = request.param
+    row = np.arange(n, dtype=np.int64)
+    columns = {
+        name: ((row * (2 * i + 1) + i) % 16).astype(np.float64) for i, name in enumerate("abcde")
+    }
+    chart = xyg.scatter_chart(xyg.scatter(x=columns["a"], y=columns["b"], density=True))
+    views = [
+        dict(
+            id=i + 1,
+            x=name,
+            y="abcde"[(i + 1) % 5],
+            width=8,
+            height=8,
+            x_range=[-0.5, 15.5],
+            y_range=[-0.5, 15.5],
+        )
+        for i, name in enumerate("abcde")
+    ]
+    active = dict(id=1, dimension="a", cuts=list(range(16)))
+    with chart.filter_session(columns, source_id=112, budget_bytes=64 << 20) as session:
+        session.configure_density(active, views)
+        yield session, active, views, n, int(np.sum((columns["a"] >= 4) & (columns["a"] <= 7)))
+
+
+def test_filter_tier_c_density_build(benchmark, linked_density_session):
+    session, active, views, n, _ = linked_density_session
+    result = benchmark(session.configure_density, active, views)
+    assert result["rows_read"] == n and result["tier"] == 0
+    assert result["index_bytes"] == 51_632
+
+
+def test_filter_tier_c_density_indexed_query(benchmark, linked_density_session):
+    session, _, _, _, expected = linked_density_session
+    result = benchmark(session.range, 4.0, 7.0)
+    assert result["rows_read"] == 0 and result["tier"] == 3 and result["fallback"] == 0
+    assert result["selected_count"] == expected
+    assert result["prefix_cells_read"] == 642 and result["index_bytes"] == 51_632
+    assert len(result["views"]) == 5
+    assert all(sum(v["counts"]) == expected for v in result["views"])
+
+
+def test_filter_tier_c_density_paint_packet(benchmark, linked_density_session):
+    session, _, _, _, expected = linked_density_session
+    session.range(4.0, 7.0)
+    result = benchmark(session.paint)
+    assert result["rows_read"] == 0 and result["tier"] == 3 and result["selected_count"] == expected
+    assert len(result["density"]) == 5
+    assert all(sum(p["selected"]) == expected and len(p["rgba"]) == 256 for p in result["density"])
+
+
+def test_filter_tier_c_density_masked_indexed_query(benchmark, linked_density_session):
+    session, _, _, n, expected = linked_density_session
+    session.base_filter(mask=b"\xff" * (n // 8))
+    session.rebuild()
+    result = benchmark(session.range, 4.0, 7.0)
+    assert result["rows_read"] == 0 and result["tier"] == 3 and result["fallback"] == 0
+    assert result["selected_count"] == expected and result["has_intent"] == 1
+    assert result["index_bytes"] == 51_632

@@ -467,3 +467,35 @@ drains admitted UI/time work, and `pinFocused(boolean)` forwards the Rust-issued
 focus target. Nonzero `load.pinned` is refused with temporal binding; pin after
 ready. Disposal stops the subscription and drains before closing the lane;
 see [temporal graph contracts](../design/temporal-graph.md).
+
+## Ordinary linked density (#112 bounded checkpoint)
+
+`createWasmFilterSession(worker, columns, {sourceId, epoch, firstRow,
+budgetBytes})` owns a dedicated ordinary Worker. Its thin client exposes the
+same binary Rust session methods as Python/Node, including `configureDensity`,
+`range`, `paint`, `baseFilter`, `beginEdit`, `cancelEdit`, `commitEdit`, append,
+eviction/rebuild and canonical membership pages.
+
+`attachFilterDashboard(session, bindings)` attaches existing composed
+`renderStandalone` ChartViews. Every binding explicitly supplies `view`, bigint
+`id/sourceId/epoch`, `dimension/cuts/step`, and a passive `grid` containing
+`x/y/width/height/xRange/yRange` and optional base/selected RGBA. The current
+surface supports one ordinary constant-color Cartesian scatter trace with primary linear axes per view. Rust
+owns default colors, counts, masks, predicate hashes, exact fallback and memory
+admission. The adapter routes pointer/keyboard input, uploads Rust-resolved
+paint through the ordinary renderer, and announces canonical totals. It never
+creates a second chart builder or renderer.
+
+The returned controller exposes `range(viewId, lo, hi)`, `clear`, `refresh`,
+`baseFilter`, `append`, `evict`, `ready`, `latest`, `error`, and `destroy`.
+Destroy detaches the presentation; the caller still owns the session and must
+close it. A view's destruction detaches the coordinated presentation. Use the
+session protocol for source mutation; external ordinary append invalidates and
+hides the binding. Existing WASM tick handles remain ordinary independent
+presentation adapters. See the [binary/exactness/lifecycle contract](../design/filter-tier-c.md)
+and [composition example](../../examples/vanilla-ts/filter-linked.ts).
+
+Real five-view Chromium pointer/keyboard/count/texture/context tests are in the
+existing Release surfaces command. This does not qualify automatic native
+widget transport, nonlinear/nonprimary/large-offset paint, active rectangles, Worker
+chunk cancellation, real assistive hardware, 100M/≥50 FPS or competitors.

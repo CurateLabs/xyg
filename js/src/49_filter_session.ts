@@ -7,7 +7,7 @@ export {
 } from "../../packages/xy-node/src/filter-protocol.js";
 /** One dedicated ordinary Worker owns the source/session; close disposes it.
  * Uses the same public programmatic protocol as Chart.filter_session/Node.
- * Renderer and gesture wiring remain separate #112 work. */
+ * attachFilterDashboard binds existing composed views to its count planes. */
 export async function createWasmFilterSession(
   worker: XygWasmWorker,
   columns: Record<string, ArrayLike<number>>,

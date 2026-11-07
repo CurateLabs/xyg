@@ -24,7 +24,7 @@ const APPEND_REFINE_MAX_WAIT_MS = 300;
 
 Object.assign(ChartView.prototype, {
   _scheduleViewRequest(viewOverride = this.view, opts: any = {}) {
-    if (this._destroyed || this._glLost) return;
+    if (this._destroyed || this._glLost || this._filterDashboard) return;
     // An explicitly attached direct-WASM density handle is authoritative for
     // its supported trace even when this ChartView has a kernel transport.
     // Do not also send a density_view fallback that could race its XYAO grid.
@@ -265,7 +265,7 @@ Object.assign(ChartView.prototype, {
   // Compatibility entrypoint for callers that used the former standalone
   // sample re-bin path. Only an attached Rust/WASM handle may refine.
   _scheduleSampleRebin(viewOverride = this.view, opts: any = {}) {
-    if (this._destroyed || this._glLost) return;
+    if (this._destroyed || this._glLost || this._filterDashboard) return;
     // Direct Rust/WASM owns the only browser density aggregation path. It
     // retains the existing surface while it aggregates and rejects obsolete
     // viewport results by sequence.
@@ -329,6 +329,7 @@ Object.assign(ChartView.prototype, {
   // leaves the retained sample overlay alone (it is the re-bin source and the
   // deep-zoom point overlay). Texture lifetime stays with the LOD cache.
   _applySampleRebinGrid(g, density, rebinned) {
+    if (this._filterDashboard) return;
     g.prevDensity = g.density;
     g._densityFadeStart = this._now();
     g.densityNormMax = density.normMax || density.max;
@@ -346,6 +347,7 @@ Object.assign(ChartView.prototype, {
   // updates GPU buffers in place with a tail-only upload; everything else
   // rebuilds. Payloads may use split or legacy packed layout.
   _applyAppend(msg, buffers) {
+    if (this._filterDashboard) { this._filterDashboard.invalidateSource(); return; }
     const spec = msg.spec;
     if (!spec || !spec.traces) return;
     const raw = spec.buffer_layout === "split" ? buffers : buffers && buffers[0];
@@ -660,6 +662,11 @@ Object.assign(ChartView.prototype, {
   },
 
   _onKernelMsg(msg, buffers) {
+    if (this._filterDashboard) {
+      if (msg?.type === "append") this._filterDashboard.invalidateSource();
+      else if (["selection", "selection_rows", "state_patch"].includes(msg?.type)) this._filterDashboard.rejectExternal(msg.type);
+      return;
+    }
     if (this._destroyed) return;
     if (!msg) return;
     if (this._glLost && msg.type !== "append" && msg.type !== "pick_result") return;

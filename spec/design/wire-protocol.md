@@ -573,10 +573,14 @@ geometry/u64 identity/u32 offset/u8 ring-role planes. No camera/projection numer
 arrays move as JSON. [The camera contract](geo-viewport-protocol.md) pins exact
 framing, bounds presence, normalized bit keys and atomic error behavior.
 
-## XYFC/XYFR ordinary filtering (#112 programmatic checkpoint)
+## XYFC/XYFR ordinary filtering (#112 linked density checkpoint)
 
 [Filter Tier C protocol v1](filter-tier-c.md#binary-protocol-v1) carries source,
 revision, counts, and membership as raw typed binary in native and WASM hosts.
 Canonical f64 columns are ingress only; no live numeric filter payload uses
-JSON or base64. It is not a new paint format or renderer. General channel
-routing/selected-count density and pointer/keyboard integration remain pending.
+JSON or base64. It is not a new paint format or renderer. Opcodes 10–15 extend the same owner with 2D passive counts, a flagged XYFP
+resolved density trailer, composed base range/mask predicates and edit
+transactions. Selected counts remain u64; derived f32/RGBA paint uses the
+existing density texture path. Pointer and keyboard edits share these packets.
+Automatic native-host/widget channel binding and massive qualification remain
+open; the bounded browser binding uses a dedicated ordinary Worker.

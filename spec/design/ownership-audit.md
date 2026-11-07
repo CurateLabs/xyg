@@ -1376,6 +1376,9 @@ These additions use the existing ownership policies without adding a host policy
 | `packages/xy-node/src/filter-protocol.js` | Node host | `node-host` | `keep-host` | — |
 | `js/src/49_filter_session.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 
+| `crates/xyg-engine/src/filter_tier_c_linked.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `js/src/49_filter_dashboard.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.
@@ -1492,3 +1495,7 @@ counts, exact-boundary admission, budget, intent and publication in
 `xyg-engine::filter_tier_c`. New Python/Node/browser modules only frame the
 same raw XYFC/XYFR packets and own handles/Worker lifecycle. No ordinary filter
 policy is migrated to hosts and no renderer or GPU ledger is introduced.
+
+Linked density additions use the same ownership boundary: Rust owns the exact
+count/paint protocol, and the shared client owns DOM input and ordinary GPU
+trace lifecycle. The two files are classified in the file ledger above.

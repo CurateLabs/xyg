@@ -3032,15 +3032,19 @@ exclude hidden rows, and each masked reply carries the `filter` state it was
 computed under (§37's `filter_hash`, in literal form). Contract:
 `spec/api/interaction.md` §10.
 
-### §34 programmatic checkpoint (2026-11-07, #112 remains open)
+### §34 linked density checkpoint (2026-11-07, #112 remains open)
 
 [Filter Tier C session/protocol](design/filter-tier-c.md) specifies the shipped
 programmatic subset: count-only active-cell × passive-bin cumulative slabs,
 exact resolvable inclusive ranges, explicit exact boundary scans, bounded
 membership pages, and stable source/intent lifecycle in native and WASM hosts.
-It does not complete §34/35: ordinary renderer selected-count density, keyboard
-and pointer coordination, composed predicates, spill, and the five-view 100M
-≥50 FPS/competitor qualification remain open. No prefix row-mask slab is used.
+The linked extension adds 2D passive grids with exact selected-count planes,
+range/mask composition, the ordinary density painter and real five-view
+pointer/keyboard edit/commit/cancel/clear. It does not complete §34/35: source
+spill/reopen, persistent materialized result masks, Worker chunk cancellation,
+automatic native widget transport, full paint/predicate compatibility and the
+five-view 100M ≥50 FPS/CodSpeed/competitor qualification remain open. No prefix
+row-mask slab or second renderer is used.
 
 ## 35. Milestone amendments (round 3)
 

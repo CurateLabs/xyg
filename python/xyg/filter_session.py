@@ -90,6 +90,48 @@ def decode_reply(packet: bytes) -> dict[str, Any]:
         counts = struct.unpack_from(f"<{n}Q", packet, at)
         at += n * 8
         views.append({"id": view_id, "counts": counts})
+    result["density"] = []
+    extension = struct.unpack_from("<I", packet, 12)[0]
+    if extension > 1:
+        raise ValueError("unknown XYFR extension")
+    if extension:
+        magic, version, nviews = struct.unpack_from("<4sIQ", packet, at)
+        if magic != b"XYFP" or version != 1 or nviews != len(views):
+            raise ValueError("invalid XYFP")
+        at += 16
+        for view in views:
+            ident, w, h, *ranges = struct.unpack_from("<QII4d", packet, at)
+            n = w * h
+            maximum = struct.unpack_from("<d", packet, at + 48)[0]
+            at += 56
+            if (
+                ident != view["id"]
+                or not w
+                or not h
+                or n != len(view["counts"])
+                or at + n * 16 > len(packet)
+            ):
+                raise ValueError("invalid density extent")
+            totals = struct.unpack_from(f"<{n}Q", packet, at)
+            at += n * 8
+            grid = struct.unpack_from(f"<{n}f", packet, at)
+            at += n * 4
+            rgba = packet[at : at + n * 4]
+            at += n * 4
+            result["density"].append(
+                dict(
+                    id=ident,
+                    width=w,
+                    height=h,
+                    maximum=maximum,
+                    x_range=ranges[:2],
+                    y_range=ranges[2:],
+                    totals=totals,
+                    selected=view["counts"],
+                    grid=grid,
+                    rgba=rgba,
+                )
+            )
     if at + result["membership_bytes"] != len(packet):
         raise ValueError("invalid XYFR length")
     result["views"] = views
@@ -104,7 +146,7 @@ class FilterTierCError(ValueError):
         self.reply = reply
 
 
-def execute_packet(handle: int, packet: bytes, capacity: int = 1 << 20) -> bytes:
+def execute_packet(handle: int, packet: bytes, capacity: int = 2 << 20) -> bytes:
     output = (ctypes.c_ubyte * capacity)()
     data = (ctypes.c_ubyte * len(packet)).from_buffer_copy(packet)
     written = ctypes.c_size_t()
@@ -194,6 +236,52 @@ class FilterTierCSession:
             args=(active["id"], self.names.index(active["dimension"]), len(views)),
             payload=payload,
         )
+
+    def configure_density(self, active: Mapping, views: Sequence[Mapping]):
+        payload = struct.pack("<Q", len(active["cuts"])) + struct.pack(
+            f"<{len(active['cuts'])}d", *active["cuts"]
+        )
+        for v in views:
+            payload += struct.pack(
+                "<3Q2I4d8BII",
+                v["id"],
+                self.names.index(v["x"]),
+                self.names.index(v["y"]),
+                v["width"],
+                v["height"],
+                *v["x_range"],
+                *v["y_range"],
+                *v.get("colors", (0,) * 8),
+                int("colors" in v),
+                0,
+            )
+        return self._call(
+            10,
+            args=(active["id"], self.names.index(active["dimension"]), len(views)),
+            payload=payload,
+        )
+
+    def paint(self, *, exact: bool = False):
+        return self._call(11, exact=exact)
+
+    def base_filter(self, ranges: Sequence[Mapping] = (), mask: bytes = b""):
+        payload = (
+            b"".join(
+                struct.pack("<Q2d", self.names.index(r["dimension"]), r["lo"], r["hi"])
+                for r in ranges
+            )
+            + mask
+        )
+        return self._call(12, args=(len(ranges), len(mask)), payload=payload)
+
+    def begin_edit(self):
+        return self._call(13)
+
+    def cancel_edit(self):
+        return self._call(14)
+
+    def commit_edit(self):
+        return self._call(15)
 
     def range(self, lo: float, hi: float, *, exact: bool = False):
         return self._call(5, bounds=(lo, hi), exact=exact)

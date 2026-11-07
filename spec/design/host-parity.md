@@ -2145,12 +2145,16 @@ JupyterLab node-callback/UUID-selection delivery. Prior receipts remain historic
 Full notebook frontend, exact geometric UUID sets, export and rendered size
 ladder acceptance for #1015/#36/#35 remains open.
 
-## Ordinary programmatic filtering checkpoint (#112)
+## Ordinary linked filtering checkpoint (#112)
 
 Native ABI 402 and WASM ABI 36 share XYFC/XYFR v1 through the Rust
 `FilterTierCSession`; Python `Chart.filter_session`, Node chart `filterSession`,
 and browser `createWasmFilterSession` frame that same protocol. Full packets,
 exact counts, refusal paths, and canonical u64 membership pages are compared
-across hosts. This is programmatic parity, not linked renderer or assistive
-input parity. The [normative subset and remaining work](filter-tier-c.md)
+across hosts, including passive 2D exact count planes, base range/mask
+composition and edit transactions. `attachFilterDashboard` reuses existing
+composed browser views and the ordinary density painter; bounded Chromium
+five-view pointer/keyboard parity and context/append/rebuild/publication failures
+are exercised. Automatic notebook/native-host transport, assistive hardware,
+nonlinear/large-offset compatibility and massive performance remain open. The [normative subset and remaining work](filter-tier-c.md)
 include synchronous Worker cancellation limits and logical memory accounting.

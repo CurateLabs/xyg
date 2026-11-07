@@ -536,7 +536,7 @@ direct-tier category toggles are exact; a density-tier category toggle
 filters the sample overlays but the standalone worker's re-binned grid is
 not masked — kernel-connected sessions are exact.
 
-## Programmatic ordinary filter sessions (#112 checkpoint)
+## Ordinary linked filter sessions (#112 checkpoint)
 
 `Chart.filter_session(columns, source_id=..., epoch=..., first_row=...,
 budget_bytes=...)` returns a Rust-owned programmatic session. Node charts expose
@@ -547,4 +547,14 @@ and request bounded membership pages. Default partial-cell boundaries fail
 closed; `exact=True` / `{exact:true}` explicitly permits a reported canonical
 scan. Native/WASM use the same binary packets and authoritative diagnostics.
 The [session contract](../design/filter-tier-c.md) defines the exact subset.
-These methods do not yet connect pointer/keyboard gestures or repaint density.
+`configure_density` / `configureDensity` declares passive 2D grids; `paint` returns
+exact total/selected count planes and Rust-resolved density color buffers.
+`base_filter` / `baseFilter` and begin/cancel/commit edit compose persistent
+predicates. `attachFilterDashboard` binds existing public composed browser views
+to this protocol. Existing pointer range drags preview/commit/cancel; focused
+canvases use B, Home/End, arrows, Enter, Escape and Delete to create/edit/commit/
+cancel/clear. It paints aggregate selected density through the ordinary renderer,
+with canonical source identity and exact count metadata across dimensions.
+The bounded five-view journey is covered; automatic native widget transport,
+nonlinear/large-offset compatibility, Worker chunk cancellation and the full
+100M/≥50 FPS/competitor qualification remain open under #112.

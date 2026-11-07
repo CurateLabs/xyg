@@ -286,3 +286,19 @@ spec/performance/filter-tier-c-linked-2026-11-07/*.json text eol=lf
 spec/performance/filter-tier-c-linked-2026-11-07/*.md text eol=lf
 spec/performance/filter-tier-c-linked-2026-11-07/*.gz -text
 spec/performance/filter-tier-c-linked-2026-11-07/*.png -text
+
+# Linked density source and append-only current Core evidence.
+crates/xyg-engine/src/filter_tier_c_linked.rs text eol=lf
+benchmarks/test_codspeed_selection.py text eol=lf
+examples/filter_tier_c.py text eol=lf
+examples/vanilla-ts/README.md text eol=lf
+scripts/gen_filter_density_fixture.py text eol=lf
+tests/filter_density_oracle.py text eol=lf
+tests/test_filter_tier_c_density.py text eol=lf
+spec/api/browser-wasm.md text eol=lf
+spec/performance/filter-tier-c-linked-product-2026-11-07/*.json text eol=lf
+spec/performance/filter-tier-c-linked-product-2026-11-07/*.md text eol=lf
+spec/performance/filter-tier-c-linked-product-2026-11-07/*.txt text eol=lf
+spec/performance/filter-tier-c-linked-product-2026-11-07/*.gz -text
+spec/performance/filter-tier-c-linked-product-2026-11-07/*.png -text
+spec/performance/filter-tier-c-linked-product-2026-11-07/*.py text eol=lf

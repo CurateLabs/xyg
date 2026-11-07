@@ -10,7 +10,7 @@ export {
   decodeFilterReply,
   FilterTierCError,
 } from "./filter-protocol.js";
-export function executeFilterPacket(handle, packet, capacity = 1 << 20) {
+export function executeFilterPacket(handle, packet, capacity = 2 << 20) {
   const output = new Uint8Array(capacity),
     written = new BigUint64Array(1);
   const status = xyFilterSessionExecute(

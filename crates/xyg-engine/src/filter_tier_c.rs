@@ -1,5 +1,8 @@
 //! Programmatic Filter Tier C session (§34). XYFC/XYFR v1 is shared by all hosts.
 //! Prefix slabs contain counts only, never active-cells × canonical-row masks.
+#[path = "filter_tier_c_linked.rs"]
+mod linked;
+use linked::{GridHandle, Linked};
 use std::cell::Cell;
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -117,6 +120,7 @@ struct View {
     id: u64,
     axis: Axis,
     offset: usize,
+    grid: Option<GridHandle>,
 }
 #[derive(Debug)]
 struct Config {
@@ -125,7 +129,25 @@ struct Config {
     views: Vec<View>,
     width: usize,
 }
+impl View {
+    fn bins(&self) -> usize {
+        self.grid
+            .as_ref()
+            .map_or(self.axis.cuts.len() + 1, |g| g.width * g.height)
+    }
+    fn cell(&self, s: &Source, row: usize) -> Option<usize> {
+        if let Some(g) = &self.grid {
+            g.cell(s, row)
+        } else {
+            let x = s.columns[self.axis.dimension][row];
+            x.is_finite().then(|| self.axis.cell(x))
+        }
+    }
+}
 impl Config {
+    fn linked(&self) -> bool {
+        self.views.first().is_some_and(|v| v.grid.is_some())
+    }
     fn read(b: &[u8], source: &Source) -> Result<Self> {
         let active_id = u64_at(b, 56)?;
         let dimension = usize_at(b, 64)?;
@@ -151,7 +173,12 @@ impl Config {
             if width > MAX_BINS {
                 return Err(Error::Budget);
             }
-            views.push(View { id, axis, offset });
+            views.push(View {
+                id,
+                axis,
+                offset,
+                grid: None,
+            });
         }
         if cursor != b.len() {
             return Err(Error::Malformed);
@@ -164,7 +191,8 @@ impl Config {
         })
     }
     fn bytes(&self) -> usize {
-        self.active.cuts.capacity() * 8
+        self.views.iter().filter(|v| v.grid.is_some()).count() * 96
+            + self.active.cuts.capacity() * 8
             + self.views.capacity() * 64
             + self
                 .views
@@ -175,7 +203,10 @@ impl Config {
     fn index_bytes(&self) -> Result<usize> {
         add(
             mul(mul(self.active.cuts.len() + 2, self.width)?, 8)?,
-            add(mul(self.width, 8)?, mul(self.active.cuts.len() + 1, 16)?)?,
+            add(
+                mul(self.width, if self.linked() { 16 } else { 8 })?,
+                mul(self.active.cuts.len() + 1, 16)?,
+            )?,
         )
     }
     fn reply_bytes(&self, counts: bool) -> usize {
@@ -187,12 +218,19 @@ struct Index {
     prefix: Vec<u64>,
     totals: Vec<u64>,
     extrema: Vec<[f64; 2]>,
+    base: Vec<u64>,
 }
 impl Index {
-    fn build(source: &Source, cfg: &Config, cancelled: &impl Fn() -> bool) -> Result<Self> {
+    fn build(
+        source: &Source,
+        cfg: &Config,
+        linked: &Linked,
+        cancelled: &impl Fn() -> bool,
+    ) -> Result<Self> {
         let cells = cfg.active.cuts.len() + 1;
         let mut prefix = alloc::<u64>((cells + 1) * cfg.width)?;
         let mut totals = alloc::<u64>(cfg.width)?;
+        let mut base = alloc::<u64>(if cfg.linked() { cfg.width } else { 0 })?;
         let mut extrema = alloc::<[f64; 2]>(cells)?;
         extrema.fill([f64::INFINITY, f64::NEG_INFINITY]);
         for row in 0..source.rows {
@@ -200,8 +238,12 @@ impl Index {
                 return Err(Error::Cancelled);
             }
             totals[0] += 1;
+            let eligible = !cfg.linked() || linked.matches(source, row);
+            if eligible && cfg.linked() {
+                base[0] += 1;
+            }
             let x = source.columns[cfg.active.dimension][row];
-            let cell = if x.is_finite() {
+            let cell = if eligible && x.is_finite() {
                 Some(cfg.active.cell(x))
             } else {
                 None
@@ -212,14 +254,15 @@ impl Index {
                 prefix[(c + 1) * cfg.width] += 1;
             }
             for v in &cfg.views {
-                let x = source.columns[v.axis.dimension][row];
-                if !x.is_finite() {
-                    continue;
-                }
-                let bin = v.offset + v.axis.cell(x);
-                totals[bin] += 1;
-                if let Some(c) = cell {
-                    prefix[(c + 1) * cfg.width + bin] += 1;
+                if let Some(cbin) = v.cell(source, row) {
+                    let bin = v.offset + cbin;
+                    totals[bin] += 1;
+                    if eligible && cfg.linked() {
+                        base[bin] += 1;
+                    }
+                    if let Some(c) = cell {
+                        prefix[(c + 1) * cfg.width + bin] += 1;
+                    }
                 }
             }
         }
@@ -235,6 +278,7 @@ impl Index {
             prefix,
             totals,
             extrema,
+            base,
         })
     }
     fn interval(&self, bounds: [f64; 2]) -> Result<(usize, usize)> {
@@ -268,6 +312,7 @@ pub struct FilterTierCSession {
     budget: usize,
     peak_observed: Cell<usize>,
     limit: usize,
+    linked: Linked,
 }
 impl Default for FilterTierCSession {
     fn default() -> Self {
@@ -282,6 +327,7 @@ impl Default for FilterTierCSession {
             budget: 0,
             peak_observed: Cell::new(0),
             limit: MAX_PACKET,
+            linked: Linked::default(),
         }
     }
 }
@@ -293,7 +339,8 @@ impl FilterTierCSession {
         }
     }
     pub fn retained_bytes(&self) -> usize {
-        512 + self.source.as_ref().map_or(0, Source::bytes)
+        512 + self.linked.bytes()
+            + self.source.as_ref().map_or(0, Source::bytes)
             + self.config.as_ref().map_or(0, Config::bytes)
             + if self.index.is_some() {
                 self.config.as_ref().unwrap().index_bytes().unwrap()
@@ -310,6 +357,13 @@ impl FilterTierCSession {
         Ok(peak)
     }
     fn fingerprint(&self) -> u64 {
+        if self.config.as_ref().is_some_and(Config::linked) {
+            return self.linked.fingerprint(
+                self.source.as_ref(),
+                self.config.as_ref(),
+                self.intent,
+            );
+        }
         let mut h = crate::transition::Blake2s8::domain(*b"xyfilt01");
         if let Some(s) = &self.source {
             h.update(&s.id.to_le_bytes());
@@ -388,7 +442,13 @@ impl FilterTierCSession {
             (160, s.map_or(0, |s| s.rows as u64)),
             (168, page_first),
             (176, membership.len() as u64),
-            (184, u64::from(self.intent.is_some())),
+            (
+                184,
+                u64::from(
+                    self.intent.is_some()
+                        || cfg.is_some_and(Config::linked) && self.linked.has_intent(),
+                ),
+            ),
         ] {
             put(&mut b, at, v);
         }
@@ -396,11 +456,7 @@ impl FilterTierCSession {
         if let Some(c) = cfg {
             for v in &c.views {
                 put(&mut b, at, v.id);
-                let n = if counts.is_some() {
-                    v.axis.cuts.len() + 1
-                } else {
-                    0
-                };
+                let n = if counts.is_some() { v.bins() } else { 0 };
                 put(&mut b, at + 8, n as u64);
                 at += 16;
                 if let Some(counts) = counts {
@@ -411,7 +467,7 @@ impl FilterTierCSession {
                 }
             }
         }
-        b[at..].copy_from_slice(membership);
+        b[at..at + membership.len()].copy_from_slice(membership);
         Ok(b)
     }
 
@@ -464,7 +520,7 @@ impl FilterTierCSession {
         let op = u32_at(b, 8)?;
         let flags = u32_at(b, 12)?;
         let seq = u64_at(b, 16)?;
-        if !(1..=9).contains(&op) || flags > 1 || (flags != 0 && op != 5) || seq == 0 {
+        if !(1..=15).contains(&op) || flags > 1 || (flags != 0 && op != 5 && op != 11) || seq == 0 {
             return Err(Error::Malformed.into());
         }
         if seq <= self.cancelled {
@@ -495,6 +551,9 @@ impl FilterTierCSession {
         let cancelled = || superseded();
         if cancelled() {
             return Err(Error::Cancelled.into());
+        }
+        if op >= 10 || self.config.as_ref().is_some_and(Config::linked) && matches!(op, 3..=5 | 7) {
+            return self.prepare_linked(b, capacity, superseded, op, flags, seq, budget);
         }
         let mut new_source = None;
         let mut new_config = None;
@@ -606,7 +665,7 @@ impl FilterTierCSession {
                     new_config.as_ref().map_or(0, Config::bytes),
                 )?;
                 peak = self.admit(extra, b.len(), cfg.reply_bytes(false), budget)?;
-                new_index = Some(Index::build(source, cfg, &cancelled)?);
+                new_index = Some(Index::build(source, cfg, &self.linked, &cancelled)?);
                 rows = source.rows as u64;
             }
             5 | 7 => {
@@ -708,13 +767,14 @@ impl FilterTierCSession {
                     if i % 4096 == 0 && cancelled() {
                         return Err(Error::Cancelled.into());
                     }
-                    let yes = if let Some([lo, hi]) = self.intent {
-                        let cfg = self.config.as_ref().ok_or(Error::Missing)?;
-                        let x = s.columns[cfg.active.dimension][offset + i];
-                        x.is_finite() && x >= lo && x <= hi
-                    } else {
-                        true
-                    };
+                    let yes = self.linked.matches(s, offset + i)
+                        && if let Some([lo, hi]) = self.intent {
+                            let cfg = self.config.as_ref().ok_or(Error::Missing)?;
+                            let x = s.columns[cfg.active.dimension][offset + i];
+                            x.is_finite() && x >= lo && x <= hi
+                        } else {
+                            true
+                        };
                     if yes {
                         membership[i / 8] |= 1 << (i % 8);
                         selected += 1;
@@ -798,9 +858,9 @@ impl RequestGate {
         if (HEADER..=MAX_PACKET).contains(&b.len())
             && b.get(..4) == Some(b"XYFC")
             && u32_at(b, 4) == Ok(1)
-            && (1..=9).contains(&op)
+            && (1..=15).contains(&op)
             && flags <= 1
-            && (flags == 0 || op == 5)
+            && (flags == 0 || op == 5 || op == 11)
             && seq != 0
         {
             self.newest.fetch_max(seq, Ordering::AcqRel);

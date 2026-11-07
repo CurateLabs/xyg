@@ -80,7 +80,7 @@ export function lodCopyGrid(f32) {
 // `filter` picks the sampling the reply asked for (spatial-exact grids ship
 // "nearest"); it applies to both texture layouts.
 export function lodWriteGridTexture(
-  gl, tex, f32, w, h, maxVal, rgba = null, filter = "linear", pointAlpha = 1,
+  gl, tex, f32, w, h, maxVal, rgba = null, filter = "linear", pointAlpha = 1, resolved = false,
 ) {
   const denom = Math.log1p(Math.max(0, maxVal || 0));
   let data;
@@ -100,7 +100,7 @@ export function lodWriteGridTexture(
       const a8 = rgba[i * 4 + 3];
       if (a8 === 0) continue; // an all-invisible cell never invents coverage
       const lg = logOneMinus[a8];
-      const shaped = Number.isNaN(lg) ? 1 : 1 - Math.exp(c * lg);
+      const shaped = resolved ? a8 / 255 : Number.isNaN(lg) ? 1 : 1 - Math.exp(c * lg);
       if (shaped <= 0) continue;
       const a = Math.max(1, Math.round(255 * shaped));
       data[i * 4] = Math.round(rgba[i * 4] * a / 255);

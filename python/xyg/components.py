@@ -3784,8 +3784,9 @@ class Chart(Component):
     ):
         """Create a programmatic Rust filter session for shared canonical columns.
 
-        This checkpoint returns counts/membership; renderer and gesture binding
-        remain pending under #112. Explicit source identity is shared by all views.
+        Counts, density planes and edit transactions share the browser protocol.
+        Explicit source identity is shared by all views; see attachFilterDashboard
+        for the opt-in existing browser-view binding.
         """
         from .filter_session import FilterTierCSession
 

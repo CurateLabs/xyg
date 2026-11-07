@@ -1626,6 +1626,7 @@ export class ChartView {
       const msg = event.data || {};
       if (msg.source === this._linkedSource) return;
       if (this._interactionFlag("link_select") && msg.selection) {
+        if (this._filterDashboard) { this._filterDashboard.rejectExternal("coordinate selection broadcast"); return; }
         const selection = msg.selection;
         // Linked applies update the durable-state mirror but never push
         // history (view-state.md §4) — dispatch: false already skips it.
@@ -1689,6 +1690,7 @@ export class ChartView {
   }
 
   _broadcastLinkedSelection(selection) {
+    if (this._filterDashboard) return;
     if (!this._linkChannel || !this._interactionFlag("link_select")) return;
     this._linkChannel.postMessage({ source: this._linkedSource, selection });
   }
@@ -2655,7 +2657,7 @@ export class ChartView {
   _initA11y() {
     if (!this.a11ySummary || !this.canvas) return;
     this.a11ySummary.textContent = this._a11ySummaryText();
-    const instruction = this._pickable
+    const instruction = this._filterDashboard ? this._filterDashboard.instructions(this) : this._pickable
       ? " Use Arrow keys to explore data points in series data order; Home and End jump to the first and last point; Escape closes the readout."
       : "";
     this.canvas.setAttribute("aria-label", `Plot area.${instruction}`);
@@ -2676,6 +2678,7 @@ export class ChartView {
   }
 
   _reductionBadgeItems() {
+    if (this._filterDashboard?.latest) return this._filterDashboard.badgeItems();
     const items = [];
     const traces = this.gpuTraces && this.gpuTraces.length
       ? this.gpuTraces
@@ -4239,7 +4242,7 @@ export class ChartView {
           grid: lodCopyGrid(grid),
           rgba,
           filter,
-          tex: this._uploadGrid(grid, d.w, d.h, d.max, rgba, filter, this._fillOpacity(t.style)),
+          tex: this._uploadGrid(grid, d.w, d.h, d.max, rgba, filter, this._fillOpacity(t.style), d.coverage === "resolved"),
           lut: this._lut(d.colormap),
         };
         g.sampleOverlay = this._buildDensitySample(t, d.sample, buffer);
@@ -5513,10 +5516,10 @@ export class ChartView {
     return tex;
   }
 
-  _uploadGrid(f32, w, h, maxVal, rgba = null, filter = "linear", pointAlpha = 1) {
+  _uploadGrid(f32, w, h, maxVal, rgba = null, filter = "linear", pointAlpha = 1, resolved = false) {
     const gl = this.gl;
     const tex = gl.createTexture();
-    lodWriteGridTexture(gl, tex, f32, w, h, maxVal, rgba, filter, pointAlpha);
+    lodWriteGridTexture(gl, tex, f32, w, h, maxVal, rgba, filter, pointAlpha, resolved);
     return tex;
   }
 
@@ -9234,6 +9237,7 @@ export class ChartView {
 
   destroy() {
     if (this._destroyed) return;
+    this._filterDashboard?.destroy();
     this._destroyed = true;
     if (this._dataAnim) {
       this._emitAnimationLifecycle?.("end", this._dataAnim.phase, { cancelled: true });

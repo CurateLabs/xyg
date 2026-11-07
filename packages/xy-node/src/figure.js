@@ -1367,7 +1367,7 @@ export class PayloadWriter {
 }
 
 export class Figure {
-  /** Programmatic shared-source filtering; paint/gesture integration follows #112. */
+  /** Shared-source filtering, density planes and edits; browser views bind with attachFilterDashboard. */
   filterSession(columns, options) { return new FilterTierCSession(columns, options); }
   constructor(opts = {}) {
     this.width = opts.width ?? 640;

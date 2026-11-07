@@ -4505,6 +4505,22 @@
       "disposition": "implement-rust-wasm",
       "follow_up_issue": 59,
       "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation."
+    },
+    {
+      "path": "crates/xyg-engine/src/filter_tier_c_linked.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "js/src/49_filter_dashboard.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
     }
   ]
 }

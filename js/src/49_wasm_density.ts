@@ -347,7 +347,9 @@ export async function attachWasmDensity(
     throw new TypeError("delay must be a nonnegative finite number");
   }
   await options.worker.ready;
+  if (view._destroyed || view._filterDashboard) throw new TypeError("density owner changed while attaching");
   await view._wasmDensity?.dispose();
+  if (view._destroyed || view._filterDashboard) throw new TypeError("density owner changed while attaching");
   const handle = new XygWasmDensityHandle(
     view, options.worker, supplied, options.workerOwnership === "own", options.delay ?? 120,
     options.sampleRebin === true, options.streamSource === true,
@@ -434,7 +436,7 @@ export async function attachInlineStandaloneWasmDensity(
 export function provisionKernelWasmDensity(
   view: ChartView & any, viewOverride = view?.view, options: any = {},
 ): Promise<XygWasmDensityHandle | null> | null {
-  if (!view || !view.comm || view._destroyed || view._wasmDensity || view._wasmDensityProvision) return null;
+  if (!view || !view.comm || view._destroyed || view._filterDashboard || view._wasmDensity || view._wasmDensityProvision) return null;
   // Only a host that explicitly supplied the bounded retained typed source
   // contract may divert a live kernel request. Older/exported payloads can
   // still carry a sample for paint/hover, but are not a WASM source promise.
@@ -448,8 +450,9 @@ export function provisionKernelWasmDensity(
   if (inputs.some((input) => input === null)) return null;
   const typedInputs = inputs as XygWasmDensityInput[];
   const provision = (async () => {
+    let worker: XygWasmWorker | null = null;
     try {
-      const worker = createXygWasmWorker(packagedDensityWorkerOptions());
+      worker = createXygWasmWorker(packagedDensityWorkerOptions());
       const handle = await attachWasmDensity(view, {
         worker, inputs: typedInputs, workerOwnership: "own", delay: 0,
         // attachWasmDensity performs the public Float64Array/trace validation
@@ -466,7 +469,8 @@ export function provisionKernelWasmDensity(
       handle.schedule(viewOverride, { ...options, delay: options.delay ?? 0 });
       return handle;
     } catch (cause) {
-      if (!view._destroyed) view._dispatchChartEvent?.("wasm_density_error", {
+      await worker?.dispose();
+      if (!view._destroyed && !view._filterDashboard) view._dispatchChartEvent?.("wasm_density_error", {
         code: cause instanceof XygWasmError ? cause.code : "XYG_WASM_WORKER_ERROR",
         message: cause instanceof Error ? cause.message : "WASM density provisioning failed",
         diagnostics: cause instanceof XygWasmError ? cause.diagnostics : null,

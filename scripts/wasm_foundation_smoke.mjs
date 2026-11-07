@@ -167,6 +167,7 @@ try {
     throw new Error("browser foundation smoke omitted massive density policy evidence");
   }
   if (!only) console.log(`direct-browser density policy ${JSON.stringify(result.densityPolicy)}`);
+  if (!only) console.log(`direct-browser linked density ${JSON.stringify(result.filterDensityProof)}`);
   await page.addScriptTag({ url: `http://127.0.0.1:${address.port}/packages/xy-client/dist/standalone.js` });
   if (!await page.evaluate(() => typeof globalThis.xy?.renderStandalone === "function" && typeof globalThis.xy?.decodeFrame === "function" && typeof globalThis.xy?.attachWasmTicks === "function")) throw new Error("published standalone IIFE did not expose window.xy");
   const iifeNoRefinement = await page.evaluate(async () => globalThis.__xygDensityNoRefinementIife());

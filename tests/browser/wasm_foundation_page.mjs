@@ -6,6 +6,7 @@ import {
   attachWasmTicks,
   ChartView,
   createXygWasmWorker,
+  createWasmFilterSession,
   decodeWasmTickBatch,
   frameWasmChart,
   encodeWasmAggregate,
@@ -805,6 +806,20 @@ async function run() {
   if (new URL(location.href).searchParams.get("only") === "density-no-refinement") {
     return { ok: true, densityNoRefinement };
   }
+
+  foundationStage = "ordinary linked 2D density protocol and canonical identity";
+  const linkedFilter=await createWasmFilterSession(createXygWasmWorker({workerUrl:"/packages/xy-client/dist/wasm-worker.js",wasm:wasmModule,maxArenaBytes:1<<20}),{x:[0,0.25,0.5,1],y:[1,0.5,0,-1]},{sourceId:112n,epoch:7n,firstRow:1n<<54n,budgetBytes:1n<<20n});
+  let filterDensityProof;
+  try {
+    await linkedFilter.configureDensity({id:1n,dimension:"x",cuts:[0,1]},[{id:1n,x:"x",y:"y",width:4,height:4,xRange:[-2,2],yRange:[-2,2]}]);
+    const indexed=await linkedFilter.range(0,0.5),paint=await linkedFilter.paint(),membership=await linkedFilter.membership(1n<<54n,4);
+    if(indexed.tier!==3n || indexed.rowsRead!==0n || paint.selectedCount!==3n || paint.density.length!==1 || paint.density[0].selected.reduce((a,b)=>a+b,0n)!==3n || membership.pageFirst!==1n<<54n || membership.membership[0]!==7)throw new Error("linked density exact count/identity drift");
+    await linkedFilter.beginEdit();await linkedFilter.range(0.1,0.4,{exact:true});await linkedFilter.cancelEdit();
+    const restored=await linkedFilter.paint();if(restored.filterHash!==paint.filterHash || restored.selectedCount!==3n || restored.tier!==2n || restored.fallback!==4n)throw new Error("linked density edit/rebuild drift");
+    await linkedFilter.clear();await linkedFilter.baseFilter([],new Uint8Array([5]));const masked=await linkedFilter.paint();
+    if(masked.selectedCount!==2n || masked.hasIntent!==1n)throw new Error("linked density base-mask metadata drift");
+    filterDensityProof={indexedRowsRead:indexed.rowsRead.toString(),selected:paint.selectedCount.toString(),firstRow:membership.pageFirst.toString(),indexBytes:paint.indexBytes.toString(),masked:masked.selectedCount.toString()};
+  }finally{await linkedFilter.close();}
 
   foundationStage = "Rust-owned massive density first-paint policy";
   const policyInstance = await WebAssembly.instantiate(wasmModule);
@@ -4883,7 +4898,7 @@ async function run() {
   } catch (error) {
     if (!(error instanceof TypeError)) throw error;
   }
-  return { ok: true, densityPolicy, densityNoRefinement, temporalControllerProof };
+  return { ok: true, densityPolicy, densityNoRefinement, temporalControllerProof, filterDensityProof };
 }
 
 globalThis.__xygWasmFoundation = run().catch((error) => ({

@@ -1,3 +1,4 @@
+export { attachFilterDashboard } from "./49_filter_dashboard";
 import { renderGraphHost } from "./66_graph_host";
 import { renderGeoHost } from "./65_geo_host";
 export { XygGeoHostView } from "./65_geo_host";
