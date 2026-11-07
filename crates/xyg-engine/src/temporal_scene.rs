@@ -1,6 +1,6 @@
 //! Exact temporal catalog lowering. Timestamp arithmetic precedes float projection (§16).
 use crate::scene::{
-    AxisScale, PlotLayout, ScaleKind, SceneBatch, SceneChromeStyle, SceneChromeText,
+    linear_fraction, AxisScale, PlotLayout, ScaleKind, SceneBatch, SceneChromeStyle, SceneChromeText,
 };
 use crate::temporal::{TemporalColumn, TemporalError, TemporalPrecision};
 
@@ -112,7 +112,9 @@ pub fn compile(bytes: &[u8], budget: usize) -> Result<Vec<u8>, TemporalError> {
         min = min.min(v);
         max = max.max(v);
     }
-    let y = |v: f64| (max - v) / (max - min) * plot_height;
+    // Negating the axis preserves the ordinary (max-v)/(max-min) operation
+    // order while sharing Scene's overflow-safe finite-domain projection.
+    let y = |v: f64| linear_fraction(-v, -max, -min) * plot_height;
     let mut kinds = Vec::new();
     let mut out_ids = Vec::new();
     let mut x0 = Vec::new();
@@ -321,6 +323,43 @@ pub fn temporal_ticks(lo: i64, hi: i64, target: usize) -> Vec<i64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn extreme_finite_values_remain_visible() {
+        for extent in [1e308, f64::MAX] {
+            for kind in 0u32..6 {
+                let mut request = vec![0; 128];
+                request[..4].copy_from_slice(b"XYTM");
+                request[4..8].copy_from_slice(&1u32.to_le_bytes());
+                request[8..12].copy_from_slice(&kind.to_le_bytes());
+                request[12..16].copy_from_slice(&3u32.to_le_bytes());
+                request[16..24].copy_from_slice(&900f64.to_le_bytes());
+                request[24..32].copy_from_slice(&420f64.to_le_bytes());
+                request[40..48].copy_from_slice(&10i64.to_le_bytes());
+                request[56..60].copy_from_slice(&3u32.to_le_bytes());
+                request[64..68].copy_from_slice(&2u32.to_le_bytes());
+                request[72..80].copy_from_slice(&[31, 119, 180, 255, 31, 119, 180, 255]);
+                request[80..88].copy_from_slice(&1f64.to_le_bytes());
+                request.extend_from_slice(b"UTC");
+                for (i, value) in [-extent, 0.0, extent].iter().enumerate() {
+                    request.extend_from_slice(&(i as i64 + 1).to_le_bytes());
+                    request.extend_from_slice(&(i as i64 + 2).to_le_bytes());
+                    request.extend_from_slice(&value.to_le_bytes());
+                    request.extend_from_slice(&(i as u64 + 1).to_le_bytes());
+                    request.extend_from_slice(&[1, 1, 0, 0, 0, 0, 0, 0]);
+                }
+                let scene = compile(&request, MAX_BYTES).unwrap();
+                let svg = crate::scene::SceneDocument::decode(&scene).unwrap().to_svg();
+                assert!(!svg.contains("NaN") && !svg.contains("Infinity"));
+                if kind == 0 || kind == 5 {
+                    assert_eq!(svg.matches("<circle ").count(), 3);
+                    for cy in [372, 210, 48] {
+                        assert!(svg.contains(&format!("cy=\"{cy}\"")));
+                    }
+                }
+            }
+        }
+    }
+
     #[test]
     fn gregorian_ticks_and_pre_epoch_labels() {
         assert_eq!(

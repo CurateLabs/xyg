@@ -1861,6 +1861,20 @@ pub extern "C" fn xyg_wasm_last_scene_styles(handle: u32) -> usize {
     with_instance_mut(handle, |instance| instance.last_scene_styles).unwrap_or(0)
 }
 
+/// Compile an exact packed temporal composition through the shared Scene engine.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_temporal_scene_compile(
+    handle: u32,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_ordinary_instance_mut(handle, |instance| {
+        geo::execute_temporal_scene(instance, sequence, offset, length)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -3457,10 +3471,4 @@ mod tests {
         .unwrap();
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
     }
-}
-
-/// Compile an exact packed temporal composition through the shared Scene engine.
-#[no_mangle]
-pub extern "C" fn xyg_wasm_temporal_scene_compile(handle:u32, sequence:u32, offset:usize, length:usize)->i32 {
-    with_ordinary_instance_mut(handle, |instance| geo::execute_temporal_scene(instance,sequence,offset,length)).unwrap_or(STATUS_INVALID_HANDLE)
 }

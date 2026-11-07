@@ -7922,8 +7922,10 @@ class TemporalChart(Chart):
         **props,
     ):
         super().__init__("temporal", (), **props)
+        from ._temporal_scene import snapshot_rows
+
         self.temporal_kind = kind
-        self.rows = tuple(tuple(row) for row in rows)
+        self.rows = snapshot_rows(rows, timezone, self.title)
         self.domain = tuple(domain)
         self.timezone = timezone
         self.precision = precision

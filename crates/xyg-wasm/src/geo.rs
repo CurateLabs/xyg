@@ -403,6 +403,26 @@ fn execute_with(
     }
 }
 
+pub(super) fn execute_temporal_scene(
+    instance: &mut Instance,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    execute_with(instance, sequence, offset, length, |request, budget| {
+        xyg_engine::temporal_scene::compile(
+            request,
+            budget.min(xyg_engine::temporal_scene::MAX_BYTES),
+        )
+        .map_err(|error| {
+            (
+                "XYG_TEMPORAL_SCENE_REJECTED",
+                error == xyg_engine::temporal::TemporalError::BudgetExceeded,
+            )
+        })
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -899,10 +919,4 @@ mod tests {
         with_instance_mut(handle, |instance| assert!(instance.arena.is_empty())).unwrap();
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
     }
-}
-
-pub(super) fn execute_temporal_scene(instance:&mut Instance, sequence:u32, offset:usize, length:usize)->i32 {
-    execute_with(instance, sequence, offset, length, |request,budget| {
-        xyg_engine::temporal_scene::compile(request,budget.min(xyg_engine::temporal_scene::MAX_BYTES)).map_err(|error| ("XYG_TEMPORAL_SCENE_REJECTED",error==xyg_engine::temporal::TemporalError::BudgetExceeded))
-    })
 }

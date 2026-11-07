@@ -13,6 +13,31 @@ MAX_BYTES = 64 * 1024 * 1024
 KINDS = {"event": 0, "interval": 1, "gantt": 2, "line": 3, "bar": 4, "scatter": 5}
 
 
+def _row_capacity(timezone, title):
+    size = 128 + len(timezone.encode("utf-8")) + len((title or "").encode("utf-8"))
+    if size > MAX_BYTES:
+        raise ValueError("temporal request exceeds framing budget")
+    return (MAX_BYTES - size) // 40
+
+
+def snapshot_rows(rows, timezone, title):
+    """Bound the wire envelope before retaining caller-owned source rows."""
+    capacity = _row_capacity(timezone, title)
+    try:
+        count = len(rows)
+    except TypeError:
+        count = None
+    if count is not None and count > capacity:
+        raise ValueError("temporal request exceeds framing budget")
+    snapshot = []
+    for row in rows:
+        # Also bound unsized iterables and sources with an understated length.
+        if len(snapshot) >= capacity:
+            raise ValueError("temporal request exceeds framing budget")
+        snapshot.append(tuple(row))
+    return tuple(snapshot)
+
+
 def integer(value, bits=64, signed=True):
     if isinstance(value, bool) or not isinstance(value, int):
         raise TypeError("temporal times and identities require exact integers")
@@ -41,7 +66,7 @@ def request(
     zone = timezone.encode("utf-8")
     heading = (title or "").encode("utf-8")
     count = len(rows)
-    if 128 + len(zone) + len(heading) + count * 40 > MAX_BYTES:
+    if count > _row_capacity(timezone, title):
         raise ValueError("temporal request exceeds framing budget")
     out = bytearray(128)
     struct.pack_into(
@@ -109,7 +134,8 @@ def html(figure, path=None, *, custom_css=None):
 <meta http-equiv="Content-Security-Policy" content="{csp}">
 <title>{title}</title>{css}</head><body><div id="chart"></div><script>{script}</script><script>
 const b=Uint8Array.from(atob("{painter}"), c=>c.charCodeAt(0));
-window.temporalView=xy.hydrateWasmPainter(document.getElementById('chart'), {{painter:b.buffer,memoryBytes:0}});
+const {{hydrateWasmPainter}}=window.xy;
+window.temporalView=hydrateWasmPainter(document.getElementById('chart'), {{painter:b.buffer,memoryBytes:0}});
 </script></body></html>'''
     if path is not None:
         export._atomic_write_text(path, document)

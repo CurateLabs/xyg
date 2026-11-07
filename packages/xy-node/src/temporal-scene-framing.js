@@ -10,12 +10,17 @@ function exact(v        , signed=true)         {
   if (typeof v !== 'bigint' || v < (signed ? -(1n<<63n) : 0n) || v >= (signed ? 1n<<63n : 1n<<64n)) throw new TypeError('exact timestamp/identity outside wire width');
   return v;
 }
+/** Exact transport envelope; shared by encoding and public source snapshots. */
+export function temporalSceneSize(count, timezone, title) {
+  const size=128+new TextEncoder().encode(timezone).length+new TextEncoder().encode(title??'').length+count*40;
+  if(!Number.isSafeInteger(count)||count<0||!Number.isSafeInteger(size)||size>64*1024*1024)throw new RangeError('temporal source exceeds framing budget');
+  return size;
+}
 export function encodeTemporalScene(input                    )              {
   const kind=['event','interval','gantt','line','bar','scatter'].indexOf(input.kind);
   if(kind<0)throw new TypeError('unknown temporal family');
   const zone=new TextEncoder().encode(input.timezone), title=new TextEncoder().encode(input.title??'');
-  const n=input.rows.length, size=128+zone.length+title.length+n*40;
-  if(size>64*1024*1024)throw new RangeError('temporal source exceeds framing budget');
+  const n=input.rows.length, size=temporalSceneSize(n,input.timezone,input.title);
   const out=new ArrayBuffer(size), b=new Uint8Array(out), v=new DataView(out);
   b.set([88,89,84,77]);v.setUint32(4,1,true);v.setUint32(8,kind,true);v.setUint32(12,n,true);
   v.setFloat64(16,input.width??900,true);v.setFloat64(24,input.height??420,true);

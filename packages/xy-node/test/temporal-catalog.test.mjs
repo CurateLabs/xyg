@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {temporalChart,encodeTemporalScene} from '../src/index.js';
 import {temporalSceneCompile} from '../src/temporal-scene.js';
+import {temporalSceneSize} from '../src/temporal-scene-framing.js';
 const oracle=JSON.parse(readFileSync(new URL('../../../tests/fixtures/temporal/catalog-six-families.json',import.meta.url)));
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
 for(const kind of ['event','interval','gantt','line','bar','scatter'])test(`public temporal ${kind}`,()=>{
@@ -37,6 +38,40 @@ test('temporal static exports compile the requested size without mutating author
    assert.equal(png.readUInt32BE(16),width);assert.equal(png.readUInt32BE(20),height);
    assert.deepEqual([chart.width,chart.height],authored);
    assert.deepEqual(Buffer.from(chart.toScene()),original);
+  }
+ }
+});
+
+test('public temporal constructor refuses oversized rows before snapshot access',()=>{
+ const rows=new Proxy([],{get(target,key){
+  if(key==='length')return Math.floor(64*1024*1024/40)+1;
+  throw new Error('public constructor copied oversized source');
+ }});
+ assert.throws(()=>temporalChart('event',rows,{domain:[0n,10n],timezone:'UTC'}),/framing budget/);
+ const cap=64*1024*1024, count=Math.floor((cap-128-3)/40), remainder=cap-128-3-count*40;
+ assert.equal(temporalSceneSize(count,'UTC','x'.repeat(remainder)),cap);
+ assert.throws(()=>temporalSceneSize(count,'UTC','x'.repeat(remainder)+'é'),/framing budget/);
+ for(const n of [-1,NaN,Infinity,1.5,Number.MAX_SAFE_INTEGER])assert.throws(()=>temporalSceneSize(n,'UTC'),/framing budget/);
+ const source=[[1n,null,1,1n]];
+ const chart=temporalChart('event',source,{domain:[0n,10n],timezone:'UTC'});
+ const scene=Buffer.from(chart.toScene());source[0][2]=99;source.push([2n,null,2,2n]);
+ assert.deepEqual(Buffer.from(chart.toScene()),scene);
+ let lengthReads=0;
+ const changingLength=new Proxy([[1n,null,1,1n]],{get(target,key){
+  if(key==='length'){lengthReads++;assert.equal(lengthReads,1);return 1;}
+  return Reflect.get(target,key);
+ }});
+ assert.deepEqual(Buffer.from(temporalChart('event',changingLength,{domain:[0n,10n],timezone:'UTC'}).toScene()),scene);
+});
+
+test('extreme finite temporal values remain visible at distinct projected heights',()=>{
+ for(const values of [[-1e308,0,1e308],[-Number.MAX_VALUE,0,Number.MAX_VALUE]]){
+  for(const kind of ['event','scatter']){
+   const chart=temporalChart(kind,values.map((v,i)=>[BigInt(i+1),null,v,BigInt(i+1)]),{domain:[0n,10n],timezone:'UTC',width:900,height:420});
+   const svg=Buffer.from(chart.toSvg()).toString();
+   const circles=[...svg.matchAll(/<circle\b[^>]*\bcy="([^"]+)"[^>]*>/g)];
+   assert.deepEqual(circles.map(m=>Number(m[1])),[372,210,48]);
+   assert.deepEqual(Buffer.from(chart.toPng()).subarray(0,8),Buffer.from([137,80,78,71,13,10,26,10]));
   }
  }
 });
