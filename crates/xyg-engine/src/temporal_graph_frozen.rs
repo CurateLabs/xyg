@@ -28,6 +28,113 @@ pub struct Publication<'a> {
     pub(crate) temporal_revision: u64,
     pub(crate) resident_bytes: usize,
 }
+// Validate the source/render correspondence before an offline publication is
+// retained. Paint/GPU decoders validate their own planes, not these CPU maps.
+fn validate_publication(
+    reply: &Container<'_>,
+    node_visibility: &[u8],
+    edge_visibility: &[u8],
+    source: &[u64],
+    target: &[u64],
+) -> Result<()> {
+    let invalid = || TemporalError::InvalidArgument;
+    let read = |name| {
+        reply
+            .get(name, 0)
+            .ok_or_else(invalid)?
+            .as_u64(name)
+            .map_err(|_| invalid())
+    };
+    let positions = |name| {
+        reply
+            .get(name, 0)
+            .ok_or_else(invalid)?
+            .as_f64(name)
+            .map_err(|_| invalid())
+    };
+    let x = positions("render.node_x.f64")?;
+    let y = positions("render.node_y.f64")?;
+    let node_count = x.len();
+    let edge_source = read("render.edge_source.u64")?;
+    let edge_target = read("render.edge_target.u64")?;
+    let edge_count = edge_source.len();
+    let member_of = read("render.member_of.u64")?;
+    let node_offsets = read("render.node_member_offsets.u64")?;
+    let node_members = read("render.node_members.u64")?;
+    let edge_offsets = read("render.edge_member_offsets.u64")?;
+    let edge_members = read("render.edge_members.u64")?;
+    let valid_offsets = |offsets: &[u64], rows: usize, members: usize| {
+        rows.checked_add(1) == Some(offsets.len())
+            && offsets.first() == Some(&0)
+            && offsets.last() == Some(&(members as u64))
+            && offsets.windows(2).all(|pair| pair[0] < pair[1])
+    };
+    if y.len() != node_count
+        || x.iter().chain(&y).any(|v| !v.is_finite())
+        || edge_target.len() != edge_count
+        || edge_source
+            .iter()
+            .chain(&edge_target)
+            .any(|&i| i >= node_count as u64)
+        || member_of.len() != node_visibility.len()
+        || member_of
+            .iter()
+            .zip(node_visibility)
+            .any(|(&r, &visible)| r != u64::MAX && (r >= node_count as u64 || visible == 0))
+        || !valid_offsets(&node_offsets, node_count, node_members.len())
+        || !valid_offsets(&edge_offsets, edge_count, edge_members.len())
+        || member_of.iter().filter(|&&r| r != u64::MAX).count() != node_members.len()
+    {
+        return Err(invalid());
+    }
+    for (render, pair) in node_offsets.windows(2).enumerate() {
+        let members = &node_members[pair[0] as usize..pair[1] as usize];
+        if members.windows(2).any(|p| p[0] >= p[1])
+            || members
+                .iter()
+                .any(|&s| s >= member_of.len() as u64 || member_of[s as usize] != render as u64)
+        {
+            return Err(invalid());
+        }
+    }
+    // Node maps are bijective via their inverse and sorted slices. Edges have
+    // no serialized inverse, so track each source edge once across CSR rows.
+    let mut seen_edges = vec![false; edge_visibility.len()];
+    for (render, pair) in edge_offsets.windows(2).enumerate() {
+        let members = &edge_members[pair[0] as usize..pair[1] as usize];
+        if members.windows(2).any(|p| p[0] >= p[1]) {
+            return Err(invalid());
+        }
+        for &s in members {
+            let s = usize::try_from(s).map_err(|_| invalid())?;
+            if s >= edge_visibility.len()
+                || edge_visibility[s] == 0
+                || seen_edges[s]
+                || member_of[source[s] as usize] != edge_source[render]
+                || member_of[target[s] as usize] != edge_target[render]
+            {
+                return Err(invalid());
+            }
+            seen_edges[s] = true;
+        }
+    }
+    for (name, count) in [
+        ("render.visual_states.u8", node_count),
+        ("render.emphasis.u8", node_count),
+        ("render.edge_visual_states.u8", edge_count),
+        ("render.edge_emphasis.u8", edge_count),
+    ] {
+        let section = reply.get(name, 0).ok_or_else(invalid)?;
+        if section.dtype != Dtype::U8 || section.payload.len() != count {
+            return Err(invalid());
+        }
+    }
+    if read("render.edges_kept.u64")? != [edge_count as u64] {
+        return Err(invalid());
+    }
+    Ok(())
+}
+
 impl FrozenTemporalGraph {
     pub fn bytes(&self) -> &[u8] {
         &self.bytes
@@ -339,30 +446,7 @@ impl FrozenTemporalGraph {
             if header.first().copied() != Some(render[1] as u32) {
                 return Err(invalid());
             }
-            let read = |name| {
-                reply
-                    .get(name, 0)
-                    .ok_or_else(invalid)?
-                    .as_u64(name)
-                    .map_err(|_| invalid())
-            };
-            let member_of = read("render.member_of.u64")?;
-            let members = read("render.node_members.u64")?;
-            let edge_members = read("render.edge_members.u64")?;
-            if member_of.len() != nodes.len()
-                || nv
-                    .iter()
-                    .zip(&member_of)
-                    .any(|(&v, &m)| v == 0 && m != u64::MAX)
-                || members
-                    .iter()
-                    .any(|&i| i >= nv.len() as u64 || nv[i as usize] == 0)
-                || edge_members
-                    .iter()
-                    .any(|&i| i >= ev.len() as u64 || ev[i as usize] == 0)
-            {
-                return Err(invalid());
-            }
+            validate_publication(&reply, nv, ev, &source, &target)?;
             crate::graphforge::interaction::wire::decode_paint(publication)
                 .map_err(|_| invalid())?;
             crate::graphforge::interaction::wire::validate_gpu(publication)
@@ -435,6 +519,77 @@ mod tests {
         )
         .unwrap()
     }
+    #[test]
+    fn retained_codec_rejects_rechecksummed_cpu_maps() {
+        let bytes = include_bytes!(
+            "../../../spec/performance/temporal-graph-freeze-2026-11-07/retained.xyfg"
+        );
+        assert!(FrozenTemporalGraph::decode(bytes, MAX_PEAK).is_ok());
+        let body_len = bytes.len() - 8;
+        let frozen = Container::decode(&bytes[..body_len], MAGIC).unwrap();
+        let publication = frozen.get("render.publication", 0).unwrap();
+        let reply = Container::decode(publication.payload, b"XYGR").unwrap();
+        for (name, index, value) in [
+            ("render.edge_target.u64", 0, 999999),
+            ("render.edge_source.u64", 0, 1),
+            ("render.member_of.u64", 0, 999999),
+            ("render.node_member_offsets.u64", 0, 999999),
+            ("render.node_member_offsets.u64", 1, 0),
+            ("render.node_members.u64", 1, 0),
+            ("render.edge_member_offsets.u64", 0, 1),
+            ("render.edge_member_offsets.u64", 1, 0),
+            ("render.edge_members.u64", 1, 0),
+            ("render.node_y.f64", 0, f64::NAN.to_bits()),
+            ("render.node_x.f64", 0, f64::INFINITY.to_bits()),
+        ] {
+            let section = reply.get(name, 0).unwrap();
+            let at = section.payload.as_ptr() as usize - bytes.as_ptr() as usize + index * 8;
+            let mut bad = bytes.to_vec();
+            bad[at..at + 8].copy_from_slice(&value.to_le_bytes());
+            let mut hash = Blake2s8::new();
+            hash.update(b"xyg-frozen-temporal-v1");
+            hash.update(&bad[..body_len]);
+            bad[body_len..].copy_from_slice(&hash.finish());
+            assert_eq!(
+                FrozenTemporalGraph::decode(&bad, MAX_PEAK).unwrap_err(),
+                TemporalError::InvalidArgument,
+                "{name} #{index}"
+            );
+        }
+    }
+
+    #[test]
+    fn publication_validation_accepts_aggregate_inverse_and_edge_members() {
+        let mut b = Builder::new(b"XYGR");
+        b.f64s("render.node_x.f64", 0, &[0., 1.]);
+        b.f64s("render.node_y.f64", 0, &[0., 1.]);
+        b.u64s("render.member_of.u64", 0, &[0, 0, 1]);
+        b.u64s("render.node_member_offsets.u64", 0, &[0, 2, 3]);
+        b.u64s("render.node_members.u64", 0, &[0, 1, 2]);
+        b.u64s("render.edge_source.u64", 0, &[0, 1]);
+        b.u64s("render.edge_target.u64", 0, &[1, 0]);
+        b.u64s("render.edge_member_offsets.u64", 0, &[0, 2, 3]);
+        b.u64s("render.edge_members.u64", 0, &[0, 1, 2]);
+        b.u64s("render.edges_kept.u64", 0, &[2]);
+        for name in [
+            "render.visual_states.u8",
+            "render.emphasis.u8",
+            "render.edge_visual_states.u8",
+            "render.edge_emphasis.u8",
+        ] {
+            b.u8s(name, 0, &[0, 0]);
+        }
+        let bytes = b.finish();
+        let reply = Container::decode(&bytes, b"XYGR").unwrap();
+        assert!(
+            validate_publication(&reply, &[1, 1, 1], &[1, 1, 1], &[0, 1, 2], &[2, 2, 0]).is_ok()
+        );
+        assert_eq!(
+            validate_publication(&reply, &[1, 1, 1], &[1, 1, 1], &[0, 1, 2], &[2, 1, 0]),
+            Err(TemporalError::InvalidArgument)
+        );
+    }
+
     #[test]
     fn acquisition_is_immutable_and_cross_instance_stale_budget_cancel_are_atomic() {
         let mut g = graph();

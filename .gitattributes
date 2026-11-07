@@ -209,3 +209,8 @@ spec/api/export.md text eol=lf
 spec/design/host-parity.md text eol=lf
 
 spec/design/graph-mark.md text eol=lf
+
+# Current frozen-publication validation correction and immutable failure evidence.
+spec/performance/temporal-frozen-publication-validation-2026-11-07/*.json text eol=lf
+spec/performance/temporal-frozen-publication-validation-2026-11-07/*.md text eol=lf
+spec/performance/temporal-frozen-publication-validation-2026-11-07/*.gz -text

@@ -82,3 +82,11 @@ test('existing native bound publication capture preserves positions, styles and 
     assert.deepEqual(frozen.toBytes(),raw);const imported=FrozenTemporalGraph.fromBytes(raw);imported.close();
   }finally{frozen?.close();if(session[0])native.xyGraphforgeSessionDestroy(session[0]);if(temporal!=null)abi.temporalGraphDestroy(temporal);abi.graphProjectionDestroy(projection);}
 });
+
+test('native import refuses independently rechecksummed malformed publication planes',()=>{
+  const result=spawnSync(process.env.UV??'/home/ubuntu/.local/bin/uv',['run','python','-c',`import base64,json,sys;sys.path.insert(0,'tests');from test_temporal_graph_frozen import PUBLICATION_MUTATIONS,malformed_retained_publication
+print(json.dumps([base64.b64encode(malformed_retained_publication(name,values)).decode() for name,values in PUBLICATION_MUTATIONS]))`],{cwd:root,encoding:'utf8',env:process.env,maxBuffer:8*1024*1024});
+  assert.equal(result.status,0,result.stderr);
+  const mutations=JSON.parse(result.stdout);assert.equal(mutations.length,20);
+  for(const [index,encoded] of mutations.entries())assert.throws(()=>FrozenTemporalGraph.fromBytes(new Uint8Array(Buffer.from(encoded,'base64'))),`malformed publication #${index}`);
+});

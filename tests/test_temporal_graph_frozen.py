@@ -6,6 +6,7 @@ import ctypes as ct
 import hashlib
 import json
 import os
+import struct
 from pathlib import Path
 
 import numpy as np
@@ -319,3 +320,54 @@ def test_native_short_copy_no_partial_write_and_registry_capacity():
                 f.close()
         with freeze(g, 1) as f:
             assert f.metadata["identity"][1] == 1
+
+
+PUBLICATION_MUTATIONS = [
+    ("render.edge_target.u64", [999999, 1, 2, 0]),
+    ("render.edge_source.u64", [999999, 0, 1, 0]),
+    ("render.member_of.u64", [999999, 1, 2]),
+    ("render.node_member_offsets.u64", [999999, 1, 2, 3]),
+    ("render.node_y.f64", [float("nan"), 160, 160]),
+    ("render.node_x.f64", [float("inf"), 300, 500]),
+    ("render.node_y.f64", [160]),
+    ("render.edge_target.u64", []),
+    ("render.node_member_offsets.u64", [0, 1, 2, 999999]),
+    ("render.node_member_offsets.u64", [0, 2, 1, 3]),
+    ("render.node_members.u64", [0, 0, 2]),
+    ("render.member_of.u64", [1, 1, 2]),
+    ("render.edge_source.u64", [1, 0, 1, 0]),
+    ("render.edge_member_offsets.u64", [1, 1, 2, 3, 4]),
+    ("render.edge_member_offsets.u64", [0, 0, 2, 3, 4]),
+    ("render.edge_member_offsets.u64", [0, 2, 1, 3, 4]),
+    ("render.edge_member_offsets.u64", [0, 1, 2, 3, 999999]),
+    ("render.edge_members.u64", [0, 0, 2, 3]),
+    ("render.edge_visual_states.u8", []),
+    ("render.emphasis.u8", []),
+]
+
+
+def malformed_retained_publication(name, values):
+    """Reframe with authoritative original dtypes and an independent valid checksum."""
+    raw = (
+        Path(__file__).resolve().parents[1]
+        / "spec/performance/temporal-graph-freeze-2026-11-07/retained.xyfg"
+    ).read_bytes()
+    outer = decode_container(raw[:-8], "XYFG")
+    publication = outer["render.publication", 0]
+    fields = decode_container(publication, "XYGR")
+    fields[name, 0] = values
+    count = struct.unpack_from("<I", publication, 8)[0]
+    names = 32 + count * 40
+    descriptors = []
+    for i in range(count):
+        offset, size, dtype, index = struct.unpack_from("<IIII", publication, 32 + i * 40)
+        field = publication[names + offset : names + offset + size].decode("ascii")
+        descriptors.append((field, index, dtype, fields[field, index]))
+    outer["render.publication", 0] = encode_container("XYGR", descriptors)
+    return reencode(outer)
+
+
+@pytest.mark.parametrize("name,values", PUBLICATION_MUTATIONS)
+def test_rechecksummed_retained_publication_rejects_invalid_topology(name, values):
+    with pytest.raises(xyg.TemporalGraphError):
+        xyg.FrozenTemporalGraph.from_bytes(malformed_retained_publication(name, values))

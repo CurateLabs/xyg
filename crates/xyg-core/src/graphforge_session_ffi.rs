@@ -44,7 +44,9 @@ struct NativeHost {
 }
 
 impl TemporalHost for NativeHost {
-    fn owner_identity(&self) -> usize { Arc::as_ptr(&self.entry) as usize }
+    fn owner_identity(&self) -> usize {
+        Arc::as_ptr(&self.entry) as usize
+    }
     fn with_graph(&self, handle: TemporalHandle, f: &mut dyn FnMut(&mut TemporalGraph)) -> bool {
         if handle.0 != self.handle || self.entry.disposed.load(Ordering::Acquire) {
             return false;
@@ -394,6 +396,38 @@ pub unsafe extern "C" fn xyg_graphforge_session_destroy(handle: u64) -> i32 {
         entry.session.lock().expect("graph session poisoned").take();
         0
     })
+}
+
+/// Borrow a retained publication while holding the same session lock as commands.
+pub(crate) fn with_frozen_publication<T>(
+    handle: u64,
+    owner: usize,
+    temporal: u64,
+    frame_revision: u64,
+    render_revision: u32,
+    f: impl FnOnce(
+        xyg_engine::temporal_graph_frozen::Publication<'_>,
+    ) -> Result<T, xyg_engine::temporal::TemporalError>,
+) -> Result<T, xyg_engine::temporal::TemporalError> {
+    use xyg_engine::temporal::TemporalError as E;
+    let entry = entry(handle).ok_or(E::StaleHandle)?;
+    let slot = entry.session.lock().expect("graph session poisoned");
+    let session = slot.as_ref().ok_or(E::Disposed)?;
+    let publication = session
+        .frozen_publication(
+            owner,
+            TemporalHandle(temporal),
+            frame_revision,
+            render_revision,
+        )
+        .map_err(|e| {
+            if e == InteractionStatus::Stale {
+                E::StaleRevision
+            } else {
+                E::InvalidArgument
+            }
+        })?;
+    f(publication)
 }
 
 #[cfg(test)]
@@ -1013,14 +1047,4 @@ mod tests {
         drop(guard);
         assert!(!worker.join().unwrap());
     }
-}
-
-/// Borrow a retained publication while holding the same session lock as commands.
-pub(crate) fn with_frozen_publication<T>(handle: u64, owner: usize, temporal: u64, frame_revision: u64, render_revision: u32, f: impl FnOnce(xyg_engine::temporal_graph_frozen::Publication<'_>) -> Result<T, xyg_engine::temporal::TemporalError>) -> Result<T, xyg_engine::temporal::TemporalError> {
-    use xyg_engine::temporal::TemporalError as E;
-    let entry = entry(handle).ok_or(E::StaleHandle)?;
-    let slot = entry.session.lock().expect("graph session poisoned");
-    let session = slot.as_ref().ok_or(E::Disposed)?;
-    let publication = session.frozen_publication(owner, TemporalHandle(temporal), frame_revision, render_revision).map_err(|e| if e == InteractionStatus::Stale { E::StaleRevision } else { E::InvalidArgument })?;
-    f(publication)
 }

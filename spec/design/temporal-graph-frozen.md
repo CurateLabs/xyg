@@ -105,8 +105,16 @@ Decode validates checksum, canonical framing/padding/order, exact section types,
 nonzero unique source UUIDs, endpoint bounds/closure, exact visible memberships,
 canonical ordered selection/pins, focus membership, temporal/window ingress,
 selection count, and source/publication identity/topology. Attached publications
-also pass the existing CPU paint and GPU validators, temporal member visibility
-checks, and render-revision check. Unknown sections, versions, noncanonical
+also pass the existing CPU paint and GPU validators and render-revision check.
+Their CPU render planes must have matching counts and finite x/y positions;
+edge endpoints must name render nodes. Node and edge CSR offsets start at zero,
+end at the exact member count and delimit nonempty, ascending member lists.
+Node lists and source-to-render maps are exact inverses. Source edges appear
+at most once and their mapped source endpoints agree with their render edge;
+all represented source entities must be temporally visible. Visual-state and
+emphasis planes match the corresponding render counts. These checks validate
+imported publications as well as acquisition; a recomputed checksum cannot
+replace topology and membership validation. Unknown sections, versions, noncanonical
 padding/trailing bytes, malformed or cross-source publications fail. Re-encoding
 an accepted snapshot is byte-exact. Different live instances deliberately have
 different provenance tokens even for equivalent source data.
