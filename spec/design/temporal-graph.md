@@ -288,3 +288,11 @@ window/timezone ingress, frame-versus-publication state, limits and refusal rule
 This is a functional programmatic checkpoint; the rendered HTML/PNG/SVG adapters
 and browser/WASM freeze attachment described above remain open. It does not
 close #45, milestones 4–7, or the original complete frozen-export task.
+
+The ABI404/WASM36 [retained export continuation](temporal-graph-frozen.md) now
+adds actual Worker/controller freeze and computed CSS capture, native
+SVG/PNG/HTML and browser Scene/XYPB/SVG/HTML, with exact whole-artifact recovery
+after scrub/disposal. HTML uses the shipped ChartView painter. WASM PNG remains
+an explicit unavailable resource error under unchanged single-module caps;
+full #45 scale/aggregate/accessibility and PNG parity remain open. Prior
+acquisition/native-only statements above describe historical checkpoints.

@@ -297,3 +297,5 @@ pub mod transition;
 pub mod coordination;
 
 pub mod temporal_graph_export;
+
+mod graph_marker_contour;

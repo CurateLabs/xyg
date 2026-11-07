@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ctypes as ct
+import struct
 from types import MappingProxyType
 
 from . import _native
@@ -66,16 +67,35 @@ class FrozenTemporalGraph:
         )
         return bytes(buf)
 
-    def export(self, format, *, focus_rgba, scale=1.0, budget_bytes=MAX_PEAK):
-        """Render retained native paint. focus_rgba explicitly supplies uncaptured CSS."""
+    def export(self, format, *, focus_rgba=None, scale=1.0, budget_bytes=MAX_PEAK):
+        """Render captured paint; v1 snapshots require an explicit focus override."""
         formats = {"svg": 0, "png": 1, "html": 2, "scene": 3, "painter": 4}
-        return _export(self.to_bytes(), formats[format], scale, focus_rgba, budget_bytes)
+        client = b""
+        if format == "html":
+            from .export import _bundled_js
+
+            client = _bundled_js().encode("utf-8")
+        return _execute(
+            self.to_bytes(), 1, formats[format], scale, focus_rgba, budget_bytes, client
+        )
+
+    def capture_focus(self, focus_rgba, *, budget_bytes=MAX_PEAK):
+        """Return v2 provenance with an explicit resolved display color."""
+        return self.from_bytes(
+            _execute(self.to_bytes(), 3, 0, 1.0, focus_rgba, budget_bytes),
+            budget_bytes=budget_bytes,
+        )
 
     @classmethod
     def from_artifact(cls, data, *, budget_bytes=MAX_PEAK):
         """Validate the complete rendered artifact and recover its exact XYFG."""
+        client = b""
+        if memoryview(data).cast("B")[:15].tobytes() == b"<!doctype html>":
+            from .export import _bundled_js
+
+            client = _bundled_js().encode("utf-8")
         return cls.from_bytes(
-            _export(data, 5, 1.0, (0, 0, 0, 0), budget_bytes), budget_bytes=budget_bytes
+            _execute(data, 2, 0, 1.0, None, budget_bytes, client), budget_bytes=budget_bytes
         )
 
     @property
@@ -156,24 +176,46 @@ def freeze(
     return FrozenTemporalGraph(_ISSUED, handle.value)
 
 
-def _export(data, format, scale, focus_rgba, budget):
-    if len(focus_rgba) != 4 or any(type(v) is not int or not 0 <= v <= 255 for v in focus_rgba):
+def _execute(data, operation, format, scale, focus, budget, client=b""):
+    if focus is not None and (
+        len(focus) != 4 or any(type(v) is not int or not 0 <= v <= 255 for v in focus)
+    ):
         raise ValueError("focus_rgba requires four integer bytes")
-    if len(data) > MAX_PEAK // 4:
-        raise ValueError("artifact exceeds admission limit")
-    raw = bytes(data)
-    buf = (ct.c_uint8 * len(raw)).from_buffer_copy(raw)
-    rgba = int.from_bytes(bytes(focus_rgba), "little")
-    length = ct.c_uint64()
+    view = memoryview(data)
+    if view.nbytes + len(client) > MAX_PEAK // 4 or (
+        operation in (1, 3, 4) and view.nbytes > MAX_BYTES
+    ):
+        raise ValueError("frozen input exceeds admission limit")
+    data = bytes(view)
+    packet = bytearray(64)
+    packet[:4] = b"XYFX"
+    struct.pack_into(
+        "<IIIIIdQQQ",
+        packet,
+        4,
+        1,
+        operation,
+        format,
+        int.from_bytes(bytes(focus or (0, 0, 0, 0)), "little"),
+        int(focus is not None),
+        scale,
+        len(data),
+        len(client),
+        budget,
+    )
+    packet.extend(data)
+    packet.extend(client)
+    buf = (ct.c_uint8 * len(packet)).from_buffer_copy(packet)
+    size = ct.c_uint64()
 
-    def call(out, capacity):
-        return _native._lib.xyg_temporal_graph_frozen_export(
-            buf, len(raw), format, scale, rgba, budget, out, capacity, ct.byref(length)
+    def call(out, cap):
+        return _native._lib.xyg_temporal_graph_frozen_execute(
+            buf, len(buf), budget, out, cap, ct.byref(size)
         )
 
     status = call(None, 0)
     if status != -9:
         _check(status)
-    out = (ct.c_uint8 * length.value)()
+    out = (ct.c_uint8 * size.value)()
     _check(call(out, len(out)))
     return bytes(out)

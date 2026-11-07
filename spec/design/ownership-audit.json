@@ -4457,6 +4457,70 @@
       "disposition": "keep-rust",
       "follow_up_issue": null,
       "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/graph_marker_contour.rs",
+      "current_owner": "Rust safe engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "policy": "rust-engine",
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/temporal_graph_export.rs",
+      "current_owner": "Rust safe engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "policy": "rust-engine",
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/temporal_graph_frozen.rs",
+      "current_owner": "Rust safe engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "policy": "rust-engine",
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-core/src/temporal_graph_frozen_ffi.rs",
+      "current_owner": "Rust C ABI shell",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "policy": "rust-c-abi",
+      "rationale": "One versioned cdylib serves ctypes, Koffi, and future browser-facing adapters."
+    },
+    {
+      "path": "crates/xyg-wasm/src/temporal_graph_frozen.rs",
+      "current_owner": "Rust WASM lifecycle adapter",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "policy": "rust-wasm-abi",
+      "rationale": "Issue #59 needs a minimal target-specific lifecycle shell over the same safe Rust engine."
+    },
+    {
+      "path": "python/xyg/_temporal_graph_frozen.py",
+      "current_owner": "Python host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "policy": "python-host",
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "packages/xy-node/src/temporal-graph-frozen.js",
+      "current_owner": "Node host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "policy": "node-host",
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
+      "path": "js/src/67_frozen_graph.ts",
+      "policy": "browser-wasm-adapter",
+      "current_owner": "Shared TypeScript WASM lifecycle adapter",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation."
     }
   ]
 }

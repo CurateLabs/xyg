@@ -672,6 +672,8 @@ jobs:
           node scripts/geo_overview_painter_snapshot_conformance.mjs
       - name: Strict-CSP local-only lifecycle smoke
         timeout-minutes: 10
+        env:
+          XYG_NATIVE_LIB: ${{ github.workspace }}/target/release/libxyg_core.so
         run: node scripts/wasm_foundation_smoke.mjs
       - name: Strict-CSP GeoColumn ingestion smoke
         timeout-minutes: 10

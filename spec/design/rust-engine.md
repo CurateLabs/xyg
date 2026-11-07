@@ -1009,5 +1009,8 @@ A combined chart snapshot reports each distinct x-range candidate metadata chunk
 ABI402 adds immutable native temporal graph snapshot acquire/import/copy/destroy
 entry points. `temporal_graph_frozen.rs` owns XYFG canonical validation and
 admission; hosts marshal typed scalars and own no graph membership policy. This
-[native checkpoint](temporal-graph-frozen.md) leaves rendered export and public
-WASM freeze attachment open and preserves historical ABI transition receipts.
+[snapshot contract](temporal-graph-frozen.md) preserves historical ABI transition
+receipts. ABI404/WASM36 add the shared XYFX retained Scene export/recovery path;
+Rust owns bounded phase splitting, shared-SDF contours, carrier consistency and
+actual private Worker frame acquisition. Native PNG uses the existing raster
+renderer; WASM PNG remains an explicit resource error under unchanged caps.

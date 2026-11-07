@@ -582,8 +582,8 @@ export class ChartView {
     // dense pyplot subplot grids legitimately build sub-120px panels whose
     // plot boxes must land exactly on their matplotlib rects.
     this.size = {
-      w: Math.max(this._borrowedSurface ? 1 : this.fluid ? 120 : 48, cw),
-      h: Math.max(this._borrowedSurface ? 1 : this.fluidH ? 120 : 48, ch),
+      w: Math.max(this._borrowedSurface || this.spec?._frozen_pixel_ratio ? 1 : this.fluid ? 120 : 48, cw),
+      h: Math.max(this._borrowedSurface || this.spec?._frozen_pixel_ratio ? 1 : this.fluidH ? 120 : 48, ch),
     };
     this._layout();
 
@@ -2466,7 +2466,7 @@ export class ChartView {
     const h = this.fluidH && cssH ? Math.max(120, Math.round(cssH)) : this.size.h;
     // Browser zoom changes devicePixelRatio with no container resize (R7);
     // re-read it so backing stores stay crisp on a pure-DPR change too.
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = this.spec?._frozen_pixel_ratio || window.devicePixelRatio || 1;
     if (!forceLayout && w === this.size.w && h === this.size.h && dpr === this.dpr) return;
     this.dpr = dpr;
     this.size.w = w;
@@ -3963,16 +3963,16 @@ export class ChartView {
   }
 
   _initGl(buffer) {
-    const dpr = this._borrowedSurface?.pixelRatio || window.devicePixelRatio || 1;
+    const dpr = this._borrowedSurface?.pixelRatio || this.spec?._frozen_pixel_ratio || window.devicePixelRatio || 1;
     this.dpr = dpr;
-    this.canvas.width = this._borrowedSurface?.gl.drawingBufferWidth ?? this.plot.w * dpr;
-    this.canvas.height = this._borrowedSurface?.gl.drawingBufferHeight ?? this.plot.h * dpr;
-    this.chrome.width = this.size.w * dpr;
-    this.chrome.height = this.size.h * dpr;
+    this.canvas.width = this._borrowedSurface?.gl.drawingBufferWidth ?? (this.spec?._frozen_pixel_ratio?Math.round(this.plot.w*dpr):this.plot.w*dpr);
+    this.canvas.height = this._borrowedSurface?.gl.drawingBufferHeight ?? (this.spec?._frozen_pixel_ratio?Math.round(this.plot.h*dpr):this.plot.h*dpr);
+    this.chrome.width = this.spec?._frozen_pixel_ratio?Math.round(this.size.w*dpr):this.size.w*dpr;
+    this.chrome.height = this.spec?._frozen_pixel_ratio?Math.round(this.size.h*dpr):this.size.h*dpr;
     this.chrome.style.width = this.size.w + "px";
     this.chrome.style.height = this.size.h + "px";
-    this.overlay.width = this.size.w * dpr;
-    this.overlay.height = this.size.h * dpr;
+    this.overlay.width = this.spec?._frozen_pixel_ratio?Math.round(this.size.w*dpr):this.size.w*dpr;
+    this.overlay.height = this.spec?._frozen_pixel_ratio?Math.round(this.size.h*dpr):this.size.h*dpr;
     this.overlay.style.width = this.size.w + "px";
     this.overlay.style.height = this.size.h + "px";
 

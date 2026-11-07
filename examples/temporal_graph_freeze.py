@@ -1,4 +1,7 @@
-"""Acquire an immutable native snapshot; rendered export is a later checkpoint.
+"""Acquire an immutable native snapshot without an attached painter.
+
+Rendered export requires an accepted retained publication; see
+spec/design/temporal-graph-frozen.md and tests/browser/temporal_graph_frozen_page.mjs.
 
 Run: uv run python examples/temporal_graph_freeze.py /path/to/frame.xyfg
 """

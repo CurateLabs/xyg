@@ -398,3 +398,5 @@ export type { GeoOverviewFrozenBinary, OverviewBinaryFreezeOptions } from './74_
 
 export { attachWasmGraphSession } from "./63_graph_controller";
 export type { XygWasmGraphSession, XygWasmGraphSessionOptions, XygWasmGraphSnapshot, XygWasmGraphCamera, XygWasmGraphLoad } from "./63_graph_controller";
+
+export {XygFrozenTemporalGraph} from './67_frozen_graph';

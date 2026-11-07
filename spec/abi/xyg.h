@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 403
-#define XYG_ABI_SIGNATURE_SHA256 "dd1f0905f36bd580d18c204e3858f60899e0008b8e414f34c7e59bc44c46b483"
+#define XYG_ABI_VERSION 404
+#define XYG_ABI_SIGNATURE_SHA256 "63292817c0c4d6dfbf2ec2e9eb18edd1ee09cd58e691198eb09ca7796ceffaeb"
 
 #ifdef __cplusplus
 extern "C" {
@@ -528,6 +528,7 @@ int32_t xyg_temporal_graph_frame(uint64_t handle, uint64_t revision, int64_t cur
 int32_t xyg_temporal_graph_freeze(uint64_t handle, uint64_t revision, uint32_t window_kind, int64_t window_start, int64_t window_end, const uint8_t * timezone, uint64_t timezone_len, uint64_t session, uint32_t render_revision, uint64_t budget, uint64_t * out_handle);
 int32_t xyg_temporal_graph_frozen_copy(uint64_t handle, uint8_t * out, uint64_t capacity, uint64_t * out_len);
 int32_t xyg_temporal_graph_frozen_destroy(uint64_t handle);
+int32_t xyg_temporal_graph_frozen_execute(const uint8_t * data, uint64_t len, uint64_t budget, uint8_t * out, uint64_t out_cap, uint64_t * out_len);
 int32_t xyg_temporal_graph_frozen_export(const uint8_t * data, uint64_t len, uint32_t format, double scale, uint32_t focus_rgba, uint64_t budget, uint8_t * out, uint64_t out_cap, uint64_t * out_len);
 int32_t xyg_temporal_graph_frozen_import(const uint8_t * data, uint64_t len, uint64_t budget, uint64_t * out_handle);
 int32_t xyg_temporal_graph_required_budget(uint64_t handle, uint64_t * out_budget);

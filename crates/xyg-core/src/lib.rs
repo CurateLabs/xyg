@@ -203,7 +203,7 @@ pub use graphforge_session_ffi::*;
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 403;
+pub const ABI_VERSION: u32 = 404;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -33240,6 +33240,43 @@ pub unsafe extern "C" fn xyg_temporal_graph_frozen_export(
             )
         };
         match result {
+            Err(e) => e as i32,
+            Ok(bytes) => {
+                *out_len = bytes.len() as u64;
+                if out_cap < bytes.len() as u64 || out.is_null() {
+                    return E::OutputCapacity as i32;
+                }
+                std::ptr::copy_nonoverlapping(bytes.as_ptr(), out, bytes.len());
+                0
+            }
+        }
+    })
+}
+
+/// Execute the shared XYFX frozen-graph export/import command, including HTML.
+/// Reports exact required output length; short capacity writes no output bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_graph_frozen_execute(
+    data: *const u8,
+    len: u64,
+    budget: u64,
+    out: *mut u8,
+    out_cap: u64,
+    out_len: *mut u64,
+) -> i32 {
+    use xyg_engine::temporal::TemporalError as E;
+    ffi_guard(E::InvalidArgument as i32, || {
+        if out_len.is_null() {
+            return E::InvalidArgument as i32;
+        }
+        *out_len = 0;
+        if len > 384 * 1024 * 1024 || budget > 384 * 1024 * 1024 || data.is_null() {
+            return E::InvalidArgument as i32;
+        }
+        match xyg_engine::temporal_graph_export::execute_packet(
+            std::slice::from_raw_parts(data, len as usize),
+            budget as usize,
+        ) {
             Err(e) => e as i32,
             Ok(bytes) => {
                 *out_len = bytes.len() as u64;

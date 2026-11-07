@@ -341,16 +341,13 @@ retains the baked face, and the existing PDF font policy is unchanged.
 ## Temporal graph acquisition checkpoint
 
 `TemporalGraph.freeze` in Python and Node captures independent immutable native
-provenance and optional retained publication planes. It currently supplies
-`to_bytes` / `toBytes` and offline import, not image output. The
-[XYFG contract](../design/temporal-graph-frozen.md) and
-[checkpoint evidence](../performance/temporal-graph-freeze-2026-11-07/README.md)
-list exact ingress, limits and remaining HTML/PNG/SVG/browser work. Do not treat
-this checkpoint as frozen rendered-artifact acceptance.
-
-Frozen temporal native snapshots expose `export("svg"|"png"|"html"|"scene"|"painter",
-focus_rgba=(r,g,b,a), scale=1)` (Node uses `{focusRgba:[r,g,b,a],scale:1}`).
-`FrozenTemporalGraph.from_artifact(bytes)` / `.fromArtifact(bytes)` validates
-and recovers the exact original XYFG. See the normative
-[retained-paint contract](../design/temporal-graph-frozen.md#native-retained-paint-export-continuation-abi-403)
-for admission, focus override, inline SVG HTML and remaining #45 acceptance.
+provenance and optional retained publication planes. Native snapshots export
+SVG/PNG/HTML/Scene/XYPB through the shared retained-paint canonical Scene path.
+V1 requires an explicit `focus_rgba` / `focusRgba` override; v2 defaults to its
+captured color. `from_artifact` / `fromArtifact` validates the whole artifact and
+recovers exact full XYFG. HTML embeds Scene/XYPB and the shipped ChartView client
+for sidecar-free offline paint. Public browser `session.freeze` captures the
+actual Worker publication and computed CSS focus; browser export supports
+Scene/XYPB/SVG/HTML. WASM PNG explicitly returns an unavailable resource error;
+full #45 acceptance remains open. See the normative
+[retained export contract](../design/temporal-graph-frozen.md).

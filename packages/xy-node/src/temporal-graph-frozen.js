@@ -1,7 +1,9 @@
+import {readFileSync} from 'node:fs';
+import {standaloneClientPath} from './html.js';
 /** Immutable native XYFG ownership. No graph filtering, layout or export policy. */
 import {
   xyTemporalGraphFreeze, xyTemporalGraphFrozenImport,
-  xyTemporalGraphFrozenCopy, xyTemporalGraphFrozenDestroy, xyTemporalGraphFrozenExport, pointer,
+  xyTemporalGraphFrozenCopy, xyTemporalGraphFrozenDestroy, xyTemporalGraphFrozenExecute, pointer,
 } from './native.js';
 import { TemporalGraphError } from './abi.js';
 import { decodeContainer } from './graphforge-container.js';
@@ -37,13 +39,16 @@ export class FrozenTemporalGraph {
     check(xyTemporalGraphFrozenCopy(this.#handle, ptr(bytes), BigInt(bytes.length), u64ptr(size)));
     return bytes;
   }
-  export(format, {focusRgba, scale=1, budgetBytes=MAX_PEAK}) {
+  export(format, {focusRgba, scale=1, budgetBytes=MAX_PEAK}={}) {
     const code={svg:0,png:1,html:2,scene:3,painter:4}[format];
     if (code===undefined) throw new TypeError('unknown frozen format');
-    return exportBytes(this.toBytes(),code,scale,focusRgba,budgetBytes);
+    return executePacket(this.toBytes(),1,code,scale,focusRgba,budgetBytes,format==='html'?readFileSync(standaloneClientPath()):new Uint8Array());
   }
   static fromArtifact(data,{budgetBytes=MAX_PEAK}={}) {
-    return this.fromBytes(exportBytes(data,5,1,[0,0,0,0],budgetBytes),{budgetBytes});
+    return this.fromBytes(executePacket(data,2,0,1,null,budgetBytes,new TextDecoder().decode(data.subarray(0,15))==='<!doctype html>'?readFileSync(standaloneClientPath()):new Uint8Array()),{budgetBytes});
+  }
+  captureFocus(focusRgba,{budgetBytes=MAX_PEAK}={}) {
+    return FrozenTemporalGraph.fromBytes(executePacket(this.toBytes(),3,0,1,focusRgba,budgetBytes),{budgetBytes});
   }
   get metadata() {
     const bytes = this.toBytes();
@@ -73,11 +78,11 @@ export function freezeTemporalGraph(handle, {revision, timezone, window = null, 
   return new FrozenTemporalGraph(issued,out[0]);
 }
 
-function exportBytes(data,format,scale,focus,budget) {
-  if (!(data instanceof Uint8Array) || data.length>Number(MAX_PEAK/4n)) throw new TypeError('bounded Uint8Array required');
-  if (!Array.isArray(focus) || focus.length!==4 || !focus.every(v=>Number.isInteger(v)&&v>=0&&v<=255)) throw new TypeError('focusRgba requires four byte values');
-  const raw=data.slice(), size=new BigUint64Array(1), rgba=(focus[0]|focus[1]<<8|focus[2]<<16|focus[3]<<24)>>>0;
-  const call=(out,capacity)=>xyTemporalGraphFrozenExport(ptr(raw),BigInt(raw.length),format,scale,rgba,scalar(budget,'budgetBytes'),out,capacity,u64ptr(size));
-  const status=call(null,0n);if(status!==-9)check(status);
-  const out=new Uint8Array(Number(size[0]));check(call(ptr(out),BigInt(out.length)));return out;
+function executePacket(data,operation,format,scale,focus,budget,client=new Uint8Array()) {
+  budget=scalar(budget,'budgetBytes');
+  if (!(data instanceof Uint8Array) || data.length+client.length>Number((budget<MAX_PEAK?budget:MAX_PEAK)/4n) || ([1,3,4].includes(operation)&&data.length>MAX_BYTES) || client.length>8*1024*1024) throw new TypeError('bounded bytes required');
+  if (focus!=null && (!Array.isArray(focus)||focus.length!==4||!focus.every(v=>Number.isInteger(v)&&v>=0&&v<=255))) throw new TypeError('focusRgba requires four byte values');
+  const packet=new Uint8Array(64+data.length+client.length),v=new DataView(packet.buffer);packet.set([88,89,70,88]);v.setUint32(4,1,true);v.setUint32(8,operation,true);v.setUint32(12,format,true);
+  if(focus!=null){packet.set(focus,16);v.setUint32(20,1,true);}v.setFloat64(24,scale,true);v.setBigUint64(32,BigInt(data.length),true);v.setBigUint64(40,BigInt(client.length),true);v.setBigUint64(48,budget,true);packet.set(data,64);packet.set(client,64+data.length);
+  const size=new BigUint64Array(1),call=(out,cap)=>xyTemporalGraphFrozenExecute(ptr(packet),BigInt(packet.length),budget,out,cap,u64ptr(size));const status=call(null,0n);if(status!==-9)check(status);const out=new Uint8Array(Number(size[0]));check(call(ptr(out),BigInt(out.length)));return out;
 }

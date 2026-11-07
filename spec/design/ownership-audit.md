@@ -1369,6 +1369,15 @@ These additions use the existing ownership policies without adding a host policy
 | `crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 
+| `crates/xyg-engine/src/graph_marker_contour.rs` | Rust safe engine | `rust-engine` | `keep-rust`; The safe engine is the single implementation of parity-affecting behavior. | — |
+| `crates/xyg-engine/src/temporal_graph_export.rs` | Rust safe engine | `rust-engine` | `keep-rust`; The safe engine is the single implementation of parity-affecting behavior. | — |
+| `crates/xyg-engine/src/temporal_graph_frozen.rs` | Rust safe engine | `rust-engine` | `keep-rust`; The safe engine is the single implementation of parity-affecting behavior. | — |
+| `crates/xyg-core/src/temporal_graph_frozen_ffi.rs` | Rust C ABI shell | `rust-c-abi` | `keep-rust`; One versioned cdylib serves ctypes, Koffi, and future browser-facing adapters. | — |
+| `crates/xyg-wasm/src/temporal_graph_frozen.rs` | Rust WASM lifecycle adapter | `rust-wasm-abi` | `implement-rust-wasm`; Issue #59 needs a minimal target-specific lifecycle shell over the same safe Rust engine. | #59 |
+| `python/xyg/_temporal_graph_frozen.py` | Python host | `python-host` | `keep-host`; This file provides Python-specific ergonomics without making Rust-owned product decisions. | — |
+| `packages/xy-node/src/temporal-graph-frozen.js` | Node host | `node-host` | `keep-host`; This file is a Node-specific shell around shared engine and paint-client contracts. | — |
+| `js/src/67_frozen_graph.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation. | #59 |
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.
@@ -1479,3 +1488,17 @@ The R7 inventory review disposition classifies the five R6 picked-target Rust
 test modules in the file ledger under the existing `rust-engine` policy, without
 a new policy or exclusion. They cover exact receipts, projection admission,
 retry/atomicity and diagnostic corpus generation for the shared Rust owner.
+
+### Frozen retained graph export continuation
+
+`graph_marker_contour.rs`, `temporal_graph_frozen.rs` and
+`temporal_graph_export.rs` are **rust-engine**: bounded shared-SDF lowering,
+phase splitting, immutable provenance, carrier validation and shared Scene
+export. `xyg-core/temporal_graph_frozen_ffi.rs` is **rust-c-abi**.
+`xyg-wasm/temporal_graph_frozen.rs` is **rust-wasm-abi**, borrowing actual
+accepted private owners and enforcing lifetime/budget/status boundaries.
+`js/src/67_frozen_graph.ts` is **browser-wasm-adapter**: binary framing and owned
+copies only. The controller captures computed CSS through the existing painter
+parser. Python/Node frozen modules are **python-host**/**node-host** package
+client discovery, scalar marshaling and native ownership. No second chart
+builder, layout, routing, semantic style resolver or renderer is introduced.

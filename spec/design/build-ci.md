@@ -197,3 +197,20 @@ existing WASM foundation / Release surfaces gate; no separate CI job or timing
 gate is added. Staged-package and focused density-only runs keep their existing
 scope. `XYG_GRAPH_SCHEDULING_REPORT` optionally records this sub-run's raw report
 and canvas captures. The focused command uses `XYG_GRAPH_SESSION_REPORT`.
+
+The full source-dist WASM foundation also executes
+`temporal_graph_frozen_smoke.mjs`: actual Worker session/controller capture,
+computed CSS focus, six glyphs and a focused compound frame, source scrub and
+disposal, native/WASM Scene/XYPB/SVG/HTML byte oracles, exact artifact recovery,
+independent retained head/phase/layer/position vectors and native/offline
+ChartView pixels. This is part of the existing gate, with no conditional
+fallback, deadline/cap increase or separate CI job. The ordinary discovered
+pytest frozen suite and explicit Node test list also cover the boundary.
+WASM PNG refusal is asserted explicitly; it does not count as PNG acceptance.
+
+The source foundation step explicitly names its already-built native core in
+`XYG_NATIVE_LIB` for the frozen cross-host oracle; the workflow verifier requires
+that binding. The discovered pytest journey passes its actually loaded ctypes
+library path to Node, so both hosts exercise the same candidate even when the
+parent shell has no native override. Commands, triggers, deadlines, package caps
+and the existing Release surfaces aggregate remain unchanged.

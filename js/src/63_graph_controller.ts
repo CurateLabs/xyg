@@ -1,10 +1,11 @@
+import {XygFrozenTemporalGraph,issuedFrozenGraph} from './67_frozen_graph';
 import type { XygTemporalState, XygWasmTemporalController } from "./49_wasm_temporal";
 import { encodeWasmTemporalGraphCreate, encodeWasmTemporalGraphFrame, decodeWasmTemporalGraphFrame,
   type XygWasmTemporalGraphBinding, type XygWasmTemporalGraphFrame } from "./49_wasm_temporal_graph";
 /** Experimental explicit retained WASM graph attachment (#36 bounded S5b).
  * Rust owns every graph decision; this module owns pointer/keyboard/DOM/lifetime only.
  * See spec/design/graph-interaction.md “Bounded explicit S5b attachment”. */
-import { XYG_WASM_GRAPH_DEFAULT_CHUNK_STEPS, XYG_WASM_GRAPH_DEFAULT_MAX_WALL_MS } from "./wasm_abi_generated";
+import { XYG_WASM_TEMPORAL_GRAPH_FRAME_CONTEXT as FRAME_CONTEXT, XYG_WASM_GRAPH_DEFAULT_CHUNK_STEPS, XYG_WASM_GRAPH_DEFAULT_MAX_WALL_MS } from "./wasm_abi_generated";
 import { claimGraphWorker, XygWasmError, type XygWasmWorker } from "./47_wasm";
 import { createGraphGpuPainter, decodeGraphGpu } from "./63_graph_gpu";
 import { decodeGraphSessionAck, decodeGraphSessionResult, encodeGraphSessionRequest,
@@ -37,6 +38,7 @@ export interface XygWasmGraphSession {
   refreshRender(camera?: XygWasmGraphCamera): Promise<XygWasmGraphSnapshot>;
   snapshot(): XygWasmGraphSnapshot | null;
   whenIdle(): Promise<void>;
+  freeze(options:{timezone:string;window?:readonly [bigint,bigint]|null;budgetBytes?:bigint}):Promise<XygFrozenTemporalGraph>;
   pinFocused(pinned: boolean): Promise<XygWasmGraphSnapshot>;
   dispose(): Promise<void>;
 }
@@ -207,8 +209,9 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   async function computeTime() {
     const state = pendingTime!, current = intent; pendingTime = null;
     const revision = ++timeRevision;
-    const bytes = await lane.temporalFrame(new Uint8Array(encodeWasmTemporalGraphFrame(revision,
-      state.cursor, [state.rangeStart, state.rangeEnd], temporalBudget!)));
+    const baseFrame=new Uint8Array(encodeWasmTemporalGraphFrame(revision,state.cursor,[state.rangeStart,state.rangeEnd],temporalBudget!));
+    const contextualFrame=new Uint8Array(FRAME_CONTEXT.header_bytes);contextualFrame.set(baseFrame);const contextView=new DataView(contextualFrame.buffer);contextView.setUint32(4,FRAME_CONTEXT.version,true);contextView.setUint32(8,FRAME_CONTEXT.header_bytes,true);contextView.setBigInt64(FRAME_CONTEXT.window_offset,state.window,true);contextView.setBigUint64(FRAME_CONTEXT.revision_offset,state.revision,true);
+    const bytes=await lane.temporalFrame(contextualFrame);
     const membership = decodeWasmTemporalGraphFrame(bytes);
     if (membership.revision !== revision) throw new XygWasmError("GF_INTERACTION_STALE", "Temporal frame revision mismatch", -1);
     // Rust may have advanced while the previous picture stays mounted. Until a
@@ -403,6 +406,16 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
     disposal = lane.close(); return disposal;
   }
   return Object.freeze({ ready, snapshot, dispose,
+    async freeze(freezeOptions:{timezone:string;window?:readonly [bigint,bigint]|null;budgetBytes?:bigint}) {
+      if(disposed||terminal||busy||pendingTime||temporalPumping||needsRefresh||!output||!acceptedMembership)throw new XygWasmError('GF_INTERACTION_STALE','Freeze requires an idle accepted temporal publication',-1);
+      const zone=new TextEncoder().encode(freezeOptions.timezone);if(zone.length>128)throw new RangeError('timezone too long');
+      const color=painter.focusRgba();
+      const request=new Uint8Array(64+zone.length+16),v=new DataView(request.buffer);request.set([88,89,70,88]);v.setUint32(4,1,true);v.setUint32(12,sessionRevision,true);
+      v.setBigUint64(24,acceptedMembership.revision,true);if(freezeOptions.window){if(freezeOptions.window.length!==2||freezeOptions.window.some(n=>typeof n!=='bigint'||n<-(1n<<63n)||n>=(1n<<63n)))throw new RangeError('window requires exact i64 endpoints');v.setUint32(20,1,true);v.setBigInt64(32,freezeOptions.window[0],true);v.setBigInt64(40,freezeOptions.window[1],true);}
+      v.setBigUint64(48,freezeOptions.budgetBytes??384n*1024n*1024n,true);v.setBigUint64(56,BigInt(zone.length),true);request.set(zone,64);for(let i=0;i<4;i++)v.setFloat32(64+zone.length+i*4,Number(color[i]),true);
+      setBusy(true);
+      try{return issuedFrozenGraph(new Uint8Array(await lane.freeze(request)));}finally{setBusy(false);}
+    },
     async whenIdle() {
       await ready;
       while (!disposed && !terminal && (busy || pendingTime || temporalPumping)) await new Promise<void>(resolve => idleWaiters.add(resolve));

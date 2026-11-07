@@ -267,3 +267,24 @@ spec/performance/temporal-native-render-2026-11-07/*.gz -text
 spec/performance/temporal-native-render-2026-11-07/artifacts/* -text
 spec/performance/temporal-native-render-2026-11-07/predecessor402/* -text
 crates/xyg-engine/src/graphforge/interaction/tests/wire.rs text eol=lf
+
+# Current frozen Worker/Scene export source and immutable successor receipts.
+.cargo/config.toml text eol=lf
+Cargo.toml text eol=lf
+crates/**/*.rs text eol=lf
+crates/**/Cargo.toml text eol=lf
+spec/design-dossier.md text eol=lf
+spec/design/browser-wasm.md text eol=lf
+spec/api/browser-wasm.md text eol=lf
+scripts/gen_wasm_abi.py text eol=lf
+scripts/verify_temporal_frozen_artifacts.py text eol=lf
+spec/wasm/abi.json text eol=lf
+spec/performance/temporal-worker-export-2026-11-07/*.json text eol=lf
+spec/performance/temporal-worker-export-2026-11-07/*.md text eol=lf
+spec/performance/temporal-worker-export-2026-11-07/*.gz -text
+spec/performance/temporal-worker-export-2026-11-07/*.patch -text
+spec/performance/temporal-worker-export-2026-11-07/artifacts/** -text
+spec/performance/temporal-worker-export-2026-11-07/predecessor403/** -text
+scripts/gen_capability_matrix.py text eol=lf
+spec/performance/temporal-worker-export-2026-11-07/*.txt text eol=lf
+spec/performance/temporal-worker-export-2026-11-07/*.patch whitespace=-blank-at-eol,-blank-at-eof

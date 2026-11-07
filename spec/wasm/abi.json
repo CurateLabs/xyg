@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "abi_version": 35,
+  "abi_version": 36,
   "scene_version": 34,
   "painter_version": 17,
   "painter_header_bytes": 420,
@@ -129,6 +129,7 @@
     "max_nodes": 1024
   },
   "exports": [
+    {"name": "xyg_wasm_frozen_graph_execute", "params": ["u32", "usize", "usize"], "result": "i32"},
     {"name": "xyg_wasm_geo_tile_frame_prepare", "params": ["u32", "u32", "u64", "u64"], "result": "i32"},
     {"name": "xyg_wasm_geo_tile_execute", "params": ["u32", "u32", "usize", "usize"], "result": "i32"},
     {"name": "xyg_wasm_geo_tile_read", "params": ["u32", "u32", "usize", "usize"], "result": "i32"},
@@ -574,6 +575,7 @@
     "version": 1,
     "create_header_bytes": 32,
     "frame_header_bytes": 56,
+    "frame_context": {"version": 2, "header_bytes": 72, "window_offset": 56, "revision_offset": 64},
     "output_magic": "XYTF",
     "output_header_bytes": 64,
     "max_entities": 5000000

@@ -1,4 +1,4 @@
-"""Public native checkpoint; no HTML/PNG/SVG or browser acceptance claim."""
+"""Immutable native and actual Worker retained export regressions; #45 stays open."""
 
 from __future__ import annotations
 
@@ -71,6 +71,12 @@ def reencode(fields):
         "render.camera": D.F64,
         "render.document": D.BYTES,
         "render.publication": D.BYTES,
+        "render.focus.rgba": D.U8,
+        "render.focus.f32": D.BYTES,
+        "render.focus.origin": D.U32,
+        "controller.kind": D.U32,
+        "controller.window": D.I64,
+        "controller.revision": D.U64,
     }
     body = encode_container(
         "XYFG",
@@ -79,7 +85,9 @@ def reencode(fields):
     return (
         body
         + hashlib.blake2s(
-            b"xyg-frozen-temporal-v1" + body, digest_size=8, person=b"xykeyv1"
+            b"xyg-frozen-temporal-v" + str(fields["version", 0][0]).encode() + body,
+            digest_size=8,
+            person=b"xykeyv1",
         ).digest()
     )
 
@@ -388,7 +396,10 @@ def test_frozen_projection_uses_css_coordinates_independent_of_dpr():
 
 
 @pytest.mark.parametrize("dpr", [1, 2])
-def test_rendered_exports_survive_disposal_and_reject_body_tampering(tmp_path, dpr):
+@pytest.mark.parametrize("focus_kind,focus_id", [("node", 1), ("edge", 11)])
+def test_rendered_exports_survive_disposal_and_reject_body_tampering(
+    tmp_path, dpr, focus_kind, focus_id
+):
     import io
 
     from PIL import Image
@@ -407,7 +418,7 @@ def test_rendered_exports_survive_disposal_and_reject_body_tampering(tmp_path, d
     )
     with graph() as g, GraphSession(doc, opening, instance_id=971123, group_id=9) as session:
         g.set_selection(nodes=ids([1]), edges=ids([11])).set_focus(
-            "node", bytes([1]) * 16
+            focus_kind, bytes([focus_id]) * 16
         ).set_pinned(ids([1]))
         publish(g, FIXTURE["frames"][0])
         bound = session.bind_temporal(
@@ -418,6 +429,10 @@ def test_rendered_exports_survive_disposal_and_reject_body_tampering(tmp_path, d
         rev = int(decode_container(reply, "XYGR")["header.u32", 0][0])
         frozen = freeze(g, 1, session=session, render_revision=rev)
         raw = frozen.to_bytes()
+        if os.environ.get("XYG_FROZEN_CAPTURE"):
+            Path(os.environ["XYG_FROZEN_CAPTURE"], f"{focus_kind}-focus-dpr{dpr}.xyfg").write_bytes(
+                raw
+            )
         buf = (ct.c_uint8 * len(raw)).from_buffer_copy(raw)
         sentinel = (ct.c_uint8 * 1)(0xA5)
         required = ct.c_uint64()
@@ -444,14 +459,14 @@ def test_rendered_exports_survive_disposal_and_reject_body_tampering(tmp_path, d
             assert frozen.export(fmt, focus_rgba=(170, 153, 236, 255)) == artifact
             (tmp_path / f"frozen.{fmt}").write_bytes(artifact)
             if os.environ.get("XYG_FROZEN_CAPTURE"):
-                Path(os.environ["XYG_FROZEN_CAPTURE"], f"render-dpr{dpr}.{fmt}").write_bytes(
-                    artifact
-                )
+                Path(
+                    os.environ["XYG_FROZEN_CAPTURE"], f"render-{focus_kind}-dpr{dpr}.{fmt}"
+                ).write_bytes(artifact)
             with xyg.FrozenTemporalGraph.from_artifact(artifact) as recovered:
                 assert recovered.to_bytes() == raw
                 assert recovered.metadata["selected.node.uuid"] == packed([1])
                 assert recovered.metadata["pinned.node.uuid"] == packed([1])
-                assert recovered.metadata["focus.uuid"] == packed([1])
+                assert recovered.metadata["focus.uuid"] == packed([focus_id])
                 assert recovered.export(fmt, focus_rgba=(170, 153, 236, 255)) == artifact
             for invalid in [artifact[:-1], artifact + b"x", artifact[:20] + b"!" + artifact[21:]]:
                 with pytest.raises(xyg.TemporalGraphError):
@@ -489,10 +504,119 @@ def test_rendered_exports_survive_disposal_and_reject_body_tampering(tmp_path, d
         )
         assert result.returncode == 0, result.stderr
         browser = Image.open(tmp_path / "offline.png").convert("RGB")
-        assert browser.getpixel((68, 68)) != browser.getpixel((228, 168))
+        assert browser.getpixel((60, 60)) != browser.getpixel((220, 160))
         assert frozen.export("scene", focus_rgba=(170, 153, 236, 255))[:4] == b"XYGS"
         assert frozen.export("painter", focus_rgba=(170, 153, 236, 255))[:4] == b"XYPB"
         with pytest.raises(xyg.TemporalGraphError):
             frozen.export("png", focus_rgba=(170, 153, 236, 255), budget_bytes=1)
     finally:
         frozen.close()
+
+
+def test_real_worker_capture_import_and_offline_chartview(tmp_path):
+    import shutil
+    import subprocess
+
+    from xyg.export import find_chromium
+
+    chromium = find_chromium(os.environ.get("XYG_FROZEN_CHROMIUM"))
+    assert chromium is not None, "frozen Worker acceptance requires Chromium"
+    node = shutil.which("node")
+    assert node is not None, "frozen Worker acceptance requires Node22"
+    env = dict(os.environ, XYG_CHROMIUM=chromium, XYG_NATIVE_LIB=str(_native._lib._name))
+    result = subprocess.run(
+        [node, "scripts/temporal_graph_frozen_smoke.mjs", str(tmp_path)],
+        cwd=Path(__file__).resolve().parents[1],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=180,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_presentation_v2_exact_roundtrip_malformed_and_carrier_binding():
+    raw = (
+        Path(__file__).resolve().parents[1]
+        / "spec/performance/temporal-native-render-2026-11-07/artifacts/retained-later.xyfg"
+    ).read_bytes()
+    with (
+        xyg.FrozenTemporalGraph.from_bytes(raw) as original,
+        original.capture_focus((77, 110, 159, 191)) as frozen,
+    ):
+        captured = frozen.to_bytes()
+        assert original.to_bytes() == raw
+        m = frozen.metadata
+        assert m["version"] == (2,) and m["render.focus.origin"] == (0,)
+        assert m["render.focus.rgba"] == (77, 110, 159, 191)
+        assert (
+            m["controller.kind"] == (0,)
+            and m["controller.window"] == (0,)
+            and m["controller.revision"] == (0,)
+        )
+        assert reencode(decode_container(captured[:-8], "XYFG")) == captured
+        for name, value in [
+            ("render.focus.origin", [2]),
+            ("render.focus.rgba", bytes((78, 110, 159, 191))),
+            ("render.focus.f32", struct.pack("<4f", float("nan"), 0, 0, 1)),
+            ("render.focus.f32", struct.pack("<4f", -0.01, 0, 0, 1)),
+            ("render.focus.f32", struct.pack("<4f", 1.01, 0, 0, 1)),
+            ("render.focus.f32", bytes(15)),
+            ("controller.kind", [2]),
+            ("controller.window", [1]),
+            ("controller.revision", [1]),
+        ]:
+            fields = decode_container(captured[:-8], "XYFG")
+            fields[name, 0] = value
+            with pytest.raises(xyg.TemporalGraphError):
+                xyg.FrozenTemporalGraph.from_bytes(reencode(fields))
+        artifact = frozen.export("html")
+        assert (
+            b"xy.hydrateWasmPainter" in artifact
+            and b'id="xyg-scene"' in artifact
+            and b'id="xyg-painter"' in artifact
+        )
+        for marker in (
+            b'id="xyg-scene"',
+            b'id="xyg-painter"',
+            b"data:text/javascript;base64,",
+            b'data-controls="',
+        ):
+            start = artifact.index(marker) + len(marker)
+            if marker.startswith(b"id="):
+                start = artifact.index(b">", start) + 1
+            elif marker == b'data-controls="':
+                pass
+            mutated = artifact[:start] + bytes((artifact[start] ^ 1,)) + artifact[start + 1 :]
+            with pytest.raises(xyg.TemporalGraphError):
+                xyg.FrozenTemporalGraph.from_artifact(mutated)
+        metadata = artifact[
+            artifact.index(b"<metadata") : artifact.index(b"</metadata>") + len(b"</metadata>")
+        ]
+        with pytest.raises(xyg.TemporalGraphError):
+            xyg.FrozenTemporalGraph.from_artifact(artifact + metadata)
+        # New binary ingress also reports the exact size without touching short output.
+        packet = bytearray(64) + captured
+        packet[:4] = b"XYFX"
+        struct.pack_into(
+            "<IIIIIdQQQ", packet, 4, 1, 1, 3, 0, 0, 1.0, len(captured), 0, 384 * 1024 * 1024
+        )
+        buf = (ct.c_uint8 * len(packet)).from_buffer_copy(packet)
+        size = ct.c_uint64()
+        sentinel = (ct.c_uint8 * 7)(*([0xA5] * 7))
+        assert (
+            _native._lib.xyg_temporal_graph_frozen_execute(
+                buf, len(buf), 384 * 1024 * 1024, sentinel, 7, ct.byref(size)
+            )
+            == -9
+        )
+        assert size.value > 7 and bytes(sentinel) == b"\xa5" * 7
+
+
+def test_uncaptured_graph_cannot_export_html_or_scene():
+    with graph() as g:
+        publish(g, FIXTURE["frames"][0])
+        with freeze(g, 1) as f:
+            for format in ("html", "scene", "png", "svg"):
+                with pytest.raises(xyg.TemporalGraphError):
+                    f.export(format, focus_rgba=(1, 2, 3, 255))

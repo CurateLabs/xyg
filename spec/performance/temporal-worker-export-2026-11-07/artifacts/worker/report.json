@@ -1,0 +1,40 @@
+{
+  "report": [
+    {
+      "shape": 0,
+      "parent": false,
+      "snapshotSha256": "b4c11af9ab5323170a01cc97ae5bc30422c5597c532d971a201a623e2714d142"
+    },
+    {
+      "shape": 1,
+      "parent": false,
+      "snapshotSha256": "a9c14ae37279f8d5cd6b17cdd750b8ccaca14b70eb9eb093cbba0f895d00afbd"
+    },
+    {
+      "shape": 2,
+      "parent": false,
+      "snapshotSha256": "e3251c38c89b3738fd9d624b1808a5878f389012965885b62b3cc6ef90e14a43"
+    },
+    {
+      "shape": 3,
+      "parent": false,
+      "snapshotSha256": "847f2c92619c051318531cddde49d0dcceb781ab11e6107ab18c2c8a8f442ed7"
+    },
+    {
+      "shape": 4,
+      "parent": false,
+      "snapshotSha256": "7b1b26c8b032a940ab6c1bd93c46e94c098c1c7e4fac6e57da9a4433de4ba084"
+    },
+    {
+      "shape": 5,
+      "parent": false,
+      "snapshotSha256": "0fb41ff8b658a4fb6ea6df11af8c02b64c61b83857289f1f40e8fc2e43a27106"
+    },
+    {
+      "shape": 5,
+      "parent": true,
+      "snapshotSha256": "011ddcf0661e7cd809096d6244d71320ef0b7aeee754e488c9aa6bbf62a3d2f0"
+    }
+  ],
+  "errors": []
+}

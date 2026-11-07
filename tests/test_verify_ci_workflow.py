@@ -5613,3 +5613,21 @@ def test_chunked_chart_rendering_cannot_be_disabled_in_ci(tmp_path: Path, comman
     path.write_text(prefix + "      - name: Python tests (native core)" + step)
     errors = verify_ci_workflow.validate_ci_workflow(path)
     assert any("required chunked chart rendered snapshots" in error for error in errors)
+
+
+def test_ci_frozen_export_oracle_requires_explicit_native_candidate(tmp_path: Path) -> None:
+    workflow = tmp_path / "ci.yml"
+    source = verify_ci_workflow.DEFAULT_CI_WORKFLOW.read_text()
+    binding = "          XYG_NATIVE_LIB: ${{ github.workspace }}/target/release/libxyg_core.so\n"
+    step = (
+        "      - name: Strict-CSP local-only lifecycle smoke\n"
+        "        timeout-minutes: 10\n"
+        "        env:\n" + binding + "        run: node scripts/wasm_foundation_smoke.mjs\n"
+    )
+    assert source.count(step) == 1
+    workflow.write_text(source.replace(step, step.replace(binding, "")))
+    errors = verify_ci_workflow.validate_ci_workflow(workflow)
+    assert any(
+        "explicit native artifact for frozen native/WASM export oracles" in error
+        for error in errors
+    )

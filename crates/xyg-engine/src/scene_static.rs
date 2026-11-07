@@ -126,7 +126,7 @@ fn rasterize_rgba(
     Ok(out)
 }
 
-fn rasterize_png(
+pub(crate) fn rasterize_png(
     cmds: &[u8],
     width: usize,
     height: usize,

@@ -2145,19 +2145,13 @@ JupyterLab node-callback/UUID-selection delivery. Prior receipts remain historic
 Full notebook frontend, exact geometric UUID sets, export and rendered size
 ladder acceptance for #1015/#36/#35 remains open.
 
-### Native immutable temporal graph snapshots
+### Immutable temporal graph snapshots and retained exports
 
-Python `TemporalGraph.freeze` / Node `TemporalGraph.freeze` acquire the same
-Rust-owned [XYFG v1 snapshot](temporal-graph-frozen.md). Native bindings only
-marshal exact scalars and copy validated immutable bytes; they never filter
-source topology. The bounded history fixture pins complete native cross-host
-bytes, including hidden/reappearing UUID state. Optional existing native session
-capture retains exact accepted publication/camera bytes. Browser/WASM attachment
-and rendered HTML/PNG/SVG provenance proof remain a subsequent checkpoint.
-
-Native frozen temporal graph exports (ABI403) use the same retained-paint to
-canonical Scene lowering and artifact consistency recovery in Python and Node.
-Both hosts require an explicit focus RGBA override; neither interprets v1 as
-capturing CSS. HTML currently embeds Rust Scene SVG. Shared XYPB ChartView HTML
-framing and public WASM freeze capture remain #45 acceptance requirements; see
-[the frozen contract](temporal-graph-frozen.md).
+Python/Node and the actual browser Worker use Rust-owned XYFG snapshots and
+retained paint-to-canonical-Scene lowering. Hosts marshal typed scalars, capture
+computed CSS presentation and frame HTML with the shipped client; Rust owns
+validation, membership, styles, geometry, dash phase, stable-ID mapping,
+provenance and full-artifact consistency. Native SVG/PNG/HTML and browser
+Scene/XYPB/SVG/HTML share these paths. WASM PNG explicitly remains unavailable
+under the unchanged package caps. See [the versioned frozen contract](temporal-graph-frozen.md).
+Historical ABI402/403 acquisition/native receipts remain immutable.

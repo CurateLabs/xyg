@@ -195,6 +195,7 @@ impl FrozenTemporalGraph {
             .filter(|&n| n <= MAX_PEAK)
             .ok_or(TemporalError::BudgetExceeded)
     }
+    #[inline(never)]
     pub fn acquire(
         graph: &TemporalGraph,
         frame: &TemporalGraphFrame,
@@ -283,12 +284,129 @@ impl FrozenTemporalGraph {
         Self::validate(&bytes, budget)?;
         cancel.publish_if_active(|| Self { bytes })
     }
+    /// XYFG v2 adds an explicit resolved display focus color; v1 bytes stay valid.
+    pub fn with_focus(&self, focus: [u8; 4], budget: usize) -> Result<Self> {
+        self.with_focus_origin(focus.map(|v| v as f32 / 255.), 0, budget)
+    }
+    pub fn with_focus_f32(&self, focus: [f32; 4], budget: usize) -> Result<Self> {
+        self.with_focus_origin(focus, 1, budget)
+    }
+    fn with_focus_origin(&self, focus: [f32; 4], origin: u32, budget: usize) -> Result<Self> {
+        if focus
+            .iter()
+            .any(|v| !v.is_finite() || !(0.0..=1.0).contains(v))
+        {
+            return Err(TemporalError::InvalidArgument);
+        }
+        Self::validate(&self.bytes, budget)?;
+        let c = Container::decode(&self.bytes[..self.bytes.len() - 8], MAGIC)
+            .map_err(|_| TemporalError::InvalidArgument)?;
+        let mut b = Builder::new(MAGIC);
+        for (name, index, section) in &c.sections {
+            if *name == "version" {
+                b.u32s(name, 0, &[2]);
+            } else if !matches!(
+                *name,
+                "render.focus.rgba"
+                    | "render.focus.f32"
+                    | "render.focus.origin"
+                    | "controller.kind"
+                    | "controller.window"
+                    | "controller.revision"
+            ) {
+                b.push(
+                    name,
+                    *index as usize,
+                    section.dtype,
+                    section.count,
+                    section.payload.to_vec(),
+                );
+            }
+        }
+        b.u8s(
+            "render.focus.rgba",
+            0,
+            &focus.map(|v| (v * 255.).round() as u8),
+        );
+        b.bytes(
+            "render.focus.f32",
+            0,
+            &focus
+                .iter()
+                .flat_map(|v| v.to_le_bytes())
+                .collect::<Vec<_>>(),
+        );
+        b.u32s("render.focus.origin", 0, &[origin]);
+        if let Some(kind) = c.get("controller.kind", 0) {
+            for (name, section) in [
+                ("controller.kind", kind),
+                ("controller.window", c.get("controller.window", 0).unwrap()),
+                (
+                    "controller.revision",
+                    c.get("controller.revision", 0).unwrap(),
+                ),
+            ] {
+                b.push(
+                    name,
+                    0,
+                    section.dtype,
+                    section.count,
+                    section.payload.to_vec(),
+                );
+            }
+        } else {
+            b.u32s("controller.kind", 0, &[0]);
+            b.i64s("controller.window", 0, &[0]);
+            b.u64s("controller.revision", 0, &[0]);
+        }
+        let mut bytes = b.finish();
+        let mut h = Blake2s8::new();
+        h.update(b"xyg-frozen-temporal-v2");
+        h.update(&bytes);
+        bytes.extend(h.finish());
+        Self::decode(&bytes, budget)
+    }
+    pub fn with_controller_context(
+        &self,
+        window: i64,
+        revision: u64,
+        budget: usize,
+    ) -> Result<Self> {
+        Self::validate(&self.bytes, budget)?;
+        if window < 0 {
+            return Err(TemporalError::InvalidArgument);
+        }
+        let c = Container::decode(&self.bytes[..self.bytes.len() - 8], MAGIC)
+            .map_err(|_| TemporalError::InvalidArgument)?;
+        let mut b = Builder::new(MAGIC);
+        for (name, index, section) in &c.sections {
+            match *name {
+                "controller.kind" => b.u32s(name, 0, &[1]),
+                "controller.window" => b.i64s(name, 0, &[window]),
+                "controller.revision" => b.u64s(name, 0, &[revision]),
+                _ => b.push(
+                    name,
+                    *index as usize,
+                    section.dtype,
+                    section.count,
+                    section.payload.to_vec(),
+                ),
+            }
+        }
+        let mut bytes = b.finish();
+        let mut hash = Blake2s8::new();
+        hash.update(b"xyg-frozen-temporal-v2");
+        hash.update(&bytes);
+        bytes.extend(hash.finish());
+        Self::decode(&bytes, budget)
+    }
     pub fn decode(bytes: &[u8], budget: usize) -> Result<Self> {
         Self::validate(bytes, budget)?;
         Ok(Self {
             bytes: bytes.to_vec(),
         })
     }
+    #[inline(never)]
     pub fn validate(bytes: &[u8], budget: usize) -> Result<()> {
         Self::admit(bytes.len(), budget)?;
         if bytes.len() < 40 {
@@ -296,7 +414,20 @@ impl FrozenTemporalGraph {
         }
         let (body, digest) = bytes.split_at(bytes.len() - 8);
         let mut hash = Blake2s8::new();
-        hash.update(b"xyg-frozen-temporal-v1");
+        let c0 = Container::decode(body, MAGIC).map_err(|_| TemporalError::InvalidArgument)?;
+        let v = c0
+            .get("version", 0)
+            .ok_or(TemporalError::InvalidArgument)?
+            .as_u32("version")
+            .map_err(|_| TemporalError::InvalidArgument)?;
+        if v != [1] && v != [2] {
+            return Err(TemporalError::InvalidArgument);
+        }
+        hash.update(if v == [2] {
+            b"xyg-frozen-temporal-v2"
+        } else {
+            b"xyg-frozen-temporal-v1"
+        });
         hash.update(body);
         if hash.finish() != digest {
             return Err(TemporalError::InvalidArgument);
@@ -330,7 +461,7 @@ impl FrozenTemporalGraph {
             .map_err(|_| invalid())?;
         crate::temporal::validate_timezone(tz)?;
         if tz.chars().any(char::is_control)
-            || u32s("version")? != [1]
+            || (u32s("version")? != [1] && u32s("version")? != [2])
             || identity.len() != 2
             || identity.contains(&0)
             || time.len() != 3
@@ -476,7 +607,7 @@ impl FrozenTemporalGraph {
                 .map_err(|_| invalid())?;
         }
         // Canonical container: exact section order, types, payloads and padding.
-        let names = [
+        let mut names = vec![
             "version",
             "identity",
             "time",
@@ -501,6 +632,58 @@ impl FrozenTemporalGraph {
             "render.document",
             "render.publication",
         ];
+        if v == [2] {
+            if get("render.focus.rgba", Dtype::U8)?.payload.len() != 4 {
+                return Err(invalid());
+            }
+            names.push("render.focus.rgba");
+            names.push("render.focus.f32");
+            names.push("render.focus.origin");
+            let origin = u32s("render.focus.origin")?;
+            if origin.len() != 1 || origin[0] > 1 {
+                return Err(invalid());
+            }
+            names.extend([
+                "controller.kind",
+                "controller.window",
+                "controller.revision",
+            ]);
+            let kind = u32s("controller.kind")?;
+            let revision = u64s("controller.revision")?;
+            let duration = get("controller.window", Dtype::I64)?
+                .as_i64("controller.window")
+                .map_err(|_| invalid())?;
+            if kind.len() != 1
+                || kind[0] > 1
+                || duration.len() != 1
+                || duration[0] < 0
+                || revision.len() != 1
+                || (kind[0] == 0 && (duration[0] != 0 || revision[0] != 0))
+            {
+                return Err(invalid());
+            }
+
+            let precise = get("render.focus.f32", Dtype::Bytes)?.payload;
+            if precise.len() != 16 {
+                return Err(invalid());
+            }
+            let precise: Vec<_> = precise
+                .chunks_exact(4)
+                .map(|v| f32::from_le_bytes(v.try_into().unwrap()))
+                .collect();
+            if precise.len() != 4
+                || precise
+                    .iter()
+                    .any(|v| !v.is_finite() || !(0.0..=1.0).contains(v))
+                || precise
+                    .iter()
+                    .map(|v| (v * 255.).round() as u8)
+                    .collect::<Vec<_>>()
+                    != get("render.focus.rgba", Dtype::U8)?.payload
+            {
+                return Err(invalid());
+            }
+        }
         if c.sections.len() != names.len()
             || c.sections
                 .iter()

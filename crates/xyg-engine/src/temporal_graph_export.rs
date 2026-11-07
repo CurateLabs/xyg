@@ -52,19 +52,38 @@ fn marker(
     .map_err(bad)
 }
 fn frame(c: &mut Columns, id: u64, b: [f64; 4], color: [u8; 4], half: f64) -> Result<()> {
-    let style = c.style([0; 4], color, half * 2.);
-    c.row(
-        SceneRecordKind::Rect,
-        id,
-        style,
-        0.,
-        0,
-        b[0],
-        b[1],
-        b[2],
-        b[3],
-    )
-    .map_err(bad)
+    if half <= 0. || color[3] == 0 {
+        return Ok(());
+    }
+    let style = c.style(color, [0; 4], 0.);
+    let [x0, y0, x1, y1] = b;
+    let outer = [x0 - half, y0 - half, x1 + half, y1 + half];
+    let inner = [x0 + half, y0 + half, x1 - half, y1 - half];
+    let rectangles = if inner[0] >= inner[2] || inner[1] >= inner[3] {
+        vec![outer]
+    } else {
+        vec![
+            [outer[0], outer[1], outer[2], inner[1]],
+            [outer[0], inner[3], outer[2], outer[3]],
+            [outer[0], inner[1], inner[0], inner[3]],
+            [inner[2], inner[1], outer[2], inner[3]],
+        ]
+    };
+    for r in rectangles {
+        c.row(
+            SceneRecordKind::Rect,
+            id,
+            style,
+            0.,
+            0,
+            r[0],
+            r[1],
+            r[2],
+            r[3],
+        )
+        .map_err(bad)?;
+    }
+    Ok(())
 }
 // Count and split the same phase-aware CSS distance interval before allocating columns.
 fn intervals(
@@ -98,9 +117,10 @@ fn intervals(
     }
     Ok(())
 }
-/// Literal IDs map nodes to 1+render ordinal, edges to 2^48+ordinal,
+/// Literal IDs map nodes to 1+render ordinal, edges to 2*2^48+ordinal,
 /// frames to 3*2^48+node ordinal. Exact UUID/CSR maps remain in XYFG.
 /// Focus RGBA is an explicit export override: v1 never captured browser CSS.
+#[inline(never)]
 pub fn canonical_scene(bytes: &[u8], focus: [u8; 4], budget: usize) -> Result<Vec<u8>> {
     let frozen = FrozenTemporalGraph::decode(bytes, budget)?;
     let source = Container::decode(&frozen.bytes()[..bytes.len() - 8], b"XYFG").map_err(bad)?;
@@ -120,23 +140,40 @@ pub fn canonical_scene(bytes: &[u8], focus: [u8; 4], budget: usize) -> Result<Ve
         .get("render.edge_emphasis.u8", 0)
         .ok_or(E::InvalidArgument)?
         .payload;
-    if paint
-        .nodes
-        .iter()
-        .enumerate()
-        .any(|(i, n)| nf[i] & 1 != 0 && n.style.shape > 1)
-    {
-        // v1 Scene markers cannot express a constant SDF offset for every symbol.
-        // Refuse rather than substitute a scaled symbol and claim exact focus.
-        return Err(E::InvalidArgument);
-    }
     // Reserve columns, prepared records, Scene, painter and encode slack before expansion.
-    let mut records = paint
-        .nodes
-        .len()
-        .checked_mul(3)
-        .and_then(|n| n.checked_add(paint.frames.len() * 16))
-        .ok_or(E::CapacityExceeded)?;
+    let mut records =
+        paint
+            .nodes
+            .iter()
+            .enumerate()
+            .try_fold(paint.frames.len() * 16, |n, (i, node)| {
+                let body = (if node.style.shape <= 1 {
+                    1
+                } else {
+                    crate::graph_marker_contour::record_bound(
+                        node.style.size as f64,
+                        node.style.shape,
+                        None,
+                        -(node.style.width as f64),
+                    )
+                }) + crate::graph_marker_contour::record_bound(
+                    node.style.size as f64,
+                    node.style.shape,
+                    Some(-(node.style.width as f64)),
+                    0.,
+                );
+                let focus = if nf[i] & 1 != 0 {
+                    crate::graph_marker_contour::record_bound(
+                        node.style.size as f64,
+                        node.style.shape,
+                        Some(1.),
+                        3.,
+                    )
+                } else {
+                    0
+                };
+                n.checked_add(1 + body + focus).ok_or(E::CapacityExceeded)
+            })?;
     for p in &paint.pieces {
         let length = (p.end[0] - p.start[0]).hypot(p.end[1] - p.start[1]);
         intervals(length, p.dash.0, p.dash.1, p.dash_offset, |_, _| {
@@ -161,20 +198,16 @@ pub fn canonical_scene(bytes: &[u8], focus: [u8; 4], budget: usize) -> Result<Ve
     };
     for (i, n) in paint.nodes.iter().enumerate() {
         admit_style(n.layers.halo, [0; 4], 0., false)?;
-        admit_style(n.layers.body, n.layers.stroke, n.style.width as f64, false)?;
+        admit_style(n.layers.body, [0; 4], 0., false)?;
+        admit_style(n.layers.stroke, [0; 4], 0., false)?;
         if nf[i] & 1 != 0 {
-            admit_style([0; 4], focus, 2., false)?;
+            admit_style(focus, [0; 4], 0., false)?;
         }
     }
     for f in &paint.frames {
-        admit_style(
-            [0; 4],
-            paint.nodes[f.node].layers.stroke,
-            f.half_width * 2.,
-            false,
-        )?;
+        admit_style(paint.nodes[f.node].layers.stroke, [0; 4], 0., false)?;
         if nf[f.node] & 1 != 0 {
-            admit_style([0; 4], focus, (f.half_width + 2.) * 2., false)?;
+            admit_style(focus, [0; 4], 0., false)?;
         }
     }
     for p in &paint.pieces {
@@ -262,16 +295,44 @@ pub fn canonical_scene(bytes: &[u8], focus: [u8; 4], budget: usize) -> Result<Ve
             [0; 4],
             0.,
         )?;
-        marker(
-            &mut c,
-            1 + i as u64,
-            n.center,
-            n.style.size as f64,
-            n.style.shape,
-            n.layers.body,
-            n.layers.stroke,
-            n.style.width as f64,
-        )?;
+        let width = n.style.width as f64;
+        if n.style.shape <= 1 {
+            // Fill-only primitives avoid the generic Scene stroke-path radius
+            // convention: retained graph strokes are disjoint inset SDF bands.
+            marker(
+                &mut c,
+                1 + i as u64,
+                n.center,
+                (n.style.size as f64 - 2. * width).max(0.),
+                n.style.shape,
+                n.layers.body,
+                [0; 4],
+                0.,
+            )?;
+        } else {
+            crate::graph_marker_contour::append(
+                &mut c,
+                1 + i as u64,
+                n.center,
+                n.style.size as f64,
+                n.style.shape,
+                None,
+                -width,
+                n.layers.body,
+            )?;
+        }
+        if width > 0. {
+            crate::graph_marker_contour::append(
+                &mut c,
+                1 + i as u64,
+                n.center,
+                n.style.size as f64,
+                n.style.shape,
+                Some(-width),
+                0.,
+                n.layers.stroke,
+            )?;
+        }
     }
     for f in &paint.frames {
         if nf[f.node] & 1 != 0 {
@@ -308,16 +369,15 @@ pub fn canonical_scene(bytes: &[u8], focus: [u8; 4], budget: usize) -> Result<Ve
     }
     for (i, n) in paint.nodes.iter().enumerate() {
         if nf[i] & 1 != 0 {
-            // Scene's marker outlines are inset; outer extent is three CSS px beyond body.
-            marker(
+            crate::graph_marker_contour::append(
                 &mut c,
                 1 + i as u64,
                 n.center,
-                n.style.size as f64 + 6.,
+                n.style.size as f64,
                 n.style.shape,
-                [0; 4],
+                Some(1.),
+                3.,
                 focus,
-                2.,
             )?;
         }
     }
@@ -412,6 +472,7 @@ fn chunk(kind: &[u8; 4], body: &[u8]) -> Result<Vec<u8>> {
 }
 /// Format 0 SVG, 1 PNG, 2 offline HTML (inline canonical SVG), 3 Scene, 4 XYPB.
 /// Raster backing pixels = round(CSS extent * camera DPR * scale).
+#[inline(never)]
 pub fn export(
     bytes: &[u8],
     format: u32,
@@ -459,19 +520,21 @@ pub fn export(
     if format == 4 {
         return browser_painter_from_scene(&scene, budget - reserved).map_err(bad);
     }
-    let body = crate::scene_static::scene_static_export(
-        &scene,
-        if format == 1 {
-            crate::scene_static::SceneStaticFormat::Png
-        } else {
-            crate::scene_static::SceneStaticFormat::Svg
-        },
-        resolution,
-        w as usize,
-        h as usize,
-        90,
-    )
-    .map_err(bad)?;
+    let document = SceneDocument::decode(&scene).map_err(bad)?;
+    document.check_mesh_budgets(format == 1).map_err(bad)?;
+    let body = if format == 1 {
+        #[cfg(feature = "raster")]
+        {
+            let commands = document.to_raster_commands(resolution).map_err(bad)?;
+            crate::scene_static::rasterize_png(&commands, w as usize, h as usize).map_err(bad)?
+        }
+        #[cfg(not(feature = "raster"))]
+        {
+            return Err(E::UnitUnsupported);
+        }
+    } else {
+        document.to_svg_retained().into_bytes()
+    };
     if body
         .len()
         .checked_mul(4)
@@ -521,7 +584,14 @@ pub fn export(
 /// Recovery regenerates and compares the entire visible artifact, including PNG
 /// chunk order/CRC, rejecting duplicate carriers and body mutations. Integrity,
 /// not authenticity: callers can produce a new consistent export themselves.
+#[inline(never)]
 pub fn recover(artifact: &[u8], budget: usize) -> Result<Vec<u8>> {
+    recover_impl(artifact, None, budget)
+}
+pub fn recover_with_client(artifact: &[u8], client: &[u8], budget: usize) -> Result<Vec<u8>> {
+    recover_impl(artifact, Some(client), budget)
+}
+fn recover_impl(artifact: &[u8], expected_client: Option<&[u8]>, budget: usize) -> Result<Vec<u8>> {
     if budget > MAX_PEAK || artifact.len() > budget / 4 {
         return Err(E::BudgetExceeded);
     }
@@ -548,15 +618,38 @@ pub fn recover(artifact: &[u8], budget: usize) -> Result<Vec<u8>> {
         while let Some(start) = rest.find(PREFIX) {
             rest = &rest[start + PREFIX.len()..];
             let end = rest.find(SUFFIX).ok_or(E::InvalidArgument)?;
-            carriers.push(rest[..end].as_bytes());
+            carriers.push(&rest.as_bytes()[..end]);
             rest = &rest[end + SUFFIX.len()..];
         }
     }
-    if carriers.len() != 1 || carriers[0].len() > 2 * (crate::temporal_graph_frozen::MAX_BYTES + 24)
+    if carriers.len() != 1
+        || carriers[0].len() > 2 * (crate::temporal_graph_frozen::MAX_BYTES + 8 * 1024 * 1024 + 40)
     {
         return Err(E::InvalidArgument);
     }
     let raw = unhex(carriers[0])?;
+    if raw.len() >= 40 && &raw[..4] == b"XYFE" && raw[4..8] == 2u32.to_le_bytes() {
+        if raw[8..12] != 2u32.to_le_bytes() {
+            return Err(E::InvalidArgument);
+        }
+        let n =
+            usize::try_from(u64::from_le_bytes(raw[24..32].try_into().unwrap())).map_err(bad)?;
+        let m =
+            usize::try_from(u64::from_le_bytes(raw[32..40].try_into().unwrap())).map_err(bad)?;
+        if n.checked_add(m).and_then(|n| n.checked_add(40)) != Some(raw.len()) {
+            return Err(E::InvalidArgument);
+        }
+        if expected_client != Some(&raw[40 + n..]) {
+            return Err(E::InvalidArgument);
+        }
+        let data = &raw[40..40 + n];
+        let scale = f64::from_le_bytes(raw[12..20].try_into().unwrap());
+        let focus = raw[20..24].try_into().unwrap();
+        if export_html(data, &raw[40 + n..], scale, focus, budget)? != artifact {
+            return Err(E::InvalidArgument);
+        }
+        return Ok(data.to_vec());
+    }
     if raw.len() < 24 || &raw[..4] != b"XYFE" || raw[4..8] != 1u32.to_le_bytes() {
         return Err(E::InvalidArgument);
     }
@@ -571,6 +664,170 @@ pub fn recover(artifact: &[u8], budget: usize) -> Result<Vec<u8>> {
         return Err(E::InvalidArgument);
     }
     Ok(bytes.to_vec())
+}
+
+
+
+/// One bounded numerical binary ingress, identical in native and WASM.
+/// XYFX v1, 64-byte header, then data and optional shipped-client bytes.
+pub fn execute_packet(packet: &[u8], limit: usize) -> Result<Vec<u8>> {
+    if packet.len() < 64
+        || &packet[..4] != b"XYFX"
+        || packet[4..8] != 1u32.to_le_bytes()
+        || packet[56..64] != [0; 8]
+    {
+        return Err(E::InvalidArgument);
+    }
+    let u32at = |i| u32::from_le_bytes(packet[i..i + 4].try_into().unwrap());
+    let u64at = |i| u64::from_le_bytes(packet[i..i + 8].try_into().unwrap());
+    let n = usize::try_from(u64at(32)).map_err(bad)?;
+    let client = usize::try_from(u64at(40)).map_err(bad)?;
+    let budget = usize::try_from(u64at(48)).map_err(bad)?.min(limit);
+    if n.checked_add(client).and_then(|n| n.checked_add(64)) != Some(packet.len())
+        || packet.len() > budget / 4
+    {
+        return Err(E::BudgetExceeded);
+    }
+    let data = &packet[64..64 + n];
+    let bundle = &packet[64 + n..];
+    let format = u32at(12);
+    if u32at(8) == 2 {
+        return if client == 0 {
+            recover(data, budget)
+        } else {
+            recover_with_client(data, bundle, budget)
+        };
+    }
+    if u32at(8) == 3 {
+        if client != 0 {
+            return Err(E::InvalidArgument);
+        }
+        return Ok(FrozenTemporalGraph::decode(data, budget)?
+            .with_focus(u32at(16).to_le_bytes(), budget)?
+            .bytes()
+            .to_vec());
+    }
+    if u32at(8) == 4 {
+        if client != 0 {
+            return Err(E::InvalidArgument);
+        }
+        FrozenTemporalGraph::validate(data, budget)?;
+        return Ok(data.to_vec());
+    }
+    if u32at(8) != 1 || u32at(20) > 1 {
+        return Err(E::InvalidArgument);
+    }
+    FrozenTemporalGraph::validate(data, budget)?;
+    let focus = if u32at(20) == 1 {
+        u32at(16).to_le_bytes()
+    } else {
+        Container::decode(&data[..data.len() - 8], b"XYFG")
+            .map_err(bad)?
+            .get("render.focus.rgba", 0)
+            .ok_or(E::InvalidArgument)?
+            .payload
+            .try_into()
+            .map_err(bad)?
+    };
+    let scale = f64::from_le_bytes(packet[24..32].try_into().unwrap());
+    if format == 2 {
+        export_html(data, bundle, scale, focus, budget)
+    } else {
+        if client != 0 {
+            return Err(E::InvalidArgument);
+        }
+        export(data, format, scale, focus, budget)
+    }
+}
+
+/// HTML contains the exact canonical Scene and XYPB, using the shipped ChartView.
+/// The client bytes are carried and bound so offline recovery can reproduce it.
+#[inline(never)]
+pub fn export_html(
+    bytes: &[u8],
+    client: &[u8],
+    scale: f64,
+    focus: [u8; 4],
+    budget: usize,
+) -> Result<Vec<u8>> {
+    if client.is_empty()
+        || client.len() > 8 * 1024 * 1024
+        || std::str::from_utf8(client).is_err()
+        || !scale.is_finite()
+        || scale <= 0.
+        || scale > 8.
+    {
+        return Err(E::InvalidArgument);
+    }
+    FrozenTemporalGraph::validate(bytes, budget)?;
+    let c = Container::decode(&bytes[..bytes.len() - 8], b"XYFG").map_err(bad)?;
+    let camera = c
+        .get("render.camera", 0)
+        .ok_or(E::InvalidArgument)?
+        .as_f64("render.camera")
+        .map_err(bad)?;
+    if camera.len() != 7 {
+        return Err(E::InvalidArgument);
+    }
+    let w = (camera[4] * camera[6] * scale).round();
+    let h = (camera[5] * camera[6] * scale).round();
+    if w < 1. || h < 1. || w > 32768. || h > 32768. {
+        return Err(E::CapacityExceeded);
+    }
+    let pixels = (w as usize)
+        .checked_mul(h as usize)
+        .and_then(|n| n.checked_mul(32))
+        .ok_or(E::CapacityExceeded)?;
+    let reserve = client
+        .len()
+        .checked_mul(12)
+        .and_then(|n| n.checked_add(bytes.len().checked_mul(8)?))
+        .and_then(|n| n.checked_add(pixels))
+        .ok_or(E::CapacityExceeded)?;
+    if reserve >= budget {
+        return Err(E::BudgetExceeded);
+    }
+    let scene = canonical_scene(bytes, focus, budget - reserve)?;
+    let painter = browser_painter_from_scene(&scene, budget - reserve).map_err(bad)?;
+    if scene
+        .len()
+        .checked_add(painter.len())
+        .and_then(|n| n.checked_mul(8))
+        .and_then(|n| n.checked_add(reserve))
+        .is_none_or(|n| n > budget)
+    {
+        return Err(E::BudgetExceeded);
+    }
+    let output_bound = (40 + bytes.len() + client.len())
+        .checked_mul(2)
+        .and_then(|n| {
+            n.checked_add(
+                (scene.len() + painter.len() + client.len())
+                    .checked_mul(4)?
+                    .checked_div(3)?
+                    + 4096,
+            )
+        })
+        .ok_or(E::CapacityExceeded)?;
+    if output_bound > budget / 4 - 128 {
+        return Err(E::BudgetExceeded);
+    }
+    let mut carrier = Vec::with_capacity(40 + bytes.len() + client.len());
+    carrier.extend(b"XYFE");
+    carrier.extend(2u32.to_le_bytes());
+    carrier.extend(2u32.to_le_bytes());
+    carrier.extend(scale.to_le_bytes());
+    carrier.extend(focus);
+    carrier.extend((bytes.len() as u64).to_le_bytes());
+    carrier.extend((client.len() as u64).to_le_bytes());
+    carrier.extend(bytes);
+    carrier.extend(client);
+    let encode = crate::scene::encode_base64;
+    let controls: Vec<u8> = [camera[4], camera[5], camera[6] * scale, scale]
+        .iter()
+        .flat_map(|v| v.to_le_bytes())
+        .collect();
+    Ok(format!("<!doctype html><meta charset=\"utf-8\"><title>Frozen temporal graph</title><style>html,body{{margin:0}}#chart{{transform-origin:0 0}}</style><div id=\"chart\" data-controls=\"{}\"></div><svg style=\"display:none\">{PREFIX}{}{SUFFIX}</svg><script id=\"xyg-scene\" type=\"application/octet-stream\">{}</script><script id=\"xyg-painter\" type=\"application/octet-stream\">{}</script><script src=\"data:text/javascript;base64,{}\"></script><script>const chart=document.getElementById('chart'),controlBytes=Uint8Array.from(atob(chart.dataset.controls),c=>c.charCodeAt(0)),control=new DataView(controlBytes.buffer);chart.style.width=control.getFloat64(0,true)+'px';chart.style.height=control.getFloat64(8,true)+'px';chart.style.transform='scale('+control.getFloat64(24,true)+')';const raw=Uint8Array.from(atob(document.getElementById('xyg-painter').textContent),c=>c.charCodeAt(0));window.__xyFrozenView=xy.hydrateWasmPainter(chart,{{painter:raw.buffer,memoryBytes:0,pixelRatio:control.getFloat64(16,true)}});document.documentElement.dataset.xyFrozenReady='true';</script>",encode(&controls),hex(&carrier),encode(&scene),encode(&painter),encode(client)).into_bytes())
 }
 
 #[cfg(test)]

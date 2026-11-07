@@ -1804,6 +1804,11 @@ impl AxisScale {
 
     #[inline(always)]
     pub fn pixel(self, value: f64) -> f64 {
+        // Retained CSS geometry uses identity scales. Avoid a divide/multiply
+        // round trip that would alter exact retained head and trim coordinates.
+        if self.is_linear() && self.px0 == self.coord_lo && self.px_delta == self.coord_span {
+            return value;
+        }
         self.px0 + (self.coord(value) - self.coord_lo) / self.coord_span * self.px_delta
     }
 
@@ -14593,9 +14598,9 @@ impl SceneDocument {
         out.push_str("</g>");
     }
 
-    fn append_svg_plot_clip(&self, out: &mut String) {
+    fn append_svg_plot_clip_policy<const RETAINED: bool>(&self, out: &mut String) {
         out.push_str("<defs><clipPath id=\"xy-scene-plot\"");
-        if let Some(polar) = &self.polar {
+        if let Some(polar) = self.polar.as_ref().filter(|_| !RETAINED) {
             let cx = polar.cx();
             let cy = polar.cy();
             let radius = polar.radius();
@@ -14631,7 +14636,9 @@ impl SceneDocument {
             out.push_str("\"/>");
         }
         out.push_str("</clipPath>");
-        self.append_svg_gradients(out);
+        if !RETAINED {
+            self.append_svg_gradients(out);
+        }
         out.push_str("</defs>");
     }
 
@@ -15053,16 +15060,24 @@ impl SceneDocument {
     }
 
     pub fn to_svg(&self) -> String {
+        self.to_svg_policy::<false>()
+    }
+    /// Frozen retained geometry is already admitted and must not be aggregated.
+    pub(crate) fn to_svg_retained(&self) -> String {
+        self.to_svg_policy::<true>()
+    }
+    fn to_svg_policy<const RETAINED: bool>(&self) -> String {
         // #1006: SVG/PDF write meshes as vector faces up to
         // `MAX_PUBLIC_TRIANGLE_MESH_FACES` faces aggregate; above it each mesh
         // trace is one raster image (`push_svg_dense_mesh`).
-        let dense_mesh = self
-            .records
-            .iter()
-            .filter(|record| record.kind == SceneRecordKind::Triangle)
-            .count()
-            / 3
-            > MAX_PUBLIC_TRIANGLE_MESH_FACES;
+        let dense_mesh = !RETAINED
+            && self
+                .records
+                .iter()
+                .filter(|record| record.kind == SceneRecordKind::Triangle)
+                .count()
+                / 3
+                > MAX_PUBLIC_TRIANGLE_MESH_FACES;
         let mut out = String::with_capacity(self.records.len().saturating_mul(96));
         out.push_str("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"");
         push_num(&mut out, self.layout.viewport_width);
@@ -15073,7 +15088,7 @@ impl SceneDocument {
         out.push(' ');
         push_num(&mut out, self.layout.viewport_height);
         out.push_str("\">");
-        self.append_svg_plot_clip(&mut out);
+        self.append_svg_plot_clip_policy::<RETAINED>(&mut out);
         for (kind, x, y, width, height, paint) in [
             (
                 "chart-background",
@@ -15106,24 +15121,42 @@ impl SceneDocument {
             out.push_str(&rgba_css(paint));
             out.push_str("\"/>");
         }
-        let x_ticks = self.resolved_axis_ticks(true).unwrap_or(AxisTicks {
-            ticks: Vec::new(),
-            labeled: Vec::new(),
-            step: 1.0,
-        });
-        let y_ticks = self.resolved_axis_ticks(false).unwrap_or(AxisTicks {
-            ticks: Vec::new(),
-            labeled: Vec::new(),
-            step: 1.0,
-        });
-        let y2_ticks = self.y2.as_ref().map(|_| {
+        let x_ticks = if RETAINED {
+            AxisTicks {
+                ticks: vec![],
+                labeled: vec![],
+                step: 1.,
+            }
+        } else {
+            self.resolved_axis_ticks(true).unwrap_or(AxisTicks {
+                ticks: Vec::new(),
+                labeled: Vec::new(),
+                step: 1.0,
+            })
+        };
+        let y_ticks = if RETAINED {
+            AxisTicks {
+                ticks: vec![],
+                labeled: vec![],
+                step: 1.,
+            }
+        } else {
+            self.resolved_axis_ticks(false).unwrap_or(AxisTicks {
+                ticks: Vec::new(),
+                labeled: Vec::new(),
+                step: 1.0,
+            })
+        };
+        let y2_ticks = self.y2.as_ref().filter(|_| !RETAINED).map(|_| {
             self.resolved_axis_ticks(AxisSlot::Y2).unwrap_or(AxisTicks {
                 ticks: Vec::new(),
                 labeled: Vec::new(),
                 step: 1.0,
             })
         });
-        if self.chrome.x_axis.has_visible_grid() || self.chrome.y_axis.has_visible_grid() {
+        if !RETAINED
+            && (self.chrome.x_axis.has_visible_grid() || self.chrome.y_axis.has_visible_grid())
+        {
             out.push_str("<g data-xy-chrome=\"grid\">");
             self.append_svg_grid(&mut out, &x_ticks, &y_ticks);
             out.push_str("</g>");
@@ -15139,9 +15172,17 @@ impl SceneDocument {
             let style = self.styles[record.style_ref];
             match record.kind {
                 SceneRecordKind::Scatter => {
-                    let symbol = ScatterSymbol::from_code(record.symbol);
+                    let symbol = if RETAINED {
+                        match record.symbol {
+                            0 => ScatterSymbol::Circle,
+                            1 => ScatterSymbol::Square,
+                            _ => unreachable!("retained noncircular markers are flattened"),
+                        }
+                    } else {
+                        ScatterSymbol::from_code(record.symbol)
+                    };
                     let geometry = MarkerGeometry::new(symbol, record.diameter, style.stroke_width);
-                    if let Some(glyph) = self.style_glyph(record.style_ref) {
+                    if let Some(glyph) = self.style_glyph(record.style_ref).filter(|_| !RETAINED) {
                         push_marker_glyph_svg(
                             &mut out,
                             record.coordinates[0],
@@ -15185,7 +15226,11 @@ impl SceneDocument {
                     out.push_str("\" height=\"");
                     push_num(&mut out, record.coordinates[3] - record.coordinates[1]);
                     out.push('"');
-                    self.push_svg_fill(&mut out, style, record.style_ref);
+                    if RETAINED {
+                        push_paint(&mut out, "fill", style.fill, None);
+                    } else {
+                        self.push_svg_fill(&mut out, style, record.style_ref);
+                    }
                     if style.stroke_width > 0.0 {
                         push_paint(&mut out, "stroke", style.stroke, None);
                         out.push_str(" stroke-width=\"");
@@ -15196,6 +15241,9 @@ impl SceneDocument {
                     index += 1;
                 }
                 SceneRecordKind::Image => {
+                    if RETAINED {
+                        unreachable!("retained Scene primitive invariant");
+                    }
                     #[cfg(feature = "raster")]
                     if let Some(image) = scene_image_by_id(&self.images, record.stable_id) {
                         if let Ok(png) = crate::png_encode::encode_png(
@@ -15232,6 +15280,9 @@ impl SceneDocument {
                     index += 1;
                 }
                 SceneRecordKind::Band => {
+                    if RETAINED {
+                        unreachable!("retained Scene primitive invariant");
+                    }
                     let style_ref = record.style_ref;
                     let start = index;
                     while index < self.records.len() {
@@ -15264,7 +15315,11 @@ impl SceneDocument {
                             push_num(&mut out, point.coordinates[3]);
                         }
                         out.push_str(" Z\"");
-                        self.push_svg_fill(&mut out, style, record.style_ref);
+                        if RETAINED {
+                            push_paint(&mut out, "fill", style.fill, None);
+                        } else {
+                            self.push_svg_fill(&mut out, style, record.style_ref);
+                        }
                         if record.symbol == BandOutline::Perimeter as u8 {
                             push_paint(&mut out, "stroke", style.stroke, None);
                             out.push_str(" stroke-width=\"");
@@ -15325,7 +15380,11 @@ impl SceneDocument {
                         out.push_str(" Z ");
                     }
                     out.push('"');
-                    self.push_svg_fill(&mut out, style, record.style_ref);
+                    if RETAINED {
+                        push_paint(&mut out, "fill", style.fill, None);
+                    } else {
+                        self.push_svg_fill(&mut out, style, record.style_ref);
+                    }
                     if style.stroke_width > 0.0 {
                         push_paint(&mut out, "stroke", style.stroke, None);
                         out.push_str(" stroke-width=\"");
@@ -15338,6 +15397,9 @@ impl SceneDocument {
                     index = end;
                 }
                 SceneRecordKind::PolyFill => {
+                    if RETAINED {
+                        unreachable!("retained Scene primitive invariant");
+                    }
                     let style_ref = record.style_ref;
                     let start = index;
                     while index < self.records.len() {
@@ -15375,7 +15437,11 @@ impl SceneDocument {
                             }
                             out.push_str(" Z\"");
                         }
-                        self.push_svg_fill(&mut out, style, record.style_ref);
+                        if RETAINED {
+                            push_paint(&mut out, "fill", style.fill, None);
+                        } else {
+                            self.push_svg_fill(&mut out, style, record.style_ref);
+                        }
                         if style.stroke_width > 0.0 {
                             push_paint(&mut out, "stroke", style.stroke, None);
                             out.push_str(" stroke-width=\"");
@@ -15421,15 +15487,23 @@ impl SceneDocument {
             }
         }
         out.push_str("</g>");
+        if RETAINED {
+            out.push_str("</svg>");
+            return out;
+        }
         if self.polar.is_some() {
             self.append_svg_polar_frame(&mut out, &x_ticks);
             self.append_svg_polar_tick_labels(&mut out, &x_ticks, &y_ticks);
         } else if self.chrome.x_axis.has_visible_axis()
             || self.chrome.y_axis.has_visible_axis()
-            || self.y2.as_ref().is_some_and(|y2| y2.axis.has_visible_axis())
+            || self
+                .y2
+                .as_ref()
+                .is_some_and(|y2| y2.axis.has_visible_axis())
         {
             out.push_str("<g data-xy-chrome=\"axes\">");
-            for (slot, ticks, scale, style) in self.axis_slots(&x_ticks, &y_ticks, y2_ticks.as_ref())
+            for (slot, ticks, scale, style) in
+                self.axis_slots(&x_ticks, &y_ticks, y2_ticks.as_ref())
             {
                 let is_x = slot == AxisSlot::X;
                 let (major_in, major_out) = tick_span(style.major_direction, style.tick_length);
@@ -24954,6 +25028,14 @@ pub(crate) mod tests {
             let raster_labels = raster_text_count(&document.to_raster_commands(1.0).unwrap());
             assert_eq!(raster_labels, Some(svg_labels));
             assert!(svg_labels >= 4);
+        }
+    }
+
+    #[test]
+    fn identity_axis_keeps_retained_css_bits() {
+        let axis = AxisScale::new(ScaleKind::Linear, 0., 180., 0., 180., 1., false).unwrap();
+        for value in [56.04_f64, -0.0, 64.03999999999999, 0.0000000000001] {
+            assert_eq!(axis.pixel(value).to_bits(), value.to_bits());
         }
     }
 

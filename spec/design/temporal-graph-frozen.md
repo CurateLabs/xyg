@@ -1,10 +1,15 @@
-# Immutable temporal graph acquisition (XYFG v1)
+# Immutable temporal graph acquisition and retained exports (XYFG v1/v2)
 
-This is the first ordered checkpoint toward #45 frozen HTML/PNG/SVG exports.
-It ships native programmatic acquisition and an offline binary codec. It does
-not claim rendered artifact acceptance, a browser/WASM freeze API, or full
-#45 / milestones 4–7 acceptance. Composition remains the only chart-building
-surface. No graph filtering, layout, style policy or renderer is added to hosts.
+Native Python/Node export SVG, PNG and offline HTML through retained canonical
+Scene geometry. Public browser sessions capture XYFG v2 through their actual
+Worker and export Scene, XYPB, SVG and the same offline HTML. Browser PNG is
+explicitly unavailable under the unchanged single-module packaging caps; full
+#45 and milestones 4–7 acceptance remain open. Composition remains the only
+chart-building surface. No host owns graph filtering, layout or style policy.
+
+The v1 acquisition and ABI403 checkpoint descriptions below retain their
+historical scope. The ABI404/WASM36 continuation supersedes their future-seam
+statements; historical receipts and original producer bytes are immutable.
 
 ## Public native acquisition
 
@@ -168,7 +173,7 @@ performance advantage over Matplotlib, Seaborn, Plotly, Bokeh, Altair, Datashade
 HoloViews/hvPlot or emerging alternatives. Their export/customization capability
 comparisons and rendered examples belong to the subsequent artifact checkpoint.
 
-## Native retained-paint export continuation (ABI 403)
+## Historical native retained-paint export checkpoint (ABI 403)
 
 `FrozenTemporalGraph.export(format, focus_rgba=..., scale=1)` in Python and
 `export(format, {focusRgba, scale:1})` in Node admit `svg`, `png`, `html`,
@@ -211,3 +216,113 @@ ChartView HTML framing.** Public browser/WASM freeze attachment, live CSS
 capture, focus SDF parity for symbols other than circle/square (currently rejected), native/WASM rendered parity and full scale evidence
 remain explicit #45 acceptance work. The native export continuation does not
 close #45 or milestones 4–7. Existing ordinary chart export remains unchanged.
+
+## Worker capture and shared rendered exports (ABI404 / WASM36)
+
+`await session.freeze({timezone, window?, budgetBytes?})` is available only after
+an accepted temporal publication and while the session is idle. The serialized
+attachment lane keeps ownership and existing deadlines. Rust borrows the actual
+retained session publication and private successful temporal frame. It never
+accepts host membership or rebuilds paint. The painter retains the exact four f32 values resolved from computed
+`--chart-focus` by its existing color parser (default `#aa99ec`) on the last
+successfully presented paint. Freeze copies that accepted value, not a fresh
+idle CSS lookup that could disagree with the displayed publication. A later
+CSS change without repaint and later controller changes cannot rewrite it. No JSON numeric paint wire is introduced.
+The Worker refuses foreign compile/stream/aggregate owners. Snapshot import and
+export use a fresh/drained `XygWasmWorker`; an attached live graph remains its
+exclusive owner. Disposing source/session/controller Workers does not invalidate
+owned snapshot bytes. Snapshot imports confer no authority over live handles.
+
+The controller frame ingress additionally supports XYTG frame v2, header72:
+existing frame fields through byte55, accepted window duration i64 at56 and
+controller revision u64 at64. Existing v1 frame56 ingress remains valid. Only a
+successfully accepted frame updates this context. It is independent of later
+interaction publication and the caller's optional display-window pair.
+
+### XYFG v2 presentation capture
+
+Acquisition without presentation capture continues producing v1 unchanged.
+V2 uses the same canonical named-section framing and BLAKE2s8 personalization,
+with domain `xyg-frozen-temporal-v2`. It preserves all v1 fields and appends,
+in this exact order:
+
+| Section | Type / meaning |
+|---|---|
+| render.focus.rgba | u8[4], Rust-rounded RGBA8 Scene color |
+| render.focus.f32 | bytes[16], exact raw little-endian computed/explicit f32 RGBA |
+| render.focus.origin | u32[1], 0 explicit override, 1 computed CSS capture |
+| controller.kind | u32[1], 0 absent, 1 captured accepted context |
+| controller.window | i64[1], nonnegative raw duration, zero when absent |
+| controller.revision | u64[1], raw accepted revision, zero when absent |
+
+Each f32 is finite in [0,1]; RGBA8 must equal Rust's rounding of f32*255.
+The original f32 remains recoverable; existing Scene style storage is RGBA8.
+`capture_focus` / `captureFocus` promotes validated native snapshots with an
+explicit RGBA8 override (origin0); it preserves any existing controller context.
+V1 exports still require an explicit focus override. Public browser
+`captureFocus(rgba, worker)` returns v2 explicit provenance; browser exports
+also accept an explicit `focusRgba`. Neither labels an override as CSS capture. V2 exports default to their
+captured color. All six retained graph symbols are admitted, with bounded Rust
+flattening of the existing shared marker SDF for inset strokes and focus
+band levels1..3, plus noncircle/nonsquare interiors. Circle/square interiors
+and all halos use fill-only Scatter records. Disjoint stroke bands avoid
+the generic Scene stroke-path radius convention in the existing raster
+primitive, preserving retained outer size and inner fill across renderers. Graph diamond keeps its live L1
+half-diameter normalization. Curved/positive-offset bands use512 portable-trig
+rays plus glyph corner rays; polygon interiors use their corner directions.
+Each band is capped at8192 records and expansion is charged before columns.
+This is explicit Scene tessellation, not a new host renderer or style resolver.
+Frame outlines lower into disjoint filled Rect
+strips, preserving their square SDF corners and alpha. Scene record/style and
+operation reservations still apply before expanded columns allocate.
+
+### Binary operation and HTML carrier
+
+The official native `xyg_temporal_graph_frozen_execute` and WASM
+`xyg_wasm_frozen_graph_execute` accept XYFX v1 header64. Fields: operation u32@8,
+format u32@12 (SVG0/PNG1/HTML2/Scene3/XYPB4), explicit focus bytes@16, focus-kind
+u32@20 (captured0/explicit1), scale f64@24, source length u64@32, shipped-client
+length u64@40, budget u64@48, reserved-zero@56; source and client follow64.
+Operations1/2/3/4 export/recover/attach explicit focus/validate-copy respectively.
+WASM operation0 is the internal actual-owner capture ingress: render revision
+u32@12, reserved-zero@16, window-kind@20, private frame revision u64@24, explicit
+display-window start/end i64@32/40, budget u64@48, timezone byte length u64@56,
+then UTF-8 timezone followed by four raw f32 focus values. Standalone operation0
+is rejected: it requires the retained GraphSession attachment.
+
+HTML embeds full XYFG, canonical Scene, XYPB and the exact shipped standalone
+client. It calls the shipped `hydrateWasmPainter` / ChartView; no SVG fallback,
+second renderer, network request, or WASM sidecar is required for offline paint.
+Four raw f64 controls (CSS width/height, captured DPR*scale, scale) are base64
+binary. ChartView uses the explicit backing ratio and rounds backing dimensions
+exactly as Rust; coordinates stay CSS y-down. Scale changes output extent and
+backing resolution without rerouting or reprojecting retained geometry.
+
+The HTML XYFE v2 carrier contains magic/version/format, scale f64@12,
+focus bytes@20, XYFG/client lengths u64@24/32, then complete XYFG and client.
+Recovery requires the expected shipped client bytes and regenerates the full
+artifact before byte comparison, binding visible Scene/painter/body/controls
+and client to the recovered provenance. Native hosts obtain the trusted client
+from their package; public browser `fromArtifact(bytes, worker, client)` takes
+the shipped bytes explicitly. Missing/wrong client, duplicate/truncated carriers,
+body/Scene/painter mutations and contradictory metadata reject. SVG/PNG retain
+XYFE v1 framing and the same whole-artifact comparison. This proves consistency,
+not authenticity; there is no signature or hostile-producer trust claim.
+
+Client input is capped at8 MiB; HTML preflight reserves client*12 + snapshot*8
++ backingpixels*32 before Scene expansion and checks Scene/painter/output bounds.
+Recovery's four-times-input admission remains. Per-operation limits do not solve
+the outstanding #111 global process budget.
+
+### Remaining acceptance
+
+WASM retains `default-features=false`; the shared Rust PNG/raster implementation
+cannot yet fit the unchanged 1,927,168 raw / 786,432 gzip6 single-module caps.
+PNG requests return `XYG_WASM_RESOURCE_LIMIT` with
+`XYG_FROZEN_PNG_UNAVAILABLE`; output is empty and subsequent exports remain usable.
+No optional module, cap increase, alternative geometry, removed existing export,
+or PNG parity acceptance is implied. Full native/WASM rendered PNG acceptance
+and full #45 scale/aggregate/accessibility evidence remain OPEN. The append-only
+[continuation receipt](../performance/temporal-worker-export-2026-11-07/README.md)
+separates fresh actual Worker/offline tests, code-size attempts and inherited
+historical evidence. No comparative performance victory is claimed.

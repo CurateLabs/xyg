@@ -17,13 +17,14 @@ mod graphforge;
 mod graphforge_session;
 mod temporal;
 mod temporal_graph;
+mod temporal_graph_frozen;
 pub mod ticks;
 mod typed_series_abi_generated;
 
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, PainterRejection, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 35;
+pub const WASM_ABI_VERSION: u32 = 36;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -3457,4 +3458,16 @@ mod tests {
         .unwrap();
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
     }
+}
+
+/// Shared XYFX frozen graph acquisition, native-equivalent export and recovery.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_frozen_graph_execute(handle: u32, offset: usize, length: usize) -> i32 {
+    with_instance_mut(handle, |i| {
+        if i.geo_transport.is_some() {
+            return STATUS_INVALID_ARGUMENT;
+        }
+        temporal_graph_frozen::execute(i, offset, length)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
 }

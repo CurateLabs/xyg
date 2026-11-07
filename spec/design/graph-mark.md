@@ -1323,3 +1323,11 @@ running layout/routing/style again. This stores exact geometry and provenance;
 it does not yet turn retained temporal publications into rendered HTML/PNG/SVG.
 The normal composed fixed-graph export route above remains unchanged. Temporal
 Scene lowering and embedded rendered-format recovery remain next-checkpoint work.
+
+The ABI404/WASM36 [retained export continuation](temporal-graph-frozen.md) now
+adds actual Worker/controller freeze and computed CSS capture, native
+SVG/PNG/HTML and browser Scene/XYPB/SVG/HTML, with exact whole-artifact recovery
+after scrub/disposal. HTML uses the shipped ChartView painter. WASM PNG remains
+an explicit unavailable resource error under unchanged single-module caps;
+full #45 scale/aggregate/accessibility and PNG parity remain open. Prior
+acquisition/native-only statements above describe historical checkpoints.

@@ -237,3 +237,11 @@ if (!only && !browserPackage) {
     env: { ...process.env, XYG_GRAPH_TEMPORAL_ONLY: "1", ...(reportPath ? { XYG_GRAPH_SESSION_REPORT: `${reportPath}.retained-temporal.json` } : {}) },
   });
 }
+
+// Actual retained owner -> XYFG -> Scene/XYPB -> offline shipped ChartView.
+// The full source gate includes native/WASM oracles; staged-package scope is unchanged.
+if (!only && !browserPackage) {
+  execFileSync(process.execPath, [join(root, "scripts/temporal_graph_frozen_smoke.mjs"), ...(reportPath ? [`${reportPath}.frozen-graph`] : [])], {
+    cwd: root, stdio: "inherit", env: process.env,
+  });
+}

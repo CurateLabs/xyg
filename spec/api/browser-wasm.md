@@ -467,3 +467,26 @@ drains admitted UI/time work, and `pinFocused(boolean)` forwards the Rust-issued
 focus target. Nonzero `load.pinned` is refused with temporal binding; pin after
 ready. Disposal stops the subscription and drains before closing the lane;
 see [temporal graph contracts](../design/temporal-graph.md).
+
+## Frozen temporal graph exports (WASM36)
+
+After an accepted idle temporal publication, `await session.freeze({timezone,
+window?, budgetBytes?})` returns an immutable `XygFrozenTemporalGraph`. Dispose
+the producer or use a fresh/drained Worker for `.fromBytes(bytes, worker)` and
+`frozen.export('scene'|'painter'|'svg'|'html', {worker, client?, scale?, focusRgba?})`. HTML
+requires the shipped standalone client bytes and paints offline through the
+same ChartView. `.fromArtifact(bytes, worker, client?)` validates complete output;
+HTML recovery requires the expected shipped client. PNG rejects explicitly
+with `XYG_WASM_RESOURCE_LIMIT` / `XYG_FROZEN_PNG_UNAVAILABLE`. Exact ingress,
+CSS capture, ownership and remaining #45 gaps are in the
+[frozen graph contract](../design/temporal-graph-frozen.md).
+
+Imported XYFGv1 has no captured CSS color: pass an explicit `focusRgba` export
+override or use `await frozen.captureFocus(rgba, worker)` to return v2 explicit
+presentation provenance. This does not mutate the original or its accepted
+controller context. It does not label an explicit override as captured CSS.
+
+The instance's unchanged arena ceiling also bounds export reservations. Rich
+retained SDF/HTML exports can exceed the default16 MiB Worker; callers may
+explicitly create the existing maximum384 MiB Worker. The API never enlarges
+an instance automatically, and insufficient reservations reject before output.

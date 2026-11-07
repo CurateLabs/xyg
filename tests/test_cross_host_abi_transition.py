@@ -16,7 +16,7 @@ HISTORICAL = ROOT / "spec/performance/pr1110-abi-fixtures-2026-11-07"
 RECEIPT = ROOT / "spec/performance/temporal-graph-freeze-2026-11-07"
 TRANSITION = json.loads(
     (
-        ROOT / "spec/performance/temporal-native-render-2026-11-07/fixture-transition.json"
+        ROOT / "spec/performance/temporal-worker-export-2026-11-07/fixture-transition.json"
     ).read_text()
 )
 
@@ -89,6 +89,17 @@ def test_preserved_402_producer_and_only_version_changed(path: str) -> None:
     )
     before = prior.read_bytes()
     assert hashlib.sha256(before).hexdigest() == TRANSITION[path]["predecessor402Sha256"]
+    assert json.loads((ROOT / path).read_bytes()) == dict(
+        json.loads(before), abi_version=ABI_VERSION
+    )
+
+
+@pytest.mark.parametrize("path", TRANSITION)
+def test_preserved_403_producer_and_only_version_changed(path: str) -> None:
+    before = (
+        ROOT / "spec/performance/temporal-worker-export-2026-11-07/predecessor403" / Path(path).name
+    ).read_bytes()
+    assert hashlib.sha256(before).hexdigest() == TRANSITION[path]["predecessor403Sha256"]
     assert json.loads((ROOT / path).read_bytes()) == dict(
         json.loads(before), abi_version=ABI_VERSION
     )

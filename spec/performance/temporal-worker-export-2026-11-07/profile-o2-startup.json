@@ -1,0 +1,175 @@
+{
+  "schema": "xyg-wasm-cold-start-abba-v1",
+  "environment": {
+    "node": "v22.23.4",
+    "platform": "linux",
+    "arch": "x64",
+    "cpu": "Intel(R) Xeon(R) CPU E3-1270 v6 @ 3.80GHz"
+  },
+  "artifacts": {
+    "A": "/home/ubuntu/.t3-owned/1cafa70d/exact-o3.wasm",
+    "B": "/home/ubuntu/.t3-owned/1cafa70d/exact-o2.wasm"
+  },
+  "samples": [
+    {
+      "pair": 0,
+      "label": "A",
+      "readMs": 0.7881470000000022,
+      "compileMs": 4.854225,
+      "instantiateMs": 0.4868440000000014,
+      "memoryBytes": 1245184,
+      "maxRssBytes": 55504896,
+      "childWallMs": 39.38023999999999
+    },
+    {
+      "pair": 0,
+      "label": "B",
+      "readMs": 0.7529839999999979,
+      "compileMs": 4.133034000000002,
+      "instantiateMs": 0.48565099999999717,
+      "memoryBytes": 1245184,
+      "maxRssBytes": 55394304,
+      "childWallMs": 41.80808499999999
+    },
+    {
+      "pair": 0,
+      "label": "B",
+      "readMs": 0.7163399999999953,
+      "compileMs": 4.837478000000004,
+      "instantiateMs": 0.5012400000000028,
+      "memoryBytes": 1245184,
+      "maxRssBytes": 55234560,
+      "childWallMs": 49.51315299999999
+    },
+    {
+      "pair": 0,
+      "label": "A",
+      "readMs": 0.8325999999999993,
+      "compileMs": 4.837604999999996,
+      "instantiateMs": 0.4730689999999953,
+      "memoryBytes": 1245184,
+      "maxRssBytes": 55259136,
+      "childWallMs": 46.758939
+    },
+    {
+      "pair": 1,
+      "label": "A",
+      "readMs": 0.8063719999999996,
+      "compileMs": 4.902231999999998,
+      "instantiateMs": 0.4816280000000006,
+      "memoryBytes": 1245184,
+      "maxRssBytes": 55394304,
+      "childWallMs": 41.17205500000003
+    },
+    {
+      "pair": 1,
+      "label": "B",
+      "readMs": 0.7777970000000032,
+      "compileMs": 4.765634000000002,
+      "instantiateMs": 0.5035559999999961,
+      "memoryBytes": 1245184,
+      "maxRssBytes": 55250944,
+      "childWallMs": 40.77330699999999
+    },
+    {
+      "pair": 1,
+      "label": "B",
+      "readMs": 0.7176280000000013,
+      "compileMs": 4.043267999999998,
+      "instantiateMs": 0.4637270000000022,
+      "memoryBytes": 1245184,
+      "maxRssBytes": 55361536,
+      "childWallMs": 40.066453000000024
+    },
+    {
+      "pair": 1,
+      "label": "A",
+      "readMs": 0.8293970000000002,
+      "compileMs": 4.257683,
+      "instantiateMs": 0.5143950000000004,
+      "memoryBytes": 1245184,
+      "maxRssBytes": 55324672,
+      "childWallMs": 41.436766999999975
+    },
+    {
+      "pair": 2,
+      "label": "A",
+      "readMs": 0.7869209999999995,
+      "compileMs": 4.790542000000002,
+      "instantiateMs": 0.47141399999999933,
+      "memoryBytes": 1245184,
+      "maxRssBytes": 55365632,
+      "childWallMs": 39.46508299999999
+    },
+    {
+      "pair": 2,
+      "label": "B",
+      "readMs": 0.754526000000002,
+      "compileMs": 4.016909999999999,
+      "instantiateMs": 0.5022970000000022,
+      "memoryBytes": 1245184,
+      "maxRssBytes": 55394304,
+      "childWallMs": 39.31083899999999
+    },
+    {
+      "pair": 2,
+      "label": "B",
+      "readMs": 0.761216000000001,
+      "compileMs": 4.796815999999996,
+      "instantiateMs": 0.6576499999999967,
+      "memoryBytes": 1245184,
+      "maxRssBytes": 55365632,
+      "childWallMs": 43.69775099999998
+    },
+    {
+      "pair": 2,
+      "label": "A",
+      "readMs": 0.8247280000000003,
+      "compileMs": 4.987465,
+      "instantiateMs": 0.6013400000000004,
+      "memoryBytes": 1245184,
+      "maxRssBytes": 55189504,
+      "childWallMs": 48.34219600000006
+    },
+    {
+      "pair": 3,
+      "label": "A",
+      "readMs": 0.789237,
+      "compileMs": 4.821835999999998,
+      "instantiateMs": 0.5510140000000021,
+      "memoryBytes": 1245184,
+      "maxRssBytes": 55382016,
+      "childWallMs": 40.569616999999994
+    },
+    {
+      "pair": 3,
+      "label": "B",
+      "readMs": 0.7098140000000015,
+      "compileMs": 4.7716850000000015,
+      "instantiateMs": 0.4787760000000034,
+      "memoryBytes": 1245184,
+      "maxRssBytes": 55222272,
+      "childWallMs": 41.780936
+    },
+    {
+      "pair": 3,
+      "label": "B",
+      "readMs": 0.7695620000000005,
+      "compileMs": 4.789415000000002,
+      "instantiateMs": 0.5211849999999956,
+      "memoryBytes": 1245184,
+      "maxRssBytes": 55365632,
+      "childWallMs": 45.093027000000006
+    },
+    {
+      "pair": 3,
+      "label": "A",
+      "readMs": 0.8039069999999988,
+      "compileMs": 4.173522999999999,
+      "instantiateMs": 0.4871200000000009,
+      "memoryBytes": 1245184,
+      "maxRssBytes": 55394304,
+      "childWallMs": 38.161189000000036
+    }
+  ]
+}
