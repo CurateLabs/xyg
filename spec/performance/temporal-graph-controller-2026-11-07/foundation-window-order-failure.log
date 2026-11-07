@@ -1,0 +1,8 @@
+file:///home/ubuntu/.t3/worktrees/xyg/t3-226571f1/scripts/wasm_foundation_smoke.mjs:165
+  if (!result?.ok) throw new Error(result?.error ?? "browser foundation smoke failed");
+                         ^
+
+Error: automatic dashboard admission concurrency lifecycle: Error: automatic history boundary membership/layout mismatch: {"expected":{"cursor":19,"range":[10,20],"nodes":[1,1,0],"edges":[1,0]},"proof":[{"cursor":"9","nodes":[1,0,0],"edges":[0,0]},{"cursor":"10","nodes":[1,1,0],"edges":[1,0]},{"cursor":"19","nodes":[1,1,0],"edges":[1,0]},{"cursor":"20","nodes":[1,0,1],"edges":[0,1]},{"cursor":"19","nodes":[1,1,0],"edges":[0,0]}],"errors":[]}
+    at file:///home/ubuntu/.t3/worktrees/xyg/t3-226571f1/scripts/wasm_foundation_smoke.mjs:165:26
+
+Node.js v22.23.4

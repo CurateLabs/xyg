@@ -24,7 +24,8 @@ export interface GraphSessionLoad {
 }
 export interface GraphSessionRequest {
   instanceId: bigint; opSeq: bigint; revision: number;
-  operation: 19 | 21 | 1 | 4 | 5 | 7 | 11 | 15 | 17;
+  operation: 19 | 21 | 1 | 4 | 5 | 7 | 11 | 13 | 15 | 17 | 18;
+  temporal?: boolean; pinned?: boolean;
   steps?: number;
   document?: Uint8Array | ArrayBuffer; load?: GraphSessionLoad; camera?: GraphSessionCamera;
   coordinates?: readonly [number, number];
@@ -113,10 +114,18 @@ export function decodeGraphSessionRefs(bytes: Uint8Array): GraphSessionRef[] {
 /** A bounded internal operation vocabulary. It is not a public arbitrary-command API. */
 export function encodeGraphSessionRequest(input: GraphSessionRequest): Uint8Array {
   exactU64(input.instanceId, "instanceId", true); exactU64(input.opSeq, "opSeq", true); exactU32(input.revision, "revision");
-  if (![19, 21, 1, 4, 5, 7, 11, 15, 17].includes(input.operation)) throw new TypeError("unsupported graph controller operation");
+  if (![19, 21, 1, 4, 5, 7, 11, 13, 15, 17, 18].includes(input.operation)) throw new TypeError("unsupported graph controller operation");
   const words = [input.revision, input.operation, 0, 0, 0, 0, 0, 0, 0];
   const sections: Array<{ name: string; dtype: number; values: any }> = [];
   const add = (name: string, dtype: number, values: any) => sections.push({ name, dtype, values });
+  if (input.operation === 18) {
+    if (typeof input.temporal !== "boolean") throw new TypeError("temporal binding requires a boolean");
+    add("temporal.u64", DT.u64, [input.temporal ? 1n : 0n]);
+  } else if (input.temporal !== undefined) throw new TypeError("temporal is only valid for binding");
+  if (input.operation === 13) {
+    if (typeof input.pinned !== "boolean" || input.refs?.length !== 1) throw new TypeError("pin requires one ref and a boolean");
+    words[5] = input.pinned ? 1 : 0;
+  } else if (input.pinned !== undefined) throw new TypeError("pinned is only valid for pin");
   if (input.operation === 15) {
     if (input.steps === undefined || !Number.isInteger(input.steps) || input.steps < 1 || input.steps > 64) throw new TypeError("relayout steps must be an integer in 1..64");
     words[7] = input.steps;
@@ -135,7 +144,7 @@ export function encodeGraphSessionRequest(input: GraphSessionRequest): Uint8Arra
     if (!coordinates.every(Number.isFinite)) throw new TypeError("select at requires two finite CSS coordinates");
     add("coordinates.f64", DT.f64, coordinates);
   } else if (input.coordinates !== undefined) throw new TypeError("coordinates are only valid for select at");
-  if (input.operation === 11) {
+  if (input.operation === 11 || input.operation === 13) {
     if (!input.refs || input.refs.length > 10_000) throw new TypeError("select refs requires a bounded ref list");
     add("refs.bytes", DT.bytes, encodeGraphSessionRefs(input.refs));
   } else if (input.refs !== undefined) throw new TypeError("refs are only valid for select refs");
