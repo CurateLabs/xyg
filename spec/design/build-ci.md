@@ -289,3 +289,9 @@ that binding. The discovered pytest journey passes its actually loaded ctypes
 library path to Node, so both hosts exercise the same candidate even when the
 parent shell has no native override. Commands, triggers, deadlines, package caps
 and the existing Release surfaces aggregate remain unchanged.
+
+The full source `wasm_foundation_smoke.mjs` also invokes
+`temporal_graph_aggregate_smoke.mjs`: six actual temporal publications with
+independent CSR/UUID and rendered-artifact oracles. It follows the existing
+seven-shape frozen regression in the existing Release surfaces path; no new
+workflow, status check, queue rule or staged-package obligation is introduced.

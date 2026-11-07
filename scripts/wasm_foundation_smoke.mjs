@@ -259,3 +259,10 @@ if (!only && !browserPackage) {
     cwd: root, stdio: "inherit", env: process.env,
   });
 }
+
+// Exact aggregate/direct temporal membership and frozen rendered artifacts.
+if (!only && !browserPackage) {
+  execFileSync(process.execPath, [join(root, "scripts/temporal_graph_aggregate_smoke.mjs"), ...(reportPath ? [`${reportPath}.aggregate-graph`] : [])], {
+    cwd: root, stdio: "inherit", env: process.env,
+  });
+}

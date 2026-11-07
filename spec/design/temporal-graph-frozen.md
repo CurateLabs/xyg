@@ -370,3 +370,38 @@ historical checkpoints. Standalone module fit does not certify a future union
 with other features or ABI additions. Full #45 scale/aggregate/accessibility
 and whole-milestone acceptance remain OPEN. No comparative performance victory
 or global process budget completion is claimed.
+
+## Actual temporal aggregate/direct regression (2026-11-07)
+
+The [aggregate receipt](../performance/temporal-aggregate-frozen-2026-11-07/README.md)
+adds a separate fixture to the existing full foundation/Release surfaces gate.
+The real `attachWasmGraphSession` controller binding and exclusive Worker lane
+capture six publications: Direct setup at20, Aggregate at5 and10, Direct at20
+and30, and Aggregate after a coalesced return to5. Keyboard focus/selection and
+`pinFocused` establish UUID4 in Direct before it becomes grouped, hidden and
+visible again. No host filters topology or constructs publications.
+
+At5 all six source edges are temporally visible, while Aggregate represents
+only edges0–3: forward parallel edges0/1 and edge2 share one render edge, and
+reverse edge3 remains distinct. Loops4/5 intentionally disappear from Aggregate
+membership under graph-mark §6. At20 Direct preserves exactly loops4/5.
+At10 exact node CSR is `[0],[2,3]`; source node1 is absent at its exclusive
+valid-to boundary. At30 UUID4 is hidden, its canonical selection/focus/pin
+remain retained, and Direct represents node0 and loop4. Returning to5 restores
+the original aggregate membership and state without identity remapping.
+
+Frame-time interaction provenance and retained-publication flags are asserted
+separately: the setup frame predates keyboard state; subsequent temporal frames
+include UUID4. Complete native replay of observed browser request/reply bytes,
+native frame acquisition, Worker/native Scene/XYPB/SVG/PNG/HTML byte parity,
+exact recovery after source disposal, offline shipped ChartView renders, and
+independent authored-center/live/raster/offline pixel checks run together.
+Re-signed malformed CSR controls reject duplicated, stale and missing members;
+independent visual controls reject translated and stale pictures. The existing
+seven shape captures, resource/disposal controls and graph pointer/keyboard,
+10k, GPU and filter regressions remain in the full gate.
+
+This finite fixture establishes neither massive aggregate playback nor broad
+accessibility, installed-host or competitor acceptance. Full #45 and milestones
+4–7 remain open. No ABI, renderer, package cap, default, tolerance or deadline
+changes accompany this proof.

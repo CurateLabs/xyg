@@ -1022,3 +1022,10 @@ tests/test_geo_host.py text eol=lf
 # Current temporal PNG status and successor evidence.
 spec/performance/temporal-png-status-2026-11-07/** text eol=lf
 spec/performance/temporal-png-status-2026-11-07/**/*.gz -text
+
+# Actual temporal aggregate/direct membership and rendered export evidence.
+spec/performance/temporal-aggregate-frozen-2026-11-07/** text eol=lf
+spec/performance/temporal-aggregate-frozen-2026-11-07/**/*.gz -text
+spec/performance/temporal-aggregate-frozen-2026-11-07/**/*.png -text
+spec/performance/temporal-aggregate-frozen-2026-11-07/**/*.xyfg -text
+scripts/verify_temporal_aggregate_artifacts.py text eol=lf
