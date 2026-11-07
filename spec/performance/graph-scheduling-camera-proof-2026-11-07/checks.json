@@ -1,0 +1,83 @@
+{
+  "reviewedParent": "80933e83154c57dae1845e1c55e0d2d95933e4ff",
+  "sourceSha256": {
+    "scripts/verify_graph_progressive_camera.mjs": "0b1e9f1bd25fb5009d31857ccdae198af6978fa2918f89cf722e250eb5e8591c",
+    "js/test/graph-progressive-camera.test.mjs": "18982cc1afdd943a62e9b19b032b0a022613c367af78778a83ca7220f7303f5e",
+    "scripts/graph_session_controller_wasm_smoke.mjs": "adfd648708c0f222d0ad718bc947e347f5a429b139f315171aafc78b592d15ec",
+    "scripts/wasm_foundation_smoke.mjs": "e60911c323fc740854081a70247c64627835ffc49cf54f7ec6ac44fb6cd872da",
+    "tests/browser/graph_session_controller_page.mjs": "dfbf21ac796977e134e032b734b8eca6a3558ab233633c48c218ac38a5c49bae",
+    "spec/performance/graph-scheduling-camera-proof-2026-11-07/README.md": "3a39a9c8ac95b130e66399c7cffe5193051c418afa65e2374c141d23614bca30"
+  },
+  "artifacts": {
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "sha256": "dbae96bb9f476d5368a9ca966e554d2dea36df7bb8ff739a5d3e712e9aefa41d",
+      "bytes": 2124856
+    },
+    "packages/xy-client/dist/index.js": {
+      "sha256": "09144e0e40a7c278a7a103a96bdde3b7ae73e3d71b3fdf367a1353ddbad1b80d",
+      "bytes": 804132
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+      "bytes": 56051
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1",
+      "bytes": 1927032
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "sha256": "303b39e33590f6b2dd65aefeaefd1714088414cb515a0817c6d3fa04c7489d3e",
+      "bytes": 226
+    }
+  },
+  "logs": {
+    "unit": {
+      "command": "node --test js/test/graph-progressive-camera.test.mjs",
+      "exitCode": 0,
+      "rawSha256": "1c76d3d53f17e7dfd0fe3e0e55b5e5058f803cd4c54841fa346935ae00d17257",
+      "archiveSha256": "f67b6c009637578d0b443aa96b4946b43cd289536f3649c1aa3f2ac035d66e91"
+    },
+    "browser": {
+      "command": "XYG_GRAPH_SCHEDULING_ONLY=1 XYG_GRAPH_SESSION_REPORT=target/task-tmp/scheduling-camera/report.json node scripts/graph_session_controller_wasm_smoke.mjs",
+      "exitCode": 0,
+      "rawSha256": "977eec4f13ec9622d4192c4742d52219b8bcf602793008771c30c16a5cc84238",
+      "archiveSha256": "808ec90984496ab85d3b92be5172a384543a028f30644a3fbfb4b760d9ca834b"
+    },
+    "foundation": {
+      "command": "XYG_GRAPH_SCHEDULING_REPORT=target/task-tmp/scheduling-camera/ci-report.json node scripts/wasm_foundation_smoke.mjs",
+      "exitCode": 0,
+      "rawSha256": "111b0aadf3219a8c8e82d163a9e02e3fd337e190521646f767154303ea5f5f85",
+      "archiveSha256": "cdf9b96d16886729141c21119e47a76a4b645e21ea622c0af43fba42f0b9519a"
+    }
+  },
+  "reports": {
+    "report.json": {
+      "rawSha256": "6d50eb83008f0c650985774b5ed2fdcbf22fb71f7279114bc3407569082162fa",
+      "archiveSha256": "2ea74c1e9d953841f28773b367694449ef1faf91ce1fef4babf4e4d002e119b6"
+    },
+    "ci-report.json": {
+      "rawSha256": "9be45a49af262b12efdf97b208a344ba95b0f11046ff1ee5f82295223bca5027",
+      "archiveSha256": "8d7b47b49fc7b19e8fad314ed1128a6d8a6c9486220d87b92980b0c31c047ea6"
+    }
+  },
+  "captures": {
+    "ci-report.json.7101.final.png": "44f583e3919388f6f5862b6d7c89234a36ae0ccce0acd7b185b3675c3bf18c3c",
+    "ci-report.json.7102.final.png": "4453d9610a62a79b6a900bf2a3d67145ea2e95cf799286690cff9365a63ff06b",
+    "report.json.7101.intermediate.png": "92bd17cb68576bb1d9f3e9a52b2d3881992ce731034891e38156d27287b29c90",
+    "report.json.7101.final.png": "ab52f8b21edf99ed47d8d8e117e859f52e75bcd9e776b944bab01bb73e811225",
+    "report.json.7101.initial.png": "d378702d8644f2616909d71978479b0b684f4477871e68316d5c9280d88a52e9",
+    "report.json.7102.final.png": "4453d9610a62a79b6a900bf2a3d67145ea2e95cf799286690cff9365a63ff06b",
+    "report.json.7102.intermediate.png": "86b4b1cb20b0aa65ade77479d6b17599e09123b660ceb57eae6bbd0054f4f5db",
+    "ci-report.json.7101.initial.png": "d378702d8644f2616909d71978479b0b684f4477871e68316d5c9280d88a52e9",
+    "ci-report.json.7101.intermediate.png": "537a6dfafbf78bfed38eb069fef836a0f44e694d6324045aa07beeda854b0497",
+    "ci-report.json.7102.intermediate.png": "86b4b1cb20b0aa65ade77479d6b17599e09123b660ceb57eae6bbd0054f4f5db",
+    "report.json.7102.initial.png": "d378702d8644f2616909d71978479b0b684f4477871e68316d5c9280d88a52e9",
+    "ci-report.json.7102.initial.png": "d378702d8644f2616909d71978479b0b684f4477871e68316d5c9280d88a52e9"
+  },
+  "environment": {
+    "node": "v22.23.4",
+    "chromium": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "systemPython": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]"
+  },
+  "limits": "Host-button camera route only; no controller/kernel change, no full ladder or issue acceptance. Hook logs retained ignored."
+}

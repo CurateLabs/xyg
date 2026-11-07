@@ -1,0 +1,67 @@
+{
+  "wasmBuild": {
+    "exit": 0,
+    "rustWarnings": 7
+  },
+  "clientBuild": {
+    "exit": 0
+  },
+  "wasmPackage": {
+    "exit": 0
+  },
+  "focusedFinal": {
+    "exit": 0,
+    "cases": 2
+  },
+  "foundationFinal": {
+    "exit": 0,
+    "includesSchedulingCases": 2
+  },
+  "legacy": {
+    "exit": 0,
+    "passed": 69,
+    "skipped": 0
+  },
+  "wireGpuPackage": {
+    "exit": 0,
+    "passed": 20,
+    "failed": 0,
+    "skipped": 0
+  },
+  "inventory": {
+    "exit": 0
+  },
+  "ownership": {
+    "exit": 0
+  },
+  "preMergeHooksRuffFormat": [
+    0,
+    0,
+    0
+  ],
+  "mergeHooksRuffFormat": [
+    0,
+    0,
+    0
+  ],
+  "finalHooksRuffFormat": [
+    0,
+    0,
+    0
+  ],
+  "initialMissingWasmLaunch": {
+    "exit": 1,
+    "resolved": "Waited for packaging to finish; no fallback."
+  },
+  "generatorInitialLint": {
+    "findings": 7,
+    "remaining": 0
+  },
+  "remaining": [
+    "10k initialization refused at 384 MiB",
+    "100k/1M not attempted",
+    "1k keyboard focus not proved",
+    "No full Python/native suite: this slice changes browser proof only",
+    "Independent review and Integrate belong to parent"
+  ]
+}
