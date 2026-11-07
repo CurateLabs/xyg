@@ -1416,3 +1416,10 @@ is refused with this option; pin after ready. Selection/focus/pins persist acros
 later temporal frames. See [the full lifecycle contract](temporal-graph.md#retained-automatic-presentation-bounded-45-slice)
 and [actual browser/native evidence](../performance/temporal-retained-presentation-2026-11-07/README.md).
 Broad accessibility, aggregate, export, scale and host acceptance remain open.
+
+The [2026-11-07 scheduling receipt](../performance/graph-browser-scheduling-1k-2026-11-07/README.md)
+adds bounded real 1k primary-click and host-driven camera response while retained
+layout is unfinished, with two isolated public attachments. The host pan button
+calls `refreshRender(camera)`; this supplies no canvas pan gesture or additional
+keyboard/focus acceptance. Explicit 384 MiB arenas and the default-arena refusal
+are disclosed. Full #36 scale and host semantics remain open.

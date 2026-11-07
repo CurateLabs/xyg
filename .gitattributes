@@ -110,3 +110,11 @@ spec/performance/temporal-worker-lifetime-2026-11-07/*.json text eol=lf
 spec/performance/temporal-worker-lifetime-2026-11-07/*.md text eol=lf
 spec/performance/temporal-worker-lifetime-2026-11-07/*.gz -text
 spec/performance/temporal-worker-lifetime-2026-11-07/*.png -text
+
+# Combined accepted scheduling/temporal integration provenance.
+spec/performance/temporal-graph-main-integration-2026-11-07/*.json text eol=lf
+spec/performance/temporal-graph-main-integration-2026-11-07/*.md text eol=lf
+spec/performance/temporal-graph-main-integration-2026-11-07/*.gz -text
+spec/performance/temporal-graph-main-integration-2026-11-07/*.png -text
+spec/design/build-ci.md text eol=lf
+spec/design/graph-interaction.md text eol=lf

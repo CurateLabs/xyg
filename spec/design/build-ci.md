@@ -186,3 +186,14 @@ fixture. This extends the existing gate, without adding a workflow/job or
 changing package/runtime budgets. Staged-package and density-only foundation
 runs keep their stated scope. Complete fixture retained native/WASM byte parity
 runs in the existing `graph-session-wire.test.mjs` command.
+
+The full source-checkout `node scripts/wasm_foundation_smoke.mjs` command also
+executes the bounded public browser graph scheduling regression via
+`graph_session_controller_wasm_smoke.mjs` in `XYG_GRAPH_SCHEDULING_ONLY` mode.
+It uses two real 1k attachments, explicit 384 MiB arenas, unheld replies, pixel
+progress, trusted pointer/host-camera input, isolation and cleanup, plus default
+1k and explicit-ceiling 10k refusal observations. Failures propagate through the
+existing WASM foundation / Release surfaces gate; no separate CI job or timing
+gate is added. Staged-package and focused density-only runs keep their existing
+scope. `XYG_GRAPH_SCHEDULING_REPORT` optionally records this sub-run's raw report
+and canvas captures. The focused command uses `XYG_GRAPH_SESSION_REPORT`.
