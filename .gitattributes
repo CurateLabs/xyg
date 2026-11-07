@@ -216,3 +216,8 @@ spec/performance/geo-native-main-proof-integration-2026-11-07/*.json text eol=lf
 spec/performance/geo-native-main-proof-integration-2026-11-07/*.md text eol=lf
 spec/performance/geo-native-main-proof-integration-2026-11-07/*.gz -text
 spec/performance/geo-native-main-proof-integration-2026-11-07/*.png -text
+
+# Python-floor correction source and actual311 evidence.
+spec/performance/geo-python-floor-2026-11-07/*.json text eol=lf
+spec/performance/geo-python-floor-2026-11-07/*.md text eol=lf
+spec/performance/geo-python-floor-2026-11-07/*.gz -text
