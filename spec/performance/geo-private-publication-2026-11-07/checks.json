@@ -1,0 +1,68 @@
+{
+  "base": "8cc86ec312135aca56948b2bca0bdf3dd210b174",
+  "sourceBindingsSha256": "6f39f1bec413c580ab02238942add7ec6245a3da437ab4216e2f163d4b2cf169",
+  "checks": {
+    "before-public-chart": {
+      "command": "Existing public indexed chart composition control",
+      "exitCode": 1,
+      "rawSha256": "6cc942fb90557bef42798a79150b1fae2226a8a7b3b4515d27ba09a3515cf3e9",
+      "archiveSha256": "d3a3271ae046f143583807d1551ecfd3a07d57ba102c7949df6c6f9833919045"
+    },
+    "before-private": {
+      "command": "New indexed private-publication controls (four fail)",
+      "exitCode": 1,
+      "rawSha256": "e146444fa16f39539e83aa99b5018d2ee5c05a1caddf7500c44bb5781dcb2206",
+      "archiveSha256": "a9f121e89e98b49670324832459ee07fb9588122dfc8bb84653cb54ca75069f0"
+    },
+    "focused": {
+      "command": "uv run pytest tests/test_geo_temporal_binding.py tests/test_geo_spatial.py tests/test_geo_hierarchy.py tests/test_geo_retained.py tests/test_geo_retained_components.py tests/test_geo_hierarchy_static_selected.py -q",
+      "exitCode": 0,
+      "rawSha256": "84bb7a4c21b6b78a4b9f9185bb98fce9de3a6313211af85b2d86e88908f2c58b",
+      "archiveSha256": "f2c78e886d8cfda435d205ed6ac5d0aaa356497c5b0fa7ec1bdb7c11553aa9dc"
+    },
+    "types": {
+      "command": "uv run ty check",
+      "exitCode": 0,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "inventory-before": {
+      "command": "uv run python scripts/check_release_inventory.py",
+      "exitCode": 0,
+      "rawSha256": "a34a909dd7061f3f64a4aba74d81faabf8edc7a960500162b920a1a90911bd08",
+      "archiveSha256": "81f4dfc1d1466237e90daaccccac04f26ab06c7128c182594ffd5259c696b8a8"
+    }
+  },
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6121112,
+      "sha256": "f0fb0c738d2cfa98295dae50a8804fb801c21e1be82c2cff30a183576fcd74ff"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 2124514,
+      "sha256": "f323d12e662abf2ef97a57e0606941147453d5d4306c2cde3a1b41f8d1ac4e05"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1926555,
+      "sha256": "0ba71b670ceae0459935ca04f6004670bac327a3c05cea4e99e7dca89ff538b7"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 803663,
+      "sha256": "a153c45ab04a5ae8a923bfc3b005c9986a966660f2aa292e95112313c68e6359"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 803690,
+      "sha256": "507cce3ff73e1c0b69360fc547d90e663abbddd922f702965e0514e061c238b1"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "df39ed30ac859444711c74242602b428c70b6f2cb90026b79101f81e3e0a9b31"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2587929,
+      "sha256": "371e0f5e68307054a3f4d9260f79c5eaceafda20948e4817d4695d192f108947"
+    }
+  },
+  "inventory": "Semantic declarations unchanged; two generation-time input hashes differ; no exact-byte freeze claimed",
+  "limits": "Native focused proof; current-main integration and final review/CI/queue pending"
+}

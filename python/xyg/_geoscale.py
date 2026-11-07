@@ -715,7 +715,7 @@ class NativeGeoScaleBridge:
 
 
 async def _settle(
-    task: asyncio.Task, on_cancel: Callable[[], Any] | None = None
+    task: asyncio.Future, on_cancel: Callable[[], Any] | None = None
 ) -> tuple[Any, bool]:
     """Wait even through repeated outer cancellation; never cancel transport."""
     interrupted = False
@@ -728,6 +728,11 @@ async def _settle(
             interrupted = True
             if on_cancel is not None:
                 on_cancel()
+            if task.done():
+                # A plain executor Future can hold CancelledError as an
+                # exception without being cancelled. Retrieve it once; a
+                # successful completion still transfers its owned result.
+                return task.result(), interrupted
 
 
 async def drive_session(

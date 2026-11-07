@@ -1,0 +1,155 @@
+{
+  "reviewedParent": "57a80d68b809070be74a22e962f0163417a7af41",
+  "previousReceiptSha256": "1386d354e148ac2dc2f34e25de1b9109bf0fd12a91ed6e5ef87149c437f65eb0",
+  "currentBindingsSha256": "c9515e452a9f56ab0cbcb6103a425f2c01fad7b2cf4450e3e691a921e2d0c4b3",
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6127864,
+      "sha256": "09b2571980a8c1d97ac4478fc51b346fb9356d07916bc8b38e84c072b531b895"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 2124856,
+      "sha256": "dbae96bb9f476d5368a9ca966e554d2dea36df7bb8ff739a5d3e712e9aefa41d"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1927032,
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 804132,
+      "sha256": "09144e0e40a7c278a7a103a96bdde3b7ae73e3d71b3fdf367a1353ddbad1b80d"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 804159,
+      "sha256": "97ae3d73b9b09435550781fa79a26480a6c15ce2bcab42ec40ca60854d18afe4"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 56051,
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2588565,
+      "sha256": "8bed6f41e9d60e41010b069cfd18bbb896a799bd733649e74deaf6dbf68ac5e7"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "303b39e33590f6b2dd65aefeaefd1714088414cb515a0817c6d3fa04c7489d3e"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 804132,
+      "sha256": "09144e0e40a7c278a7a103a96bdde3b7ae73e3d71b3fdf367a1353ddbad1b80d"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 804159,
+      "sha256": "97ae3d73b9b09435550781fa79a26480a6c15ce2bcab42ec40ca60854d18afe4"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1927032,
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1"
+    }
+  },
+  "environment": {
+    "node": "v22.23.4",
+    "systemPython": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+    "testPython": "3.12.15 (main, Oct  1 2026, 20:59:04) [Clang 22.1.3 ]",
+    "nativeSelection": "Explicit XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-6e94436c/target/release/libxyg_core.so"
+  },
+  "logs": {
+    "before": {
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "tests/test_geo_temporal_binding.py",
+        "-k",
+        "reentrant_controller_close",
+        "-q"
+      ],
+      "exitCode": 1,
+      "rawSha256": "c2022ff4906a50d428525e1fe16220cafda0827a0ca04c76a156a2a315c56170",
+      "archiveSha256": "e43e7c59dced0084f143d748dd8004d7f23ce31edf6a7a20b4dd85e401e2a393"
+    },
+    "after": {
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "tests/test_geo_temporal_binding.py",
+        "-k",
+        "reentrant_controller_close",
+        "-q"
+      ],
+      "exitCode": 0,
+      "rawSha256": "ad4e47c8dfa1a382c5d961ad4379d70009e25676c0a0857e8464a1f75a73dd9a",
+      "archiveSha256": "98c1f51f0f9a6723ca2f61d697cd8fe3b85fc3f4329354b80fb3a915a0a3dc09"
+    },
+    "final-python": {
+      "argv": [
+        "uv",
+        "run",
+        "pytest",
+        "tests/test_geo_temporal_binding.py",
+        "tests/test_temporal_controller.py",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_release_inventory.py",
+        "-q"
+      ],
+      "exitCode": 0,
+      "rawSha256": "3d1fa9350a87ed40d8df681c8fd2cc3359e3883414a66253976ad46b25d97bd9",
+      "archiveSha256": "6ccf3e9d658cd8bf6c2ed26ba4f3e7baf51b3b784416d5e358a76db976751c1b"
+    },
+    "types": {
+      "argv": [
+        "uv",
+        "run",
+        "ty",
+        "check"
+      ],
+      "exitCode": 0,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "hooks": {
+      "argv": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exitCode": 0,
+      "scope": "Complete staged correction before appending gate archives; repeated before final commit",
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "ruff": {
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exitCode": 0,
+      "scope": "Complete staged correction before appending gate archives; repeated before final commit",
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "format": {
+      "argv": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exitCode": 0,
+      "scope": "Complete staged correction before appending gate archives; repeated before final commit",
+      "rawSha256": "1780393f095db4a6b5c8e0faa84b71681c2dae2daa05ee27d35629c0290bde6c",
+      "archiveSha256": "e82aa05e80a206efc84c5d8486467f750e1ce9c246fccdb262baa57243d597d5"
+    }
+  }
+}

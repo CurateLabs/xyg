@@ -1,0 +1,9 @@
+# Latest intent at the scheduling completion boundary
+
+This successor preserves `5b26f70e1706a1d8a402bdd629fb2e7b94d2e09b` and every earlier receipt. A real native controller update delivered after the last admitted operation settled but before the pump completion reaction could leave the accepted geographic frame at instant 1 while the controller had advanced to 2. The retained pre-fix regression fails with `1n !== 2n`.
+
+The Node scheduler now returns the drained intent generation and reconciles it in the completion reaction. Only a newly arrived intent starts a successor pump; the same failed intent is not automatically retried. `whenIdle()` observes replacement pumps. The regression mutates the actual controller from the operation-settlement boundary and verifies the accepted native frame, without replacing native computation.
+
+The final four-module Node command passes 39 tests, zero skips. The prior 157-test Python run remains evidence for unchanged Python behavior; current Core/checkout/inventory tests and types are rerun separately. Native, WASM and browser artifacts are unchanged and reused by digest. No browser recapture, full suite, milestone closure, or publication qualification is claimed. Mounted native replacement, mixed tiles, all-host export/accessibility and scale/five-view/competitor acceptance remain open.
+
+Reproduction: select the test named `latest controller intent at the pump completion boundary is not lost` in `packages/xy-node/test/geo-temporal-binding.test.mjs` with Node 22 and explicit `XYG_NATIVE_LIB=target/release/libxyg_core.so`. Against the prior module and new regression it fails; the candidate passes. The pre-fix log was retained from the actual failing run; its exact original argv was not captured. `checks.json` records exact argv for the full successful successor run and archive/raw hashes. Historical receipts are not rewritten.

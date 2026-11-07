@@ -1,0 +1,7 @@
+import os,subprocess,json,time,sys
+from pathlib import Path
+root=Path.cwd(); out=Path('/home/ubuntu/.t3tmp/1111/native-m7')
+env=os.environ.copy();env.update(PATH='/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:'+env['PATH'],TMPDIR='/home/ubuntu/.t3tmp/1111',PYTHONPATH=str(root/'python'),XYG_NATIVE_LIB='/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so',XYG_CHROMIUM='/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome',XYG_TEST_CHROMIUM='/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome',UV_NO_SYNC='1')
+name=sys.argv[1];cmd=sys.argv[2];start=time.time()
+with (out/(name+'.log')).open('w') as f:r=subprocess.run(cmd,shell=True,env=env,stdout=f,stderr=subprocess.STDOUT)
+(out/(name+'.result.json')).write_text(json.dumps(dict(command=cmd,exit=r.returncode,seconds=time.time()-start),indent=2)+'\n');print(name,r.returncode);print((out/(name+'.log')).read_text()[-1800:]);sys.exit(r.returncode)

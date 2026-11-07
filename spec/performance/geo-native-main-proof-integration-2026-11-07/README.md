@@ -1,0 +1,7 @@
+# Integrate native geographic binding with accepted scheduling proof
+
+Normal merge parents: queued-recipient correction 212ed378e46592b32ac67a317d73fbe67bdb1b71 and accepted main084b3c1b7c393e135476aab9610bf8334767b2ac (PR1109). Only the preparation inventory conflicted and is officially regenerated. Python/Node/browser production implementations remain exact to the correction parent. Historical receipts and accepted scheduling evidence are preserved. Successor bindings refresh current-source claims and real Git CRLF coverage; no release freeze is claimed.
+
+The queued-recipient repair preceding this merge fixes R10's remaining Node P2 by storing captured subscriptions beside pending snapshots. Its real-controller regression fails on c1c059f3 and all44 Node cases pass afterward; Python teardown was independently approved in R10 and production bytes remain unchanged. Focused current Core/inventory, Node, full strict-CSP foundation (including accepted camera/scheduling controls) and required full hooks/Ruff are run before merge commit. Native/WASM and packaged clients are digest-reused, not rebuilt; this is not new scale or all-host proof.
+
+Independent final correction/integration review, new-head CI and merge queue remain required. Mounted native replacement, indexed/hierarchy automatic binding, mixed tiles, broader exports/accessibility, scale/five-view/competitor acceptance and #50/#39/M6 remain open.

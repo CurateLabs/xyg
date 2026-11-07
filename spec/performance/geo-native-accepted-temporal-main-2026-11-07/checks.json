@@ -1,0 +1,127 @@
+{
+  "parents": {
+    "nativeCandidate": "77b21a02fff2df9bbe5f5e9cc7df349cdde16918",
+    "acceptedMain": "ae104cf35316e10e56e345c225acef2604e487a1"
+  },
+  "commands": [
+    "uv run --no-project /home/ubuntu/.t3/worktrees/xyg/t3-3cad2042/.venv/bin/python -m pytest tests/test_geo_temporal_binding.py tests/test_temporal_controller.py tests/test_geo_retained.py tests/test_geo_retained_components.py tests/test_graphforge_contract_corpus.py tests/test_release_inventory.py -q",
+    "node js/build.mjs",
+    "node --test packages/xy-node/test/geo-temporal-binding.test.mjs packages/xy-node/test/temporal-controller.test.mjs packages/xy-node/test/temporal-graph-publication.test.mjs",
+    "node scripts/wasm_foundation_smoke.mjs",
+    "uv run python scripts/verify_wasm_assets.py",
+    "uv run python scripts/check_python_floor.py",
+    "uv run python scripts/verify_ownership.py",
+    "uv run --with pre-commit pre-commit run --all-files",
+    "uv run ruff check .",
+    "uv run ruff format --check ."
+  ],
+  "logs": {
+    "python311.log.gz": {
+      "archiveSha256": "e9e943f837a7d22eec21c5674e431907fa645be22d22085fec7f2563c68fab1f",
+      "rawSha256": "142677c75f1ae6da401b8d51d21b03fb7d820f2c578fe8d2bbeae07b04753827",
+      "rawBytes": 251,
+      "exit": 0
+    },
+    "js-build.log.gz": {
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+      "rawBytes": 5448,
+      "exit": 0
+    },
+    "node.log.gz": {
+      "archiveSha256": "6dd2040a8c10cafe979ff95493d259a92f1f49120df136d09aae215196dfa08b",
+      "rawSha256": "6bc9926ed1e81f23b2981d4578f68231c6b7cd9fb19243fe646e3c7278bcf929",
+      "rawBytes": 8715,
+      "exit": 0
+    },
+    "foundation.log.gz": {
+      "archiveSha256": "26f0a49eb392b0b75dafc333969b5969a3bf332529d7d58aa1bbf25043b274a3",
+      "rawSha256": "00d845a85a184bf76b3cb24000543c0ccce79f9ef5911413015b4a4f9be2beca",
+      "rawBytes": 3854,
+      "exit": 0
+    },
+    "assets.log.gz": {
+      "archiveSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730",
+      "rawSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+      "rawBytes": 88,
+      "exit": 0
+    },
+    "floor.log.gz": {
+      "archiveSha256": "4652456836415472c91bf0db9100a6d492591d06ecd7fde0f5832056a1f73ebf",
+      "rawSha256": "b74c6582357e4cc55f2da8b24b4db3eba9c166d307177c0acd0a422cdcbd8551",
+      "rawBytes": 22,
+      "exit": 0
+    },
+    "ownership-final.log.gz": {
+      "archiveSha256": "d584819740eb8c538cc4bc5a1bf4f93b1fb7e1857121b605d983ac289a4a931b",
+      "rawSha256": "114918cae22abfe24de003b791ecfc6b8c602b2cadf06589755cf06d1b748b47",
+      "rawBytes": 60,
+      "exit": 0
+    },
+    "hooks.log.gz": {
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "rawBytes": 240,
+      "exit": 0
+    },
+    "ruff.log.gz": {
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "rawBytes": 19,
+      "exit": 0
+    },
+    "format.log.gz": {
+      "archiveSha256": "089b83253e4784b0bd6e4515b3d7e17655b33a56cd5876d826da1971968e0217",
+      "rawSha256": "2400a574afc9248168592bb76669b4bf799fdaa349c806c136f03b5762d6ff83",
+      "rawBytes": 29,
+      "exit": 0
+    }
+  },
+  "artifacts": {
+    "/home/ubuntu/.t3/worktrees/xyg/t3-6e94436c/target/release/libxyg_core.so": {
+      "bytes": 6127864,
+      "sha256": "09b2571980a8c1d97ac4478fc51b346fb9356d07916bc8b38e84c072b531b895"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 808602,
+      "sha256": "279ac3767ee8b9dedf91698018f71441d143767ad940e887d3cc0fadbd29b056"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 808631,
+      "sha256": "147a3dbd091c75782567f6bb44c32190366948a0481fb548f5b40bdb1676dc8a"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 56634,
+      "sha256": "cc65e16ea9d59dcee9a339ff7ead857c71c8507771e5cddc24ab2cd090ffd555"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1927032,
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 808602,
+      "sha256": "279ac3767ee8b9dedf91698018f71441d143767ad940e887d3cc0fadbd29b056"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 808631,
+      "sha256": "147a3dbd091c75782567f6bb44c32190366948a0481fb548f5b40bdb1676dc8a"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1927032,
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1"
+    }
+  },
+  "protectionSha256": "7fd2c9d1d34a1061c096ea59bbbacf7040db3cd2824de8db0c7e35bf6c7b42ce",
+  "inventory": {
+    "gaps": 686,
+    "contractSha256": "7fcca571a15d1333842fb36f8e9e252d616093aad594b93dff820c025f235529",
+    "newGapsBeyondParentUnion": []
+  },
+  "environment": {
+    "pythonTests": "CPython3.11.17; explicit PYTHONPATH points at this worktree python and tests",
+    "node": "22.23.4",
+    "chromium": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "tmpdir": "/home/ubuntu/.t3tmp/1111"
+  },
+  "limits": "Independent review, new CI and queue required; no mounted native/all-host/export/accessibility/scale/competitor or issue/milestone completion."
+}

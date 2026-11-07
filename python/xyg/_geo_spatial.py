@@ -295,7 +295,7 @@ class GeoSpatialIndex(RetainedGeoSource):
             await g._settle(asyncio.create_task(bridge.execute(_request(10, self.handle))))
             raise
 
-    def update(self, query, *, sequence, style):
+    def update(self, query, *, sequence, style, _publish=True):
         self._check()
         if not isinstance(style, bytes) or len(style) != 48:
             raise ValueError("style must be exact 48-byte Rust framing")
@@ -324,10 +324,11 @@ class GeoSpatialIndex(RetainedGeoSource):
                 raise
             finally:
                 self._busy = False
-        self.current = frame
+        if _publish:
+            self.current = frame
         return frame
 
-    async def aupdate(self, query, *, sequence, style):
+    async def aupdate(self, query, *, sequence, style, _publish=True):
         self._check(True)
         if not isinstance(style, bytes) or len(style) != 48:
             raise ValueError("style must be exact 48-byte Rust framing")
@@ -371,7 +372,8 @@ class GeoSpatialIndex(RetainedGeoSource):
                 raise
             finally:
                 self._busy, self._active = False, None
-        self.current = frame
+        if _publish:
+            self.current = frame
         return frame
 
     def cancel(self):
