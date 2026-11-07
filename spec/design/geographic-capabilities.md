@@ -131,4 +131,10 @@ small proof does not establish live linked hosts or massive export latency.
 Canonical mounted notebook and Node/VS Code temporal replacement uses native
 XYGH preparation and the original painter, with bounded direct/aggregate and
 selected identity proof in [the mounted receipt](../performance/geo-mounted-temporal-2026-11-07/README.md).
-Indexed/hierarchy/overview/mixed-tile automation and whole M6 acceptance remain open.
+Explicitly framed `GeoSpatialIndex` mounts now share that controller-to-native
+replacement path for ordinary and selected data. The [indexed follow-up](../performance/indexed-temporal-hosts-header-sharing-2026-11-07/README.md)
+records actual notebook and Node/VS Code journeys, exact membership and camera
+continuity, storage/refusal retention, cancellation, retirement retries and
+independent caller leases under the existing limits. This is mounted-only;
+indexed snapshot binding, ordinary hierarchy/overview/mixed-tile automation,
+scale/resource/competitor comparisons and whole M6 acceptance remain open.

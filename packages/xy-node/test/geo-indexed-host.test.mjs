@@ -34,7 +34,7 @@ test('indexed explicit mount retains anchor before caller disposal and remounts 
 test('query/style/sequence mismatch rejects before retain and preserves caller',async()=>{
  const {index,chart,frame,q}=await setup();
  try{
- assert.throws(()=>chart.host(),/indexed hosts are pending/);
+ assert.throws(()=>chart.host(),/explicit matching initial frame/);
  for(const field of ['cameraRevision','timeRevision','styleRevision','stateRevision']){
  const changed={...q,[field]:q[field]-1n};const wrong=geoChart(geoLayer('points',{source:index,layerId:U64,query:changed,sequence:2n,style:style()}),{camera:q.camera});assert.throws(()=>wrong.host({frame}),/explicit frame/);
  }

@@ -285,8 +285,9 @@ This slice supports canonical retained points (including Rust cluster/density
 reduction). Indexed/overview/hierarchy/mixed-tile automatic bindings and direct
 low-level Python ABI mutations outside the controller wrapper are not covered.
 Snapshot callers acquire an exact frame for existing host/view
-or export routes. Automatic replacement of an already mounted canonical notebook
-or Node/VS Code view is specified in [mounted temporal hosts](geo-mounted-temporal-hosts.md),
+or export routes. Automatic replacement of an already mounted canonical or
+explicitly framed `GeoSpatialIndex` notebook or Node/VS Code view is specified in
+[mounted temporal hosts](geo-mounted-temporal-hosts.md),
 using the existing XYGH CAS and retirement ACK contract.
 This does not establish all-host accessibility, complete attributed frozen
 exports, massive/five-view/competitor acceptance or M6/#50/#39 closure.

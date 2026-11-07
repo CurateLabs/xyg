@@ -1004,3 +1004,13 @@ spec/performance/frozen-combined-module-2026-11-07/*.gz -text
 spec/performance/frozen-combined-module-2026-11-07/*.png -text
 spec/performance/frozen-combined-module-2026-11-07/abi403-predecessor/*.json text eol=lf
 spec/performance/frozen-combined-module-2026-11-07/abi404-predecessor/*.json text eol=lf
+
+# Indexed mounted-host qualification and unchanged-cap header sharing.
+spec/performance/indexed-temporal-hosts-header-sharing-2026-11-07/** text eol=lf
+spec/performance/indexed-temporal-hosts-header-sharing-2026-11-07/**/*.gz -text
+spec/performance/indexed-temporal-hosts-header-sharing-2026-11-07/**/*.png -text
+tests/notebook_geo_mounted_indexed_temporal.ipynb text eol=lf
+tests/vscode_geo_mounted_indexed_temporal/*.cjs text eol=lf
+tests/vscode_geo_mounted_indexed_temporal/*.json text eol=lf
+python/xyg/_geo_selected.py text eol=lf
+tests/test_geo_indexed_host.py text eol=lf

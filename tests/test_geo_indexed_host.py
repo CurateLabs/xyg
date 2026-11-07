@@ -82,7 +82,7 @@ def test_indexed_anchor_survives_caller_disposal_and_ack_remount():
 def test_indexed_host_rejects_mismatches_without_stealing_caller_frame():
     index, chart, frame = indexed_chart_fixture()
     try:
-        with pytest.raises(ValueError, match="indexed hosts are pending"):
+        with pytest.raises(ValueError, match="explicit matching initial frame"):
             chart.host()
         for field in ("camera_revision", "time_revision", "style_revision", "state_revision"):
             layer = chart.layers[0]

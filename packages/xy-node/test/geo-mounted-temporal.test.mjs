@@ -63,3 +63,40 @@ test('postMessage rejection and failed realm cleanup retain retryable source exc
   p.panel.dispose();await turn();assert.throws(()=>f.chart.bindTemporal(h),/already/);rejectCleanup=false;await host.dispose();await next.dispose();assert.equal(f.adapter.mounted,false);
  }finally{await release(f);temporalControllerDestroy(h);}
 });
+
+for(const selected of [false,true])test(`indexed mounted ${selected?'selected':'ordinary'} native replacement, fallback and disposal`,{timeout:15000},async()=>{
+ const {mountedIndexedFixture}=await import('./geo-mounted-indexed-temporal-fixture.mjs');
+ const {prepare,acknowledge}=await import('./geo-live-host-fixture.mjs');
+ const f=await mountedIndexedFixture({selected}),p=panelFixture(),host=attachGeoWebview(p.panel,f.adapter);
+ const h=temporalControllerCreate({instanceId:selected?63n:62n,domainStart:-(1n<<63n),domainEnd:(1n<<63n)-1n,cursor:0n,window:0n,step:1n});
+ const prototype=Object.getPrototypeOf(f.source);class UnissuedSubclass extends f.source.constructor{}
+ try{Object.setPrototypeOf(f.source,UnissuedSubclass.prototype);assert.throws(()=>host.bindTemporal(h),/spatial index required/);}finally{Object.setPrototypeOf(f.source,prototype);}
+ const binding=host.bindTemporal(h);let caller,unblock;
+ try{
+  assert.throws(()=>host.bindTemporal(h),/already/);
+  // Snapshot binding remains outside this indexed mounted slice.
+  assert.throws(()=>f.chart.bindTemporal(h),/canonical retained/);
+  await request(f.adapter,1,{mount:'native'});caller=await f.adapter.frame.retain();const originalCurrent=f.source.current;
+  p.receive({type:'geo_host_ready',mount:'native'});await turn();const active=p.sent.at(-1).message;
+  for(let n=0;n<1000;n++)temporalControllerSetCursor(h,BigInt(n));await turn();assert.equal(p.sent.length,2);
+  p.receive({...active,type:'geo_host_temporal_done',status:'superseded',drained:true});await turn();const last=p.sent.at(-1);
+  assert.equal(new DataView(last.buffers[0]).getBigInt64(16,true),999n);
+  p.receive({...last.message,type:'geo_host_temporal_done',status:'failed',drained:false,error:'lost indexed ACK'});await binding.whenIdle();assert.match(binding.error.message,/lost indexed/);
+  const draining=binding.dispose();await turn();const retry=p.sent.findLast(e=>new DataView(e.buffers[0]).getUint32(8,true)===4);assert.ok(retry);assert.deepEqual(retry.message,last.message);
+  p.receive({...last.message,type:'geo_host_temporal_done',status:'superseded',drained:true});await draining;
+  // Real native replacements cross the fixed selected birth-bank capacity.
+  for(let n=3n;n<28n;n++){
+   const old=f.adapter.frame,sequence=f.adapter.sequence,[reply,packets]=await prepare(f.adapter,{nonce:n,sequence:n});assert.equal(reply.error,undefined);
+   assert.equal((await acknowledge(f.adapter,7,old.handle,sequence,packets[0]))[0].error,undefined);
+   assert.equal((await acknowledge(f.adapter,8,old.handle,sequence,packets[0]))[0].error,undefined);
+   assert.equal(f.adapter.frame.data.length,2);assert.equal(f.adapter.frame.data.record(0).featureId,0xffffffffffffffffn);
+   if(selected)assert.equal(f.adapter.frame.data.selection.id(0),0xffffffffffffffffn);
+  }
+  const good=f.adapter.frame,cap=f.source.budget.maxChunks;f.source.budget.maxChunks=1;
+  assert.match((await prepare(f.adapter,{nonce:28n,sequence:28n}))[0].error,/explicit canonical full-source scan/);assert.equal(f.adapter.frame,good);f.source.budget.maxChunks=cap;
+  const reader=f.source.readPage;let enter;const entered=new Promise(r=>enter=r),gate=new Promise(r=>unblock=r);
+  f.source.readPage=async ticket=>{enter();await gate;return reader(ticket);};
+  const pending=prepare(f.adapter,{nonce:29n,sequence:29n});await entered;let closed=false;const closing=f.source.dispose().then(()=>closed=true);await turn();assert.equal(closed,false);unblock();assert.match((await pending)[0].error,/abort|cancel|closing|disposed/i);await closing;
+  assert.equal(f.adapter.frame,good);assert.equal(caller.data.record(0).featureId,0xffffffffffffffffn);assert.equal(f.source.current,originalCurrent);assert.equal(f.canonicalReads(),0);assert.ok(f.pageReads()>0);
+ }finally{unblock?.();p.panel.dispose();await host.dispose();await binding.dispose();await caller?.dispose();await release(f);await f.scope?.dispose();temporalControllerDestroy(h);}
+});

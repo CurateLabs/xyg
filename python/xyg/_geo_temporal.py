@@ -340,13 +340,16 @@ class MountedGeoTemporalBinding:
 
     def __init__(self, widget, controller, mode="cursor"):
         from ._geo_retained import RetainedGeoSource
+        from ._geo_spatial import GeoSpatialIndex
 
         if mode not in ("cursor", "range"):
             raise ValueError("mode must be cursor or range")
         self._loop = asyncio.get_running_loop()
         self._source = widget._adapter._source
-        if type(self._source) is not RetainedGeoSource:
-            raise ValueError("mounted binding requires a canonical retained source")
+        if type(self._source) not in (RetainedGeoSource, GeoSpatialIndex):
+            raise ValueError(
+                "mounted binding requires a canonical retained source or spatial index"
+            )
         if widget._close_requested or controller.state["disposed"]:
             raise RuntimeError("widget or controller disposed")
         if self._source in _BINDINGS:

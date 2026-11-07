@@ -21,7 +21,7 @@ export class GeoHostAdapter {
  get overviewMode(){return this.#overviewMode;}
  constructor(chart,{frame,selectedScope,hierarchyLane}={}){
   const overview=chart._overview?.();if(overview){this.initOverview(chart,overview,{frame,selectedScope,hierarchyLane});return;}this.#overviewMode=false;
-  const layer=chart._retained();if(!layer||chart.tileSession||(!(layer.source instanceof RetainedGeoSource)||(!frame&&layer.source.constructor!==RetainedGeoSource)))throw new TypeError('native host requires one canonical RetainedGeoSource; indexed hosts are pending');
+  const layer=chart._retained();if(!layer||chart.tileSession||(!(layer.source instanceof RetainedGeoSource)||(!frame&&layer.source.constructor!==RetainedGeoSource)))throw new TypeError('native host requires one retained source; a spatial index requires an explicit matching initial frame');
   if(layer.source.bridge.execute!==geoScaleExecute)throw new TypeError('native geographic host requires the native source bridge');
   const {query,sequence,style}=chart._inputs(layer);
   this.source=layer.source;this.query={...query,camera:{...query.camera},time:{...query.time},sourceDigest:query.sourceDigest.slice()};this.sequence=sequence;this.style=style.slice();this.budget=chart.budget;

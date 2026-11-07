@@ -58,7 +58,7 @@ class GeoHostAdapter:
             or (frame is None and type(layer.source) is not RetainedGeoSource)
         ):
             raise ValueError(
-                "live native hosts require one canonical RetainedGeoSource; indexed hosts are pending"
+                "native host requires one retained source; a spatial index requires an explicit matching initial frame"
             )
         if layer.source._bridge is not None:
             raise ValueError("live native hosts currently require a synchronous native reader")

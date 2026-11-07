@@ -8,7 +8,7 @@ import {fileURLToPath} from 'node:url';
 import {createServer} from 'node:net';
 import {chromium} from 'playwright';
 const root=fileURLToPath(new URL('../',import.meta.url)),temp=await mkdtemp(join(tmpdir(),'xyg-notebook-host-'));
-await cp(join(root,'tests/notebook_geo_mounted_temporal.ipynb'),join(temp,'geographic.ipynb'));
+await cp(join(root,process.env.XYG_GEO_INDEXED==='1'?'tests/notebook_geo_mounted_indexed_temporal.ipynb':'tests/notebook_geo_mounted_temporal.ipynb'),join(temp,'geographic.ipynb'));
 const allocator=createServer();await new Promise(r=>allocator.listen(0,'127.0.0.1',r));const port=allocator.address().port;await new Promise(r=>allocator.close(r));
 await mkdir(join(temp,'runtime'));await mkdir(join(temp,'config'));await mkdir(join(temp,'data'));
 const executable=process.env.XYG_GEO_JUPYTER??join(root,'.venv/bin/jupyter-lab');
@@ -45,12 +45,13 @@ try{
    await page.waitForTimeout(100);
    const count=await painter.evaluate(canvas=>{const ctx=canvas.getContext('2d');let p;if(ctx)p=ctx.getImageData(0,0,canvas.width,canvas.height).data;else{const gl=canvas.getContext('webgl2');p=new Uint8Array(gl.drawingBufferWidth*gl.drawingBufferHeight*4);gl.readPixels(0,0,gl.drawingBufferWidth,gl.drawingBufferHeight,gl.RGBA,gl.UNSIGNED_BYTE,p);}let red=0;for(let at=0;at<p.length;at+=4)if(p[at]>150&&p[at+1]<100&&p[at+2]<100)red++;return red;});
    phasePixels.push(count);if(i===2?count!==0:count===0)throw Error('unexpected mounted pixels phase '+i+': '+count);
-   if(process.env.XYG_GEO_NOTEBOOK_CAPTURE)await page.screenshot({path:process.env.XYG_GEO_NOTEBOOK_CAPTURE.replace('.png','-'+i+'.png')});
+   if(process.env.XYG_GEO_NOTEBOOK_CAPTURE){await painter.scrollIntoViewIfNeeded();await page.screenshot({path:process.env.XYG_GEO_NOTEBOOK_CAPTURE.replace('.png','-'+i+'.png')});}
   }
  }
  if(errors.length)throw Error('browser page errors '+errors.join(','));
  if(external.length)throw Error('external requests '+external.join(','));
- const result={ok:true,journey:'actual JupyterLab + live IPython loop + anywidget binary comm + Rust native painter',mountedTemporal:true,rangeAndCursor:true,cameraPreserved:true,foreignThread:true,failureRetained:true,rebind:true,independentCaller:true,phasePixels,canvasCount,redPixels:red,browser:browser.version(),external,errors,warnings,releaseAcknowledged:true};
+ const kernelEnvironment=process.env.XYG_GEO_INDEXED==='1'?JSON.parse((await page.locator('.jp-OutputArea').allTextContents()).join('\n').match(/XYG indexed environment (\{[^\n]+\})/)[1]):undefined;
+ const result={ok:true,kernelEnvironment,indexed:process.env.XYG_GEO_INDEXED==='1',selected:process.env.XYG_GEO_INDEXED==='1'&&process.env.XYG_GEO_SELECTED!=='0',journey:'actual JupyterLab + live IPython loop + anywidget binary comm + Rust native painter',mountedTemporal:true,rangeAndCursor:true,cameraPreserved:true,foreignThread:true,failureRetained:true,rebind:true,independentCaller:true,phasePixels,canvasCount,redPixels:red,browser:browser.version(),external,errors,warnings,releaseAcknowledged:true};
  if(process.env.XYG_GEO_NOTEBOOK_REPORT)await writeFile(process.env.XYG_GEO_NOTEBOOK_REPORT,JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
 }catch(error){throw Error(JSON.stringify({error:error.message,errors,body:await page?.locator('body').innerText().catch(()=>''),outputs:await page?.locator('.jp-OutputArea').evaluateAll(els=>els.map(el=>el.innerHTML.slice(-6000))).catch(()=>[]),logs:logs.slice(-6000)}));}
 finally{await browser?.close();server.kill('SIGTERM');}

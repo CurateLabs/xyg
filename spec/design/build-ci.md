@@ -84,7 +84,7 @@ implementations and thresholds are unchanged.
 
 ## Packaged WASM assets (#1005, dossier §33)
 
-The combined filtering/temporal-catalog source uses native ABI403 and WASM37.
+The last package-qualified filtering/temporal-catalog source uses native ABI403 and WASM37.
 Its wasm32-only Cargo configuration uses `opt-level=2` with LLVM inlining
 threshold 50; native release optimization remains O3. The single module keeps
 the complete parent export union, optimizer passes and unchanged 1927168 raw /
@@ -95,6 +95,15 @@ Same-source ABBA diagnostics retain complete admitted-output equality and
 slower cases. This compiler choice establishes package admission and the
 recorded bounded functional paths, not a latency or competitor win. Historical
 O3 receipts describe their historical sources and are not rewritten.
+
+The newer combined frozen-export source declares native ABI405 (551 symbols)
+and WASM38 (68 function exports). It is a source checkpoint, not a package pass.
+Sharing only the four geographic source/snapshot header-writer bodies on wasm32
+reduces the complete module to 1,936,761 raw /805,269 Node22 gzip6 bytes, still
+9,593 /18,837 bytes above the unchanged limits. Native compilation, compiler
+settings and shipping optimizer passes are unchanged; diagnostic extra passes
+are not adopted. Matching native-host paint qualification does not certify this
+unqualified WASM module. See the [follow-up evidence](../performance/indexed-temporal-hosts-header-sharing-2026-11-07/README.md).
 
 The full source foundation also validates the six-family temporal catalog
 through the packaged Worker and existing ChartView painter. It compares

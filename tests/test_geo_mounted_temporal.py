@@ -302,7 +302,7 @@ def test_comm_notifications_from_foreign_notebook_loop_dispatch_to_owner():
     asyncio.run(asyncio.wait_for(run(), 15))
 
 
-def mounted_chart_fixture():
+def mounted_chart_fixture(*, spread=False):
     """Same canonical IDs with a finite end for visible half-open host checks."""
     import numpy as np
 
@@ -311,10 +311,13 @@ def mounted_chart_fixture():
     from xyg import _geoscale as g
 
     original, _ = source_fixture()
+    descriptor = bytearray(original[288:408])
+    if spread:
+        struct.pack_into("<d", descriptor, 80, 45.0)
     chunk = g.read(
         g.encode_chunk_request(
             dict(
-                descriptor=original[288:408],
+                descriptor=descriptor,
                 rows=2,
                 intervals=dict(
                     starts=np.array([I64, I64], dtype="<i8"),
@@ -343,6 +346,410 @@ def mounted_chart_fixture():
         xyg.geo_layer("points", source=source, layer_id=U64, query=q, sequence=1, style=style()),
         camera=q["camera"],
     )
+
+
+def mounted_indexed_chart_fixture(*, selected=False):
+    """External native index with a matching caller-owned mount frame."""
+    import numpy as np
+
+    from test_geo_retained import style
+    from test_geoscale import U64
+    from xyg import _geoscale as g
+    from xyg._geo_retained import _attach_frame
+    from xyg._geo_selected import GeoSelectedScope
+
+    source, base = mounted_chart_fixture(spread=True)
+    q = {**base.layers[0].properties["query"], "state_revision": 1}
+    canonical = source.update(q, sequence=1, style=style())
+    pages = {}
+    index = canonical.spatial_index(
+        grid=16,
+        max_vertices=1000000,
+        read_page=lambda ticket: pages[ticket["page"]],
+        write_page=lambda ticket, packet: pages.__setitem__(ticket["page"], bytes(packet)),
+    )
+    scope = None
+    if selected:
+        scope = GeoSelectedScope.from_frame(canonical, namespace=U64, layer_id=U64)
+        state = scope.state(revision=1, ids=np.array([U64], dtype="<u8"), fill=b"\0\xff\0\xff")
+        operation = state.begin(index, q, sequence=2, indexed=True)
+        operation.drive()
+        frame = operation.prepare(style())
+        packet = g.encode_request(
+            dict(
+                command=36,
+                handle=index.handle,
+                sequence=2,
+                query=q,
+                budget=index.budget,
+                payload=bytes(8),
+            )
+        )
+        _attach_frame(index, frame, 2, packet, style())
+        index._sequence = 2
+        operation.close()
+        state.close()
+    else:
+        frame = index.update(q, sequence=2, style=style())
+    chart = xyg.geo_chart(
+        xyg.geo_layer("points", source=index, layer_id=U64, query=q, sequence=2, style=style()),
+        camera=q["camera"],
+    )
+    canonical.close()
+    source.close()
+    return index, chart, frame, scope
+
+
+@pytest.mark.parametrize("selected", [False, True])
+def test_indexed_mounted_admission_extreme_controls_and_retryable_drain(selected):
+    async def run():
+        source, chart, caller, scope = mounted_indexed_chart_fixture(selected=selected)
+        with pytest.raises(ValueError, match="explicit matching initial frame"):
+            chart.widget()
+        widget = chart.widget(frame=caller, selected_scope=scope)
+        sent = []
+        widget.send = lambda message, buffers=(): sent.append((message, buffers))
+        controller = xyg.TemporalController(instance_id=61, domain=(-(1 << 63), (1 << 63) - 1))
+        source_class = type(source)
+
+        class UnissuedSubclass(source_class):
+            pass
+
+        try:
+            source.__class__ = UnissuedSubclass
+            with pytest.raises(ValueError, match="spatial index"):
+                widget.bind_temporal(controller)
+        finally:
+            source.__class__ = source_class
+        binding = widget.bind_temporal(controller)
+        adapter = widget._adapter
+        try:
+            assert "error" not in request(adapter, 1, mount="indexed")[0]
+            widget._on_geo_message(widget, dict(type="geo_host_ready", mount="indexed"), [])
+            await asyncio.sleep(0)
+            first = sent[-1][0]
+            assert struct.unpack_from("<q", sent[-1][1][0], 16)[0] == -(1 << 63)
+            for value in range(1000):
+                controller.set_cursor(value)
+            await asyncio.sleep(0)
+            assert len(sent) == 2
+            widget._on_geo_message(
+                widget,
+                {
+                    **first,
+                    "type": "geo_host_temporal_done",
+                    "status": "superseded",
+                    "drained": True,
+                },
+                [],
+            )
+            await asyncio.sleep(0)
+            latest = sent[-1][0]
+            assert struct.unpack_from("<q", sent[-1][1][0], 16)[0] == 999
+            widget._on_geo_message(
+                widget,
+                {
+                    **latest,
+                    "type": "geo_host_temporal_done",
+                    "status": "failed",
+                    "drained": False,
+                    "error": "lost indexed abort ACK",
+                },
+                [],
+            )
+            await binding.when_idle()
+            assert source in _BINDINGS
+            closing = asyncio.create_task(binding.aclose())
+            await asyncio.sleep(0)
+            while struct.unpack_from("<I", sent[-1][1][0], 8)[0] != 4:
+                await asyncio.sleep(0)
+            assert sent[-1][0] == latest
+            widget._on_geo_message(
+                widget,
+                {
+                    **latest,
+                    "type": "geo_host_temporal_done",
+                    "status": "superseded",
+                    "drained": True,
+                },
+                [],
+            )
+            await closing
+            assert source not in _BINDINGS
+            assert caller.data.record(0)["feature_id"] == (1 << 64) - 1
+            if selected:
+                assert caller.data.selection["namespace"] == (1 << 64) - 1
+            assert adapter._frame.data.record(0)["feature_id"] == (1 << 64) - 1
+        finally:
+            if adapter.mounted:
+                request(
+                    adapter,
+                    4,
+                    mount="indexed",
+                    owner=adapter._frame.handle,
+                    sequence=adapter._sequence,
+                )
+            widget.close()
+            await widget._geo_rpc_task
+            await binding.aclose()
+            caller.close()
+            controller.close()
+            source.close()
+            if scope is not None:
+                scope.close()
+
+    asyncio.run(asyncio.wait_for(run(), 15))
+
+
+@pytest.mark.parametrize("selected", [False, True])
+def test_indexed_mounted_native_time_membership_fallback_and_fixed_caps(selected):
+    from test_geo_live_host import ack, close, live
+    from xyg import _geoviewport
+
+    source, chart, caller, scope = mounted_indexed_chart_fixture(selected=selected)
+    widget = chart.widget(frame=caller, selected_scope=scope)
+    adapter = widget._adapter
+    original_current = source.current
+    canonical_reads = []
+    source._reader = lambda ticket: canonical_reads.append(ticket)
+
+    def prepare(sequence, kind, start, end=0):
+        raw = bytearray(256)
+        struct.pack_into(
+            "<4sIIIQQ5QI4x2q",
+            raw,
+            0,
+            b"XYGH",
+            2,
+            6,
+            0,
+            adapter._frame.handle,
+            adapter._sequence,
+            sequence,
+            sequence,
+            sequence,
+            sequence,
+            1,
+            kind,
+            start,
+            end,
+        )
+        raw[96:224] = _geoviewport.encode_request(adapter._query["camera"], 0)
+        return live(adapter, 6, raw)
+
+    try:
+        assert "error" not in request(adapter, 1)[0]
+        extrema = [
+            (1, -(1 << 63), 0, 2),
+            (1, (1 << 63) - 1, 0, 0),
+            (2, 99999, 100000, 2),
+            (2, 100000, 100001, 0),
+        ]
+        for sequence in range(3, 31):
+            kind, start, end, count = extrema[(sequence - 3) % len(extrema)]
+            old, old_sequence = adapter._frame.handle, adapter._sequence
+            message, packets = prepare(sequence, kind, start, end)
+            assert "error" not in message, (sequence, message)
+            assert "error" not in live(adapter, 7, ack(7, old, old_sequence, packets[0]))[0]
+            assert "error" not in live(adapter, 8, ack(8, old, old_sequence, packets[0]))[0]
+            assert adapter._frame.data.length == count
+            if count:
+                assert adapter._frame.data.record(0)["feature_id"] == (1 << 64) - 1
+                assert adapter._frame.data.record(1)["feature_id"] == (1 << 53) + 1
+            if selected:
+                assert adapter._frame.data.selection["namespace"] == (1 << 64) - 1
+        accepted = adapter._frame
+        capacity = source.budget["max_chunks"]
+        source.budget["max_chunks"] = 1
+        assert "explicit canonical full-source scan" in prepare(31, 1, 0)[0]["error"]
+        assert adapter._frame is accepted
+        source.budget["max_chunks"] = capacity
+        reader = source._read_page
+
+        def failed_page(_):
+            raise OSError("indexed page storage failure")
+
+        source._read_page = failed_page
+        assert "indexed page storage failure" in prepare(32, 1, 0)[0]["error"]
+        assert adapter._frame is accepted
+        source._read_page = reader
+        assert caller.data.record(0)["feature_id"] == (1 << 64) - 1
+        assert source.current is original_current
+        assert canonical_reads == []
+    finally:
+        close(source, adapter)
+        widget.close()
+        caller.close()
+        if scope is not None:
+            scope.close()
+
+
+@pytest.mark.parametrize("action", [0, 2])
+@pytest.mark.parametrize("cleanup", [False, True])
+def test_indexed_selected_birth_retirement_failure_keeps_exact_retry_and_claim(
+    monkeypatch, action, cleanup
+):
+    import ctypes
+
+    import numpy as np
+
+    from test_geo_retained import style
+    from xyg import _native
+
+    async def run():
+        source, chart, caller, scope = mounted_indexed_chart_fixture(selected=True)
+        widget = chart.widget(frame=caller, selected_scope=scope)
+        controller = xyg.TemporalController(instance_id=64, domain=(-100, 100))
+        binding = widget.bind_temporal(controller)
+        q = chart.layers[0].properties["query"]
+        state = scope.state(
+            revision=1, ids=np.array([(1 << 64) - 1], dtype="<u8"), fill=b"\0\xff\0\xff"
+        )
+        operation = state.begin(source, q, sequence=3, indexed=True)
+        operation.drive()
+        actual = _native._lib.xyg_geo_scale_execute
+        requests = []
+        armed = True
+
+        def dispatch(request, length, out, capacity):
+            nonlocal armed
+            raw = ctypes.string_at(request, length)
+            command = struct.unpack_from("<I", raw, 8)[0]
+            if command == 47 and struct.unpack_from("<I", raw, 256)[0] == 36:
+                requests.append(raw)
+                code = actual(request, length, out, capacity)
+                if armed and struct.unpack_from("<I", raw, 260)[0] == action:
+                    armed = False
+                    raise OSError("lost indexed mutation retirement acknowledgement")
+                return code
+            return actual(request, length, out, capacity)
+
+        frame = None
+        try:
+            monkeypatch.setattr(_native._lib, "xyg_geo_scale_execute", dispatch)
+            with pytest.raises(OSError, match="retirement acknowledgement"):
+                operation.prepare(style())
+            assert operation._publication_pending
+            assert source in _BINDINGS
+            with pytest.raises(RuntimeError, match="already"):
+                widget.bind_temporal(controller)
+            if cleanup:
+                await operation.aclose()
+                await operation.aclose()
+            else:
+                frame = operation.prepare(style())
+                assert not operation._publication_pending
+                assert frame.data.record(0)["feature_id"] == (1 << 64) - 1
+                operation.close()
+                assert frame.data.record(0)["feature_id"] == (1 << 64) - 1
+            matching = [r for r in requests if struct.unpack_from("<I", r, 260)[0] == action]
+            assert len(matching) >= 2 and matching[0] == matching[1]
+            assert operation._mutation._attempt._released
+            assert caller.data.record(0)["feature_id"] == (1 << 64) - 1
+        finally:
+            monkeypatch.setattr(_native._lib, "xyg_geo_scale_execute", actual)
+            operation.close()
+            if frame is not None:
+                frame.close()
+            state.pending_operation.close()
+            await binding.aclose()
+            widget.close()
+            await widget._geo_rpc_task
+            caller.close()
+            controller.close()
+            source.close()
+            scope.close()
+
+    asyncio.run(asyncio.wait_for(run(), 15))
+
+
+@pytest.mark.parametrize("cleanup", [False, True])
+def test_async_indexed_selected_birth_release_failure_retains_publication(cleanup):
+    import numpy as np
+
+    from test_geo_retained import fixture_manifest, style
+    from test_geoscale import BUDGET, U64, query
+    from xyg import _geoscale as g
+    from xyg._geo_selected import GeoSelectedScope
+
+    async def run():
+        native = g.NativeGeoScaleBridge(BUDGET["processor_bytes"])
+
+        class Bridge:
+            armed = False
+
+            def __init__(self):
+                self.releases = []
+
+            async def execute(self, packet):
+                reply = await native.execute(packet)
+                if struct.unpack_from("<I", packet, 8)[0] == 47 and struct.unpack_from(
+                    "<2I", packet, 256
+                ) == (36, 2):
+                    self.releases.append(bytes(packet))
+                    if self.armed:
+                        self.armed = False
+                        raise OSError("lost asynchronous indexed birth release")
+                return reply
+
+            async def read(self, packet):
+                return await native.read(packet)
+
+        bridge = Bridge()
+        manifest, chunk = fixture_manifest()
+
+        async def reader(_):
+            return chunk
+
+        source = await xyg.RetainedGeoSource.create_async(
+            manifest, reader, budget=BUDGET, bridge=bridge
+        )
+        q = {**query(source.info), "state_revision": 1}
+        original = await source.aupdate(q, sequence=1, style=style())
+        pages = {}
+
+        async def read_page(ticket):
+            return pages[ticket["page"]]
+
+        async def write_page(ticket, packet):
+            pages[ticket["page"]] = bytes(packet)
+
+        index = await original.spatial_index_async(
+            grid=16, max_vertices=1000000, read_page=read_page, write_page=write_page
+        )
+        scope = await GeoSelectedScope.from_frame_async(original, namespace=U64, layer_id=U64)
+        state = await scope.state_async(
+            revision=1, ids=np.array([U64], dtype="<u8"), fill=b"\0\xff\0\xff"
+        )
+        operation = await state.begin_async(index, q, sequence=2, indexed=True)
+        await operation.drive_async()
+        frame = None
+        try:
+            bridge.armed = True
+            with pytest.raises(OSError, match="asynchronous indexed birth release"):
+                await operation.prepare_async(style())
+            assert operation._publication_pending
+            if cleanup:
+                await operation.aclose()
+                await operation.aclose()
+            else:
+                frame = await operation.prepare_async(style())
+                await operation.aclose()
+                assert frame.data.record(0)["feature_id"] == U64
+            assert len(bridge.releases) == 2 and bridge.releases[0] == bridge.releases[1]
+            assert operation._mutation._attempt._released
+            assert original.data.record(0)["feature_id"] == U64
+        finally:
+            await operation.aclose()
+            if frame is not None:
+                await frame.aclose()
+            await state.pending_operation.aclose()
+            await index.aclose()
+            await original.aclose()
+            await source.aclose()
+            await scope.aclose()
+
+    asyncio.run(asyncio.wait_for(run(), 15))
 
 
 def test_repeated_waiter_cancellation_and_controller_reentrancy_keep_claim_until_ack():

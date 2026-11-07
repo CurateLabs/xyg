@@ -1,10 +1,10 @@
 # Automatic temporal replacement in native mounted geographic hosts
 
-Dossier §27/§29/§34. This extends the canonical retained Point/MultiPoint native
+Dossier §27/§29/§34. This extends canonical retained and spatially indexed Point/MultiPoint native
 binding to existing notebook and Node/VS Code painters. Geometry, temporal
 eligibility, reduction, selected identity and camera policy remain in Rust.
 The XYGHv2 protocol and existing native signatures are unchanged. The current
-combined filtering/catalog source uses native ABI403; its additive ABI
+combined filtering/catalog source uses native ABI405; its additive ABI
 reconciliation does not change mounted geographic operations. This does not complete M6/#50/#39.
 
 ## Public lifecycle
@@ -17,6 +17,35 @@ controller range into the existing half-open native predicate. Cursor/range
 values remain signed i64; source identities and revisions remain full u64.
 Controller clamping and range validity are unchanged. Selection/playback-only
 notifications with an unchanged effective predicate issue no query.
+
+Mounted admission accepts the exact issued `RetainedGeoSource` or
+`GeoSpatialIndex` class. Arbitrary subclasses are not admitted. Indexed hosts
+still require an explicit matching initial immutable frame and the existing
+native transport; automatic binding does not relax either gate. Both ordinary
+and selected indexed frames use the existing XYHT/XYGH lane: Rust operations18
+and19 for ordinary index queries, or33/36/19 for immutable selected queries.
+Rust alone owns external-page tickets, temporal membership, cancellation,
+admission and full-scan refusal. A `GeoSpatialFullScanRequired` failure preserves
+the accepted picture and never starts a canonical fallback. Failed external
+page reads likewise preserve the accepted frame; a later intent can recover
+after definite cleanup. Index disposal during a page read waits for admitted
+storage settlement and cancellation. Independent caller Data and accepted paint
+survive disposal of the index. Binding cleanup still requires actual drain or
+native realm release before dropping source exclusion.
+
+This admission is mounted-only. Indexed snapshot `chart.bind_temporal` /
+`chart.bindTemporal` remains refused; in particular this does not qualify Node
+index snapshot publication suppression.
+
+After selected indexed19 confirms independent Data, the Python operation
+confirms retirement of its distinct36 Query birth and releases that exact birth,
+as the Node operation already does. Preparation retains its publication guard
+if this confirmation or release fails; retry reuses the original47 correlation.
+Explicit operation cleanup can instead retire the known Data and then retry
+the same Query-birth release. Closing an operation after successful preparation
+does not dispose its caller-owned Data. The mounted lane keeps any failed
+cleanup owner and the source claim until settlement. Repeated replacements
+therefore reuse the fixed birth bank without changing its16-entry capacity.
 
 `when_idle()` / `whenIdle()` waits for the latest admitted intent, including its
 successor after supersession. Failure is available as `binding.error`; failed
@@ -150,11 +179,21 @@ The successor receipt in `spec/performance/geo-mounted-temporal-2026-11-07/`
 binds source, native/client artifacts, commands, raw logs and captures. Existing
 pytest/Node tests discover lifecycle regressions; the existing Chromium CI step
 runs the packaged mounted journey for selected direct and ordinary aggregate
-sources. The Jupyter journey is separately reproducible with JupyterLab installed.
+sources. `XYG_GEO_INDEXED=1` selects external-page indexed fixtures in the same
+packaged browser, Jupyter and VS Code entrypoints; `XYG_GEO_SELECTED=0` selects
+ordinary indexed Data, and1 selects immutable selected Data. Jupyter requires
+JupyterLab installed. The normal pytest and Node mounted suites include indexed
+admission, bounded control, exact drain retry, native temporal membership,
+full-scan refusal, independent leases and repeated replacement past the fixed
+selected birth-bank capacity. The browser indexed journey additionally checks
+real page-read supersession, failure-retained framebuffer pixels, ordered camera
+gestures, index disposal while reading and zero canonical fallback reads.
 
-Indexed, hierarchy, overview and mixed-tile automatic binding, full attributed
+Ordinary hierarchy, overview and mixed-tile automatic binding, full attributed
 frozen exports, full-source accessibility, massive/five-view latency and memory,
-and competitor qualification remain open. Existing static/indexed/hierarchy,
+and competitor qualification remain open. Selected hierarchy uses the existing
+canonical source plus an explicit `hierarchy_lane` / `hierarchyLane`; this indexed
+slice does not change or newly qualify it. Existing static/indexed/hierarchy,
 explicit live mounts and snapshot/export evidence remain distinct. The packaged
 Node22/native bridge and real VS Code1.103.2 (embedded Node22.17.0) application
 journey exercise the same painter. A separate VS Code1.145.2/Node24.22.1 probe is

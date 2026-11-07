@@ -1,6 +1,7 @@
 /** Scheduling and independent native leases; Rust owns every geographic decision. */
 import { temporalControllerState, temporalControllerSubscribeState } from './abi.js';
 import { RetainedGeoSource } from './geo-retained.js';
+import { GeoSpatialIndex } from './geo-spatial.js';
 const bindings = new WeakMap();
 const MAX = 0xffffffffffffffffn;
 function copyQuery(query) {
@@ -117,7 +118,7 @@ export class GeoTemporalBinding {
 export class MountedGeoTemporalBinding {
   constructor(source,handle,host,mode='cursor') {
     if(!['cursor','range'].includes(mode))throw TypeError('mode must be cursor or range');
-    if(source?.constructor!==RetainedGeoSource)throw TypeError('canonical retained source required');
+    if(source?.constructor!==RetainedGeoSource&&source?.constructor!==GeoSpatialIndex)throw TypeError('canonical retained source or spatial index required');
     if(temporalControllerState(handle).disposed)throw Error('controller disposed');
     if(bindings.has(source))throw Error('source already has a temporal binding');
     this.source=source;this.host=host;this.mode=mode;this.generation=0;this.sent=-1;this.serial=0;this.wake();

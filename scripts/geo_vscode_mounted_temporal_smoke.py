@@ -30,7 +30,14 @@ def main():
     args = parser.parse_args()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
-    native = ROOT / "target/release/libxyg_core.so"
+    native = Path(
+        os.environ.get("XYG_NATIVE_LIB", ROOT / "target/release/libxyg_core.so")
+    ).resolve()
+    fixture = (
+        "vscode_geo_mounted_indexed_temporal"
+        if os.environ.get("XYG_GEO_INDEXED") == "1"
+        else "vscode_geo_mounted_temporal"
+    )
     if not args.code.is_file() or not native.is_file():
         parser.error("installed VS Code executable and this checkout's native core are required")
     env = dict(
@@ -107,8 +114,8 @@ def main():
                 "--verbose",
                 "--user-data-dir=" + str(output / "user"),
                 "--extensions-dir=" + str(output / "extensions"),
-                "--extensionDevelopmentPath=" + str(ROOT / "tests/vscode_geo_mounted_temporal"),
-                "--extensionTestsPath=" + str(ROOT / "tests/vscode_geo_mounted_temporal/test.cjs"),
+                "--extensionDevelopmentPath=" + str(ROOT / "tests" / fixture),
+                "--extensionTestsPath=" + str(ROOT / "tests" / fixture / "test.cjs"),
                 "--disable-extensions",
                 "--skip-welcome",
                 "--skip-release-notes",
