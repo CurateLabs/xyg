@@ -11,8 +11,9 @@ export function assertProgressiveCameraPan(view) {
     assert.deepEqual(pan.after.camera,expected,'requested camera translation and unchanged components');
   }
   const pan=admitted.at(-1),expected=[...pan.before.camera];expected[2]+=12;
-  const later=view.frames.filter(frame=>frame.at>pan.returned && BigInt(frame.progress.steps)>BigInt(pan.after.relayout.steps));
-  assert.ok(later.length,'camera survives a later Rust continuation');
+  assert.ok(Number.isSafeInteger(pan.framesAtReply) && pan.framesAtReply>=0 && pan.framesAtReply<=view.frames.length,'valid reply frame ordinal');
+  const later=view.frames.slice(pan.framesAtReply);
+  assert.ok(later.some(frame=>BigInt(frame.progress.steps)>BigInt(pan.after.relayout.steps)),'camera survives a later Rust continuation');
   for(const frame of later)assert.deepEqual(frame.camera,expected,'continuation preserves camera');
   assert.deepEqual(view.finalSnapshot.camera,expected,'final camera preserves translation');
 }

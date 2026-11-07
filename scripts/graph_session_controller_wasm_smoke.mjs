@@ -70,7 +70,7 @@ try {
           const button=document.createElement('button');button.textContent='Pan right';button.dataset.pan='';p.el.prepend(button);
           button.addEventListener('click',async e=>{
             const before=p.handle.snapshot(),at=performance.now();
-            try {const camera=[...before.camera];camera[2]+=12;const after=await p.handle.refreshRender(camera);p.pans.push({trusted:e.isTrusted,at,returned:performance.now(),before,after});}
+            try {const camera=[...before.camera];camera[2]+=12;const after=await p.handle.refreshRender(camera);p.pans.push({trusted:e.isTrusted,at,returned:performance.now(),framesAtReply:p.frames.length,before,after});}
             catch(e){p.pans.push({trusted:e.isTrusted,at,code:e.code});}
           });
         }
