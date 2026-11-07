@@ -1196,7 +1196,7 @@
  "releaseLine":"0.6.0",
  "schema":"xyg.release-api-inventory/v1",
  "sourceProvenance":{
-  "baseCommit":"6609061500055f5bc3db185b75b79fbafba5b8f9",
+  "baseCommit":"212ed378e46592b32ac67a317d73fbe67bdb1b71",
   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
  },
  "sourceSha256":{
@@ -1268,7 +1268,7 @@
   "packages/xy-node/README.md":"531b67fd93a7cd9574443a75b50049053cefde97651bde9b334e7d1be5f5a7ce",
   "packages/xy-node/package.json":"04c85980e5b38646a66af8b0ec8a651156c8893b7b67db0b2b4f3db72deb5b27",
   "packages/xy-node/src/_abi_generated.js":"b412346a72c658b6a7a66453f7ee83c7e808edfd9120057f55dcff60c297498a",
-  "packages/xy-node/src/abi.js":"cfcbef03ff3beeb2b0af29fc5caf63d5ff1ccaf3f125c46cb55e426231515520",
+  "packages/xy-node/src/abi.js":"1cf0a2bb4411405ddd8ca3c1e881d29ce9aad139395dda7ae64dba8540c290f7",
   "packages/xy-node/src/charts.js":"b7419dbc01c96fbf7a5328c0d2542074498c5c2dd51bbbf21c4d7b3b7284975c",
   "packages/xy-node/src/chunked-columns.js":"2b1dca81301a1235c108e7e54f529638d6e2c41a231b60638b65c8f277d332d2",
   "packages/xy-node/src/color.js":"a90db89647287c3c35ce46af805ae3ff99d3f45b9982e94bb8ec484cba1ba0e8",
@@ -1298,7 +1298,7 @@
   "packages/xy-node/src/geo-snapshot.js":"1e61f6fca02b6ea5acf2406d79eb0e6ceafa0ff71dcb27d5465e1b4b7f54968d",
   "packages/xy-node/src/geo-spatial.d.ts":"38ca6190ccea496d29d0c62cd17d4537d097ffd4c62fe55c43fe3308921bba9b",
   "packages/xy-node/src/geo-spatial.js":"83a7da0edb48f4ddcf7f61e02da8d36062fb3ce0b154ccd4c786b1d70cd49e7f",
-  "packages/xy-node/src/geo-temporal.js":"71259b0f834fd4911fa36d5a6ab7128db394d08520eb0bdee2ae9c604b0e0993",
+  "packages/xy-node/src/geo-temporal.js":"8fc67689c9a424704f6c661752864edaa62b11363aad1811ee6fb039f9448328",
   "packages/xy-node/src/geo-tiles.d.ts":"6e138eb0602b8fc2c42b147314d6d79157f131a5f9175ec8a42f77a0da2f2dd6",
   "packages/xy-node/src/geo-tiles.js":"ad1dfd502f1e3b39ef2799d6d1ab9c3cdc924138ecb873d5744f01593de4fe50",
   "packages/xy-node/src/geo-webview.d.ts":"71317fa4afaca94e0d2012c5650de5c4ed766e7d19e05206cfe238d28e339e24",
@@ -1374,7 +1374,7 @@
   "python/xyg/pyplot/_rc.py":"7554354bebacf25d3728d874905abd0fcaa11d4a4fe82c8671f17b1b8484a45c",
   "python/xyg/pyplot/_state.py":"86a031aee8b399e6818ed297a40bb1be77c40ebedd80564dd395510d0d48735d",
   "python/xyg/pyplot/_ticker.py":"94ab8ae124e14bcf5d3f75b53f34476f4e0e13849c21c36026263f2986b5ccd8",
-  "python/xyg/temporal_controller.py":"812c4fdc93c2414b7d168de4694dd355b47e5eb18bc24bc3838f59845e670e6b",
+  "python/xyg/temporal_controller.py":"1068046abaa25c083800e2fa56ce14736521d399ada67a9ea03df9bc2f59211e",
   "python/xyg/temporal_graph.py":"f872b808275748032edd52502935928525cc32bd0663f7cf8b81c401ef5ac9b8",
   "scripts/check_release_inventory.py":"0dff7c2746dd1c8068d61230eb190b83a6d95389bcca0a2988d606fc0993b994",
   "scripts/check_release_version.py":"49fc49be846049e2200d897eb585a084d4359d2ff8d87d2391d8e3d14dc1382e",

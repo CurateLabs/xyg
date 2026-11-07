@@ -214,6 +214,12 @@ try {
     await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`);
     console.log(`density no-refinement evidence retained: ${reportPath}`);
   }
+  // Bounded public graph attachment regression shares this existing CI gate.
+  // Staged-package and focused density receipts retain their declared scope.
+  if (!browserPackage && !only) execFileSync(process.execPath, ["--test", join(root, "js/test/graph-progressive-camera.test.mjs")], {cwd:root, stdio:"inherit"});
+  if (!browserPackage && !only) execFileSync(process.execPath, [join(root, "scripts/graph_session_controller_wasm_smoke.mjs")], {
+    cwd: root, env: { ...process.env, XYG_GRAPH_SCHEDULING_ONLY: "1", XYG_GRAPH_SESSION_REPORT: process.env.XYG_GRAPH_SCHEDULING_REPORT || "" }, stdio: "inherit", timeout: 120000,
+  });
   console.log(`strict-CSP local-only WASM ${only || "worker lifecycle"} smoke passed (${browserPackage ? "staged package" : "source dist"})`);
 } finally {
   releaseManifest();

@@ -1,0 +1,67 @@
+{
+  "refusals": [
+    {
+      "count": 1000,
+      "arena": 16777216,
+      "status": "refused",
+      "code": "GF_INTERACTION_BUDGET",
+      "message": "GF_INTERACTION_BUDGET",
+      "ms": 39.09999990463257
+    },
+    {
+      "count": 10000,
+      "arena": 402653184,
+      "status": "refused",
+      "code": "GF_INTERACTION_BUDGET",
+      "message": "GF_INTERACTION_BUDGET",
+      "ms": 44.799999713897705
+    }
+  ],
+  "views": [
+    {
+      "id": "7101",
+      "arena": 402653184,
+      "workerStartupMs": 34.299999713897705,
+      "initialPublicationMs": 216.59999990463257,
+      "firstPixelSampleMs": 360.2999997138977,
+      "paintedSamples": 60,
+      "distinctPaintHashes": 60,
+      "unfinishedPaintedSteps": 58,
+      "maxPaintIntervalMs": 460.90000009536743,
+      "maxHeartbeatGapMs": 332.7999997138977,
+      "pickReplyLatencyMs": [
+        135.0,
+        130.30000019073486
+      ],
+      "hostPanLatencyMs": [
+        129.59999990463257
+      ],
+      "payloadBytes": {
+        "requests": 83072,
+        "replies": 22876880
+      },
+      "cleanupMs": 8,
+      "finalSteps": "458"
+    },
+    {
+      "id": "7102",
+      "arena": 402653184,
+      "workerStartupMs": 39.89999961853027,
+      "initialPublicationMs": 554.2999997138977,
+      "firstPixelSampleMs": 662.5,
+      "paintedSamples": 59,
+      "distinctPaintHashes": 59,
+      "unfinishedPaintedSteps": 58,
+      "maxPaintIntervalMs": 431.19999980926514,
+      "maxHeartbeatGapMs": 625.8000001907349,
+      "pickReplyLatencyMs": [],
+      "hostPanLatencyMs": [],
+      "payloadBytes": {
+        "requests": 81960,
+        "replies": 21393232
+      },
+      "cleanupMs": 1.8999996185302734,
+      "finalSteps": "458"
+    }
+  ]
+}
