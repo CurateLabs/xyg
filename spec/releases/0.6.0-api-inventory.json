@@ -1203,7 +1203,7 @@
  "releaseLine":"0.6.0",
  "schema":"xyg.release-api-inventory/v1",
  "sourceProvenance":{
-  "baseCommit":"bea7eab191e6ff54b1999087edf23b3d98695899",
+  "baseCommit":"6210c63f702c55b19564069fc78418f42c3540ab",
   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
  },
  "sourceSha256":{
@@ -1352,7 +1352,7 @@
   "packages/xy-node/src/scene.js":"9461ff55d5bdfd428e5eddc0d4ee14723807f04a75d853031a74cf22337ffa68",
   "packages/xy-node/src/sceneBulkNative.js":"bd395fc8a18e013dcb53937d3f48546a9a7637a04847ef705c08fd6ba46581dc",
   "packages/xy-node/src/temporal-graph.js":"f3606a6526fa76215ac1ffedc720f41cb3ca5d7f578c29d61d34e809d87f2b2a",
-  "packages/xy-node/src/temporal-scene-framing.js":"3a3857ad62f26b74ff4b3dad06ad0994a67fd83948bb505b07379883392ea251",
+  "packages/xy-node/src/temporal-scene-framing.js":"46f33f6e2cd0730fafad3a5956d7b72dfab8f1f85741054fab15d37a4d11a680",
   "packages/xy-node/src/temporal-scene.js":"814d9015d3f6dee11f316fd79fc5e701cbe0c2cb0116979b468a78c17db104a1",
   "packages/xy-node/src/tooltip-columns.js":"363538c7d375cdff560d58f7d7bb76ad34dd6cfc111057a72e7c089bbeef26f1",
   "packages/xy-node/src/vscode.js":"dc3c9c01ac72bb1509f35cc00bee5539b8c4bf5352f661ed270236745c1f0e1f",
