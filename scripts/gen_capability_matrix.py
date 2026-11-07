@@ -118,6 +118,17 @@ def render() -> str:
             lines.append(f"- **`{prop.id}`** — {prop.notes}")
     lines += [
         "",
+        "## Programmatic ordinary filtering (#112 checkpoint)",
+        "",
+        "| capability | Python / Node / actual WASM | renderer and input |",
+        "|---|---|---|",
+        "| Exact resolvable one-dimension cumulative counts, five passive views | shared binary session; full packet/oracle parity | programmatic only |",
+        "| Arbitrary finite inclusive boundary | explicit recorded exact scan or refusal | integration pending |",
+        "| Canonical u64 membership pages; append, cancellation, eviction/rebuild | bounded exact pages and retained intent | persistent masks/selected-count density pending |",
+        "| Pointer, keyboard, five rendered views at 100M / ≥50 FPS | qualification open | pending under #112 |",
+        "",
+        "See [normative filtering subset](../design/filter-tier-c.md). No competitor or performance win is claimed.",
+        "",
         "## Chrome slots",
         "",
         "Stable `data-xy-slot` names that accept `class_names=` and `styles=` in the",

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "abi_version": 35,
+  "abi_version": 36,
   "scene_version": 34,
   "painter_version": 17,
   "painter_header_bytes": 420,
@@ -129,6 +129,7 @@
     "max_nodes": 1024
   },
   "exports": [
+    {"name": "xyg_wasm_filter_execute", "params": ["u32", "usize", "usize", "usize"], "result": "i32"},
     {"name": "xyg_wasm_geo_tile_frame_prepare", "params": ["u32", "u32", "u64", "u64"], "result": "i32"},
     {"name": "xyg_wasm_geo_tile_execute", "params": ["u32", "u32", "usize", "usize"], "result": "i32"},
     {"name": "xyg_wasm_geo_tile_read", "params": ["u32", "u32", "usize", "usize"], "result": "i32"},

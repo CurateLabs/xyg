@@ -333,6 +333,7 @@ jobs:
         run: |
           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
           npm test --prefix packages/xy-node
+          XYG_CHROMIUM="$(node -e "console.log(require('playwright').chromium.executablePath())")" node scripts/filter_tier_c_conformance.mjs
 
       - name: Graph and chart-scale smoke gates
         run: |

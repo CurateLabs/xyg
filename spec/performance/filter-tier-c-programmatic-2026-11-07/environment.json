@@ -1,0 +1,17 @@
+{
+  "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+  "python": "Python 3.12.15",
+  "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)",
+  "node": "v22.23.4",
+  "nodePath": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin/node",
+  "chromium": "Google Chrome for Testing 156.0.8078.4",
+  "chromiumPath": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+  "cargoBuildJobs": 2,
+  "tmpdir": "/home/ubuntu/.t3/worktrees/xyg/t3-a6fec95d/target/ftmp",
+  "acceptedMainAtStart": "084b3c1b7c393e135476aab9610bf8334767b2ac",
+  "checkpointBase": "2cb7f0a13ec0af3a00b9dcfd2b104a2c579b7ac9",
+  "observedMainAtFinalFetch": "ae104cf35316e10e56e345c225acef2604e487a1",
+  "workspace": "/home/ubuntu/.t3/worktrees/xyg/t3-a6fec95d",
+  "branch": "t3/a6fec95d"
+}

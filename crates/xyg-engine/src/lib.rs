@@ -294,3 +294,5 @@ pub mod tiles;
 pub mod transition;
 
 pub mod coordination;
+
+pub mod filter_tier_c;

@@ -59,6 +59,10 @@ def test_ci_workflow_accepts_current_gates() -> None:
     [
         ("npm test --prefix packages/xy-node", "complete Node host suite"),
         (
+            'XYG_CHROMIUM="$(node -e "console.log(require(\'playwright\').chromium.executablePath())")" node scripts/filter_tier_c_conformance.mjs',
+            "complete Node host suite",
+        ),
+        (
             ".venv/bin/python benchmarks/bench_dual_host_graph.py --sizes 1000",
             "graph/kernel ceilings",
         ),

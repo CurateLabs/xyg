@@ -1369,6 +1369,13 @@ These additions use the existing ownership policies without adding a host policy
 | `crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 
+| `crates/xyg-engine/src/filter_tier_c.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-core/src/filter_session_ffi.rs` | Rust C ABI shell | `rust-c-abi` | `keep-rust` | — |
+| `python/xyg/filter_session.py` | Python host | `python-host` | `keep-host` | — |
+| `packages/xy-node/src/filter-session.js` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/filter-protocol.js` | Node host | `node-host` | `keep-host` | — |
+| `js/src/49_filter_session.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.
@@ -1479,3 +1486,9 @@ The R7 inventory review disposition classifies the five R6 picked-target Rust
 test modules in the file ledger under the existing `rust-engine` policy, without
 a new policy or exclusion. They cover exact receipts, projection admission,
 retry/atomicity and diagnostic corpus generation for the shared Rust owner.
+
+The #112 programmatic filter session owns canonical source identity, cumulative
+counts, exact-boundary admission, budget, intent and publication in
+`xyg-engine::filter_tier_c`. New Python/Node/browser modules only frame the
+same raw XYFC/XYFR packets and own handles/Worker lifecycle. No ordinary filter
+policy is migrated to hosts and no renderer or GPU ledger is introduced.

@@ -866,6 +866,27 @@ export class XygWasmWorker {
     },length,cleanup);
   }
 
+  /** Submit one packed filter command to the shared Rust state machine. */
+  filterCommand(command: ArrayBuffer): Promise<ArrayBuffer> {
+    this.assertLive();
+    if (!(command instanceof ArrayBuffer) || command.byteLength < 1
+        || command.byteLength > this.maxArenaBytes) {
+      throw new TypeError("filter command must be a bounded ArrayBuffer");
+    }
+    const requestId = this.allocateRequest();
+    const result = this.promiseFor<ArrayBuffer>(requestId);
+    try {
+      this.worker.postMessage({ type: "filter.command", requestId, command }, [command]);
+    } catch (cause) {
+      this.pending.delete(requestId);
+      throw new XygWasmError(
+        "XYG_WASM_INVALID_ARGUMENT",
+        cause instanceof Error ? cause.message : "could not post filter command",
+      );
+    }
+    return result;
+  }
+
   /** Submit one packed temporal command to the shared Rust state machine. */
   temporalCommand(command: ArrayBuffer): Promise<ArrayBuffer> {
     this.assertLive();

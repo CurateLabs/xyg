@@ -572,3 +572,11 @@ five f64 operation arguments, optionally followed by XYGD source ingress.
 geometry/u64 identity/u32 offset/u8 ring-role planes. No camera/projection numeric
 arrays move as JSON. [The camera contract](geo-viewport-protocol.md) pins exact
 framing, bounds presence, normalized bit keys and atomic error behavior.
+
+## XYFC/XYFR ordinary filtering (#112 programmatic checkpoint)
+
+[Filter Tier C protocol v1](filter-tier-c.md#binary-protocol-v1) carries source,
+revision, counts, and membership as raw typed binary in native and WASM hosts.
+Canonical f64 columns are ingress only; no live numeric filter payload uses
+JSON or base64. It is not a new paint format or renderer. General channel
+routing/selected-count density and pointer/keyboard integration remain pending.

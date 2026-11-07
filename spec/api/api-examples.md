@@ -815,3 +815,31 @@ independent snapshots, with exact viewport admission failures rather than silent
 truncation. Automatic browser gestures do not request a new snapshot. See the
 [bounded contract](../design/tier3-phase4-roadmap.md#bounded-local-chart-snapshots-110-continuation)
 for memory accounting and remaining #110 requirements.
+
+## Programmatic cross-dimension filtering (#112 checkpoint)
+
+```python
+import xyg
+
+columns = {"age": [20., 21., 29., 30.], "income": [10., 20., 30., 40.]}
+chart = xyg.scatter_chart(xyg.scatter(x=columns["age"], y=columns["income"]))
+with chart.filter_session(columns, source_id=71, budget_bytes=1 << 20) as session:
+    session.configure(
+        {"id": 1, "dimension": "age", "cuts": [20., 30.]},
+        [{"id": 2, "dimension": "income", "cuts": [20., 40.]}],
+    )
+    result = session.range(20., 29.)  # Entire populated active cell: indexed exact.
+    assert result["selected_count"] == 3
+    assert result["rows_read"] == 0
+    assert result["views"][0]["counts"] == (1, 2, 0)
+    # A partial cell requires an explicitly recorded exact scan.
+    exact = session.range(20.5, 25., exact=True)
+    assert exact["selected_count"] == 1 and exact["fallback"] == 1
+```
+
+Node uses `chart.filterSession(columns, {sourceId:71n})`, `configure(...)`, and
+`range(lo, hi, {exact:true})`; browser uses
+`await createWasmFilterSession(dedicatedWorker, columns, {sourceId:71n, budgetBytes:1n << 20n})` and
+awaits the same methods. Explicit source identity belongs to the canonical
+source owner. The chart is not repainted by these programmatic calls yet;
+renderer, pointer, keyboard, and massive qualification remain open under #112.

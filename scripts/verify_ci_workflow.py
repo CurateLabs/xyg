@@ -2147,6 +2147,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         "complete Node host suite against the shared native core",
         'export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"',
         "npm test --prefix packages/xy-node",
+        'XYG_CHROMIUM="$(node -e "console.log(require(\'playwright\').chromium.executablePath())")" node scripts/filter_tier_c_conformance.mjs',
     )
     _require_step_runs_exactly(
         errors,

@@ -491,3 +491,5 @@ export {RetainedGeoSource} from './geo-retained.js';
 export {GeoTileSource,GeoTileSession} from './geo-tiles.js';
 
 export {GeoOverviewIndex} from './geo-overview-source.js';
+
+export { FilterTierCSession, filterRequest, decodeFilterReply, FilterTierCError } from "./filter-session.js";

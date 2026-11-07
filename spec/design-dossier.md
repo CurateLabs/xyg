@@ -3032,6 +3032,16 @@ exclude hidden rows, and each masked reply carries the `filter` state it was
 computed under (§37's `filter_hash`, in literal form). Contract:
 `spec/api/interaction.md` §10.
 
+### §34 programmatic checkpoint (2026-11-07, #112 remains open)
+
+[Filter Tier C session/protocol](design/filter-tier-c.md) specifies the shipped
+programmatic subset: count-only active-cell × passive-bin cumulative slabs,
+exact resolvable inclusive ranges, explicit exact boundary scans, bounded
+membership pages, and stable source/intent lifecycle in native and WASM hosts.
+It does not complete §34/35: ordinary renderer selected-count density, keyboard
+and pointer coordination, composed predicates, spill, and the five-view 100M
+≥50 FPS/competitor qualification remain open. No prefix row-mask slab is used.
+
 ## 35. Milestone amendments (round 3)
 
 - **Phase 0** adds the **wheel matrix + anywidget skeleton** (F1) — distribution is a

@@ -84,6 +84,17 @@ one honors.
 - **`wedge-gap`** — Gap between neighbouring polar wedges, in px. Rect kinds under `coords="polar"` only; ignored elsewhere. Deliberately a LENGTH rather than an angle: an angular pad's seam is `r * dtheta` wide, so it tapers to nothing at the hole and reads as uneven spacing. The angular inset therefore grows as the radius shrinks, which is the same construction as d3's padAngle/padRadius pair. An XYG vocabulary name: CSS has no gap between two arcs.
 - **`marker-shape`** — 17 shapes, drawn as analytic signed-distance fields in all three renderers, with the same orientation (`triangle` points up): the WebGL client takes "up" from window y rather than trusting `gl_PointCoord`, which some implementations run bottom-up. An XYG vocabulary name: CSS has no shape keyword for a non-DOM point mark, and the CSS spelling and `symbol=` compile to the same value.
 
+## Programmatic ordinary filtering (#112 checkpoint)
+
+| capability | Python / Node / actual WASM | renderer and input |
+|---|---|---|
+| Exact resolvable one-dimension cumulative counts, five passive views | shared binary session; full packet/oracle parity | programmatic only |
+| Arbitrary finite inclusive boundary | explicit recorded exact scan or refusal | integration pending |
+| Canonical u64 membership pages; append, cancellation, eviction/rebuild | bounded exact pages and retained intent | persistent masks/selected-count density pending |
+| Pointer, keyboard, five rendered views at 100M / ≥50 FPS | qualification open | pending under #112 |
+
+See [normative filtering subset](../design/filter-tier-c.md). No competitor or performance win is claimed.
+
 ## Chrome slots
 
 Stable `data-xy-slot` names that accept `class_names=` and `styles=` in the

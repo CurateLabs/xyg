@@ -180,3 +180,13 @@ def test_historical_native_abi_requires_an_explicit_artifact_contract():
     report["kernel"]["native"]["abi"] = 399
     assert verify(report)
     assert not verify(report, expected_abi=399)
+
+
+def test_immutable_abi401_notebook_receipt_requires_explicit_historical_admission():
+    path = Path(
+        "spec/performance/pr1110-main-integration-2026-11-07/notebook-final-capture.json.gz"
+    )
+    report = json.loads(gzip.decompress(path.read_bytes()))
+    assert report["kernel"]["native"]["abi"] == 401
+    assert not verify(report, expected_abi=401)
+    assert verify(report)  # Default and CLI require the generated current ABI.

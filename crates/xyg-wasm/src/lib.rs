@@ -23,7 +23,7 @@ mod typed_series_abi_generated;
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, PainterRejection, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 35;
+pub const WASM_ABI_VERSION: u32 = 36;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -304,6 +304,7 @@ struct Instance {
     aggregate_job: Option<aggregate::AggregateJob>,
     stream_aggregate_job: Option<aggregate::StreamAggregateJob>,
     aggregate_sequence: u32,
+    filter: xyg_engine::filter_tier_c::FilterTierCSession,
     temporal: Option<xyg_engine::temporal_controller::TemporalController>,
     temporal_graph: Option<temporal_graph::WasmTemporalGraph>,
     graph_session: Option<xyg_engine::graphforge::interaction::wire::WireSession>,
@@ -480,6 +481,7 @@ impl Registry {
                 aggregate_job: None,
                 stream_aggregate_job: None,
                 aggregate_sequence: 0,
+                filter: xyg_engine::filter_tier_c::FilterTierCSession::with_limit(max_arena_bytes),
                 temporal: None,
                 temporal_graph: None,
                 graph_session: None,
@@ -3456,5 +3458,95 @@ mod tests {
         })
         .unwrap();
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+    }
+}
+
+/// Execute the same XYFC v1 session protocol as the native adapter.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_filter_execute(
+    handle: u32,
+    offset: usize,
+    length: usize,
+    capacity: usize,
+) -> i32 {
+    with_ordinary_instance_mut(handle, |instance| {
+        instance.output = Vec::new();
+        let arena = std::mem::take(&mut instance.arena);
+        let Some(input) = offset
+            .checked_add(length)
+            .and_then(|end| arena.get(offset..end))
+        else {
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "invalid filter packet range",
+            );
+        };
+        match instance
+            .filter
+            .execute(input, capacity.min(instance.max_arena_bytes), || false)
+        {
+            Ok(reply) => {
+                instance.output = reply;
+                instance.last_error.clear();
+                STATUS_OK
+            }
+            Err(required) => {
+                instance.output = (required as u64).to_le_bytes().to_vec();
+                fail(
+                    instance,
+                    STATUS_RESOURCE_LIMIT,
+                    "filter reply exceeds output capacity",
+                )
+            }
+        }
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+#[cfg(test)]
+mod filter_tier_c_tests {
+    #[test]
+    fn filter_tier_c_native_wasm_adapter_shared_packets() {
+        let b = include_bytes!("../../../tests/fixtures/filter_tier_c/session.bin");
+        let h = super::xyg_wasm_instance_new(1 << 20);
+        let mut at = 0;
+        let mut cases = 0;
+        while at < b.len() {
+            let u32_at = |at| u32::from_le_bytes(b[at..at + 4].try_into().unwrap());
+            let n = u32_at(at) as usize;
+            let cap = u32_at(at + 4) as usize;
+            let code = u32_at(at + 8) as i32;
+            let out_n = u32_at(at + 12) as usize;
+            at += 24;
+            let input = &b[at..at + n];
+            at += n;
+            let expected = &b[at..at + out_n];
+            at += out_n;
+            assert_eq!(super::xyg_wasm_arena_resize(h, n), 0);
+            unsafe {
+                std::ptr::copy_nonoverlapping(
+                    input.as_ptr(),
+                    super::xyg_wasm_arena_ptr(h) as *mut u8,
+                    n,
+                );
+            }
+            let status = super::xyg_wasm_filter_execute(h, 0, n, cap);
+            if code == 0 {
+                assert_eq!(status, 0);
+                let output = unsafe {
+                    std::slice::from_raw_parts(
+                        super::xyg_wasm_output_ptr(h) as *const u8,
+                        super::xyg_wasm_output_len(h),
+                    )
+                };
+                assert_eq!(output, expected, "case {cases}");
+            } else {
+                assert_eq!(status, 3);
+            }
+            cases += 1;
+        }
+        assert_eq!(super::xyg_wasm_instance_dispose(h), 0);
+        assert_eq!(cases, 47);
     }
 }

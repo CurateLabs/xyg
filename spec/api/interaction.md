@@ -535,3 +535,16 @@ starts all-visible. On a kernel-less standalone page, whole-trace and
 direct-tier category toggles are exact; a density-tier category toggle
 filters the sample overlays but the standalone worker's re-binned grid is
 not masked — kernel-connected sessions are exact.
+
+## Programmatic ordinary filter sessions (#112 checkpoint)
+
+`Chart.filter_session(columns, source_id=..., epoch=..., first_row=...,
+budget_bytes=...)` returns a Rust-owned programmatic session. Node charts expose
+`filterSession(columns, options)`; a dedicated ordinary browser Worker exposes
+`createWasmFilterSession(worker, columns, options)`. Configure active/passive
+dimensions and cuts, query an inclusive range, clear, append, evict/rebuild,
+and request bounded membership pages. Default partial-cell boundaries fail
+closed; `exact=True` / `{exact:true}` explicitly permits a reported canonical
+scan. Native/WASM use the same binary packets and authoritative diagnostics.
+The [session contract](../design/filter-tier-c.md) defines the exact subset.
+These methods do not yet connect pointer/keyboard gestures or repaint density.

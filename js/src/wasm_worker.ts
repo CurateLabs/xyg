@@ -911,7 +911,7 @@ function queueTicks(message: any) {
   startNextTick();
 }
 
-function runTemporalCommand(message: any) {
+function runTemporalCommand(message: any, filter = false) {
   if (!exports || !handle || lifecycle !== "initialized") {
     error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized");
     return;
@@ -936,7 +936,7 @@ function runTemporalCommand(message: any) {
       error(activeAggregate.requestId, "XYG_WASM_CANCELLED", "aggregate was superseded by temporal work", XYG_WASM_STATUS.CANCELLED);
       activeAggregate = null;
     }
-    if (!(message.command instanceof ArrayBuffer) || message.command.byteLength < 16
+    if (!(message.command instanceof ArrayBuffer) || message.command.byteLength < (filter ? 1 : 16)
         || message.command.byteLength > operationBudgetBytes) {
       error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "temporal command is malformed");
       return;
@@ -951,7 +951,7 @@ function runTemporalCommand(message: any) {
     if (!ptr || end > exports.memory.buffer.byteLength) throw new Error("invalid temporal staging range");
     new Uint8Array(exports.memory.buffer, ptr, message.command.byteLength)
       .set(new Uint8Array(message.command));
-    status = exports.xyg_wasm_temporal_execute(handle, 0, message.command.byteLength);
+    status = filter ? exports.xyg_wasm_filter_execute(handle, 0, message.command.byteLength, operationBudgetBytes) : exports.xyg_wasm_temporal_execute(handle, 0, message.command.byteLength);
     if (status !== XYG_WASM_STATUS.OK) {
       const detail = readXygWasmError(exports, handle);
       exports.xyg_wasm_arena_resize(handle, 0);
@@ -961,12 +961,12 @@ function runTemporalCommand(message: any) {
     const outputPtr = exports.xyg_wasm_output_ptr(handle) >>> 0;
     const outputLen = exports.xyg_wasm_output_len(handle) >>> 0;
     const outputEnd = outputPtr + outputLen;
-    if (!outputPtr || outputLen < 176 || outputLen > operationBudgetBytes
+    if (!outputPtr || outputLen < (filter ? 192 : 176) || outputLen > operationBudgetBytes
         || outputEnd > exports.memory.buffer.byteLength) {
       throw new Error("Rust temporal response returned an invalid range");
     }
-    const selectionCount = new DataView(exports.memory.buffer, outputPtr, 16).getUint32(12, true);
-    if (outputLen !== 176 + selectionCount * 8) {
+    const selectionCount = filter ? 0 : new DataView(exports.memory.buffer, outputPtr, 16).getUint32(12, true);
+    if (!filter && outputLen !== 176 + selectionCount * 8) {
       throw new Error("Rust temporal response returned an invalid selection range");
     }
     const response = new Uint8Array(exports.memory.buffer, outputPtr, outputLen).slice().buffer;
@@ -1340,6 +1340,7 @@ scope.onmessage = (event: MessageEvent<any>) => {
     queued.set(message.requestId, timer as unknown as number);
     return;
   }
+  if (message?.type === "filter.command") { runTemporalCommand(message, true); return; }
   if (message?.type === "temporal.command") {
     runTemporalCommand(message);
     return;

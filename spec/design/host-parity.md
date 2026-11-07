@@ -2144,3 +2144,13 @@ unit proofs for loops/parallel edges/layered provenance from actual small
 JupyterLab node-callback/UUID-selection delivery. Prior receipts remain historical.
 Full notebook frontend, exact geometric UUID sets, export and rendered size
 ladder acceptance for #1015/#36/#35 remains open.
+
+## Ordinary programmatic filtering checkpoint (#112)
+
+Native ABI 402 and WASM ABI 36 share XYFC/XYFR v1 through the Rust
+`FilterTierCSession`; Python `Chart.filter_session`, Node chart `filterSession`,
+and browser `createWasmFilterSession` frame that same protocol. Full packets,
+exact counts, refusal paths, and canonical u64 membership pages are compared
+across hosts. This is programmatic parity, not linked renderer or assistive
+input parity. The [normative subset and remaining work](filter-tier-c.md)
+include synchronous Worker cancellation limits and logical memory accounting.

@@ -203,7 +203,7 @@ pub use graphforge_session_ffi::*;
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 401;
+pub const ABI_VERSION: u32 = 402;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -33195,4 +33195,37 @@ mod chunked_chart_publication_tests {
         drop(store);
         std::fs::remove_file(path).unwrap();
     }
+}
+
+mod filter_session_ffi;
+/// Allocate one ordinary filter session. Zero means registry exhaustion.
+#[no_mangle]
+pub extern "C" fn xyg_filter_session_new(max_bytes: u64) -> u64 {
+    ffi_guard(0, || filter_session_ffi::create(max_bytes))
+}
+/// Release a filter session and cancel any outstanding publication.
+#[no_mangle]
+pub extern "C" fn xyg_filter_session_free(handle: u64) {
+    ffi_guard((), || filter_session_ffi::free(handle));
+}
+/// Advance the cancellation watermark without waiting for a native scan lock.
+#[no_mangle]
+pub extern "C" fn xyg_filter_session_cancel(handle: u64, revision: u64) -> i32 {
+    ffi_guard(-3, || filter_session_ffi::cancel(handle, revision))
+}
+/// Execute XYFC v1. Protocol failures are XYFR status values. -4 reports needed
+/// output capacity without publication; retry requires a newer request revision.
+/// Safety: request/out/written address the declared readable/writable extents.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_filter_session_execute(
+    handle: u64,
+    request: *const u8,
+    request_len: usize,
+    out: *mut u8,
+    capacity: usize,
+    written: *mut usize,
+) -> i32 {
+    ffi_guard(-3, || {
+        filter_session_ffi::execute(handle, request, request_len, out, capacity, written)
+    })
 }

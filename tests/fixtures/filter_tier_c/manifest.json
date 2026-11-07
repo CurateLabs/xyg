@@ -1,0 +1,1059 @@
+{
+  "schema": "xyg.filter-tier-c/v1",
+  "cases": [
+    {
+      "name": "open-five-dimensional-source",
+      "adapter_status": 0,
+      "required": 192,
+      "status": 0,
+      "oracle": null
+    },
+    {
+      "name": "configure-five-passive-views",
+      "adapter_status": 0,
+      "required": 272,
+      "status": 0,
+      "oracle": null
+    },
+    {
+      "name": "indexed-inclusive",
+      "adapter_status": 0,
+      "required": 408,
+      "status": 0,
+      "oracle": {
+        "selected": 3,
+        "views": [
+          {
+            "id": 11,
+            "counts": [
+              0,
+              1,
+              2,
+              0
+            ]
+          },
+          {
+            "id": 12,
+            "counts": [
+              0,
+              1,
+              2
+            ]
+          },
+          {
+            "id": 13,
+            "counts": [
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "id": 14,
+            "counts": [
+              0,
+              0,
+              3
+            ]
+          },
+          {
+            "id": 15,
+            "counts": [
+              0,
+              2,
+              1,
+              0
+            ]
+          }
+        ],
+        "membership_hex": null
+      }
+    },
+    {
+      "name": "boundary-refused",
+      "adapter_status": 0,
+      "required": 272,
+      "status": 6,
+      "oracle": null
+    },
+    {
+      "name": "boundary-exact",
+      "adapter_status": 0,
+      "required": 408,
+      "status": 0,
+      "oracle": {
+        "selected": 1,
+        "views": [
+          {
+            "id": 11,
+            "counts": [
+              0,
+              0,
+              1,
+              0
+            ]
+          },
+          {
+            "id": 12,
+            "counts": [
+              0,
+              0,
+              1
+            ]
+          },
+          {
+            "id": 13,
+            "counts": [
+              1,
+              0,
+              0
+            ]
+          },
+          {
+            "id": 14,
+            "counts": [
+              0,
+              0,
+              1
+            ]
+          },
+          {
+            "id": 15,
+            "counts": [
+              0,
+              1,
+              0,
+              0
+            ]
+          }
+        ],
+        "membership_hex": null
+      }
+    },
+    {
+      "name": "reversed-exact",
+      "adapter_status": 0,
+      "required": 408,
+      "status": 0,
+      "oracle": {
+        "selected": 1,
+        "views": [
+          {
+            "id": 11,
+            "counts": [
+              0,
+              0,
+              1,
+              0
+            ]
+          },
+          {
+            "id": 12,
+            "counts": [
+              0,
+              0,
+              1
+            ]
+          },
+          {
+            "id": 13,
+            "counts": [
+              1,
+              0,
+              0
+            ]
+          },
+          {
+            "id": 14,
+            "counts": [
+              0,
+              0,
+              1
+            ]
+          },
+          {
+            "id": 15,
+            "counts": [
+              0,
+              1,
+              0,
+              0
+            ]
+          }
+        ],
+        "membership_hex": null
+      }
+    },
+    {
+      "name": "zero-width-exact",
+      "adapter_status": 0,
+      "required": 408,
+      "status": 0,
+      "oracle": {
+        "selected": 1,
+        "views": [
+          {
+            "id": 11,
+            "counts": [
+              0,
+              0,
+              1,
+              0
+            ]
+          },
+          {
+            "id": 12,
+            "counts": [
+              0,
+              0,
+              1
+            ]
+          },
+          {
+            "id": 13,
+            "counts": [
+              1,
+              0,
+              0
+            ]
+          },
+          {
+            "id": 14,
+            "counts": [
+              0,
+              0,
+              1
+            ]
+          },
+          {
+            "id": 15,
+            "counts": [
+              0,
+              1,
+              0,
+              0
+            ]
+          }
+        ],
+        "membership_hex": null
+      }
+    },
+    {
+      "name": "zero-width-indexed",
+      "adapter_status": 0,
+      "required": 408,
+      "status": 0,
+      "oracle": {
+        "selected": 1,
+        "views": [
+          {
+            "id": 11,
+            "counts": [
+              1,
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "id": 12,
+            "counts": [
+              0,
+              0,
+              1
+            ]
+          },
+          {
+            "id": 13,
+            "counts": [
+              0,
+              0,
+              1
+            ]
+          },
+          {
+            "id": 14,
+            "counts": [
+              0,
+              0,
+              1
+            ]
+          },
+          {
+            "id": 15,
+            "counts": [
+              0,
+              0,
+              0,
+              1
+            ]
+          }
+        ],
+        "membership_hex": null
+      }
+    },
+    {
+      "name": "empty-indexed",
+      "adapter_status": 0,
+      "required": 408,
+      "status": 0,
+      "oracle": {
+        "selected": 0,
+        "views": [
+          {
+            "id": 11,
+            "counts": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "id": 12,
+            "counts": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "id": 13,
+            "counts": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "id": 14,
+            "counts": [
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "id": 15,
+            "counts": [
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        ],
+        "membership_hex": null
+      }
+    },
+    {
+      "name": "all-finite-indexed",
+      "adapter_status": 0,
+      "required": 408,
+      "status": 0,
+      "oracle": {
+        "selected": 7,
+        "views": [
+          {
+            "id": 11,
+            "counts": [
+              2,
+              2,
+              2,
+              1
+            ]
+          },
+          {
+            "id": 12,
+            "counts": [
+              0,
+              2,
+              5
+            ]
+          },
+          {
+            "id": 13,
+            "counts": [
+              1,
+              1,
+              5
+            ]
+          },
+          {
+            "id": 14,
+            "counts": [
+              0,
+              1,
+              6
+            ]
+          },
+          {
+            "id": 15,
+            "counts": [
+              1,
+              2,
+              1,
+              3
+            ]
+          }
+        ],
+        "membership_hex": null
+      }
+    },
+    {
+      "name": "clear-includes-nonfinite-active",
+      "adapter_status": 0,
+      "required": 408,
+      "status": 0,
+      "oracle": {
+        "selected": 10,
+        "views": [
+          {
+            "id": 11,
+            "counts": [
+              2,
+              2,
+              2,
+              3
+            ]
+          },
+          {
+            "id": 12,
+            "counts": [
+              0,
+              2,
+              8
+            ]
+          },
+          {
+            "id": 13,
+            "counts": [
+              1,
+              1,
+              8
+            ]
+          },
+          {
+            "id": 14,
+            "counts": [
+              0,
+              1,
+              9
+            ]
+          },
+          {
+            "id": 15,
+            "counts": [
+              1,
+              2,
+              1,
+              3
+            ]
+          }
+        ],
+        "membership_hex": null
+      }
+    },
+    {
+      "name": "persistent-intent",
+      "adapter_status": 0,
+      "required": 408,
+      "status": 0,
+      "oracle": {
+        "selected": 3,
+        "views": [
+          {
+            "id": 11,
+            "counts": [
+              0,
+              1,
+              2,
+              0
+            ]
+          },
+          {
+            "id": 12,
+            "counts": [
+              0,
+              1,
+              2
+            ]
+          },
+          {
+            "id": 13,
+            "counts": [
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "id": 14,
+            "counts": [
+              0,
+              0,
+              3
+            ]
+          },
+          {
+            "id": 15,
+            "counts": [
+              0,
+              2,
+              1,
+              0
+            ]
+          }
+        ],
+        "membership_hex": null
+      }
+    },
+    {
+      "name": "membership-u64-source-rows",
+      "adapter_status": 0,
+      "required": 274,
+      "status": 0,
+      "oracle": {
+        "selected": 3,
+        "views": [],
+        "membership_hex": "0e00"
+      }
+    },
+    {
+      "name": "evict",
+      "adapter_status": 0,
+      "required": 272,
+      "status": 0,
+      "oracle": null
+    },
+    {
+      "name": "intent-survives-eviction",
+      "adapter_status": 0,
+      "required": 274,
+      "status": 0,
+      "oracle": {
+        "selected": 3,
+        "views": [],
+        "membership_hex": "0e00"
+      }
+    },
+    {
+      "name": "evicted-query-fails-closed",
+      "adapter_status": 0,
+      "required": 272,
+      "status": 5,
+      "oracle": null
+    },
+    {
+      "name": "rebuild",
+      "adapter_status": 0,
+      "required": 272,
+      "status": 0,
+      "oracle": null
+    },
+    {
+      "name": "rebuilt-index",
+      "adapter_status": 0,
+      "required": 408,
+      "status": 0,
+      "oracle": {
+        "selected": 3,
+        "views": [
+          {
+            "id": 11,
+            "counts": [
+              0,
+              1,
+              2,
+              0
+            ]
+          },
+          {
+            "id": 12,
+            "counts": [
+              0,
+              1,
+              2
+            ]
+          },
+          {
+            "id": 13,
+            "counts": [
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "id": 14,
+            "counts": [
+              0,
+              0,
+              3
+            ]
+          },
+          {
+            "id": 15,
+            "counts": [
+              0,
+              2,
+              1,
+              0
+            ]
+          }
+        ],
+        "membership_hex": null
+      }
+    },
+    {
+      "name": "append-invalidates-index",
+      "adapter_status": 0,
+      "required": 272,
+      "status": 0,
+      "oracle": null
+    },
+    {
+      "name": "intent-survives-append",
+      "adapter_status": 0,
+      "required": 274,
+      "status": 0,
+      "oracle": {
+        "selected": 4,
+        "views": [],
+        "membership_hex": "0e04"
+      }
+    },
+    {
+      "name": "append-requires-rebuild",
+      "adapter_status": 0,
+      "required": 272,
+      "status": 5,
+      "oracle": null
+    },
+    {
+      "name": "rebuild-appended-source",
+      "adapter_status": 0,
+      "required": 272,
+      "status": 0,
+      "oracle": null
+    },
+    {
+      "name": "appended-indexed-query",
+      "adapter_status": 0,
+      "required": 408,
+      "status": 0,
+      "oracle": {
+        "selected": 4,
+        "views": [
+          {
+            "id": 11,
+            "counts": [
+              0,
+              2,
+              2,
+              0
+            ]
+          },
+          {
+            "id": 12,
+            "counts": [
+              0,
+              2,
+              2
+            ]
+          },
+          {
+            "id": 13,
+            "counts": [
+              1,
+              2,
+              1
+            ]
+          },
+          {
+            "id": 14,
+            "counts": [
+              0,
+              1,
+              3
+            ]
+          },
+          {
+            "id": 15,
+            "counts": [
+              0,
+              3,
+              1,
+              0
+            ]
+          }
+        ],
+        "membership_hex": null
+      }
+    },
+    {
+      "name": "publication-capacity-failure",
+      "adapter_status": -4,
+      "required": 408,
+      "status": 0,
+      "oracle": null
+    },
+    {
+      "name": "failed-publication-keeps-intent",
+      "adapter_status": 0,
+      "required": 274,
+      "status": 0,
+      "oracle": {
+        "selected": 4,
+        "views": [],
+        "membership_hex": "0e04"
+      }
+    },
+    {
+      "name": "append-publication-capacity-failure",
+      "adapter_status": -4,
+      "required": 272,
+      "status": 0,
+      "oracle": null
+    },
+    {
+      "name": "failed-append-keeps-source-and-intent",
+      "adapter_status": 0,
+      "required": 274,
+      "status": 0,
+      "oracle": {
+        "selected": 4,
+        "views": [],
+        "membership_hex": "0e04"
+      }
+    },
+    {
+      "name": "cancel-watermark",
+      "adapter_status": 0,
+      "required": 272,
+      "status": 0,
+      "oracle": null
+    },
+    {
+      "name": "cancelled-request-replay",
+      "adapter_status": 0,
+      "required": 272,
+      "status": 4,
+      "oracle": null
+    },
+    {
+      "name": "newer-request-after-cancel",
+      "adapter_status": 0,
+      "required": 408,
+      "status": 0,
+      "oracle": {
+        "selected": 4,
+        "views": [
+          {
+            "id": 11,
+            "counts": [
+              0,
+              2,
+              2,
+              0
+            ]
+          },
+          {
+            "id": 12,
+            "counts": [
+              0,
+              2,
+              2
+            ]
+          },
+          {
+            "id": 13,
+            "counts": [
+              1,
+              2,
+              1
+            ]
+          },
+          {
+            "id": 14,
+            "counts": [
+              0,
+              1,
+              3
+            ]
+          },
+          {
+            "id": 15,
+            "counts": [
+              0,
+              3,
+              1,
+              0
+            ]
+          }
+        ],
+        "membership_hex": null
+      }
+    },
+    {
+      "name": "stale-newer-revision",
+      "adapter_status": 0,
+      "required": 272,
+      "status": 3,
+      "oracle": null
+    },
+    {
+      "name": "wrong-source-fails-closed",
+      "adapter_status": 0,
+      "required": 272,
+      "status": 7,
+      "oracle": null
+    },
+    {
+      "name": "oversized-wire-size-native-wasm-parity",
+      "adapter_status": 0,
+      "required": 272,
+      "status": 2,
+      "oracle": null
+    },
+    {
+      "name": "nonmonotone-cuts",
+      "adapter_status": 0,
+      "required": 272,
+      "status": 1,
+      "oracle": null
+    },
+    {
+      "name": "nonfinite-cuts",
+      "adapter_status": 0,
+      "required": 272,
+      "status": 1,
+      "oracle": null
+    },
+    {
+      "name": "wrong-source-epoch",
+      "adapter_status": 0,
+      "required": 272,
+      "status": 7,
+      "oracle": null
+    },
+    {
+      "name": "append-schema-mismatch",
+      "adapter_status": 0,
+      "required": 272,
+      "status": 7,
+      "oracle": null
+    },
+    {
+      "name": "nonfinite-bounds",
+      "adapter_status": 0,
+      "required": 272,
+      "status": 1,
+      "oracle": null
+    },
+    {
+      "name": "duplicate-view-id",
+      "adapter_status": 0,
+      "required": 272,
+      "status": 1,
+      "oracle": null
+    },
+    {
+      "name": "checked-index-budget-refusal",
+      "adapter_status": 0,
+      "required": 272,
+      "status": 2,
+      "oracle": null
+    },
+    {
+      "name": "configure-publication-capacity-failure",
+      "adapter_status": -4,
+      "required": 272,
+      "status": 0,
+      "oracle": null
+    },
+    {
+      "name": "budget-refusal-keeps-current-index",
+      "adapter_status": 0,
+      "required": 408,
+      "status": 0,
+      "oracle": {
+        "selected": 4,
+        "views": [
+          {
+            "id": 11,
+            "counts": [
+              0,
+              2,
+              2,
+              0
+            ]
+          },
+          {
+            "id": 12,
+            "counts": [
+              0,
+              2,
+              2
+            ]
+          },
+          {
+            "id": 13,
+            "counts": [
+              1,
+              2,
+              1
+            ]
+          },
+          {
+            "id": 14,
+            "counts": [
+              0,
+              1,
+              3
+            ]
+          },
+          {
+            "id": 15,
+            "counts": [
+              0,
+              3,
+              1,
+              0
+            ]
+          }
+        ],
+        "membership_hex": null
+      }
+    },
+    {
+      "name": "unsupported-active-dimension-switch-with-intent",
+      "adapter_status": 0,
+      "required": 272,
+      "status": 1,
+      "oracle": null
+    },
+    {
+      "name": "clear-before-active-switch",
+      "adapter_status": 0,
+      "required": 408,
+      "status": 0,
+      "oracle": {
+        "selected": 12,
+        "views": [
+          {
+            "id": 11,
+            "counts": [
+              2,
+              3,
+              3,
+              3
+            ]
+          },
+          {
+            "id": 12,
+            "counts": [
+              0,
+              3,
+              9
+            ]
+          },
+          {
+            "id": 13,
+            "counts": [
+              1,
+              2,
+              9
+            ]
+          },
+          {
+            "id": 14,
+            "counts": [
+              0,
+              2,
+              10
+            ]
+          },
+          {
+            "id": 15,
+            "counts": [
+              1,
+              3,
+              1,
+              4
+            ]
+          }
+        ],
+        "membership_hex": null
+      }
+    },
+    {
+      "name": "switch-active-view",
+      "adapter_status": 0,
+      "required": 272,
+      "status": 0,
+      "oracle": null
+    },
+    {
+      "name": "different-active-dimension-exact",
+      "adapter_status": 0,
+      "required": 408,
+      "status": 0,
+      "oracle": {
+        "selected": 6,
+        "views": [
+          {
+            "id": 11,
+            "counts": [
+              0,
+              3,
+              3,
+              0
+            ]
+          },
+          {
+            "id": 12,
+            "counts": [
+              0,
+              2,
+              4
+            ]
+          },
+          {
+            "id": 13,
+            "counts": [
+              1,
+              2,
+              3
+            ]
+          },
+          {
+            "id": 14,
+            "counts": [
+              0,
+              1,
+              5
+            ]
+          },
+          {
+            "id": 15,
+            "counts": [
+              0,
+              3,
+              1,
+              2
+            ]
+          }
+        ],
+        "membership_hex": null
+      }
+    },
+    {
+      "name": "truncated-request",
+      "adapter_status": 0,
+      "required": 272,
+      "status": 1,
+      "oracle": null
+    }
+  ]
+}

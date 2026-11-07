@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 401
-#define XYG_ABI_SIGNATURE_SHA256 "351e51d44ed0a3c4c3525d48a6aee277667a9963685a67fa689559b944c86295"
+#define XYG_ABI_VERSION 402
+#define XYG_ABI_SIGNATURE_SHA256 "f5a10817bcc9cf94d22ef3560be143bce5f96e6e09a7065652c16a5d25667c00"
 
 #ifdef __cplusplus
 extern "C" {
@@ -140,6 +140,10 @@ size_t xyg_factorize_unicode1_u8_counts(const uint32_t * data, size_t len, int32
 int32_t xyg_factorize_use_native_fixed(const uint8_t * data, size_t n_rows, uint32_t record_width);
 int32_t xyg_factorize_use_native_probe(uint32_t distinct, uint32_t probe_len, uint32_t record_width);
 int32_t xyg_figure_autorange(const uint8_t * input, size_t len, double * out_lo, double * out_hi);
+int32_t xyg_filter_session_cancel(uint64_t handle, uint64_t revision);
+int32_t xyg_filter_session_execute(uint64_t handle, const uint8_t * request, size_t request_len, uint8_t * out, size_t capacity, size_t * written);
+void xyg_filter_session_free(uint64_t handle);
+uint64_t xyg_filter_session_new(uint64_t max_bytes);
 int32_t xyg_fold_codes_u8(const uint32_t * codes, size_t n, uint32_t n_palette, uint8_t * out);
 int32_t xyg_geo_catalog_compile(const uint8_t * request, size_t request_len, size_t budget, uint8_t * out, size_t cap, size_t * out_length);
 int32_t xyg_geo_column_copy(uint64_t handle, double * out_xy, size_t xy_cap, uint8_t * out_validity, size_t validity_cap, uint64_t * out_ids, size_t ids_cap, uint32_t * out_o0, size_t o0_cap, uint32_t * out_o1, size_t o1_cap, uint32_t * out_o2, size_t o2_cap, uint8_t * out_orient, size_t orient_cap);

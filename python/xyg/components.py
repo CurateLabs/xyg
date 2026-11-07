@@ -3773,6 +3773,30 @@ class Chart(Component):
     """Composes marks + axis/legend children into a `Figure`. Renders in
     notebooks and exports to HTML via the underlying engine."""
 
+    def filter_session(
+        self,
+        columns,
+        *,
+        source_id: int,
+        epoch: int = 1,
+        first_row: int = 0,
+        budget_bytes: int = 64 << 20,
+    ):
+        """Create a programmatic Rust filter session for shared canonical columns.
+
+        This checkpoint returns counts/membership; renderer and gesture binding
+        remain pending under #112. Explicit source identity is shared by all views.
+        """
+        from .filter_session import FilterTierCSession
+
+        return FilterTierCSession(
+            columns,
+            source_id=source_id,
+            epoch=epoch,
+            first_row=first_row,
+            budget_bytes=budget_bytes,
+        )
+
     def __init__(
         self,
         kind: str,

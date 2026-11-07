@@ -1,0 +1,22 @@
+{
+  "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+    "before": "6a96fa29786bfc7e2e3a20de313e4c681ec7c7dc011e658c6a2b8f3f3c6b0b2e",
+    "after": "6a96fa29786bfc7e2e3a20de313e4c681ec7c7dc011e658c6a2b8f3f3c6b0b2e",
+    "identical": true
+  },
+  "packages/xy-client/dist/xyg-wasm.wasm": {
+    "before": "c5ae5257c90a4a6a7a633bf0b85b868c81468715e53480d55bc7b3ca33f117ad",
+    "after": "c5ae5257c90a4a6a7a633bf0b85b868c81468715e53480d55bc7b3ca33f117ad",
+    "identical": true
+  },
+  "target/filter-inline100-final/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+    "before": "503e8448f5fdf597508ede006a15ec031817cc8e02d12409e3b0933181b34d0e",
+    "after": "503e8448f5fdf597508ede006a15ec031817cc8e02d12409e3b0933181b34d0e",
+    "identical": true
+  },
+  "target/ftmp/filter-inline100-shipping-source.wasm": {
+    "before": "b9154027b9d9f2bb8469de52ff640fd3d64d649fb91877da970ef35a5cd1640b",
+    "after": "b9154027b9d9f2bb8469de52ff640fd3d64d649fb91877da970ef35a5cd1640b",
+    "identical": true
+  }
+}

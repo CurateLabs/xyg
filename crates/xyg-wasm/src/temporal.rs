@@ -314,6 +314,7 @@ mod tests {
             aggregate_job: None,
             stream_aggregate_job: None,
             aggregate_sequence: 0,
+            filter: Default::default(),
             temporal: None,
             temporal_graph: None,
             graph_session: None,
