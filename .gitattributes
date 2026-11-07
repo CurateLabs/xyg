@@ -195,3 +195,28 @@ spec/performance/public10k-temporal-chunked-union-2026-11-07/*.json text eol=lf
 spec/performance/public10k-temporal-chunked-union-2026-11-07/*.md text eol=lf
 spec/performance/public10k-temporal-chunked-union-2026-11-07/*.gz -text
 spec/performance/public10k-temporal-chunked-union-2026-11-07/*.png -text
+
+# Temporal catalog compiler/profile and successor source qualification.
+.cargo/config.toml text eol=lf
+crates/xyg-engine/src/lib.rs text eol=lf
+crates/xyg-engine/src/temporal_scene.rs text eol=lf
+crates/xyg-wasm/src/geo.rs text eol=lf
+crates/xyg-wasm/src/lib.rs text eol=lf
+examples/temporal/catalog.py text eol=lf
+packages/xy-node/package.json text eol=lf
+python/xyg/__init__.py text eol=lf
+python/xyg/_figure_export.py text eol=lf
+python/xyg/_scene_v3.py text eol=lf
+python/xyg/_static_document.py text eol=lf
+python/xyg/_temporal_scene.py text eol=lf
+spec/design/temporal-catalog.md text eol=lf
+spec/design/temporal.md text eol=lf
+spec/design/wire-protocol.md text eol=lf
+spec/releases/api-inventory.md text eol=lf
+spec/temporal/evidence/46/receipt.json text eol=lf
+spec/wasm/abi.json text eol=lf
+tests/fixtures/temporal/catalog-six-families.json text eol=lf
+tests/test_temporal_catalog.py text eol=lf
+spec/temporal/evidence/46-inline50/*.json text eol=lf
+spec/temporal/evidence/46-inline50/*.md text eol=lf
+spec/temporal/evidence/46-inline50/*.gz -text

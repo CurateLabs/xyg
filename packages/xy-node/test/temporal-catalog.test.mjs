@@ -1,6 +1,11 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 import {temporalChart,encodeTemporalScene} from '../src/index.js';
+import {temporalSceneCompile} from '../src/temporal-scene.js';
+const oracle=JSON.parse(readFileSync(new URL('../../../tests/fixtures/temporal/catalog-six-families.json',import.meta.url)));
+const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
 for(const kind of ['event','interval','gantt','line','bar','scatter'])test(`public temporal ${kind}`,()=>{
  const origin=9223372036854775707n;
  const rows=[[origin+1n,origin+4n,1,18446744073709551615n],[origin+5n,null,2,42n]];
@@ -11,4 +16,10 @@ for(const kind of ['event','interval','gantt','line','bar','scatter'])test(`publ
  assert.match(chart.toHtml(),/hydrateWasmPainter/);
  const packet=encodeTemporalScene({kind,rows,domain:[origin,origin+10n],timezone:'UTC'});
  assert.equal(new DataView(packet).getBigInt64(131,true),origin+1n);
+ const retained=oracle.cases.find(row=>row.kind===kind);
+ const boundPacket=encodeTemporalScene({kind,rows,domain:[origin,origin+10n],timezone:'UTC',title:'LF\nCRLF\r\n'});
+ assert.equal(digest(new Uint8Array(boundPacket)),retained.requestSha256);
+ const scene=temporalSceneCompile(boundPacket);
+ assert.equal(scene.length,retained.sceneBytes);
+ assert.equal(digest(scene),retained.sceneSha256);
 });

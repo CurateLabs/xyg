@@ -13,7 +13,7 @@ and each row is `(start_us, end_us, value_or_lane, stable_u64_id)`.
 Figure/StaticDocument/Scene/painter consumers. Node `temporalChart` returns
 an ordinary Figure; browser `encodeTemporalScene` plus
 `worker.temporalSceneCompile` produces the same Scene bytes. No publication
-or WASM package qualification is implied by these declarations.
+or whole-catalog qualification is implied by these declarations.
 
 ## Exactness and framing
 
@@ -62,13 +62,31 @@ membership, keyboard journeys and virtualized tables remain unimplemented.
 
 `tests/test_temporal_catalog.py`, Node `test/temporal-catalog.test.mjs`, and
 `scripts/temporal_catalog_browser_smoke.mjs` exercise public exports.
-The final candidate WASM package failed the unchanged gzip cap: 793095 bytes
+The original candidate WASM package failed the unchanged gzip cap: 793095 bytes
 versus 786432 (6663 bytes over). Optimized raw bytes are1942827 versus the
 requested1927168 cap (15659 bytes over); SHA256 is
 `18337bf17ea649bba23e99a8f045917cf85addc05575780f55ca7cac0b1dce4d`. The earlier candidate measured792737. Actual
 native/raw-WASM six-family Scene bytes match, including LF/CRLF title inputs;
-no packaged browser-WASM pass is claimed. The first attempt also hit errno -122 under /tmp; the retry
+that original capture claims no packaged browser-WASM pass. The first attempt also hit errno -122 under /tmp; the retry
 used TMPDIR=/var/tmp. Neither failure is counted as a pass.
+
+The subsequent wasm32-only inlining qualification retains O3, native flags,
+toolchain, optimizer, exports, request/output contracts, guards and package
+limits. Threshold 50 packages at 1886204 raw / 771728 Node 22 gzip6 bytes,
+below the unchanged 1927168 / 786432 limits. The original failure and bytes
+remain in the historical receipt; the successor evidence is
+[`46-inline50`](../temporal/evidence/46-inline50/README.md). All 69 export
+names/kinds are identical. Same-source ABBA profiles retain complete byte
+equality for admitted 100/10k/100k operations, and the same 100k interaction
+resource refusal. Samples include slower cases and concurrent VM work; they
+do not establish a latency or competitor win.
+
+The existing full foundation CI command additionally exercises all six
+families through the packaged public Worker, compares each binary request
+and complete Scene against native SHA256 oracles, then uses the existing
+ChartView painter. It requires actual source-colored pixels and exact u64
+identity metadata before disposal. This proves bounded rendering and metadata,
+not a trusted pointer pick or accessible interactive temporal controller.
 
 All #46 acceptance remains open beyond the bounded public path: screen-bounded
 LOD with complete membership/provenance, full host/WASM byte oracles, shared

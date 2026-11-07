@@ -1,0 +1,11 @@
+{
+  "base": "1e585261d40d3113d7f41e7b739cd5b254cc7723",
+  "artifacts": {
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "sha256": "c723cd4f282153cefe6bdd2ffb3ca906d0095c0fdc75bbe677ccf123e90fbbd0",
+      "bytes": 2142517,
+      "gzip6Bytes": 806889
+    }
+  },
+  "qualification": "Existing module exceeds unchanged caps; retained failure producer only"
+}

@@ -13,6 +13,7 @@ import {
   encodeWasmColumns,
   encodeWasmDashboardPlan,
   encodeWasmTickBatch,
+  encodeTemporalScene,
   hydrateWasmPainter,
   layoutWasmCose,
   planWasmDashboardResources,
@@ -2276,6 +2277,37 @@ async function run() {
   polarTickHost.remove();
 
   const fromHex = (value) => Uint8Array.from(value.match(/../g) ?? [], (pair) => Number.parseInt(pair, 16));
+  foundationStage = "six temporal families through packaged Worker and existing painter";
+  const catalogOracle = await (await fetch("/tests/fixtures/temporal/catalog-six-families.json")).json();
+  if (catalogOracle.schema !== "xyg.temporal-catalog-native-oracle/v1" || catalogOracle.cases.length !== 6) throw Error("temporal oracle fixture is incomplete");
+  const temporalCatalogProof = [];
+  const catalogWorker = createXygWasmWorker({workerUrl:"/packages/xy-client/dist/wasm-worker.js", wasm:wasmModule, maxArenaBytes:16*1024*1024});
+  const digest = async bytes => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), b=>b.toString(16).padStart(2,"0")).join("");
+  await catalogWorker.ready;
+  try {
+    for (const oracle of catalogOracle.cases) {
+      const lo = 9223372036854775707n;
+      const request = encodeTemporalScene({kind:oracle.kind,rows:[[lo+1n,lo+4n,1,18446744073709551615n],[lo+5n,null,2,42n]],domain:[lo,lo+10n],timezone:"UTC",title:"LF\nCRLF\r\n"});
+      if (await digest(request) !== oracle.requestSha256) throw Error(`temporal browser framing differs from native: ${oracle.kind}`);
+      const scene = await catalogWorker.temporalSceneCompile(request).result;
+      const sceneSha256 = await digest(scene);
+      if (scene.byteLength !== oracle.sceneBytes || sceneSha256 !== oracle.sceneSha256) throw Error(`temporal Worker Scene differs from native: ${oracle.kind}`);
+      const host = document.body.appendChild(document.createElement("div"));
+      let view;
+      try {
+        view = await renderWasmScene({el:host,scene,worker:catalogWorker,transfer:false});
+        view._drawNow();
+        const ids = view.gpuTraces.flatMap((trace,i)=>Array.from({length:trace._sceneIds.lo.length},(_,r)=>view.sceneStableId(i,r)?.toString()));
+        if (!ids.includes("18446744073709551615")) throw Error(`temporal painter lost exact source identity: ${oracle.kind}`);
+        const pixels = view.canvas.getContext("2d").getImageData(0,0,view.canvas.width,view.canvas.height).data;
+        let ink = 0;
+        for (let i=0;i<pixels.length;i+=4) if (pixels[i]===31 && pixels[i+1]===119 && pixels[i+2]===180 && pixels[i+3]>0) ink++;
+        if (!ink) throw Error(`temporal ${oracle.kind} has no source-colored painted marks`);
+        temporalCatalogProof.push({kind:oracle.kind,sceneSha256,sceneBytes:scene.byteLength,sourceIds:ids,sourceColorPixels:ink});
+      } finally { view?.destroy();host.remove(); }
+    }
+  } finally { await catalogWorker.dispose(); }
+  console.log("PASS six temporal catalog Worker/native Scene oracles, painted source pixels, exact u64 metadata and disposal");
   const fixtureWorker = createXygWasmWorker({
     workerUrl: "/packages/xy-client/dist/wasm-worker.js",
     wasm: wasmModule,
@@ -4883,7 +4915,7 @@ async function run() {
   } catch (error) {
     if (!(error instanceof TypeError)) throw error;
   }
-  return { ok: true, densityPolicy, densityNoRefinement, temporalControllerProof };
+  return { ok: true, densityPolicy, densityNoRefinement, temporalControllerProof, temporalCatalogProof };
 }
 
 globalThis.__xygWasmFoundation = run().catch((error) => ({

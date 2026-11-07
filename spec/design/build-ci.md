@@ -84,6 +84,15 @@ implementations and thresholds are unchanged.
 
 ## Packaged WASM assets (#1005, dossier §33)
 
+The full source foundation also validates the six-family temporal catalog
+through the packaged Worker and existing ChartView painter. It compares
+requests and complete Scenes with the native hashes in
+`tests/fixtures/temporal/catalog-six-families.json`, checks actual source-color
+pixels and exact u64 identity metadata, and disposes each view. The ordinary
+Node catalog tests independently bind that fixture to the native compiler.
+This bounded proof adds no job or timing gate and does not qualify temporal
+controller interaction, accessibility, dense LOD or massive-scale behavior.
+
 Main run 38640943006 failed `Benchmark methodology suites` with
 `FileNotFoundError: packaged WASM tick assets missing: xyg-wasm.wasm`: the job built the
 client but nothing in its dependency graph produced the generated WASM assets, and the
