@@ -2849,6 +2849,9 @@ async function run() {
     },
   };
   const instrumentedHost = {
+    beginDashboardBudget(budget) { return budget; },
+    clientResourceBytes() { return 4n; },
+    sharedResourceBytes() { return 0n; },
     subscribeDashboardResources(listener) {
       dashboardListener = listener;
       return () => { if (dashboardListener === listener) dashboardListener = null; };
@@ -3910,7 +3913,9 @@ async function run() {
   peerView._ctxVisible = true;
   sharedHost.markDashboardResourceUsed(peerView);
   sharedHost.markDashboardResourceUsed(semanticView);
-  const admittedBytes = semanticView._dashboardResourceState().derivedBytes;
+  const residentBytes = semanticView._dashboardResourceState().derivedBytes;
+  const admittedBytes = sharedHost.dashboardResourceSnapshot().resources[0].derivedBytes;
+  const dashboardBudget = admittedBytes + sharedHost.sharedResourceBytes();
   const peerIds = peerView.gpuTraces.map((trace, traceIndex) =>
     Array.from(trace._sceneIds.lo, (_, row) => peerView.sceneStableId(traceIndex, row)));
   const applyResidency = sharedHost.applyDashboardResidency.bind(sharedHost);
@@ -3919,26 +3924,28 @@ async function run() {
     admissionAttempts += 1;
     return admissionAttempts === 1 ? false : applyResidency(...args);
   };
-  const admission = await semanticView.applyDashboardResourceBudget(semanticWorker, admittedBytes);
+  const admission = await semanticView.applyDashboardResourceBudget(semanticWorker, dashboardBudget);
   sharedHost.applyDashboardResidency = applyResidency;
   if (!admission.applied || admissionAttempts < 2 || admission.plan.retained.join(",") !== "true,false"
-      || admission.beforeBytes !== admittedBytes * 2n || admission.afterBytes !== admittedBytes
+      || admission.beforeBytes !== residentBytes * 2n + sharedHost.sharedResourceBytes() || admission.afterBytes !== residentBytes + sharedHost.sharedResourceBytes()
       || !semanticView.pickTex || peerView.pickTex || peerView.pickFbo) {
     throw new Error(`Rust dashboard recency admission was not applied to two visible pick resources: retained=${admission.plan.retained} applied=${admission.applied} bytes=${admission.beforeBytes}/${admission.afterBytes}/${admittedBytes} textures=${!!semanticView.pickTex}/${!!peerView.pickTex}/${!!peerView.pickFbo}`);
   }
+  const automaticAdmission = semanticView.watchDashboardResourceBudget(semanticWorker, dashboardBudget);
+  await automaticAdmission.settled;
   peerView._pickAt(-1, -1);
+  await automaticAdmission.settled;
+  await new Promise(resolve => setTimeout(resolve, 50));
+  await automaticAdmission.settled;
   const rebuiltPeerIds = peerView.gpuTraces.map((trace, traceIndex) =>
     Array.from(trace._sceneIds.lo, (_, row) => peerView.sceneStableId(traceIndex, row)));
-  if (!peerView.pickTex || JSON.stringify(peerIds, (_, value) => typeof value === "bigint" ? value.toString() : value)
+  if (!peerView.pickTex || semanticView.pickTex || JSON.stringify(peerIds, (_, value) => typeof value === "bigint" ? value.toString() : value)
       !== JSON.stringify(rebuiltPeerIds, (_, value) => typeof value === "bigint" ? value.toString() : value)) {
-    throw new Error("evicted pick resources did not rebuild with stable source identity");
-  }
-  const automaticAdmission = semanticView.watchDashboardResourceBudget(semanticWorker, admittedBytes);
-  await automaticAdmission.settled;
-  if (semanticView.pickTex || !peerView.pickTex) {
-    throw new Error("automatic Rust admission did not retain the most recently used peer");
+    throw new Error("Rust-admitted whole-chart rebuild lost stable source identity");
   }
   semanticView._pickAt(-1, -1);
+  await automaticAdmission.settled;
+  await new Promise(resolve => setTimeout(resolve, 50));
   await automaticAdmission.settled;
   if (!semanticView.pickTex || peerView.pickTex || peerView.pickFbo) {
     throw new Error("automatic Rust admission did not replan after active resource use");
@@ -3950,6 +3957,9 @@ async function run() {
   if (sharedHost.applyDashboardResidency(staleSnapshot, stalePlan.retained)) {
     throw new Error("shared host applied a Rust dashboard plan after visibility changed");
   }
+  await semanticView.applyDashboardResourceBudget(semanticWorker, dashboardBudget * 3n);
+  await new Promise(resolve => setTimeout(resolve, 50));
+  if (peerView._glLost) throw new Error("peer must rebuild before frame cancellation probe");
   const cancelBefore = sharedHost.frameSnapshot();
   peerView.draw();
   if (sharedHost.frameSnapshot().pending !== 1) throw new Error("shared frame cancellation probe was not queued");

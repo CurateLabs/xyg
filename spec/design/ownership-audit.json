@@ -2115,6 +2115,14 @@
       "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
     },
     {
+      "path": "js/src/41_gpu_storage.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    {
       "path": "js/src/42_glhost.ts",
       "current_owner": "Shared TypeScript browser client",
       "policy": "browser-client",

@@ -49,12 +49,14 @@ export async function applyWasmDashboardResourceBudget(
   worker: XygWasmWorker,
   host: GLHost,
   budgetBytes: bigint,
+  perChartBudgetBytes: bigint = budgetBytes,
 ): Promise<Readonly<{
   plan: XygWasmDashboardPlan;
   applied: boolean;
   beforeBytes: bigint;
   afterBytes: bigint;
 }>> {
+  encodeWasmDashboardPlan([], perChartBudgetBytes);
   if (!host || typeof host.dashboardResourceSnapshot !== "function"
       || typeof host.applyDashboardResidency !== "function") {
     throw new TypeError("a shared GLHost is required");
@@ -63,14 +65,26 @@ export async function applyWasmDashboardResourceBudget(
   // bounded number of times so one ordinary lifecycle edge does not turn a
   // valid public request into a no-op; every individual apply remains atomic.
   for (let attempt = 0; attempt < 3; attempt += 1) {
+    const availableBytes = host.beginDashboardBudget(budgetBytes);
     const snapshot = host.dashboardResourceSnapshot();
-    const beforeBytes = snapshot.resources.reduce((sum, resource) => sum + resource.derivedBytes, 0n);
-    const plan = await planWasmDashboardResources(worker, snapshot.resources, budgetBytes);
+    const beforeBytes = snapshot.clients.reduce((sum, client) => sum + host.clientResourceBytes(client), host.sharedResourceBytes());
+    let plan: XygWasmDashboardPlan;
+    if (perChartBudgetBytes >= availableBytes) {
+      // A whole-chart global grant already implies this per-chart cap.
+      plan = await planWasmDashboardResources(worker, snapshot.resources, availableBytes);
+    } else {
+      const eligible = await Promise.all(snapshot.resources.map(resource =>
+        planWasmDashboardResources(worker, [resource], perChartBudgetBytes)));
+      const admittedIndices = snapshot.resources.flatMap((_, index) => eligible[index].retained[0] ? [index] : []);
+      const globalPlan = await planWasmDashboardResources(worker,
+        admittedIndices.map(index => snapshot.resources[index]), availableBytes);
+      const retained = snapshot.resources.map(() => false);
+      admittedIndices.forEach((index, at) => { retained[index] = globalPlan.retained[at]; });
+      plan = Object.freeze({ retainedBytes: globalPlan.retainedBytes, retained: Object.freeze(retained) });
+    }
     const applied = host.applyDashboardResidency(snapshot, plan.retained);
     if (applied) {
-      const afterBytes = host.dashboardResourceSnapshot().resources.reduce(
-        (sum, resource) => sum + resource.derivedBytes, 0n,
-      );
+      const afterBytes = host.dashboardResourceSnapshot().clients.reduce((sum, client) => sum + host.clientResourceBytes(client), host.sharedResourceBytes());
       return Object.freeze({ plan, applied, beforeBytes, afterBytes });
     }
     if (attempt === 2) return Object.freeze({ plan, applied, beforeBytes, afterBytes: beforeBytes });
@@ -91,9 +105,11 @@ export function watchWasmDashboardResourceBudget(
   worker: XygWasmWorker,
   host: GLHost,
   budgetBytes: bigint,
+  perChartBudgetBytes: bigint = budgetBytes,
 ): XygWasmDashboardAdmissionController {
   // Validate before installing a lifecycle listener.
   encodeWasmDashboardPlan([], budgetBytes);
+  encodeWasmDashboardPlan([], perChartBudgetBytes);
   if (!host || typeof host.subscribeDashboardResources !== "function") {
     throw new TypeError("a shared GLHost is required");
   }
@@ -119,7 +135,7 @@ export function watchWasmDashboardResourceBudget(
       try {
         do {
           rerun = false;
-          await applyWasmDashboardResourceBudget(worker, host, budgetBytes);
+          await applyWasmDashboardResourceBudget(worker, host, budgetBytes, perChartBudgetBytes);
         } while (rerun && !disposed);
       } catch (error) {
         failure = error;
