@@ -2,7 +2,10 @@
   "parent": "5ccab2ecdc8862e9a70f49537b2bbcec6b0972b8",
   "commands": {
     "before": "uv run pytest tests/test_graphforge_contract_corpus.py -q",
-    "after": "uv run pytest tests/test_graphforge_contract_corpus.py tests/test_release_inventory.py tests/test_shared_glhost.py::test_dashboard_gpu_allocation_oracle_and_lifecycle -q"
+    "after": "uv run pytest tests/test_graphforge_contract_corpus.py tests/test_release_inventory.py tests/test_shared_glhost.py::test_dashboard_gpu_allocation_oracle_and_lifecycle -q",
+    "hooks": "uv run --with pre-commit pre-commit run --all-files",
+    "ruff": "uv run ruff check .",
+    "format": "uv run ruff format --check ."
   },
   "logs": {
     "core-before.log.gz": {
@@ -15,6 +18,24 @@
       "rawSha256": "4524c2b5189d782a8dddcef10b017061a3722ca6509240351085fd2d88c2b675",
       "archiveSha256": "bd24ebff5c69d9c5e6dd43f2f9a09b9f7ec37ced5c68c88da882888fed2c5e09",
       "rawBytes": 100,
+      "exit": 0
+    },
+    "hooks.log.gz": {
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "rawBytes": 240,
+      "exit": 0
+    },
+    "ruff.log.gz": {
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "rawBytes": 19,
+      "exit": 0
+    },
+    "format.log.gz": {
+      "rawSha256": "71828415ae7956717bbef7f9bd1683393e137b6b7b3f2ae381407f4327456e23",
+      "archiveSha256": "2c6ab4aea7deb473cb03120e197b035f027d28e416affb553cf4b8dc275d80b7",
+      "rawBytes": 29,
       "exit": 0
     }
   },
