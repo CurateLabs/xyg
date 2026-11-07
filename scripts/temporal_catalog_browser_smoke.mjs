@@ -13,5 +13,5 @@ try {
   await page.screenshot({path:`${process.argv[2]}/${kind}.png`});
   await page.evaluate(()=>window.temporalView.destroy());await page.close();
  }
- console.log('6 offline public temporal HTML journeys painted, exact u64 picks and disposal');
+ console.log('6 offline public temporal HTML journeys painted, exact u64 identity metadata and disposal');
 }finally{await browser.close();}

@@ -156,7 +156,7 @@ export function toHtml(figOrPayload, path = null, opts = {}) {
   if (figOrPayload._temporalCompile) {
     const painter=Buffer.from(sceneBrowserPainter(figOrPayload.toScene())).toString('base64');
     const client=javascriptForInlineScript(readFileSync(standaloneClientPath(), 'utf8'));
-    const html=`<!doctype html><meta charset="utf-8"><div id="chart"></div><script>${client}</script><script>const b=Uint8Array.from(atob("${painter}"),c=>c.charCodeAt(0));window.temporalView=xy.hydrateWasmPainter(document.getElementById('chart'),{painter:b.buffer,memoryBytes:0});</script>`;
+    const html=`<!doctype html><meta charset="utf-8"><div id="chart"></div><script>${client}</script><script>const b=Uint8Array.from(atob("${painter}"),c=>c.charCodeAt(0));${BROWSER_DOCUMENT}.defaultView.temporalView=xy.hydrateWasmPainter(${BROWSER_DOCUMENT}.getElementById('chart'),{painter:b.buffer,memoryBytes:0});</script>`;
     if(path!=null)writeFileSync(path,html);return html;
   }
   const { spec, buffers, title } = payloadFrom(figOrPayload);

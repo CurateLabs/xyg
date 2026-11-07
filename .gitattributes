@@ -220,3 +220,16 @@ tests/test_temporal_catalog.py text eol=lf
 spec/temporal/evidence/46-inline50/*.json text eol=lf
 spec/temporal/evidence/46-inline50/*.md text eol=lf
 spec/temporal/evidence/46-inline50/*.gz -text
+
+# Temporal catalog append-only ABI401 to402 fixture transition.
+spec/temporal/evidence/46-abi402/*.json text eol=lf
+spec/temporal/evidence/46-abi402/*.md text eol=lf
+spec/temporal/evidence/46-abi402/*.py text eol=lf
+spec/temporal/evidence/46-abi402/*.gz -text
+spec/temporal/evidence/46-abi402/abi401-predecessor/*.json text eol=lf
+tests/test_cross_host_abi_transition.py text eol=lf
+packages/xy-node/test/fixtures/write_geo_cross_host_fixtures.py text eol=lf
+packages/xy-node/test/fixtures/write_payload_attach_cross_host_fixtures.py text eol=lf
+packages/xy-node/test/fixtures/write_payload_chrome_cross_host_fixtures.py text eol=lf
+packages/xy-node/test/fixtures/write_payload_cross_host_fixtures.py text eol=lf
+tests/test_series_palette_cross_host.py text eol=lf
