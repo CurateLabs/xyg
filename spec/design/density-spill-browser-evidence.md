@@ -65,6 +65,35 @@ preserving the historical hashed reports below. They cannot satisfy current
 schema-3 path/owned/normal or `--require-hardware` acceptance. No historical
 artifact is rewritten or assigned new proof it never recorded.
 
+
+## Shared-host instrumentation and CI failure diagnostics
+
+The owned-resource audit hooks raw WebGL calls before `renderStandalone`.
+A shared-host chart receives an owner-accounted proxy from the GPU storage
+ledger; audit lookup resolves the chart's actual `GLHost.gl`, while all chart
+and oracle operations continue through the owner-accounted proxy. Native and
+borrowed-context paths retain direct lookup. This observes the same actual
+allocations without bypassing admission or creating a second context. Missing
+pre-render instrumentation still fails closed. Deliberate unreferenced-leak controls allocate through the audited
+raw context so the owner ledger cannot repair the injected fault during teardown;
+normal chart and oracle allocations continue through the proxy. Pixel,
+tile-upload, stale and malformed reply, normal-cadence, explicit deletion and
+teardown assertions retain their original bounds.
+
+The supervisor writes final host and browser reports before printing a failed
+invocation's cause and host report path to stderr. This keeps the one-way exact
+host-byte binding and nonzero exit, and exposes report-only browser errors in
+CI logs. Artifact upload absence cannot substitute for the worker's cause.
+
+Browser-report mutation controls must change the actual inherited context.
+The reference mutation derives a different ref from the fixture's current value
+and asserts the precondition before applying it. Local, pull-request, main and
+merge-group context simulations retain strict host/companion equality and exact
+host-byte hashing; they are test controls, not hosted-platform acceptance.
+The [PR1114 repair receipt](../performance/dashboard-colored-ci-repair-2026-11-07/README.md)
+records Python 3.11/3.12 reproduction, failures and bounded validation. #111 and
+whole milestones 4–7 remain open.
+
 ## Renderer admission and existing Mac experiment
 
 `--colored-browser-gl software|hardware` flows through the existing supervisor

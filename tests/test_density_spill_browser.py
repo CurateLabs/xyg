@@ -120,9 +120,9 @@ def test_run_existing_cannot_bypass_local_scale_guard(tmp_path):
 @pytest.mark.parametrize(
     "injection,match",
     [
-        ("gl.createTexture();", "explicit deletion missing"),
+        ("(v._glHost?.gl??gl).createTexture();", "explicit deletion missing"),
         (
-            "const leak=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,leak);gl.bufferData(gl.ARRAY_BUFFER,4096,gl.STATIC_DRAW);",
+            "const raw=v._glHost?.gl??gl,leak=raw.createBuffer();raw.bindBuffer(raw.ARRAY_BUFFER,leak);raw.bufferData(raw.ARRAY_BUFFER,4096,raw.STATIC_DRAW);",
             "explicit deletion missing",
         ),
     ],
@@ -130,6 +130,8 @@ def test_run_existing_cannot_bypass_local_scale_guard(tmp_path):
 def test_initial_unreferenced_resource_leak_fails_before_context_loss(
     chromium, monkeypatch, injection, match
 ):
+    # Bypass the ledger only for this adversarial leak. Allocations made
+    # through the chart proxy are now correctly reclaimed by host teardown.
     marker = "  audit.label(v.pickTex,'pick');"
     assert marker in smoke.BROWSER_PROOF
     monkeypatch.setattr(

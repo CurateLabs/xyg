@@ -1,0 +1,740 @@
+{
+  "schema": "xyg.dashboard-colored-ci-repair/v1",
+  "base": "174c9ac6a24f91d25d46f3e55c559a5bad854fab",
+  "orderedParents": [
+    "174c9ac6a24f91d25d46f3e55c559a5bad854fab"
+  ],
+  "sourceProducer": "fc096e61f3069496c6cae5719e361ec4336180e8",
+  "nativeAbi": 401,
+  "commands": {
+    "after312": {
+      "command": [
+        "/var/tmp/xyg-pr1114-ci/venv312/bin/python",
+        "benchmarks/bench_density_e2e.py",
+        "--workload",
+        "colored-spill",
+        "--points",
+        "16384",
+        "--chunk-points",
+        "4096",
+        "--chrome",
+        "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "--timeout",
+        "180",
+        "--max-rss-gib",
+        "4",
+        "--max-disk-gib",
+        "1",
+        "--output",
+        "/var/tmp/xyg-pr1114-ci/after312-host.json",
+        "--colored-browser-report",
+        "/var/tmp/xyg-pr1114-ci/after312-browser.json"
+      ],
+      "exit": 0
+    },
+    "host-verify312": {
+      "command": [
+        "/var/tmp/xyg-pr1114-ci/venv312/bin/python",
+        "scripts/verify_density_spill_report.py",
+        "/var/tmp/xyg-pr1114-ci/after312-host.json",
+        "--artifact-root",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-150befc0"
+      ],
+      "exit": 0
+    },
+    "browser-verify312": {
+      "command": [
+        "/var/tmp/xyg-pr1114-ci/venv312/bin/python",
+        "scripts/verify_density_spill_browser_report.py",
+        "/var/tmp/xyg-pr1114-ci/after312-browser.json",
+        "--host-report",
+        "/var/tmp/xyg-pr1114-ci/after312-host.json",
+        "--sha",
+        "174c9ac6a24f91d25d46f3e55c559a5bad854fab",
+        "--artifact-root",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-150befc0"
+      ],
+      "exit": 0
+    },
+    "report-tests312": {
+      "command": [
+        "/var/tmp/xyg-pr1114-ci/venv312/bin/python",
+        "-m",
+        "pytest",
+        "tests/test_density_spill_browser_report.py",
+        "-q",
+        "--basetemp",
+        "/var/tmp/xyg-pr1114-ci/pytest-312"
+      ],
+      "exit": 0
+    },
+    "browser-tests312": {
+      "command": [
+        "/var/tmp/xyg-pr1114-ci/venv312/bin/python",
+        "-m",
+        "pytest",
+        "tests/test_density_spill_browser.py",
+        "-q",
+        "--basetemp",
+        "/var/tmp/xyg-pr1114-ci/pytest-browser-312"
+      ],
+      "exit": 1
+    },
+    "host-verify311": {
+      "command": [
+        "/home/ubuntu/.t3/worktrees/xyg/t3-150befc0/.venv/bin/python",
+        "scripts/verify_density_spill_report.py",
+        "/var/tmp/xyg-pr1114-ci/after311-host.json",
+        "--artifact-root",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-150befc0"
+      ],
+      "exit": 0
+    },
+    "browser-verify311": {
+      "command": [
+        "/home/ubuntu/.t3/worktrees/xyg/t3-150befc0/.venv/bin/python",
+        "scripts/verify_density_spill_browser_report.py",
+        "/var/tmp/xyg-pr1114-ci/after311-browser.json",
+        "--host-report",
+        "/var/tmp/xyg-pr1114-ci/after311-host.json",
+        "--sha",
+        "174c9ac6a24f91d25d46f3e55c559a5bad854fab",
+        "--artifact-root",
+        "/home/ubuntu/.t3/worktrees/xyg/t3-150befc0"
+      ],
+      "exit": 0
+    },
+    "report-tests311": {
+      "command": [
+        "/home/ubuntu/.t3/worktrees/xyg/t3-150befc0/.venv/bin/python",
+        "-m",
+        "pytest",
+        "tests/test_density_spill_browser_report.py",
+        "-q",
+        "--basetemp",
+        "/var/tmp/xyg-pr1114-ci/pytest-311"
+      ],
+      "exit": 0
+    },
+    "browser-tests311": {
+      "command": [
+        "/home/ubuntu/.t3/worktrees/xyg/t3-150befc0/.venv/bin/python",
+        "-m",
+        "pytest",
+        "tests/test_density_spill_browser.py",
+        "-q",
+        "--basetemp",
+        "/var/tmp/xyg-pr1114-ci/pytest-browser-311"
+      ],
+      "exit": 0
+    },
+    "fixed-leak-tests312": {
+      "command": [
+        "/var/tmp/xyg-pr1114-ci/venv312/bin/python",
+        "-m",
+        "pytest",
+        "tests/test_density_spill_browser.py::test_initial_unreferenced_resource_leak_fails_before_context_loss",
+        "-q",
+        "--basetemp",
+        "/var/tmp/xyg-pr1114-ci/pytest-fixed-leak-312"
+      ],
+      "exit": 0
+    },
+    "core-inventory": {
+      "command": [
+        "/var/tmp/xyg-pr1114-ci/venv312/bin/python",
+        "-m",
+        "pytest",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_release_inventory.py",
+        "-q",
+        "--basetemp",
+        "/var/tmp/xyg-pr1114-ci/pytest-core"
+      ],
+      "exit": 0
+    },
+    "assets": {
+      "command": [
+        "/var/tmp/xyg-pr1114-ci/venv312/bin/python",
+        "scripts/verify_wasm_assets.py"
+      ],
+      "exit": 0
+    },
+    "abi": {
+      "command": [
+        "/var/tmp/xyg-pr1114-ci/venv312/bin/python",
+        "scripts/gen_abi_manifest.py",
+        "--check"
+      ],
+      "exit": 0
+    },
+    "before311": {
+      "command": [
+        "benchmarks/bench_density_e2e.py",
+        "--workload",
+        "colored-spill",
+        "--points",
+        "16384",
+        "--chunk-points",
+        "4096",
+        "--chrome",
+        "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "--timeout",
+        "180",
+        "--max-rss-gib",
+        "4",
+        "--max-disk-gib",
+        "1",
+        "--output",
+        "/var/tmp/xyg-pr1114-ci/before311-host.json",
+        "--colored-browser-report",
+        "/var/tmp/xyg-pr1114-ci/before311-browser.json"
+      ],
+      "python": "3.11.17",
+      "exit": 1,
+      "failure": "ValueError: '/home/ubuntu/.t3/worktrees/xyg/t3-0a84283d/target/release/libxyg_core.so' is not in the subpath of '/home/ubuntu/.t3/worktrees/xyg/t3-150befc0' OR one path is relative and the other is absolute."
+    },
+    "before311-local": {
+      "command": [
+        "benchmarks/bench_density_e2e.py",
+        "--workload",
+        "colored-spill",
+        "--points",
+        "16384",
+        "--chunk-points",
+        "4096",
+        "--chrome",
+        "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "--timeout",
+        "180",
+        "--max-rss-gib",
+        "4",
+        "--max-disk-gib",
+        "1",
+        "--output",
+        "/var/tmp/xyg-pr1114-ci/before311-local-host.json",
+        "--colored-browser-report",
+        "/var/tmp/xyg-pr1114-ci/before311-local-browser.json"
+      ],
+      "python": "3.11.17",
+      "exit": 1,
+      "failure": "RuntimeError: RuntimeError: browser proof failed: {'exceptionId': 2, 'text': 'Uncaught (in promise) Error: initial instrumentation missing', 'lineNumber': 0, 'columnNumber': 0, 'exception': {'type': 'object', 'subtype': 'error', 'className': 'Error', 'description': 'Error: initial instrumentation missing\\n    at Object.for (file:///var/tmp/xyg-density-e2e-49uxdqzf/runtime-tmp/xy-export-qea1htw2/chart-3A0FD2A2.html:1580:36)\\n    at file:///var/tmp/xyg-density-e2e-49uxdqzf/runtime-tmp/xy-export-qea1htw2/chart-3A0FD2A2.html:1797:49\\n    at file:///var/tmp/xyg-density-e2e-49uxdqzf/runtime-tmp/xy-export-qea1htw2/chart-3A0FD2A2.html:1927:3', 'objectId': '-6798520415454850430.2.1'}}"
+    },
+    "before312": {
+      "command": [
+        "benchmarks/bench_density_e2e.py",
+        "--workload",
+        "colored-spill",
+        "--points",
+        "16384",
+        "--chunk-points",
+        "4096",
+        "--chrome",
+        "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "--timeout",
+        "180",
+        "--max-rss-gib",
+        "4",
+        "--max-disk-gib",
+        "1",
+        "--output",
+        "/var/tmp/xyg-pr1114-ci/before312-host.json",
+        "--colored-browser-report",
+        "/var/tmp/xyg-pr1114-ci/before312-browser.json"
+      ],
+      "python": "3.12.15",
+      "exit": 1,
+      "failure": "RuntimeError: RuntimeError: browser proof failed: {'exceptionId': 2, 'text': 'Uncaught (in promise) Error: initial instrumentation missing', 'lineNumber': 0, 'columnNumber': 0, 'exception': {'type': 'object', 'subtype': 'error', 'className': 'Error', 'description': 'Error: initial instrumentation missing\\n    at Object.for (file:///var/tmp/xyg-density-e2e-ki9y5gnn/runtime-tmp/xy-export-ede8dcja/chart-B90C1AAA.html:1580:36)\\n    at file:///var/tmp/xyg-density-e2e-ki9y5gnn/runtime-tmp/xy-export-ede8dcja/chart-B90C1AAA.html:1797:49\\n    at file:///var/tmp/xyg-density-e2e-ki9y5gnn/runtime-tmp/xy-export-ede8dcja/chart-B90C1AAA.html:1927:3', 'objectId': '6063246030679582922.2.1'}}"
+    },
+    "afterA312": {
+      "command": [
+        "benchmarks/bench_density_e2e.py",
+        "--workload",
+        "colored-spill",
+        "--points",
+        "16384",
+        "--chunk-points",
+        "4096",
+        "--chrome",
+        "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "--timeout",
+        "180",
+        "--max-rss-gib",
+        "4",
+        "--max-disk-gib",
+        "1",
+        "--output",
+        "/var/tmp/xyg-pr1114-ci/afterA312-host.json",
+        "--colored-browser-report",
+        "/var/tmp/xyg-pr1114-ci/afterA312-browser.json"
+      ],
+      "python": "3.12.15",
+      "exit": 1,
+      "failure": "RuntimeError: RuntimeError: browser proof failed: {'exceptionId': 1, 'text': 'Uncaught (in promise) Error: normal adjacent transition/source missing', 'lineNumber': 0, 'columnNumber': 0, 'exception': {'type': 'object', 'subtype': 'error', 'className': 'Error', 'description': 'Error: normal adjacent transition/source missing\\n    at assert (file:///var/tmp/xyg-density-e2e-7h43rtlo/runtime-tmp/xy-export-rfbmk1jn/chart-61AD3036.html:1788:39)\\n    at file:///var/tmp/xyg-density-e2e-7h43rtlo/runtime-tmp/xy-export-rfbmk1jn/chart-61AD3036.html:1891:27', 'objectId': '6030008969790344807.2.1'}}"
+    },
+    "after311": {
+      "command": [
+        "benchmarks/bench_density_e2e.py",
+        "--workload",
+        "colored-spill",
+        "--points",
+        "16384",
+        "--chunk-points",
+        "4096",
+        "--chrome",
+        "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "--timeout",
+        "180",
+        "--max-rss-gib",
+        "4",
+        "--max-disk-gib",
+        "1",
+        "--output",
+        "/var/tmp/xyg-pr1114-ci/after311-host.json",
+        "--colored-browser-report",
+        "/var/tmp/xyg-pr1114-ci/after311-browser.json"
+      ],
+      "python": "3.11.17",
+      "exit": 0,
+      "failure": null
+    },
+    "hooks": {
+      "command": "uv run --with pre-commit pre-commit run --all-files",
+      "exit": 0
+    },
+    "ruff": {
+      "command": "uv run ruff check .",
+      "exit": 0
+    },
+    "format": {
+      "command": "uv run ruff format --check .",
+      "exit": 0
+    },
+    "staged-protection": {
+      "command": "python3 /var/tmp/xyg-pr1114-ci/preserve-final.py",
+      "exit": 0
+    },
+    "initial-protection": {
+      "command": "initial preserve-final.py against working-tree AGENTS.md",
+      "exit": 1,
+      "failure": "Injected local AGENTS overlay differs from indexed source. Corrected proof compares index identity and separately records overlay hash; overlay not staged. Observed tool traceback, no raw log file retained."
+    },
+    "hosted-merge-object-probe": {
+      "command": "git cat-file -t ecfd8888797c00027af0bed1ccda655ad60a6a44; git diff --name-only 174c9ac6 ecfd8888797c00027af0bed1ccda655ad60a6a44 -- affected paths",
+      "exit": 128,
+      "failure": "Object unavailable locally; no fetch or checkout mutation. Reproductions explicitly use reviewed feature tree."
+    },
+    "interpreter-path-discovery": {
+      "command": "python3.11 --version",
+      "exit": 127,
+      "failure": "Bare executable absent from PATH; actual linked .venv Python3.11.17 used and separately provisioned uv Python3.12.15 used."
+    },
+    "beforeB312": {
+      "command": "GITHUB_REF=refs/heads/main Python3.12 -m pytest 'tests/test_density_spill_browser_report.py::test_mutations_are_rejected[path9-refs/heads/main]' -q",
+      "exit": 1,
+      "scope": "Actual inherited-main NO-OP mutation reproduced after audit lookup repair."
+    }
+  },
+  "files": {
+    "beforeB312.log": {
+      "rawSha256": "b81f1162285c3487e95807ec7373663f6a6593d79c5460add5f51227cdc75ca7",
+      "rawBytes": 5603,
+      "archiveSha256": "3b54a3bcd4fce6e0ca9faf6e0df4ba5522a156990f6593c94e8ffa4b2036b20b"
+    },
+    "report-tests312.log": {
+      "rawSha256": "df24d050628331cf7d5f6f532f7cdab38c56c83eeab5f5e222e9e2a742feb4bb",
+      "rawBytes": 180,
+      "archiveSha256": "25532a180e13553222300b1ce96d287f4f2a99186b91c2433966ff507a27a74c"
+    },
+    "phase-afterA-density_spill_browser_smoke.py": {
+      "rawSha256": "e56e36ccf8ee6685efd7666120a5ff7c1a42ee3efcdc7a97f35f587cf2c4a48e",
+      "rawBytes": 45428,
+      "archiveSha256": "46a086600284d1d998665c6c8646bf6240247852984e84542075a50b93bd3747"
+    },
+    "fixed-leak-tests312.log": {
+      "rawSha256": "2f57cde974f0faffb1cd43cebbd0e8cbcca757a8ea722b7e02ac4e2649c209bb",
+      "rawBytes": 99,
+      "archiveSha256": "f06e858aca2b609ce2e79b1efe320e84fbd3144074686c9881f92ac2ff8ce7e9"
+    },
+    "before311.log": {
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "rawBytes": 0,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "core-inventory.log": {
+      "rawSha256": "6d9fb6de656dacab684e58696e52ee64f675488520baf066ab07fb6db83bcc9a",
+      "rawBytes": 100,
+      "archiveSha256": "35c1a5b8aa904755a3a9f575bc80068eabe3d79f994ec1eba06e2a8b5bcd2240"
+    },
+    "browser-verify312.log": {
+      "rawSha256": "3af3b7fd448ffc8653d81078d2ee6052853fb8c8783846b33657230bdeb6212f",
+      "rawBytes": 80,
+      "archiveSha256": "b1c0ca6b95b2778f966b344bc7322d4c6715faacb310e3fe6bb1f8b3a2c8e031"
+    },
+    "afterA312-browser.json": {
+      "rawSha256": "6286ae3cdaa6bcfe3c13715d0a241d32460008abdd7cf533dc9f140224ee924a",
+      "rawBytes": 3573,
+      "archiveSha256": "fef3e6c6202d0209b5bb96cabd8fa39fb27771d8000fdb7a04082b251f93af2b"
+    },
+    "before-bindings.json": {
+      "rawSha256": "7f275eb8020d9e305d2cf18591284eb4d52bb97d1f9aa3990c513bb0efabb97b",
+      "rawBytes": 53802,
+      "archiveSha256": "0cb761d582739951878594b6d2340f7d7bb3b2b72fd99f99ccda8489d0ba48f0"
+    },
+    "final-validation.json": {
+      "rawSha256": "464d419ce95b10d768176d5a4e35f3ef62caf15c9cfc5fd479431d680c011e7d",
+      "rawBytes": 963,
+      "archiveSha256": "e2c056311c8671caca8763106248e6e1283be6f87791a61c4eb89c572e67ec0d"
+    },
+    "before311-local-host.json": {
+      "rawSha256": "4d86f15f2cefe1876e91218d6a06b2848df003c60c607affd8f69e677c184f70",
+      "rawBytes": 5131,
+      "archiveSha256": "65d40e14eda2183f345109526d37cac2ae365a3832d22b49ec6eee497ad3f96f"
+    },
+    "preliminary-format.log": {
+      "rawSha256": "74c745446ab59b95d83eae0eb9ca8a207e3c8ae685adb44ba44d09729b09fd50",
+      "rawBytes": 29,
+      "archiveSha256": "d4160c99c20a19850835698ce6871704ebd3836d4c49d75c887d833168460224"
+    },
+    "host-verify311.log": {
+      "rawSha256": "1fee0ba26b155d94f4ce06d1c1e6ed860782ec6c80f7af90ca2e754300788e32",
+      "rawBytes": 83,
+      "archiveSha256": "0fb892de55b69027f7f8dc2294308e21707ece71bf6a2b6ea7896364ab3a18ad"
+    },
+    "before311-local-browser.json": {
+      "rawSha256": "b54570e5c8b236d11e76d28054f4a4c334af97a1272db67812c87924c2445497",
+      "rawBytes": 3522,
+      "archiveSha256": "2c461934ee978a5f28e8b780efdc30ad7190132c6b99266958ecf8f7f5ec7596"
+    },
+    "browser-tests311.log": {
+      "rawSha256": "e181073dd227394cd25ff1f5f44980fba26099e5c246f89011e18b573f9fc4a4",
+      "rawBytes": 111,
+      "archiveSha256": "d8996e3f160e9bc106f6738fbfb4abd945f79b3c03a876ae6c4fd9fe879a4bb7"
+    },
+    "before311-browser.json": {
+      "rawSha256": "b92a08e31ac5e8d31cdc6d8892a3d9a94042bff97aed457174014ec0f83046a6",
+      "rawBytes": 2314,
+      "archiveSha256": "b1b4fe5cb81ae4ae25dc59f2eec4026f8417220e0f3799b23bc6a6e4ef99ad75"
+    },
+    "final-validate.py": {
+      "rawSha256": "48dd7e8ff8d68f2d65eeb3b9798a7c422b9957c23d383fb16bcc207fa70207bb",
+      "rawBytes": 1225,
+      "archiveSha256": "1db04944e82e38f8fc2f1bb8ecc54e682f7a7451ee36420cdcd5a972118d49a7"
+    },
+    "host-verify312.log": {
+      "rawSha256": "1fee0ba26b155d94f4ce06d1c1e6ed860782ec6c80f7af90ca2e754300788e32",
+      "rawBytes": 83,
+      "archiveSha256": "0fb892de55b69027f7f8dc2294308e21707ece71bf6a2b6ea7896364ab3a18ad"
+    },
+    "before312.log": {
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "rawBytes": 0,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "setup312.log": {
+      "rawSha256": "45500849771244b8148058ae9ee497da3530ed9216490c4a57ba9f86715a0403",
+      "rawBytes": 1057,
+      "archiveSha256": "493e85d4b7926bef4ca808104fead502726a71db4c7e1e97f2b9d16f7b9e2a09"
+    },
+    "validate.py": {
+      "rawSha256": "a26b2856ef89b5cdf3e89d10169bbe6b70dffe0e3204743543e4ee04351983cf",
+      "rawBytes": 2310,
+      "archiveSha256": "e11db2ad2a856c7cc01664547f7b5970dc78675e3a8a33586e8e0c724462201a"
+    },
+    "before311-local.log": {
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "rawBytes": 0,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "after312.log": {
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "rawBytes": 0,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "protection-final.log": {
+      "rawSha256": "b78423ddd0bf1ba1bd6138fd1a429d2a6def2355da07a0c6aac126d51aa495d1",
+      "rawBytes": 27,
+      "archiveSha256": "542b0c006a6b3fb68b6606887b339b966644dd8f077284d01ef8f3cfaba2ed52"
+    },
+    "beforeB312-host.json": {
+      "rawSha256": "406b075242c95fddb209beb75deb117296a51290ecf760465567ab6858f89d67",
+      "rawBytes": 416542,
+      "archiveSha256": "2439d8f3efcd8e8eb76d29e6b62aeaa91a942c2907252df989e914a8684faa01"
+    },
+    "after312-browser.json": {
+      "rawSha256": "6b9bedc67166a26d46b4fa3ccea5558a40d94cc7437d5ea19888e377cca9a4b2",
+      "rawBytes": 1189806,
+      "archiveSha256": "b9c34f31373aca3af3b50b66c2c2112476202012df495bd01daa560a2f4c309d"
+    },
+    "after312-browser-adjacent-fade.png": {
+      "sha256": "c40261081fe37bfc1e7f58b7954e9e885ecea380a713532be51a09f114298139",
+      "bytes": 39417,
+      "source": "after312-browser.json",
+      "sourcePointer": "browser.captures.adjacent-fade.png"
+    },
+    "after312-browser-pan.png": {
+      "sha256": "24430242729597d28985c6df3f29bd6af2892b0a3f94bb66cce2eaa3a13ba77a",
+      "bytes": 18430,
+      "source": "after312-browser.json",
+      "sourcePointer": "browser.captures.pan.png"
+    },
+    "after312-browser-zoom.png": {
+      "sha256": "71a4f07693f59ff788c690cb3ef186150393bec909e9232dad262162606d8ec5",
+      "bytes": 18358,
+      "source": "after312-browser.json",
+      "sourcePointer": "browser.captures.zoom.png"
+    },
+    "validation.json": {
+      "rawSha256": "f1d50da1b2675e4547f584847ebf48776165069608e6a6ea8c031c3f902fa1f5",
+      "rawBytes": 3252,
+      "archiveSha256": "57e757f004be038ad96fbf62370e8e838f8a9e4f2741fd1af24893eb09ae8d69"
+    },
+    "browser-tests312.log": {
+      "rawSha256": "15cecabacc3772597e03a50c8a66563cc0637dcfd1361191e1ab67bb7f740a48",
+      "rawBytes": 6192,
+      "archiveSha256": "4e0e2d1bb3b80eb088955d48cf1cdd60925815b00e617d42cf0fc506363215d9"
+    },
+    "afterA312-host.json": {
+      "rawSha256": "d14129a5545d000789d992bd314c9dcaa03193055c380b5787aacde5edbc8eee",
+      "rawBytes": 5089,
+      "archiveSha256": "30f0a62813c644ececfdf2e5474887d31611264c636f8d2ccdda9380ba327159"
+    },
+    "staged-protection.log": {
+      "rawSha256": "b78423ddd0bf1ba1bd6138fd1a429d2a6def2355da07a0c6aac126d51aa495d1",
+      "rawBytes": 27,
+      "archiveSha256": "542b0c006a6b3fb68b6606887b339b966644dd8f077284d01ef8f3cfaba2ed52"
+    },
+    "hooks.log": {
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "rawBytes": 240,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "afterA312.log": {
+      "rawSha256": "319b3c38f2f1ac8ecbb2238fa42330572de7d33bfdc1bc70aba53fb4708f6619",
+      "rawBytes": 674,
+      "archiveSha256": "22ba5595182fb2a15fb553e2a378b93c07a18ea521af9b21ad175595e52e307a"
+    },
+    "preliminary-ruff.log": {
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "rawBytes": 19,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "ruff.log": {
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "rawBytes": 19,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "before312-browser.json": {
+      "rawSha256": "0a547b90aa50335b4313c346143b0079639a0835744a6b064d94157a258b3ef5",
+      "rawBytes": 3584,
+      "archiveSha256": "8d039f36b13bd045d7aae5b21149a7616cecfdd7034da376737c2b9ba175508b"
+    },
+    "before311-host.json": {
+      "rawSha256": "9e98a52c3a055a27e132902d6fc46fee90eab5e66a1b8d01c1e3837ce2c23871",
+      "rawBytes": 3952,
+      "archiveSha256": "3283b896ecb887fb573e351496e2eeb657837a81d4a5514b843e3ee66c3eee5b"
+    },
+    "after311.log": {
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "rawBytes": 0,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "assets.log": {
+      "rawSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+      "rawBytes": 88,
+      "archiveSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730"
+    },
+    "protection.log": {
+      "rawSha256": "b78423ddd0bf1ba1bd6138fd1a429d2a6def2355da07a0c6aac126d51aa495d1",
+      "rawBytes": 27,
+      "archiveSha256": "542b0c006a6b3fb68b6606887b339b966644dd8f077284d01ef8f3cfaba2ed52"
+    },
+    "before312-host.json": {
+      "rawSha256": "85a81079c7ce1c7b610dc06bcd589a577ae2c556e09da693666782edd622a302",
+      "rawBytes": 5192,
+      "archiveSha256": "a06131082026a9bbfb39f2b991075c2be4e45fb33650e50a8a850415fae3151d"
+    },
+    "after312-host.json": {
+      "rawSha256": "2e0ed68df524b586d0bf046f3f495cc8896bedaf5c500751fe16ffdf63c5b839",
+      "rawBytes": 416626,
+      "archiveSha256": "071bd5bbfcb3bf8449b3ce52aa0d9b536afeeb97eb6a41030611ca6ff9ba769c"
+    },
+    "abi.log": {
+      "rawSha256": "b291311f1f3b01cb293dccb8c2cceb076dfc02d46c04bb59207615a1672807c4",
+      "rawBytes": 42,
+      "archiveSha256": "cb10c3f314d3683cc8b113b490bea1ed1e520625e2459c9ecd51390902050569"
+    },
+    "beforeB312-browser.json": {
+      "rawSha256": "1de82005353b84bcacc7bcc7f31c19ca050312d4019277c3ec07cffe064ca68e",
+      "rawBytes": 1203212,
+      "archiveSha256": "43a3bd82c2c4bacdacce6955d60c8051093420ad1637f51473cc9b40b5a840de"
+    },
+    "beforeB312-browser-adjacent-fade.png": {
+      "sha256": "c40261081fe37bfc1e7f58b7954e9e885ecea380a713532be51a09f114298139",
+      "bytes": 39417,
+      "source": "beforeB312-browser.json",
+      "sourcePointer": "browser.captures.adjacent-fade.png"
+    },
+    "beforeB312-browser-pan.png": {
+      "sha256": "24430242729597d28985c6df3f29bd6af2892b0a3f94bb66cce2eaa3a13ba77a",
+      "bytes": 18430,
+      "source": "beforeB312-browser.json",
+      "sourcePointer": "browser.captures.pan.png"
+    },
+    "beforeB312-browser-zoom.png": {
+      "sha256": "71a4f07693f59ff788c690cb3ef186150393bec909e9232dad262162606d8ec5",
+      "bytes": 18358,
+      "source": "beforeB312-browser.json",
+      "sourcePointer": "browser.captures.zoom.png"
+    },
+    "report-tests311.log": {
+      "rawSha256": "ae1d917ee14aa07bbb5847b08bbc0eba77e45c4e717e906289574e99d7864b0a",
+      "rawBytes": 180,
+      "archiveSha256": "93d5c8be75ba2c4513d95e878c2def5d56852d7304fe36f136202bf6a0078870"
+    },
+    "format.log": {
+      "rawSha256": "74c745446ab59b95d83eae0eb9ca8a207e3c8ae685adb44ba44d09729b09fd50",
+      "rawBytes": 29,
+      "archiveSha256": "d4160c99c20a19850835698ce6871704ebd3836d4c49d75c887d833168460224"
+    },
+    "after311-host.json": {
+      "rawSha256": "03c60963debbcad385b131ea8bd52208994e75ac11af22ee1facfd35084daed2",
+      "rawBytes": 416524,
+      "archiveSha256": "d9273530dee67491996b472dce5b847559ad8c0e277c3e3709da581e7f99f1fb"
+    },
+    "after311-browser.json": {
+      "rawSha256": "53db1360e78b8afbcf90b51b7716dc03a7ddfc2d84065c8727861a961fc38195",
+      "rawBytes": 1190225,
+      "archiveSha256": "1ba26037896d1de5b67a316ef12426785d935fcc00b81991d29c6e062cd4e866"
+    },
+    "after311-browser-adjacent-fade.png": {
+      "sha256": "c40261081fe37bfc1e7f58b7954e9e885ecea380a713532be51a09f114298139",
+      "bytes": 39417,
+      "source": "after311-browser.json",
+      "sourcePointer": "browser.captures.adjacent-fade.png"
+    },
+    "after311-browser-pan.png": {
+      "sha256": "24430242729597d28985c6df3f29bd6af2892b0a3f94bb66cce2eaa3a13ba77a",
+      "bytes": 18430,
+      "source": "after311-browser.json",
+      "sourcePointer": "browser.captures.pan.png"
+    },
+    "after311-browser-zoom.png": {
+      "sha256": "71a4f07693f59ff788c690cb3ef186150393bec909e9232dad262162606d8ec5",
+      "bytes": 18358,
+      "source": "after311-browser.json",
+      "sourcePointer": "browser.captures.zoom.png"
+    },
+    "browser-verify311.log": {
+      "rawSha256": "3af3b7fd448ffc8653d81078d2ee6052853fb8c8783846b33657230bdeb6212f",
+      "rawBytes": 80,
+      "archiveSha256": "b1c0ca6b95b2778f966b344bc7322d4c6715faacb310e3fe6bb1f8b3a2c8e031"
+    },
+    "report-tests311-host.json": {
+      "rawSha256": "309d5b5066bd99cec5dd6c3f93773dc16bf7e624fc081bda25d72444a62ce721",
+      "rawBytes": 416573,
+      "archiveSha256": "0f52b48d2621519520aa02f83bf2af7c83f2c6a0387f8c8e71c815196043d396"
+    },
+    "report-tests311-browser.json": {
+      "rawSha256": "3a85111cb5e9d5a1915d3092e9f4be4edfc8969c41c721fb31678db1361054fb",
+      "rawBytes": 1189947,
+      "archiveSha256": "f16d8faf52c2a1a2abab928ab888cef76fa2368c058f83ea394e3458658f3a6a"
+    },
+    "report-tests312-host.json": {
+      "rawSha256": "88e970bdca03a377f39d75930bca53261ac197af4ef94096620bc31afec8827f",
+      "rawBytes": 416635,
+      "archiveSha256": "834b00686dbcb0e1c03067f392e586263d75b24abdb61623f5e7d07b8a6f5be0"
+    },
+    "report-tests312-browser.json": {
+      "rawSha256": "cb340fc329754d0b9e57c7661c99c11be701b470ab8bb10d6febd383c8a51aac",
+      "rawBytes": 1190557,
+      "archiveSha256": "33e25415d2ccaeb47d951a7de1b0d09c12ee65313b7b03efccab626107688b42"
+    },
+    "hosted-pr1114-test.log": {
+      "rawSha256": "a89369cae950987e792267697b8cc205defa559fe08901f1996fb703852633af",
+      "rawBytes": 1093125,
+      "archiveSha256": "52d8090000171ae8e3f6a2136684e454027f3734dae733feb9524966b858852a"
+    },
+    "hosted-main43-test.log": {
+      "rawSha256": "f1139878824da4f6655b3d3f7449ab0d8d73e5d7b0ccf649eb61ca4ad52ba1e0",
+      "rawBytes": 1167951,
+      "archiveSha256": "d16c5bcce8a883e826cde642032000588f56962d7a96d6f9eda1d68b856ca306"
+    }
+  },
+  "artifacts": {
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "sha256": "303b39e33590f6b2dd65aefeaefd1714088414cb515a0817c6d3fa04c7489d3e",
+      "bytes": 226
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "sha256": "cc65e16ea9d59dcee9a339ff7ead857c71c8507771e5cddc24ab2cd090ffd555",
+      "bytes": 56634
+    },
+    "packages/xy-client/dist/index.js": {
+      "sha256": "0de0430db0e956c8cba75066f000a3a79d788527168dc97e987278341dd956d7",
+      "bytes": 816958
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "sha256": "8bed6f41e9d60e41010b069cfd18bbb896a799bd733649e74deaf6dbf68ac5e7",
+      "bytes": 2588565
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "sha256": "e6ea3f78a54fc1fa0ee61b6d2f2881d1ee3bd694a1239b39b9dc6027ababbf95",
+      "bytes": 19000
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1",
+      "bytes": 1927032
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "sha256": "813086d8d78a0fdada1ef53ee28580f73aefc21082b39ef3e442fa874fde522c",
+      "bytes": 816978
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "sha256": "cc65e16ea9d59dcee9a339ff7ead857c71c8507771e5cddc24ab2cd090ffd555",
+      "bytes": 56634
+    },
+    "python/xyg/static/index.js": {
+      "sha256": "0de0430db0e956c8cba75066f000a3a79d788527168dc97e987278341dd956d7",
+      "bytes": 816958
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "sha256": "8bed6f41e9d60e41010b069cfd18bbb896a799bd733649e74deaf6dbf68ac5e7",
+      "bytes": 2588565
+    },
+    "python/xyg/static/standalone.js": {
+      "sha256": "813086d8d78a0fdada1ef53ee28580f73aefc21082b39ef3e442fa874fde522c",
+      "bytes": 816978
+    },
+    "target/release/libxyg_core.so": {
+      "sha256": "7a513d1f98212a39e50132ba3b24dc83a76af0d9192635eab248fa3816fc898b",
+      "bytes": 6137112
+    }
+  },
+  "sourceProtection": "d5a7d44ad37cf87789158f12c04c758dfc178e375bee0f0287bbb46af27f8bef",
+  "sourceSha256": {
+    "benchmarks/bench_density_e2e.py": "a8c6636049b0625ad0c7fae44312db50849296a199cbb0b7aa232e23c626a19b",
+    "scripts/density_spill_browser_smoke.py": "10e3ade18cd5b5845408c139a3bce24c4bde1bf5331fb96296e7a430b30261c0",
+    "spec/design/density-spill-browser-evidence.md": "10c68473224b28630c92996c15074b235a0b440c5d24866d818e734c0bc1bc1e",
+    "tests/test_density_spill_browser.py": "131fdb51c91b13cafc07530e74e58cef86c0e63c6c48f037f2378f6e4e60dbc0",
+    "tests/test_density_spill_browser_report.py": "0d8963303b09f6519cd8c2095f9d97f343e7d40e26a6e7d814ecfde219c658aa"
+  },
+  "preservedEvidence": {
+    "reviewedBaseFocusReceipt": "spec/performance/dashboard-native-main-integration-2026-11-07/focus-checks.json",
+    "sha256": "ee17e97d492cdd288143bf6430a1b815ccf14beedc68abe673c112da4a952290",
+    "qualification": "GPU allocation/lifecycle/focus, foundation 15 temporal and current Core sources remain unchanged; no fresh full GPU/foundation suite claimed for this harness-only fix."
+  },
+  "environment": {
+    "Node": "v22.23.4",
+    "Python": [
+      "3.11.17",
+      "3.12.15"
+    ],
+    "TMPDIR": "/var/tmp",
+    "nativeLib": "/home/ubuntu/.t3/worktrees/xyg/t3-150befc0/target/release/libxyg_core.so",
+    "python311": "/home/ubuntu/.t3/worktrees/xyg/t3-150befc0/.venv/bin/python",
+    "python312": "/var/tmp/xyg-pr1114-ci/venv312/bin/python",
+    "browser": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+  },
+  "boundaries": "Local bounded software-renderer evidence only. Hosted source logs retained; no hosted rerun, timing claim, paid job or platform acceptance. Root FINAL review/current CI/merge queue required. No release/closure; full #111 and milestones4-7 remain open. Failed normal-frame observations retained without declaring flake or weakening assertion."
+}
