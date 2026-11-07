@@ -106,6 +106,12 @@
       "rawSha256": "249ca8fdf681c33584279a87fb3692a6b68c84a91b27ffd14f141a2f0a36836b",
       "rawBytes": 98,
       "archiveSha256": "37a602b31e30a9b2bd6b8dce04fb087264a426974f4c2f1d6e077dc230868d0c"
+    },
+    "gpu-browser.log.gz": {
+      "kind": "browser console capture from the passing 32-chart pytest journey; not a separate command exit",
+      "rawBytes": 7071,
+      "rawSha256": "86d4ad95a1a287b8ad40d2aa423d4538bcb44837c009061769b336f1b215d412",
+      "archiveSha256": "05ba22df418e7a0a83284d81e9884b7eeb7e061a4cef425c42fa68c50c41e1de"
     }
   },
   "artifacts": {
