@@ -339,3 +339,26 @@ its first row must yield the exact aligned Rust ref. The recorded command path
 includes companion paging, continuation followed by same-state render, and ref
 selection. This 64-node fixture explicitly requests the existing 384 MiB arena;
 no default/maximum is raised and no broader scale or interaction claim follows.
+
+### Public browser 1k presentation and unfinished input (2026-11-07)
+
+The append-only [1k scheduling receipt](../performance/graph-browser-scheduling-1k-2026-11-07/README.md)
+exercises two concurrent public `attachWasmGraphSession` lifetimes with ordinary,
+unheld packaged Worker replies. It records initial pixels, advancing intermediate
+canvas pixels sampled at animation opportunities, Rust progress to completion,
+trusted pointer selection, and a trusted host button calling the existing
+`refreshRender(camera)` to pan while unfinished. This establishes a host camera
+route; it adds no canvas drag/pan gesture. The second attachment retains its own
+camera and empty selection, and both lifetimes drain and remove their surfaces.
+No controller defect preventing this bounded path was reproduced; product
+scheduling, Rust kernels, wire format and resource policy remain unchanged.
+
+Both successful 1k views explicitly request 384 MiB each. The 1k default 16 MiB
+and attempted 10k explicit 384 MiB requests refuse with
+`GF_INTERACTION_BUDGET`. There is no rendered 10k result. Recorded startup,
+presentation, payload, page heap, heartbeat, input and cleanup observations are
+VM evidence, with observer overhead, rather than latency or memory qualification.
+Page heap metrics exclude Worker/WASM/GPU memory. Keyboard focus was not proved
+at 1k; the earlier refusal is not reclassified as fixed. The rendered
+10k/100k/1M ladder, Python notebook acceptance and broader #35/#36/#1015 and
+milestones remain open. No competitor performance claim follows.

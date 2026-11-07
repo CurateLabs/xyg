@@ -1397,3 +1397,10 @@ wire tests and foundation smoke. This bounded browser slice establishes no
 competitor win or full rendered 1k/10k/100k/1M ladder. Python notebook/widget
 progressive integration (#1015), broader #36 interactions and full #35/#108
 acceptance remain open. Publication still requires all #108 acceptance.
+
+The [2026-11-07 scheduling receipt](../performance/graph-browser-scheduling-1k-2026-11-07/README.md)
+adds bounded real 1k primary-click and host-driven camera response while retained
+layout is unfinished, with two isolated public attachments. The host pan button
+calls `refreshRender(camera)`; this supplies no canvas pan gesture or additional
+keyboard/focus acceptance. Explicit 384 MiB arenas and the default-arena refusal
+are disclosed. Full #36 scale and host semantics remain open.

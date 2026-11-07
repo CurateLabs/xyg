@@ -44,7 +44,82 @@ try {
       return { ok: true, point, after, delivery: "Playwright mouse.click" };
     });
   }
-  if (process.env.XYG_GRAPH_PROGRESSIVE_ONLY) {
+  if (process.env.XYG_GRAPH_SCHEDULING_ONLY) {
+    await run('public-resource-refusals-unchanged-arenas',async()=>{
+      const result=await page.evaluate(async()=>{
+        const s=window.__graphSession,out=[];
+        for(const [count,arena] of [[1000,16*1024*1024],[10000,384*1024*1024]]){
+          const at=performance.now();try{await s.progressiveFixture(count,BigInt(8000+count),{},arena);
+            const p=s.progressives.at(-1);clearInterval(p.timer);await p.handle.dispose();await p.worker.dispose();p.el.remove();out.push({count,arena,status:'opened',ms:performance.now()-at});}
+          catch(e){out.push({count,arena,status:'refused',code:e.code,message:e.message,ms:performance.now()-at});}
+        }return out;
+      });
+      evidence.refusals=result;
+      assert.equal(result[0].status,'refused');assert.equal(result[0].code,'GF_INTERACTION_BUDGET');
+      return result;
+    });
+    await run('public-1k-unheld-pick-camera-isolation-cleanup', async () => {
+      await page.evaluate(async () => {
+        const s=window.__graphSession;
+        await Promise.all([s.progressiveFixture(1000,7101n),s.progressiveFixture(1000,7102n)]);
+        for(const p of s.progressives.slice(-2)) {
+          p.el.dataset.scheduling=String(p.id); p.selections=[]; p.pans=[]; p.keys=[];
+          p.el.addEventListener('xy:graph-select',e=>p.selections.push({at:performance.now(),snapshot:e.detail}));
+          p.el.addEventListener('xy:graph-focus',e=>p.keys.push({at:performance.now(),snapshot:e.detail}));
+          const button=document.createElement('button');button.textContent='Pan right';button.dataset.pan='';p.el.prepend(button);
+          button.addEventListener('click',async e=>{
+            const before=p.handle.snapshot(),at=performance.now();
+            try {const camera=[...before.camera];camera[2]+=12;const after=await p.handle.refreshRender(camera);p.pans.push({trusted:e.isTrusted,at,returned:performance.now(),before,after});}
+            catch(e){p.pans.push({trusted:e.isTrusted,at,code:e.code});}
+          });
+        }
+      });
+      const cdp=await page.context().newCDPSession(page);await cdp.send('Performance.enable');
+      evidence.heapDuring=await cdp.send('Performance.getMetrics');
+      const surface=page.locator('[data-scheduling="7101"] [role="application"]');
+      await surface.focus();await page.keyboard.press('ArrowRight');
+      for(let attempt=0;attempt<80;attempt++) {
+        const point=await page.evaluate(()=>{
+          const s=window.__graphSession,p=s.progressives.at(-2),snap=p.handle.snapshot();
+          const reply=s.replies.filter(r=>r.owner===p.worker.worker.__graphOwner).at(-1);
+          const centers=s.values(reply.bytes,'paint.node.center.f64');const r=p.el.querySelector('canvas').getBoundingClientRect();
+          for(let i=0;i<centers.length;i+=2)if(centers[i]>10&&centers[i]<630&&centers[i+1]>10&&centers[i+1]<310)
+            return {x:r.x+centers[i],y:r.y+centers[i+1],done:snap.relayout?.done};
+          return {centers:centers.length,done:snap.relayout?.done};
+        });
+        if(point.done) break;
+        if(point.x!==undefined)await page.mouse.click(point.x,point.y);
+        if(await page.evaluate(()=>window.__graphSession.progressives.at(-2).selections.some(e=>e.snapshot.outcome.selected>0&&!e.snapshot.relayout?.done))) break;
+      }
+      for(let attempt=0;attempt<80;attempt++) {
+        await page.locator('[data-scheduling="7101"] [data-pan]').click();
+        if(await page.evaluate(()=>window.__graphSession.progressives.at(-2).pans.some(p=>p.after&&!p.after.relayout?.done)))break;
+      }
+      await page.waitForFunction(()=>window.__graphSession.progressives.slice(-2).every(p=>p.handle.snapshot()?.relayout?.done||p.errors.length),null,{timeout:40000});
+      const result=await page.evaluate(async()=>{
+        const s=window.__graphSession,out=[];
+        for(const p of s.progressives.slice(-2)) {
+          const at=performance.now(),frames=p.frames.length,finalSnapshot=p.handle.snapshot();const owner=p.worker.worker.__graphOwner;const commands=s.commands.filter(c=>c.owner===owner);const replies=s.replies.filter(c=>c.owner===owner);
+          clearInterval(p.timer);await p.handle.dispose();await p.worker.dispose();
+          out.push({id:p.id,finalSnapshot,started:p.started,workerReady:p.workerReady,captures:p.captures,arena:384*1024*1024,painted:p.painted,clicks:p.clicks,payloadBytes:{requests:commands.reduce((n,c)=>n+c.bytes.length,0),replies:replies.reduce((n,c)=>n+c.bytes.length,0)},frames:p.frames,errors:p.errors,heartbeats:p.heartbeats,selections:p.selections,pans:p.pans,keys:p.keys,
+            commands:s.commands.filter(c=>c.owner===p.worker.worker.__graphOwner).map(({bytes,...c})=>c),held:s.held.length,
+            cleanupMs:performance.now()-at,attachmentChildren:p.el.querySelectorAll('[data-xy-graph-session],table,canvas').length,disposed:p.handle.snapshot()===null,framesAtDispose:frames});p.el.remove();
+        }await new Promise(r=>setTimeout(r,25));return out;
+      });
+      for(const p of result) {
+        if(process.env.XYG_GRAPH_SESSION_REPORT)for(const [stage,data]of Object.entries(p.captures))await writeFile(`${process.env.XYG_GRAPH_SESSION_REPORT}.${p.id}.${stage}.png`,Buffer.from(data.split(',')[1],'base64'));
+        delete p.captures;
+      }
+      evidence.views=result;evidence.heapAfter=await cdp.send('Performance.getMetrics');
+      if(process.env.XYG_GRAPH_SESSION_REPORT)await writeFile(process.env.XYG_GRAPH_SESSION_REPORT,JSON.stringify(evidence,(_,v)=>typeof v==='bigint'?v.toString():v,2)+'\n');
+      for(const p of result){assert.deepEqual(p.errors,[]);assert.equal(p.held,0);assert.equal(p.disposed,true);assert.equal(p.attachmentChildren,0);assert.equal(p.frames.length,p.framesAtDispose);assert.ok(p.commands.filter(c=>c.operation).every(c=>String(c.instanceId)===String(p.id)));assert.ok(new Set(p.painted.filter(f=>!f.progress.done&&f.pixels>0).map(f=>f.progress.steps)).size>3);assert.ok(new Set(p.painted.map(f=>f.hash)).size>3);assert.ok(p.frames.filter(f=>!f.progress.done&&f.pixels>0).length>3);assert.ok(p.frames.at(-1).progress.done);}
+      assert.ok(result[0].selections.some(e=>e.snapshot.outcome.selected>0&&!e.snapshot.relayout?.done),'trusted unfinished pick');
+      assert.ok(result[0].pans.some(e=>e.trusted&&e.after&&!e.after.relayout?.done),'trusted unfinished host camera pan');
+      assert.ok(result[0].clicks.some(e=>e.trusted&&e.prevented&&!e.progress?.done));
+      assert.equal(result[1].selections.length,0);assert.equal(result[1].finalSnapshot.selection.refs.length,0);assert.equal(result[1].finalSnapshot.camera[2],320);assert.deepEqual(violations,[]);assert.deepEqual(errors,[]);
+      return result;
+    });
+  } else if (process.env.XYG_GRAPH_PROGRESSIVE_ONLY) {
     const delay = ms => new Promise(r=>setTimeout(r,ms));
     for (const count of [0,4,1000]) {
       await run(`public-progressive-${count}-unheld-painter-heartbeat`, async()=>{
