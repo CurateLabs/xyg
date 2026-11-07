@@ -243,3 +243,5 @@ back its source registration. Observer callbacks and rejected promises remain
 isolated, and do not delay native commands on asynchronous completion.
 
 Python controller closure retains subscriptions until its captured terminal snapshot drains, including closure from within an observer. The public native handle is cleared before terminal callbacks so nested close is idempotent and new commands cannot revive terminal state. Automatic bindings receive terminal delivery and release their private owners and registrations; independently retained caller frames survive.
+
+A terminal notification already being delivered is never superseded by reentrant close. Only nonterminal notification passes yield to queued terminal state; every still-subscribed observer in the terminal pass receives disposal before subscriptions are cleared.

@@ -644,7 +644,10 @@ def test_terminal_cancelled_pump_cannot_block_private_frame_cleanup(cancelled_ca
 
 
 @pytest.mark.parametrize("nested_terminal_close", [False, True])
-def test_reentrant_controller_close_delivers_terminal_and_releases_binding(nested_terminal_close):
+@pytest.mark.parametrize("trigger", ["cursor", "dispose"])
+def test_reentrant_controller_close_delivers_terminal_and_releases_binding(
+    nested_terminal_close, trigger
+):
     async def journey():
         from xyg._geo_temporal import _BINDINGS
 
@@ -661,10 +664,16 @@ def test_reentrant_controller_close_delivers_terminal_and_releases_binding(neste
         )
         terminal = []
 
-        def close_from_notification(state):
-            if not state["disposed"] or nested_terminal_close:
-                controller.close()
+        class ClosingObserver:
+            def __hash__(self):
+                # Force the adverse legal order in the actual observer set.
+                return 0
 
+            def __call__(self, state):
+                if not state["disposed"] or nested_terminal_close:
+                    controller.close()
+
+        close_from_notification = ClosingObserver()
         stop = controller.subscribe_state(close_from_notification)
         stop_terminal = controller.subscribe_state(lambda state: terminal.append(state["disposed"]))
         binding = chart.bind_temporal(controller)
@@ -672,7 +681,12 @@ def test_reentrant_controller_close_delivers_terminal_and_releases_binding(neste
         try:
             await binding.when_idle()
             _, lease = await binding.snapshot()
-            controller.set_cursor(3)
+            observers = list(controller._observers)
+            assert observers.index(close_from_notification) < observers.index(binding._accept)
+            if trigger == "dispose":
+                controller.dispose()
+            else:
+                controller.set_cursor(3)
             await asyncio.sleep(0)
             assert binding._closed
             await binding._closing

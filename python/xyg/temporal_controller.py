@@ -107,7 +107,11 @@ class TemporalController:
                                     result.close()
                     except Exception:
                         pass
-                    if self._pending_state is not None and self._pending_state["disposed"]:
+                    if (
+                        not state["disposed"]
+                        and self._pending_state is not None
+                        and self._pending_state["disposed"]
+                    ):
                         # A callback closed the controller; terminal delivery
                         # supersedes the remainder of this nonterminal snapshot.
                         break
