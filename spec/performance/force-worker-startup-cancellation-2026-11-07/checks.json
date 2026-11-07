@@ -1,0 +1,137 @@
+{
+  "artifacts": {
+    "packages/xy-client/dist/index.js": {
+      "bytes": 808602,
+      "sha256": "279ac3767ee8b9dedf91698018f71441d143767ad940e887d3cc0fadbd29b056"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 808631,
+      "sha256": "147a3dbd091c75782567f6bb44c32190366948a0481fb548f5b40bdb1676dc8a"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 56634,
+      "sha256": "cc65e16ea9d59dcee9a339ff7ead857c71c8507771e5cddc24ab2cd090ffd555"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1927066,
+      "sha256": "06938b014a74528eb95a279971cb884b41a9dbcb094d3530a49a633ffd1e9792"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 808602,
+      "sha256": "279ac3767ee8b9dedf91698018f71441d143767ad940e887d3cc0fadbd29b056"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 808631,
+      "sha256": "147a3dbd091c75782567f6bb44c32190366948a0481fb548f5b40bdb1676dc8a"
+    },
+    "target/release/libxyg_core.so": {
+      "bytes": 6137240,
+      "sha256": "b93f21b8f19799897566a5447279f0a79729b7814c0391db302cd31a050a31bd"
+    }
+  },
+  "beforeSources": {
+    "packages/xy-node/src/force_scheduler.js": {
+      "archive": "force_scheduler.js.before.gz",
+      "archiveSha256": "fdbb5e1c499eee1a07f274eaba34df78d8edfd264a2e0757aa4934420d8754eb",
+      "rawSha256": "27d32cf47c236ddabb780667c0aa0c63f8eef3aedd2c39dc832a8a923697755c"
+    },
+    "packages/xy-node/test/force-worker-lifecycle.test.mjs": {
+      "archive": "force-worker-lifecycle.test.mjs.before.gz",
+      "archiveSha256": "58c02ba260ca227bed4e3168a86356432182929338a5231aa21ce3ead5e8ecf7",
+      "rawSha256": "b9897c0def45b28affd1d9c8c1089f7ddc7975bd104af5c13fad64bbf60eb17d"
+    }
+  },
+  "gatesUnchanged": {
+    "emergencyCleanupMs": 1000,
+    "maxWallMsCeiling": 300000,
+    "maxWallMsDefault": 30000
+  },
+  "implementationBase": "7e720104f2d3f0508e6c93211980c09808f42bc6",
+  "limits": [
+    "Startup mechanism reproduced; not proof of the unique cause of every historical timeout.",
+    "No destruction guarantee for actual emergency termination during a wedged native call.",
+    "No timing, total process/GPU memory or milestone acceptance claim.",
+    "Final nonrecursive hook logs may be supplied outside the committed receipt."
+  ],
+  "logs": {
+    "abi-generated.log.gz": {
+      "archiveSha256": "cb10c3f314d3683cc8b113b490bea1ed1e520625e2459c9ecd51390902050569",
+      "rawBytes": 42,
+      "rawSha256": "b291311f1f3b01cb293dccb8c2cceb076dfc02d46c04bb59207615a1672807c4",
+      "status": "auxiliary output; shell exit not inferred"
+    },
+    "after.log.gz": {
+      "archiveSha256": "19555760215fafbd98cc47a1fec011212205263fc7be966ee1b330fa7117f55d",
+      "exit": 0,
+      "rawBytes": 16636,
+      "rawSha256": "bc068399a59af1ccbbfd9c6faaa1621b7b6fc4d9fc14255cb60f27af9ae0c893"
+    },
+    "before.log.gz": {
+      "archiveSha256": "70c8cf73397a4629c463b44d31e9c9ba717396b6f33855dbd353095f82ccb134",
+      "exit": 1,
+      "rawBytes": 26459,
+      "rawSha256": "3fca73d4230f25e1fb97cce38e0b4e07a6fd9b0fcca1393492a9142f1f343b50"
+    },
+    "core-final.log.gz": {
+      "archiveSha256": "eeebda28b2f372b4c4d7ac991dc0d7b655b5471f44cc30beaf10677474bcd3ee",
+      "exit": 0,
+      "rawBytes": 99,
+      "rawSha256": "13e90db8781e3b03a9a1a15500d7686462cd3df43b9cbe09f51d4b8858c509b7"
+    },
+    "core-inventory.log.gz": {
+      "archiveSha256": "3b2386616e54a9d362142129c6788ca9418cee1a936de041c757fa33db125f37",
+      "exit": 0,
+      "rawBytes": 99,
+      "rawSha256": "076c891416f7d3d3693551cb5933f5cc8a76c2ae582206904acf273211d97369"
+    },
+    "format-pointer.log.gz": {
+      "archiveSha256": "c83415d9b95662dc8eb860c9ea4e89932f73e40e739ea313767fea71ad4f5c1d",
+      "rawBytes": 81,
+      "rawSha256": "cc619ce26a5484e7014b1656cb4e7fac9aff1977aa0f1cf080a0c0591d2beda2",
+      "status": "auxiliary output; shell exit not inferred"
+    },
+    "format.log.gz": {
+      "archiveSha256": "d4160c99c20a19850835698ce6871704ebd3836d4c49d75c887d833168460224",
+      "rawBytes": 29,
+      "rawSha256": "74c745446ab59b95d83eae0eb9ca8a207e3c8ae685adb44ba44d09729b09fd50",
+      "status": "auxiliary output; shell exit not inferred"
+    },
+    "hooks.log.gz": {
+      "archiveSha256": "7894812180a5811d9111f5e0b533e944ba5500cdac5f1ae29e21affcc6c0253e",
+      "rawBytes": 300,
+      "rawSha256": "33a3f35a7020c5f7eb2a7ae3c37034908067f2729d3d7997b070899a6406a9e3",
+      "status": "auxiliary output; shell exit not inferred"
+    },
+    "inventory.log.gz": {
+      "archiveSha256": "c5bfc23b2801350ff0f0bcc761298f51b45e45605e1ee74cfbfee84d9d23abf0",
+      "rawBytes": 200,
+      "rawSha256": "8256f4abcc7d710c548e87de16d1a2731d1159c23ff65460f99971ceb33d2ab9",
+      "status": "auxiliary output; shell exit not inferred"
+    },
+    "node-full-final.log.gz": {
+      "archiveSha256": "8f47abd7f5845c24e60f62b9d61b4603b7f00e487fbdc43cd35a54327fc610a8",
+      "exit": 0,
+      "rawBytes": 228754,
+      "rawSha256": "5d6456a3184f71ca5d7e3ae69df84a79d71aaa40ee6efdc2eb099b4868052096"
+    },
+    "node-full.log.gz": {
+      "archiveSha256": "6ec217b4b3ff898eb11009410a57cb7bc823c2944a45b46924be294a38970a1e",
+      "exit": 1,
+      "rawBytes": 229950,
+      "rawSha256": "74f79a978e3fb112f4cdb152ea69a3ac41a5a880eedc29f08496399cadc2b1e6"
+    },
+    "ruff.log.gz": {
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "rawBytes": 19,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "status": "auxiliary output; shell exit not inferred"
+    }
+  },
+  "nativeSelection": "explicit XYG_NATIVE_LIB=checkout/target/release/libxyg_core.so",
+  "node": "22.23.4",
+  "sourceSha256": {
+    "spec/performance/force-worker-startup-cancellation-2026-11-07/README.md": "aeb91252c677dd46dcbc6cf2452d1196239437fd4e09af9f20cbf9c4f12ae260",
+    "spec/performance/force-worker-startup-cancellation-2026-11-07/current-bindings.json": "42e3937400b81d8e043d6c85022f934b763cefbd2c956c049e84a46232447de0"
+  },
+  "tmpdir": "/var/tmp"
+}

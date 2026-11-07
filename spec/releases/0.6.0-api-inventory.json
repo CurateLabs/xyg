@@ -1204,7 +1204,7 @@
  "releaseLine":"0.6.0",
  "schema":"xyg.release-api-inventory/v1",
  "sourceProvenance":{
-  "baseCommit":"53a1b4dfefc9c20cde610536722384d72f5d198e",
+  "baseCommit":"fc7ef7edf16acfa3c0dd751e91289b2a0d4767c1",
   "meaning":"generation-time working-tree bytes; source hashes may differ after body-only edits"
  },
  "sourceSha256":{
@@ -1285,7 +1285,7 @@
   "packages/xy-node/src/encode.js":"f20519f1a21d26b969ab514ee90c4d6e857358fac8fc86d2ad05892a98428a6c",
   "packages/xy-node/src/factorize.js":"2c9a27d6f91894d4b8a0fd0389c754f382b6ad439685e8fe3aec789707901c57",
   "packages/xy-node/src/figure.js":"96a9981114f18c42810208b7a9962d4260ccc0e292df340dc33928bc7b5fc19f",
-  "packages/xy-node/src/force_scheduler.js":"27d32cf47c236ddabb780667c0aa0c63f8eef3aedd2c39dc832a8a923697755c",
+  "packages/xy-node/src/force_scheduler.js":"96c52846ad4217d70c1f280ddbf6359ca09b4afcec1e2bd98de2e48ae5e3e5fc",
   "packages/xy-node/src/geo-allocation-attempt.js":"8a24e9c4e22aa6967ef4e55036b796f6ca1f0d21f7299d0d88a40cc88157ba5e",
   "packages/xy-node/src/geo-hierarchy-wire.js":"59790b2236a200166a62177411df49ffb1c47edddea0f620f78893bb29124b96",
   "packages/xy-node/src/geo-hierarchy.d.ts":"74c4f060f01eebb49303c9d5c47744008663efefbf010020bb785d04dfc5999a",
