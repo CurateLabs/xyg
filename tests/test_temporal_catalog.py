@@ -1,6 +1,7 @@
 """Public exact temporal catalog regressions; no host timestamp float ingress."""
 
 import struct
+import xml.etree.ElementTree as ET
 from html.parser import HTMLParser
 
 import pytest
@@ -156,3 +157,66 @@ def test_temporal_transport_budget_refuses_before_copying_rows():
             stroke=(1, 2, 3, 255),
             stroke_width=1,
         )
+
+
+@pytest.mark.parametrize(
+    "values",
+    [
+        (-1e308, 0, 1e308),
+        (-float.fromhex("0x1.fffffffffffffp1023"), 0, float.fromhex("0x1.fffffffffffffp1023")),
+    ],
+)
+@pytest.mark.parametrize("kind", ["event", "scatter"])
+def test_extreme_finite_values_preserve_visible_positions(values, kind):
+    chart = xyg.temporal_chart(
+        kind,
+        [(i + 1, None, value, i + 1) for i, value in enumerate(values)],
+        domain=(0, 10),
+        timezone="UTC",
+    )
+    circles = ET.fromstring(chart.to_svg()).findall(".//{http://www.w3.org/2000/svg}circle")
+    assert len(circles) == 3
+    assert [float(circle.attrib["cy"]) for circle in circles] == [372, 210, 48]
+    assert all(float(circle.attrib["r"]) > 0 for circle in circles)
+    assert chart.to_png().startswith(b"\x89PNG\r\n\x1a\n")
+
+
+@pytest.mark.parametrize("constructor", [xyg.temporal_chart, xyg.TemporalChart])
+def test_public_constructor_refuses_sized_overflow_before_iteration(constructor):
+    class Oversized:
+        def __len__(self):
+            return _temporal_scene.MAX_BYTES // 40 + 1
+
+        def __iter__(self):
+            raise AssertionError("public constructor copied oversized source")
+
+    with pytest.raises(ValueError, match="framing budget"):
+        constructor("event", Oversized(), domain=(0, 10), timezone="UTC")
+
+
+def test_public_constructor_bounds_unsized_and_understated_sources(monkeypatch):
+    # Two rows fit exactly after the UTF-8 title; a third row is never copied.
+    title = "é"
+    monkeypatch.setattr(_temporal_scene, "MAX_BYTES", 128 + 3 + 2 + 2 * 40)
+    rows = [[1, None, 1, 1], [2, None, 2, 2]]
+    chart = xyg.temporal_chart("event", iter(rows), domain=(0, 10), timezone="UTC", title=title)
+    rows[0][2] = 99
+    assert chart.rows == ((1, None, 1, 1), (2, None, 2, 2))
+
+    class NeverCopy:
+        def __iter__(self):
+            raise AssertionError("over-budget row was copied")
+
+    class Understated:
+        def __len__(self):
+            return 1
+
+        def __iter__(self):
+            yield from rows
+            yield NeverCopy()
+
+    for source in (Understated(), (row for row in [*rows, NeverCopy()])):
+        with pytest.raises(ValueError, match="framing budget"):
+            xyg.temporal_chart("event", source, domain=(0, 10), timezone="UTC", title=title)
+    with pytest.raises(ValueError, match="framing budget"):
+        xyg.temporal_chart("event", rows, domain=(0, 10), timezone="UTC", title=title + "é")

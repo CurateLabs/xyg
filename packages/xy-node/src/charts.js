@@ -5,7 +5,8 @@ import {temporalSceneCompile} from "./temporal-scene.js";
  */
 
 import { figure } from "./figure.js";
-import { applyGraphHomeView } from "./scene.js";
+import { applyGraphHomeView, sceneBrowserPainter } from "./scene.js";
+import { temporalSceneSize } from "./temporal-scene-framing.js";
 import { attachScatter } from "./marks/scatter.js";
 import { attachLine } from "./marks/line.js";
 import { attachHistogram } from "./marks/histogram.js";
@@ -618,8 +619,11 @@ export function geoChart(...children) {
 
 /** Exact temporal rows lower through the same canonical Scene engine. */
 export function temporalChart(kind, rows, opts) {
+  const count=rows.length;
+  temporalSceneSize(count, opts.timezone, opts.title);
   const fig=figure({width:opts.width,height:opts.height,title:opts.title});
-  const source=rows.map(row=>Object.freeze([...row]));
+  const source=Array.from({length:count},(_,i)=>Object.freeze([...rows[i]]));
   fig._temporalCompile=(width=fig.width,height=fig.height)=>temporalSceneCompile({...opts,kind,rows:source,width,height});
+  fig._temporalPainter=()=>sceneBrowserPainter(fig.toScene());
   return fig;
 }

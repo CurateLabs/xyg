@@ -4108,7 +4108,7 @@ struct ResolvedColorbarTicks {
 /// Position of `value` in `[lo, hi]`. When the span overflows (for example
 /// `[-MAX, MAX]`), halving every term keeps the fraction finite.
 #[inline(never)]
-fn linear_fraction(value: f64, lo: f64, hi: f64) -> f64 {
+pub(crate) fn linear_fraction(value: f64, lo: f64, hi: f64) -> f64 {
     if (hi - lo).is_finite() {
         (value - lo) / (hi - lo)
     } else {

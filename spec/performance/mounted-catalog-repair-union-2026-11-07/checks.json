@@ -1,0 +1,26 @@
+{
+  "scope": "Source checkpoint; matching Rust builds/runtime qualification pending",
+  "gates": {
+    "hooks.log": {
+      "exit": 0,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "ruff.log": {
+      "exit": 0,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "format.log": {
+      "exit": 0,
+      "rawSha256": "411680debd0d596aa12e98d65d3757028f1cec1e7f99eddca22c1644a59ad0dc",
+      "archiveSha256": "9e72ac3541224e400c89c64b58f6bb0b8a7ab7f313ca65f3ffa7f10e769bb3cd"
+    }
+  },
+  "noRuntimeArtifactReuseClaim": true,
+  "versions": {
+    "native": 403,
+    "wasm": 37
+  },
+  "independentReview": "Final combined-head review pending"
+}

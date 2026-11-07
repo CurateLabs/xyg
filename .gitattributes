@@ -785,3 +785,19 @@ spec/performance/mounted-filter-catalog-union-2026-11-07/*.md text eol=lf
 spec/performance/mounted-filter-catalog-union-2026-11-07/*.gz -text
 spec/performance/mounted-filter-catalog-union-2026-11-07/*.png -text
 spec/performance/mounted-filter-catalog-union-2026-11-07/procedures/*.gz -text
+
+# Temporal catalog projection, bounded ingress and hosted-CI successor evidence.
+spec/temporal/evidence/46-review-ci-repair-2026-11-07/*.json text eol=lf
+spec/temporal/evidence/46-review-ci-repair-2026-11-07/*.md text eol=lf
+spec/temporal/evidence/46-review-ci-repair-2026-11-07/*.gz -text
+spec/temporal/evidence/46-review-ci-repair-2026-11-07/*.png -text
+
+# Additional current source bindings must survive CRLF checkout.
+crates/xyg-engine/src/scene.rs text eol=lf
+python/xyg/_figure.py text eol=lf
+tests/test_check_typing.py text eol=lf
+
+# Mounted/filter/catalog review correction source integration.
+spec/performance/mounted-catalog-repair-union-2026-11-07/*.json text eol=lf
+spec/performance/mounted-catalog-repair-union-2026-11-07/*.md text eol=lf
+spec/performance/mounted-catalog-repair-union-2026-11-07/*.gz -text

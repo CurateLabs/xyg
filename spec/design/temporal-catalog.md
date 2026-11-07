@@ -30,6 +30,9 @@ Python rejects timestamp floats; JavaScript requires bigint. Membership uses
 exact integer comparisons. Projection subtracts an i128 origin before a
 float ratio. Full-width signed extremes therefore cannot overflow subtraction.
 Scene IDs retain literal application identities; duplicate source IDs refuse.
+Numeric values remain f64 through projection. The shared Scene linear fraction
+halves all terms when a finite domain's span overflows, preserving distinct
+positions for opposite finite extremes instead of emitting nonfinite geometry.
 
 Range membership is half-open. Null instants omit; null interval starts/ends
 are unbounded. Reversed finite intervals refuse before publishing any output.
@@ -59,6 +62,14 @@ Controller snapshots supply Python compile range/cursor; exports freeze the
 range and cursor in the Scene axis annotation. Browser timing, brush/group
 binding, cursor marks, append/update transactions, cancellation, revisioned
 membership, keyboard journeys and virtualized tables remain unimplemented.
+
+The public Python/Node constructors apply that same 128-byte header, UTF-8
+zone/title and 40-byte row envelope before retaining their immutable source
+snapshot. Python unsized or understated iterables are bounded incrementally;
+an over-budget row is refused before copying it. This framing check does not
+replace Rust's operation/Scene admission. Node's generic HTML payload framing
+continues to import without native dependencies; only a temporal Figure's
+existing native Scene/painter hook prepares temporal paint bytes.
 
 ## Evidence and remaining acceptance
 

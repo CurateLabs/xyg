@@ -14,8 +14,6 @@ import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import {sceneBrowserPainter} from "./scene.js";
-
 const here = dirname(fileURLToPath(import.meta.url));
 
 const B64_CHUNK_BYTES = 48 * 2 ** 20;
@@ -154,7 +152,7 @@ function payloadFrom(figOrPayload) {
  */
 export function toHtml(figOrPayload, path = null, opts = {}) {
   if (figOrPayload._temporalCompile) {
-    const painter=Buffer.from(sceneBrowserPainter(figOrPayload.toScene())).toString('base64');
+    const painter=Buffer.from(figOrPayload._temporalPainter()).toString('base64');
     const client=javascriptForInlineScript(readFileSync(standaloneClientPath(), 'utf8'));
     const html=`<!doctype html><meta charset="utf-8"><div id="chart"></div><script>${client}</script><script>const b=Uint8Array.from(atob("${painter}"),c=>c.charCodeAt(0));${BROWSER_DOCUMENT}.defaultView.temporalView=xy.hydrateWasmPainter(${BROWSER_DOCUMENT}.getElementById('chart'),{painter:b.buffer,memoryBytes:0});</script>`;
     if(path!=null)writeFileSync(path,html);return html;

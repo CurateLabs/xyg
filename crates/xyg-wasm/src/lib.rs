@@ -1863,6 +1863,63 @@ pub extern "C" fn xyg_wasm_last_scene_styles(handle: u32) -> usize {
     with_instance_mut(handle, |instance| instance.last_scene_styles).unwrap_or(0)
 }
 
+/// Execute the same XYFC v1 session protocol as the native adapter.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_filter_execute(
+    handle: u32,
+    offset: usize,
+    length: usize,
+    capacity: usize,
+) -> i32 {
+    with_ordinary_instance_mut(handle, |instance| {
+        instance.output = Vec::new();
+        let arena = std::mem::take(&mut instance.arena);
+        let Some(input) = offset
+            .checked_add(length)
+            .and_then(|end| arena.get(offset..end))
+        else {
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "invalid filter packet range",
+            );
+        };
+        match instance
+            .filter
+            .execute(input, capacity.min(instance.max_arena_bytes), || false)
+        {
+            Ok(reply) => {
+                instance.output = reply;
+                instance.last_error.clear();
+                STATUS_OK
+            }
+            Err(required) => {
+                instance.output = (required as u64).to_le_bytes().to_vec();
+                fail(
+                    instance,
+                    STATUS_RESOURCE_LIMIT,
+                    "filter reply exceeds output capacity",
+                )
+            }
+        }
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+/// Compile an exact packed temporal composition through the shared Scene engine.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_temporal_scene_compile(
+    handle: u32,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_ordinary_instance_mut(handle, |instance| {
+        geo::execute_temporal_scene(instance, sequence, offset, length)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -3459,55 +3516,6 @@ mod tests {
         .unwrap();
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
     }
-}
-
-/// Execute the same XYFC v1 session protocol as the native adapter.
-#[no_mangle]
-pub extern "C" fn xyg_wasm_filter_execute(
-    handle: u32,
-    offset: usize,
-    length: usize,
-    capacity: usize,
-) -> i32 {
-    with_ordinary_instance_mut(handle, |instance| {
-        instance.output = Vec::new();
-        let arena = std::mem::take(&mut instance.arena);
-        let Some(input) = offset
-            .checked_add(length)
-            .and_then(|end| arena.get(offset..end))
-        else {
-            return fail(
-                instance,
-                STATUS_INVALID_ARGUMENT,
-                "invalid filter packet range",
-            );
-        };
-        match instance
-            .filter
-            .execute(input, capacity.min(instance.max_arena_bytes), || false)
-        {
-            Ok(reply) => {
-                instance.output = reply;
-                instance.last_error.clear();
-                STATUS_OK
-            }
-            Err(required) => {
-                instance.output = (required as u64).to_le_bytes().to_vec();
-                fail(
-                    instance,
-                    STATUS_RESOURCE_LIMIT,
-                    "filter reply exceeds output capacity",
-                )
-            }
-        }
-    })
-    .unwrap_or(STATUS_INVALID_HANDLE)
-}
-
-/// Compile an exact packed temporal composition through the shared Scene engine.
-#[no_mangle]
-pub extern "C" fn xyg_wasm_temporal_scene_compile(handle:u32, sequence:u32, offset:usize, length:usize)->i32 {
-    with_ordinary_instance_mut(handle, |instance| geo::execute_temporal_scene(instance,sequence,offset,length)).unwrap_or(STATUS_INVALID_HANDLE)
 }
 
 #[cfg(test)]
