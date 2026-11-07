@@ -256,14 +256,27 @@ class GeoTemporalBinding:
                 # Child cancellation is terminal work completion. A new caller
                 # cancellation remains observable after private-owner teardown.
                 interrupted = waiter is not None and waiter.cancelling() > cancellation
-        async with self._lock:
-            if self._retiring is not None:
-                await self._retiring.aclose()
-                self._retiring = None
-            if self._frame is not None:
-                await self._frame.aclose()
-                self._frame = None
+        _, cancelled = await _settle(asyncio.create_task(self._lock.acquire()))
+        interrupted |= cancelled
+        try:
+            for name in ("_retiring", "_frame"):
+                frame = getattr(self, name)
+                if frame is not None:
+                    disposal = asyncio.create_task(frame.aclose())
+                    try:
+                        _, cancelled = await _settle(disposal)
+                        interrupted |= cancelled
+                    except asyncio.CancelledError:
+                        # A terminally cancelled child may already have closed
+                        # its owner. Finish registration teardown in that case;
+                        # otherwise retain the owner so cleanup can be retried.
+                        if not frame._closed:
+                            raise
+                        interrupted = True
+                    setattr(self, name, None)
             if _BINDINGS.get(self._source) is self:
                 del _BINDINGS[self._source]
+        finally:
+            self._lock.release()
         if interrupted:
             raise asyncio.CancelledError

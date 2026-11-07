@@ -896,3 +896,95 @@ def test_loop_shutdown_releases_unpublished_sync_worker_candidate(monkeypatch):
             frame.close()
         controller.close()
         source.close()
+
+
+@pytest.mark.parametrize("cancellations,concurrent", [(1, False), (2, False), (1, True), (2, True)])
+def test_cancelled_close_drains_async_frame_and_releases_registration(cancellations, concurrent):
+    import struct
+    from contextlib import suppress
+
+    from xyg import _geoscale as g
+    from xyg._geo_temporal import _BINDINGS
+
+    async def run():
+        entered, release = asyncio.Event(), asyncio.Event()
+        held = False
+
+        class Bridge(g.NativeGeoScaleBridge):
+            async def execute(self, request):
+                if held and struct.unpack_from("<I", request, 8)[0] == 10:
+                    entered.set()
+                    await release.wait()
+                return await super().execute(request)
+
+        manifest, chunk = fixture_manifest()
+
+        async def reader(_):
+            return chunk
+
+        source = await xyg.RetainedGeoSource.create_async(
+            manifest, reader, budget=BUDGET, bridge=Bridge(BUDGET["processor_bytes"])
+        )
+        controller = xyg.TemporalController(instance_id=994, domain=(-10, 10))
+        q = query(source.info)
+        q.update(time_revision=0, camera_revision=0)
+
+        def chart(sequence, request):
+            return xyg.geo_chart(
+                xyg.geo_layer(
+                    "points",
+                    source=source,
+                    layer_id=U64,
+                    query=request,
+                    sequence=sequence,
+                    style=style(),
+                ),
+                camera=request["camera"],
+            )
+
+        binding = chart(1, q).bind_temporal(controller)
+        lease = replacement = None
+        try:
+            await binding.when_idle()
+            _, lease = await binding.snapshot()
+            accepted = binding._frame
+            held = True
+            close = asyncio.create_task(binding.aclose())
+            await asyncio.wait_for(entered.wait(), 2)
+            first_close = close if concurrent else None
+            if concurrent:
+                close = asyncio.create_task(binding.aclose())
+                await asyncio.sleep(0)
+            for _ in range(cancellations):
+                close.cancel()
+                await asyncio.sleep(0)
+                assert not close.done(), "cancelled close must drain frame disposal"
+            release.set()
+            with pytest.raises(asyncio.CancelledError):
+                await close
+            if first_close is not None:
+                await first_close
+            held = False
+            assert accepted._closed
+            assert binding._frame is None
+            assert binding._retiring is None
+            assert source not in _BINDINGS
+            assert lease.data.record(0)["feature_id"] == U64
+            replacement = chart(binding._sequence + 1, dict(binding._query)).bind_temporal(
+                controller
+            )
+            await replacement.when_idle()
+            assert replacement.error is None
+        finally:
+            held = False
+            release.set()
+            with suppress(asyncio.CancelledError):
+                await binding.aclose()
+            if replacement is not None:
+                await replacement.aclose()
+            if lease is not None:
+                await lease.aclose()
+            await source.aclose()
+            controller.close()
+
+    asyncio.run(run())

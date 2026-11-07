@@ -988,16 +988,17 @@ export function temporalControllerSubscribeState(handle, observer) {
   if(typeof observer !== 'function') throw new TypeError('observer must be a function');
   let observers = temporalObservers.get(handle);
   if(!observers) temporalObservers.set(handle, observers = new Set());
-  observers.add(observer);
+  const subscription = { observer };
+  observers.add(subscription);
   let subscribed = true;
   return () => {
     if(!subscribed)return;
     subscribed = false;
-    observers.delete(observer);
+    observers.delete(subscription);
     if(!observers.size && temporalObservers.get(handle) === observers)temporalObservers.delete(handle);
   };
 }
-function publishTemporalState(handle, disposed = false) {
+function publishTemporalState(handle, disposed = false, recipients = null) {
   handle = toU64(handle, "handle");
   if(temporalDestroying.get(handle)?.nativeDone || !temporalObservers.has(handle))return;
   const raw=temporalControllerState(handle);
@@ -1007,10 +1008,12 @@ function publishTemporalState(handle, disposed = false) {
   temporalPublishing.add(handle);
   try { while(temporalPending.has(handle)) {
     const next=temporalPending.get(handle);temporalPending.delete(handle);
-    for(const observer of [...(temporalObservers.get(handle)??[])]) {
+    const delivery = recipients ?? [...(temporalObservers.get(handle)??[])];
+    recipients = null;
+    for(const subscription of delivery) {
       if(temporalPending.get(handle)?.disposed && !next.disposed)break;
-      if(!temporalObservers.get(handle)?.has(observer))continue;
-      try { Promise.resolve(observer(next)).catch(()=>{}); } catch {}
+      if(!temporalObservers.get(handle)?.has(subscription))continue;
+      try { Promise.resolve(subscription.observer(next)).catch(()=>{}); } catch {}
     }
     if(next.disposed)temporalObservers.delete(handle);
   }} finally {
@@ -1166,8 +1169,10 @@ export function temporalCoordinateDeliver(event) {
     BigInt(selection.length),
     u32Ptr(applied),
   ));
-  // Subscription changes during delivery cannot extend the current recipient set.
-  for (const handle of [...temporalObservers.keys()]) publishTemporalState(handle);
+  // Capture registrations, not only handles: a later handle's observers may
+  // be replaced by an earlier callback, even with the same callback function.
+  const recipients = [...temporalObservers].map(([handle, observers]) => [handle, [...observers]]);
+  for (const [handle, observers] of recipients) publishTemporalState(handle, false, observers);
   return applied[0];
 }
 

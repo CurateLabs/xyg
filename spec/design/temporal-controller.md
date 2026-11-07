@@ -246,6 +246,8 @@ Python controller closure retains subscriptions until its captured terminal snap
 
 A terminal notification already being delivered is never superseded by reentrant close. Only nonterminal notification passes yield to queued terminal state; every still-subscribed observer in the terminal pass receives disposal before subscriptions are cleared.
 
-Native coordination captures its observer-handle set once per delivery. A subscription created or removed and re-added by an observer starts with future delivery and cannot extend the active traversal.
+Native coordination captures each subscription registration across all observed handles before delivery. Registrations have distinct identities, including when the same callback is removed and registered again. Before invocation the registration must still belong to its original handle. A subscription created or replaced by an observer starts with future delivery and cannot extend the active traversal.
 
 Synchronous geographic binding compilation runs in an executor Future whose ownership survives pump cancellation and event-loop task shutdown. The pump drains that Future before releasing its unpublished private frame; close waits for this drain before releasing the accepted private owner and source registration. A new cancellation of the close caller remains observable after teardown, while a previously handled cancellation does not interrupt cleanup. Reader-originated cancellation is an operation failure retaining the last accepted snapshot. This drain adds no timeout or early return for a non-returning synchronous reader.
+
+Binding close also drains asynchronous private-frame retirement before clearing owner fields and the source registration. Cancellation received during that retirement is propagated only after the remaining teardown; independent caller leases survive and the source can be rebound immediately after cancelled close completes.

@@ -265,3 +265,25 @@ test("coordination does not notify a handle subscribed during the current delive
     assert.equal(temporalControllerState(c).cursor,200_000n);
   } finally {stopB();stopC();temporalControllerDestroy(a);temporalControllerDestroy(b);temporalControllerDestroy(c);}
 });
+
+
+for (const sameCallback of [false,true]) test(`coordination retains subscription identities across replacement (${sameCallback})`, () => {
+  const a=make(811n,918n),b=make(812n,918n),c=make(813n,918n);
+  let previousCalls=0,replacementCalls=0,stopC=()=>{},stopNew=()=>{},replaced=false;
+  const previous=()=>previousCalls++;
+  const next=sameCallback?previous:()=>replacementCalls++;
+  const stopB=temporalControllerSubscribeState(b,()=>{
+    if(replaced)return;
+    replaced=true;stopC();stopNew=temporalControllerSubscribeState(c,next);
+  });
+  stopC=temporalControllerSubscribeState(c,previous);
+  try {
+    temporalControllerSetCursor(a,200_000n);
+    temporalCoordinateDeliver(temporalControllerPollEvent(a));
+    assert.equal(previousCalls,0,"a removed/re-added subscription is not the original recipient");
+    assert.equal(replacementCalls,0,"replacement observers start on a future delivery");
+    temporalControllerSetCursor(a,300_000n);
+    temporalCoordinateDeliver(temporalControllerPollEvent(a));
+    assert.equal(previousCalls+replacementCalls,1,"the replacement receives the next delivery once");
+  } finally {stopB();stopC();stopNew();for(const h of [a,b,c])temporalControllerDestroy(h);}
+});

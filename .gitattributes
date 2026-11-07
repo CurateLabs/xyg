@@ -200,3 +200,8 @@ spec/performance/geo-worker-ownership-2026-11-07/*.md text eol=lf
 spec/performance/geo-worker-ownership-2026-11-07/*.gz -text
 tests/test_geoscale.py text eol=lf
 python/xyg/_geoscale.py text eol=lf
+
+# Geographic private teardown and subscription identity corrections.
+spec/performance/geo-disposal-recipients-2026-11-07/*.json text eol=lf
+spec/performance/geo-disposal-recipients-2026-11-07/*.md text eol=lf
+spec/performance/geo-disposal-recipients-2026-11-07/*.gz -text
