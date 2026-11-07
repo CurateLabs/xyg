@@ -1,6 +1,7 @@
 //! Immutable temporal graph acquisition and canonical XYFG v1 codec (§27/29).
 //! This is provenance/publication storage, not rendered-export acceptance.
 use crate::graphforge::container::{Builder, Container, Dtype};
+use crate::graphforge::interaction::Camera;
 use crate::temporal::{CancelFlag, TemporalError};
 use crate::temporal_graph::{GraphEntity, TemporalGraph, TemporalGraphFrame};
 use crate::transition::Blake2s8;
@@ -36,6 +37,7 @@ fn validate_publication(
     edge_visibility: &[u8],
     source: &[u64],
     target: &[u64],
+    camera: &Camera,
 ) -> Result<()> {
     let invalid = || TemporalError::InvalidArgument;
     let read = |name| {
@@ -54,6 +56,7 @@ fn validate_publication(
     };
     let x = positions("render.node_x.f64")?;
     let y = positions("render.node_y.f64")?;
+    let centers = positions("paint.node.center.f64")?;
     let node_count = x.len();
     let edge_source = read("render.edge_source.u64")?;
     let edge_target = read("render.edge_target.u64")?;
@@ -70,6 +73,17 @@ fn validate_publication(
             && offsets.windows(2).all(|pair| pair[0] < pair[1])
     };
     if y.len() != node_count
+        || node_count.checked_mul(2) != Some(centers.len())
+        || x.iter()
+            .zip(&y)
+            .zip(centers.chunks_exact(2))
+            .any(|((&x, &y), center)| {
+                camera
+                    .project(x, y)
+                    .iter()
+                    .zip(center)
+                    .any(|(a, b)| a.to_bits() != b.to_bits())
+            })
         || x.iter().chain(&y).any(|v| !v.is_finite())
         || edge_target.len() != edge_count
         || edge_source
@@ -446,7 +460,16 @@ impl FrozenTemporalGraph {
             if header.first().copied() != Some(render[1] as u32) {
                 return Err(invalid());
             }
-            validate_publication(&reply, nv, ev, &source, &target)?;
+            let view = Camera {
+                scale_x: camera[0],
+                scale_y: camera[1],
+                offset_x: camera[2],
+                offset_y: camera[3],
+                viewport_width: camera[4],
+                viewport_height: camera[5],
+                dpr: camera[6],
+            };
+            validate_publication(&reply, nv, ev, &source, &target, &view)?;
             crate::graphforge::interaction::wire::decode_paint(publication)
                 .map_err(|_| invalid())?;
             crate::graphforge::interaction::wire::validate_gpu(publication)
@@ -540,6 +563,8 @@ mod tests {
             ("render.edge_member_offsets.u64", 1, 0),
             ("render.edge_members.u64", 1, 0),
             ("render.node_y.f64", 0, f64::NAN.to_bits()),
+            ("render.node_y.f64", 0, 1.0f64.to_bits()),
+            ("render.node_x.f64", 0, 1.0f64.to_bits()),
             ("render.node_x.f64", 0, f64::INFINITY.to_bits()),
         ] {
             let section = reply.get(name, 0).unwrap();
@@ -563,6 +588,7 @@ mod tests {
         let mut b = Builder::new(b"XYGR");
         b.f64s("render.node_x.f64", 0, &[0., 1.]);
         b.f64s("render.node_y.f64", 0, &[0., 1.]);
+        b.f64s("paint.node.center.f64", 0, &[0., 0., 1., 1.]);
         b.u64s("render.member_of.u64", 0, &[0, 0, 1]);
         b.u64s("render.node_member_offsets.u64", 0, &[0, 2, 3]);
         b.u64s("render.node_members.u64", 0, &[0, 1, 2]);
@@ -581,11 +607,33 @@ mod tests {
         }
         let bytes = b.finish();
         let reply = Container::decode(&bytes, b"XYGR").unwrap();
-        assert!(
-            validate_publication(&reply, &[1, 1, 1], &[1, 1, 1], &[0, 1, 2], &[2, 2, 0]).is_ok()
-        );
+        let camera = Camera {
+            scale_x: 1.,
+            scale_y: 1.,
+            offset_x: 0.,
+            offset_y: 0.,
+            viewport_width: 1.,
+            viewport_height: 1.,
+            dpr: 2.,
+        };
+        assert!(validate_publication(
+            &reply,
+            &[1, 1, 1],
+            &[1, 1, 1],
+            &[0, 1, 2],
+            &[2, 2, 0],
+            &camera
+        )
+        .is_ok());
         assert_eq!(
-            validate_publication(&reply, &[1, 1, 1], &[1, 1, 1], &[0, 1, 2], &[2, 1, 0]),
+            validate_publication(
+                &reply,
+                &[1, 1, 1],
+                &[1, 1, 1],
+                &[0, 1, 2],
+                &[2, 1, 0],
+                &camera
+            ),
             Err(TemporalError::InvalidArgument)
         );
     }

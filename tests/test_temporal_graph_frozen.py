@@ -323,6 +323,10 @@ def test_native_short_copy_no_partial_write_and_registry_capacity():
 
 
 PUBLICATION_MUTATIONS = [
+    ("render.node_y.f64", [1.0, 0.0, 20.0]),
+    ("render.node_x.f64", [1.0, 40.0, 80.0]),
+    ("render.camera", [1.0, 1.0, 61.0, 60.0, 240.0, 180.0, 1.0]),
+    ("render.camera", [2.0, 1.0, 60.0, 60.0, 240.0, 180.0, 1.0]),
     ("render.edge_target.u64", [999999, 1, 2, 0]),
     ("render.edge_source.u64", [999999, 0, 1, 0]),
     ("render.member_of.u64", [999999, 1, 2]),
@@ -353,6 +357,9 @@ def malformed_retained_publication(name, values):
         / "spec/performance/temporal-graph-freeze-2026-11-07/retained.xyfg"
     ).read_bytes()
     outer = decode_container(raw[:-8], "XYFG")
+    if name == "render.camera":
+        outer[name, 0] = values
+        return reencode(outer)
     publication = outer["render.publication", 0]
     fields = decode_container(publication, "XYGR")
     fields[name, 0] = values
@@ -371,3 +378,10 @@ def malformed_retained_publication(name, values):
 def test_rechecksummed_retained_publication_rejects_invalid_topology(name, values):
     with pytest.raises(xyg.TemporalGraphError):
         xyg.FrozenTemporalGraph.from_bytes(malformed_retained_publication(name, values))
+
+
+def test_frozen_projection_uses_css_coordinates_independent_of_dpr():
+    raw = malformed_retained_publication("render.camera", [1.0, 1.0, 60.0, 60.0, 240.0, 180.0, 2.0])
+    with xyg.FrozenTemporalGraph.from_bytes(raw) as frozen:
+        assert frozen.to_bytes() == raw
+        assert frozen.metadata["render.camera"][-1] == 2.0

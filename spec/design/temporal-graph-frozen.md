@@ -111,7 +111,11 @@ edge endpoints must name render nodes. Node and edge CSR offsets start at zero,
 end at the exact member count and delimit nonempty, ascending member lists.
 Node lists and source-to-render maps are exact inverses. Source edges appear
 at most once and their mapped source endpoints agree with their render edge;
-all represented source entities must be temporally visible. Visual-state and
+all represented source entities must be temporally visible. Each CPU paint-node
+center must bitwise equal the source render position projected with the captured
+camera through the same Rust projector used by live paint. This also rejects
+finite source/camera mutations that leave old paint centers behind; DPR controls
+backing resolution and does not multiply CSS-space coordinates. Visual-state and
 emphasis planes match the corresponding render counts. These checks validate
 imported publications as well as acquisition; a recomputed checksum cannot
 replace topology and membership validation. Unknown sections, versions, noncanonical
@@ -122,7 +126,10 @@ different provenance tokens even for equivalent source data.
 ## Admission and lifetime
 
 Encoded snapshots are capped at 24 MiB. A conservative `16*encoded + 64 KiB`
-peak envelope is capped at the unchanged 384 MiB process ceiling. Acquisition
+peak envelope is capped at the unchanged 384 MiB per-operation limit. Retained
+caller-owned snapshots accumulate across operations; the256-handle registry cap
+is not a global process byte budget. Global CPU/source/WASM budget integration
+remains part of #111. Acquisition
 first bounds canonical source/state rows at 128 bytes per node/edge plus borrowed
 publication/document bytes and 8 KiB framing, adds the bound session’s existing
 retained-budget charge, and admits that envelope **before**

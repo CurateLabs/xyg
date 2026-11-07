@@ -214,3 +214,10 @@ spec/design/graph-mark.md text eol=lf
 spec/performance/temporal-frozen-publication-validation-2026-11-07/*.json text eol=lf
 spec/performance/temporal-frozen-publication-validation-2026-11-07/*.md text eol=lf
 spec/performance/temporal-frozen-publication-validation-2026-11-07/*.gz -text
+
+# Frozen camera/CPU-paint consistency source and immutable evidence bindings.
+crates/xyg-engine/src/graphforge/interaction/render.rs text eol=lf
+crates/xyg-engine/src/graphforge/interaction/paint.rs text eol=lf
+spec/performance/frozen-camera-consistency-2026-11-07/*.json text eol=lf
+spec/performance/frozen-camera-consistency-2026-11-07/*.md text eol=lf
+spec/performance/frozen-camera-consistency-2026-11-07/*.gz -text

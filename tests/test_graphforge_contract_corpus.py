@@ -12,7 +12,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 CURRENT_BINDINGS = Path(
-    "spec/performance/temporal-frozen-publication-validation-2026-11-07/current-bindings.json"
+    "spec/performance/frozen-camera-consistency-2026-11-07/current-bindings.json"
 )
 
 
