@@ -1,0 +1,28 @@
+{
+  "source_parent": "317d82abebdb6d605d6812ce2e01cfb1a2422004",
+  "source_sha256": {
+    "scripts/consumer_apps_smoke.py": "9aac586601d63421f81ef2fc60fd3b249037d6505ad49c2a6c1e490d56448ab5",
+    "tests/test_stage_node_packages.py": "63fc9151bb05470a2849613ceb5259ccb24c3f9a4967eec7e0b904229428a0ce",
+    "spec/process/production-readiness.md": "3aa6942402b2e89c6b126b524fded93543cae5758d35f2179e91522fcd0066ed"
+  },
+  "consumer_report_sha256": "a21103b716f57574bbdb43b0f5c901248e7284a43e63b0d4bca4485733622c54",
+  "fixture_wheel": {
+    "path": ".artifacts/consumer-fixture/xyg-0.6.0rc1063-py3-none-linux_x86_64.whl",
+    "sha256": "538f84057791189de5814e5820651d5279e3452b9dd75f963599caca1a67f75c",
+    "bytes": 6161580
+  },
+  "passed": {
+    "focused_tests": 220,
+    "streamlit_app_tests": 13,
+    "packaged_qualification_cases": 9,
+    "consumer_smoke": true
+  },
+  "host_path_isolation": {
+    "python_without_node": true,
+    "node_without_python": true
+  },
+  "pending": [
+    "independent final repair review",
+    "new-head CI"
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "node": "v22.23.4",
+  "rust": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "uv": "uv 0.12.22 (x86_64-unknown-linux-gnu)",
+  "python_runner": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+  "release_rebuild_or_browser_rerun": false,
+  "full_770_make_check_ci_repeat": false,
+  "reuse_basis": "Exact all non-spec source/test/build/CI input modes and blobs, 285 recorded production SHA256 values and 15 qualified artifacts; fresh verifier/13 mutation tests and shipping byte replay"
+}

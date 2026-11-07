@@ -1,0 +1,98 @@
+{
+  "capability-check": {
+    "exit": 0,
+    "log_sha256": "42b8d4d87753f9103ac02d0b33f9a3c6f6e68193684dd88198095d247c8e7392"
+  },
+  "capability-final-check": {
+    "exit": 0,
+    "log_sha256": "42b8d4d87753f9103ac02d0b33f9a3c6f6e68193684dd88198095d247c8e7392"
+  },
+  "focused-boundary-tests": {
+    "exit": 0,
+    "log_sha256": "923798bb4c9c39d91eedcb3c2ec39305f196339fbf2b0f9bf0bcf553b9d1d1d8"
+  },
+  "format-repair": {
+    "exit": 0,
+    "log_sha256": "43affe539ba0ae8b202b306a3294d04f3b7fc062316c1c825399076d966c8f2d"
+  },
+  "inventory-check": {
+    "exit": 0,
+    "log_sha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c"
+  },
+  "inventory-final-check": {
+    "exit": 0,
+    "log_sha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c"
+  },
+  "inventory-write": {
+    "exit": 0,
+    "log_sha256": "4ca8047382029cc6877337002694d1d92024329a5dc830334e8379f4ab8c70c9"
+  },
+  "metadata-regressions-final": {
+    "exit": 0,
+    "log_sha256": "bb1130ddd318c1a7e1b7d589b5e411a088c05091d438448da8912864a37b5c91"
+  },
+  "metadata-regressions": {
+    "exit": 1,
+    "log_sha256": "91155a3be38a28aa14e1275f1dbf0ed59f743554971f7a4c5f1845061614bf9a"
+  },
+  "native-declarations": {
+    "exit": 0,
+    "log_sha256": "9e6b288fcb04d188754d9994cdd1e74a253efa2b3f8f2e62a3dae37611f054ed"
+  },
+  "ownership-classified": {
+    "exit": 1,
+    "log_sha256": "ce1800a0311e1b4b405d10f711f4e37a4651462ef886da9186f590e1e6b118e6"
+  },
+  "ownership-final": {
+    "exit": 0,
+    "log_sha256": "c5aa14def5ab71ddcf818ef1a32f3a6098225fd9f656c72112000270853b6133"
+  },
+  "ownership": {
+    "exit": 1,
+    "log_sha256": "fb9f8e1682500848ae3047a82abe77e826176ed7f9bb4d720c5681d6c51781f8"
+  },
+  "p2-after": {
+    "exit": 0,
+    "log_sha256": "2a24220e6edf43fd00d1f6a4ac356da663687cb1a97e574fade76bc7fb46e821"
+  },
+  "p2-before": {
+    "exit": 1,
+    "log_sha256": "2c5f34aa286266f2196b18a0619d717043cd3cae08baac51c5d5fa6d6c5b7f51"
+  },
+  "precommit-hooks": {
+    "exit": 0,
+    "log_sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+  },
+  "precommit-ruff-check": {
+    "exit": 0,
+    "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  "precommit-ruff-format": {
+    "exit": 0,
+    "log_sha256": "509a079f767f1e45e1cbd35e7bcf9cc076889895357f39ab4b2cdfac71708ed1"
+  },
+  "protected-identity": {
+    "exit": 0,
+    "log_sha256": "8dc3acc9cb51cc77602af53bb42de673af79aedf0714648cfe34b239a42eca56"
+  },
+  "python-host-audit": {
+    "exit": 0,
+    "log_sha256": "2377152a2079e2f4cc441024f38a0f0e0b774eb66592e857e63628f7eb9ac635"
+  },
+  "rust-interaction": {
+    "exit": 0,
+    "log_sha256": "aeec37364d7cc38b0ec9a74e83fab9fce25098bf111e0590ab94387cd5360967"
+  },
+  "typing": {
+    "exit": 0,
+    "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  "wasm-declarations": {
+    "exit": 0,
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "whole-naming": {
+    "exit": 0,
+    "log_sha256": "1003caaf3711434f9f15fab5a76f470c95cf9f63df4d3b732b9e7fb3016ed840"
+  }
+}

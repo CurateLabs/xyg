@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import hashlib
 import io
 import re
 import sys
@@ -300,6 +301,15 @@ _HISTORICAL_IDENTITY_ALLOWLIST = {
     ("spec/process/security-audit-2026-07-06.md", "XY_NATIVE_LIB"),
 }
 
+# Immutable issue responses and test transcripts retain their original context. Only
+# these exact canonical UTF-8/LF contents are historical evidence: changing
+# either the path or any content restores every ordinary identity check.
+_FROZEN_EVIDENCE_SNAPSHOTS = {
+    "spec/performance/chunked-read-validation-2026-11-06/issue-11-blocked-by.json": "644f7b508bb36c53c3af96e9c4212cc6833eadf4020ef32ae68ad2ba3a8c8604",
+    "spec/performance/chunked-read-validation-2026-11-06/issue-5-blocked-by.json": "8add22090cd068e7d1d00999e6517a8b218377ddeaed16aea0749ecc1eaed82d",
+    "spec/performance/chunked-column-reuse-2026-11-06/rust-tests.json": "ab1fd6dd588c7022eda421e672d88d90ec0ee53a26402120f3258833362cb3eb",
+}
+
 _NEGATIVE_TEST_LINE_FRAGMENTS = (
     "libxy_core",
     "XY_NATIVE_LIB",
@@ -353,6 +363,12 @@ def check_stale_names(root: Path = ROOT) -> list[str]:
         except (OSError, UnicodeDecodeError):
             continue
         rel = path.relative_to(root).as_posix()
+        frozen_hash = _FROZEN_EVIDENCE_SNAPSHOTS.get(rel)
+        if (
+            frozen_hash is not None
+            and frozen_hash == hashlib.sha256(text.encode("utf-8")).hexdigest()
+        ):
+            continue
         errors.extend(_structural_identity_errors(rel, text))
         errors.extend(_python_text_errors(path, rel, text, repository_scan=repository_scan))
         if repository_scan:

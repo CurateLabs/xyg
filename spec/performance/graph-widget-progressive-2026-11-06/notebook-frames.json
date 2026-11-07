@@ -1,0 +1,318 @@
+{
+  "frames": [
+    {
+      "step": "1",
+      "painted": 369,
+      "time": 4017.9000000953674
+    },
+    {
+      "step": "9",
+      "painted": 343,
+      "time": 4074.5
+    },
+    {
+      "step": "17",
+      "painted": 374,
+      "time": 4129.200000286102
+    },
+    {
+      "step": "25",
+      "painted": 392,
+      "time": 4185.599999904633
+    },
+    {
+      "step": "33",
+      "painted": 410,
+      "time": 4239.5
+    },
+    {
+      "step": "41",
+      "painted": 426,
+      "time": 4293.5
+    },
+    {
+      "step": "49",
+      "painted": 435,
+      "time": 4379.599999904633
+    },
+    {
+      "step": "57",
+      "painted": 448,
+      "time": 4436
+    },
+    {
+      "step": "65",
+      "painted": 445,
+      "time": 4487.900000095367
+    },
+    {
+      "step": "73",
+      "painted": 450,
+      "time": 4540.400000095367
+    },
+    {
+      "step": "81",
+      "painted": 439,
+      "time": 4592.099999904633
+    },
+    {
+      "step": "89",
+      "painted": 441,
+      "time": 4643.400000095367
+    },
+    {
+      "step": "97",
+      "painted": 441,
+      "time": 4704.099999904633
+    },
+    {
+      "step": "105",
+      "painted": 444,
+      "time": 4756.5
+    },
+    {
+      "step": "113",
+      "painted": 444,
+      "time": 4809.099999904633
+    },
+    {
+      "step": "121",
+      "painted": 443,
+      "time": 4860.300000190735
+    },
+    {
+      "step": "129",
+      "painted": 443,
+      "time": 4919.800000190735
+    },
+    {
+      "step": "137",
+      "painted": 443,
+      "time": 4971.700000286102
+    },
+    {
+      "step": "145",
+      "painted": 432,
+      "time": 5023.800000190735
+    },
+    {
+      "step": "153",
+      "painted": 432,
+      "time": 5076.099999904633
+    },
+    {
+      "step": "161",
+      "painted": 432,
+      "time": 5127.300000190735
+    },
+    {
+      "step": "169",
+      "painted": 432,
+      "time": 5187.800000190735
+    },
+    {
+      "step": "177",
+      "painted": 420,
+      "time": 5242.700000286102
+    },
+    {
+      "step": "185",
+      "painted": 420,
+      "time": 5294.300000190735
+    },
+    {
+      "step": "193",
+      "painted": 420,
+      "time": 5353.700000286102
+    },
+    {
+      "step": "201",
+      "painted": 420,
+      "time": 5405.700000286102
+    },
+    {
+      "step": "209",
+      "painted": 420,
+      "time": 5458.300000190735
+    },
+    {
+      "step": "217",
+      "painted": 422,
+      "time": 5509.300000190735
+    },
+    {
+      "step": "225",
+      "painted": 421,
+      "time": 5570.099999904633
+    },
+    {
+      "step": "233",
+      "painted": 422,
+      "time": 5621.200000286102
+    },
+    {
+      "step": "241",
+      "painted": 422,
+      "time": 5672.200000286102
+    },
+    {
+      "step": "249",
+      "painted": 422,
+      "time": 5723.400000095367
+    },
+    {
+      "step": "257",
+      "painted": 422,
+      "time": 5774.700000286102
+    },
+    {
+      "step": "265",
+      "painted": 427,
+      "time": 5826
+    },
+    {
+      "step": "273",
+      "painted": 428,
+      "time": 5889.300000190735
+    },
+    {
+      "step": "281",
+      "painted": 429,
+      "time": 5942
+    },
+    {
+      "step": "289",
+      "painted": 429,
+      "time": 5993
+    },
+    {
+      "step": "297",
+      "painted": 429,
+      "time": 6055.099999904633
+    },
+    {
+      "step": "305",
+      "painted": 429,
+      "time": 6106.400000095367
+    },
+    {
+      "step": "313",
+      "painted": 427,
+      "time": 6158.400000095367
+    },
+    {
+      "step": "321",
+      "painted": 427,
+      "time": 6209.099999904633
+    },
+    {
+      "step": "329",
+      "painted": 427,
+      "time": 6269.400000095367
+    },
+    {
+      "step": "337",
+      "painted": 428,
+      "time": 6320.099999904633
+    },
+    {
+      "step": "345",
+      "painted": 428,
+      "time": 6371.300000190735
+    },
+    {
+      "step": "353",
+      "painted": 415,
+      "time": 6423
+    },
+    {
+      "step": "361",
+      "painted": 415,
+      "time": 6474.900000095367
+    },
+    {
+      "step": "369",
+      "painted": 415,
+      "time": 6526.099999904633
+    },
+    {
+      "step": "377",
+      "painted": 415,
+      "time": 6587.900000095367
+    },
+    {
+      "step": "385",
+      "painted": 415,
+      "time": 6639.700000286102
+    },
+    {
+      "step": "393",
+      "painted": 415,
+      "time": 6691
+    },
+    {
+      "step": "401",
+      "painted": 415,
+      "time": 6742.099999904633
+    },
+    {
+      "step": "409",
+      "painted": 415,
+      "time": 6803.5
+    },
+    {
+      "step": "417",
+      "painted": 416,
+      "time": 6854.300000190735
+    },
+    {
+      "step": "425",
+      "painted": 416,
+      "time": 6905.300000190735
+    },
+    {
+      "step": "433",
+      "painted": 416,
+      "time": 6956.300000190735
+    },
+    {
+      "step": "441",
+      "painted": 415,
+      "time": 7007.200000286102
+    },
+    {
+      "step": "449",
+      "painted": 415,
+      "time": 7058.300000190735
+    },
+    {
+      "step": "457",
+      "painted": 415,
+      "time": 7109.200000286102
+    },
+    {
+      "step": "458",
+      "painted": 415,
+      "time": 7169.200000286102
+    }
+  ],
+  "ok": true,
+  "journey": "actual JupyterLab/IPython/anywidget/native retained graph",
+  "firstSteps": "41",
+  "finalSteps": "458",
+  "dimensions": {
+    "width": 900,
+    "height": 420,
+    "painted": 415
+  },
+  "browser": "156.0.8078.4",
+  "external": [],
+  "errors": [
+    "[anywidget] Deprecation Warning for xyg._graph_widget.GraphWidget: Direct export of a 'render' will likely be deprecated in the future. To migrate ...\n\nRemove the 'export' keyword from 'render'\n-----------------------------------------\n\nexport function render({ model, el }) { ... }\n^^^^^^\n\nCreate a default export that returns an object with 'render'\n------------------------------------------------------------\n\nfunction render({ model, el }) { ... }\n         ^^^^^^\nexport default { render }\n                 ^^^^^^\n\nPin to anywidget>=0.9.0 in your pyproject.toml\n----------------------------------------------\n\ndependencies = [\"anywidget>=0.9.0\"]\n\nTo learn more, please see: https://github.com/manzt/anywidget/pull/395.\n",
+    "[.WebGL-0x2384042c4200]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "Canvas2D: Multiple readback operations using getImageData are faster with the willReadFrequently attribute set to true. See: https://html.spec.whatwg.org/multipage/canvas.html#concept-canvas-will-read-frequently",
+    "[.WebGL-0x2384042c4200]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "[.WebGL-0x2384042c4200]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "[.WebGL-0x2384042c4200]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+  ]
+}

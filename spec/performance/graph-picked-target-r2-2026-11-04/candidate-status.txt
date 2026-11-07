@@ -1,0 +1,10 @@
+ M crates/xyg-engine/src/graphforge/interaction.rs
+ M crates/xyg-engine/src/graphforge/interaction/pick.rs
+ M crates/xyg-engine/src/graphforge/interaction/tests/wire.rs
+ M crates/xyg-engine/src/graphforge/interaction/wire.rs
+ M spec/design/browser-wasm.md
+ M spec/design/graph-interaction.md
+?? crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs
+?? crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs
+?? spec/performance/graph-picked-target-checkpoint-2026-11-04/
+?? spec/performance/graph-picked-target-r2-2026-11-04/

@@ -41,7 +41,7 @@ injected native faults propagate before output, and a host-local fallback event
 fails the verifier. Dynamic traces prove execution, not absence of every
 possible duplicate algorithm, so the structural tripwires remain complementary.
 
-The verifier inventories tracked source only. Tests, examples, benchmarks, generated bundles, dependencies, vendor trees, and untracked local files are deliberately outside this production-source ledger.
+The verifier inventories tracked source under its listed roots. Top-level tests, examples, benchmarks, generated bundles, dependencies, vendor trees, and untracked local files are outside this ledger. Internal Rust test modules under `crates/*/src/` remain in scope and require exact file entries; a `tests` directory name does not waive ownership classification.
 
 Migration status: Scene v25 now moves canonical viewport/plot bounds, numeric
 axis transforms, chart/plot backgrounds, authored axis side and visibility,
@@ -903,6 +903,7 @@ Forbidden:
 | `js/src/57_viewstate.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/58_graph.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
 | `js/src/60_entries.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client` | — |
+| `js/src/66_graph_host.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client`; notebook frame/ACK presentation and existing comm routing only | — |
 | `js/src/63_graph_controller.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client`; explicit S5b keyboard/DOM/ARIA/companion/lifetime only | — |
 | `js/src/63_graph_gpu.ts` | Shared TypeScript browser client | `browser-client` | `keep-shared-client`; GPU-v1 validation/raw-buffer paint through GLHost | — |
 | `js/src/63_graph_session_wire.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; internal XYGI/XYGR framing, no graph policy | #59 |
@@ -1090,6 +1091,8 @@ Forbidden:
 | `python/xyg/styling/capabilities.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/temporal_controller.py` | Python host | `python-host` | `keep-host` | — |
 | `python/xyg/temporal_graph.py` | Python host | `python-host` | `keep-host` | — |
+| `python/xyg/_graph_widget.py` | Python host | `python-host` | `keep-host`; native checkpoint scheduling and revisioned notebook transport only | — |
+| `python/xyg/_graph_widget_identity.py` | Python host | `python-host` | `keep-host`; packs Rust identity requests and joins existing Rust membership planes | — |
 | `python/xyg/widget.py` | Python host | `python-host` | `keep-host` | — |
 | `crates/xyg-engine/src/geo_layers.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-engine/src/geo_layers_protocol.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
@@ -1360,6 +1363,12 @@ These additions use the existing ownership policies without adding a host policy
 | `packages/xy-node/src/graphforge_layout.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/graphforge_layout_worker.js` | Node host | `node-host` | `keep-host` | — |
 
+| `crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_probe.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.
@@ -1464,3 +1473,9 @@ post-operation state snapshot. TypeScript validates this required fact and owns
 synchronous keyboard default cancellation after local command admission. It does
 not infer applicability from selection counts, projected refs, styles or DOM.
 GLHost resets textures/samplers through unit 2 for shared-client isolation.
+
+
+The R7 inventory review disposition classifies the five R6 picked-target Rust
+test modules in the file ledger under the existing `rust-engine` policy, without
+a new policy or exclusion. They cover exact receipts, projection admission,
+retry/atomicity and diagnostic corpus generation for the shared Rust owner.

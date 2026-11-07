@@ -1032,7 +1032,10 @@ test("Node Scene v13 compiles bounded primary annotations and fails closed", () 
     { opacity: "opaque" }, { width: null }, { width: false },
   ]) {
     figure.annotations = [{ kind: "rule", axis: "x", value: 0.25, style }];
-    assert.throws(() => figure.toScene(), /Scene v12 annotation/);
+    const key = Object.keys(style)[0];
+    assert.throws(() => figure.toScene(), { message: key === "color"
+      ? "Scene v12 annotation rule color must be a nonempty CSS color"
+      : `XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: rule ${key} must be numeric` });
   }
   for (const annotation of [
     { kind: "rule", axis: "x", value: null },
@@ -1044,7 +1047,12 @@ test("Node Scene v13 compiles bounded primary annotations and fails closed", () 
     { kind: "marker", x: 0, y: 1, symbol: 2 },
   ]) {
     figure.annotations = [annotation];
-    assert.throws(() => figure.toScene(), /Scene v12 annotation/);
+    const label = annotation.kind === "rule" ? "rule value"
+      : annotation.kind === "band" ? "band start"
+      : Object.hasOwn(annotation, "size") ? "marker size" : "marker x";
+    assert.throws(() => figure.toScene(), { message: Object.hasOwn(annotation, "symbol")
+      ? "Scene v12 annotation marker symbol must be a supported string name"
+      : `XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE: ${label} must be numeric` });
   }
 });
 
@@ -1492,7 +1500,7 @@ test("Node frames literal attached-label paint and rejects it without a label", 
   figure.annotations = [{ kind: "marker", x: 0.5, y: 0.5, text: "peak", style: { label_color: "#ff0000", label_opacity: 0.5 } }];
   assert.match(sceneSvg(figure.toScene()), /fill="rgba\(255,0,0,0\.501961\)"[^>]*>peak</);
   figure.annotations = [{ kind: "marker", x: 0.5, y: 0.5, style: { label_color: "#ff0000" } }];
-  assert.throws(() => figure.toScene(), /does not encode/);
+  assert.throws(() => figure.toScene(), { message: "XYG_SCENE_UNSUPPORTED_ANNOTATION_STYLE: marker unsupported keys label_color" });
 });
 
 test("Node Scene v16 accepts both independently bounded annotation text frames", () => {
@@ -1515,7 +1523,7 @@ test("Node frames bounded raw-coordinate straight arrows and rejects richer form
   figure.annotations[0].text = "no";
   assert.throws(() => figure.toScene(), /arrows do not encode text/);
   figure.annotations = [{ kind: "arrow", x0: 0, y0: 0, x1: 1, y1: 1, style: { dash: "2,2" } }];
-  assert.throws(() => figure.toScene(), /arrow style does not encode/);
+  assert.throws(() => figure.toScene(), { message: "XYG_SCENE_UNSUPPORTED_ANNOTATION_STYLE: arrow unsupported keys dash" });
 });
 
 test("Node frames callout label backgrounds as XYAC v2 and retains v1 otherwise", () => {

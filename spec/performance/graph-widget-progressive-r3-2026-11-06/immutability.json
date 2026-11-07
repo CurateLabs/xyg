@@ -1,0 +1,306 @@
+{
+  "historicalFiles": {
+    "spec/releases/core-rc7-checkout-repair-2026-11-06/README.md": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "247ea5c629eb12aa0dde2513e5419ae2977adc34f5a26abe184a4d8c3426e66f"
+    },
+    "spec/releases/core-rc7-checkout-repair-2026-11-06/before-hashes.json": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "37764c28767da8e956ccf26448ea567b450a7d00af35c7512a6d2ecfd1182947"
+    },
+    "spec/releases/core-rc7-checkout-repair-2026-11-06/before.log.gz": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "92f7876f02bf60b656a53c4de52a101b4d6081864a686b0a9872abbf9f3a1b3a"
+    },
+    "spec/releases/core-rc7-checkout-repair-2026-11-06/bindings.json": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "bf9baaf0d5b0e3a3dd06c756e98f5032f8a091b3157a742b590d550acb53abcc"
+    },
+    "spec/releases/core-rc7-checkout-repair-2026-11-06/focused-with-dunamai.log": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "5b587f1d4edf104e332791680a2488c4695d10c831df4826503b0069a5e2c85d"
+    },
+    "spec/releases/core-rc7-checkout-repair-2026-11-06/focused.log": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "50f762c72fafdb30d9fde2074e5da14c6944c60559384a4f3bbc977294c9b854"
+    },
+    "spec/releases/core-rc7-checkout-repair-2026-11-06/logs.json": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "7401f8c94381b09182d631000038da76b66d987da881ce72849367d148faf9fa"
+    },
+    "spec/releases/core-rc7-compatibility-2026-11-06/README.md": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "8b1a3a6a0b63000ce5e68d63abfe70dc5b1b3d30dbd957042e1e3b723a860950"
+    },
+    "spec/releases/core-rc7-compatibility-2026-11-06/abi.log": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306"
+    },
+    "spec/releases/core-rc7-compatibility-2026-11-06/assets.log": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef"
+    },
+    "spec/releases/core-rc7-compatibility-2026-11-06/checks.json": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "7d03d70d0f62d9713aa4eb869eb9a4fdca04a1b3438fbdc0cf9aa703266424d3"
+    },
+    "spec/releases/core-rc7-compatibility-2026-11-06/ci.log": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "acdaa9ba80c876351426fbccb63bed6fb1e850b2c16dc2492a3c9925c11da17e"
+    },
+    "spec/releases/core-rc7-compatibility-2026-11-06/contracts.log": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "aed3b3a6884cccaeb62dcf4245d2cd357a52ad9ba5eb37fc077e001ef23b39c0"
+    },
+    "spec/releases/core-rc7-compatibility-2026-11-06/corpus.log": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "242f5c2e18a699d37a2246fa00c11dab1842d1ccae0c76910f1be7de9d186231"
+    },
+    "spec/releases/core-rc7-compatibility-2026-11-06/editor-ledger-snapshot.md": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "535b3dc9505d6ed21c4298537f7e5d288984a5513682219c09b3c2263df06f6d"
+    },
+    "spec/releases/core-rc7-compatibility-2026-11-06/format.log": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "1c6ac5143b72ea5b8ad608126f1a8210d60454ee0a88f3107cbe6a9c3b0b633f"
+    },
+    "spec/releases/core-rc7-compatibility-2026-11-06/generator.log": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "86e18b7ab8c173a37405678e31dd36b997a1b31ed77ef8fac7282702ca5660ad"
+    },
+    "spec/releases/core-rc7-compatibility-2026-11-06/graphforge-attestations.json": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "cb15a3fbe782e8992dc9a09b3ce98100ef7f6bdc6f680420df542c5b9940d7e5"
+    },
+    "spec/releases/core-rc7-compatibility-2026-11-06/graphforge-linux-x64-gnu-attestations.json": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "62a89c42d059ad1c137e3304cc4ef5dd13284cb2927dfb91f96a213d2be3de1f"
+    },
+    "spec/releases/core-rc7-compatibility-2026-11-06/hooks.log": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "spec/releases/core-rc7-compatibility-2026-11-06/initial-generator.log": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "5bb77324d19191bb2e142724794b559cb5636e48dfbb10ae723b287cf7b7d086"
+    },
+    "spec/releases/core-rc7-compatibility-2026-11-06/initial-manifest.json": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "69e412ff4655733ca9da481857f873cff51288d2a8ed5319fadc75dba113720f"
+    },
+    "spec/releases/core-rc7-compatibility-2026-11-06/native-build.log": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "1ca0116d69d74303fc57dd84dc2411d234879e08d545bc92ac3ec487b72f874d"
+    },
+    "spec/releases/core-rc7-compatibility-2026-11-06/node-wasm.log": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "c4330443c929c9be6def14298988efa35a789a39d48d0d2a4832d9dafbfaa746"
+    },
+    "spec/releases/core-rc7-compatibility-2026-11-06/provenance-final.log": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "a073d88c1b947ec34432fbe034bdc858d9ae3a3e36e10925ba62442f94fc64c7"
+    },
+    "spec/releases/core-rc7-compatibility-2026-11-06/python.log": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "e7d12c8e50ab4db397158edd99011558bc217f2a7e80997034f28bbd000433da"
+    },
+    "spec/releases/core-rc7-compatibility-2026-11-06/ruff.log": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "spec/releases/core-rc7-compatibility-2026-11-06/rust.log": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "0b9a7e8b9cc788498a4ed757fd5978fa4077e49d98383fe22a532d08d8becad7"
+    },
+    "spec/releases/core-rc7-compatibility-2026-11-06/wasm-build.log": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "821be48780d6c2dd7302dffebad8a6c0270104b6e69c27edef75c37fef4022f9"
+    },
+    "spec/releases/core-rc7-generator-default-2026-11-06/README.md": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "16f21da4f9bf4bc37e37d71c710f4cd507278e9d052d14815d38e2b6728edd88"
+    },
+    "spec/releases/core-rc7-generator-default-2026-11-06/bindings.json": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "935d1c13c39e316a8a6cbda1d184fb618cb488a1853f429a9456626c05fa7168"
+    },
+    "spec/releases/core-rc7-generator-default-2026-11-06/corpus-tests.log": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "579c037820aa4f3159d336e17083f3ae176e266c30e88937d229a048589fcbb3"
+    },
+    "spec/releases/core-rc7-generator-default-2026-11-06/failure-log-binding.json": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "03e5b834603d5c6801328b320d121075828a82438ac48a781510f1dbe262b4cd"
+    },
+    "spec/releases/core-rc7-generator-default-2026-11-06/manifest.json": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "b5a7e320205020debfa5b44df0e521f5b0edcf5038aecfdb5db0f3b38b305092"
+    },
+    "spec/releases/core-rc7-generator-default-2026-11-06/original-generator.cjs": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "eff4f2a91531ae58cb9b1578ba40e128e14f5f55737a2141c0c2846a82e23d05"
+    },
+    "spec/releases/core-rc7-generator-default-2026-11-06/producer-binding-before.log.gz": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "8a834fa1bb503c6f62d31e7d1a208cc2481df5a626e3dc10482b9ce3c6e0fbbd"
+    },
+    "spec/releases/core-rc7-generator-default-2026-11-06/reproduction.log": {
+      "parent": "57a171bbc18e8380e8ac238a22e3a9d3bf15b1b8",
+      "sha256": "86e18b7ab8c173a37405678e31dd36b997a1b31ed77ef8fac7282702ca5660ad"
+    },
+    "spec/performance/graph-widget-progressive-2026-11-06/README.md": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "6d47c5e35ed40db7603e506879dd6870c9d2c307b47968e2f1621aac0cc8871c"
+    },
+    "spec/performance/graph-widget-progressive-2026-11-06/environment.json": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "956a6d5a36c0885e5256775dd847f46ce8ab33af82ff65cd5a30480ee5fb3960"
+    },
+    "spec/performance/graph-widget-progressive-2026-11-06/focused-tests.txt": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "e43919631345543edecba89d4355f8a8a0ae29567f6452b0f09311cf1b7f63aa"
+    },
+    "spec/performance/graph-widget-progressive-2026-11-06/hashes.json": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "05139d2a3becffa07d5768fbdce5804d26f249ee1a965bebf231b08c9bdf45dd"
+    },
+    "spec/performance/graph-widget-progressive-2026-11-06/inventory.txt": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "3c9325487e17f35855254dd36e7499dcb558a39cfbaa72d476ef38206446bd31"
+    },
+    "spec/performance/graph-widget-progressive-2026-11-06/notebook-frames.json": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "0f8643fcfaeca33d82631d9c4f6c65dbb38696c06711e6548738be89885de13e"
+    },
+    "spec/performance/graph-widget-progressive-2026-11-06/notebook-pixels.json": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "07868223ed3a9a73e8b11db13c44976404aa8c526aa1ff32372180d00c6844ba"
+    },
+    "spec/performance/graph-widget-progressive-2026-11-06/notebook.json": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "2e51aab95f5f5d01002a8f5d021e8d337e8e2001fea2611e9555f23ff7a6e432"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/README.md": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "9ac44951da008716ee4f3ce35d9781a1b04696d3f31a0c59f68ef8d38f8b60f5"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/api-inventory.log": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "e788cfdec5c8896e774454bb7208484839d5a8e081d4f28f67a988d65b9e7f45"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/build-client.log.gz": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/changed-paths.txt": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "1cebef7dcebe326e683f8918aabbdc916e6da03e5360cdc2d094dbc5a330ac29"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/check-ci.log": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "417a3eb1fa79373eeac46561c3144c313761084ebe24206c8a1ddb6e561397cc"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/development-failures/cross-loop-notebook.log": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "063fd51777948761b0e9b401357408ebccfe71872efcc7e7fabd3b47e29c5abc"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/development-failures/cross-loop-worker.log": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "cbcfc324294506c0fbbd06fca069905454d7d6273ff2f34ab40de31fb589af55"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/development-failures/moving-target-check.log": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "e033cbbeaecd9efa8c9c530837fc41669759c67c53a58ac0d9d5dcc2fdaa1af8"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/development-failures/retired-hover-buffer.json": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "317d922dfde171419b44c9be72783fe63a4e33f91b867b306a7097a2cc3dac86"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/development-failures/self-observing-hooks.log.gz": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "86aecbc1e57c633d2beaed8776a6f4ce297925f3b52aa60829b1bdfeb2ab0d6f"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/environment.json": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "8aaefacb416c2c0ee500c01b76f7b473d43b5aec333511cb3a5527d9df964203"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/final-report-negative-tests.log": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "563739d297da085d8a153d2728be4a9dfadeea946108d3c5de9a375c999f3d57"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/final-workflow-check.log": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "a3fa522ab21dac04ff34f16142015da96d6dbc312b5f29e63bd08467bc19a05f"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/final.png": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "7dd73c25b41d94cd5a4721be9356cc92d24b2142329e6d7b1924ce50702a3a80"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/focused-tests.log": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "b2c2bd01256ab694f323aa0e084464059c8bfc488ac685ad6793ed55049a7d9f"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/hashes.json": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "fe10e90a933a3bbf771b5989c35dfb9369f86c3abb261fd5f82c09912240cbcb"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/hooks.log": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "735582b7082f081d1d49205c769686a0005eaaa0d6aa3e2fd72e5f3e6bc744ef"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/initial.png": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "7a8116df811647b33a538df513a84f922ef465961dc1923fc54c7da1ad13dc01"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/notebook-verifier.log": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "8a0083ab43cb0f83117637cfeef43d13eaa95c5dd16bd8b35d4cf08da8ffa754"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/notebook.json": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "560091ab9f8a64df0f6a39a67150bcf9c94a640d753501e8d2952cda153752ee"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/notebook.log": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "13381487d9b6d68aafa93f08583dfa02e4d7493525957fb918d165672cb9948b"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/public-api.log": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "fef7ff8098e56676e13107515645763fbac712dc4baa23afbab2ec25081e1fea"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/report-verifier-tests.log": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "2e450126a473f9acb41a96992e0a7510c563fe8854ed94e4773b93978394e36f"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/types.log": {
+      "parent": "d3ed3b2083c023ee09d7c0443797a3e2c2d29a04",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    }
+  },
+  "coreReceiptFiles": 37,
+  "protectedCorePathsUnchangedFromMain": [
+    "crates/xyg-engine/src/graphforge/ledger.rs",
+    "python/xyg/graphforge-compatibility.json",
+    "scripts/gen_graphforge_result_fixtures.cjs",
+    "scripts/gen_graphforge_rc7_result_fixtures.cjs",
+    "tests/fixtures",
+    "tests/test_graphforge.py",
+    "tests/test_verify_release_cohort.py",
+    "packages/xy-node/test/graphforge.test.mjs",
+    "packages/xy-node/test/graphforge-wasm-parity.test.mjs",
+    "spec/design/graphforge-compositions.md"
+  ],
+  "runtimePathsUnchangedFromWidget": [
+    "js/src",
+    "js/build.mjs",
+    "package.json",
+    "package-lock.json",
+    "python/xyg/_graph_widget.py",
+    "python/xyg/_graphforge.py",
+    "python/xyg/components.py",
+    "python/xyg/graph_layout.py",
+    "python/xyg/widget.py",
+    "scripts/graph_notebook_progressive_smoke.mjs",
+    "tests/notebook_graph_progressive.ipynb"
+  ]
+}

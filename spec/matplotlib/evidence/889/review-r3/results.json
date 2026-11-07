@@ -1,0 +1,44 @@
+{
+  "source_parent": "1351ae00e0e8dd134a34f23a25df614ec2209156",
+  "source_sha256": {
+    "python/xyg/pyplot/_axes.py": "360596df0f5d1859c76108c11800eccbb641f894b0d5ff84987cdc99e5ebf468",
+    "tests/pyplot/test_pdsh_gap_features.py": "1363672487f3292ba48b9eff771b3da2af06233cc400eba488b3e244cc54e5f6",
+    "spec/design/host-parity.md": "477c2d996671b36b746a4506966454b7a2106d848188583e7f4ca5e4d21cfe48",
+    "spec/matplotlib/issue-889-evidence.md": "059b19f0f32956525587486552be0c4470576ae531084f752433427db133947f"
+  },
+  "native_sha256": "7d57a86ebc56443936364817fc24d598fd9986774bcac0787f4a25750141d06e",
+  "wasm_manifest": {
+    "schema_version": 1,
+    "artifact": "xyg-wasm.wasm",
+    "sha256": "632510de5fef2adc675294167e133e99d3a2377f5f047f3a79a04987ee724d3d",
+    "bytes": 1922723,
+    "abi_version": 35,
+    "scene_version": 34,
+    "painter_version": 17
+  },
+  "unchanged_review_scopes": {
+    "Rust_PDF_registry": "3a91236542fe1b45c093d83b1e4fc6980956ebf4 APPROVE",
+    "original_body_acceptance_inventory": "1351ae00e0e8dd134a34f23a25df614ec2209156 APPROVE"
+  },
+  "passed": {
+    "pyplot": {
+      "passed": 1188,
+      "skipped": 163,
+      "xfailed": 26
+    },
+    "host_parity": 1097,
+    "locator_regressions": 4,
+    "legacy_chrome_and_secondary_axis_contracts": 26,
+    "typecheck": true,
+    "mandatory_hooks_and_ruff": true
+  },
+  "review_findings": {
+    "linear_coincident_minor_marks": "0/4 at reviewed parent; regression now passes 4/4",
+    "log_coincident_minor_marks": "0/3 at reviewed parent; regression now passes 3/3",
+    "noncoincident_control": "2/2 at reviewed parent and repair"
+  },
+  "pending": [
+    "independent Python repair review",
+    "PR CI and merge queue"
+  ]
+}

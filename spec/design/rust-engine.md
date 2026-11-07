@@ -731,6 +731,75 @@ reduced, retains canonical u64 row identity, and records available points, sourc
 rows, and zero detail rows read. Fully non-finite overview windows are omitted
 without rejecting an otherwise valid detail chunk.
 
+Fetched detail slabs are validated against their admitted finite x/y extrema
+and finite-x ordering before either read mode publishes rows. Structural mismatch
+returns the existing corrupt-artifact error (code 2), discarding the whole result
+or page, including any previously gathered chunks in that call. Validation uses
+constant scratch space beyond the existing bounded raw slab; it adds a linear
+pass over fetched bytes and performs no extra I/O. Non-finite canonical values
+keep their existing omission semantics. This detects inconsistent extrema and
+ordering, not arbitrary same-length edits that preserve those facts, and does
+not authenticate skipped chunks or overview/detail agreement. Local artifacts
+must remain immutable while open; concurrent mutation is unsupported. The
+nonpaged reader also checks generation before publication, including empty or
+fully y-pruned selections, matching the paged reader's cancellation contract.
+No ABI, file version, budget, tier or quantization policy changes.
+
+### 5.1a Bounded local canonical chunk reuse (#110)
+
+Each open `ChunkedColumns` owns one Rust mutex-protected LRU of validated raw
+canonical slabs, shared by paged and nonpaged reads. Cache identity is the open
+artifact plus absolute chunk index; viewport generation and predicates do not
+change canonical identity. Artifacts must remain immutable while open; closing
+and reopening drops the cache. There is no process-global data cache or host
+cache policy. A hit reruns the exact finite-row predicate over original f64
+bytes; returned Rust `row_ids` are metadata row-start plus physical row offset,
+including gaps from omitted nonfinite rows and duplicate-coordinate identities.
+
+Admission still counts **all selected canonical bytes**, including hits. Page
+boundaries cannot expand when warm. Before a valid current request, residency
+shrinks to `min(request_budget, 8 MiB)`; on misses Rust evicts least-recently-used
+slabs before allocating the incoming slab. Equal access sequences produce equal
+evictions. A chunk above 8 MiB that fits the existing read/page budget clears
+residency and uses a transient slab without admission to the cache. This preserves
+previous accepted requests. Cache plus in-flight raw slab payload never exceeds
+the request byte budget. Retained slab payload is at most 8 MiB per open handle.
+This is a canonical-byte budget, not total process RSS: open metadata/overview,
+cache entry bookkeeping, provenance vectors, exact result vectors and host output
+allocations remain additional. Each retained chunk has at least one 16-byte row;
+cache entry count is therefore bounded by 524,288, also bounded by source chunks.
+Result rows and access records are bounded by admitted rows/chunks; vectors use
+ordinary Rust capacity growth. Idle stores retain their last admitted residency
+until the next current request or close. Multiple handles have separate budgets.
+
+A chunk-keyed hash table supplies expected amortized constant-time lookup,
+removal and insertion. Previous/next chunk-ID links establish deterministic LRU
+order independently of hash iteration, so hits and evictions do not scan or
+shift resident entries. Trimming costs linear work in entries actually evicted;
+zone-map selection and row validation/decoding retain their existing costs.
+Hash-table capacity and link metadata remain additional to the raw-slab cap.
+
+A per-store lock serializes raw slab ownership, reads and byte accounting;
+generation supersession uses the existing independent atomic watermark and does
+not wait for I/O. Both modes check generation after lock acquisition, around
+miss I/O, on hits and before publication, including empty requests. Cancellation
+or read/validation failure publishes no rows or provenance. Validated chunks from
+earlier completed steps may remain reusable after failure; cancellation is not a
+cache rollback. Removed or failed incoming slabs are excluded from resident byte
+accounting. Newer reads cannot observe partially admitted data or stale eviction
+accounting. Supersession is cooperative at checkpoints, not an interrupt of an OS
+read; publication follows the existing final-check semantics.
+
+Rust replies record canonical chunk index, admitted metadata row span, hit/miss,
+evicted chunk IDs, final resident payload bytes and exact row IDs. Existing
+Python/Node ABI fields `chunks_read`/`bytes_read` now count actual positioned
+chunk fetches only; considered chunks retain their previous selection meaning.
+Detailed per-chunk and row provenance remains Rust-side: the existing ABI does
+not expose those additional fields. No ABI/version or file-format change, no
+browser/WASM cache claim, and no change to structural validation or budgets for
+other resource arenas follows from this local-file continuation.
+
+
 ABI v84 adds the versioned `xyg_scene_support_reason` authored-feature
 predicate. It returns Rust's stable ordered diagnostic verbatim, so Python and
 Node cannot silently diverge on polar, custom-font, browser-CSS, gradient, or

@@ -214,15 +214,18 @@ stable reason `XYG_SCENE_UNSUPPORTED_CONTOUR_CUSTOM_COLORMAP` (fail closed,
 `segments` color channels and is left as is. `filled`, `dash_negative`, `extend`, and per-level widths remain
 Python-only on Node.
 
-Nine bounded pairwise rows cross authored/autorange domains, empty/single/NaN
-inputs, categorical/time axes, style, and linear/log scale. Rust pins that exact
+The Rust-registry-driven bounded pairwise rows cross authored/autorange domains,
+empty/single/NaN inputs, categorical/time axes, style, linear/log scale, and
+static LOD tiers. Issue #889 adds hidden tick labels paired with empty authored
+tick lists, on an authored-domain line and an autoranged scatter. Rust pins that exact
 concern vocabulary and requires each concern's two rows to use distinct public
 shapes and distinct axis-mode configurations. Admitted rows use
 the same byte-exact matrix; deliberately unsupported rows require identical
-fail-close reasons. The 19-row fail-close registry separately pins fluid
+fail-close reasons. The fail-close registry separately pins fluid
 viewport, browser CSS/classes, custom font, title options, extra legend layout,
 alternate axes, unsupported symbol/mark, user-authored violin orientation
-metadata, layered autorange, annotation HTML/collision/markup/schema, colorbar
+metadata, layered autorange, annotation HTML/collision/markup/schema and the
+#889 per-kind unadmitted annotation styles, colorbar
 schema, LOD, malformed band/segment geometry, and triangle-mesh budget. This
 is designed to grow by appending Rust registry rows when #873 expands
 `StaticDocument`; the corpus runner and CI wiring do not need another
@@ -2074,3 +2077,70 @@ are specified in [geographic-hosts.md](geographic-hosts.md), including public
 composition wiring, one-mount admission, release acknowledgment, actual host
 journey evidence and the remaining native live-update/orphan-recovery gates.
 This checkpoint is pending follow-up PR integration.
+
+Issue #889 extends the same registry with all-format witnesses for exact authored
+frames, colormapped scatter alpha, explicit relabelled/frameless legend items,
+annular polar documents, and two opposite paint orders of wide overlapping
+translucent panels. The overlap witnesses also pin exact source-over RGBA pixels.
+Every retained pyplot #889 future-rendering xfail has an active exact original-
+program rejection check; the family matrix and receipts live in
+`spec/matplotlib/issue-889-evidence.md`.
+
+### Null locator/formatter observations (#889 review correction)
+
+Bulk chrome empty major arrays retain their existing automatic-ticks contract,
+including secondary axes. The pyplot NullLocator adapter authors zero major
+tick length/grid width and uses Rust's existing off label strategy. Separately
+authored minor positions and their style use the existing authored-major slot
+with labels off when no majors exist. This preserves minor marks coincident
+with Rust's automatic major positions without altering the empty-array contract.
+The redundant minor slot is disabled. A null minor locator, or an absent minor
+locator on a non-log axis, authors zero minor length/grid width; implicit log
+subdivisions retain their normal minor style. NullFormatter uses off to hide labels while
+retaining tick marks. A pre-existing hidden-axis `none` strategy takes precedence
+for either null ticker. Python and Node annotation numeric admission uses the
+same `XYG_SCENE_UNSUPPORTED_ANNOTATION_COORDINATE` diagnostic, including the
+coordinate name, for nonnumeric/nonfinite values. Four registry rejection cases
+check exact x/y messages across both hosts. This changes no ABI struct,
+signature or wire format.
+
+### Python public notebook progressive scheduling (R2, 2026-11-06)
+
+All public GraphForge graph widgets now feed retained native force checkpoints
+through the original Figure compiler, ChartView and widget channel. Layered and
+configured graphs share that route; there is no theme/style routing fork. The
+initial native checkpoint precedes terminal layout, and paint acknowledgements
+bound delivery to one pending picture. Static/batch routes remain synchronous.
+[The transport contract](graph-session-python-transport.md#public-notebook-scheduling-through-the-existing-figure-channel-r2-2026-11-06)
+records exact snapshot/epoch ownership, cross-loop dispatch, cancellation,
+selection-mask validity, preserved generic presentation and event semantics.
+The private GraphSession wrapper is unchanged. The later notebook identity
+projection subsection below records the bounded UUID integration; full public
+GraphSession interaction remains future work. The real five-node/two-widget notebook
+smoke runs within the existing Release surfaces `test` job. It does not prove
+required rendered ladder budgets, every notebook frontend, UUID box/lasso/export
+parity, competitor leadership or #35/#36/#1015 closure. The R1 geometry-only
+candidate is superseded; its receipt remains historical evidence.
+
+
+### Authentic Core rc.7 composition qualification
+
+The [Core rc.7 receipt](../releases/core-rc7-compatibility-2026-11-06/README.md)
+records real published-addon IPC for 96 algorithms plus find, native/Python/Node
+composition, and exact native/WASM document parity. The supported-Core
+declaration adds exact `0.6.0-rc.7`; it declares no interval or final `0.6.0`.
+This Linux x64 GNU qualification is not an installed XYG release cohort, complete
+platform matrix, or notebook/frontend acceptance. #936/#884/#108 remain open.
+
+
+### Python notebook identity projection (2026-11-06)
+
+The [bounded identity slice](graph-session-python-transport.md#notebook-typed-identity-slice-2026-11-06)
+adds Rust SelectRefs/SelectUuids projection to existing FigureWidget callbacks
+and binary row highlights. Exact typed callback records preserve kind, UUID and
+per-layer result_id/row without replacing the original graph renderer. The
+[receipt](../performance/graph-notebook-identity-2026-11-06/README.md) separates
+unit proofs for loops/parallel edges/layered provenance from actual small
+JupyterLab node-callback/UUID-selection delivery. Prior receipts remain historical.
+Full notebook frontend, exact geometric UUID sets, export and rendered size
+ladder acceptance for #1015/#36/#35 remains open.

@@ -1,0 +1,61 @@
+{
+  "reviewedCandidate": "195e2339e4783c17a2783067da9774053cc63ac7",
+  "beforeInventorySha256": "fe62d8faf9e013d5abfd1f3c515a6d51ae626fde396976e573239b6f26d61c5e",
+  "checks": {
+    "before": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_release_inventory.py"
+      ],
+      "exitCode": 1,
+      "rawSha256": "6811a1efb5e8ec653d9367b162b182eb434be53400ecd25e1cf25797ca3200e5",
+      "archiveSha256": "484af68886bd5ad2f7719602f819cc752821b075d16cdaf61e222c720a8b6812"
+    },
+    "generate": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_release_inventory.py",
+        "--write"
+      ],
+      "exitCode": 0,
+      "rawSha256": "4ca8047382029cc6877337002694d1d92024329a5dc830334e8379f4ab8c70c9",
+      "archiveSha256": "829f2c1074a4f38acde3d22c1ecb789a662925c5c59afe71127d27c0648c42c7"
+    },
+    "after": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/check_release_inventory.py"
+      ],
+      "exitCode": 0,
+      "rawSha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c",
+      "archiveSha256": "061e29d38894e10e9f9982462538fadbdf9051697515ec1315b4fc2b4d20e9f2"
+    },
+    "tests": {
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "tests/test_release_inventory.py",
+        "-q"
+      ],
+      "exitCode": 0,
+      "rawSha256": "3435dbb50b9af87ef644bc3988c65b3d0da12bbb667203910a3bf8a139f40762",
+      "archiveSha256": "04050a167dc0633c92efca1d233e7633c55c41b664bd323465b53fdee603f895"
+    }
+  },
+  "sourceSha256": {
+    "spec/releases/0.6.0-api-inventory.json": "e10f4b95101543a89a4f3e7d358be9b85249aedcd0c3abeab45fc89e88bf2d67",
+    "scripts/check_release_inventory.py": "0dff7c2746dd1c8068d61230eb190b83a6d95389bcca0a2988d606fc0993b994",
+    "spec/performance/geo-temporal-inventory-2026-11-06/README.md": "2ed6163b7980cf3e494adf5c4721b0078e9bebc7adfda306b33db896b878c5c7",
+    "spec/performance/geo-temporal-inventory-2026-11-06/semantic-delta.json": "a3e19e942c3e240f95d220e5f1227b4c7a25f00b2979f0ebd4169e030cc6a73b"
+  },
+  "priorBindingsSha256": "ca819717a96dcfd45b5e07d5b0a9f7f0193ee1129cead2a45af7a00cfdb242e9",
+  "inventoryTestCount": 26,
+  "apiChange": "subscribeState only; preparation-only-not-a-freeze"
+}

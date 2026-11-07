@@ -1,0 +1,80 @@
+{
+  "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+  "python": "3.14.4",
+  "commands": {
+    "node": {
+      "command": [
+        "node",
+        "--version"
+      ],
+      "output": "v22.23.4"
+    },
+    "rust": {
+      "command": [
+        "rustc",
+        "--version"
+      ],
+      "output": "rustc 1.96.0 (ac68faa20 2026-05-25)"
+    },
+    "cargo": {
+      "command": [
+        "cargo",
+        "--version"
+      ],
+      "output": "cargo 1.96.0 (30a34c682 2026-05-25)"
+    },
+    "branch": {
+      "command": [
+        "git",
+        "branch",
+        "--show-current"
+      ],
+      "output": "t3/graph-notebook-identity"
+    },
+    "base": {
+      "command": [
+        "git",
+        "rev-parse",
+        "origin/main"
+      ],
+      "output": "c3152d97bdb3a1efd61686b21d84385ee0f8de9e"
+    },
+    "syncMerge": {
+      "command": [
+        "git",
+        "rev-parse",
+        "HEAD"
+      ],
+      "output": "b312fbc170642a2376a62aed481e6e951168ca5a"
+    },
+    "pythonPackages": {
+      "command": [
+        "uv",
+        "pip",
+        "freeze"
+      ],
+      "output": "anyio==4.14.2\nanywidget==0.11.0\nargon2-cffi==25.1.0\nargon2-cffi-bindings==26.1.0\narrow==1.4.0\nasttokens==3.0.2\nasync-lru==2.4.0\nattrs==26.1.0\nbabel==2.18.0\nbeautifulsoup4==4.15.0\nbleach==6.4.0\ncertifi==2026.10.23\ncffi==2.1.1\ncharset-normalizer==3.5.2\nclick==8.4.2\ncomm==0.2.3\ndebugpy==1.8.22\ndefusedxml==0.7.1\nexecuting==2.2.1\nfastjsonschema==2.22.3\nfqdn==1.6.0\nh11==0.16.0\nhttpcore==1.0.9\nhttpx==0.28.1\nhypothesis==6.165.0\nidna==3.18\niniconfig==2.3.0\nipykernel==7.4.0\nipython==9.16.1\nipython-pygments-lexers==1.1.1\nipywidgets==8.1.8\nisoduration==20.11.0\njedi==0.20.0\njinja2==3.1.6\njson5==0.17.3\njsonpointer==3.10\njsonschema==4.26.0\njsonschema-specifications==2025.9.1\njupyter-builder==1.2.4\njupyter-client==8.10.0\njupyter-core==5.9.1\njupyter-events==0.12.1\njupyter-lsp==2.3.1\njupyter-server==2.21.1\njupyter-server-terminals==0.5.4\njupyterlab==4.6.6\njupyterlab-pygments==0.3.0\njupyterlab-server==2.28.1\njupyterlab-widgets==3.0.16\nlark==1.3.1\nmarkupsafe==3.0.4\nmatplotlib-inline==0.2.2\nmistune==3.4.0\nnbclient==0.11.0\nnbconvert==7.17.2\nnbformat==5.11.1\nnest-asyncio2==1.7.4\nnotebook-shim==0.2.4\nnumpy==2.5.1\npackaging==26.3\npandocfilters==1.5.1\nparso==0.8.7\npexpect==4.9.0\npillow==12.3.0\nplatformdirs==4.14.5\npluggy==1.6.0\nprometheus-client==0.26.0\nprompt-toolkit==3.0.53\npsutil==7.2.2\npsygnal==0.15.1\nptyprocess==0.7.0\npure-eval==0.2.3\npyarrow==26.0.0\npycparser==3.12\npygments==2.20.0\npytest==9.1.1\npython-dateutil==4.0.0\npython-json-logger==4.2.0\npyyaml==6.0.3\npyzmq==27.3.0\nreferencing==0.37.0\nrequests==2.34.2\nrfc3339-validator==0.1.4\nrfc3986-validator==0.1.1\nrfc3987-syntax==1.1.0\nrpds-py==2026.9.1\nruff==0.15.8\nsend2trash==2.1.0\nsix==1.17.0\nsortedcontainers==2.4.0\nsoupsieve==4.0.1\nstack-data==0.6.3\nstarlette==1.3.1\nterminado==0.18.1\ntinycss2==1.5.1\ntornado==6.6\ntraitlets==5.16.1\nty==0.0.66\ntyping-extensions==4.16.0\ntzdata==2026.6\nuri-template==1.3.0\nurllib3==2.8.0\nuvicorn==0.52.1\nwcwidth==0.8.2\nwebcolors==25.10.0\nwebencodings==0.6.1\nwebsocket-client==1.9.2\nwidgetsnbextension==4.0.15\n-e file:///home/ubuntu/.t3/worktrees/xyg/t3-d653db11"
+    }
+  },
+  "artifacts": {
+    "target/release/libxyg_core.so": "d1758cf111c09add3bb5a0aed107eb623d9e2035e5f5461068eb32b3a8ce0949",
+    "python/xyg/static/index.js": "484490d3f263c1ca4c4d4c54c483650d4b23c431b30aa2b53a762628e31d0db9",
+    "python/xyg/static/standalone.js": "472b3bc27c661d9c47664d1aa570a60392215b69fd71f23208da2f62352a3811",
+    "packages/xy-client/dist/index.js": "484490d3f263c1ca4c4d4c54c483650d4b23c431b30aa2b53a762628e31d0db9"
+  },
+  "notebook": {
+    "ok": true,
+    "browser": "156.0.8078.4",
+    "firstObservedStep": "9",
+    "finalStep": "300",
+    "native": {
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-d653db11/target/release/libxyg_core.so",
+      "sha256": "d1758cf111c09add3bb5a0aed107eb623d9e2035e5f5461068eb32b3a8ce0949",
+      "abi": 399
+    },
+    "twoWidgets": 2,
+    "pageErrors": [],
+    "externalRequests": []
+  },
+  "note": "No scale qualification; first observed/screenshot steps do not certify first-paint budget."
+}

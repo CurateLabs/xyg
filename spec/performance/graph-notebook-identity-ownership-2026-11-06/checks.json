@@ -1,0 +1,47 @@
+{
+  "candidate": "0742df3381e20110584df8f39242a27aee4cfc0d",
+  "nativePath": "/home/ubuntu/.t3/worktrees/xyg/t3-d653db11/target/release/libxyg_core.so",
+  "nativeSha256": "d1758cf111c09add3bb5a0aed107eb623d9e2035e5f5461068eb32b3a8ce0949",
+  "checks": {
+    "before": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_ownership.py",
+        "--manifest",
+        "target/task-tmp/identity/parent-old-ownership.json"
+      ],
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "rawSha256": "9c76cb4934947a3768b85651abbd626fb1e4e40cd58eaf81f5f0734acdf7621d",
+      "archiveSha256": "bc6269046ad400ee6f8b24ddea8fbb731e29b77e8e5be5e34e6c4119f1f97f9d"
+    },
+    "after": {
+      "command": [
+        "uv",
+        "run",
+        "python",
+        "scripts/verify_ownership.py"
+      ],
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "rawSha256": "05bc4e08ec18b45b65e6d57b56638a446616e313033b4454dac2a20eb6881f92",
+      "archiveSha256": "8d374b3086416aa738b0f9db79a959e696d1a00a65105f8d73006a30d53edd8b"
+    },
+    "focused": {
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_graph_widget.py",
+        "-q"
+      ],
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "rawSha256": "2145d8b40ba7b5cc60583be9cae654741b34af17aee7f43a1591455182c2024d",
+      "archiveSha256": "0b46fe98592d82519aba6bf0c29a6f0054b9307de823eb7ef3fe6b6b2f96ee02"
+    }
+  }
+}

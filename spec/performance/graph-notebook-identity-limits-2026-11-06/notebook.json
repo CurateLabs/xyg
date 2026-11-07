@@ -1,0 +1,913 @@
+{
+  "artifactDir": "/home/ubuntu/.t3/worktrees/xyg/t3-d653db11/target/xyg-graph-notebook-1hFEPn",
+  "presentation": "Layout complete\nProgressive property graph. 2 data series. X axis ranges from 0.1482 to 8.0024. Y axis ranges from -47.8988 to 7.1542. Graph: 5 nodes, 5 visible labels, 0 compound groups, 0 selected, 0 disabled.\nPoint 1 of 5. x: 2.6206, y: 1.0915\nProgressive property graph\nGraphForge result\nno label\nCompany\nPerson\ndirected relationship\n123%",
+  "kernel": {
+    "clicks": [
+      {
+        "trace": 1,
+        "index": 0,
+        "id": "01000000-0000-0000-0000-000000000001",
+        "provenance_row": 0,
+        "name": "ada",
+        "type": "Person",
+        "graphforge": [
+          {
+            "kind": "node",
+            "uuid": "01000000-0000-0000-0000-000000000001",
+            "index": 0,
+            "layers": []
+          }
+        ]
+      },
+      {
+        "trace": 1,
+        "index": 0,
+        "id": "01000000-0000-0000-0000-000000000001",
+        "provenance_row": 0,
+        "name": "ada",
+        "type": "Person",
+        "graphforge": [
+          {
+            "kind": "node",
+            "uuid": "01000000-0000-0000-0000-000000000001",
+            "index": 0,
+            "layers": []
+          }
+        ]
+      }
+    ],
+    "native": {
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-d653db11/target/release/libxyg_core.so",
+      "sha256": "d1758cf111c09add3bb5a0aed107eb623d9e2035e5f5461068eb32b3a8ce0949",
+      "abi": 399
+    },
+    "otherClicks": 0,
+    "hovers": 1,
+    "views": 1,
+    "selections": 0
+  },
+  "uuidSelection": {
+    "requested": [
+      "01000000-0000-0000-0000-000000000001",
+      "02000000-0000-0000-0000-000000000001"
+    ],
+    "identities": [
+      {
+        "kind": "node",
+        "index": 0,
+        "uuid": "01000000-0000-0000-0000-000000000001",
+        "layers": []
+      },
+      {
+        "kind": "edge",
+        "index": 0,
+        "uuid": "02000000-0000-0000-0000-000000000001",
+        "layers": [],
+        "derived": false,
+        "type": "KNOWS",
+        "source": "01000000-0000-0000-0000-000000000001",
+        "target": "01000000-0000-0000-0000-000000000002"
+      }
+    ]
+  },
+  "finalPointer": {
+    "before": 2,
+    "after": 3,
+    "id": "01000000-0000-0000-0000-000000000001",
+    "expectedId": "01000000-0000-0000-0000-000000000001"
+  },
+  "finalPointerVerified": true,
+  "expectedNativeHash": "d1758cf111c09add3bb5a0aed107eb623d9e2035e5f5461068eb32b3a8ce0949",
+  "initialPicture": {
+    "colors": 1386,
+    "width": 824,
+    "height": 339,
+    "sha256": "4495fb6c24c71a0828a30bb0f84812f9e5c99cced1fbae6311e6c25a66503afb",
+    "step": "65"
+  },
+  "widgetCount": 2,
+  "events": {
+    "actions": [
+      {
+        "kind": "keydown",
+        "key": "Home",
+        "step": "65"
+      },
+      {
+        "kind": "keydown",
+        "key": "Enter",
+        "step": "65"
+      },
+      {
+        "kind": "pointerdown",
+        "step": "73"
+      },
+      {
+        "kind": "wheel",
+        "step": "89"
+      },
+      {
+        "kind": "keydown",
+        "key": "Home",
+        "step": "300"
+      },
+      {
+        "kind": "pointerdown",
+        "step": "300"
+      }
+    ],
+    "events": [
+      {
+        "kind": "hover",
+        "detail": {
+          "row": {
+            "trace": 1,
+            "index": 0,
+            "x": 2.620615386604756,
+            "y": 1.091454796853565,
+            "x_kind": "float",
+            "y_kind": "float",
+            "id": "01000000-0000-0000-0000-000000000001",
+            "provenance_row": 0,
+            "name": "ada",
+            "type": "Person"
+          },
+          "trace": 1,
+          "index": 0,
+          "view": {
+            "ranges": {
+              "x": [
+                -1.8006442609073656,
+                5.01505537065008
+              ],
+              "y": [
+                -22.360947017007074,
+                3.6723909277308064
+              ]
+            },
+            "x0": -1.8006442609073656,
+            "x1": 5.01505537065008,
+            "y0": -22.360947017007074,
+            "y1": 3.6723909277308064,
+            "source": "hover"
+          },
+          "active": true,
+          "cursor": {
+            "px": [
+              596.5185595741261,
+              73.50920324117851
+            ],
+            "data": {
+              "x": 2.6206153866047557,
+              "y": 1.0914547968535695
+            }
+          },
+          "points": [
+            {
+              "trace": 1,
+              "index": 0,
+              "row": {
+                "trace": 1,
+                "index": 0,
+                "x": 2.620615386604756,
+                "y": 1.091454796853565,
+                "x_kind": "float",
+                "y_kind": "float",
+                "id": "01000000-0000-0000-0000-000000000001",
+                "provenance_row": 0,
+                "name": "ada",
+                "type": "Person"
+              },
+              "x_axis": "x",
+              "y_axis": "y",
+              "color": "rgb(77, 120, 168)"
+            }
+          ]
+        },
+        "client": [
+          912.5185595741261,
+          565.2592032411785
+        ],
+        "step": "65"
+      },
+      {
+        "kind": "click",
+        "detail": {
+          "row": {
+            "trace": 1,
+            "index": 0,
+            "x": 2.620615386604756,
+            "y": 1.091454796853565,
+            "x_kind": "float",
+            "y_kind": "float",
+            "id": "01000000-0000-0000-0000-000000000001",
+            "provenance_row": 0,
+            "name": "ada",
+            "type": "Person"
+          },
+          "trace": 1,
+          "index": 0,
+          "screen": {
+            "x": 534.5185595741261,
+            "y": 33.50920324117851
+          },
+          "modifiers": {
+            "shift": false,
+            "alt": false,
+            "ctrl": false,
+            "meta": false
+          },
+          "view": {
+            "ranges": {
+              "x": [
+                -1.8006442609073656,
+                5.01505537065008
+              ],
+              "y": [
+                -22.360947017007074,
+                3.6723909277308064
+              ]
+            },
+            "x0": -1.8006442609073656,
+            "x1": 5.01505537065008,
+            "y0": -22.360947017007074,
+            "y1": 3.6723909277308064,
+            "source": "click"
+          }
+        },
+        "client": null,
+        "step": "65"
+      },
+      {
+        "kind": "hover",
+        "detail": {
+          "row": {
+            "trace": 1,
+            "index": 0,
+            "id": "01000000-0000-0000-0000-000000000001",
+            "provenance_row": 0,
+            "name": "ada",
+            "type": "Person",
+            "x": 2.620615386604756,
+            "y": 1.091454796853565,
+            "x_kind": "float",
+            "y_kind": "float"
+          },
+          "trace": 1,
+          "index": 0,
+          "exact": true,
+          "view": {
+            "ranges": {
+              "x": [
+                -1.8006442609073656,
+                5.01505537065008
+              ],
+              "y": [
+                -22.360947017007074,
+                3.6723909277308064
+              ]
+            },
+            "x0": -1.8006442609073656,
+            "x1": 5.01505537065008,
+            "y0": -22.360947017007074,
+            "y1": 3.6723909277308064,
+            "source": "hover"
+          },
+          "active": true,
+          "cursor": {
+            "px": [
+              596.5185595741261,
+              73.50920324117851
+            ],
+            "data": {
+              "x": 2.6206153866047557,
+              "y": 1.0914547968535695
+            }
+          },
+          "points": [
+            {
+              "trace": 1,
+              "index": 0,
+              "row": {
+                "trace": 1,
+                "index": 0,
+                "id": "01000000-0000-0000-0000-000000000001",
+                "provenance_row": 0,
+                "name": "ada",
+                "type": "Person",
+                "x": 2.620615386604756,
+                "y": 1.091454796853565,
+                "x_kind": "float",
+                "y_kind": "float"
+              },
+              "x_axis": "x",
+              "y_axis": "y",
+              "color": "rgb(77, 120, 168)"
+            }
+          ]
+        },
+        "client": [
+          912.5185595741261,
+          565.2592032411785
+        ],
+        "step": "65"
+      },
+      {
+        "kind": "click",
+        "detail": {
+          "x": 2.7665060592145676,
+          "y": 1.0777132005063184,
+          "view": {
+            "ranges": {
+              "x": [
+                -1.7252131618876283,
+                5.20582923172325
+              ],
+              "y": [
+                -23.70418782687511,
+                3.781562943444571
+              ]
+            },
+            "x0": -1.7252131618876283,
+            "x1": 5.20582923172325,
+            "y0": -23.70418782687511,
+            "y1": 3.781562943444571,
+            "source": "click"
+          },
+          "row": {
+            "trace": 1,
+            "index": 0,
+            "x": 2.6954537959195153,
+            "y": 1.3017319155845364,
+            "x_kind": "float",
+            "y_kind": "float",
+            "id": "01000000-0000-0000-0000-000000000001",
+            "provenance_row": 0,
+            "name": "ada",
+            "type": "Person"
+          },
+          "trace": 1,
+          "index": 0
+        },
+        "client": null,
+        "step": "73"
+      },
+      {
+        "kind": "view_change",
+        "detail": {
+          "ranges": {
+            "x": [
+              -1.1304438611154382,
+              5.235316047758903
+            ],
+            "y": [
+              -24.877112720174843,
+              2.5770976743352865
+            ]
+          },
+          "x0": -1.1304438611154382,
+          "x1": 5.235316047758903,
+          "y0": -24.877112720174843,
+          "y1": 2.5770976743352865,
+          "source": "wheel_zoom",
+          "axes": [
+            "x",
+            "y"
+          ],
+          "phase": "update",
+          "interaction_id": 2
+        },
+        "client": null,
+        "step": "89"
+      },
+      {
+        "kind": "view_change",
+        "detail": {
+          "ranges": {
+            "x": [
+              -1.1304438611154382,
+              5.235316047758903
+            ],
+            "y": [
+              -24.877112720174843,
+              2.5770976743352865
+            ]
+          },
+          "x0": -1.1304438611154382,
+          "x1": 5.235316047758903,
+          "y0": -24.877112720174843,
+          "y1": 2.5770976743352865,
+          "source": "wheel_zoom",
+          "axes": [
+            "x",
+            "y"
+          ],
+          "phase": "end",
+          "interaction_id": 2
+        },
+        "client": null,
+        "step": "97"
+      },
+      {
+        "kind": "select",
+        "detail": {
+          "total": 2,
+          "view": {
+            "ranges": {
+              "x": [
+                -1.1304438611154382,
+                5.235316047758903
+              ],
+              "y": [
+                -24.877112720174843,
+                2.5770976743352865
+              ]
+            },
+            "x0": -1.1304438611154382,
+            "x1": 5.235316047758903,
+            "y0": -24.877112720174843,
+            "y1": 2.5770976743352865,
+            "source": "select"
+          }
+        },
+        "client": null,
+        "step": "121"
+      },
+      {
+        "kind": "view_change",
+        "detail": {
+          "ranges": {
+            "x": [
+              0.14822701123726417,
+              8.002375547029795
+            ],
+            "y": [
+              -47.898808382440166,
+              7.154210741145297
+            ]
+          },
+          "x0": 0.14822701123726417,
+          "x1": 8.002375547029795,
+          "y0": -47.898808382440166,
+          "y1": 7.154210741145297,
+          "source": "reset",
+          "axes": [
+            "x",
+            "y"
+          ],
+          "phase": "end",
+          "interaction_id": 3
+        },
+        "client": null,
+        "step": "300"
+      },
+      {
+        "kind": "hover",
+        "detail": {
+          "row": {
+            "trace": 1,
+            "index": 0,
+            "x": 2.7348689022137487,
+            "y": 4.577143089142606,
+            "x_kind": "float",
+            "y_kind": "float",
+            "id": "01000000-0000-0000-0000-000000000001",
+            "provenance_row": 0,
+            "name": "ada",
+            "type": "Person"
+          },
+          "trace": 1,
+          "index": 0,
+          "view": {
+            "ranges": {
+              "x": [
+                0.14822701123726417,
+                8.002375547029795
+              ],
+              "y": [
+                -47.898808382440166,
+                7.154210741145297
+              ]
+            },
+            "x0": 0.14822701123726417,
+            "x1": 8.002375547029795,
+            "y0": -47.898808382440166,
+            "y1": 7.154210741145297,
+            "source": "hover"
+          },
+          "active": true,
+          "cursor": {
+            "px": [
+              333.3716080682134,
+              55.8219999601028
+            ],
+            "data": {
+              "x": 2.734868902213748,
+              "y": 4.577143089142611
+            }
+          },
+          "points": [
+            {
+              "trace": 1,
+              "index": 0,
+              "row": {
+                "trace": 1,
+                "index": 0,
+                "x": 2.7348689022137487,
+                "y": 4.577143089142606,
+                "x_kind": "float",
+                "y_kind": "float",
+                "id": "01000000-0000-0000-0000-000000000001",
+                "provenance_row": 0,
+                "name": "ada",
+                "type": "Person"
+              },
+              "x_axis": "x",
+              "y_axis": "y",
+              "color": "rgb(77, 120, 168)"
+            }
+          ]
+        },
+        "client": [
+          649.3716080682134,
+          327.5719999601028
+        ],
+        "step": "300"
+      },
+      {
+        "kind": "hover",
+        "detail": {
+          "row": {
+            "trace": 1,
+            "index": 0,
+            "id": "01000000-0000-0000-0000-000000000001",
+            "provenance_row": 0,
+            "name": "ada",
+            "type": "Person",
+            "x": 2.7348689022137487,
+            "y": 4.577143089142606,
+            "x_kind": "float",
+            "y_kind": "float"
+          },
+          "trace": 1,
+          "index": 0,
+          "exact": true,
+          "view": {
+            "ranges": {
+              "x": [
+                0.14822701123726417,
+                8.002375547029795
+              ],
+              "y": [
+                -47.898808382440166,
+                7.154210741145297
+              ]
+            },
+            "x0": 0.14822701123726417,
+            "x1": 8.002375547029795,
+            "y0": -47.898808382440166,
+            "y1": 7.154210741145297,
+            "source": "hover"
+          },
+          "active": true,
+          "cursor": {
+            "px": [
+              333.3716080682134,
+              55.8219999601028
+            ],
+            "data": {
+              "x": 2.734868902213748,
+              "y": 4.577143089142611
+            }
+          },
+          "points": [
+            {
+              "trace": 1,
+              "index": 0,
+              "row": {
+                "trace": 1,
+                "index": 0,
+                "id": "01000000-0000-0000-0000-000000000001",
+                "provenance_row": 0,
+                "name": "ada",
+                "type": "Person",
+                "x": 2.7348689022137487,
+                "y": 4.577143089142606,
+                "x_kind": "float",
+                "y_kind": "float"
+              },
+              "x_axis": "x",
+              "y_axis": "y",
+              "color": "rgb(77, 120, 168)"
+            }
+          ]
+        },
+        "client": [
+          649.3716080682134,
+          327.5719999601028
+        ],
+        "step": "300"
+      },
+      {
+        "kind": "click",
+        "detail": {
+          "x": 2.7313268330816527,
+          "y": 4.670309730391811,
+          "view": {
+            "ranges": {
+              "x": [
+                0.14822701123726417,
+                8.002375547029795
+              ],
+              "y": [
+                -47.898808382440166,
+                7.154210741145297
+              ]
+            },
+            "x0": 0.14822701123726417,
+            "x1": 8.002375547029795,
+            "y0": -47.898808382440166,
+            "y1": 7.154210741145297,
+            "source": "click"
+          },
+          "row": {
+            "trace": 1,
+            "index": 0,
+            "x": 2.7348689022137487,
+            "y": 4.577143089142606,
+            "x_kind": "float",
+            "y_kind": "float",
+            "id": "01000000-0000-0000-0000-000000000001",
+            "provenance_row": 0,
+            "name": "ada",
+            "type": "Person"
+          },
+          "trace": 1,
+          "index": 0
+        },
+        "client": null,
+        "step": "300"
+      }
+    ]
+  },
+  "frames": [
+    {
+      "step": "1",
+      "time": 3913.5,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "9",
+      "time": 4746.199999809265,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "17",
+      "time": 4789.699999809265,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "25",
+      "time": 4827.400000095367,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "33",
+      "time": 4857.800000190735,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "41",
+      "time": 4891.699999809265,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "49",
+      "time": 4961.199999809265,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "57",
+      "time": 5017,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "65",
+      "time": 5083.300000190735,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "73",
+      "time": 5255.900000095367,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "81",
+      "time": 5376.599999904633,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "89",
+      "time": 5434.099999904633,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "97",
+      "time": 5534.699999809265,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "105",
+      "time": 5627.300000190735,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "113",
+      "time": 5684.099999904633,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "121",
+      "time": 5769.099999904633,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "129",
+      "time": 5861,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "137",
+      "time": 5889.900000095367,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "145",
+      "time": 5940.699999809265,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "153",
+      "time": 5986,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "161",
+      "time": 6023.099999904633,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "169",
+      "time": 6058.099999904633,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "177",
+      "time": 6089.900000095367,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "185",
+      "time": 6123.099999904633,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "193",
+      "time": 6163.300000190735,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "201",
+      "time": 6191.199999809265,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "209",
+      "time": 6223.400000095367,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "217",
+      "time": 6256.900000095367,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "225",
+      "time": 6291.400000095367,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "233",
+      "time": 6322.400000095367,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "241",
+      "time": 6357.900000095367,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "249",
+      "time": 6390.099999904633,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "257",
+      "time": 6423.300000190735,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "265",
+      "time": 6456.599999904633,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "273",
+      "time": 6489.400000095367,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "281",
+      "time": 6524.599999904633,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "289",
+      "time": 6557.800000190735,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "297",
+      "time": 6589.400000095367,
+      "width": 824,
+      "height": 338
+    },
+    {
+      "step": "300",
+      "time": 6624.300000190735,
+      "width": 824,
+      "height": 338
+    }
+  ],
+  "kernelVerified": true,
+  "disposed": true,
+  "pageErrors": [],
+  "ok": true,
+  "journey": "actual JupyterLab/IPython/anywidget/native retained graph",
+  "firstSteps": "9",
+  "finalSteps": "300",
+  "dimensions": {
+    "colors": 270,
+    "width": 824,
+    "height": 339,
+    "sha256": "de67b1bea47ecb08b3930cc0c90c7f68742f401afadde0e34744b3042711ba19",
+    "step": "300"
+  },
+  "browser": "156.0.8078.4",
+  "external": [],
+  "errors": [
+    "[anywidget] Deprecation Warning for xyg._graph_widget.GraphWidget: Direct export of a 'render' will likely be deprecated in the future. To migrate ...\n\nRemove the 'export' keyword from 'render'\n-----------------------------------------\n\nexport function render({ model, el }) { ... }\n^^^^^^\n\nCreate a default export that returns an object with 'render'\n------------------------------------------------------------\n\nfunction render({ model, el }) { ... }\n         ^^^^^^\nexport default { render }\n                 ^^^^^^\n\nPin to anywidget>=0.9.0 in your pyproject.toml\n----------------------------------------------\n\ndependencies = [\"anywidget>=0.9.0\"]\n\nTo learn more, please see: https://github.com/manzt/anywidget/pull/395.\n",
+    "[anywidget] Deprecation Warning for xyg._graph_widget.GraphWidget: Direct export of a 'render' will likely be deprecated in the future. To migrate ...\n\nRemove the 'export' keyword from 'render'\n-----------------------------------------\n\nexport function render({ model, el }) { ... }\n^^^^^^\n\nCreate a default export that returns an object with 'render'\n------------------------------------------------------------\n\nfunction render({ model, el }) { ... }\n         ^^^^^^\nexport default { render }\n                 ^^^^^^\n\nPin to anywidget>=0.9.0 in your pyproject.toml\n----------------------------------------------\n\ndependencies = [\"anywidget>=0.9.0\"]\n\nTo learn more, please see: https://github.com/manzt/anywidget/pull/395.\n",
+    "[.WebGL-0x1b1404319a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "[.WebGL-0x1b1404319a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "[.WebGL-0x1b1404319a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+    "[.WebGL-0x1b1404319a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+  ]
+}

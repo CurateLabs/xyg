@@ -1,0 +1,39 @@
+{
+  "base": "d22a6713af30ef13665d8b2bdbf7c0de5b3c4861",
+  "branch": "t3/fix-temporal-frame-retry",
+  "worktree": "/home/ubuntu/.t3/worktrees/xyg/t3-7298b34b",
+  "producer": "/home/ubuntu/.t3/worktrees/xyg/t3-4585b57b",
+  "producerHead": "ec58124ff083da650c2f35bd5ec2f3b53f4902c2",
+  "sourceCompatibility": {
+    "comparedFiles": 243,
+    "allEqual": true,
+    "sourceManifestSha256": "22e21eeea3aa74365c679fc584e45e4bf5bb293470bd6694f950aaf23866085a"
+  },
+  "native": {
+    "path": "/home/ubuntu/.t3/worktrees/xyg/t3-4585b57b/target/release/libxyg_core.so",
+    "sha256": "02f0edf9c79ae1408821c197981b37ebe8f5746a4e1a8df4f8a3ccf468f6519e"
+  },
+  "wasm": {
+    "path": "/home/ubuntu/.t3/worktrees/xyg/t3-7298b34b/packages/xy-client/dist/xyg-wasm.wasm",
+    "sha256": "7bce0525a9688ae051ef0f13d9f55da1a1e9fef08b2449993673e8811aada3a1",
+    "bytes": 1927032,
+    "rawCap": 1927168,
+    "node22GzipCap": 786432,
+    "pythonGzip6Bytes": 782869,
+    "node22Gzip6Bytes": 786115
+  },
+  "sourceHashes": {
+    "js/src/49_wasm_temporal_graph.ts": "86525c2710aa139173893360c9a53e33fc7a1ad7b05ff20041d9807ca7188227",
+    "packages/xy-node/test/temporal-graph-publication.test.mjs": "40f6266c0b84eba747584c00783354896c8cec093a1e359e6f9d47a5f7577e7b",
+    "tests/browser/wasm_foundation_page.mjs": "83330dd775a5a90b5638e393efabe19289443a2075aa242272c8828a4456cb49",
+    "spec/design/temporal-graph.md": "e0ae8933b1fad39c108004f83c26b3625ceed2da18ea6faa109939136c198a49",
+    "scripts/wasm_foundation_smoke.mjs": "cf51ae7d22304b2d1aae03f139e8871d67f6140645b15ff1b1c9014d0940862e",
+    "packages/xy-node/package.json": "d9806c71ca9cd5e667d11d37ce69665f0244f6a04ca320da57ffd1ebbd69360d",
+    ".github/workflows/ci.yml": "281b58be7f0bf65a2a03de177ebb622220e351e0118a0308262f8f2d56822cec"
+  },
+  "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+  "python": "3.14.4",
+  "node": "v22.23.4",
+  "chromium": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+  "uvPython": "3.12.15"
+}

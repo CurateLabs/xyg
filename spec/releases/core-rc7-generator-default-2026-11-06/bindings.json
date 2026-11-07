@@ -1,0 +1,14 @@
+{
+  "parent": "59af22861692fbe44babb0f53a167d82ccfb9cb4",
+  "sourceSha256": {
+    "scripts/gen_graphforge_rc7_result_fixtures.cjs": "14122498a63020f291e1f8428fb842d0cb153e9241fd3bad874812b87cfcded2",
+    "spec/api/graphforge-integration.md": "aaa1528aa8ec879f1aadbb30ea4d66124af45807794b73845376ec84c22cb965",
+    "spec/design/host-parity.md": "308472ac3ef1e772846f31c39e4c5ddfaf91d753cae999cec69beb805cc15888",
+    "tests/test_graphforge_contract_corpus.py": "d0c132f534ba9de3b3b07df0f8816da0ee1d42700b53f3e88694a8e1d42bcff5",
+    ".gitattributes": "9d6baebb7da2b43280dc69b8f64f95e92a199bacc0b9d52fc2c4a71aff4c883a"
+  },
+  "manifestSha256": "b5a7e320205020debfa5b44df0e521f5b0edcf5038aecfdb5db0f3b38b305092",
+  "command": "node scripts/gen_graphforge_rc7_result_fixtures.cjs \"$PWD/target/core-compat-artifacts/node_modules/@curatelabs/graphforge\" target/core-rc7-parent-reproduction",
+  "exitCode": 0,
+  "originalProducerSha256": "eff4f2a91531ae58cb9b1578ba40e128e14f5f55737a2141c0c2846a82e23d05"
+}

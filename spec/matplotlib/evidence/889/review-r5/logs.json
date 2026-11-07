@@ -1,0 +1,22 @@
+{
+  "diagnostic-before.log.gz": {
+    "raw_sha256": "07a936aa2de138d4d6f82a8e20e994f12a8d55b4abac70313d8d41c4dddee236",
+    "archive_sha256": "3e830d667137ea13b7eb64afc49411340819da4da00bc5300671d38355bf046e"
+  },
+  "focused.log.gz": {
+    "raw_sha256": "013e39868dfc440da576cf7e229b03c913f6553ef43baf1e986065dfd0c0e0ad",
+    "archive_sha256": "05d460161980a35ad12bb1510357158ecd178fcdf319353ec1deaa1149477391"
+  },
+  "hooks.log.gz": {
+    "raw_sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+    "archive_sha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+  },
+  "ruff-check.log.gz": {
+    "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "archive_sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+  },
+  "ruff-format.log.gz": {
+    "raw_sha256": "411fcf1ed834906dbb09d947a17c6d2fe140e696e4321610d139bbb83fd63fcd",
+    "archive_sha256": "2032d3da901efbcbb2ac4a3f6fa412e9a12b1034061476644e513d47375f47ba"
+  }
+}

@@ -10,7 +10,7 @@ use xyg_engine::graph_interaction_state::{ElementSet, Focus, HighlightPlane};
 use xyg_engine::graphforge::interaction::{TemporalHandle, TemporalHost};
 use xyg_engine::projection::{GraphProjection, Uuid};
 use xyg_engine::temporal::{CancelFlag, TemporalColumn, TemporalError, TemporalPrecision};
-use xyg_engine::temporal_graph::{TemporalBindingInput, TemporalGraph};
+use xyg_engine::temporal_graph::{TemporalBindingInput, TemporalGraph, TemporalGraphFrame};
 
 const MAGIC: &[u8; 4] = b"XYTG";
 const OUTPUT_MAGIC: &[u8; 4] = b"XYTF";
@@ -348,15 +348,45 @@ fn frame(instance: &mut Instance, bytes: &[u8]) -> i32 {
         .expect("WASM temporal owner poisoned")
         .as_mut()
         .ok_or(TemporalError::Disposed)
-        .and_then(|graph| graph.frame(revision, cursor, start, end, &cancel, budget));
-    let frame = match result {
-        Ok(frame) => frame,
-        Err(error) => return fail(instance, status(error), "temporal graph frame failed"),
-    };
+        .and_then(|graph| {
+            graph.frame_with_output(revision, cursor, start, end, &cancel, budget, |frame| {
+                encode_frame(
+                    frame,
+                    &bound.sources,
+                    &bound.targets,
+                    instance.max_arena_bytes,
+                )
+            })
+        });
+    match result {
+        Ok((_, output)) => {
+            instance.output = output;
+            instance.last_error.clear();
+            STATUS_OK
+        }
+        Err(error) => fail(instance, status(error), "temporal graph frame failed"),
+    }
+}
+
+fn encode_frame(
+    frame: &TemporalGraphFrame,
+    canonical_sources: &[u64],
+    canonical_targets: &[u64],
+    max_output_bytes: usize,
+) -> Result<Vec<u8>, TemporalError> {
     let nv = frame.node_visibility();
     let ev = frame.edge_visibility();
     let visible_nodes = frame.visible_node_ids();
     let visible_edges = frame.visible_edge_ids();
+    let output_len = OUTPUT_HEADER
+        .checked_add(nv.len())
+        .and_then(|v| v.checked_add(ev.len()))
+        .and_then(|v| v.checked_add(visible_nodes.len().checked_mul(16)?))
+        .and_then(|v| v.checked_add(visible_edges.len().checked_mul(16)?))
+        .and_then(|v| v.checked_add(visible_edges.len().checked_mul(16)?));
+    if output_len.is_none_or(|length| length > max_output_bytes) {
+        return Err(TemporalError::BudgetExceeded);
+    }
     let mut dense = vec![u64::MAX; nv.len()];
     let mut next = 0u64;
     for (index, &visible) in nv.iter().enumerate() {
@@ -369,32 +399,19 @@ fn frame(instance: &mut Instance, bytes: &[u8]) -> i32 {
     let mut targets = Vec::new();
     for (index, &visible) in ev.iter().enumerate() {
         if visible == 1 {
-            sources.push(dense[bound.sources[index] as usize]);
-            targets.push(dense[bound.targets[index] as usize]);
+            sources.push(dense[canonical_sources[index] as usize]);
+            targets.push(dense[canonical_targets[index] as usize]);
         }
-    }
-    let output_len = OUTPUT_HEADER
-        .checked_add(nv.len())
-        .and_then(|v| v.checked_add(ev.len()))
-        .and_then(|v| v.checked_add(visible_nodes.len() * 16))
-        .and_then(|v| v.checked_add(visible_edges.len() * 16))
-        .and_then(|v| v.checked_add(sources.len() * 16));
-    if output_len.is_none_or(|length| length > instance.max_arena_bytes) {
-        return fail(
-            instance,
-            STATUS_RESOURCE_LIMIT,
-            "temporal graph frame exceeds worker budget",
-        );
     }
     let mut out = Vec::with_capacity(output_len.unwrap());
     out.extend_from_slice(OUTPUT_MAGIC);
     out.extend_from_slice(&VERSION.to_le_bytes());
     out.extend_from_slice(&(OUTPUT_HEADER as u32).to_le_bytes());
     out.extend_from_slice(&0u32.to_le_bytes());
-    out.extend_from_slice(&revision.to_le_bytes());
-    out.extend_from_slice(&cursor.to_le_bytes());
-    out.extend_from_slice(&start.to_le_bytes());
-    out.extend_from_slice(&end.to_le_bytes());
+    out.extend_from_slice(&frame.revision().to_le_bytes());
+    out.extend_from_slice(&frame.cursor_micros().to_le_bytes());
+    out.extend_from_slice(&frame.range_start_micros().to_le_bytes());
+    out.extend_from_slice(&frame.range_end_micros().to_le_bytes());
     out.extend_from_slice(&(nv.len() as u32).to_le_bytes());
     out.extend_from_slice(&(ev.len() as u32).to_le_bytes());
     out.extend_from_slice(&(visible_nodes.len() as u32).to_le_bytes());
@@ -413,22 +430,38 @@ fn frame(instance: &mut Instance, bytes: &[u8]) -> i32 {
     for value in targets {
         out.extend_from_slice(&value.to_le_bytes());
     }
-    instance.output = out;
-    instance.last_error.clear();
-    STATUS_OK
+    Ok(out)
 }
 
 pub(super) fn execute(instance: &mut Instance, offset: usize, length: usize) -> i32 {
     // A retained GraphSession shares this owner. Admit replacement/frame work
     // before touching either owner or output; no second canonical state is kept.
-    if let Some(session)=&instance.graph_session {
-        let old=instance.temporal_graph.as_ref().map_or(0,|g|g.retained_bytes());
-        let staged=instance.arena.get(offset..offset.saturating_add(length));
-        let incoming=staged.filter(|b|b.get(..4)==Some(MAGIC) && u32_at(b,12)==Some(OP_CREATE))
-            .map_or(0,|b| (u32_at(b,20).unwrap_or(u32::MAX) as usize).saturating_add(u32_at(b,24).unwrap_or(u32::MAX) as usize).saturating_mul(2048));
-        let charge=session.retained_budget().saturating_add(old.saturating_mul(3)).saturating_add(incoming)
-            .saturating_add(instance.arena.capacity().saturating_mul(8)).saturating_add(instance.output.capacity());
-        if charge>instance.max_arena_bytes {return fail(instance,STATUS_RESOURCE_LIMIT,"temporal/session world exceeds worker budget");}
+    if let Some(session) = &instance.graph_session {
+        let old = instance
+            .temporal_graph
+            .as_ref()
+            .map_or(0, |g| g.retained_bytes());
+        let staged = instance.arena.get(offset..offset.saturating_add(length));
+        let incoming = staged
+            .filter(|b| b.get(..4) == Some(MAGIC) && u32_at(b, 12) == Some(OP_CREATE))
+            .map_or(0, |b| {
+                (u32_at(b, 20).unwrap_or(u32::MAX) as usize)
+                    .saturating_add(u32_at(b, 24).unwrap_or(u32::MAX) as usize)
+                    .saturating_mul(2048)
+            });
+        let charge = session
+            .retained_budget()
+            .saturating_add(old.saturating_mul(3))
+            .saturating_add(incoming)
+            .saturating_add(instance.arena.capacity().saturating_mul(8))
+            .saturating_add(instance.output.capacity());
+        if charge > instance.max_arena_bytes {
+            return fail(
+                instance,
+                STATUS_RESOURCE_LIMIT,
+                "temporal/session world exceeds worker budget",
+            );
+        }
     }
     instance.output.clear();
     let Some(end) = offset.checked_add(length) else {
@@ -480,6 +513,50 @@ mod tests {
         )
         .unwrap();
         WasmTemporalGraph::new(graph, vec![0], vec![1]).unwrap()
+    }
+
+    #[test]
+    fn output_budget_failure_does_not_publish_and_exact_retry_matches_native_frame() {
+        let handle = crate::xyg_wasm_instance_new(1024 * 1024);
+        assert_ne!(handle, 0);
+        super::super::with_instance_mut(handle, |instance| {
+            instance.temporal_graph = Some(graph());
+            let bound = instance.temporal_graph.as_ref().unwrap();
+            let (owner, authority) = bound.owner();
+            let mut native = None;
+            owner.with_graph(authority, &mut |graph| {
+                native = Some(graph.frame(1, 0, 0, 1, &CancelFlag::new(), 100).unwrap());
+            });
+            let native = native.unwrap();
+            let expected = encode_frame(&native, &[0], &[1], 1024).unwrap();
+            let mut bytes = MAGIC.to_vec();
+            for value in [VERSION, FRAME_HEADER as u32, OP_FRAME] {
+                bytes.extend_from_slice(&value.to_le_bytes());
+            }
+            for value in [2u64, 0, 0, 1, 100] {
+                bytes.extend_from_slice(&value.to_le_bytes());
+            }
+            // The output cap is exact. One-byte-under admission must not
+            // consume revision 2 or change the world observed by a session.
+            instance.max_arena_bytes = expected.len() - 1;
+            assert_eq!(frame(instance, &bytes), STATUS_RESOURCE_LIMIT);
+            assert!(owner.with_graph(authority, &mut |graph| {
+                assert_eq!(graph.applied_revision(), 1);
+                assert_eq!(
+                    graph.applied_visibility(),
+                    Some((native.node_visibility(), native.edge_visibility()))
+                );
+                assert!(graph.freeze(&native).is_ok());
+            }));
+            instance.max_arena_bytes = expected.len();
+            assert_eq!(frame(instance, &bytes), STATUS_OK);
+            let mut expected = expected;
+            expected[16..24].copy_from_slice(&2u64.to_le_bytes());
+            assert_eq!(instance.output, expected);
+            assert_eq!(frame(instance, &bytes), STATUS_STALE_REVISION);
+        })
+        .unwrap();
+        assert_eq!(crate::xyg_wasm_instance_dispose(handle), STATUS_OK);
     }
 
     #[test]

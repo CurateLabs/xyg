@@ -1,0 +1,66 @@
+{
+  "c318": {
+    "base": "c318a0cb2a25bd18d21dc925eb234340b06ddbbb",
+    "argv": [
+      "git",
+      "diff",
+      "--binary",
+      "--full-index",
+      "c318a0cb2a25bd18d21dc925eb234340b06ddbbb",
+      "--",
+      ".",
+      ":(exclude)spec/performance/**"
+    ],
+    "sha256": "9fa2668af8f884453c2b697baba0ba72104edbc97ff499a6abab22ed036420aa",
+    "paths": {
+      "spec/design/graphforge-node-scheduling.md": "05e46d9a98a0a8ee445e01254dee2fc1724678ecd779bc87a3ed49e95cf02adc",
+      "spec/releases/0.6.0-api-inventory.json": "ca5a42700d69abad10d3790a2eaf04ae013608130ddc7ee43a3c72cc09bb957d"
+    }
+  },
+  "MAIN": {
+    "base": "40c0cc5af2fead54684197c0ef90affbbff53519",
+    "argv": [
+      "git",
+      "diff",
+      "--binary",
+      "--full-index",
+      "40c0cc5af2fead54684197c0ef90affbbff53519",
+      "--",
+      ".",
+      ":(exclude)spec/performance/**"
+    ],
+    "sha256": "034fdb700aaab0cd3d9bfd4ef21fe897977c4befcbe73e7727629bcadd562549",
+    "paths": {
+      ".github/workflows/ci.yml": "477cc75eac50937cfd39ccbf76090b4090642e03108c3c5067a2b404912ba397",
+      "crates/xyg-engine/src/graphforge/interaction.rs": "7308227670b594e777d069015b2da63f4c473a4f25574d7ad2cdcdf1575fe503",
+      "crates/xyg-engine/src/graphforge/interaction/pick.rs": "a5e6dd1561206614af01722285f55d9c42b00fab8f4c8e295df7fc676985920d",
+      "crates/xyg-engine/src/graphforge/interaction/tests/wire.rs": "2f9001f3457ef0b8117044b1a4c1d031f4c6984b2af87a4fa203c578e80c4e59",
+      "crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs": "e05dcf451e014dcde9e220fd840e159c1fedcc8a21cc9cf5c6b02fac118cc490",
+      "crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs": "6af79ea2ed5edcb6ec6b3fe63d7d25f02f9b03af24ca5cb6f086a9cfe9e6fb62",
+      "crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_probe.rs": "e866ce2f93add0933610a66507846e09a7b2accd1e7c0d1191dc0d071ffb0091",
+      "crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs": "e23bfb1292b06c1c1291bf3a46b3fd7098cd63dfdc87fa041560b3398874b811",
+      "crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs": "0e3086946f9fa541762da75b3d1163e6363d132b277da6f2fb3b0a2a8e8c53a0",
+      "crates/xyg-engine/src/graphforge/interaction/wire.rs": "b63629aefa8c7043fa5e5400c67394060d6cb1bb1acb7d807b7d97cfd9e8f6d6",
+      "js/package-wasm.mjs": "e27f7a26c57d857b2897df83a08619f0d5ab9e534bc2b214f159a101a3a14d17",
+      "js/test/graph-picked-golden-migration.test.mjs": "670bc33a2e5d6d1ded4b2a4848d34d6e0ec6f077095106eeaa693e7b1d926fd0",
+      "js/test/graph-session-controller-wire.test.mjs": "a436ee29361d4f483e06fd6c52e872aca82ec39fe326d65e2d4ea26db4081e4f",
+      "packages/xy-node/test/graph-picked-receipt-diagnostic.mjs": "e29c2c3bee57c740e40e46f499c271ad5564e1fa98fe8d67c57eeda5c34b40ce",
+      "packages/xy-node/test/graph-picked-receipt-shipping.mjs": "bd73cae7c78bf575d485aaf7e2d7db7e7abc135916b5ef88e5cb7eac005f4e8d",
+      "packages/xy-node/test/graph-session-replay-helpers.mjs": "d43485af58543a7e537fb79d8d86d1f92c414412e17c3b04d88db5f6682b2aa5",
+      "packages/xy-node/test/graph-session-wire.test.mjs": "f6a4b087facdd692b8364ecbdd7028e8f0499d986e3a1f0c4df02ac9d3cb2c17",
+      "scripts/check_release_inventory.py": "0dff7c2746dd1c8068d61230eb190b83a6d95389bcca0a2988d606fc0993b994",
+      "scripts/verify_ci_workflow.py": "4a626b929febb2833f17aa7f8ccefcfd677ee544b772aabacf418708b7670a6a",
+      "spec/design-dossier.md": "593527dfe3a7216e04a3e8735a5085f30ebf4a8db2d66a2f8dbbf93daf49c662",
+      "spec/design/browser-wasm.md": "0a5469ed427bee4ad8854d0eee18eff1a2c61a435d0866262bc129fc90695563",
+      "spec/design/graph-interaction.md": "24803e72d38d998b591e556b385268d754954fb13703b6f5bb684b9cd5b6173b",
+      "spec/design/graphforge-node-scheduling.md": "05e46d9a98a0a8ee445e01254dee2fc1724678ecd779bc87a3ed49e95cf02adc",
+      "spec/design/ownership-audit.json": "f5f7d1317863bda0cd92becad40639e6c3a4f316a4cbeaa4fadd79eecac7c0fc",
+      "spec/design/ownership-audit.md": "f5a4639da1243f62b6e99c1b977a7f5ce445d270bb7175401cbc159fd6c382a6",
+      "spec/process/production-readiness.md": "d94f73d548a4d907e93a20eb8c547dfc77bd488ee220d265955c7811eb5f4b1c",
+      "spec/releases/0.6.0-api-inventory.json": "ca5a42700d69abad10d3790a2eaf04ae013608130ddc7ee43a3c72cc09bb957d",
+      "spec/releases/api-inventory.md": "ba791cc3fb21c60dbda419f6c9cc870eb701b15b839d10d68958789d04dd94cb",
+      "tests/test_release_inventory.py": "094d37c819a2e21cdaccaf9251c45f653fd0ae1261f3b3e9a4ab901360f161cb",
+      "tests/test_verify_ci_workflow.py": "bb7b7c839e66ccef5d9262e7bf2609c7b6b6ef536e5d037769fea954e8478b3c"
+    }
+  }
+}

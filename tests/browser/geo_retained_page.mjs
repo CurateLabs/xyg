@@ -1,4 +1,4 @@
-import {createXygWasmWorker, XygGeographicChart, encodeGeoScaleRequest, encodeGeoScaleStyle, encodeGeoChunkRequest, encodeGeoViewportColumnRequest} from '/packages/xy-client/dist/index.js';
+import {XygWasmTemporalController,createXygWasmWorker, XygGeographicChart, encodeGeoScaleRequest, encodeGeoScaleStyle, encodeGeoChunkRequest, encodeGeoViewportColumnRequest} from '/packages/xy-client/dist/index.js';
 import {parseGeoSceneData,parseGeoMembershipData,parseGeoHitData,parseGeoRowsData} from '/tests/browser/geo_source_parser.mjs';
 
 const assert=(ok,message)=>{if(!ok)throw Error(message);};
@@ -307,6 +307,77 @@ try{
   const next=await aggregate.membership(0,page.cursor);assert(next.records.length===2&&next.records[0].sourceRow===2n,'opaque cursor replay');
   const badCursor=page.cursor.slice();badCursor[0]^=1;await reject(aggregate.membership(0,badCursor),'stale cursor accepted');
   assert((await aggregate.pick(400,300))[0]?.count===32769n,'cursor failure invalidated painted frame');await remove(aggregate);
+  stage('automatic temporal geographic binding');
+  const temporalWorker=createXygWasmWorker({wasm:'/packages/xy-client/dist/xyg-wasm.wasm',workerUrl:'/packages/xy-client/dist/wasm-worker.js'});
+  const observerErrors=[],unhandledObserverErrors=[];
+  const onUnhandledObserver=event=>{unhandledObserverErrors.push(String(event.reason));event.preventDefault();};
+  window.addEventListener('unhandledrejection',onUnhandledObserver);
+  const temporal=await XygWasmTemporalController.create(temporalWorker,{instanceId:901n,groupId:901n,domain:[MIN,MIN+10n],cursor:MIN,
+    onError:async error=>{observerErrors.push(error.message);throw Error('error observer rejection');}});
+  let hold=false,fail=false,autoGate=deferred(),autoEntered=deferred(),abortedSignal;
+  const published=[],failures=[];
+  const linked=await chart({el:host(),worker,manifest:direct.manifest,budget,query:query(direct.info),style,
+    readChunk:async(ticket,signal)=>{if(hold){hold=false;abortedSignal=signal;autoEntered.resolve();await autoGate.promise;}if(fail)throw Error('automatic reader failure');return direct.chunk.slice();},
+    onChange:frame=>published.push(frame.identity.time.instant),onError:error=>failures.push(error.message)});
+  try{
+    // Observers run synchronously up to their first await; promises never hold
+    // the Rust command queue. Both observer and error-observer failures isolate.
+    const pendingObserver=deferred(),seenSnapshots=[];
+    const subscriptions=[temporal.subscribeState(()=>{throw Error('sync state observer');}),
+      temporal.subscribeState(async()=>{throw Error('async state observer');}),
+      temporal.subscribeState(()=>pendingObserver.promise),
+      temporal.subscribeState(state=>seenSnapshots.push(state))];
+    try{
+      await temporal.setCursor(MIN+1n);await temporal.setCursor(MIN);
+      await delay(20);
+      assert(seenSnapshots.length===2&&seenSnapshots[0].cursor===MIN+1n&&seenSnapshots[1].cursor===MIN,
+        'pending state observer delayed temporal commands');
+      assert(observerErrors.filter(x=>x==='sync state observer').length===2&&observerErrors.filter(x=>x==='async state observer').length===2,
+        'async state observer rejection bypassed onError');
+      assert(unhandledObserverErrors.length===0,'state or error observer rejection escaped');
+    }finally{pendingObserver.resolve();subscriptions.forEach(unsubscribe=>unsubscribe());window.removeEventListener('unhandledrejection',onUnhandledObserver);}
+    await linked.ready;
+    let binding=await linked.bindTemporal(temporal);await binding.whenIdle();
+    assert((await linked.pick(400,300))[0]?.featureId===MAX,'automatic direct identity lost');
+    const unchanged=published.length;await temporal.setSelection([MAX]);await binding.whenIdle();assert(published.length===unchanged,'selection-only event reissued geographic time query');
+    await temporal.setCursor(MIN+1n);await binding.whenIdle();
+    assert(linked.snapshot().visibleVertices===0n&&linked.snapshot().identity.time.instant===MIN+1n,'cursor did not automatically filter geographic frame');
+    hold=true;await temporal.setCursor(MIN);await autoEntered.promise;
+    const cameraUpdate=linked.update(query(direct.info,77n,{camera:{...camera,zoom:1}}));const cameraSettled=Promise.allSettled([cameraUpdate]);
+    await temporal.setCursor(MIN+2n);const after=published.length;
+    autoGate.resolve();await cameraSettled;await binding.whenIdle();
+    assert(abortedSignal.aborted&&linked.snapshot().identity.camera.zoom===1&&linked.snapshot().identity.time.instant===MIN+2n,'cursor/viewport race published stale identity');
+    assert(!published.slice(after).includes(MIN),'cancelled temporal frame leaked');
+    fail=true;await temporal.setCursor(MIN);await binding.whenIdle();
+    assert(failures.includes('automatic reader failure')&&linked.snapshot().identity.time.instant===MIN+2n,'bounded failure replaced old frame');
+    fail=false;await temporal.setCursor(MIN+1n);await binding.whenIdle();
+    const reducedLinked=await chart({el:host(),worker,manifest:reduced.manifest,budget,query:query(reduced.info,1n,{maxCells:1,previousDirect:false}),style,readChunk:async()=>reduced.chunk.slice(),layer:{setPrepared(){},releasePrepared(){}}});
+    await reducedLinked.ready;
+    const reducedBinding=await reducedLinked.bindTemporal(temporal);await reducedBinding.whenIdle();
+    assert(reducedLinked.snapshot().visibleVertices===0n,'aggregate time exclusion lost');
+    await temporal.setCursor(MIN);await Promise.all([binding.whenIdle(),reducedBinding.whenIdle()]);
+    assert(reducedLinked.snapshot().aggregate&&(await reducedLinked.pick(400,300))[0]?.count===32769n,'automatic aggregate provenance lost');
+    const members=await reducedLinked.membership(0);assert(members.records[0].featureId===MAX&&members.cursor?.length===208,'automatic aggregate exact membership lost');
+    await reducedBinding.dispose();await remove(reducedLinked);
+    await binding.dispose();binding=await linked.bindTemporal(temporal,'range');await binding.whenIdle();
+    assert(linked.snapshot().visibleVertices>0n&&linked.snapshot().identity.time.kind===2,'range snapshot not forwarded');
+    await temporal.setRange(MIN+1n,MIN+3n);await binding.whenIdle();assert(linked.snapshot().visibleVertices===0n,'range half-open exclusion lost');
+    await temporal.applyEvent({groupId:901n,sourceInstance:902n,revision:1n,rangeStart:MIN,rangeEnd:MIN+1n,cursor:MIN,window:0n,selection:[]});await binding.whenIdle();
+    assert(linked.snapshot().visibleVertices>0n,'received temporal event did not update geography');
+    await temporal.dispose();await binding.whenIdle();const count=published.length;
+    await linked.update(query(direct.info,90n));assert(published.length===count+1,'temporal disposal broke geographic independence');
+    await binding.dispose();
+    const replacementWorker=createXygWasmWorker({wasm:'/packages/xy-client/dist/xyg-wasm.wasm',workerUrl:'/packages/xy-client/dist/wasm-worker.js'});
+    const replacement=await XygWasmTemporalController.create(replacementWorker,{instanceId:903n,domain:[MIN,MIN+10n],cursor:MIN+1n});
+    try{
+      const replacementBinding=await linked.bindTemporal(replacement);await replacementBinding.whenIdle();
+      autoGate=deferred();autoEntered=deferred();hold=true;
+      await replacement.setCursor(MIN);await autoEntered.promise;
+      const closing=remove(linked);assert(abortedSignal.aborted,'geographic disposal did not cancel bound read');
+      autoGate.resolve();await closing;await replacementBinding.whenIdle();const closedCount=published.length;
+      await replacement.setCursor(MIN+2n);assert(published.length===closedCount,'disposed geography retained temporal subscription');
+    }finally{autoGate.resolve();await replacement.dispose();await replacementWorker.dispose();}
+  }finally{autoGate.resolve();await remove(linked);await temporal.dispose();await temporalWorker.dispose();}
   stage('failed initialization cleanup');const brokenHost=host(),broken=await chart({el:brokenHost,worker,manifest:direct.manifest,budget,query:query(direct.info),style,readChunk:async()=>{throw Error('reader failure');}});
   await reject(broken.ready,'initial reader failure accepted');assert(!brokenHost.children.length,'failed initialization left DOM');await remove(broken);
   stage('dispose unsettled source read');pauseSequence=6n;entered=deferred();gate=deferred();teardownRelease=gate.resolve;
@@ -326,6 +397,6 @@ try{
   assert(stopped.every(r=>r.status==='rejected'&&r.reason.code==='XYG_WASM_DISPOSED'),'shutdown executed or stranded queued mutation');
   assert(worker.pending.size===0,'shutdown retained pending transport');
   assert(parserFamilies.size===4,'parser proof missing actual packet family');
-  result={ok:true,abiVersion:metadata.abiVersion,concurrentOwnership:true,sharedViews:5,directPages:3,fullU64:true,fullI64:true,cancelledReadAck:true,oldFramePreserved:true,contextRestored:true,memberCursor:true,originalRows:true,indexedSidecar:true,indexedRecovery:true,indexedWriteCancelAck:true,offscreenKeyboardFocus:true,failedInitializationCleaned:true,pending:worker.pending.size,parserNegativeControls,frozenSnapshot:true,wasmRasterExport:'unsupported',startupMs,retainedBuffers,environment:{userAgent:navigator.userAgent,hardwareConcurrency:navigator.hardwareConcurrency,devicePixelRatio:window.devicePixelRatio}};
+  result={ok:true,automaticTemporalBinding:true,asyncStateObserversIsolated:true,abiVersion:metadata.abiVersion,concurrentOwnership:true,sharedViews:5,directPages:3,fullU64:true,fullI64:true,cancelledReadAck:true,oldFramePreserved:true,contextRestored:true,memberCursor:true,originalRows:true,indexedSidecar:true,indexedRecovery:true,indexedWriteCancelAck:true,offscreenKeyboardFocus:true,failedInitializationCleaned:true,pending:worker.pending.size,parserNegativeControls,frozenSnapshot:true,wasmRasterExport:'unsupported',startupMs,retainedBuffers,environment:{userAgent:navigator.userAgent,hardwareConcurrency:navigator.hardwareConcurrency,devicePixelRatio:window.devicePixelRatio}};
 }catch(error){result={ok:false,stage:window.__retainedStage,code:error.code,message:error.message,stack:error.stack};}
 finally{teardownRelease?.();await Promise.allSettled([...charts].map(c=>c.dispose()));await worker.dispose();hosts.forEach(el=>el.remove());HTMLCanvasElement.prototype.getContext=getContext;window.__retained=result;}

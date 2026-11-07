@@ -1,0 +1,253 @@
+{
+  "qualification": "uncommitted R2 working-tree bytes; capture HEAD names R1, not these candidate bytes",
+  "sources": {
+    ".github/workflows/ci.yml": {
+      "sha256": "014c24f8cc282db9cf28e558789d16e24d8db67a3e5b9419cfd9c66da5bb1971",
+      "bytes": 77227
+    },
+    "js/src/60_entries.ts": {
+      "sha256": "d60ad7ebdd73b8c3ecbe38436cfc61ba774236e28509d82a3aca2370cb2e28da",
+      "bytes": 19300
+    },
+    "js/src/66_graph_host.ts": {
+      "sha256": "8a1b016fd6af3aba530afb9430bada8de314828a0cdd693d96b74956eb26f258",
+      "bytes": 6406
+    },
+    "python/xyg/_graph_widget.py": {
+      "sha256": "765f50fc97299975f0861a2bfedc33158a54b96c14913e14c9c2c9cac4b7fd55",
+      "bytes": 10720
+    },
+    "python/xyg/_graphforge.py": {
+      "sha256": "354e72d7706c95b7a46de02b6943c93b0682ff4dbff081b4519aa83dfc7f224e",
+      "bytes": 37303
+    },
+    "python/xyg/components.py": {
+      "sha256": "39f27826c2149e29020ee7357bb72262b2356ca5edf9cf3dfa8671da7a0773a7",
+      "bytes": 312525
+    },
+    "python/xyg/graph_layout.py": {
+      "sha256": "da2625172ef34cf09a3b87ca98083096957e2111d97f6eb78310736d003a4577",
+      "bytes": 10496
+    },
+    "python/xyg/widget.py": {
+      "sha256": "dd0db765486f1f92488408651b2ab77a49f437901975e1aa24c3ed1cdb574ac9",
+      "bytes": 11734
+    },
+    "scripts/graph_notebook_progressive_smoke.mjs": {
+      "sha256": "04884e05369ac0faccf008029feadecd0c87554dfe0feea5592fd60096b94626",
+      "bytes": 10097
+    },
+    "scripts/verify_graph_notebook_report.py": {
+      "sha256": "7b9a0fdda07a8122ae521ddbfdcb57d754ee9d483e0526992958f7f4283f4790",
+      "bytes": 4241
+    },
+    "scripts/verify_ci_workflow.py": {
+      "sha256": "f6fdb2c156b733668ef24df09f33f1532c2454fe405cddc079675cb79268c875",
+      "bytes": 194759
+    },
+    "tests/notebook_graph_progressive.ipynb": {
+      "sha256": "d3dbdaf7b603f3e70aa30e903732657fc93b873f2632972f947997fff86e7a60",
+      "bytes": 3490
+    },
+    "tests/test_graph_widget.py": {
+      "sha256": "94e3349da407601607a4aa916ba611468b1b688e0678ae1c6c95cc2656581430",
+      "bytes": 10325
+    },
+    "tests/test_graph_notebook_report.py": {
+      "sha256": "767a0bfc5cde1d632e48c3adce7dd9db9989e6606fc954acc4c221b106df0373",
+      "bytes": 2621
+    },
+    "package-lock.json": {
+      "sha256": "8d8fd757c65329343e3e212f540bf6dfd5a7950b3af321787a649b94ab15a5d8",
+      "bytes": 52836
+    },
+    "pyproject.toml": {
+      "sha256": "07f8799e3d616e73c24bd3ef5a7c679d190855d82f65d853467a7343ee90e825",
+      "bytes": 10228
+    },
+    "uv.lock": {
+      "sha256": "9c897f644d4b241ab192c38d0afc26f4a49665dbf7734410e893b763ed9a0bef",
+      "bytes": 392962
+    },
+    "spec/design/graph-session-python-transport.md": {
+      "sha256": "693d06a41474ee4af950a3d7e3852a54ee1acb70e7528788793916b3a11002b5",
+      "bytes": 17286
+    },
+    "spec/design/graph-mark.md": {
+      "sha256": "9588433e6cb19a6b0f85f90aafd8cde77f8bcbf6d0076f5828ba753aaeefd038",
+      "bytes": 84515
+    },
+    "spec/design/host-parity.md": {
+      "sha256": "68bc4eae6501485c36938d61ac362790ed04313c0ec1c6a6aa011d7671f2f594",
+      "bytes": 158336
+    },
+    "spec/design/build-ci.md": {
+      "sha256": "b6a28d1e47cb0864f95e4953346f4346a763a48dccc122b0f8ff0d6c445808ed",
+      "bytes": 11585
+    },
+    "spec/api/graphforge-integration.md": {
+      "sha256": "cd653efc6f680080735015720af57369f604b37c30df40aa149a6a2246bb3245",
+      "bytes": 21052
+    },
+    "python/xyg/_graph.py": {
+      "sha256": "478fdb8026138d78c55a41ffed0f051236c5e2bef5f3391163a7d41ab272e7f5",
+      "bytes": 28802
+    },
+    "python/xyg/_marks_graph.py": {
+      "sha256": "d429896b88d87d539b748fdb06f5bdaeb87dba7cfa5d382b5f187a417ab6a5a7",
+      "bytes": 49442
+    },
+    "python/xyg/channel.py": {
+      "sha256": "74db10e1ba6afb9cd58b1c9e465c10a11e3d1abf8d0ac7a7189c7f297f8ada86",
+      "bytes": 16474
+    },
+    "js/src/50_chartview.ts": {
+      "sha256": "c43862b647550d388a374e1f0fbf31582ae401a30fd7d5fc02cb7c9e987a402b",
+      "bytes": 429971
+    },
+    "js/src/54_kernel.ts": {
+      "sha256": "2b557462f5582fd323ddcad55d6b74f82709dee74f7947f331324e71388098d6",
+      "bytes": 45764
+    },
+    "js/src/58_graph.ts": {
+      "sha256": "f3c1c66af6334dc6361ac1bc3b5accff0294b0ae6800d003cbfb21d29dd67935",
+      "bytes": 6713
+    },
+    "js/src/63_graph_controller.ts": {
+      "sha256": "53a231dc02aafc217c37b764252a2459544ffec36b29c84b1e9fe65444bdd89d",
+      "bytes": 20649
+    },
+    "js/build.mjs": {
+      "sha256": "47e2f4de2f3a7d9c90c09ab0c3676533b288f2a575921089e2586d9b9f22aea6",
+      "bytes": 7923
+    }
+  },
+  "artifacts": {
+    "target/release/libxyg_core.so": {
+      "sha256": "d1758cf111c09add3bb5a0aed107eb623d9e2035e5f5461068eb32b3a8ce0949",
+      "bytes": 6119880
+    },
+    "packages/xy-client/dist/index.js": {
+      "sha256": "b4520df6dc498c87658c7250a584c6d540de927489345a82e9cb4af657b56aa8",
+      "bytes": 799941,
+      "gzip_bytes_level9": 228629
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "sha256": "69b42f6f6a2caf27694a0302c60bf7cb3a88ec6e78c9ea23d304f8aa00247105",
+      "bytes": 799968,
+      "gzip_bytes_level9": 228663
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e",
+      "bytes": 56051,
+      "gzip_bytes_level9": 9859
+    },
+    "python/xyg/static/index.js": {
+      "sha256": "b4520df6dc498c87658c7250a584c6d540de927489345a82e9cb4af657b56aa8",
+      "bytes": 799941,
+      "gzip_bytes_level9": 228629
+    },
+    "python/xyg/static/standalone.js": {
+      "sha256": "69b42f6f6a2caf27694a0302c60bf7cb3a88ec6e78c9ea23d304f8aa00247105",
+      "bytes": 799968,
+      "gzip_bytes_level9": 228663
+    }
+  },
+  "rust_crates_git_tree": "49aed30e707b88a410ae04b22710773df0a19dce",
+  "receipt_artifacts": {
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/api-inventory.log": {
+      "sha256": "e788cfdec5c8896e774454bb7208484839d5a8e081d4f28f67a988d65b9e7f45",
+      "bytes": 201
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/check-ci.log": {
+      "sha256": "417a3eb1fa79373eeac46561c3144c313761084ebe24206c8a1ddb6e561397cc",
+      "bytes": 1786
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/development-failures/cross-loop-notebook.log": {
+      "sha256": "063fd51777948761b0e9b401357408ebccfe71872efcc7e7fabd3b47e29c5abc",
+      "bytes": 19296
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/development-failures/cross-loop-worker.log": {
+      "sha256": "cbcfc324294506c0fbbd06fca069905454d7d6273ff2f34ab40de31fb589af55",
+      "bytes": 796
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/development-failures/moving-target-check.log": {
+      "sha256": "e033cbbeaecd9efa8c9c530837fc41669759c67c53a58ac0d9d5dcc2fdaa1af8",
+      "bytes": 22116
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/development-failures/retired-hover-buffer.json": {
+      "sha256": "317d922dfde171419b44c9be72783fe63a4e33f91b867b306a7097a2cc3dac86",
+      "bytes": 21508
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/environment.json": {
+      "sha256": "8aaefacb416c2c0ee500c01b76f7b473d43b5aec333511cb3a5527d9df964203",
+      "bytes": 3554
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/final.png": {
+      "sha256": "7dd73c25b41d94cd5a4721be9356cc92d24b2142329e6d7b1924ce50702a3a80",
+      "bytes": 10754
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/focused-tests.log": {
+      "sha256": "b2c2bd01256ab694f323aa0e084464059c8bfc488ac685ad6793ed55049a7d9f",
+      "bytes": 260
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/initial.png": {
+      "sha256": "7a8116df811647b33a538df513a84f922ef465961dc1923fc54c7da1ad13dc01",
+      "bytes": 18392
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/notebook-verifier.log": {
+      "sha256": "8a0083ab43cb0f83117637cfeef43d13eaa95c5dd16bd8b35d4cf08da8ffa754",
+      "bytes": 71
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/notebook.json": {
+      "sha256": "560091ab9f8a64df0f6a39a67150bcf9c94a640d753501e8d2952cda153752ee",
+      "bytes": 22903
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/notebook.log": {
+      "sha256": "13381487d9b6d68aafa93f08583dfa02e4d7493525957fb918d165672cb9948b",
+      "bytes": 13350
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/public-api.log": {
+      "sha256": "fef7ff8098e56676e13107515645763fbac712dc4baa23afbab2ec25081e1fea",
+      "bytes": 27
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/report-verifier-tests.log": {
+      "sha256": "2e450126a473f9acb41a96992e0a7510c563fe8854ed94e4773b93978394e36f",
+      "bytes": 98
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/types.log": {
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "bytes": 19
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/README.md": {
+      "sha256": "9ac44951da008716ee4f3ce35d9781a1b04696d3f31a0c59f68ef8d38f8b60f5",
+      "bytes": 11247
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/final-report-negative-tests.log": {
+      "sha256": "563739d297da085d8a153d2728be4a9dfadeea946108d3c5de9a375c999f3d57",
+      "bytes": 98
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/final-workflow-check.log": {
+      "sha256": "a3fa522ab21dac04ff34f16142015da96d6dbc312b5f29e63bd08467bc19a05f",
+      "bytes": 567
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/build-client.log.gz": {
+      "sha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "bytes": 1056,
+      "uncompressed_sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/changed-paths.txt": {
+      "sha256": "1cebef7dcebe326e683f8918aabbdc916e6da03e5360cdc2d094dbc5a330ac29",
+      "bytes": 3011
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/hooks.log": {
+      "sha256": "735582b7082f081d1d49205c769686a0005eaaa0d6aa3e2fd72e5f3e6bc744ef",
+      "bytes": 288
+    },
+    "spec/performance/graph-widget-progressive-r2-2026-11-06/development-failures/self-observing-hooks.log.gz": {
+      "sha256": "86aecbc1e57c633d2beaed8776a6f4ce297925f3b52aa60829b1bdfeb2ab0d6f",
+      "bytes": 295,
+      "uncompressed_sha256": "0a8d5c2f2e827e13be825b5c9015f4f55045a60a81d6c1b13d69d3783c8b9e02"
+    }
+  }
+}

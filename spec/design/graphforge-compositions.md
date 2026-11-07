@@ -103,7 +103,7 @@ versions in the release evidence. This is release metadata, not a client
 handshake or a substitute for per-result schema validation.
 
 Qualified exact releases are **Core 0.5.2** (94 algorithm results) and
-**Core 0.6.0-rc.5** (96 algorithm results), each with its own pinned Core-owned
+**Core 0.6.0-rc.5** and **Core 0.6.0-rc.7** (96 algorithm results each), each with its own pinned Core-owned
 schema/descriptor corpus, real published-binding IPC run, `find` fixture,
 and native/Python/Node/WASM composition evidence. The rc.5 corpus lives in
 `tests/fixtures/graphforge/core/0.6.0-rc.5` and its 112 real fixtures in
@@ -111,6 +111,13 @@ and native/Python/Node/WASM composition evidence. The rc.5 corpus lives in
 is preserved. Ledger contents version 2 adds `path-cost`: `bfs_depth` and
 `dijkstra_cost` draw derived endpoint pairs carrying `cost`, without inferring
 an ordered path or a persisted relationship.
+
+The [rc.7 compatibility receipt](../releases/core-rc7-compatibility-2026-11-06/README.md)
+binds the published Linux addon/facade, source corpus and every new IPC file.
+The rc.7 corpus has the same schema facts as rc.5; no runtime ledger change
+is needed. Its generator uses Core's options-object cluster API. Historical
+corpus and generator bytes are retained. This is tested compatibility coverage,
+with no XYG candidate reserved or frozen.
 
 This declares no version interval, later release candidate, or installable
 editor pairing. #108/#884 still require the actual Core/XYG artifact cohort

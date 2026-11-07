@@ -1,0 +1,78 @@
+{
+  "node": "v22.23.4",
+  "productionProducers": true,
+  "native": {
+    "bytes": 6118472,
+    "sha256": "0deea9029e4a328dc15aa2d86873a203f12b8911e1c89c274f14270b31a3f880"
+  },
+  "rawSource": {
+    "sha256": "f66281328c0ffa9a53db8ab4728ab9ed3d88f2f3ca8b58ecc6ac3db212e08231"
+  },
+  "module": {
+    "bytes": 1926555,
+    "gzip6": 785546,
+    "sha256": "e3ef33b58820675f4c201a2b81ad23b3665090442210aa22fcee28a269884a96"
+  },
+  "limits": {
+    "raw": 1927168,
+    "gzip6": 786432
+  },
+  "headroom": {
+    "raw": 613,
+    "gzip6": 886
+  },
+  "artifacts": {
+    "packages/xy-client/dist/index.js": {
+      "bytes": 795056,
+      "sha256": "1c7ee9a2073ea036a72b8ae695e413ac2f5860383582f3b838910ea8aff7f7ba"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 795085,
+      "sha256": "e8c3b4aeab6c28b80f67e35ba56003eb1a99704527f58d262acef0f876014dbf"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 56051,
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "bytes": 19000,
+      "sha256": "e6ea3f78a54fc1fa0ee61b6d2f2881d1ee3bd694a1239b39b9dc6027ababbf95"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1926555,
+      "sha256": "e3ef33b58820675f4c201a2b81ad23b3665090442210aa22fcee28a269884a96"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2587929,
+      "sha256": "17ffb4bdbd71f4329a419ba0e3eeb204193cd62f4aeeb36eaac74cef51a7e4d9"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "c9d0683c1e71b7a0f0418cfba19a39cdf31d5be54c2353ac945b69e05a53fcfd"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 795056,
+      "sha256": "1c7ee9a2073ea036a72b8ae695e413ac2f5860383582f3b838910ea8aff7f7ba"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 795085,
+      "sha256": "e8c3b4aeab6c28b80f67e35ba56003eb1a99704527f58d262acef0f876014dbf"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "bytes": 56051,
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1926555,
+      "sha256": "e3ef33b58820675f4c201a2b81ad23b3665090442210aa22fcee28a269884a96"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "bytes": 2587929,
+      "sha256": "17ffb4bdbd71f4329a419ba0e3eeb204193cd62f4aeeb36eaac74cef51a7e4d9"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "c9d0683c1e71b7a0f0418cfba19a39cdf31d5be54c2353ac945b69e05a53fcfd"
+    }
+  }
+}

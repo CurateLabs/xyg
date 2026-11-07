@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/home/ubuntu/.t3/worktrees/xyg/t3-12512ccd/spec/performance/graph-picked-target-r8-2026-11-04/verify-sync.py", line 38, in <module>
+    assert blob(current) == expected["blob"], path
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: AGENTS.md
