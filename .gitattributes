@@ -126,3 +126,12 @@ spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.gz -text
 spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.py text eol=lf
 spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.png -text
 spec/performance/chunked-chart-postcopy-portability-2026-11-07/*.xygc -text
+
+# Append-only PR1110 ABI fixture refresh and current source bindings.
+spec/performance/pr1110-abi-fixtures-2026-11-07/*.json text eol=lf
+spec/performance/pr1110-abi-fixtures-2026-11-07/*.md text eol=lf
+spec/performance/pr1110-abi-fixtures-2026-11-07/predecessor/*.json text eol=lf
+tests/test_cross_host_abi_transition.py text eol=lf
+tests/test_graph_session_python_transport.py text eol=lf
+spec/design/graph-session-python-transport.md text eol=lf
+tests/fixtures/*_cross_host.json text eol=lf

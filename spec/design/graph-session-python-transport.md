@@ -3,8 +3,10 @@
 Status: **P0 internal S6 foundation for #1015 / #36 only**. This does not
 establish acceptance for #108, M4, a public Python session wrapper, notebooks,
 or the browser painter. The authoritative protocol remains
-[graph-interaction.md §3](graph-interaction.md#3-abi--wasm); the original foundation used native ABI 398. Accepted main now requires ABI
-399; the R2 notebook consumer changes no ABI export or generated declaration.
+[graph-interaction.md §3](graph-interaction.md#3-abi--wasm); the original foundation used native ABI 398. The loaded core must exactly match the current generated native ABI contract
+(`python/xyg/_abi_generated.py`); the transport tests use that contract, including
+subprocess callback checks. The R2 notebook consumer changes no ABI export or
+generated declaration.
 
 ## Boundary and ownership
 

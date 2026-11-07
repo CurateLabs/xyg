@@ -90,7 +90,7 @@ def session():
 
 
 def test_native_398_create_render_update_and_replay(session) -> None:
-    assert _native._lib.xyg_abi_version() == 399
+    assert _native._lib.xyg_abi_version() == _native.ABI_VERSION
     handle, instance = session
     request = _request(instance, 2, 21)
     before = handle.render(request)
@@ -412,7 +412,7 @@ from xyg._graph_session import GraphSession, GraphSessionError
 
 helpers = runpy.run_path('tests/test_graph_session_python_transport.py')
 open_session, request = helpers['_open'], helpers['_request']
-assert _native._lib.xyg_abi_version() == 399
+assert _native._lib.xyg_abi_version() == _native.ABI_VERSION
 instance = 0x505954485245454E
 callbacks = []
 
@@ -476,7 +476,7 @@ from xyg._graph_session import GraphSessionError
 
 helpers = runpy.run_path('tests/test_graph_session_python_transport.py')
 open_session, request = helpers['_open'], helpers['_request']
-assert _native._lib.xyg_abi_version() == 399
+assert _native._lib.xyg_abi_version() == _native.ABI_VERSION
 instance = 0x505954485245434D
 close_target = sys.argv[1] == 'True'
 callbacks = []
