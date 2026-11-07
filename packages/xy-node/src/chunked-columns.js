@@ -3,8 +3,24 @@ import { scatterChart } from "./charts.js";
 import {
   pointer, xyChunkedColumnsCancelBefore, xyChunkedColumnsFree,
   xyChunkedColumnsOpen, xyChunkedColumnsOverview, xyChunkedColumnsRead, xyChunkedColumnsReadPage,
-  xyChunkedColumnsRows, xyChunkedColumnsChart,
+  xyChunkedColumnsRows, xyChunkedColumnsChart, xyChunkedColumnsChartOverview,
 } from "./native.js";
+
+function readOverview(columns,maxPoints,generation=null) {
+    if (!Number.isSafeInteger(maxPoints) || maxPoints < 1 || maxPoints > 1_000_000) {
+      throw new RangeError("chunked-column maxPoints must be an integer in [1, 1,000,000]");
+    }
+    const rowIds = new BigUint64Array(maxPoints);
+    const x = new Float64Array(maxPoints), y = new Float64Array(maxPoints);
+    const stats = new BigUint64Array(generation === null ? 2 : 4);
+    const outputs = [pointer(rowIds, "uint64_t *"), pointer(x, "double *"), pointer(y, "double *"), pointer(stats, "uint64_t *")];
+    const written = generation === null ? xyChunkedColumnsOverview(columns.handle, maxPoints, ...outputs) : xyChunkedColumnsChartOverview(columns.handle, maxPoints, BigInt(generation), ...outputs);
+    if (written === BigInt("18446744073709551615") && generation !== null && stats[3] === 5n) throw new Error("chunked-column overview chart failed: cancelled by newer viewport");
+    const offset = generation === null ? 0 : 1;
+    if (written === BigInt("18446744073709551615")) throw new Error("chunked-column overview read failed: invalid or stale request");
+    const n = Number(written);
+    return { rowIds: rowIds.slice(0, n), x: x.slice(0, n), y: y.slice(0, n), provenance: { availablePoints: stats[offset], sourceRows: stats[offset+1], detailRowsRead: 0n, ...(generation === null ? {} : {generation: stats[0]}) } };
+}
 
 export class ChunkedColumns {
   constructor(path) {
@@ -14,18 +30,7 @@ export class ChunkedColumns {
     this.path = String(path);
     this.rows = xyChunkedColumnsRows(this.handle);
   }
-  overview({ maxPoints = 2048 } = {}) {
-    if (!Number.isSafeInteger(maxPoints) || maxPoints < 1 || maxPoints > 1_000_000) {
-      throw new RangeError("chunked-column maxPoints must be an integer in [1, 1,000,000]");
-    }
-    const rowIds = new BigUint64Array(maxPoints);
-    const x = new Float64Array(maxPoints), y = new Float64Array(maxPoints);
-    const stats = new BigUint64Array(2);
-    const written = xyChunkedColumnsOverview(this.handle, maxPoints, pointer(rowIds, "uint64_t *"), pointer(x, "double *"), pointer(y, "double *"), pointer(stats, "uint64_t *"));
-    if (written === BigInt("18446744073709551615")) throw new Error("chunked-column overview read failed: invalid or stale request");
-    const n = Number(written);
-    return { rowIds: rowIds.slice(0, n), x: x.slice(0, n), y: y.slice(0, n), provenance: { availablePoints: stats[0], sourceRows: stats[1], detailRowsRead: 0n } };
-  }
+  overview({ maxPoints = 2048 } = {}) { return readOverview(this,maxPoints); }
   read([x0, x1], { yRange = null, budgetBytes = 64 << 20, generation = 0 } = {}) {
     if (!Number.isSafeInteger(budgetBytes) || budgetBytes < 16) throw new RangeError("chunked-column read budget must be at least 16 bytes");
     if (!Number.isSafeInteger(generation) || generation < 0) throw new RangeError("chunked-column generation must be a non-negative safe integer");
@@ -69,7 +74,7 @@ export class ChunkedColumns {
     let result;
     if (xRange === null) {
       if (yRange !== null) throw new RangeError("yRange requires an explicit xRange");
-      result = this.overview({maxPoints});
+      result = readOverview(this,maxPoints,generation);
     } else {
       const capacity = Math.floor(budgetBytes / 16), rowIds = new BigUint64Array(capacity);
       const x = new Float64Array(capacity), y = new Float64Array(capacity), stats = new BigUint64Array(6);
@@ -89,7 +94,7 @@ export class ChunkedColumns {
     }
     const chart = scatterChart(result.x, result.y);
     chart.sourceRowIds = result.rowIds;
-    chart.sourceProvenance = {...result.provenance, generation: BigInt(generation), path: this.path};
+    chart.sourceProvenance = {...result.provenance, path: this.path};
     return chart;
   }
   cancelBefore(generation) {

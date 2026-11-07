@@ -242,7 +242,9 @@ class ChunkedColumns:
         if x_range is None:
             if y_range is not None:
                 raise ValueError("y_range requires an explicit x_range")
-            row_ids, x, y, provenance = self.overview(max_points=max_points)
+            row_ids, x, y, provenance = _native.chunked_columns_overview(
+                self._handle, max_points, generation=generation
+            )
         else:
             row_ids, x, y, provenance = _native.chunked_columns_chart(
                 self._handle,
@@ -254,7 +256,7 @@ class ChunkedColumns:
             )
         chart = scatter_chart(scatter(x, y))
         chart.source_row_ids = row_ids
-        chart.source_provenance = {**provenance, "generation": generation, "path": self.path}
+        chart.source_provenance = {**provenance, "path": self.path}
         return chart
 
     def cancel_before(self, generation: int) -> None:

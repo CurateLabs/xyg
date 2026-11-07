@@ -135,3 +135,19 @@ test("chart overview, paged viewport, reuse, generation and disposal", () => {
     assert.throws(()=>columns.chart(), /stale/);
   } finally { columns.close(); rmSync(dir,{recursive:true}); }
 });
+
+test("chart overview rejects superseded generations while static overview remains usable", () => {
+  const dir=mkdtempSync(join(tmpdir(),"xyg-overview-generation-")),path=join(dir,"chart.xygc");
+  overviewArtifact(path);const columns=new ChunkedColumns(path);
+  try {
+    columns.cancelBefore(5);
+    assert.throws(()=>columns.chart(null,{generation:4,maxPoints:5}),/cancelled by newer viewport/);
+    const current=columns.chart(null,{generation:5,maxPoints:5});
+    assert.equal(current.sourceProvenance.generation,5n);
+    assert.equal(current.sourceProvenance.detailRowsRead,0n);
+    assert.equal(current.sourceRowIds.length,5);
+    columns.cancelBefore(6);
+    assert.throws(()=>columns.chart(null,{generation:5,maxPoints:5}),/cancelled by newer viewport/);
+    assert.equal(columns.overview({maxPoints:5}).rowIds.length,5);
+  } finally {columns.close();rmSync(dir,{recursive:true});}
+});

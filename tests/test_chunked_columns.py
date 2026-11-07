@@ -212,7 +212,27 @@ def test_rendered_chart_snapshot_navigation(tmp_path):
 
     chromium = os.environ.get("XYG_TEST_CHROMIUM")
     if not chromium:
+        if os.environ.get("XY_REQUIRE_BROWSER") == "1":
+            pytest.fail("required chunked chart snapshot browser is not configured")
         pytest.skip("set XYG_TEST_CHROMIUM for the headless chart snapshot proof")
     report = run(tmp_path, chromium)
     assert len(report["requests"]) == 4
     assert all(request["exact_pixel_match"] for request in report["requests"])
+
+
+def test_chart_overview_rejects_stale_generation_without_changing_static_overview(tmp_path):
+    path = tmp_path / "overview-generation.xygc"
+    _artifact_with_overview(path, [(float(i), float(i % 3)) for i in range(12)])
+    with ChunkedColumns(path) as columns:
+        columns.cancel_before(5)
+        with pytest.raises(ValueError, match="cancelled by newer viewport"):
+            columns.chart(generation=4, max_points=5)
+        current = columns.chart(generation=5, max_points=5)
+        assert current.source_provenance["generation"] == 5
+        assert current.source_provenance["detail_rows_read"] == 0
+        assert len(current.source_row_ids) == 5
+        columns.cancel_before(6)
+        with pytest.raises(ValueError, match="cancelled by newer viewport"):
+            columns.chart(generation=5, max_points=5)
+        # The explicit static metadata API has no viewport generation contract.
+        assert len(columns.overview(max_points=5)[0]) == 5

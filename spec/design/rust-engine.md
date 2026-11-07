@@ -988,7 +988,7 @@ ABI 202 Scene product-path ABI 130 time/angular formats (`scene.rs` / `scene_chr
 5. `stream.rs` append ✅ (Arrow ingest already landed).
 
 
-### 5.1b Bounded chart snapshots (ABI 400)
+### 5.1b Bounded chart snapshots (ABI 400; generation-aware overview ABI 401)
 
 `Registered::chart_view` / `ChunkedColumns::read_chart` admit all selected chunk
 bytes before I/O, then consume existing `read_range_page` results under a separate
@@ -996,6 +996,6 @@ page cap. Both caps are explicit; hits count toward admission. Rust returns exac
 canonical IDs and f64 values, with aggregate physical-read provenance, and checks
 generation again before final publication. The new C ABI
 `xyg_chunked_columns_chart` transports those IDs and values; its emscripten stub
-fails closed. No browser/WASM file reader is introduced. Existing XYGC versions,
+fails closed. ABI 401 adds `xyg_chunked_columns_chart_overview`: Rust checks the monotonic generation before and after bounded overview construction and after copying C outputs. On refusal the host discards every output; success provenance contains the Rust-accepted generation. The existing static overview API remains unchanged. No browser/WASM file reader is introduced. Existing XYGC versions,
 LRU accounting, overview construction and render kernels remain authoritative.
 See the [scoped chart snapshot contract](tier3-phase4-roadmap.md#bounded-local-chart-snapshots-110-continuation).

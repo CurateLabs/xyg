@@ -284,6 +284,17 @@ impl Registered {
     pub fn overview(&self, max_points: usize) -> Result<OverviewRead, Error> {
         self.store.overview(max_points)
     }
+    pub fn is_current(&self, generation: u64) -> bool {
+        self.current_generation.load(Ordering::Acquire) == generation
+    }
+    pub fn chart_overview(
+        &self,
+        max_points: usize,
+        generation: u64,
+    ) -> Result<OverviewRead, Error> {
+        self.store
+            .overview_for_generation(max_points, generation, |g| self.is_current(g))
+    }
     pub fn read(
         &self,
         x0: f64,
@@ -605,6 +616,24 @@ impl ChunkedColumns {
             available: available as u32,
             source_rows: self.rows,
         })
+    }
+
+    /// Chart metadata is subject to the same generation watermark as detail.
+    /// The second check refuses supersession during bounded overview copying.
+    pub fn overview_for_generation<F: FnMut(u64) -> bool>(
+        &self,
+        max_points: usize,
+        generation: u64,
+        mut is_current: F,
+    ) -> Result<OverviewRead, Error> {
+        if !is_current(generation) {
+            return Err(Error::Cancelled);
+        }
+        let read = self.overview(max_points)?;
+        if !is_current(generation) {
+            return Err(Error::Cancelled);
+        }
+        Ok(read)
     }
 
     /// Read exact rows in an x viewport. Zone maps select chunks; y bounds
@@ -1497,6 +1526,40 @@ mod tests {
         ));
         assert_eq!(checks, 5);
         std::fs::remove_file(p).unwrap();
+    }
+
+    #[test]
+    fn chart_overview_checks_admission_and_publication_including_empty_overview() {
+        for empty in [false, true] {
+            let p = path(if empty {
+                "overview-cancel-empty.xygc"
+            } else {
+                "overview-cancel.xygc"
+            });
+            let rows: Vec<_> = if empty {
+                vec![]
+            } else {
+                (0..20).map(|i| (i as f64, i as f64)).collect()
+            };
+            ChunkedColumns::create(&p, rows, 4).unwrap();
+            let store = ChunkedColumns::open(&p).unwrap();
+            assert!(matches!(
+                store.overview_for_generation(5, 4, |_| false),
+                Err(Error::Cancelled)
+            ));
+            let mut checks = 0;
+            assert!(matches!(
+                store.overview_for_generation(5, 5, |g| {
+                    assert_eq!(g, 5);
+                    checks += 1;
+                    checks == 1
+                }),
+                Err(Error::Cancelled)
+            ));
+            assert_eq!(checks, 2);
+            assert!(store.overview_for_generation(5, 6, |_| true).is_ok());
+            std::fs::remove_file(p).unwrap();
+        }
     }
 
     #[test]

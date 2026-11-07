@@ -203,7 +203,7 @@ pub use graphforge_session_ffi::*;
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 400;
+pub const ABI_VERSION: u32 = 401;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -13395,6 +13395,19 @@ mod wasm_tile_store_stubs {
         usize::MAX
     }
 
+    #[export_name = "xyg_chunked_columns_chart_overview"]
+    pub unsafe extern "C" fn chunked_columns_chart_overview(
+        _store: u64,
+        _max_points: usize,
+        _generation: u64,
+        _out_rows: *mut u64,
+        _out_x: *mut f64,
+        _out_y: *mut f64,
+        _out_stats: *mut u64,
+    ) -> usize {
+        usize::MAX
+    }
+
     #[export_name = "xyg_chunked_columns_read"]
     pub unsafe extern "C" fn chunked_columns_read(
         _store: u64,
@@ -13541,6 +13554,63 @@ pub unsafe extern "C" fn xyg_chunked_columns_overview(
         let stats = std::slice::from_raw_parts_mut(out_stats, 2);
         stats[0] = u64::from(read.available);
         stats[1] = read.source_rows;
+        read.points.len()
+    })
+}
+
+/// Return a bounded overview chart snapshot under the viewport generation watermark.
+/// Stats are generation, available overview points, source rows and error code
+/// (0 success, 5 cancelled). Other invalid requests return `usize::MAX`.
+/// Publication is checked after copying outputs; hosts must discard all outputs on error.
+///
+/// # Safety
+/// Each output pointer must address `max_points` writable values;
+/// `out_stats` must address four writable u64 values.
+#[cfg(not(target_os = "emscripten"))]
+#[no_mangle]
+pub unsafe extern "C" fn xyg_chunked_columns_chart_overview(
+    store: u64,
+    max_points: usize,
+    generation: u64,
+    out_rows: *mut u64,
+    out_x: *mut f64,
+    out_y: *mut f64,
+    out_stats: *mut u64,
+) -> usize {
+    ffi_guard(usize::MAX, || {
+        if max_points == 0
+            || out_rows.is_null()
+            || out_x.is_null()
+            || out_y.is_null()
+            || out_stats.is_null()
+        {
+            return usize::MAX;
+        }
+        let stats = std::slice::from_raw_parts_mut(out_stats, 4);
+        stats.fill(0);
+        let Some(s) = chunked_columns::reg_get(store) else {
+            return usize::MAX;
+        };
+        let read = match s.chart_overview(max_points, generation) {
+            Ok(read) => read,
+            Err(error) => {
+                stats[3] = error.code();
+                return usize::MAX;
+            }
+        };
+        for (index, point) in read.points.iter().enumerate() {
+            *out_rows.add(index) = point.row;
+            *out_x.add(index) = point.x;
+            *out_y.add(index) = point.y;
+        }
+        // Final publication check covers concurrent cancellation during C output copying.
+        if !s.is_current(generation) {
+            stats[3] = 5;
+            return usize::MAX;
+        }
+        stats[0] = generation;
+        stats[1] = u64::from(read.available);
+        stats[2] = read.source_rows;
         read.points.len()
     })
 }

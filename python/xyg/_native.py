@@ -19420,7 +19420,7 @@ def chunked_columns_rows(handle: int) -> int:
 
 
 def chunked_columns_overview(
-    handle: int, max_points: int
+    handle: int, max_points: int, *, generation: int | None = None
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict[str, int]]:
     if (
         not isinstance(max_points, int)
@@ -19431,29 +19431,28 @@ def chunked_columns_overview(
     rows = np.empty(max_points, dtype=np.uint64)
     x = np.empty(max_points, dtype=np.float64)
     y = np.empty(max_points, dtype=np.float64)
-    stats = (ctypes.c_uint64 * 2)()
-    written = int(
-        _lib.xyg_chunked_columns_overview(
-            handle,
-            max_points,
-            rows.ctypes.data,
-            x.ctypes.data,
-            y.ctypes.data,
-            stats,
+    stats = (ctypes.c_uint64 * (2 if generation is None else 4))()
+    outputs = (rows.ctypes.data, x.ctypes.data, y.ctypes.data, stats)
+    if generation is None:
+        written = int(_lib.xyg_chunked_columns_overview(handle, max_points, *outputs))
+        offset = 0
+    else:
+        written = int(
+            _lib.xyg_chunked_columns_chart_overview(handle, max_points, generation, *outputs)
         )
-    )
+        if written == _USIZE_MAX and stats[3] == 5:
+            raise ValueError("chunked-column overview chart failed: cancelled by newer viewport")
+        offset = 1
     if written == _USIZE_MAX:
         raise ValueError("chunked-column overview read failed: invalid or stale request")
-    return (
-        rows[:written],
-        x[:written],
-        y[:written],
-        {
-            "available_points": int(stats[0]),
-            "source_rows": int(stats[1]),
-            "detail_rows_read": 0,
-        },
-    )
+    provenance = {
+        "available_points": int(stats[offset]),
+        "source_rows": int(stats[offset + 1]),
+        "detail_rows_read": 0,
+    }
+    if generation is not None:
+        provenance["generation"] = int(stats[0])
+    return rows[:written], x[:written], y[:written], provenance
 
 
 def chunked_columns_cancel_before(handle: int, generation: int) -> None:
