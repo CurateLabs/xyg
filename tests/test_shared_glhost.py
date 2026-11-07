@@ -9,7 +9,9 @@ from __future__ import annotations
 
 import base64
 import json
+import os
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -436,7 +438,8 @@ def _sixty_view_shader_cache_probe() -> str:
         (view) => Array.from(view._progCache.values()),
       );
       const hostCount = new Set(views.map((view) => view._glHost)).size;
-      const contextCount = new Set(views.map((view) => view.gl)).size;
+      // Client GL facades carry ownership; count actual context identities.
+      const contextCount = new Set(views.map((view) => view._glHost.gl)).size;
       const host = views[0]._glHost;
       const failedCompileStart = compileShaderCalls;
       const failedDeleteStart = deleteShaderCalls;
@@ -530,7 +533,7 @@ _CONTEXT_LOSS_PROBE = r"""
         shaderContextIds.set(this, contextId);
       }
       const registry = globalThis[
-        Symbol.for("reflex-dev.xy.shared-webgl-host.v1")
+        Symbol.for("reflex-dev.xy.shared-webgl-host.v2")
       ];
       const currentHost = registry instanceof WeakMap
         ? registry.get(document)
@@ -953,7 +956,7 @@ def test_shared_glhost_source_contract() -> None:
     # Document identity owns the singleton, and releasing the final registered
     # client removes it so a later chart cannot receive a disposed host.
     for marker in (
-        'Symbol.for("reflex-dev.xy.shared-webgl-host.v1")',
+        'Symbol.for("reflex-dev.xy.shared-webgl-host.v2")',
         "const HOSTS = sharedHostRegistry();",
         "let host = HOSTS.get(doc);",
         "HOSTS.set(doc, host);",
@@ -1019,13 +1022,16 @@ def test_shared_glhost_source_contract() -> None:
         assert marker in host, f"automatic dashboard lifecycle marker missing: {marker}"
     for marker in (
         "watchWasmDashboardResourceBudget(",
-        "await applyWasmDashboardResourceBudget(worker, host, budgetBytes);",
+        "await applyDashboardResourceBudget(worker, host, budgetBytes, perChartBudgetBytes, () => disposed, admission);",
         "if (running) { rerun = true; return; }",
         "const unsubscribe = host.subscribeDashboardResources(request);",
         "unsubscribe();",
     ):
         assert marker in dashboard, f"automatic Rust admission marker missing: {marker}"
-    assert "watchDashboardResourceBudget(worker, budgetBytes)" in chartview
+    assert (
+        "watchDashboardResourceBudget(worker, budgetBytes, perChartBudgetBytes = budgetBytes)"
+        in chartview
+    )
     assert "dashboardResourceChanged(this)" in chartview
 
 
@@ -1499,7 +1505,7 @@ _GOVERNED_FALLBACK_PROBE = r"""
         snapshots: document.querySelectorAll("canvas[data-xy-ctx-snapshot]").length,
       };
       const registry = globalThis[
-        Symbol.for("reflex-dev.xy.shared-webgl-host.v1")
+        Symbol.for("reflex-dev.xy.shared-webgl-host.v2")
       ];
       const registryHostExists =
         registry instanceof WeakMap && registry.get(document) !== undefined;
@@ -1643,7 +1649,7 @@ _FRAME_GATE_PROBE = r"""
   (async () => {
     const innerDefault = __XY_INNER_DEFAULT__;
     const innerOptIn = __XY_INNER_OPT_IN__;
-    const HOST_KEY = Symbol.for("reflex-dev.xy.shared-webgl-host.v1");
+    const HOST_KEY = Symbol.for("reflex-dev.xy.shared-webgl-host.v2");
     try {
       document.body.style.cssText = "margin:0;overflow:hidden";
       const grid = document.getElementById("chart");
@@ -1814,3 +1820,27 @@ def test_child_frames_default_to_governed_path_and_opt_into_shared_host(
     assert opted_in["glHostMarker"] == "shared", result
     assert opted_in["presents2d"] is True, result
     assert opted_in["nonblank"] is True, result
+
+
+def test_dashboard_gpu_allocation_oracle_and_lifecycle(tmp_path: Path) -> None:
+    """Run the 32-chart driver oracle in the normal browser-enabled pytest gate."""
+    chromium = find_chromium()
+    if chromium is None:
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            pytest.fail("dashboard GPU allocation proof requires Chromium in CI")
+        pytest.skip("Chromium unavailable")
+    subprocess.run(
+        ["node", "scripts/dashboard_gpu_smoke.mjs"],
+        cwd=ROOT,
+        env={
+            **os.environ,
+            "XYG_CHROMIUM": chromium,
+            "XYG_GPU_REPORT_DIR": str(tmp_path / "dashboard-gpu"),
+        },
+        check=True,
+        timeout=180,
+        capture_output=True,
+        text=True,
+    )
+    report = json.loads((tmp_path / "dashboard-gpu" / "report.json").read_text())
+    assert report["result"], report

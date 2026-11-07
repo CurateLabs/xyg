@@ -2026,9 +2026,11 @@ client must not grow a parallel “JS layout/LOD” product path.
   its `applyWasmDashboardResourceBudget` boundary
   snapshots logical bytes and lifecycle signals from one document-scoped
   `GLHost`, obtains retain bits from Rust `XYDP`, and applies them only if the
-  exact snapshot is still current. The first evictable class is the per-chart
-  RGBA8 pick attachment; canonical Scene data and source identity stay intact,
-  and picking recreates the attachment lazily. Python and Node HTML
+  exact snapshot is still current. Object-identity accounting and synchronous
+  capacity reservations now cover shared-host buffer and texture storage, with
+  whole-chart loss/rebuild eviction, per-chart caps through the same Rust planner,
+  and separately charged host quad/canvas backing. Canonical Scene data and
+  source identity stay intact; stale GPU state cannot serve picks. Python and Node HTML
   inherit this browser compositor when they use the packaged client; none owns
   a parallel admission policy. The same `GLHost` coalesces registered charts'
   color paints into one animation-frame batch without ranking them in the host;

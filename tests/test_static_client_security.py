@@ -512,7 +512,7 @@ def test_client_quiesces_and_rebuilds_repeated_context_loss() -> None:
         "clearTimeout(this._viewTimer);",
         "if (this._destroyed || this._glLost || !this.gl) return;",
         "if (this._destroyed || this._contextRecoveryError) return;",
-        'if (this._glLost && msg.type !== "append" && msg.type !== "pick_result") return;',
+        'if ((this._glLost || (this._glHost && !this._glHost.clientAdmitted(this))) && msg.type !== "append" && msg.type !== "pick_result") return;',
     )
 
     for path, text in CLIENT_FILES:

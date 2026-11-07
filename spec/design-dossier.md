@@ -1137,6 +1137,12 @@ and measured allocation changes coalesce into serialized plans; a change during
 an in-flight plan requests one fresh snapshot afterward. TypeScript only reports
 measurements and applies the returned retain bits. It never duplicates Rust's
 priority ordering, and stale snapshots remain non-mutating.
+The v2 host storage boundary accounts buffers/textures by object identity,
+charges shared backing once, and refuses storage growth beyond a Rust-issued
+whole-chart reservation before calling WebGL. Optional per-chart caps use the
+same Rust planner. Activation reports prior unmanaged allocations separately;
+logical requested storage is not physical VRAM. See
+`spec/design/dashboard-compositor.md` for the transient-peak and rebuild contract.
 
 Pass isolation resets texture bindings and sampler bindings on units 0–2,
 including the retained graph painter's integer reference texture on unit 2.

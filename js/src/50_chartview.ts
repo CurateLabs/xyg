@@ -1,3 +1,4 @@
+import { GPUAdmissionPending } from "./41_gpu_storage";
 import { PROTOCOL, TRACE_GPU_BUFFERS, xyByteSpan } from "./00_header";
 import { buildLutData, colormapKey, colormapStops } from "./10_colormaps";
 import { chartBackdrop, cssColor, ensureChromeStylesheet, hexColor, parseColor, readTheme, safeCssPaint } from "./20_theme";
@@ -625,6 +626,7 @@ export class ChartView {
     try {
       this._initGl(buffer);
     } catch (err) {
+      if (!(err instanceof GPUAdmissionPending)) {
       // Initial construction has no recovery handler yet and the public entry
       // points intentionally let the exception surface. Leave a useful DOM
       // fallback behind for browsers without WebGL2; recovery attempts catch
@@ -643,6 +645,7 @@ export class ChartView {
         this.root.textContent = "xy: WebGL2 unavailable in this browser.";
       }
       throw err;
+      }
     }
     this.canvas.dataset.xyCtx = "live";
     this.view0 = this._clampView({
@@ -1869,6 +1872,26 @@ export class ChartView {
   // updates written into now-dead buffers are gone until it answers).
   _onGlHostContextLost() {
     if (this._destroyed) return;
+    // The shared renderer already owns a completed Canvas2D picture. Keep a
+    // stand-in through readmission attempts: _initGl may resize/clear the
+    // presentation surface before a larger canonical payload is admitted.
+    if (this._present2d && !this._ctxSnapshot) {
+      const snapshot = document.createElement("canvas");
+      snapshot.width = this.canvas.width;
+      snapshot.height = this.canvas.height;
+      snapshot.style.cssText = this.canvas.style.cssText;
+      snapshot.style.pointerEvents = "none";
+      snapshot.dataset.xyCtxSnapshot = "";
+      snapshot.setAttribute("aria-hidden", "true");
+      const context = snapshot.getContext("2d");
+      if (context) {
+        context.drawImage(this.canvas, 0, 0);
+        this._ctxSnapshot = snapshot;
+        // Keep the input surface focusable. The pointer-transparent stand-in
+        // stays above an unpublished clear, including opaque canvas CSS.
+        this.canvas.after(snapshot);
+      }
+    }
     clearTimeout(this._glHostRecoveryTimer);
     this._glHostRecoveryTimer = null;
     this._glHostRecoveryDelay = 0;
@@ -2015,6 +2038,7 @@ export class ChartView {
         // context disappears mid-compile. Keep the chart recoverable instead
         // of turning transient global pressure into a permanent error card.
         const transient =
+          err instanceof GPUAdmissionPending ||
           !this.gl ||
           this.gl.isContextLost() ||
           String(err && err.message || err).includes("shader compile: null") ||
@@ -2025,7 +2049,7 @@ export class ChartView {
             if (this.gl && !this.gl.isContextLost()) {
               try { this._destroyGlResources(); } catch (_cleanupError) {}
             }
-            this._scheduleGlHostClientRecovery();
+            if (!(err instanceof GPUAdmissionPending)) this._scheduleGlHostClientRecovery();
           } else {
             this._scheduleContextRecovery();
           }
@@ -2485,8 +2509,17 @@ export class ChartView {
     this.canvas.style.top = p.y + "px";
     this.canvas.style.width = p.w + "px";
     this.canvas.style.height = p.h + "px";
+    let previousFrame = null;
+    if (this._glHost) {
+      previousFrame = document.createElement("canvas");
+      previousFrame.width = this.canvas.width;
+      previousFrame.height = this.canvas.height;
+      previousFrame.getContext("2d").drawImage(this.canvas, 0, 0);
+    }
     this.canvas.width = p.w * this.dpr;
     this.canvas.height = p.h * this.dpr;
+    if (previousFrame) this._present2d.drawImage(previousFrame, 0, 0,
+      previousFrame.width, previousFrame.height, 0, 0, this.canvas.width, this.canvas.height);
     this.chrome.style.width = this.size.w + "px";
     this.chrome.style.height = this.size.h + "px";
     this.chrome.width = this.size.w * this.dpr;
@@ -4000,7 +4033,7 @@ export class ChartView {
       gl = this._borrowedSurface.gl;
       if (!gl || gl.isContextLost()) throw new Error("webgl2 unavailable");
     } else if (this._glHost) {
-      gl = this._glHost.gl;
+      gl = this._glHost.clientContext(this);
       if (!gl || gl.isContextLost()) throw new Error("webgl2 unavailable");
     } else {
       if (!this._governorRegistered) {
@@ -4060,8 +4093,19 @@ export class ChartView {
       try { this._destroyGlResources(); } catch (_cleanupError) {}
       throw error;
     }
+    this._restoreSceneIds();
     this._reapplyLegendVisibility();
     this._updatePickable();
+  }
+
+  _restoreSceneIds() {
+    for (const trace of this.gpuTraces) {
+      const ids = trace.trace.scene_ids;
+      if (ids) trace._sceneIds = {
+        lo: this._columnView(this._payload, this.spec.columns[ids.lo]),
+        hi: this._columnView(this._payload, this.spec.columns[ids.hi]),
+      };
+    }
   }
 
   // Recompute point-pickability from the current GPU traces and reflect it in
@@ -5678,33 +5722,38 @@ export class ChartView {
   }
 
   _dashboardResourceState() {
-    const width = this.pickTex ? this._pickW || this.canvas.width : 0;
-    const height = this.pickTex ? this._pickH || this.canvas.height : 0;
     return {
-      derivedBytes: BigInt(width) * BigInt(height) * 4n,
+      derivedBytes: this._glHost?.clientResourceBytes(this) || 0n,
       visible: this._ctxVisible === true,
       interacting: !!this._hoverTarget || this._interactionTransitionActive(),
     };
   }
 
-  applyDashboardResourceBudget(worker, budgetBytes) {
-    return applyWasmDashboardResourceBudget(worker, this._glHost, budgetBytes);
+  applyDashboardResourceBudget(worker, budgetBytes, perChartBudgetBytes = budgetBytes) {
+    return applyWasmDashboardResourceBudget(worker, this._glHost, budgetBytes, perChartBudgetBytes);
   }
 
-  watchDashboardResourceBudget(worker, budgetBytes) {
-    return watchWasmDashboardResourceBudget(worker, this._glHost, budgetBytes);
+  watchDashboardResourceBudget(worker, budgetBytes, perChartBudgetBytes = budgetBytes) {
+    return watchWasmDashboardResourceBudget(worker, this._glHost, budgetBytes, perChartBudgetBytes);
   }
 
   _applyDashboardResidency(retained) {
-    if (retained || !this.gl || !this.pickTex) return;
-    if (this.pickFbo) this.gl.deleteFramebuffer(this.pickFbo);
-    this.gl.deleteTexture(this.pickTex);
-    this.pickFbo = null;
-    this.pickTex = null;
-    this._pickW = 0;
-    this._pickH = 0;
+    if (!this._glHost || this._destroyed) return;
+    if (retained) {
+      if (this._glLost) queueMicrotask(() => {
+        if (!this._destroyed && this._glLost) this._onGlHostContextRestored();
+      });
+      return;
+    }
+    if (this._glLost && this._glHost.clientResourceBytes(this) === 0n) {
+      this._glHost.releaseClientStorage(this);
+      return;
+    }
+    this._onGlHostContextLost();
+    this._destroyGlResources();
+    // Also deletes objects from an interrupted, unpublished trace build.
+    this._glHost.releaseClientStorage(this);
     this._pickDirty = true;
-    this._glHost?.dashboardResourceChanged(this);
   }
 
   _allocPickTex() {
@@ -6342,6 +6391,7 @@ export class ChartView {
       return;
     }
     let rendered;
+    try {
     if (this._glHost) {
       rendered = this._glHost.render(
         this,
@@ -6352,6 +6402,10 @@ export class ChartView {
       );
     } else {
       rendered = this._renderGlFrame();
+    }
+    } catch (error) {
+      if (error instanceof GPUAdmissionPending) return false;
+      throw error;
     }
     // Presentation now owns the GL pixels. Do DOM/2D overlay work afterward
     // so the shared default framebuffer is copied immediately after GPU work.
@@ -8739,14 +8793,20 @@ export class ChartView {
   }
 
   _pickAt(cssX, cssY) {
+    this._glHost?.markDashboardResourceUsed(this);
     if (
       !this._pickable ||
+      (this._glHost && !this._glHost.clientAdmitted(this)) ||
       this._glLost ||
       !this.gl ||
       this.gl.isContextLost()
     ) return null;
-    this._glHost?.markDashboardResourceUsed(this);
-    if (!this.pickFbo || !this.pickTex) this._initPickTarget();
+    try {
+      if (!this.pickFbo || !this.pickTex) this._initPickTarget();
+    } catch (error) {
+      if (error instanceof GPUAdmissionPending) return null;
+      throw error;
+    }
     if (this._pickDirty) {
       try {
         if (!this._renderPick()) return null;
@@ -8754,7 +8814,7 @@ export class ChartView {
         // Native eviction can race pointer movement before the asynchronous
         // webglcontextlost event updates `_glLost`. Suppress only that lost-
         // context case; real shader/program defects must remain observable.
-        if (!this.gl || this.gl.isContextLost()) return null;
+        if (err instanceof GPUAdmissionPending || !this.gl || this.gl.isContextLost()) return null;
         throw err;
       }
     }

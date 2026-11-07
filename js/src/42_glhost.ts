@@ -1,3 +1,4 @@
+import { GPUStorage, GPUAdmissionPending } from "./41_gpu_storage";
 import { ATTR_SLOTS } from "./40_gl";
 
 /** A caller-owned context. Its owner alone schedules paint and owns the canvas,
@@ -64,7 +65,7 @@ type SharedQuad = {
 // URLs for identical source).  The protocol suffix deliberately prevents a
 // future incompatible GLHost implementation from sharing private state with
 // this one; bump it when the host/client contract changes incompatibly.
-const HOST_REGISTRY_KEY = Symbol.for("reflex-dev.xy.shared-webgl-host.v1");
+const HOST_REGISTRY_KEY = Symbol.for("reflex-dev.xy.shared-webgl-host.v2");
 
 function sharedHostRegistry(): WeakMap<Document, GLHost> {
   const scope = globalThis as typeof globalThis & Record<PropertyKey, unknown>;
@@ -133,6 +134,80 @@ export class GLHost {
   lost = false;
   ready = false;
 
+  private readonly _storage = new GPUStorage((owner, peak) => {
+    if (owner === this) return;
+    const client = owner as GLHostClient;
+    const previous = this._demands.get(client) || 0n;
+    if (peak > previous) {
+      this._demands.set(client, peak);
+      this.dashboardResourceChanged(client);
+    }
+    if (this._budget !== null && peak > (this._grants.get(client) || 0n)) {
+      this._blocked.add(client);
+      queueMicrotask(() => {
+        if (this._clients.has(client)) client._applyDashboardResidency?.(false);
+      });
+      throw new GPUAdmissionPending();
+    }
+  }, owner => {
+    if (owner !== this) this.dashboardResourceChanged(owner as GLHostClient);
+  });
+  private _budget: bigint | null = null;
+  private _requestedWidth = 1;
+  private _requestedHeight = 1;
+  private readonly _demands = new Map<GLHostClient, bigint>();
+  private readonly _grants = new Map<GLHostClient, bigint>();
+  private readonly _blocked = new Set<GLHostClient>();
+
+  clientContext(client: GLHostClient): WebGL2RenderingContext {
+    return this._storage.context(this.gl, client);
+  }
+
+  clientAdmitted(client: GLHostClient): boolean { return !this._blocked.has(client); }
+
+  clientResourceBytes(client: GLHostClient): bigint { return this._storage.bytes(client); }
+
+  releaseClientStorage(client: GLHostClient): void {
+    this._storage.release(this.gl, client);
+  }
+
+  storageSnapshot() {
+    return Object.freeze({ ...this._storage.snapshot(),
+      sharedBytes: this.sharedResourceBytes(),
+      sharedShaders: [...this._shaderCache.values()].reduce((sum, shaders) => sum + shaders.size, 0), contexts: this.lost ? 0 : 1,
+      budgetBytes: this._budget, opaqueDriverBytes: null });
+  }
+
+  sharedResourceBytes(): bigint {
+    return this.lost ? 0n : BigInt(this.canvas.width) * BigInt(this.canvas.height) * 4n + this._storage.bytes(this);
+  }
+
+  private _budgetAdmission: object | null = null;
+
+  beginDashboardAdmission(budgetBytes: bigint, perChartBudgetBytes: bigint): object {
+    this.beginDashboardBudget(budgetBytes);
+    const admission = Object.freeze({ budgetBytes, perChartBudgetBytes });
+    this._budgetAdmission = admission;
+    return admission;
+  }
+
+  isDashboardAdmissionCurrent(admission: object): boolean {
+    return !this._disposed && this._budgetAdmission === admission;
+  }
+
+  beginDashboardBudget(budget: bigint): bigint {
+    if (budget < this.sharedResourceBytes()) throw new RangeError("xy: dashboard budget is below existing shared backing storage");
+    if (this._budget !== budget) {
+      this._budget = budget;
+      // Freeze growth immediately, before crossing the asynchronous boundary.
+      for (const client of this._clients) this._grants.set(client, this._storage.bytes(client));
+      this._dashboardRevision += 1;
+    }
+    const shared = BigInt(Math.max(this.canvas.width, this._requestedWidth))
+      * BigInt(Math.max(this.canvas.height, this._requestedHeight)) * 4n + this._storage.bytes(this);
+    return budget > shared ? budget - shared : 0n;
+  }
+
   private readonly _clients = new Set<GLHostClient>();
   private readonly _clientIds = new Map<GLHostClient, bigint>();
   private readonly _clientLastUsed = new Map<GLHostClient, bigint>();
@@ -174,6 +249,7 @@ export class GLHost {
       // A restored context has a fresh object namespace even when the canvas
       // and WebGLRenderingContext identity did not change.
       this._dropShaderHandles();
+      this._storage.clear();
       this._createSharedQuad();
       this.lost = false;
       this.ready = true;
@@ -184,6 +260,8 @@ export class GLHost {
     }
     this._recoveryDelay = RECOVERY_INITIAL_DELAY_MS;
     this._notify("_onGlHostContextRestored");
+    this._dashboardRevision += 1;
+    this._notifyDashboardListeners();
     // A client can lose the host again while rebuilding its own resources.
     if (this.gl.isContextLost()) this._markLost();
   };
@@ -213,6 +291,7 @@ export class GLHost {
   _register(client: GLHostClient): void {
     if (this._disposed) throw new Error("xy: shared WebGL host is disposed");
     if (!this._clients.has(client)) {
+      if (this._clients.size >= 4096) throw new RangeError("xy: dashboard client limit");
       if (this._nextClientId > 0xffffffffffffffffn || this._nextResourceUse > 0xffffffffffffffffn) {
         throw new RangeError("xy: shared dashboard identity or resource-use sequence exhausted u64");
       }
@@ -237,7 +316,7 @@ export class GLHost {
       const lastUsed = this._clientLastUsed.get(client);
       if (!state || stableId === undefined || lastUsed === undefined) continue;
       clients.push(client);
-      resources.push(Object.freeze({ stableId, lastUsed, ...state }));
+      resources.push(Object.freeze({ stableId, lastUsed, ...state, derivedBytes: this._demands.get(client) || state.derivedBytes }));
     }
     return Object.freeze({
       revision: this._dashboardRevision,
@@ -310,9 +389,14 @@ export class GLHost {
   }
 
   /** Apply only the exact snapshot Rust planned; changed state retries later. */
-  applyDashboardResidency(snapshot: GLHostDashboardSnapshot, retained: readonly boolean[]): boolean {
+  applyDashboardResidency(snapshot: GLHostDashboardSnapshot, retained: readonly boolean[],
+    admission?: object, cancelled: () => boolean = () => false): boolean {
+    const active = () => !cancelled() && (admission === undefined || this.isDashboardAdmissionCurrent(admission));
+    if (!active()) return false;
     if (this._disposed || this._activeClient || snapshot.revision !== this._dashboardRevision
         || retained.length !== snapshot.clients.length) return false;
+    if (this._budget !== null && snapshot.resources.reduce((sum, resource, index) =>
+      sum + (retained[index] ? resource.derivedBytes : 0n), this.sharedResourceBytes()) > this._budget) return false;
     const current = this.dashboardResourceSnapshot();
     if (current.clients.length !== snapshot.clients.length
         || current.resources.some((resource, index) => {
@@ -324,8 +408,28 @@ export class GLHost {
             || resource.visible !== expected.visible
             || resource.interacting !== expected.interacting;
         })) return false;
-    snapshot.clients.forEach((client, index) => client._applyDashboardResidency?.(retained[index] === true));
-    return true;
+    // Revoke and delete first, then publish reservations and rebuild. No
+    // rebuild can overlap the storage of an evicted chart.
+    for (const [index, client] of snapshot.clients.entries()) {
+      if (!active()) return false;
+      if (!retained[index]) {
+        this._grants.set(client, 0n);
+        this._blocked.add(client);
+        client._applyDashboardResidency?.(false);
+      }
+    }
+    for (const [index, client] of snapshot.clients.entries()) {
+      if (!active()) return false;
+      if (retained[index]) {
+        this._grants.set(client, snapshot.resources[index].derivedBytes);
+        this._blocked.delete(client);
+      }
+    }
+    for (const [index, client] of snapshot.clients.entries()) {
+      if (!active()) return false;
+      if (retained[index]) client._applyDashboardResidency?.(true);
+    }
+    return active();
   }
 
   /** Resolve one immutable compiled shader for this host context. Programs
@@ -447,6 +551,10 @@ export class GLHost {
   release(client: GLHostClient): void {
     if (this._disposed || !this._clients.delete(client)) return;
     this.cancelFrame(client);
+    this.releaseClientStorage(client);
+    this._demands.delete(client);
+    this._grants.delete(client);
+    this._blocked.delete(client);
     this._clientIds.delete(client);
     this._clientLastUsed.delete(client);
     this._dashboardRevision += 1;
@@ -460,7 +568,7 @@ export class GLHost {
   }
 
   private _canRun(client: GLHostClient): boolean {
-    if (this._disposed || !this._clients.has(client) || !this.ready || this.lost) return false;
+    if (this._disposed || !this._clients.has(client) || this._blocked.has(client) || !this.ready || this.lost) return false;
     if (this.gl.isContextLost()) {
       this._markLost();
       return false;
@@ -486,6 +594,8 @@ export class GLHost {
     const gl = canvas.getContext("webgl2", {
       alpha: true,
       antialias: false,
+      depth: false,
+      stencil: false,
       premultipliedAlpha: true,
       // Presentation copies synchronously into client-owned Canvas2D surfaces.
       // Keeping this one host buffer avoids browser-specific discarded-buffer
@@ -522,6 +632,18 @@ export class GLHost {
     const nextWidth = Math.max(this._capacityWidth, width);
     const nextHeight = Math.max(this._capacityHeight, height);
     if (nextWidth === this._capacityWidth && nextHeight === this._capacityHeight) return;
+    if (nextWidth > this._requestedWidth || nextHeight > this._requestedHeight) {
+      this._requestedWidth = nextWidth;
+      this._requestedHeight = nextHeight;
+      this._dashboardRevision += 1;
+      this._notifyDashboardListeners();
+    }
+    if (this._budget !== null && BigInt(nextWidth) * BigInt(nextHeight) * 4n
+        + this._storage.bytes(this) + [...this._grants.values()].reduce((a, b) => a + b, 0n) > this._budget) {
+      // Host backing is grow-only. Refuse before resizing; existing pictures
+      // survive until a budget admitting this backing is supplied.
+      throw new GPUAdmissionPending();
+    }
     this._capacityWidth = nextWidth;
     this._capacityHeight = nextHeight;
     this.canvas.width = nextWidth;
@@ -615,7 +737,8 @@ export class GLHost {
     gl.clear(gl.COLOR_BUFFER_BIT);
   }
 
-  private _buildSharedQuad(gl: WebGL2RenderingContext): SharedQuad {
+  private _buildSharedQuad(raw: WebGL2RenderingContext): SharedQuad {
+    const gl = this._storage.context(raw, this);
     let quad: WebGLBuffer | null = null;
     let vao: WebGLVertexArrayObject | null = null;
     try {
@@ -658,6 +781,12 @@ export class GLHost {
       this.ready = false;
       this.generation += 1;
       this._activeClient = null;
+      this._storage.clear();
+      // Context loss invalidates GPU objects, not Rust's reserved byte grants.
+      // Rebuilding the same client under its existing reservation also works
+      // for one-shot admission without a watcher. Growth still needs a plan.
+      this._dashboardRevision += 1;
+      this._notifyDashboardListeners();
       this._dropSharedHandles();
       // Context-loss invalidates handles; clearing references is correct, but
       // issuing deleteShader against the lost namespace is not.
@@ -726,6 +855,8 @@ export class GLHost {
       try { oldGl.getExtension("WEBGL_lose_context")?.loseContext(); } catch (_cleanupError) {}
     }
     this._notify("_onGlHostContextRestored");
+    this._dashboardRevision += 1;
+    this._notifyDashboardListeners();
     if (this.gl.isContextLost()) this._markLost();
   }
 
@@ -779,6 +910,7 @@ export class GLHost {
       this._dropShaderHandles();
     }
     this._dropSharedHandles();
+    this._storage.clear();
     this._onDispose();
   }
 }

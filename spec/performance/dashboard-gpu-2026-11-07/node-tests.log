@@ -1,0 +1,862 @@
+TAP version 13
+# Subtest: packaged standalone client wins over a separately installed client
+ok 1 - packaged standalone client wins over a separately installed client
+  ---
+  duration_ms: 1.779791
+  type: 'test'
+  ...
+# Subtest: standalone client falls back to a separately installed client
+ok 2 - standalone client falls back to a separately installed client
+  ---
+  duration_ms: 0.32608
+  type: 'test'
+  ...
+# Subtest: toHtml inlines the host-neutral standalone client
+ok 3 - toHtml inlines the host-neutral standalone client
+  ---
+  duration_ms: 11.035939
+  type: 'test'
+  ...
+# Subtest: toHtml writes a destination path when given
+ok 4 - toHtml writes a destination path when given
+  ---
+  duration_ms: 11.331828
+  type: 'test'
+  ...
+# Subtest: toHtml rejects customCss that could break out of <style>
+ok 5 - toHtml rejects customCss that could break out of <style>
+  ---
+  duration_ms: 3.370552
+  type: 'test'
+  ...
+# Subtest: @curatelabs/xyg-node modules do not reference browser globals
+ok 6 - @curatelabs/xyg-node modules do not reference browser globals
+  ---
+  duration_ms: 23.37208
+  type: 'test'
+  ...
+# Subtest: Node projects Rust-owned Scene support decisions verbatim
+ok 7 - Node projects Rust-owned Scene support decisions verbatim
+  ---
+  duration_ms: 129.414321
+  type: 'test'
+  ...
+# Subtest: packChromeAxis rejects null unsupported keys like Python set-difference
+ok 8 - packChromeAxis rejects null unsupported keys like Python set-difference
+  ---
+  duration_ms: 5.72829
+  type: 'test'
+  ...
+# Subtest: Node Scene v30 compiles constant dash polylines and keeps authored markers fail-closed
+ok 9 - Node Scene v30 compiles constant dash polylines and keeps authored markers fail-closed
+  ---
+  duration_ms: 11.625862
+  type: 'test'
+  ...
+# Subtest: Node product encode owns figure-compile support from packed XYFS
+ok 10 - Node product encode owns figure-compile support from packed XYFS
+  ---
+  duration_ms: 4.552122
+  type: 'test'
+  ...
+# Subtest: Node public static export matches explicit Scene consumers
+ok 11 - Node public static export matches explicit Scene consumers
+  ---
+  duration_ms: 2.951286
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles constant marker_path contours
+ok 12 - Node Scene compiles constant marker_path contours
+  ---
+  duration_ms: 14.966304
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles constant marker_glyph text markers
+ok 13 - Node Scene compiles constant marker_glyph text markers
+  ---
+  duration_ms: 11.705721
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles constant linear-gradient fills and keeps var() fail-closed
+ok 14 - Node Scene compiles constant linear-gradient fills and keeps var() fail-closed
+  ---
+  duration_ms: 19.025589
+  type: 'test'
+  ...
+# Subtest: Node Scene v30 compiles flattened smooth polylines and polar smooth as chords
+ok 15 - Node Scene v30 compiles flattened smooth polylines and polar smooth as chords
+  ---
+  duration_ms: 45.740369
+  type: 'test'
+  ...
+# Subtest: Node Scene v31 compiles flattened smooth areas and polar smooth areas as chords
+ok 16 - Node Scene v31 compiles flattened smooth areas and polar smooth areas as chords
+  ---
+  duration_ms: 12.980767
+  type: 'test'
+  ...
+# Subtest: Node Scene v31 compiles flattened smooth error bands (curve=smooth)
+ok 17 - Node Scene v31 compiles flattened smooth error bands (curve=smooth)
+  ---
+  duration_ms: 8.611382
+  type: 'test'
+  ...
+# Subtest: Node Scene v30 compiles constant linecap polylines and keeps unknown caps fail-closed
+ok 18 - Node Scene v30 compiles constant linecap polylines and keeps unknown caps fail-closed
+  ---
+  duration_ms: 10.902272
+  type: 'test'
+  ...
+# Subtest: Node packs public-export eligibility through the shared Rust predicate
+ok 19 - Node packs public-export eligibility through the shared Rust predicate
+  ---
+  duration_ms: 10.938419
+  type: 'test'
+  ...
+# Subtest: Node encodes Scene PDF through the shared Rust SVG→PDF converter
+ok 20 - Node encodes Scene PDF through the shared Rust SVG→PDF converter
+  ---
+  duration_ms: 4.558046
+  type: 'test'
+  ...
+# Subtest: Node encodes JPEG, PNG, and WebP through the shared Rust image encoders
+ok 21 - Node encodes JPEG, PNG, and WebP through the shared Rust image encoders
+  ---
+  duration_ms: 0.782388
+  type: 'test'
+  ...
+# Subtest: Node figure compiles the exact shared scatter, line, bar Scene v4 fixture
+ok 22 - Node figure compiles the exact shared scatter, line, bar Scene v4 fixture
+  ---
+  duration_ms: 8.771885
+  type: 'test'
+  ...
+# Subtest: Node matches Python bytes for all constant built-in scatter symbols
+ok 23 - Node matches Python bytes for all constant built-in scatter symbols
+  ---
+  duration_ms: 29.507908
+  type: 'test'
+  ...
+# Subtest: Node matches Python bytes for the bounded public literal triangle mesh
+ok 24 - Node matches Python bytes for the bounded public literal triangle mesh
+  ---
+  duration_ms: 4.552523
+  type: 'test'
+  ...
+# Subtest: Node numeric tick formats match Python bytes and every Rust Scene consumer
+ok 25 - Node numeric tick formats match Python bytes and every Rust Scene consumer
+  ---
+  duration_ms: 6.294326
+  type: 'test'
+  ...
+# Subtest: Node authored tick labels override the format envelope byte-for-byte
+ok 26 - Node authored tick labels override the format envelope byte-for-byte
+  ---
+  duration_ms: 7.545252
+  type: 'test'
+  ...
+# Subtest: Node Scene filters authored tick values and pairs labels during encode
+ok 27 - Node Scene filters authored tick values and pairs labels during encode
+  ---
+  duration_ms: 3.830031
+  type: 'test'
+  ...
+# Subtest: Node Scene filters authored minor ticks on linear/log/symlog during encode
+ok 28 - Node Scene filters authored minor ticks on linear/log/symlog during encode
+  ---
+  duration_ms: 16.139267
+  type: 'test'
+  ...
+# Subtest: Node Scene filters polar seam-crossing authored ticks and uses angular labels
+ok 29 - Node Scene filters polar seam-crossing authored ticks and uses angular labels
+  ---
+  duration_ms: 3.398609
+  type: 'test'
+  ...
+# Subtest: Node Scene materializes time strftime and polar numeric tick formats
+ok 30 - Node Scene materializes time strftime and polar numeric tick formats
+  ---
+  duration_ms: 7.590285
+  type: 'test'
+  ...
+# Subtest: Node Scene authors only the right-hand secondary y axis
+ok 31 - Node Scene authors only the right-hand secondary y axis
+  ---
+  duration_ms: 0.479838
+  type: 'test'
+  ...
+# Subtest: Node numeric tick precision boundary and oversize fallback are Rust-owned
+ok 32 - Node numeric tick precision boundary and oversize fallback are Rust-owned
+  ---
+  duration_ms: 4.478327
+  type: 'test'
+  ...
+# Subtest: Node forwards nonlinear axis policy exactly like Python
+ok 33 - Node forwards nonlinear axis policy exactly like Python
+  ---
+  duration_ms: 1.431282
+  type: 'test'
+  ...
+# Subtest: Node figure defaults match Python Scene bytes and canonical values
+ok 34 - Node figure defaults match Python Scene bytes and canonical values
+  ---
+  duration_ms: 3.353545
+  type: 'test'
+  ...
+# Subtest: Node constant scatter stroke matches Python bytes and public defaults
+ok 35 - Node constant scatter stroke matches Python bytes and public defaults
+  ---
+  duration_ms: 17.504071
+  type: 'test'
+  ...
+# Subtest: Node frames the literal Scene colorbar side before Rust reserves its lane
+ok 36 - Node frames the literal Scene colorbar side before Rust reserves its lane
+  ---
+  duration_ms: 3.767159
+  type: 'test'
+  ...
+# Subtest: Node frames bounded Scene colorbar ticks and Rust renders shared major/minor chrome
+ok 37 - Node frames bounded Scene colorbar ticks and Rust renders shared major/minor chrome
+  ---
+  duration_ms: 1.705427
+  type: 'test'
+  ...
+# Subtest: Node named colorbars keep the full palette on extreme and adjacent finite domains (\#888)
+ok 38 - Node named colorbars keep the full palette on extreme and adjacent finite domains (\#888)
+  ---
+  duration_ms: 31.981657
+  type: 'test'
+  ...
+# Subtest: Node exports extreme named-colorbar domains to SVG and PNG without panicking (\#888)
+ok 39 - Node exports extreme named-colorbar domains to SVG and PNG without panicking (\#888)
+  ---
+  duration_ms: 29.713743
+  type: 'test'
+  ...
+# Subtest: Node host ticks spanning the f64 range draw the same minors in SVG and PNG (\#888)
+ok 40 - Node host ticks spanning the f64 range draw the same minors in SVG and PNG (\#888)
+  ---
+  duration_ms: 4.624099
+  type: 'test'
+  ...
+# Subtest: Node explicit hidden Cartesian chrome omits invisible groups without implying polar
+ok 41 - Node explicit hidden Cartesian chrome omits invisible groups without implying polar
+  ---
+  duration_ms: 3.891523
+  type: 'test'
+  ...
+# Subtest: Node Scene v9 primary legend matches Python bytes and rejects unsupported variants
+ok 42 - Node Scene v9 primary legend matches Python bytes and rejects unsupported variants
+  ---
+  duration_ms: 14.778357
+  type: 'test'
+  ...
+# Subtest: Node Scene v9 whole-scene consumers reject malformed and unsupported input
+ok 43 - Node Scene v9 whole-scene consumers reject malformed and unsupported input
+  ---
+  duration_ms: 6.575056
+  type: 'test'
+  ...
+# Subtest: Node Scene v13 compiles bounded primary annotations and fails closed
+ok 44 - Node Scene v13 compiles bounded primary annotations and fails closed
+  ---
+  duration_ms: 6.034436
+  type: 'test'
+  ...
+# Subtest: Node matches Python bytes for the full bounded public annotation family
+ok 45 - Node matches Python bytes for the full bounded public annotation family
+  ---
+  duration_ms: 2.949313
+  type: 'test'
+  ...
+# Subtest: Node matches Python bytes for the bounded public literal geometry family
+ok 46 - Node matches Python bytes for the bounded public literal geometry family
+  ---
+  duration_ms: 3.447386
+  type: 'test'
+  ...
+# Subtest: Node matches Python bytes for constant-style Cartesian heatmap Rects
+ok 47 - Node matches Python bytes for constant-style Cartesian heatmap Rects
+  ---
+  duration_ms: 1.606478
+  type: 'test'
+  ...
+# Subtest: Node matches Python bytes for constant-style Cartesian hexbin PolyFill
+ok 48 - Node matches Python bytes for constant-style Cartesian hexbin PolyFill
+  ---
+  duration_ms: 5.137231
+  type: 'test'
+  ...
+# Subtest: Node matches Python XYTA bytes for colormap hexbin
+ok 49 - Node matches Python XYTA bytes for colormap hexbin
+  ---
+  duration_ms: 0.620905
+  type: 'test'
+  ...
+# Subtest: Node matches Python XYTA bytes for colormap heatmap
+ok 50 - Node matches Python XYTA bytes for colormap heatmap
+  ---
+  duration_ms: 1.560467
+  type: 'test'
+  ...
+# Subtest: Node matches Python XYTA bytes for constant-style Cartesian density
+ok 51 - Node matches Python XYTA bytes for constant-style Cartesian density
+  ---
+  duration_ms: 0.646287
+  type: 'test'
+  ...
+# Subtest: Node bounds ABI 323 density observations at its source-plane ceiling
+ok 52 - Node bounds ABI 323 density observations at its source-plane ceiling
+  ---
+  duration_ms: 28.426387
+  type: 'test'
+  ...
+# Subtest: Node matches Python XYTC bytes for the bounded public literal triangle mesh
+ok 53 - Node matches Python XYTC bytes for the bounded public literal triangle mesh
+  ---
+  duration_ms: 0.577964
+  type: 'test'
+  ...
+# Subtest: Node matches Python XYTC bytes for the public linear ribbon
+ok 54 - Node matches Python XYTC bytes for the public linear ribbon
+  ---
+  duration_ms: 0.853293
+  type: 'test'
+  ...
+# Subtest: Node matches Python Scene bytes for constant-style Cartesian density blit
+ok 55 - Node matches Python Scene bytes for constant-style Cartesian density blit
+  ---
+  duration_ms: 7.449693
+  type: 'test'
+  ...
+# Subtest: Node matches Python Scene bytes for bounded polar hexbin, bar, line, scatter, and lattice heatmap
+ok 56 - Node matches Python Scene bytes for bounded polar hexbin, bar, line, scatter, and lattice heatmap
+  ---
+  duration_ms: 21.187695
+  type: 'test'
+  ...
+# Subtest: Node matches Python bytes for Rust-owned bounded violin geometry
+ok 57 - Node matches Python bytes for Rust-owned bounded violin geometry
+  ---
+  duration_ms: 5.332688
+  type: 'test'
+  ...
+# Subtest: Node matches Python bytes for Rust-owned bounded box geometry
+ok 58 - Node matches Python bytes for Rust-owned bounded box geometry
+  ---
+  duration_ms: 10.930198
+  type: 'test'
+  ...
+# Subtest: Node preserves authored numeric box centers in both orientations
+ok 59 - Node preserves authored numeric box centers in both orientations
+  ---
+  duration_ms: 5.838918
+  type: 'test'
+  ...
+# Subtest: Node matches Python bytes for bounded literal geometry host transforms
+ok 60 - Node matches Python bytes for bounded literal geometry host transforms
+  ---
+  duration_ms: 5.081052
+  type: 'test'
+  ...
+# Subtest: Node matches Python exact Rust-expanded step bytes in every mode and consumer
+ok 61 - Node matches Python exact Rust-expanded step bytes in every mode and consumer
+  ---
+  duration_ms: 4.697023
+  type: 'test'
+  ...
+# Subtest: Node matches Python exact Rust-expanded ribbon bytes across axis scales and consumers
+ok 62 - Node matches Python exact Rust-expanded ribbon bytes across axis scales and consumers
+  ---
+  duration_ms: 7.572233
+  type: 'test'
+  ...
+# Subtest: Node Figure authoring accepts bounded annotations without exposing a second policy
+ok 63 - Node Figure authoring accepts bounded annotations without exposing a second policy
+  ---
+  duration_ms: 4.771773
+  type: 'test'
+  ...
+# Subtest: Node Scene v16 frames bounded plain and attached text annotations and rejects malformed content
+ok 64 - Node Scene v16 frames bounded plain and attached text annotations and rejects malformed content
+  ---
+  duration_ms: 4.184683
+  type: 'test'
+  ...
+# Subtest: Node frames literal attached-label paint and rejects it without a label
+ok 65 - Node frames literal attached-label paint and rejects it without a label
+  ---
+  duration_ms: 2.375338
+  type: 'test'
+  ...
+# Subtest: Node Scene v16 accepts both independently bounded annotation text frames
+ok 66 - Node Scene v16 accepts both independently bounded annotation text frames
+  ---
+  duration_ms: 1.012391
+  type: 'test'
+  ...
+# Subtest: Node frames bounded raw-coordinate straight arrows and rejects richer forms
+ok 67 - Node frames bounded raw-coordinate straight arrows and rejects richer forms
+  ---
+  duration_ms: 1.079028
+  type: 'test'
+  ...
+# Subtest: Node frames callout label backgrounds as XYAC v2 and retains v1 otherwise
+ok 68 - Node frames callout label backgrounds as XYAC v2 and retains v1 otherwise
+  ---
+  duration_ms: 3.694747
+  type: 'test'
+  ...
+# Subtest: Node Scene v20 Cartesian callout matches the Python exact-byte fixture
+ok 69 - Node Scene v20 Cartesian callout matches the Python exact-byte fixture
+  ---
+  duration_ms: 1.900772
+  type: 'test'
+  ...
+# Subtest: Node matches the public Python disconnected segments, errorbar caps, and stem fixture
+ok 70 - Node matches the public Python disconnected segments, errorbar caps, and stem fixture
+  ---
+  duration_ms: 8.952524
+  type: 'test'
+  ...
+# Subtest: Node Scene v9 compiles ribbon and triangle_mesh
+ok 71 - Node Scene v9 compiles ribbon and triangle_mesh
+  ---
+  duration_ms: 9.25505
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles constant ribbon color2 as XYGR
+ok 72 - Node Scene compiles constant ribbon color2 as XYGR
+  ---
+  duration_ms: 10.747849
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles cartesian unwrapped text layout as XYAW
+ok 73 - Node Scene compiles cartesian unwrapped text layout as XYAW
+  ---
+  duration_ms: 17.070949
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles labelled cartesian marker layout as XYAW
+ok 74 - Node Scene compiles labelled cartesian marker layout as XYAW
+  ---
+  duration_ms: 13.155634
+  type: 'test'
+  ...
+# Subtest: Node Scene v9 compiles area bands
+ok 75 - Node Scene v9 compiles area bands
+  ---
+  duration_ms: 2.84881
+  type: 'test'
+  ...
+# Subtest: Node Scene v4 raster rejects nonrepresentable f32 commands
+ok 76 - Node Scene v4 raster rejects nonrepresentable f32 commands
+  ---
+  duration_ms: 2.814955
+  type: 'test'
+  ...
+# Subtest: Node figure Scene v5 encodes titles and still rejects incomplete customization
+ok 77 - Node figure Scene v5 encodes titles and still rejects incomplete customization
+  ---
+  duration_ms: 11.320261
+  type: 'test'
+  ...
+# Subtest: Node figure Scene v4 rejects missing coordinates until break records exist
+ok 78 - Node figure Scene v4 rejects missing coordinates until break records exist
+  ---
+  duration_ms: 2.647414
+  type: 'test'
+  ...
+# Subtest: Node Scene v4 matches shared scatter, line, bar, and axis bytes
+ok 79 - Node Scene v4 matches shared scatter, line, bar, and axis bytes
+  ---
+  duration_ms: 0.487912
+  type: 'test'
+  ...
+# Subtest: Node Scene v9 authored chrome matches Python exact bytes
+ok 80 - Node Scene v9 authored chrome matches Python exact bytes
+  ---
+  duration_ms: 0.581302
+  type: 'test'
+  ...
+# Subtest: Node Figure authored chrome matches the Python Figure fixture bytes
+ok 81 - Node Figure authored chrome matches the Python Figure fixture bytes
+  ---
+  duration_ms: 3.659382
+  type: 'test'
+  ...
+# Subtest: Node Figure axis visibility cases match the public Python Scene fixture
+ok 82 - Node Figure axis visibility cases match the public Python Scene fixture
+  ---
+  duration_ms: 12.146966
+  type: 'test'
+  ...
+# Subtest: Node public Figure matches the combined Python authored Scene v25 fixture
+ok 83 - Node public Figure matches the combined Python authored Scene v25 fixture
+  ---
+  duration_ms: 12.220099
+  type: 'test'
+  ...
+# Subtest: Node public Scene chrome setters snapshot literals and retain Rust validation
+ok 84 - Node public Scene chrome setters snapshot literals and retain Rust validation
+  ---
+  duration_ms: 10.865062
+  type: 'test'
+  ...
+# Subtest: Node Scene v25 wrapped annotations reject host layout features
+ok 85 - Node Scene v25 wrapped annotations reject host layout features
+  ---
+  duration_ms: 2.001047
+  type: 'test'
+  ...
+# Subtest: Node Scene annotation html stays fail-closed
+ok 86 - Node Scene annotation html stays fail-closed
+  ---
+  duration_ms: 2.92834
+  type: 'test'
+  ...
+# Subtest: Node Scene annotation class_name stays fail-closed as browser CSS
+ok 87 - Node Scene annotation class_name stays fail-closed as browser CSS
+  ---
+  duration_ms: 1.80773
+  type: 'test'
+  ...
+# Subtest: Node Scene annotation collision stays fail-closed
+ok 88 - Node Scene annotation collision stays fail-closed
+  ---
+  duration_ms: 2.875176
+  type: 'test'
+  ...
+# Subtest: Node Scene annotation markup stays fail-closed
+ok 89 - Node Scene annotation markup stays fail-closed
+  ---
+  duration_ms: 1.954993
+  type: 'test'
+  ...
+# Subtest: Node Scene annotation custom typography stays fail-closed as custom font
+ok 90 - Node Scene annotation custom typography stays fail-closed as custom font
+  ---
+  duration_ms: 2.106467
+  type: 'test'
+  ...
+# Subtest: Node Scene annotation style.rotation routes through Scene
+ok 91 - Node Scene annotation style.rotation routes through Scene
+  ---
+  duration_ms: 1.850578
+  type: 'test'
+  ...
+# Subtest: Node Scene v9 rejects non-byte chrome style input before the ABI
+ok 92 - Node Scene v9 rejects non-byte chrome style input before the ABI
+  ---
+  duration_ms: 0.84557
+  type: 'test'
+  ...
+# Subtest: Node Scene v4 rejects malformed batches
+ok 93 - Node Scene v4 rejects malformed batches
+  ---
+  duration_ms: 1.840139
+  type: 'test'
+  ...
+# Subtest: Node Scene v4 validates unsigned fields before typed-array coercion
+ok 94 - Node Scene v4 validates unsigned fields before typed-array coercion
+  ---
+  duration_ms: 1.090569
+  type: 'test'
+  ...
+# Subtest: Node Scene v4 log mask ignores reserved coordinates and breaks line runs
+ok 95 - Node Scene v4 log mask ignores reserved coordinates and breaks line runs
+  ---
+  duration_ms: 0.240275
+  type: 'test'
+  ...
+# Subtest: Node consumes canonical linear, log, and symlog scale records
+ok 96 - Node consumes canonical linear, log, and symlog scale records
+  ---
+  duration_ms: 0.285467
+  type: 'test'
+  ...
+# Subtest: Node rejects malformed canonical scale options before the ABI call
+ok 97 - Node rejects malformed canonical scale options before the ABI call
+  ---
+  duration_ms: 0.100903
+  type: 'test'
+  ...
+# Subtest: Node consumes Rust-owned canonical axis ticks
+ok 98 - Node consumes Rust-owned canonical axis ticks
+  ---
+  duration_ms: 0.352744
+  type: 'test'
+  ...
+# Subtest: Node consumes Rust-owned tick-label collision layout
+ok 99 - Node consumes Rust-owned tick-label collision layout
+  ---
+  duration_ms: 0.539332
+  type: 'test'
+  ...
+# Subtest: Node consumes Rust-owned authored tick-window filter
+ok 100 - Node consumes Rust-owned authored tick-window filter
+  ---
+  duration_ms: 0.261522
+  type: 'test'
+  ...
+# Subtest: Node consumes Rust-owned tick-label formatting
+ok 101 - Node consumes Rust-owned tick-label formatting
+  ---
+  duration_ms: 0.365002
+  type: 'test'
+  ...
+# Subtest: Node consumes Rust-owned static legend box packing
+ok 102 - Node consumes Rust-owned static legend box packing
+  ---
+  duration_ms: 0.617106
+  type: 'test'
+  ...
+# Subtest: Node consumes Rust-owned text-block measure and axis rooms
+ok 103 - Node consumes Rust-owned text-block measure and axis rooms
+  ---
+  duration_ms: 0.372929
+  type: 'test'
+  ...
+# Subtest: Node consumes Rust-owned static-export layout combination
+ok 104 - Node consumes Rust-owned static-export layout combination
+  ---
+  duration_ms: 0.623657
+  type: 'test'
+  ...
+# Subtest: Node polar layout/project matches default-cardinals fixture
+ok 105 - Node polar layout/project matches default-cardinals fixture
+  ---
+  duration_ms: 0.282856
+  type: 'test'
+  ...
+# Subtest: Node polar wedge flatten matches pinned annular count
+ok 106 - Node polar wedge flatten matches pinned annular count
+  ---
+  duration_ms: 0.248331
+  type: 'test'
+  ...
+# Subtest: Node polar heatmap inverse map stays screen-bounded
+ok 107 - Node polar heatmap inverse map stays screen-bounded
+  ---
+  duration_ms: 0.238636
+  type: 'test'
+  ...
+# Subtest: Node consumes Rust-owned pyplot tight-layout solve
+ok 108 - Node consumes Rust-owned pyplot tight-layout solve
+  ---
+  duration_ms: 0.226606
+  type: 'test'
+  ...
+# Subtest: Node matches every Rust-owned axis tick family in the shared cross-host fixture
+ok 109 - Node matches every Rust-owned axis tick family in the shared cross-host fixture
+  ---
+  duration_ms: 0.53857
+  type: 'test'
+  ...
+# Subtest: Node symlog ticks fail closed at invalid arguments and honor the 200 target ceiling
+ok 110 - Node symlog ticks fail closed at invalid arguments and honor the 200 target ceiling
+  ---
+  duration_ms: 0.358968
+  type: 'test'
+  ...
+# Subtest: Node consumes the versioned Rust scatter scene
+ok 111 - Node consumes the versioned Rust scatter scene
+  ---
+  duration_ms: 0.228743
+  type: 'test'
+  ...
+# Subtest: Node rejects malformed scene array lengths before the ABI call
+ok 112 - Node rejects malformed scene array lengths before the ABI call
+  ---
+  duration_ms: 0.102593
+  type: 'test'
+  ...
+# Subtest: Node maps Rust scene validation failures to a stable host error
+ok 113 - Node maps Rust scene validation failures to a stable host error
+  ---
+  duration_ms: 0.115644
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles column and histogram as Rect records
+ok 114 - Node Scene compiles column and histogram as Rect records
+  ---
+  duration_ms: 4.625754
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles cartesian corner_radius and polar donut rounding
+ok 115 - Node Scene compiles cartesian corner_radius and polar donut rounding
+  ---
+  duration_ms: 36.599232
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles violin and box fill_opacity
+ok 116 - Node Scene compiles violin and box fill_opacity
+  ---
+  duration_ms: 19.431806
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles bar fill_opacity
+ok 117 - Node Scene compiles bar fill_opacity
+  ---
+  duration_ms: 5.199505
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles heatmap fill_opacity
+ok 118 - Node Scene compiles heatmap fill_opacity # SKIP heatmap fill_opacity is not yet admitted by the shared Scene route; tracked in CurateLabs/xyg\#889
+  ---
+  duration_ms: 0.072703
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles heatmap stroke_opacity
+ok 119 - Node Scene compiles heatmap stroke_opacity
+  ---
+  duration_ms: 5.217476
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles scatter fill_opacity
+ok 120 - Node Scene compiles scatter fill_opacity
+  ---
+  duration_ms: 5.159223
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles hexbin fill_opacity
+ok 121 - Node Scene compiles hexbin fill_opacity
+  ---
+  duration_ms: 6.521213
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles hexbin stroke_opacity
+ok 122 - Node Scene compiles hexbin stroke_opacity
+  ---
+  duration_ms: 3.746179
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles colormap hexbin
+ok 123 - Node Scene compiles colormap hexbin
+  ---
+  duration_ms: 3.280188
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles polar hexbin, custom reduce, and direct_rgba cells
+ok 124 - Node Scene compiles polar hexbin, custom reduce, and direct_rgba cells
+  ---
+  duration_ms: 10.790106
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles triangle_mesh joined_fill
+ok 125 - Node Scene compiles triangle_mesh joined_fill
+  ---
+  duration_ms: 8.386227
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles triangle_mesh per-item paint
+ok 126 - Node Scene compiles triangle_mesh per-item paint
+  ---
+  duration_ms: 8.249096
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles triangle_mesh fill_opacity
+ok 127 - Node Scene compiles triangle_mesh fill_opacity
+  ---
+  duration_ms: 6.773588
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles scatter per-item paint
+ok 128 - Node Scene compiles scatter per-item paint
+  ---
+  duration_ms: 18.319183
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles polar wedge_gap and keeps cartesian fail-closed
+ok 129 - Node Scene compiles polar wedge_gap and keeps cartesian fail-closed
+  ---
+  duration_ms: 4.487871
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles polar density tessellation
+ok 130 - Node Scene compiles polar density tessellation
+  ---
+  duration_ms: 3.973659
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles cartesian density blit as one image
+ok 131 - Node Scene compiles cartesian density blit as one image
+  ---
+  duration_ms: 13.690972
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles cartesian mean-color density blit
+ok 132 - Node Scene compiles cartesian mean-color density blit
+  ---
+  duration_ms: 9.736689
+  type: 'test'
+  ...
+# Subtest: Node Scene rejects hidden traces and unknown kinds
+ok 133 - Node Scene rejects hidden traces and unknown kinds
+  ---
+  duration_ms: 4.096881
+  type: 'test'
+  ...
+# Subtest: Node Scene rejects missing or unequal rectangle columns
+ok 134 - Node Scene rejects missing or unequal rectangle columns
+  ---
+  duration_ms: 3.229235
+  type: 'test'
+  ...
+# Subtest: Node Scene compiles segments, step lines, and stem
+ok 135 - Node Scene compiles segments, step lines, and stem
+  ---
+  duration_ms: 8.464137
+  type: 'test'
+  ...
+# Subtest: Node area matches Python Scene v25 Band outline bytes and consumers
+ok 136 - Node area matches Python Scene v25 Band outline bytes and consumers
+  ---
+  duration_ms: 18.397204
+  type: 'test'
+  ...
+# Subtest: Node frames literal v23 borders for text, attached, and callout label boxes
+ok 137 - Node frames literal v23 borders for text, attached, and callout label boxes
+  ---
+  duration_ms: 1.691719
+  type: 'test'
+  ...
+# Subtest: sceneChannelConstantCss owns constant mode CSS pack
+ok 138 - sceneChannelConstantCss owns constant mode CSS pack
+  ---
+  duration_ms: 0.115214
+  type: 'test'
+  ...
+# Subtest: stream new/append/seal/copy/free and stale handle
+ok 139 - stream new/append/seal/copy/free and stale handle
+  ---
+  duration_ms: 1.522611
+  type: 'test'
+  ...
+# Subtest: Column.append migrates onto the stream handle
+ok 140 - Column.append migrates onto the stream handle
+  ---
+  duration_ms: 0.473656
+  type: 'test'
+  ...
+# Subtest: Figure.append uses the stream ABI and keeps payload prefixes
+ok 141 - Figure.append uses the stream ABI and keeps payload prefixes
+  ---
+  duration_ms: 14.914849
+  type: 'test'
+  ...
+# Subtest: pyramid build/append from stream handles
+ok 142 - pyramid build/append from stream handles
+  ---
+  duration_ms: 1.214862
+  type: 'test'
+  ...
+1..142
+# tests 142
+# suites 0
+# pass 141
+# fail 0
+# cancelled 0
+# skipped 1
+# todo 0
+# duration_ms 1248.3413
