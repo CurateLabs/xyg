@@ -156,6 +156,13 @@ emergency termination grace, allowing the scheduler's 1-second emergency grace.
 A wedged native call/Worker can require forced termination; no force-destructor
 claim is made for emergency termination. Actual worker exits still precede
 terminal settlement. No silent fallback to caller-thread force is provided.
+The scheduler also latches cancellation in a constant-size shared atomic flag,
+checked before force allocation and at chunk boundaries. This covers startup
+module evaluation before the cancellation listener exists. Reentrant AbortSignal
+registration and structured-clone cancellation cannot publish an untracked Worker
+or settle before its actual exit. No native call, deadline or cleanup grace is
+changed; an already wedged native call still has only the documented emergency
+termination guarantee.
 
 ## Evidence and remaining boundary
 
