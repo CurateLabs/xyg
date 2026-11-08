@@ -1127,3 +1127,125 @@ def test_reentrant_drain_ack_survives_retry_delivery_exception():
             source.close()
 
     asyncio.run(asyncio.wait_for(run(), 15))
+
+
+@pytest.mark.parametrize("mode", ["cursor", "range"])
+def test_hierarchy_remount_keeps_cancelled_native_query_sequence(mode):
+    from test_geo_live_hierarchy_host import fixture
+    from test_geo_live_host import ack, live, prepare
+
+    async def run():
+        source, scope, lane, caller, chart, previous = fixture()
+        previous.close()
+        widget = chart.widget(frame=caller, selected_scope=scope, hierarchy_lane=lane)
+        adapter = widget._adapter
+        sent = []
+        widget.send = lambda message, buffers=(): sent.append((message, buffers))
+        controller = xyg.TemporalController(instance_id=62, domain=(-100, 100))
+        controller.set_cursor(23)
+        controller.set_range(23, 24)
+        binding = None
+        try:
+            assert "error" not in request(adapter, 1)[0]
+            accepted, sequence, source_sequence = (
+                adapter._frame,
+                adapter._sequence,
+                source._sequence,
+            )
+            malformed = bytearray(256)
+            struct.pack_into(
+                "<4sIIIQQ5QI4x2q",
+                malformed,
+                0,
+                b"XYGH",
+                2,
+                6,
+                0,
+                accepted.handle,
+                sequence,
+                1,
+                (1 << 64) - 1,
+                1,
+                1,
+                1,
+                0,
+                0,
+                0,
+            )
+            assert "error" in live(adapter, 6, malformed)[0]
+            assert adapter._live_candidate.sequence_floor == sequence
+            message, packets = prepare(adapter, nonce=1, sequence=4)
+            assert "error" not in message, message
+            assert "error" not in live(adapter, 9, ack(9, accepted.handle, sequence, packets[0]))[0]
+            assert source._sequence == source_sequence
+            assert "error" not in request(adapter, 4, owner=accepted.handle, sequence=sequence)[0]
+            assert "error" not in request(adapter, 1)[0]
+            assert adapter._frame is accepted
+            assert adapter._sequence == sequence
+            binding = widget.bind_temporal(controller, mode)
+            widget._on_geo_message(widget, dict(type="geo_host_ready", mount="notebook"), [])
+            await asyncio.sleep(0)
+            message, buffers = sent[-1]
+            framing = json.loads(
+                (Path(__file__).parent / "fixtures/geo_mounted_temporal.json").read_text()
+            )
+            key = "hierarchyAfterAbortCursor" if mode == "cursor" else "hierarchyAfterAbortRange"
+            assert buffers[0].hex() == framing[key]
+            floor = struct.unpack_from("<Q", buffers[0], 32)[0]
+            assert floor == 4
+            assert floor > adapter._sequence
+            widget._on_geo_message(
+                widget,
+                {
+                    **message,
+                    "type": "geo_host_temporal_done",
+                    "status": "superseded",
+                    "drained": True,
+                },
+                [],
+            )
+            await binding.aclose()
+            # Drive the same authoritative native lane above the advertised
+            # floor. These acknowledgements settle real prepared native owners.
+            message, packets = prepare(adapter, nonce=1, sequence=floor + 1)
+            assert "error" not in message, message
+            for operation in (7, 8):
+                assert (
+                    "error"
+                    not in live(
+                        adapter,
+                        operation,
+                        ack(operation, accepted.handle, sequence, packets[0]),
+                    )[0]
+                )
+            assert adapter._frame.data.selection["ids"].tolist() == [(1 << 64) - 1]
+        finally:
+            # The synthetic control delivery owns no native operation; all
+            # actual native preparations above have been aborted or retired.
+            if binding is not None:
+                if binding._active is not None:
+                    active = binding._active
+                    widget._on_geo_message(
+                        widget,
+                        dict(
+                            type="geo_host_temporal_done",
+                            mount=active["mount"],
+                            request=active["request"],
+                            status="superseded",
+                            drained=True,
+                        ),
+                        [],
+                    )
+                await binding.aclose()
+            if adapter.mounted:
+                request(adapter, 4, owner=adapter._frame.handle, sequence=adapter._sequence)
+            widget.close()
+            if widget._geo_rpc_task is not None:
+                await widget._geo_rpc_task
+            caller.close()
+            lane.close()
+            source.close()
+            scope.close()
+            controller.close()
+
+    asyncio.run(asyncio.wait_for(run(), 15))

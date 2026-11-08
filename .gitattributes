@@ -1356,3 +1356,20 @@ spec/performance/dense-native-navigation-union-2026-11-08/**/*.png -text
 # Dense union module status successor.
 spec/performance/dense-union-module-status-2026-11-08/** text eol=lf
 spec/performance/dense-union-module-status-2026-11-08/**/*.gz -text
+
+# Selected hierarchy temporal remount evidence.
+.github/workflows/ci.yml text eol=lf
+packages/xy-node/src/geo-live-host.js text eol=lf
+packages/xy-node/src/geo-temporal.js text eol=lf
+packages/xy-node/test/geo-mounted-temporal.test.mjs text eol=lf
+packages/xy-node/test/geo-mounted-hierarchy-temporal-fixture.mjs text eol=lf
+python/xyg/_geo_live_host.py text eol=lf
+python/xyg/_geo_temporal.py text eol=lf
+spec/design/geo-mounted-temporal-hosts.md text eol=lf
+tests/browser/geo_mounted_temporal_test.mjs text eol=lf
+tests/fixtures/geo_mounted_temporal.json text eol=lf
+tests/test_geo_mounted_temporal.py text eol=lf
+tests/test_graphforge_contract_corpus.py text eol=lf
+spec/performance/geo-hierarchy-temporal-remount-2026-11-08/** text eol=lf
+spec/performance/geo-hierarchy-temporal-remount-2026-11-08/**/*.gz -text
+spec/performance/geo-hierarchy-temporal-remount-2026-11-08/**/*.png -text

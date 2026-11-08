@@ -23,6 +23,7 @@ class GeoLiveCandidate:
         self.adapter = adapter
         self.camera_floor = adapter._query["camera_revision"]
         self.time_floor = adapter._query["time_revision"]
+        self.sequence_floor = adapter._sequence
         self.nonce = 0
         self.frame = self.retired = None
         self.cleanup_frame = None
@@ -153,6 +154,7 @@ class GeoLiveCandidate:
                 raise ValueError("camera change requires new revision")
             if query["time"] != a._query["time"] and time_rev == a._query["time_revision"]:
                 raise ValueError("time change requires new revision")
+            self.sequence_floor = max(self.sequence_floor, sequence)
             source = a._source
             frame = self._build(source, query, sequence, a._style)
             self.cleanup_frame = None

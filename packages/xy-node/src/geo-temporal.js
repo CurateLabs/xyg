@@ -135,7 +135,7 @@ export class MountedGeoTemporalBinding {
     this.time=time;this.generation++;this.schedule();
   }
   schedule(){this.wake();if(!this.scheduled){this.scheduled=true;queueMicrotask(()=>this.pump());}}
-  packet(operation){const b=new ArrayBuffer(56),v=new DataView(b);v.setUint32(0,0x54485958,true);v.setUint32(4,1,true);v.setUint32(8,operation,true);if(operation<3){v.setBigInt64(16,this.time[1],true);v.setBigInt64(24,this.time[2],true);v.setBigUint64(32,this.source.sequence,true);v.setBigUint64(40,this.host.adapter.liveCandidate.timeFloor,true);v.setBigUint64(48,this.host.adapter.liveCandidate.cameraFloor,true);}return b;}
+  packet(operation){const b=new ArrayBuffer(56),v=new DataView(b);v.setUint32(0,0x54485958,true);v.setUint32(4,1,true);v.setUint32(8,operation,true);if(operation<3){v.setBigInt64(16,this.time[1],true);v.setBigInt64(24,this.time[2],true);const sequenceFloor=this.host.adapter.liveCandidate.sequenceFloor;v.setBigUint64(32,this.source.sequence>sequenceFloor?this.source.sequence:sequenceFloor,true);v.setBigUint64(40,this.host.adapter.liveCandidate.timeFloor,true);v.setBigUint64(48,this.host.adapter.liveCandidate.cameraFloor,true);}return b;}
   send(operation){
     const {mount,request}=this.active;
     try{return Promise.resolve(this.host.send({type:'geo_host_temporal',mount,request},[this.packet(operation)]));}catch(error){return Promise.reject(error);}

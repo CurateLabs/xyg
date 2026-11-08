@@ -432,7 +432,12 @@ class MountedGeoTemporalBinding:
                     0,
                     start,
                     end,
-                    self._source._sequence if operation in (1, 2) else 0,
+                    max(
+                        self._source._sequence,
+                        self._widget._adapter._live_candidate.sequence_floor,
+                    )
+                    if operation in (1, 2)
+                    else 0,
                     self._widget._adapter._live_candidate.time_floor if operation in (1, 2) else 0,
                     self._widget._adapter._live_candidate.camera_floor
                     if operation in (1, 2)

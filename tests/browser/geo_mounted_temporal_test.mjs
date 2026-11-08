@@ -4,14 +4,18 @@ import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {readFile,writeFile} from 'node:fs/promises';
 import {chromium} from 'playwright';
-import {release} from '../../packages/xy-node/test/geo-live-host-fixture.mjs';
+import {release as releaseCanonical} from '../../packages/xy-node/test/geo-live-host-fixture.mjs';
+import {isHierarchyFrame} from '../../packages/xy-node/src/geo-hierarchy.js';
 import {xyAbiVersion} from '../../packages/xy-node/src/native.js';
 import {attachGeoWebview} from '../../packages/xy-node/src/geo-webview.js';
 import {temporalControllerCreate,temporalControllerSetCursor,temporalControllerDestroy,temporalControllerSetRange,temporalControllerState,temporalControllerSetSelection} from '../../packages/xy-node/src/index.js';
 const {mountedFixture}=await import('../../packages/xy-node/test/geo-mounted-temporal-fixture.mjs');
-const indexed=process.env.XYG_GEO_INDEXED==='1';
+const indexed=process.env.XYG_GEO_INDEXED==='1',hierarchy=process.env.XYG_GEO_HIERARCHY==='1';
+assert.ok(!indexed||!hierarchy,'select one explicit indexed or hierarchy producer');
+const {mountedHierarchyFixture}=hierarchy?await import('../../packages/xy-node/test/geo-mounted-hierarchy-temporal-fixture.mjs'):{};
+async function release(f){await releaseCanonical(f);if(hierarchy)await f.lane.dispose();}
 const {mountedIndexedFixture}=indexed?await import('../../packages/xy-node/test/geo-mounted-indexed-temporal-fixture.mjs'):{};
-const f=await (indexed?mountedIndexedFixture:mountedFixture)({selected:process.env.XYG_GEO_SELECTED!=='0',aggregate:process.env.XYG_GEO_AGGREGATE==='1'}),readKey=indexed?'readPage':'readChunk',I64=-(1n<<63n),MAX=(1n<<63n)-1n;
+const f=await (hierarchy?mountedHierarchyFixture:indexed?mountedIndexedFixture:mountedFixture)({selected:process.env.XYG_GEO_SELECTED!=='0',aggregate:process.env.XYG_GEO_AGGREGATE==='1'}),readKey=hierarchy?'hierarchyReadPage':indexed?'readPage':'readChunk',I64=-(1n<<63n),MAX=(1n<<63n)-1n;
 let receive,disposed,poll,hold,unhold,held,caller,observePoll;let closedPolls=0;
 function clearClosedPoll(response){if(poll===response){poll=undefined;closedPolls++;}}
 const outgoing=[],receipts=[],operations=new Map(),controlWaiters=new Map(),controlFrames=[];let failAbort=0,corruptMembership=false;
@@ -26,6 +30,19 @@ const panel={webview:{onDidReceiveMessage(callback){receive=callback;return {dis
  const b=pack(envelope);if(poll&&(poll.destroyed||poll.writableEnded))clearClosedPoll(poll);if(poll){const target=poll;poll=undefined;target.end(b);}else{assert.ok(outgoing.length<16);outgoing.push(b);}return true;
 }},onDidDispose(callback){disposed=callback;return {dispose(){}};},dispose(){disposed();}};
 const host=attachGeoWebview(panel,f.adapter);
+const publications=[],seen=new Set(),bindTemporal=host.bindTemporal.bind(host);
+if(hierarchy)host.bindTemporal=(...args)=>{
+ const binding=bindTemporal(...args),idle=binding.whenIdle.bind(binding);
+ binding.whenIdle=async()=>{
+  await idle();const frame=f.adapter.frame;
+  if(frame){
+   assert.ok(isHierarchyFrame(frame),'accepted frame must retain private issued43 authority');
+   assert.equal(frame.data.selection.id(0),0xffffffffffffffffn);
+   if(!seen.has(frame.handle)){seen.add(frame.handle);publications.push({handle:frame.handle,identity:frame.data.identity,selectedId:frame.data.selection.id(0)});}
+  }
+ };
+ return binding;
+};
 const h=temporalControllerCreate({instanceId:31n,domainStart:I64,domainEnd:MAX,cursor:I64,window:0n,step:1n});
 let originalCurrent;
 let binding=host.bindTemporal(h);temporalControllerSetCursor(h,3n);
@@ -145,6 +162,6 @@ try{
  tracePhase('release');
  const finalFrame=f.adapter.frame;await page.evaluate(()=>window.view.dispose());assert.equal(f.adapter.mounted,false);assert.equal(f.adapter.liveCandidate.frame,undefined);assert.equal(f.adapter.liveCandidate.retired,undefined);assert.deepEqual(errors,[]);assert.equal(f.source.current,originalCurrent);
  await release(f);await f.scope?.dispose();assert.equal(f.adapter.anchor,undefined);assert.throws(()=>finalFrame.data,/disposed/);
- const report={ok:true,transportAbortControl:true,closedPolls,indexed,indexedFallbackRetained:indexed,indexedPageReadSuperseded:indexed,indexDisposalDuringRead:indexed,externalPageCount:indexed?f.pages.size:undefined,externalPageReads:indexed?f.pageReads():undefined,canonicalFallbackReads:indexed?f.canonicalReads():undefined,host:'packaged strict-CSP browser + attachGeoWebview + Node native backend',node:process.version,nativeAbi:xyAbiVersion(),browser:browser.version(),coloredPixels:red,exactPick:true,heldPrepareSuperseded:true,orderedCamera:moved,initialCentroid,movedCentroid,trustedPointer:true,remount:true,range:true,detachRetry:true,closeDuringRead:indexed||!f.scope,closeDuringPreparedReply:!!f.scope&&!indexed,selectedFullIdentity:!!f.scope,aggregateMembership:process.env.XYG_GEO_AGGREGATE==='1',exactI64Endpoint:true,lastGoodOnFailure:true,independentCaller:true,rebind:true,releaseACK:true,allNativeOwnersClosed:true,currentPublicationPreserved:true,controllerCloseDuringPublication:true,corruptMembershipRejected:process.env.XYG_GEO_AGGREGATE==='1',receipts};
- if(process.env.XYG_GEO_MOUNTED_REPORT)await writeFile(process.env.XYG_GEO_MOUNTED_REPORT,JSON.stringify(report,(_,v)=>typeof v==='bigint'?String(v):v,2)+'\n');console.log(JSON.stringify({...report,receipts:receipts.length}));
+ const report={ok:true,hierarchy,privateIssuedPublications:hierarchy?publications:undefined,hierarchyPageReads:hierarchy?f.pageReads():undefined,transportAbortControl:true,closedPolls,indexed,indexedFallbackRetained:indexed,indexedPageReadSuperseded:indexed,indexDisposalDuringRead:indexed,externalPageCount:indexed?f.pages.size:undefined,externalPageReads:indexed?f.pageReads():undefined,canonicalFallbackReads:indexed?f.canonicalReads():undefined,host:'packaged strict-CSP browser + attachGeoWebview + Node native backend',node:process.version,nativeAbi:xyAbiVersion(),browser:browser.version(),coloredPixels:red,exactPick:true,heldPrepareSuperseded:true,orderedCamera:moved,initialCentroid,movedCentroid,trustedPointer:true,remount:true,range:true,detachRetry:true,closeDuringRead:indexed||!f.scope,closeDuringPreparedReply:!!f.scope&&!indexed,selectedFullIdentity:!!f.scope,aggregateMembership:process.env.XYG_GEO_AGGREGATE==='1',exactI64Endpoint:true,lastGoodOnFailure:true,independentCaller:true,rebind:true,releaseACK:true,allNativeOwnersClosed:true,currentPublicationPreserved:true,controllerCloseDuringPublication:true,corruptMembershipRejected:process.env.XYG_GEO_AGGREGATE==='1',receipts};
+ if(process.env.XYG_GEO_MOUNTED_REPORT)await writeFile(process.env.XYG_GEO_MOUNTED_REPORT,JSON.stringify(report,(_,v)=>typeof v==='bigint'?String(v):v,2)+'\n');console.log(JSON.stringify({...report,receipts:receipts.length},(_,v)=>typeof v==='bigint'?String(v):v));
 }catch(error){console.error('PRIMARY',error.stack);throw error;}finally{unhold?.();await browser.close();poll?.end();server.closeAllConnections();await new Promise(r=>server.close(r));await caller?.dispose();await release(f);await f.scope?.dispose();try{temporalControllerDestroy(h);}catch{}}

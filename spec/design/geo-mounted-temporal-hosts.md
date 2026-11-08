@@ -109,6 +109,17 @@ aborted camera query advanced its revision, automatic time reauthors the accepte
 camera with a newer revision. Exhaustion fails closed. Explicit `update()` and
 XYHU authoring retain caller revisions without rewriting them.
 
+The live host also retains the highest structurally valid desired publication
+sequence, independently of the accepted frame and the original source's query
+counter. XYHT advertises the maximum of that retained floor and the source
+counter. This includes selected hierarchy preparations that were aborted or
+failed before visual publication: their issued native query sequence may already
+be consumed while the original source and accepted frame remain unchanged.
+Releasing and reopening a browser mount resets request correlation, not this
+floor. The next automatic cursor/range request advances above it. This is
+bounded authoring bookkeeping; Rust still admits every query, and no aborted
+frame becomes accepted paint or changes the caller's source publication.
+
 A mounted temporal request waits for previously admitted gestures, then uses the
 existing serialized XYGH Prepare/CAS/RetireACK lane with camera operation0.
 It reads the current accepted camera when that lane runs, never the composition
@@ -193,7 +204,14 @@ Ordinary hierarchy, overview and mixed-tile automatic binding, full attributed
 frozen exports, full-source accessibility, massive/five-view latency and memory,
 and competitor qualification remain open. Selected hierarchy uses the existing
 canonical source plus an explicit `hierarchy_lane` / `hierarchyLane`; this indexed
-slice does not change or newly qualify it. Existing static/indexed/hierarchy,
+slice did not change or newly qualify it. The later
+[selected hierarchy remount follow-up](../performance/geo-hierarchy-temporal-remount-2026-11-08/README.md)
+qualifies the bounded packaged Node/native browser lane: temporal cursor/range,
+private hierarchy publication authority, complete selected intent, supersession,
+storage failure, drain retry, remount and acknowledged cleanup. Python native
+regressions verify the same exact control bytes after a real hierarchy abort and
+remount. Actual hierarchy Jupyter/VS Code remount, five simultaneous automatic
+bindings and mixed tiles remain unqualified. Existing static/indexed/hierarchy,
 explicit live mounts and snapshot/export evidence remain distinct. The packaged
 Node22/native bridge and real VS Code1.103.2 (embedded Node22.17.0) application
 journey exercise the same painter. A separate VS Code1.145.2/Node24.22.1 probe is
