@@ -1420,6 +1420,25 @@ pub(super) fn prepare_layer<'a>(
             ),
         ));
     }
+    if !request.selected_rows.is_empty() {
+        if !matches!(
+            request.intent,
+            Intent::BarChart | Intent::ParallelCoordinates | Intent::EmbeddingCoordinates
+        ) {
+            return Err(layer_error("GF_COMPOSE_REQUEST_INVALID", index,
+                "selected_rows requires a bar-chart or embedding intent; graph selections use select.uuid".into()));
+        }
+        let mut seen = std::collections::HashSet::new();
+        for &row in &request.selected_rows {
+            if row >= table.rows as u64 || !seen.insert(row) {
+                return Err(layer_error(
+                    "GF_COMPOSE_REQUEST_INVALID",
+                    index,
+                    "selected_rows must be unique source rows within the result".into(),
+                ));
+            }
+        }
+    }
     let rows = match &request.rows {
         None => (0..table.rows).collect(),
         Some(selected) => {

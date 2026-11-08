@@ -506,6 +506,7 @@ hierarchy (`node.parent`); sessions refuse any other version. Requests are stric
 | `layer.generation` [i] | UUID ×1 | result generation |
 | `layer.missing`, `layer.extra` [i] | UTF-8 | policies (§4.3) |
 | `layer.rows` [i] | u64 | explicit result rows |
+| `layer.selected_rows` [i] | u64 | source rows highlighted without filtering, for bar/embedding intents; unique, in range, bound to this layer's exact `result_id`, IPC and generation |
 | `layer.coordinates` [i] | bytes | Arrow IPC `node_uuid`, `x`, `y` (embeddings) |
 | `select.uuid` | UUID | node or relationship UUIDs painted in the selected state (§4.4 flags); a UUID naming both a node and a relationship (separate identity spaces) selects both; unknown UUIDs are counted (`GF_COMPOSE_SELECTION_UNMATCHED`) |
 | `render.width`, `render.height` | f64 ×1 | viewport (160–16,384 × 120–16,384 CSS px): also lower a graph composition to the canonical Scene (§6.3); other kinds fail with `GF_COMPOSE_RENDER_UNSUPPORTED` |
@@ -542,9 +543,36 @@ Other document kinds share the header, `layer.*` provenance (index 0),
 | `kind` | Sections |
 |---|---|
 | `table` | `table.columns`, `table.kinds`, `table.rows` (result rows), `table.cells` (text list, row-major), `table.values` (f64), `table.valid` (u8) |
-| `bar-chart` | `chart.category_name`, `chart.value_name`, `chart.category`, `chart.value`, `chart.result_row`, `chart.domain` (`[x0, x1, y0, y1]`: bar slots 0..k−1 as `[-0.5, k-0.5]`, and a value range that includes zero with 5% headroom away from it) |
-| `parallel-coordinates` | `vector.dimensions`, `vector.uuid`, `vector.result_row`, `vector.base_row`, `vector.name`, `vector.values` (row-major), `vector.domain` (`x0, x1, y0, y1`) |
-| `scatter` | `point.source` (`caller` or `embedding`), `vector.dimensions`, `point.uuid`, `point.result_row`, `point.base_row`, `point.name`, `point.x`, `point.y` |
+| `bar-chart` | `chart.category_name`, `chart.value_name`, `chart.category`, `chart.value`, `chart.result_row`, `chart.selected` (u8, native admitted-row selection), `chart.domain` (`[x0, x1, y0, y1]`: bar slots 0..k−1 as `[-0.5, k-0.5]`, and a value range that includes zero with 5% headroom away from it) |
+| `parallel-coordinates` | `vector.dimensions`, `vector.uuid`, `vector.result_row`, `vector.selected` (u8), `vector.base_row`, `vector.name`, `vector.values` (row-major), `vector.domain` (`x0, x1, y0, y1`) |
+| `scatter` | `point.source` (`caller` or `embedding`), `vector.dimensions`, `point.uuid`, `point.result_row`, `point.selected` (u8), `point.base_row`, `point.name`, `point.x`, `point.y` |
+
+For Node and browser requests, `layers[i].selectedRows` frames
+`layer.selected_rows`. Selection is independent of the `rows` filter: Rust
+marks only admitted members after row filtering and UUID/coordinate joins.
+Selecting an excluded row does not add it back. Empty/absent selection clears
+all selected bytes. Duplicates, out-of-range source rows, and row-selection on
+graph/table intents fail with `GF_COMPOSE_REQUEST_INVALID` (graph selections
+remain `select.uuid`). Existing generation validation applies unchanged.
+
+Node `composition.selectResultRows(resultId, rows)` (and its WASM equivalent)
+returns only admitted native source rows for the exact opaque result identity;
+unknown identities return an empty selection. `graphforgeChart` paints selected
+members with a contrasting outline or heavier line/point overlay, preserving
+the full unselected chart and domain. `figure.graphforgeRowsForPick(composition,
+{trace,index})` relays exact native source rows for original marks and selected
+overlays, including every segment of a parallel-coordinate vector. The host
+Figure retains the same native gather indices used for geometry after finite
+filtering/decimation; density marks never masquerade as exact source rows.
+Call this mapping after `buildPayload()`. A different
+composition instance or invalid pick returns no rows. These are the contracts
+for table-to-chart highlighting and chart-to-table provenance; consumers must
+not join categories or infer row numbers from geometry.
+
+An unregistered algorithm retains `GF_RESULT_SCHEMA_UNREGISTERED` and includes
+the recovery action: open the result as a table, then update XYG to support
+that Core schema or rerun with a compatible Core release. It never logs result
+cell values.
 
 Output is deterministic for identical request bytes, so native and WASM hosts
 are compared byte for byte.

@@ -46,6 +46,7 @@ export type XygGraphForgeIntent = "graph" | "table" | "bar-chart" | "embedding-c
 export interface XygGraphForgeLayerInput {
   result: Bytes; intent: XygGraphForgeIntent; resultId?: string; generation?: string;
   missing?: "dim" | "hide" | "keep" | "error"; extra?: "error" | "drop"; rows?: ArrayLike<number | bigint>;
+  selectedRows?: ArrayLike<number | bigint>;
   coordinates?: Bytes;
 }
 export interface XygGraphForgeInput {
@@ -193,6 +194,7 @@ export function encodeWasmGraphForgeRequest(input: XygGraphForgeInput): ArrayBuf
     if (layer.missing != null) sections.push({ name: "layer.missing", index, dtype: DT.utf8, values: layer.missing });
     if (layer.extra != null) sections.push({ name: "layer.extra", index, dtype: DT.utf8, values: layer.extra });
     if (layer.rows != null) sections.push({ name: "layer.rows", index, dtype: DT.u64, values: Array.from(layer.rows, (row) => BigInt(row)) });
+    if (layer.selectedRows != null) sections.push({ name: "layer.selected_rows", index, dtype: DT.u64, values: Array.from(layer.selectedRows, (row) => BigInt(row)) });
     if (layer.coordinates != null) sections.push({ name: "layer.coordinates", index, dtype: DT.bytes, values: bytesOf(layer.coordinates, `layers[${index}].coordinates`) });
   });
   if (input.select != null) {
@@ -274,6 +276,17 @@ export class XygGraphForgeComposition {
   }
 
   get(name: string, index = 0): any { return this.sections.get(`${name}#${index}`)?.value; }
+
+  /** Admitted source rows for this exact opaque result identity. */
+  selectResultRows(resultId: string, rows: number[]): number[] {
+    if (this.layers[0]?.resultId !== resultId) return [];
+    const plane = this.kind === "bar-chart" ? "chart.result_row"
+      : this.kind === "parallel-coordinates" ? "vector.result_row"
+      : this.kind === "scatter" ? "point.result_row" : null;
+    if (plane === null) return [];
+    const admitted = new Set(Array.from(this.get(plane) as BigUint64Array, Number));
+    return [...new Set(rows)].filter((row) => Number.isSafeInteger(row) && row >= 0 && admitted.has(row));
+  }
 
   /** Identity of a composed node or edge for selection routing. */
   identify(kind: "node" | "edge", index: number): XygGraphForgeIdentity {

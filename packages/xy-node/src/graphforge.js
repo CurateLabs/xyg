@@ -125,7 +125,8 @@ function uuidPlane(values, label) {
  * @param {Array<object>} [input.layers] result layers (none composes the base
  *   property graph with XYG's default view): `result` (Arrow IPC
  *   bytes), `intent` (required), `resultId`, `generation`, `missing`,
- *   `extra`, `rows`, `coordinates` (Arrow IPC bytes).
+ *   `extra`, `rows`, `selectedRows` (source rows to highlight without filtering),
+ *   `coordinates` (Arrow IPC bytes).
  * @param {string[]} [input.select] node/relationship UUIDs painted selected.
  * @param {object} [input.render] `{width, height, theme, title}`: also lower a
  *   graph composition to the direct-tier canonical Scene (`scene.canonical`).
@@ -157,14 +158,15 @@ export function encodeGraphForgeRequest({ base = {}, layers = [], select = null,
     }
     if (layer.missing != null) sections.push({ name: "layer.missing", index, dtype: DTYPE.utf8, values: String(layer.missing) });
     if (layer.extra != null) sections.push({ name: "layer.extra", index, dtype: DTYPE.utf8, values: String(layer.extra) });
-    if (layer.rows != null) {
-      const rows = [...layer.rows].map((row) => {
+    for (const [key, section] of [["rows", "layer.rows"], ["selectedRows", "layer.selected_rows"]]) {
+      if (layer[key] == null) continue;
+      const rows = [...layer[key]].map((row) => {
         if (!(Number.isSafeInteger(row) && row >= 0) && typeof row !== "bigint") {
           throw hostError("GF_COMPOSE_REQUEST_INVALID", "rows must be non-negative integers");
         }
         return BigInt(row);
       });
-      sections.push({ name: "layer.rows", index, dtype: DTYPE.u64, values: rows });
+      sections.push({ name: section, index, dtype: DTYPE.u64, values: rows });
     }
     if (layer.coordinates != null) {
       sections.push({ name: "layer.coordinates", index, dtype: DTYPE.bytes, values: ipcBytes(layer.coordinates, `layers[${index}].coordinates`) });
@@ -381,6 +383,7 @@ export class GraphForgeComposition {
       };
     } else if (this.kind === "bar-chart") {
       this.chart = {
+        selected: get("chart.selected") ?? new Uint8Array(get("chart.value").length),
         categoryName: get("chart.category_name"),
         valueName: get("chart.value_name"),
         categories: get("chart.category"),
@@ -393,6 +396,7 @@ export class GraphForgeComposition {
       const dimensions = get("vector.dimensions")[0];
       this.vectors = {
         dimensions,
+        selected: get("vector.selected") ?? new Uint8Array(get("vector.result_row").length),
         uuid: uuidList(get("vector.uuid")),
         name: get("vector.name"),
         resultRows: [...get("vector.result_row")].map(Number),
@@ -401,6 +405,7 @@ export class GraphForgeComposition {
       };
     } else if (this.kind === "scatter") {
       this.points = {
+        selected: get("point.selected") ?? new Uint8Array(get("point.result_row").length),
         source: get("point.source"),
         dimensions: get("vector.dimensions")[0],
         uuid: uuidList(get("point.uuid")),
@@ -445,6 +450,15 @@ export class GraphForgeComposition {
       layer: decisionLayers[i] === NONE_U32 ? null : decisionLayers[i],
       count: Number(decisionCounts[i]),
     }));
+  }
+
+  /** Admitted source rows for this exact opaque result identity (no row guessing). */
+  selectResultRows(resultId, rows) {
+    if (this.layers[0]?.resultId !== resultId) return [];
+    const source = this.chart ?? this.vectors ?? this.points;
+    if (!source) return [];
+    const admitted = new Set(source.resultRows);
+    return [...new Set(rows)].filter((row) => Number.isSafeInteger(row) && row >= 0 && admitted.has(row));
   }
 
   /** Dense node index for a UUID (or -1). */
@@ -630,6 +644,20 @@ export function graphforgeChart(composition, opts = {}) {
   }
 }
 
+// Match the semantic selected outline contrast in graph_style::resolve_semantic_styles.
+function selectionColor(opts) { return opts.theme === "dark" ? "#ffffff" : "#000000"; }
+
+// Every rendered mark, including selected overlays and parallel segments,
+// routes through the native result-row plane. Host consumers only relay it.
+function bindChartRows(fig, owner, rowMaps) {
+  rowMaps.forEach((rows, i) => { fig.traces[i]._graphforgeResultRows = rows; });
+  fig.graphforgeRowsForPick = (composition, hit) => {
+    if (composition !== owner || !Number.isSafeInteger(hit?.trace) || !Number.isSafeInteger(hit?.index) || hit.index < 0) return [];
+    const row = fig.traces[hit.trace]?._graphforgePaintRows?.[hit.index];
+    return Number.isSafeInteger(row) && row >= 0 ? [row] : [];
+  };
+}
+
 function axisTitles(fig, x, y) {
   // Figure-level axis titles (chrome `x_label` / `y_label`), which every
   // export route admits, rather than authored axis options.
@@ -651,6 +679,17 @@ function graphforgeBarChart(composition, opts) {
     [categoryName]: category,
     [valueName]: Number.isFinite(values[i]) ? values[i] : null,
   }));
+  const rowMaps = [composition.chart.resultRows];
+  const selected = Array.from(composition.chart.selected, (value, i) => value ? i : -1).filter((i) => i >= 0);
+  if (selected.length) {
+    fig.bar(Float64Array.from(selected), Float64Array.from(selected, (i) => values[i]), {
+      name: valueName, color: fig.traces[0].style.color,
+      stroke: selectionColor(opts), strokeWidth: 3,
+    });
+    fig.traces[1].tooltip_rows = selected.map((i) => fig.traces[0].tooltip_rows[i]);
+    rowMaps.push(selected.map((i) => composition.chart.resultRows[i]));
+  }
+  bindChartRows(fig, composition, rowMaps);
   // Bars sit on integer slots of a linear axis whose ticks carry the category
   // names (Rust domain), so the browser and SVG/PNG export label them alike.
   const [x0, x1, y0, y1] = domain;
@@ -675,6 +714,16 @@ function graphforgeParallelChart(composition, opts) {
       tooltip_rows: uuid.map((id, i) => ({ id, ...(name[i] ? { name: name[i] } : {}), dimension: 0 })),
       _composed: true,
     });
+    const selected = Array.from(composition.vectors.selected, (value, i) => value ? i : -1).filter((i) => i >= 0);
+    const rowMaps = [composition.vectors.resultRows];
+    if (selected.length) {
+      fig.scatter(new Float64Array(selected.length), Float64Array.from(selected, (i) => values[i]), {
+        name: "embedding", style: { color: selectionColor(opts), size: 7 },
+        tooltip_rows: selected.map((i) => fig.traces[0].tooltip_rows[i]), _composed: true,
+      });
+      rowMaps.push(selected.map((i) => composition.vectors.resultRows[i]));
+    }
+    bindChartRows(fig, composition, rowMaps);
     const [dx0, dx1, dy0, dy1] = composition.vectors.domain;
     fig.setAxis("x", { domain: [dx0, dx1] });
     fig.setAxis("y", { domain: [dy0, dy1] });
@@ -697,6 +746,18 @@ function graphforgeParallelChart(composition, opts) {
   const fig = figure({ width, height, title });
   // Every segment keeps its node identity (rows ship as typed tooltip columns).
   fig.segments(x0, y0, x1, y1, { name: "embedding", tooltip_rows: rows });
+  const sourceRows = rows.map((_, i) => composition.vectors.resultRows[Math.floor(i / (dimensions - 1))]);
+  const selected = rows.map((_, i) => composition.vectors.selected[Math.floor(i / (dimensions - 1))] ? i : -1).filter((i) => i >= 0);
+  const rowMaps = [sourceRows];
+  if (selected.length) {
+    fig.segments(Float64Array.from(selected, (i) => x0[i]), Float64Array.from(selected, (i) => y0[i]),
+      Float64Array.from(selected, (i) => x1[i]), Float64Array.from(selected, (i) => y1[i]), {
+        name: "embedding", color: selectionColor(opts), width: 3,
+        tooltip_rows: selected.map((i) => rows[i]),
+      });
+    rowMaps.push(selected.map((i) => sourceRows[i]));
+  }
+  bindChartRows(fig, composition, rowMaps);
   // Rust owns the plot domain (dimension span, padded finite value range).
   const [dx0, dx1, dy0, dy1] = composition.vectors.domain;
   fig.setAxis("x", { domain: [dx0, dx1] });
@@ -718,6 +779,16 @@ function graphforgeScatterChart(composition, opts) {
     tooltip_rows: rows,
     _composed: true,
   });
+  const selected = Array.from(composition.points.selected, (value, i) => value ? i : -1).filter((i) => i >= 0);
+  const rowMaps = [composition.points.resultRows];
+  if (selected.length) {
+    fig.scatter(Float64Array.from(selected, (i) => x[i]), Float64Array.from(selected, (i) => y[i]), {
+      name: "embedding", style: { color: selectionColor(opts), size: 7 },
+      tooltip_rows: selected.map((i) => rows[i]), _composed: true,
+    });
+    rowMaps.push(selected.map((i) => composition.points.resultRows[i]));
+  }
+  bindChartRows(fig, composition, rowMaps);
   return source === "embedding" ? axisTitles(fig, "dimension 0", "dimension 1") : fig;
 }
 

@@ -99,7 +99,7 @@ pub fn recognize(schema: &Schema) -> GfResult<Recognized> {
             return Err(GfError::new(
                 "GF_RESULT_SCHEMA_UNREGISTERED",
                 format!(
-                    "no composition is registered for the \"{}\" {verb} result",
+                    "unregistered \"{}\" {verb} result. Open this result as a table; update XYG or rerun with compatible Core",
                     bounded(algorithm)
                 ),
             ));
@@ -123,7 +123,11 @@ pub fn recognize(schema: &Schema) -> GfResult<Recognized> {
     if verb == Some("find") {
         let got = version(schema, "graphforge.search_schema_version");
         if got != Some(ledger::SEARCH_SCHEMA_VERSION) {
-            return Err(unsupported_version("search", got, ledger::SEARCH_SCHEMA_VERSION));
+            return Err(unsupported_version(
+                "search",
+                got,
+                ledger::SEARCH_SCHEMA_VERSION,
+            ));
         }
         check_fields(&ledger::SEARCH_SCHEMA, schema)?;
         return Ok(Recognized {
@@ -214,6 +218,8 @@ mod tests {
         let error = recognize(&schema).unwrap_err();
         assert_eq!(error.code, "GF_RESULT_SCHEMA_UNREGISTERED");
         assert!(error.message.contains("quantum_rank"));
+        assert!(error.message.contains("Open this result as a table"));
+        assert!(error.message.contains("update XYG"));
 
         let schema = with_metadata("pagerank", "graphforge.algorithm_schema_version", Some("2"));
         assert_eq!(
@@ -235,10 +241,30 @@ mod tests {
     #[test]
     fn unsupported_versions_name_the_schema_and_action_without_echoing_untrusted_text() {
         for (name, key, value, expected) in [
-            ("pagerank", "graphforge.algorithm_schema_version", Some("2"), "node-score result schema version 2"),
-            ("pagerank", "graphforge.algorithm_schema_version", None, "node-score result schema version (missing or invalid)"),
-            ("pagerank", "graphforge.algorithm_schema_version", Some("secret-row-value"), "node-score result schema version (missing or invalid)"),
-            ("find", "graphforge.search_schema_version", Some("9"), "search result schema version 9"),
+            (
+                "pagerank",
+                "graphforge.algorithm_schema_version",
+                Some("2"),
+                "node-score result schema version 2",
+            ),
+            (
+                "pagerank",
+                "graphforge.algorithm_schema_version",
+                None,
+                "node-score result schema version (missing or invalid)",
+            ),
+            (
+                "pagerank",
+                "graphforge.algorithm_schema_version",
+                Some("secret-row-value"),
+                "node-score result schema version (missing or invalid)",
+            ),
+            (
+                "find",
+                "graphforge.search_schema_version",
+                Some("9"),
+                "search result schema version 9",
+            ),
         ] {
             let schema = with_metadata(name, key, value);
             let error = recognize(&schema).unwrap_err();
