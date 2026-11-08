@@ -12,7 +12,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 CURRENT_BINDINGS = Path(
-    "spec/performance/dense-native-navigation-union-2026-11-08/current-bindings.json"
+    "spec/performance/dense-union-module-status-2026-11-08/current-bindings.json"
 )
 
 
@@ -236,13 +236,14 @@ def test_rc7_artifact_provenance_and_every_generated_ipc_are_bound() -> None:
         ]
 
 
-def test_dense_navigation_union_preserves_both_exact_parent_sources():
+def test_dense_navigation_successor_preserves_qualified_source_parents():
     import gzip
 
     current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
     expected = {
         "spec/performance/temporal-dense-continuation-2026-11-08/current-bindings.json",
         "spec/performance/wasm-frozen-feature-ci-2026-11-08/current-bindings.json",
+        "spec/performance/dense-native-navigation-union-2026-11-08/current-bindings.json",
     }
     assert {parent["path"] for parent in current["parents"]} == expected
     for parent in current["parents"]:

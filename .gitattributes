@@ -1352,3 +1352,7 @@ spec/performance/wasm-frozen-feature-ci-2026-11-08/**/*.gz -text
 spec/performance/dense-native-navigation-union-2026-11-08/** text eol=lf
 spec/performance/dense-native-navigation-union-2026-11-08/**/*.gz -text
 spec/performance/dense-native-navigation-union-2026-11-08/**/*.png -text
+
+# Dense union module status successor.
+spec/performance/dense-union-module-status-2026-11-08/** text eol=lf
+spec/performance/dense-union-module-status-2026-11-08/**/*.gz -text

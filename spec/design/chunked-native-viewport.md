@@ -106,8 +106,13 @@ positioned read for close/drain proof. No fabricated ACK or relaxed timeout is u
 Receipts and original-minimum acceptance mapping are in
 `spec/performance/chunked-native-installed-2026-11-07/`. Earlier checkpoint and Root
 producer receipts remain immutable and are linked by the successor bindings.
-The current union reuses the source-verified native405/WASM38 producer, whose
-module is 1,897,547 raw / 784,435 Node22 gzip6 bytes with all 68 exports.
+That historical chunked-navigation union reused the source-verified
+native405/WASM38 producer, measuring 1,897,547 raw /784,435 Node22 gzip6 bytes.
+The later [dense temporal/native navigation integration](../performance/dense-native-navigation-union-2026-11-08/README.md)
+measures **1,895,719 raw /786,385 Node22 gzip6 bytes**, retains all 68 exports
+and zero imports, and leaves **47 gzip bytes** below the unchanged 786,432-byte
+gzip cap (raw cap 1,927,168 bytes). Package headroom must use that integration's
+pinned module rather than the earlier checkpoint.
 
 The manual Linux native HTTP qualification adds a fully materialized
 4,500,000,000-row XYGC file: 72,003,345,112 bytes against 33,319,313,408 bytes of

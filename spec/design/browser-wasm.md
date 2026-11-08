@@ -1911,8 +1911,13 @@ It then orders functions by name and strips debug/name sections. This supersedes
 the historical threshold50/early-stripping setting for this combined module;
 native O3 and stripping, Rust1.96, fat LTO, codegen1, dependencies, public
 declarations, validation, runtime budgets and packaging limits remain unchanged.
-The final single module has all 68 function exports, no imports, and measures
-1,897,244 raw /784,226 Node22 gzip6 bytes against 1,927,168 /786,432 caps.
+That historical layout-qualified module retained all 68 function exports and
+no imports, measuring 1,897,244 raw /784,226 Node22 gzip6 bytes. The later
+[dense temporal/native navigation integration](../performance/dense-native-navigation-union-2026-11-08/README.md)
+retains the same exports and zero imports and measures **1,895,719 raw /786,385
+Node22 gzip6 bytes** against unchanged 1,927,168 /786,432 caps: **47 gzip bytes
+of headroom**. Earlier checkpoint measurements do not describe that combined
+module's remaining capacity.
 
 The [layout qualification receipt](../performance/combined-wasm-layout-2026-11-07/README.md)
 preserves the over-cap baseline and compiler/layout attribution separately.

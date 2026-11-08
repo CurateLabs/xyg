@@ -1,0 +1,213 @@
+{
+  "base": "4d0d7dc2d27a2a978a126fc829284fdf11842b9b",
+  "compiledInputs": {
+    "allUnchanged": 324,
+    "path": "spec/performance/dense-native-navigation-union-2026-11-08/compiled-input-equality.json",
+    "sha256": "c8ee716be372c060085e1faa448b81630ddcfa60f3dc23b1879423eb12c00495"
+  },
+  "evidence": {
+    "target/task-tmp/dense-module-status/core.log": {
+      "archive": "spec/performance/dense-union-module-status-2026-11-08/evidence/1b3e23970d4413d776f708dad6419baf1254361d6187761df13f8b88dbf70f25.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "ae4320673a36e336e1caa7ca531b1ed6b158e47ff041b18a4784a6a39b874d7f",
+      "bytes": 99,
+      "sha256": "1b3e23970d4413d776f708dad6419baf1254361d6187761df13f8b88dbf70f25"
+    },
+    "target/task-tmp/dense-module-status/format.log": {
+      "archive": "spec/performance/dense-union-module-status-2026-11-08/evidence/22d9cc41a68c5c4bc0358a9acabffa715d262f2aa4a2bd3b7b40bb6c59adb465.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "c88a68761a765b09c296e3a5fba36e3e321f4984e54e6772575c8510f8eaac25",
+      "bytes": 29,
+      "sha256": "22d9cc41a68c5c4bc0358a9acabffa715d262f2aa4a2bd3b7b40bb6c59adb465"
+    },
+    "target/task-tmp/dense-module-status/hooks.log": {
+      "archive": "spec/performance/dense-union-module-status-2026-11-08/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/dense-module-status/module.json": {
+      "archive": "spec/performance/dense-union-module-status-2026-11-08/evidence/f66cd98ac85449d87efc3af12b3fef793e9ef5fdd932f77e1083512393849057.gz",
+      "archiveBytes": 157,
+      "archiveSha256": "e38b86b4a60be42e9382a9ae51d2219bf16007c4f38ce731874f456894e9cffd",
+      "bytes": 172,
+      "sha256": "f66cd98ac85449d87efc3af12b3fef793e9ef5fdd932f77e1083512393849057"
+    },
+    "target/task-tmp/dense-module-status/ruff.log": {
+      "archive": "spec/performance/dense-union-module-status-2026-11-08/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/dense-module-status/runtime-equality.json": {
+      "archive": "spec/performance/dense-union-module-status-2026-11-08/evidence/5be2b2c0693cf22c4df6d3887c1568fe3402016f9cb309a1c03b2dea8d4b0540.gz",
+      "archiveBytes": 657,
+      "archiveSha256": "48ce83dbff90939f13a29243fba9d27524e248c3c299315bf5111c773bcb4de0",
+      "bytes": 1457,
+      "sha256": "5be2b2c0693cf22c4df6d3887c1568fe3402016f9cb309a1c03b2dea8d4b0540"
+    },
+    "target/task-tmp/dense-module-status/runtime-equality.log": {
+      "archive": "spec/performance/dense-union-module-status-2026-11-08/evidence/e7add69b3e810aabe27335fe5a4f59788518a81a291058be2acd8d8f2de7f655.gz",
+      "archiveBytes": 91,
+      "archiveSha256": "085c819436a34a60197178182e0da15f2215fb4afff2d0395183f8005cc3bc5b",
+      "bytes": 79,
+      "sha256": "e7add69b3e810aabe27335fe5a4f59788518a81a291058be2acd8d8f2de7f655"
+    },
+    "target/task-tmp/dense-module-status/seal-sources.py": {
+      "archive": "spec/performance/dense-union-module-status-2026-11-08/evidence/d274a99e74805bdf4d91a0088f7382d770248a5ad2f90af2735a17e6d44ef414.gz",
+      "archiveBytes": 892,
+      "archiveSha256": "a124427bd8a3f6260ca0b3ef3c3dcbc526806b5972477b2a324d49447cc5c7b8",
+      "bytes": 1906,
+      "sha256": "d274a99e74805bdf4d91a0088f7382d770248a5ad2f90af2735a17e6d44ef414"
+    },
+    "target/task-tmp/dense-module-status/seal.log": {
+      "archive": "spec/performance/dense-union-module-status-2026-11-08/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/dense-module-status/source-bindings.log": {
+      "archive": "spec/performance/dense-union-module-status-2026-11-08/evidence/ae41298adac0c3dac8808e609fcf3fc7a3f8e86099b23ec4bff74bd424ce2f92.gz",
+      "archiveBytes": 73,
+      "archiveSha256": "dcfc54d6826fac555c41e747c366859f259de8cc39bb89f38ea1ae38390a480f",
+      "bytes": 61,
+      "sha256": "ae41298adac0c3dac8808e609fcf3fc7a3f8e86099b23ec4bff74bd424ce2f92"
+    },
+    "target/task-tmp/dense-module-status/union-review-result.json": {
+      "archive": "spec/performance/dense-union-module-status-2026-11-08/evidence/2aa9887fc209c8939125d4b6b80e4b6244143ce0a697a7529b98a65051032b0e.gz",
+      "archiveBytes": 4804,
+      "archiveSha256": "e885abf4928409336799c1fbc477bf30d9f16605cd15991a3567b0c78e27216e",
+      "bytes": 10858,
+      "sha256": "2aa9887fc209c8939125d4b6b80e4b6244143ce0a697a7529b98a65051032b0e"
+    },
+    "target/task-tmp/dense-module-status/verify-runtime.py": {
+      "archive": "spec/performance/dense-union-module-status-2026-11-08/evidence/3777cde9089ff449fa18892337668e866b4c99e2645d9a6279e5658568e06df2.gz",
+      "archiveBytes": 713,
+      "archiveSha256": "4e30ec89548de4aef534c2ef5753ccdf14e3a45c10901c59ab24928fb5fb400c",
+      "bytes": 1409,
+      "sha256": "3777cde9089ff449fa18892337668e866b4c99e2645d9a6279e5658568e06df2"
+    }
+  },
+  "fresh": {
+    "Core": {
+      "exit": 0,
+      "includesRealGitCrLf": true,
+      "log": "target/task-tmp/dense-module-status/core.log",
+      "passed": 8
+    },
+    "hooks": {
+      "exit": 0,
+      "log": "target/task-tmp/dense-module-status/hooks.log"
+    },
+    "module": {
+      "functionExports": 68,
+      "gzip6": 786385,
+      "headroom": 47,
+      "imports": 0,
+      "node": "v22.23.4",
+      "raw": 1895719,
+      "sha256": "4cd1e964a16fb8be527b552dae50f94729e80d79ed8bcf936b53601914c8feba"
+    },
+    "ruff": {
+      "exit": 0,
+      "log": "target/task-tmp/dense-module-status/ruff.log"
+    },
+    "ruffFormat": {
+      "exit": 0,
+      "log": "target/task-tmp/dense-module-status/format.log"
+    }
+  },
+  "notFresh": [
+    "Union runtime/foundation/packet/page/browser suites are independent-review or producer evidence inherited only over unchanged sources/artifacts",
+    "Producer793CI and installed-Jupyter totals are receipts"
+  ],
+  "parentProtection": {
+    "allPriorPerformanceReceiptsUnchanged": true,
+    "changedParentPaths": [
+      ".gitattributes",
+      "spec/design/browser-wasm.md",
+      "spec/design/chunked-native-viewport.md",
+      "tests/test_graphforge_contract_corpus.py"
+    ],
+    "noMissingPaths": true,
+    "protectedModeObjects": 21458
+  },
+  "preservedFailures": [
+    "Installed server startup/readiness failures",
+    "e48 timer-order and disposed Worker failures",
+    "Initial hosted blanket PNG absence guard failed and dependent tests skipped"
+  ],
+  "readmeSha256": "7a73c9691138115322c52f6852c7760e83610618d9cbce3162d5005df159565a",
+  "recordedAt": "2026-11-08T03:39:14.501441+00:00",
+  "remaining": [
+    "Independent correction review",
+    "Currentmain freshness, newhead hosted CI, mandatory queue",
+    "Broader #46/#110 and milestones4\u20137 acceptance"
+  ],
+  "reviewFinding": {
+    "disposition": "Both older measurements labelled historical, current pinned module and47-byte headroom cited; independent correction review pending",
+    "reviewTask": "690aa90e-a833-41b6-beb8-84c83e8b2050"
+  },
+  "runtimeArtifacts": {
+    "packages/xy-client/dist/index.js": {
+      "bytes": 855560,
+      "sha256": "af48bff857ca4515d55ff5828e7020f5fcf5aa164aa41632fba404688ada0758"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 855580,
+      "sha256": "d7524c3c12713526423d5120b839d237ab1c949d7cbe1b913f19d928549fa819"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2548750,
+      "sha256": "128586393e0a576b7d54f6d8354e297d3ccc4cf72e2594280510075e6c08b20f"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "0460b161e4b45690a2a6f18bce57549a088d8ee0606d76afc2f352227f72fbc1"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1895719,
+      "sha256": "4cd1e964a16fb8be527b552dae50f94729e80d79ed8bcf936b53601914c8feba"
+    },
+    "target/release/libxyg_core.so": {
+      "bytes": 6374200,
+      "sha256": "1ac386f0d7af618a757fb51cca883f0c409f3991c976f7a9df0562f69524d316"
+    }
+  },
+  "schemaVersion": 1,
+  "scope": "Normative module status wording and append-only Core successor; no runtime change",
+  "sourceBindings": {
+    "currentCount": 3352,
+    "historicalCount": 792,
+    "path": "spec/performance/dense-union-module-status-2026-11-08/current-bindings.json",
+    "provenanceParents": [
+      {
+        "commit": "e48b2da1a3a25612065a6ba6ee5393b7b2413b83",
+        "path": "spec/performance/temporal-dense-continuation-2026-11-08/current-bindings.json",
+        "sha256": "e22a0940c479a2a39a0e9644595df88c21dff1d40c2096e0793767e60ea2b633"
+      },
+      {
+        "commit": "7cfd6fd9f9636438a6489b83504925e3b5bc9cbd",
+        "path": "spec/performance/wasm-frozen-feature-ci-2026-11-08/current-bindings.json",
+        "sha256": "820fa4f896378cd85391f87114aa59017bee357e42358084e77064d27bfeaab4"
+      },
+      {
+        "commit": "4d0d7dc2d27a2a978a126fc829284fdf11842b9b",
+        "path": "spec/performance/dense-native-navigation-union-2026-11-08/current-bindings.json",
+        "sha256": "227ed466194baed725d1dadf3d950518ecf521eb5c41e34d7e39d87d25cab0dc"
+      }
+    ],
+    "sha256": "df5de1eb7678bb3212a19b01e536e7bea61b421a8b6882310cf1fdcd2ace20aa"
+  }
+}
