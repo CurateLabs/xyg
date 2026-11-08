@@ -220,7 +220,11 @@ release ACK, redisplay and exact full-canvas RGBA restoration. VS Code uses a
 public programmatic camera update, native read supersession/failure, actual
 prepared abort and WebviewPanel reload/disposal, with full-canvas RGBA retention.
 Both retain private hierarchy authority, exact u64 selection and independent
-caller leases. These are source-checkout tests in installed applications, not
+caller leases. Application-test transport holds must be disarmed and any held
+reply released before awaiting failure teardown. The VS Code harness has an
+explicit held-preparation failure injection; it preserves the failed exit while
+separately asserting actual native-owner cleanup. See the
+[held-reply cleanup correction](../performance/geo-hierarchy-held-reply-cleanup-2026-11-08/README.md). These are source-checkout tests in installed applications, not
 installed-XYG-wheel acceptance. The separately started notebook server must
 serve the exact committed input; this does not qualify cold startup. Five
 simultaneous automatic bindings, mixed tiles and broader host/scale/accessibility

@@ -1,0 +1,416 @@
+{
+  "allCompiledInputsUnchanged": 324,
+  "base": "ea19bdb0f622faace721b68a59c3c80431439555",
+  "captures": {
+    "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/captures/injected-failure.png": {
+      "bytes": 35424,
+      "sha256": "09fd657bdb851a577ea15a1b6b1bc286923b6226369536c95552da9ff9188c1f"
+    },
+    "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/captures/normal.png": {
+      "bytes": 35424,
+      "sha256": "09fd657bdb851a577ea15a1b6b1bc286923b6226369536c95552da9ff9188c1f"
+    }
+  },
+  "compiledInputs": {
+    "allUnchanged": 324,
+    "path": "spec/performance/dense-native-navigation-union-2026-11-08/compiled-input-equality.json",
+    "sha256": "c8ee716be372c060085e1faa448b81630ddcfa60f3dc23b1879423eb12c00495"
+  },
+  "evidence": {
+    "target/task-tmp/geo-hierarchy-held-cleanup/changed-sources.json": {
+      "archive": "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/evidence/aa78467f009e05eea13838eed1f4d825d5ab634d30a4611353d3d2db227fc9a6.gz",
+      "archiveBytes": 142,
+      "archiveSha256": "d4c2de6afef8593397cd684cc1305ce3ce4ee3a7351ad157e22412c188e1144a",
+      "bytes": 174,
+      "sha256": "aa78467f009e05eea13838eed1f4d825d5ab634d30a4611353d3d2db227fc9a6"
+    },
+    "target/task-tmp/geo-hierarchy-held-cleanup/core.log": {
+      "archive": "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/evidence/cfaf46fc59f06512d61a82980d5e5be210546f9b404dba469e5b2c5f154d071f.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "17d184c880ff10826da1bfbaae30e3923317a04d29d91619c8389acf6748a4d6",
+      "bytes": 99,
+      "sha256": "cfaf46fc59f06512d61a82980d5e5be210546f9b404dba469e5b2c5f154d071f"
+    },
+    "target/task-tmp/geo-hierarchy-held-cleanup/format.log": {
+      "archive": "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/evidence/e921aaaf65986c6531c59f2065c35ed00cdcc7f22c1a12a135443e5e76f7f46a.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "ce42a3224112748d5dc59f4bfc1494cb313915f5b0b64f25ced5cbd42a51ed87",
+      "bytes": 29,
+      "sha256": "e921aaaf65986c6531c59f2065c35ed00cdcc7f22c1a12a135443e5e76f7f46a"
+    },
+    "target/task-tmp/geo-hierarchy-held-cleanup/hooks.log": {
+      "archive": "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/geo-hierarchy-held-cleanup/injected-failure.log": {
+      "archive": "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/geo-hierarchy-held-cleanup/injected-failure/application.log": {
+      "archive": "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/evidence/14276eeee833ef1f2a3706e4ff77814c62958e264884aa7ac131ee1004f35fb7.gz",
+      "archiveBytes": 25727,
+      "archiveSha256": "13833c35d2e22508f7af49625f3e2e56145f9b88ae8ba0cdac78e288d68af435",
+      "bytes": 128826,
+      "sha256": "14276eeee833ef1f2a3706e4ff77814c62958e264884aa7ac131ee1004f35fb7"
+    },
+    "target/task-tmp/geo-hierarchy-held-cleanup/injected-failure/command.json": {
+      "archive": "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/evidence/841dbac6d23ec1cfcdb036024f5fc5b1f877b86b8e9723ce5ca03168634f18b6.gz",
+      "archiveBytes": 536,
+      "archiveSha256": "08f18f269ce1583e08b108862df3308b9237763393636cd8de611fdf3d590ade",
+      "bytes": 1509,
+      "sha256": "841dbac6d23ec1cfcdb036024f5fc5b1f877b86b8e9723ce5ca03168634f18b6"
+    },
+    "target/task-tmp/geo-hierarchy-held-cleanup/injected-failure/report.json": {
+      "archive": "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/evidence/d0d35415ace02bfe24180b367055e82584a7a1f5a86ed231554b167f661b1f20.gz",
+      "archiveBytes": 506,
+      "archiveSha256": "5ff4e427877359e6f30f94cc831eb08d97b39ed637a807185a8c7a667e8ce0e3",
+      "bytes": 2018,
+      "sha256": "d0d35415ace02bfe24180b367055e82584a7a1f5a86ed231554b167f661b1f20"
+    },
+    "target/task-tmp/geo-hierarchy-held-cleanup/injected-failure/report.json.cleanup.json": {
+      "archive": "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/evidence/87b3e8d0ffa2c6629b51da7d65a35f485734a76cfbd9bd7ba4fd8037297f4313.gz",
+      "archiveBytes": 133,
+      "archiveSha256": "90e3974dce0ec7182056292c6437dd5045d0ec93dca5d981c4d303d6af928c7d",
+      "bytes": 203,
+      "sha256": "87b3e8d0ffa2c6629b51da7d65a35f485734a76cfbd9bd7ba4fd8037297f4313"
+    },
+    "target/task-tmp/geo-hierarchy-held-cleanup/injected-failure/xvfb.log": {
+      "archive": "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/geo-hierarchy-held-cleanup/node22.log": {
+      "archive": "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/evidence/00cb800ebaa172d8bffdadf6216c9eaf104ede8e476c3dc89b7454cc3a178344.gz",
+      "archiveBytes": 981,
+      "archiveSha256": "311c4a7f40f1e5d15859b9731c2795cf5448d269f9aff9a507410f301b48c75f",
+      "bytes": 3870,
+      "sha256": "00cb800ebaa172d8bffdadf6216c9eaf104ede8e476c3dc89b7454cc3a178344"
+    },
+    "target/task-tmp/geo-hierarchy-held-cleanup/normal.log": {
+      "archive": "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/evidence/85cb8b8bf3e134b4fe3b56f757b9dc316c8db968de38fad0ed9380a18b8648f6.gz",
+      "archiveBytes": 634,
+      "archiveSha256": "d4a0dd11a11fda1ff44550dc5b611c2c059a25f687efc3c0602aac40fa58d194",
+      "bytes": 2281,
+      "sha256": "85cb8b8bf3e134b4fe3b56f757b9dc316c8db968de38fad0ed9380a18b8648f6"
+    },
+    "target/task-tmp/geo-hierarchy-held-cleanup/normal/application.log": {
+      "archive": "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/evidence/8ffde7a1a5c836baea919165f558b4f2e9da782be94540fbc750c7b45ba4cba9.gz",
+      "archiveBytes": 25620,
+      "archiveSha256": "684a3b678ab2721d4ddf67b0112f2bd310ec0c6f245db42a216d5b0a865eeddb",
+      "bytes": 128511,
+      "sha256": "8ffde7a1a5c836baea919165f558b4f2e9da782be94540fbc750c7b45ba4cba9"
+    },
+    "target/task-tmp/geo-hierarchy-held-cleanup/normal/command.json": {
+      "archive": "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/evidence/9146dacb5df38bf3c83840fd80f65ba9e5f7fd58999fcffd523b6260ba541c01.gz",
+      "archiveBytes": 530,
+      "archiveSha256": "6ba6fdc9e67c85e641b7fd6a03e8fbd0543a19b649d076db0cbc231e4ce6cbf1",
+      "bytes": 1469,
+      "sha256": "9146dacb5df38bf3c83840fd80f65ba9e5f7fd58999fcffd523b6260ba541c01"
+    },
+    "target/task-tmp/geo-hierarchy-held-cleanup/normal/report.json": {
+      "archive": "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/evidence/e4449beb271740c46baec52a846512cc35fa24521a0b30349c2176edab4b4e75.gz",
+      "archiveBytes": 665,
+      "archiveSha256": "2712d1a4cb6637a15992f8a224474adbddc083c3426d00a57bba687ae353e501",
+      "bytes": 2747,
+      "sha256": "e4449beb271740c46baec52a846512cc35fa24521a0b30349c2176edab4b4e75"
+    },
+    "target/task-tmp/geo-hierarchy-held-cleanup/normal/report.json.cleanup.json": {
+      "archive": "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/evidence/87b3e8d0ffa2c6629b51da7d65a35f485734a76cfbd9bd7ba4fd8037297f4313.gz",
+      "archiveBytes": 133,
+      "archiveSha256": "90e3974dce0ec7182056292c6437dd5045d0ec93dca5d981c4d303d6af928c7d",
+      "bytes": 203,
+      "sha256": "87b3e8d0ffa2c6629b51da7d65a35f485734a76cfbd9bd7ba4fd8037297f4313"
+    },
+    "target/task-tmp/geo-hierarchy-held-cleanup/normal/xvfb.log": {
+      "archive": "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/geo-hierarchy-held-cleanup/original-held-control.log": {
+      "archive": "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/evidence/8cea5806b64eb8a2939672e7b2a199595e42990710b399c253784b9586b8ac06.gz",
+      "archiveBytes": 105,
+      "archiveSha256": "52dfd5ba6d112c32c40a9b81affc54e78864c81a3c0e95992016e30043538a19",
+      "bytes": 102,
+      "sha256": "8cea5806b64eb8a2939672e7b2a199595e42990710b399c253784b9586b8ac06"
+    },
+    "target/task-tmp/geo-hierarchy-held-cleanup/original-held-control.mjs": {
+      "archive": "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/evidence/00cf15afc680b4b8b78c3aa5e89f82fc8d68ebfe7aa85fe76885ddf40a151c0f.gz",
+      "archiveBytes": 745,
+      "archiveSha256": "91f3298040b2e8514ea6b85a482b34c47947368c7b3cb8b2d8901a8e27a54a3a",
+      "bytes": 1526,
+      "sha256": "00cf15afc680b4b8b78c3aa5e89f82fc8d68ebfe7aa85fe76885ddf40a151c0f"
+    },
+    "target/task-tmp/geo-hierarchy-held-cleanup/review-ea19.json": {
+      "archive": "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/evidence/eca8982965982520ebe3c557ecac0f1d8205fcd50a046e152e4b37679de45f4f.gz",
+      "archiveBytes": 4709,
+      "archiveSha256": "ffd323471b349028fd392eb6475d8d7f875e39660c7d9f63cad8cdc93d1f834c",
+      "bytes": 11328,
+      "sha256": "eca8982965982520ebe3c557ecac0f1d8205fcd50a046e152e4b37679de45f4f"
+    },
+    "target/task-tmp/geo-hierarchy-held-cleanup/ruff.log": {
+      "archive": "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/geo-hierarchy-held-cleanup/seal-sources.log": {
+      "archive": "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/evidence/85de95ac3872a7aeaca5355691016d71f229e4a0155c05eb7cdd9fb9098c43d5.gz",
+      "archiveBytes": 75,
+      "archiveSha256": "39a409b4ce5f8bbe0aa4db6eb12a419a70ad6c61f2bb7bcf4017d22d2da28b37",
+      "bytes": 61,
+      "sha256": "85de95ac3872a7aeaca5355691016d71f229e4a0155c05eb7cdd9fb9098c43d5"
+    },
+    "target/task-tmp/geo-hierarchy-held-cleanup/seal-sources.py": {
+      "archive": "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/evidence/e3ac7c5002398db8d41e85318490c2fe4104ac21fe590b7bd091eb4b4894badd.gz",
+      "archiveBytes": 862,
+      "archiveSha256": "486fff2ccca745843a3c3c4d00b01bac8ee8fa8b1fbf58e947422c4656f90522",
+      "bytes": 1861,
+      "sha256": "e3ac7c5002398db8d41e85318490c2fe4104ac21fe590b7bd091eb4b4894badd"
+    }
+  },
+  "externalExecutables": {
+    "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome": {
+      "bytes": 301186376,
+      "sha256": "377a9fc07b495c3b8d0ab8ec1fdfd153641759f9756fea34d8dfce4de82f5025"
+    },
+    "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin/node": {
+      "bytes": 124902584,
+      "sha256": "94efd062ed066c1a0b332e18249859c905e920eeada5df55d24c99b919629a90"
+    },
+    "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/task-tmp/mounted-temporal-continuation/vscode-node22/code": {
+      "bytes": 195299104,
+      "sha256": "d1a85801f176b2cfdceee8618d54a56a159accaee42bef8cbaa8bdb707d96b93"
+    }
+  },
+  "failuresAndLimits": [
+    "Injected actual-application run intentionally exits1; original assertion error remains recorded; cleanup success does not turn it into a passing product run",
+    "Reviewer old held-transport pending reproduction remains a dependency control,not an actual-app original-source timeout claim",
+    "Earlier Jupyter/Worker/timer failures remain unexplained",
+    "Exploratory CSS source draft was saved and restored before this correction; no CSS/native/browser source or artifact is changed here"
+  ],
+  "finding": {
+    "disposition": "Disarm late holds and release admitted gate before awaiting actual panel/host/binding teardown; fresh actual-application negative and normal runs",
+    "mechanism": "Outer finally awaited host transport while its prepared-reply gate remained held",
+    "review": "target/task-tmp/geo-hierarchy-held-cleanup/review-ea19.json",
+    "severity": "P2"
+  },
+  "fresh": {
+    "CoreRealCrLf": {
+      "exit": 0,
+      "log": "target/task-tmp/geo-hierarchy-held-cleanup/core.log",
+      "passed": 8
+    },
+    "Node22": {
+      "exit": 0,
+      "log": "target/task-tmp/geo-hierarchy-held-cleanup/node22.log",
+      "passed": 17
+    },
+    "format": {
+      "exit": 0,
+      "log": "target/task-tmp/geo-hierarchy-held-cleanup/format.log"
+    },
+    "heldDependencyControl": {
+      "exit": 0,
+      "log": "target/task-tmp/geo-hierarchy-held-cleanup/original-held-control.log",
+      "scope": "Reviewer control rerun with actual host/nativefixture and stubbed reply delivery; disposal stays pending while held then settles after release; not an actual-app injection"
+    },
+    "hooks": {
+      "exit": 0,
+      "log": "target/task-tmp/geo-hierarchy-held-cleanup/hooks.log"
+    },
+    "injected-failure": {
+      "cleanup": {
+        "anchorReleased": true,
+        "cleanupComplete": true,
+        "heldGateReleased": true,
+        "laneClosed": true,
+        "mounted": false,
+        "prepareHoldDisarmed": true,
+        "scopeLive": false,
+        "sourceClosed": true
+      },
+      "command": [
+        "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/task-tmp/mounted-temporal-continuation/vscode-node22/code",
+        "--no-sandbox",
+        "--disable-gpu-sandbox",
+        "--use-angle=swiftshader",
+        "--enable-unsafe-swiftshader",
+        "--verbose",
+        "--user-data-dir=/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/geo-hierarchy-held-cleanup/injected-failure/user",
+        "--extensions-dir=/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/geo-hierarchy-held-cleanup/injected-failure/extensions",
+        "--extensionDevelopmentPath=/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/tests/vscode_geo_mounted_hierarchy_temporal",
+        "--extensionTestsPath=/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/tests/vscode_geo_mounted_hierarchy_temporal/test.cjs",
+        "--disable-extensions",
+        "--skip-welcome",
+        "--skip-release-notes"
+      ],
+      "environment": {
+        "DISPLAY": "127.0.0.1:104",
+        "TMPDIR": "/var/tmp",
+        "XYG_GEO_VSCODE_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/geo-hierarchy-held-cleanup/injected-failure/report.json",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/release/libxyg_core.so"
+      },
+      "error": "XYG intentional failure while native prepared reply is held",
+      "flag": {
+        "XYG_GEO_HIERARCHY": "1",
+        "XYG_GEO_VSCODE_FAIL_HELD_PREPARE": "1"
+      },
+      "operatorExit": 1,
+      "report": "target/task-tmp/geo-hierarchy-held-cleanup/injected-failure/report.json",
+      "scope": "Actual VSCode1.103.2/embeddedNode22.17.0 with native405,privateauthenticatedXvfb,Root source and unchanged artifacts"
+    },
+    "normal": {
+      "cleanup": {
+        "anchorReleased": true,
+        "cleanupComplete": true,
+        "heldGateReleased": true,
+        "laneClosed": true,
+        "mounted": false,
+        "prepareHoldDisarmed": true,
+        "scopeLive": false,
+        "sourceClosed": true
+      },
+      "command": [
+        "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/task-tmp/mounted-temporal-continuation/vscode-node22/code",
+        "--no-sandbox",
+        "--disable-gpu-sandbox",
+        "--use-angle=swiftshader",
+        "--enable-unsafe-swiftshader",
+        "--verbose",
+        "--user-data-dir=/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/geo-hierarchy-held-cleanup/normal/user",
+        "--extensions-dir=/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/geo-hierarchy-held-cleanup/normal/extensions",
+        "--extensionDevelopmentPath=/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/tests/vscode_geo_mounted_hierarchy_temporal",
+        "--extensionTestsPath=/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/tests/vscode_geo_mounted_hierarchy_temporal/test.cjs",
+        "--disable-extensions",
+        "--skip-welcome",
+        "--skip-release-notes"
+      ],
+      "environment": {
+        "DISPLAY": "127.0.0.1:104",
+        "TMPDIR": "/var/tmp",
+        "XYG_GEO_VSCODE_REPORT": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/geo-hierarchy-held-cleanup/normal/report.json",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/release/libxyg_core.so"
+      },
+      "error": null,
+      "flag": {
+        "XYG_GEO_HIERARCHY": "1"
+      },
+      "operatorExit": 0,
+      "report": "target/task-tmp/geo-hierarchy-held-cleanup/normal/report.json",
+      "scope": "Actual VSCode1.103.2/embeddedNode22.17.0 with native405,privateauthenticatedXvfb,Root source and unchanged artifacts"
+    },
+    "ruff": {
+      "exit": 0,
+      "log": "target/task-tmp/geo-hierarchy-held-cleanup/ruff.log"
+    }
+  },
+  "inheritedOnlyAfterIdentityVerification": [
+    "Parent complete application sources except the inspected VSCode test correction",
+    "Parent Jupyter/canonical notebook and Python3.11/3.12 tests; not rerun for this CJS-only correction",
+    "Prior producer builds/fullCI and hooks remain historical evidence; no new broadCI/build claim"
+  ],
+  "module": {
+    "capsUnchanged": true,
+    "gzipHeadroom": 47,
+    "node22Gzip6": 786385,
+    "raw": 1895719
+  },
+  "parentPreservation": {
+    "allHistoricalPerformanceEvidenceUnchanged": true,
+    "changedParentPaths": [
+      ".gitattributes",
+      "spec/design/geo-mounted-temporal-hosts.md",
+      "tests/test_graphforge_contract_corpus.py",
+      "tests/vscode_geo_mounted_hierarchy_temporal/test.cjs"
+    ],
+    "noProductionChange": true,
+    "protectedModeObjects": 21596
+  },
+  "pythonStaticCopies": {
+    "python/xyg/static/index.js": {
+      "bytes": 855560,
+      "sha256": "af48bff857ca4515d55ff5828e7020f5fcf5aa164aa41632fba404688ada0758"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 855580,
+      "sha256": "d7524c3c12713526423d5120b839d237ab1c949d7cbe1b913f19d928549fa819"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "bytes": 2548750,
+      "sha256": "128586393e0a576b7d54f6d8354e297d3ccc4cf72e2594280510075e6c08b20f"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "0460b161e4b45690a2a6f18bce57549a088d8ee0606d76afc2f352227f72fbc1"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1895719,
+      "sha256": "4cd1e964a16fb8be527b552dae50f94729e80d79ed8bcf936b53601914c8feba"
+    }
+  },
+  "readmeSha256": "4c7e49580328ae854dd35098be7503a4e4063545740efce0f0bc6db164cf5619",
+  "recordedAt": "2026-11-08T05:06:46.728180+00:00",
+  "remaining": [
+    "Independent exact correction review",
+    "Currentmain freshness,final-head hosted checks and queue",
+    "All previously listed wholeissue/milestone acceptance gaps"
+  ],
+  "schemaVersion": 1,
+  "scope": "VSCode application-test held native prepared reply failure teardown; no production changes",
+  "shippingArtifacts": {
+    "packages/xy-client/dist/index.js": {
+      "bytes": 855560,
+      "sha256": "af48bff857ca4515d55ff5828e7020f5fcf5aa164aa41632fba404688ada0758"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 855580,
+      "sha256": "d7524c3c12713526423d5120b839d237ab1c949d7cbe1b913f19d928549fa819"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2548750,
+      "sha256": "128586393e0a576b7d54f6d8354e297d3ccc4cf72e2594280510075e6c08b20f"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "0460b161e4b45690a2a6f18bce57549a088d8ee0606d76afc2f352227f72fbc1"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1895719,
+      "sha256": "4cd1e964a16fb8be527b552dae50f94729e80d79ed8bcf936b53601914c8feba"
+    },
+    "target/release/libxyg_core.so": {
+      "bytes": 6374200,
+      "sha256": "1ac386f0d7af618a757fb51cca883f0c409f3991c976f7a9df0562f69524d316"
+    }
+  },
+  "sourceBindings": {
+    "current": 3362,
+    "historical": 816,
+    "path": "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/current-bindings.json",
+    "provenanceParents": 6,
+    "sha256": "a56624d8c8f9f652a7056404385d2e332b9ffd047609b956aba1ec20fc1f8594"
+  }
+}

@@ -1,6 +1,6 @@
 const vscode=require('vscode'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{pathToFileURL}=require('node:url');
 exports.run=async()=>{
- const root=path.resolve(__dirname,'../..'),out=process.env.XYG_GEO_VSCODE_REPORT,rows=[],waiters=new Map();let panel,f,host,binding,caller,h,unblock;
+ const root=path.resolve(__dirname,'../..'),out=process.env.XYG_GEO_VSCODE_REPORT,rows=[],waiters=new Map();let panel,f,host,binding,caller,h,unblock,releasePrepared,holdPrepared=false;
  const importFile=p=>import(pathToFileURL(path.join(root,p)).href);
  const bounded=async(promise,label)=>{let timer;try{return await Promise.race([promise,new Promise((_,reject)=>timer=setTimeout(()=>reject(Error('VS Code native gate did not complete: '+label)),45000))]);}finally{clearTimeout(timer);}};
  const wait=key=>new Promise((resolve,reject)=>{const timer=setTimeout(()=>{waiters.delete(key);reject(Error('VS Code test action did not complete: '+key));},45000);waiters.set(key,{resolve:value=>{clearTimeout(timer);waiters.delete(key);resolve(value);},reject:error=>{clearTimeout(timer);waiters.delete(key);reject(error);}});});
@@ -14,7 +14,7 @@ exports.run=async()=>{
   h=api.temporalControllerCreate({instanceId:41n,domainStart:-(1n<<63n),domainEnd:(1n<<63n)-1n,cursor:3n,window:0n,step:1n});
   panel=vscode.window.createWebviewPanel('xygMountedTemporal','XYG mounted temporal proof',vscode.ViewColumn.One,{enableScripts:true,localResourceRoots:[vscode.Uri.file(root)],retainContextWhenHidden:true});
   const actualPanel=panel;
-  let holdPrepared=false,preparedEntered,releasePrepared;
+  let preparedEntered;
   const forward={webview:{onDidReceiveMessage:actualPanel.webview.onDidReceiveMessage.bind(actualPanel.webview),async postMessage(envelope){
    if(holdPrepared&&envelope.message?.type==='geo_host'&&envelope.buffers?.[0]&&new DataView(envelope.buffers[0]).getUint32(8,true)===6){holdPrepared=false;preparedEntered();await new Promise(r=>releasePrepared=r);}
    return actualPanel.webview.postMessage(envelope);
@@ -46,6 +46,7 @@ exports.run=async()=>{
    while(!fs.existsSync(process.env.XYG_GEO_VSCODE_CAPTURE_READY+'.done')){if(Date.now()>deadline)throw Error('VS Code capture did not settle');await new Promise(resolve=>setTimeout(resolve,20));}
   }
   holdPrepared=true;const prepared=new Promise(r=>preparedEntered=r);api.temporalControllerSetCursor(h,12n);await bounded(prepared,'prepared reply');
+  if(process.env.XYG_GEO_VSCODE_FAIL_HELD_PREPARE==='1')throw Error('XYG intentional failure while native prepared reply is held');
   const abortedSequence=f.adapter.liveCandidate.sequenceFloor,acceptedSequence=f.adapter.sequence;assert.ok(abortedSequence>acceptedSequence);
   const close=binding.dispose();await bounded((async()=>{while(!binding.active.invalidated)await new Promise(r=>setImmediate(r));})(),'prepared invalidation');releasePrepared();await close;
   assert.equal(f.adapter.sequence,acceptedSequence);
@@ -58,5 +59,5 @@ exports.run=async()=>{
   api.temporalControllerDestroy(h);h=undefined;
   fs.writeFileSync(out,JSON.stringify({ok:true,selectedHierarchy:true,nativeAbi:xyAbiVersion(),preparedAbortBeforeRemount:true,abortedSequence:String(abortedSequence),acceptedSequence:String(acceptedSequence),newSequence:String(f.adapter.sequence),privateHierarchyAuthority:true,completeRgbaFailureRetention:true,completeRgbaRemountRetention:true,programmaticCamera:true,vscode:vscode.version,node:process.version,platform:process.platform,rows,premountLatest:true,exactI64U64:true,cameraPreserved:true,unfinishedReadSuperseded:true,failureRetained:true,rangeAndCursor:true,rebind:true,reload:true,realPanelDisposeDuringRead:true,independentCaller:true,currentPublicationPreserved:true,allNativeOwnersClosed:true},null,2)+'\n');
  }catch(error){if(out)fs.writeFileSync(out,JSON.stringify({ok:false,error:error.message,stack:error.stack,rows},null,2)+'\n');throw error;}
- finally{unblock?.();panel?.dispose();if(host)await host.dispose();await caller?.dispose();if(f){await f.lane.dispose();await f.source.dispose();await f.scope.dispose();}if(h){const api=await importFile('packages/xy-node/src/index.js');api.temporalControllerDestroy(h);}}
+ finally{holdPrepared=false;releasePrepared?.();releasePrepared=undefined;unblock?.();panel?.dispose();if(host)await host.dispose();await binding?.dispose();await caller?.dispose();if(f){await f.lane.dispose();await f.source.dispose();await f.scope.dispose();}if(h){const api=await importFile('packages/xy-node/src/index.js');api.temporalControllerDestroy(h);}if(f){assert.equal(f.adapter.mounted,false);assert.equal(f.adapter.anchor,undefined);assert.equal(f.source.closed,true);assert.equal(f.lane.closed,true);assert.equal(f.scope.owner.live,false);if(out)fs.writeFileSync(out+'.cleanup.json',JSON.stringify({cleanupComplete:true,prepareHoldDisarmed:holdPrepared===false,heldGateReleased:releasePrepared===undefined,sourceClosed:f.source.closed,laneClosed:f.lane.closed,scopeLive:f.scope.owner.live,mounted:f.adapter.mounted,anchorReleased:f.adapter.anchor===undefined},null,2)+'\n');}}
 };

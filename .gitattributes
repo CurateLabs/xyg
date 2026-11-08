@@ -1383,3 +1383,8 @@ tests/vscode_geo_mounted_hierarchy_temporal/** text eol=lf
 spec/performance/geo-hierarchy-application-remount-2026-11-08/** text eol=lf
 spec/performance/geo-hierarchy-application-remount-2026-11-08/**/*.gz -text
 spec/performance/geo-hierarchy-application-remount-2026-11-08/**/*.png -text
+
+# Failed held-reply teardown successor evidence.
+spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/** text eol=lf
+spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/**/*.gz -text
+spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/**/*.png -text
