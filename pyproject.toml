@@ -41,6 +41,7 @@ dev = [
     # Parses .binder/environment.yml in tests/test_binder_config.py so the
     # Binder contract is asserted on structure, not string transcription.
     "pyyaml>=6",
+    "playwright==1.61.0",
 ]
 # Application frameworks and their transitive packages stay isolated from the
 # core/reference environment. The required consumer gate installs this group

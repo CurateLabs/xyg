@@ -171,6 +171,25 @@ The issue's historical Reflex requirement conflicts with the current supported
 consumer contract; it does not authorize a Reflex product surface. No competitor
 performance win or full milestone closure is claimed.
 
+The same normal pressure command also mounts 32 ordinary composed views across
+line, scatter, histogram, grouped-bar and heatmap families. Box and polygon
+geometry survives whole-chart eviction and shared context loss. Before the
+first replacement frame, the existing local selection path rebuilds masks from
+retained CPU columns; no selection event, host command, link broadcast or history
+entry is replayed. Kernel-backed restoration retains its existing scatter-only
+preview universe. Row-index selections remain non-durable under the view-state
+contract.
+
+This bounded probe reads the actual GPU masks against authored row sets and
+compares complete presentation RGBA bytes, including evicted stand-ins. Its
+selected line/scatter use explicitly authored saturated red/blue paint; it does
+not qualify every default-palette antialiasing boundary. Real Tab/key events
+activate the same canonical scatter row before eviction and continue to the
+next row after readmission/context restoration, without changing a peer. An
+independent driver-call ledger checks logical buffer/texture storage and zero
+remaining allocations. The small fixtures do not establish mixed massive data,
+LOD/tile/graph pressure, latency, all-host accessibility or global CPU/WASM memory.
+
 
 ### Admission ownership and watcher cancellation
 

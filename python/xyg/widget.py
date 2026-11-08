@@ -76,6 +76,7 @@ class FigureWidget(anywidget.AnyWidget):
         wasm_ticks: Any = None,
         **kwargs: Any,
     ) -> None:
+        self._chunked_binding = None
         self._figure: Any = figure
         self._callbacks = ChannelCallbacks(
             on_hover=on_hover,
@@ -98,10 +99,40 @@ class FigureWidget(anywidget.AnyWidget):
             spec["wasm_ticks"] = resolve_wasm_tick_assets(wasm_ticks)
         super().__init__(spec=spec, buffers=bufs, **kwargs)
         self.on_msg(self._on_custom_msg)
+        source = getattr(figure, "_chunked_live", None)
+        if source is not None:
+            from ._chunked_live import ChunkedWidgetBinding
+
+            try:
+                self._chunked_binding = ChunkedWidgetBinding(self, *source)
+            except BaseException:
+                self.close()
+                raise
+
+    def close(self) -> None:
+        binding = getattr(self, "_chunked_binding", None)
+        if binding is not None:
+            binding.close()
+        super().close()
+
+    async def when_idle(self):
+        """Wait for the latest chunked intent and real painter acknowledgement."""
+        if self._chunked_binding is not None:
+            await self._chunked_binding.when_idle()
 
     def _configure_transport(self, spec: dict[str, Any]) -> None:
         """Attach private subscriptions without changing browser behavior."""
-        if self._callbacks.on_view_change is not None:
+        if hasattr(self._figure, "_chunked_row_ids"):
+            spec["interaction"] = {
+                **spec.get("interaction", {}),
+                **{
+                    name: True
+                    for name in ("hover", "click", "select")
+                    if getattr(self._callbacks, "on_" + name) is not None
+                },
+            }
+            spec["chunked"] = {"frame": self._figure._chunked_generation}
+        if self._callbacks.on_view_change is not None or hasattr(self._figure, "_chunked_live"):
             spec["interaction"] = {
                 **spec.get("interaction", {}),
                 "_transport_view_change": True,
@@ -129,6 +160,8 @@ class FigureWidget(anywidget.AnyWidget):
         `spec.append.seq` advances — and which doubles as the notebook-reopen
         state. The payload crosses the wire exactly once per tick; there is no
         separate custom-message send."""
+        if self._chunked_binding is not None:
+            raise ValueError("chunked chart data is owned by its immutable artifact")
         msg, buffers = self._figure.append(
             trace_id,
             x,
@@ -199,9 +232,13 @@ class FigureWidget(anywidget.AnyWidget):
     def _on_custom_msg(self, widget: Any, content: Any, msg_buffers: Any) -> None:
         # All dispatch and callback semantics live in channel.handle_message
         # (wire-protocol.md) — this widget only owns the anywidget comm send.
+        if self._chunked_binding is not None and self._chunked_binding.message(content):
+            return
         reply = handle_message(self._figure, content, msg_buffers, callbacks=self._callbacks)
         if reply is not None:
             msg, buffers = reply
+            if self._chunked_binding is not None:
+                msg["chunked_frame"] = self._figure._chunked_generation
             self.send(msg, buffers=buffers)
 
 

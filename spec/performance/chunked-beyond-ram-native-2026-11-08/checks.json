@@ -1,0 +1,1905 @@
+{
+  "artifacts": {
+    "packages/xy-client/dist/index.js": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/e10978d62101539a958cedab001b89f31cf3efe97adb0132db31b306e583afd7.gz",
+      "archiveBytes": 243732,
+      "archiveSha256": "039310aad48827098b78b4fcad878dbfbc1cacd689d65a5db4b4f4e48b29146b",
+      "bytes": 850835,
+      "path": "packages/xy-client/dist/index.js",
+      "sha256": "e10978d62101539a958cedab001b89f31cf3efe97adb0132db31b306e583afd7"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/550f22b038477d855141f096d0e315bf7c34c2f9b146f869a8b3fb5e4ea264ad.gz",
+      "archiveBytes": 243776,
+      "archiveSha256": "4c482845e863549eb6393f399093fc09a7a614d484db066616b4920a16f05c0f",
+      "bytes": 850856,
+      "path": "packages/xy-client/dist/standalone.js",
+      "sha256": "550f22b038477d855141f096d0e315bf7c34c2f9b146f869a8b3fb5e4ea264ad"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "archive": "spec/performance/temporal-line-window-2026-11-07/artifacts/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz",
+      "archiveBytes": 3838,
+      "archiveSha256": "dda8e6c4cec42d91f687b660d742d79dcc1a8c0d052ca6ca189c6acf095db2b4",
+      "bytes": 20933,
+      "path": "packages/xy-client/dist/wasm-inline-worker.js",
+      "reuse": "Parent-exact compiled artifact; fresh rebuild not claimed",
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "archive": "spec/performance/temporal-line-window-2026-11-07/artifacts/dbc7007bc40ef1ccd4963b2e0c4c9f15bb6808649c5bd609329df889d9056b3e.gz",
+      "archiveBytes": 10515,
+      "archiveSha256": "78f7e7fa542bf7128d501b07b4b49b104fb3f080926b3363f0d356aa09597e7a",
+      "bytes": 58827,
+      "path": "packages/xy-client/dist/wasm-worker.js",
+      "reuse": "Parent-exact compiled artifact; fresh rebuild not claimed",
+      "sha256": "dbc7007bc40ef1ccd4963b2e0c4c9f15bb6808649c5bd609329df889d9056b3e"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "archive": "spec/performance/temporal-line-window-2026-11-07/artifacts/b754c189f98a7ad4e32297d630831da4933dc2617bbab2cb82893a3a5d02a53a.gz",
+      "archiveBytes": 1043503,
+      "archiveSha256": "ec06286ff147a6dbb644cefa2224bb9877e77b7385befa673406ab7f61048cf1",
+      "bytes": 2551186,
+      "path": "packages/xy-client/dist/xyg-wasm-inline.js",
+      "reuse": "Parent-exact compiled artifact; fresh rebuild not claimed",
+      "sha256": "b754c189f98a7ad4e32297d630831da4933dc2617bbab2cb82893a3a5d02a53a"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/temporal-line-window-2026-11-07/artifacts/63fffd1be061f32f98bd6e563789c046f7cd99340fc40a356b0d9b11560dab3f.gz",
+      "archiveBytes": 171,
+      "archiveSha256": "e47121ab9dc7f3e5ba96818c7ea8e9177a23febb50a413a0b99d3fbd94fb178b",
+      "bytes": 226,
+      "path": "packages/xy-client/dist/xyg-wasm.manifest.json",
+      "reuse": "Parent-exact compiled artifact; fresh rebuild not claimed",
+      "sha256": "63fffd1be061f32f98bd6e563789c046f7cd99340fc40a356b0d9b11560dab3f"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "archive": "spec/performance/temporal-line-window-2026-11-07/artifacts/6d25737b14c6eab21241b488169dc8abb25f2a30110b72d8a27e5f9e2c508a7f.gz",
+      "archiveBytes": 779331,
+      "archiveSha256": "753f62089b08be73e32a0b3fdf60836e117c877c7b4cd0ecedc4684e049c0a27",
+      "bytes": 1897547,
+      "path": "packages/xy-client/dist/xyg-wasm.wasm",
+      "reuse": "Parent-exact compiled artifact; fresh rebuild not claimed",
+      "sha256": "6d25737b14c6eab21241b488169dc8abb25f2a30110b72d8a27e5f9e2c508a7f"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 850835,
+      "path": "python/xyg/static/index.js",
+      "sameBytesAs": "packages/xy-client/dist/index.js",
+      "sha256": "e10978d62101539a958cedab001b89f31cf3efe97adb0132db31b306e583afd7"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 850856,
+      "path": "python/xyg/static/standalone.js",
+      "sameBytesAs": "packages/xy-client/dist/standalone.js",
+      "sha256": "550f22b038477d855141f096d0e315bf7c34c2f9b146f869a8b3fb5e4ea264ad"
+    },
+    "target/milestone-integration-build/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "archive": "spec/performance/temporal-line-window-2026-11-07/artifacts/9b750476acec31778de520dba750715c3a5e8d121263a11d577232a1f244fb4e.gz",
+      "archiveBytes": 1246928,
+      "archiveSha256": "1b3c9c0039a96ac159b61eaa9edff7b1cabc005c9899ec6e2e3c361ff5e8b944",
+      "bytes": 4074249,
+      "path": "target/milestone-integration-build/wasm32-unknown-unknown/release/xyg_wasm.wasm",
+      "reuse": "Parent-exact compiled artifact; fresh rebuild not claimed",
+      "sha256": "9b750476acec31778de520dba750715c3a5e8d121263a11d577232a1f244fb4e"
+    },
+    "target/task-tmp/temporal-line-clip/native405.so": {
+      "archive": "spec/performance/temporal-line-window-2026-11-07/artifacts/a807abd2ba7bd89e30a2e635ee291e30a67ba645349dca39ccacdd93a653550d.gz",
+      "archiveBytes": 2893531,
+      "archiveSha256": "289a1cadb6f98d6931b71a803edf6c6e124649a1a4ad54809437de3ae1b64555",
+      "bytes": 6357448,
+      "path": "target/task-tmp/temporal-line-clip/native405.so",
+      "reuse": "Parent-exact compiled artifact; fresh rebuild not claimed",
+      "sha256": "a807abd2ba7bd89e30a2e635ee291e30a67ba645349dca39ccacdd93a653550d"
+    }
+  },
+  "compiled": {
+    "allInputsIdentical": 298,
+    "freshBuild": false,
+    "manifest": "spec/performance/chunked-beyond-ram-native-2026-11-08/compiled-source-inputs.json",
+    "sha256": "f0f9ad82f31de490ec9c1385e4533c00e1833269791a5387c287443bee048a63"
+  },
+  "environment": {
+    "TMPDIR": "/var/tmp",
+    "chromium": "156.0.8078.4 SwiftShader",
+    "node": "22.23.4",
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "python": "3.12.15 / actual 3.11.17 for installed/browser controls",
+    "sourcePhysicalRamBytes": 33319313408
+  },
+  "evidence": {
+    "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/.ipynb_checkpoints/chunked-checkpoint.ipynb": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/8104cd9fa5c69b6161e79deb44e829c454d88c68e67218e1f199170a2b88cc8d.gz",
+      "archiveBytes": 1838,
+      "archiveSha256": "e62561988d37c48264f2f5accca6aed73f7fba60623a72b9043815b2094bb19b",
+      "bytes": 5350,
+      "path": "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/.ipynb_checkpoints/chunked-checkpoint.ipynb",
+      "sha256": "8104cd9fa5c69b6161e79deb44e829c454d88c68e67218e1f199170a2b88cc8d"
+    },
+    "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/camera-debug.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/6125d2f0b04ae8894bf79fd7430abb02d89376bc59301d1506a89493db4bacd4.gz",
+      "archiveBytes": 7506,
+      "archiveSha256": "dacc9204f2ae4db739f28542686274cd12f2007e91a37c4d38187d700bb633b1",
+      "bytes": 37835,
+      "path": "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/camera-debug.json",
+      "sha256": "6125d2f0b04ae8894bf79fd7430abb02d89376bc59301d1506a89493db4bacd4"
+    },
+    "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/chunked.ipynb": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/8104cd9fa5c69b6161e79deb44e829c454d88c68e67218e1f199170a2b88cc8d.gz",
+      "archiveBytes": 1838,
+      "archiveSha256": "e62561988d37c48264f2f5accca6aed73f7fba60623a72b9043815b2094bb19b",
+      "bytes": 5350,
+      "path": "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/chunked.ipynb",
+      "sha256": "8104cd9fa5c69b6161e79deb44e829c454d88c68e67218e1f199170a2b88cc8d"
+    },
+    "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/data/kernels/python3/kernel.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/35415493cbaaa74f1d32521d61629d33383040192be88acb864c77fafa78669f.gz",
+      "archiveBytes": 172,
+      "archiveSha256": "6bd37a8631aabd75f625c0897e822ccfffa319bb99eca558bd8eedfa747130d8",
+      "bytes": 219,
+      "path": "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/data/kernels/python3/kernel.json",
+      "sha256": "35415493cbaaa74f1d32521d61629d33383040192be88acb864c77fafa78669f"
+    },
+    "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/failure-oracle-paint.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4.gz",
+      "archiveBytes": 21847,
+      "archiveSha256": "336c50bc74a19b857099bc60a010d4827559187caefacfc925550730c9a544cf",
+      "bytes": 23856,
+      "path": "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/failure-oracle-paint.png",
+      "sha256": "04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4"
+    },
+    "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/failure-oracle.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/d52a429dd9caae1e8306b805d85ffc76ae3eb429279029a620d8bd39fe39feb9.gz",
+      "archiveBytes": 14796,
+      "archiveSha256": "30cd84f77d896f4c6f1703bb11dc017ebd9756f852148db7c91f58e4651e9690",
+      "bytes": 16493,
+      "path": "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/failure-oracle.png",
+      "sha256": "d52a429dd9caae1e8306b805d85ffc76ae3eb429279029a620d8bd39fe39feb9"
+    },
+    "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/failure-retained-paint.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4.gz",
+      "archiveBytes": 21847,
+      "archiveSha256": "336c50bc74a19b857099bc60a010d4827559187caefacfc925550730c9a544cf",
+      "bytes": 23856,
+      "path": "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/failure-retained-paint.png",
+      "sha256": "04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4"
+    },
+    "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/failure-retained.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/d52a429dd9caae1e8306b805d85ffc76ae3eb429279029a620d8bd39fe39feb9.gz",
+      "archiveBytes": 14796,
+      "archiveSha256": "30cd84f77d896f4c6f1703bb11dc017ebd9756f852148db7c91f58e4651e9690",
+      "bytes": 16493,
+      "path": "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/failure-retained.png",
+      "sha256": "d52a429dd9caae1e8306b805d85ffc76ae3eb429279029a620d8bd39fe39feb9"
+    },
+    "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/install.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/e42316d82d1aa9b8a5635bdae1de22ae86130487544d4d75b6b30005ef9480a6.gz",
+      "archiveBytes": 1151,
+      "archiveSha256": "173581addb66008ef00334d111314402fd032c8c223b7aa1b6c563096f171101",
+      "bytes": 2512,
+      "path": "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/install.log",
+      "sha256": "e42316d82d1aa9b8a5635bdae1de22ae86130487544d4d75b6b30005ef9480a6"
+    },
+    "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/oracle-paint.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/db414bcd039f3b8121a7112ee9404905ddd15ffb7b5ed6505eada185cd9e158a.gz",
+      "archiveBytes": 51835,
+      "archiveSha256": "699bdc759bf045cac4dadbb5495a5e68766975106533a61c19c38e4ec02be875",
+      "bytes": 52425,
+      "path": "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/oracle-paint.png",
+      "sha256": "db414bcd039f3b8121a7112ee9404905ddd15ffb7b5ed6505eada185cd9e158a"
+    },
+    "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/oracle.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/2a3b2c7400b15c5eb7b7507c10cdfbd3bdaebc54cf0a89094c63c7f9aeaa2979.gz",
+      "archiveBytes": 34220,
+      "archiveSha256": "d29f65af1541a289a7732ee7f84ccf07e02cc32ae79f71db975d109517427356",
+      "bytes": 34516,
+      "path": "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/oracle.png",
+      "sha256": "2a3b2c7400b15c5eb7b7507c10cdfbd3bdaebc54cf0a89094c63c7f9aeaa2979"
+    },
+    "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/overview-control-paint.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/a292278a1f1c907748ea851e8389135dc1fabc960904186c910f6eb2ef09fa53.gz",
+      "archiveBytes": 11974,
+      "archiveSha256": "ecea3bc5ddfd399d07ad97f0f74157307ab2265c760e3a201a7a8c935199ac03",
+      "bytes": 12820,
+      "path": "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/overview-control-paint.png",
+      "sha256": "a292278a1f1c907748ea851e8389135dc1fabc960904186c910f6eb2ef09fa53"
+    },
+    "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/overview-control.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/490fe80aee85db28b4bec06ce9b3836bee851678ce5526fbdab22fc507d57024.gz",
+      "archiveBytes": 11141,
+      "archiveSha256": "6f4d0e5c6e89c3cc94c8e52c7556c64a08c3400c0559f9e34b6de52237f9ac5f",
+      "bytes": 11276,
+      "path": "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/overview-control.png",
+      "sha256": "490fe80aee85db28b4bec06ce9b3836bee851678ce5526fbdab22fc507d57024"
+    },
+    "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/pointer-debug.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/32592b421f68e012c6a2c8b8d20c8677a4a4b2888374a132daf54415e837714e.gz",
+      "archiveBytes": 2534,
+      "archiveSha256": "a0696fc72cc777e5fb40ec1e833f8d72727e791f980f4189aa1cc923b2086f8e",
+      "bytes": 16081,
+      "path": "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/pointer-debug.json",
+      "sha256": "32592b421f68e012c6a2c8b8d20c8677a4a4b2888374a132daf54415e837714e"
+    },
+    "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/refined-paint.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/db414bcd039f3b8121a7112ee9404905ddd15ffb7b5ed6505eada185cd9e158a.gz",
+      "archiveBytes": 51835,
+      "archiveSha256": "699bdc759bf045cac4dadbb5495a5e68766975106533a61c19c38e4ec02be875",
+      "bytes": 52425,
+      "path": "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/refined-paint.png",
+      "sha256": "db414bcd039f3b8121a7112ee9404905ddd15ffb7b5ed6505eada185cd9e158a"
+    },
+    "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/refined.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/2a3b2c7400b15c5eb7b7507c10cdfbd3bdaebc54cf0a89094c63c7f9aeaa2979.gz",
+      "archiveBytes": 34220,
+      "archiveSha256": "d29f65af1541a289a7732ee7f84ccf07e02cc32ae79f71db975d109517427356",
+      "bytes": 34516,
+      "path": "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/refined.png",
+      "sha256": "2a3b2c7400b15c5eb7b7507c10cdfbd3bdaebc54cf0a89094c63c7f9aeaa2979"
+    },
+    "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/remounted-paint.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4.gz",
+      "archiveBytes": 21847,
+      "archiveSha256": "336c50bc74a19b857099bc60a010d4827559187caefacfc925550730c9a544cf",
+      "bytes": 23856,
+      "path": "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/remounted-paint.png",
+      "sha256": "04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4"
+    },
+    "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/report.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/4e8060ad57f87be7ebaa775addb057dc2c4ddda27b79db06a5adc2a5853bfc71.gz",
+      "archiveBytes": 11228,
+      "archiveSha256": "5d0cbc02f4729e14c7d4d2d84d1306a5321cf8a2ad53de3f23e9b15177238787",
+      "bytes": 63851,
+      "path": "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/report.json",
+      "sha256": "4e8060ad57f87be7ebaa775addb057dc2c4ddda27b79db06a5adc2a5853bfc71"
+    },
+    "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/server.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/d3839fb0427879dc7f937cabad26f5e65dfe6588ba40597481dde88cef329cd3.gz",
+      "archiveBytes": 1474,
+      "archiveSha256": "e0fc9b38cf8a9f06bfd60bf54dd0ea248eb0fa33e131878fa70305994d6f8040",
+      "bytes": 4447,
+      "path": "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/server.log",
+      "sha256": "d3839fb0427879dc7f937cabad26f5e65dfe6588ba40597481dde88cef329cd3"
+    },
+    "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/site.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/395cfd6647dea5f8e7b71201eb8d165d9de98ca4d358262d08ea9ec9ec0c5879.gz",
+      "archiveBytes": 112,
+      "archiveSha256": "b1d14034f32c6df407d592de88fdb12c84b8dc81f1ebc89fa56df204363fcba0",
+      "bytes": 119,
+      "path": "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/site.log",
+      "sha256": "395cfd6647dea5f8e7b71201eb8d165d9de98ca4d358262d08ea9ec9ec0c5879"
+    },
+    "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/venv.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/dfef8c43a5c1f112b9c0d8f1e3fa09d7b3f00e25eafb69510e5489710295951c.gz",
+      "archiveBytes": 207,
+      "archiveSha256": "41618621a252bcd7b2dad59fa3c19444f75c2148a028043466769c2fb38ef2a8",
+      "bytes": 346,
+      "path": "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/venv.log",
+      "sha256": "dfef8c43a5c1f112b9c0d8f1e3fa09d7b3f00e25eafb69510e5489710295951c"
+    },
+    "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/wheel.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/2fe94aa9646e9187e5a578d384c4005ef3f53469e42f4c25c90d18dcf5d39fd4.gz",
+      "archiveBytes": 160,
+      "archiveSha256": "a8eff4e27f28f4a474231584ce094d33ea0d104f5150e973cd2d04da5d04524c",
+      "bytes": 177,
+      "path": "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/wheel.log",
+      "sha256": "2fe94aa9646e9187e5a578d384c4005ef3f53469e42f4c25c90d18dcf5d39fd4"
+    },
+    "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/wheel/xyg-0.0.1.dev3121+a0a5087ef-py3-none-linux_x86_64.whl": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/7ca29ce8a7a921832bf15f4bdac06b4cf3d837c58aa5f83bdbe8170d1f45773b.gz",
+      "archiveBytes": 6324272,
+      "archiveSha256": "08df02ba08509a036cdba38473c9c41018d081b5d947b353e34b2cf7543554af",
+      "bytes": 6338876,
+      "path": "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/wheel/xyg-0.0.1.dev3121+a0a5087ef-py3-none-linux_x86_64.whl",
+      "sha256": "7ca29ce8a7a921832bf15f4bdac06b4cf3d837c58aa5f83bdbe8170d1f45773b"
+    },
+    "target/task-tmp/chunked-massive/browser-r2.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/22c4fb0b22024ffa0beeed4caf316892a5795ec8183187920bf03798acb55fa1.gz",
+      "archiveBytes": 303,
+      "archiveSha256": "1e3834f9aed87e0c6aff5e493143a9ffe18f2f7d7f9869f49f490cd221b8abbb",
+      "bytes": 877,
+      "path": "target/task-tmp/chunked-massive/browser-r2.log",
+      "sha256": "22c4fb0b22024ffa0beeed4caf316892a5795ec8183187920bf03798acb55fa1"
+    },
+    "target/task-tmp/chunked-massive/browser-r2/oracle.xybf": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/99122fb821777617183f15ab1bd251535858a6ce5cbdcc497222090c28f7b738.gz",
+      "archiveBytes": 20258,
+      "archiveSha256": "fe8765e6a5a762454e9ce9af18d3199f00feee53ad0d087b5e73b69d638ee79f",
+      "bytes": 54016,
+      "path": "target/task-tmp/chunked-massive/browser-r2/oracle.xybf",
+      "sha256": "99122fb821777617183f15ab1bd251535858a6ce5cbdcc497222090c28f7b738"
+    },
+    "target/task-tmp/chunked-massive/browser-r2/overview.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/d1f96cb50258941d7246eef444f97614ca70a1c4718931d577f986e6d38ba360.gz",
+      "archiveBytes": 30041,
+      "archiveSha256": "0b101dfe72daeae6601d8502220f726ec682dde0f09194ead8bf1b2c351ee204",
+      "bytes": 31085,
+      "path": "target/task-tmp/chunked-massive/browser-r2/overview.png",
+      "sha256": "d1f96cb50258941d7246eef444f97614ca70a1c4718931d577f986e6d38ba360"
+    },
+    "target/task-tmp/chunked-massive/browser-r2/pan-oracle.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/40365db8d9148b855044610fac75c2b20a102058097912248494c702d349f064.gz",
+      "archiveBytes": 5001,
+      "archiveSha256": "1775ad77ab88c17f7c3af4e990e363801b4ab7529a733bac0ca3582cf4f234cd",
+      "bytes": 6527,
+      "path": "target/task-tmp/chunked-massive/browser-r2/pan-oracle.png",
+      "sha256": "40365db8d9148b855044610fac75c2b20a102058097912248494c702d349f064"
+    },
+    "target/task-tmp/chunked-massive/browser-r2/pan.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/40365db8d9148b855044610fac75c2b20a102058097912248494c702d349f064.gz",
+      "archiveBytes": 5001,
+      "archiveSha256": "1775ad77ab88c17f7c3af4e990e363801b4ab7529a733bac0ca3582cf4f234cd",
+      "bytes": 6527,
+      "path": "target/task-tmp/chunked-massive/browser-r2/pan.png",
+      "sha256": "40365db8d9148b855044610fac75c2b20a102058097912248494c702d349f064"
+    },
+    "target/task-tmp/chunked-massive/browser-r2/partial-report.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/d25ec65412d69ec2da4028866929e10d1440347d41dc3cefcd4dab96e44f1e12.gz",
+      "archiveBytes": 53892,
+      "archiveSha256": "cdb10e3bf8cecd50875854fe1839b2ff65c1944217dbb9a820b6047a8972e78f",
+      "bytes": 446686,
+      "path": "target/task-tmp/chunked-massive/browser-r2/partial-report.json",
+      "sha256": "d25ec65412d69ec2da4028866929e10d1440347d41dc3cefcd4dab96e44f1e12"
+    },
+    "target/task-tmp/chunked-massive/browser-r2/report.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/68463ee4e54cd80e41240369838afa90f50ab6f835196f0559a984bf676512ba.gz",
+      "archiveBytes": 55151,
+      "archiveSha256": "c2a1d5a152df541bae4e54fecce9916c60c7e076c534fb7594a96e4980686343",
+      "bytes": 449213,
+      "path": "target/task-tmp/chunked-massive/browser-r2/report.json",
+      "sha256": "68463ee4e54cd80e41240369838afa90f50ab6f835196f0559a984bf676512ba"
+    },
+    "target/task-tmp/chunked-massive/browser-r2/requests.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/617491feffc902ef0f65c3562427b64fabba107b1b77ec7a576f5fa073538965.gz",
+      "archiveBytes": 125,
+      "archiveSha256": "064408053145203e348bb1a502be6d85f7a653bc4d81f65a6d5a0830f89a29b5",
+      "bytes": 369,
+      "path": "target/task-tmp/chunked-massive/browser-r2/requests.json",
+      "sha256": "617491feffc902ef0f65c3562427b64fabba107b1b77ec7a576f5fa073538965"
+    },
+    "target/task-tmp/chunked-massive/browser-r2/revisit-oracle.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/13f36ed6866856ed65a11e8a6a8d3fa84b9cc4121d9c6276a299bc98baaad03b.gz",
+      "archiveBytes": 5003,
+      "archiveSha256": "935affba162afacec320276dc1524cead8d8b584ead197151f500484e6eb3366",
+      "bytes": 6540,
+      "path": "target/task-tmp/chunked-massive/browser-r2/revisit-oracle.png",
+      "sha256": "13f36ed6866856ed65a11e8a6a8d3fa84b9cc4121d9c6276a299bc98baaad03b"
+    },
+    "target/task-tmp/chunked-massive/browser-r2/revisit.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/13f36ed6866856ed65a11e8a6a8d3fa84b9cc4121d9c6276a299bc98baaad03b.gz",
+      "archiveBytes": 5003,
+      "archiveSha256": "935affba162afacec320276dc1524cead8d8b584ead197151f500484e6eb3366",
+      "bytes": 6540,
+      "path": "target/task-tmp/chunked-massive/browser-r2/revisit.png",
+      "sha256": "13f36ed6866856ed65a11e8a6a8d3fa84b9cc4121d9c6276a299bc98baaad03b"
+    },
+    "target/task-tmp/chunked-massive/browser-r2/zoom-oracle.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/13f36ed6866856ed65a11e8a6a8d3fa84b9cc4121d9c6276a299bc98baaad03b.gz",
+      "archiveBytes": 5003,
+      "archiveSha256": "935affba162afacec320276dc1524cead8d8b584ead197151f500484e6eb3366",
+      "bytes": 6540,
+      "path": "target/task-tmp/chunked-massive/browser-r2/zoom-oracle.png",
+      "sha256": "13f36ed6866856ed65a11e8a6a8d3fa84b9cc4121d9c6276a299bc98baaad03b"
+    },
+    "target/task-tmp/chunked-massive/browser-r2/zoom.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/13f36ed6866856ed65a11e8a6a8d3fa84b9cc4121d9c6276a299bc98baaad03b.gz",
+      "archiveBytes": 5003,
+      "archiveSha256": "935affba162afacec320276dc1524cead8d8b584ead197151f500484e6eb3366",
+      "bytes": 6540,
+      "path": "target/task-tmp/chunked-massive/browser-r2/zoom.png",
+      "sha256": "13f36ed6866856ed65a11e8a6a8d3fa84b9cc4121d9c6276a299bc98baaad03b"
+    },
+    "target/task-tmp/chunked-massive/browser-r3.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/0ad83485c782e2b4b91f202b9ef3a84fc25389070093ad51053327784ca1699f.gz",
+      "archiveBytes": 312,
+      "archiveSha256": "61a872a346b44713d9cbfadf0a2bc5fac51f105385ae9e2954193ac8168af247",
+      "bytes": 401,
+      "path": "target/task-tmp/chunked-massive/browser-r3.log",
+      "sha256": "0ad83485c782e2b4b91f202b9ef3a84fc25389070093ad51053327784ca1699f"
+    },
+    "target/task-tmp/chunked-massive/browser-r3/oracle.xybf": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/99122fb821777617183f15ab1bd251535858a6ce5cbdcc497222090c28f7b738.gz",
+      "archiveBytes": 20258,
+      "archiveSha256": "fe8765e6a5a762454e9ce9af18d3199f00feee53ad0d087b5e73b69d638ee79f",
+      "bytes": 54016,
+      "path": "target/task-tmp/chunked-massive/browser-r3/oracle.xybf",
+      "sha256": "99122fb821777617183f15ab1bd251535858a6ce5cbdcc497222090c28f7b738"
+    },
+    "target/task-tmp/chunked-massive/browser-r3/overview.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/d1f96cb50258941d7246eef444f97614ca70a1c4718931d577f986e6d38ba360.gz",
+      "archiveBytes": 30041,
+      "archiveSha256": "0b101dfe72daeae6601d8502220f726ec682dde0f09194ead8bf1b2c351ee204",
+      "bytes": 31085,
+      "path": "target/task-tmp/chunked-massive/browser-r3/overview.png",
+      "sha256": "d1f96cb50258941d7246eef444f97614ca70a1c4718931d577f986e6d38ba360"
+    },
+    "target/task-tmp/chunked-massive/browser-r3/partial-report.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/6f46b8e11feb55e909c39aad471cea1a712d5195e2b4e9b61ad553f7a6f3223c.gz",
+      "archiveBytes": 18230,
+      "archiveSha256": "e16472bde5a2eae581751a04c671d45c518cfc9a2b4ae73f5079e818c38544b0",
+      "bytes": 147854,
+      "path": "target/task-tmp/chunked-massive/browser-r3/partial-report.json",
+      "sha256": "6f46b8e11feb55e909c39aad471cea1a712d5195e2b4e9b61ad553f7a6f3223c"
+    },
+    "target/task-tmp/chunked-massive/browser-r3/zoom-oracle.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/13f36ed6866856ed65a11e8a6a8d3fa84b9cc4121d9c6276a299bc98baaad03b.gz",
+      "archiveBytes": 5003,
+      "archiveSha256": "935affba162afacec320276dc1524cead8d8b584ead197151f500484e6eb3366",
+      "bytes": 6540,
+      "path": "target/task-tmp/chunked-massive/browser-r3/zoom-oracle.png",
+      "sha256": "13f36ed6866856ed65a11e8a6a8d3fa84b9cc4121d9c6276a299bc98baaad03b"
+    },
+    "target/task-tmp/chunked-massive/browser-r3/zoom.native": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/5283e20fcad2c50d676a1f67e2f92c6f11dfb5ce5d668024625062f94606e898.gz",
+      "archiveBytes": 33078,
+      "archiveSha256": "88fcc779f718ff669ad2db7ef6ec9fa282beec5a61e4d10b09fd5b2ac8ca2cc0",
+      "bytes": 158560,
+      "path": "target/task-tmp/chunked-massive/browser-r3/zoom.native",
+      "sha256": "5283e20fcad2c50d676a1f67e2f92c6f11dfb5ce5d668024625062f94606e898"
+    },
+    "target/task-tmp/chunked-massive/browser-r3/zoom.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/13f36ed6866856ed65a11e8a6a8d3fa84b9cc4121d9c6276a299bc98baaad03b.gz",
+      "archiveBytes": 5003,
+      "archiveSha256": "935affba162afacec320276dc1524cead8d8b584ead197151f500484e6eb3366",
+      "bytes": 6540,
+      "path": "target/task-tmp/chunked-massive/browser-r3/zoom.png",
+      "sha256": "13f36ed6866856ed65a11e8a6a8d3fa84b9cc4121d9c6276a299bc98baaad03b"
+    },
+    "target/task-tmp/chunked-massive/browser-r4.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/92c42df339d502caf6ac3aef05e02f2a7930aeebf687516912adfed0f4e3bb9d.gz",
+      "archiveBytes": 5261,
+      "archiveSha256": "a2fa31150088c9889e7ae700c6ca659499af11fc7ae0a4e78a6e42495218441f",
+      "bytes": 35184,
+      "path": "target/task-tmp/chunked-massive/browser-r4.log",
+      "sha256": "92c42df339d502caf6ac3aef05e02f2a7930aeebf687516912adfed0f4e3bb9d"
+    },
+    "target/task-tmp/chunked-massive/browser-r4/oracle.xybf": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/0a0ad4158e2f9a775ef9be72bf66e775b2195913fbf1df0efa6f9ae1b80ddc64.gz",
+      "archiveBytes": 20670,
+      "archiveSha256": "f97ed85937cb98e78ad381917a53260c4461dcbb65569e8f417488f287b647cf",
+      "bytes": 54016,
+      "path": "target/task-tmp/chunked-massive/browser-r4/oracle.xybf",
+      "sha256": "0a0ad4158e2f9a775ef9be72bf66e775b2195913fbf1df0efa6f9ae1b80ddc64"
+    },
+    "target/task-tmp/chunked-massive/browser-r4/overview.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/d1f96cb50258941d7246eef444f97614ca70a1c4718931d577f986e6d38ba360.gz",
+      "archiveBytes": 30041,
+      "archiveSha256": "0b101dfe72daeae6601d8502220f726ec682dde0f09194ead8bf1b2c351ee204",
+      "bytes": 31085,
+      "path": "target/task-tmp/chunked-massive/browser-r4/overview.png",
+      "sha256": "d1f96cb50258941d7246eef444f97614ca70a1c4718931d577f986e6d38ba360"
+    },
+    "target/task-tmp/chunked-massive/browser-r4/pan-controls.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/2f06e4276b7e901f18053e9bb5706d50a9563113367e85a5266b5ae9d751022d.gz",
+      "archiveBytes": 1958,
+      "archiveSha256": "0b482304c395470b2f7f895428ca10ea92723bef60b08addc2315cb50bef3d64",
+      "bytes": 24656,
+      "path": "target/task-tmp/chunked-massive/browser-r4/pan-controls.json",
+      "sha256": "2f06e4276b7e901f18053e9bb5706d50a9563113367e85a5266b5ae9d751022d"
+    },
+    "target/task-tmp/chunked-massive/browser-r4/pan-oracle.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/c9d0ffc4650c47ab124457194fc8fb6c5e76762690298d50c473529b00cb2aa2.gz",
+      "archiveBytes": 4868,
+      "archiveSha256": "bf735f197912224e6dfa0296eeb2b5ddcf99e85a5a2e5e5d77f3506bf3a51eeb",
+      "bytes": 6430,
+      "path": "target/task-tmp/chunked-massive/browser-r4/pan-oracle.png",
+      "sha256": "c9d0ffc4650c47ab124457194fc8fb6c5e76762690298d50c473529b00cb2aa2"
+    },
+    "target/task-tmp/chunked-massive/browser-r4/pan.native": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/4690c76556d55484904a3b68528d327b9c2fd3c94aa99349fafdebc8a7d556d5.gz",
+      "archiveBytes": 32874,
+      "archiveSha256": "fc2eb7c858bcfabe2961af1fc9e111625a5c0a057fcb226e0fd079192e6fc3e1",
+      "bytes": 158560,
+      "path": "target/task-tmp/chunked-massive/browser-r4/pan.native",
+      "sha256": "4690c76556d55484904a3b68528d327b9c2fd3c94aa99349fafdebc8a7d556d5"
+    },
+    "target/task-tmp/chunked-massive/browser-r4/pan.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/c9d0ffc4650c47ab124457194fc8fb6c5e76762690298d50c473529b00cb2aa2.gz",
+      "archiveBytes": 4868,
+      "archiveSha256": "bf735f197912224e6dfa0296eeb2b5ddcf99e85a5a2e5e5d77f3506bf3a51eeb",
+      "bytes": 6430,
+      "path": "target/task-tmp/chunked-massive/browser-r4/pan.png",
+      "sha256": "c9d0ffc4650c47ab124457194fc8fb6c5e76762690298d50c473529b00cb2aa2"
+    },
+    "target/task-tmp/chunked-massive/browser-r4/partial-report.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/6c9968e39bf4b6c5b0b531c2c70c25800b4b3845a8f1cc8aac80b78ae7ebd163.gz",
+      "archiveBytes": 38019,
+      "archiveSha256": "3b1cd79086210289384bf68a31e85f15bf059b44dde939a6a4d76212afecffc5",
+      "bytes": 314680,
+      "path": "target/task-tmp/chunked-massive/browser-r4/partial-report.json",
+      "sha256": "6c9968e39bf4b6c5b0b531c2c70c25800b4b3845a8f1cc8aac80b78ae7ebd163"
+    },
+    "target/task-tmp/chunked-massive/browser-r4/zoom-oracle.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/13f36ed6866856ed65a11e8a6a8d3fa84b9cc4121d9c6276a299bc98baaad03b.gz",
+      "archiveBytes": 5003,
+      "archiveSha256": "935affba162afacec320276dc1524cead8d8b584ead197151f500484e6eb3366",
+      "bytes": 6540,
+      "path": "target/task-tmp/chunked-massive/browser-r4/zoom-oracle.png",
+      "sha256": "13f36ed6866856ed65a11e8a6a8d3fa84b9cc4121d9c6276a299bc98baaad03b"
+    },
+    "target/task-tmp/chunked-massive/browser-r4/zoom.native": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/5283e20fcad2c50d676a1f67e2f92c6f11dfb5ce5d668024625062f94606e898.gz",
+      "archiveBytes": 33078,
+      "archiveSha256": "88fcc779f718ff669ad2db7ef6ec9fa282beec5a61e4d10b09fd5b2ac8ca2cc0",
+      "bytes": 158560,
+      "path": "target/task-tmp/chunked-massive/browser-r4/zoom.native",
+      "sha256": "5283e20fcad2c50d676a1f67e2f92c6f11dfb5ce5d668024625062f94606e898"
+    },
+    "target/task-tmp/chunked-massive/browser-r4/zoom.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/13f36ed6866856ed65a11e8a6a8d3fa84b9cc4121d9c6276a299bc98baaad03b.gz",
+      "archiveBytes": 5003,
+      "archiveSha256": "935affba162afacec320276dc1524cead8d8b584ead197151f500484e6eb3366",
+      "bytes": 6540,
+      "path": "target/task-tmp/chunked-massive/browser-r4/zoom.png",
+      "sha256": "13f36ed6866856ed65a11e8a6a8d3fa84b9cc4121d9c6276a299bc98baaad03b"
+    },
+    "target/task-tmp/chunked-massive/browser-r5.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/478b9b1ba65d785c8b5960d27b8d155b94721550d47975f5f8720b5eac5902b9.gz",
+      "archiveBytes": 316,
+      "archiveSha256": "3caa93e2d62879cbc298b09ff78d38c4e3eb82ecccda11c3bc026995fa06561c",
+      "bytes": 1109,
+      "path": "target/task-tmp/chunked-massive/browser-r5.log",
+      "sha256": "478b9b1ba65d785c8b5960d27b8d155b94721550d47975f5f8720b5eac5902b9"
+    },
+    "target/task-tmp/chunked-massive/browser-r5/oracle.xybf": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/f379d69cd018ead84f4c823242e65ab056372b66ff12f69b99a60500383458e3.gz",
+      "archiveBytes": 20348,
+      "archiveSha256": "53ae90b948ebf9b488e284bf6e3501f0c8735947562d0aa13f3b3e574b4cc31b",
+      "bytes": 54016,
+      "path": "target/task-tmp/chunked-massive/browser-r5/oracle.xybf",
+      "sha256": "f379d69cd018ead84f4c823242e65ab056372b66ff12f69b99a60500383458e3"
+    },
+    "target/task-tmp/chunked-massive/browser-r5/overview.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/d1f96cb50258941d7246eef444f97614ca70a1c4718931d577f986e6d38ba360.gz",
+      "archiveBytes": 30041,
+      "archiveSha256": "0b101dfe72daeae6601d8502220f726ec682dde0f09194ead8bf1b2c351ee204",
+      "bytes": 31085,
+      "path": "target/task-tmp/chunked-massive/browser-r5/overview.png",
+      "sha256": "d1f96cb50258941d7246eef444f97614ca70a1c4718931d577f986e6d38ba360"
+    },
+    "target/task-tmp/chunked-massive/browser-r5/pan-controls.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/74c9715369baba13ad6e0dfe47bdbd7c2418d12d2fd1653565c01603feea1b32.gz",
+      "archiveBytes": 2058,
+      "archiveSha256": "0849eb6b0c4798b0cdfdaa0d8913a96422e3e4512a2c721cc297643b8ca1dd53",
+      "bytes": 26829,
+      "path": "target/task-tmp/chunked-massive/browser-r5/pan-controls.json",
+      "sha256": "74c9715369baba13ad6e0dfe47bdbd7c2418d12d2fd1653565c01603feea1b32"
+    },
+    "target/task-tmp/chunked-massive/browser-r5/pan-oracle.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/c9d0ffc4650c47ab124457194fc8fb6c5e76762690298d50c473529b00cb2aa2.gz",
+      "archiveBytes": 4868,
+      "archiveSha256": "bf735f197912224e6dfa0296eeb2b5ddcf99e85a5a2e5e5d77f3506bf3a51eeb",
+      "bytes": 6430,
+      "path": "target/task-tmp/chunked-massive/browser-r5/pan-oracle.png",
+      "sha256": "c9d0ffc4650c47ab124457194fc8fb6c5e76762690298d50c473529b00cb2aa2"
+    },
+    "target/task-tmp/chunked-massive/browser-r5/pan.native": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/4690c76556d55484904a3b68528d327b9c2fd3c94aa99349fafdebc8a7d556d5.gz",
+      "archiveBytes": 32874,
+      "archiveSha256": "fc2eb7c858bcfabe2961af1fc9e111625a5c0a057fcb226e0fd079192e6fc3e1",
+      "bytes": 158560,
+      "path": "target/task-tmp/chunked-massive/browser-r5/pan.native",
+      "sha256": "4690c76556d55484904a3b68528d327b9c2fd3c94aa99349fafdebc8a7d556d5"
+    },
+    "target/task-tmp/chunked-massive/browser-r5/pan.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/c9d0ffc4650c47ab124457194fc8fb6c5e76762690298d50c473529b00cb2aa2.gz",
+      "archiveBytes": 4868,
+      "archiveSha256": "bf735f197912224e6dfa0296eeb2b5ddcf99e85a5a2e5e5d77f3506bf3a51eeb",
+      "bytes": 6430,
+      "path": "target/task-tmp/chunked-massive/browser-r5/pan.png",
+      "sha256": "c9d0ffc4650c47ab124457194fc8fb6c5e76762690298d50c473529b00cb2aa2"
+    },
+    "target/task-tmp/chunked-massive/browser-r5/partial-report.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/01c172ed0a94f5ee3c0ebb04837b40e9630accd80b670e0b3edacac7327c92d4.gz",
+      "archiveBytes": 74696,
+      "archiveSha256": "1f5685511b15676fda1b5ed6817671780ffd0609bb089025ae104ca825e62778",
+      "bytes": 633731,
+      "path": "target/task-tmp/chunked-massive/browser-r5/partial-report.json",
+      "sha256": "01c172ed0a94f5ee3c0ebb04837b40e9630accd80b670e0b3edacac7327c92d4"
+    },
+    "target/task-tmp/chunked-massive/browser-r5/report.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/f4d0a725a42bb643dade0e9c1810147ef80d1df2f5218b23142422121f7f3d4e.gz",
+      "archiveBytes": 76530,
+      "archiveSha256": "23c98e66d5264d154bb8acbf68e02b4cfe9b29b72e7123e64e3e8d27c21cb5ad",
+      "bytes": 650882,
+      "path": "target/task-tmp/chunked-massive/browser-r5/report.json",
+      "sha256": "f4d0a725a42bb643dade0e9c1810147ef80d1df2f5218b23142422121f7f3d4e"
+    },
+    "target/task-tmp/chunked-massive/browser-r5/requests.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/8b06c6b4740c86f9cc8bb594fd6045e5e35cd8d5b2e883bb272e41fbc628489f.gz",
+      "archiveBytes": 146,
+      "archiveSha256": "4aebee99095a10335055501a5a15cca6b5026b4c98ae49e7bbe24feb4713a271",
+      "bytes": 491,
+      "path": "target/task-tmp/chunked-massive/browser-r5/requests.json",
+      "sha256": "8b06c6b4740c86f9cc8bb594fd6045e5e35cd8d5b2e883bb272e41fbc628489f"
+    },
+    "target/task-tmp/chunked-massive/browser-r5/revisit-oracle.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/13f36ed6866856ed65a11e8a6a8d3fa84b9cc4121d9c6276a299bc98baaad03b.gz",
+      "archiveBytes": 5003,
+      "archiveSha256": "935affba162afacec320276dc1524cead8d8b584ead197151f500484e6eb3366",
+      "bytes": 6540,
+      "path": "target/task-tmp/chunked-massive/browser-r5/revisit-oracle.png",
+      "sha256": "13f36ed6866856ed65a11e8a6a8d3fa84b9cc4121d9c6276a299bc98baaad03b"
+    },
+    "target/task-tmp/chunked-massive/browser-r5/revisit.native": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/5283e20fcad2c50d676a1f67e2f92c6f11dfb5ce5d668024625062f94606e898.gz",
+      "archiveBytes": 33078,
+      "archiveSha256": "88fcc779f718ff669ad2db7ef6ec9fa282beec5a61e4d10b09fd5b2ac8ca2cc0",
+      "bytes": 158560,
+      "path": "target/task-tmp/chunked-massive/browser-r5/revisit.native",
+      "sha256": "5283e20fcad2c50d676a1f67e2f92c6f11dfb5ce5d668024625062f94606e898"
+    },
+    "target/task-tmp/chunked-massive/browser-r5/revisit.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/13f36ed6866856ed65a11e8a6a8d3fa84b9cc4121d9c6276a299bc98baaad03b.gz",
+      "archiveBytes": 5003,
+      "archiveSha256": "935affba162afacec320276dc1524cead8d8b584ead197151f500484e6eb3366",
+      "bytes": 6540,
+      "path": "target/task-tmp/chunked-massive/browser-r5/revisit.png",
+      "sha256": "13f36ed6866856ed65a11e8a6a8d3fa84b9cc4121d9c6276a299bc98baaad03b"
+    },
+    "target/task-tmp/chunked-massive/browser-r5/warm-oracle.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/43e76ab407f457264a94e369b10acd41e65276746a415ec17b93117f7b8a92cf.gz",
+      "archiveBytes": 5043,
+      "archiveSha256": "3564d622e7ee11976e6c263205e420f81bbdbe93a67bd3355e6f2aef36e72a88",
+      "bytes": 6556,
+      "path": "target/task-tmp/chunked-massive/browser-r5/warm-oracle.png",
+      "sha256": "43e76ab407f457264a94e369b10acd41e65276746a415ec17b93117f7b8a92cf"
+    },
+    "target/task-tmp/chunked-massive/browser-r5/warm.native": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/fba7b0837815954ab2af85bca9763e4b48b71be47165d3fafb1e8a3dce0b1d62.gz",
+      "archiveBytes": 33067,
+      "archiveSha256": "43831e46a755eecc8da23d36b6da6098064dd5ae5967293c6f65d90dc3f5e528",
+      "bytes": 158560,
+      "path": "target/task-tmp/chunked-massive/browser-r5/warm.native",
+      "sha256": "fba7b0837815954ab2af85bca9763e4b48b71be47165d3fafb1e8a3dce0b1d62"
+    },
+    "target/task-tmp/chunked-massive/browser-r5/warm.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/43e76ab407f457264a94e369b10acd41e65276746a415ec17b93117f7b8a92cf.gz",
+      "archiveBytes": 5043,
+      "archiveSha256": "3564d622e7ee11976e6c263205e420f81bbdbe93a67bd3355e6f2aef36e72a88",
+      "bytes": 6556,
+      "path": "target/task-tmp/chunked-massive/browser-r5/warm.png",
+      "sha256": "43e76ab407f457264a94e369b10acd41e65276746a415ec17b93117f7b8a92cf"
+    },
+    "target/task-tmp/chunked-massive/browser-r5/zoom-oracle.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/13f36ed6866856ed65a11e8a6a8d3fa84b9cc4121d9c6276a299bc98baaad03b.gz",
+      "archiveBytes": 5003,
+      "archiveSha256": "935affba162afacec320276dc1524cead8d8b584ead197151f500484e6eb3366",
+      "bytes": 6540,
+      "path": "target/task-tmp/chunked-massive/browser-r5/zoom-oracle.png",
+      "sha256": "13f36ed6866856ed65a11e8a6a8d3fa84b9cc4121d9c6276a299bc98baaad03b"
+    },
+    "target/task-tmp/chunked-massive/browser-r5/zoom.native": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/5283e20fcad2c50d676a1f67e2f92c6f11dfb5ce5d668024625062f94606e898.gz",
+      "archiveBytes": 33078,
+      "archiveSha256": "88fcc779f718ff669ad2db7ef6ec9fa282beec5a61e4d10b09fd5b2ac8ca2cc0",
+      "bytes": 158560,
+      "path": "target/task-tmp/chunked-massive/browser-r5/zoom.native",
+      "sha256": "5283e20fcad2c50d676a1f67e2f92c6f11dfb5ce5d668024625062f94606e898"
+    },
+    "target/task-tmp/chunked-massive/browser-r5/zoom.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/13f36ed6866856ed65a11e8a6a8d3fa84b9cc4121d9c6276a299bc98baaad03b.gz",
+      "archiveBytes": 5003,
+      "archiveSha256": "935affba162afacec320276dc1524cead8d8b584ead197151f500484e6eb3366",
+      "bytes": 6540,
+      "path": "target/task-tmp/chunked-massive/browser-r5/zoom.png",
+      "sha256": "13f36ed6866856ed65a11e8a6a8d3fa84b9cc4121d9c6276a299bc98baaad03b"
+    },
+    "target/task-tmp/chunked-massive/browser.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/56639466547edaec43e2ed16c8d2201f6c145ea5a9ef8d67bcb33f5b6d1b9c86.gz",
+      "archiveBytes": 333,
+      "archiveSha256": "25c46acd45c1c60e57f4a82ed36579fd68084bf464560f321301b27c840b8d3a",
+      "bytes": 431,
+      "path": "target/task-tmp/chunked-massive/browser.log",
+      "sha256": "56639466547edaec43e2ed16c8d2201f6c145ea5a9ef8d67bcb33f5b6d1b9c86"
+    },
+    "target/task-tmp/chunked-massive/cache-before-r2.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/fad175c4df5a5919690456b843a72b8199876d5286459c693b263b78a019f355.gz",
+      "archiveBytes": 179,
+      "archiveSha256": "1ed528c0f8299e3ff4ec7d5caf8553dbb75c5eb338cb85dd91c47328fa58bb0d",
+      "bytes": 191,
+      "path": "target/task-tmp/chunked-massive/cache-before-r2.json",
+      "sha256": "fad175c4df5a5919690456b843a72b8199876d5286459c693b263b78a019f355"
+    },
+    "target/task-tmp/chunked-massive/cache-before-r3.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/fad175c4df5a5919690456b843a72b8199876d5286459c693b263b78a019f355.gz",
+      "archiveBytes": 179,
+      "archiveSha256": "1ed528c0f8299e3ff4ec7d5caf8553dbb75c5eb338cb85dd91c47328fa58bb0d",
+      "bytes": 191,
+      "path": "target/task-tmp/chunked-massive/cache-before-r3.json",
+      "sha256": "fad175c4df5a5919690456b843a72b8199876d5286459c693b263b78a019f355"
+    },
+    "target/task-tmp/chunked-massive/cache-before-r4.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/fad175c4df5a5919690456b843a72b8199876d5286459c693b263b78a019f355.gz",
+      "archiveBytes": 179,
+      "archiveSha256": "1ed528c0f8299e3ff4ec7d5caf8553dbb75c5eb338cb85dd91c47328fa58bb0d",
+      "bytes": 191,
+      "path": "target/task-tmp/chunked-massive/cache-before-r4.json",
+      "sha256": "fad175c4df5a5919690456b843a72b8199876d5286459c693b263b78a019f355"
+    },
+    "target/task-tmp/chunked-massive/cache-before-r5.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/fad175c4df5a5919690456b843a72b8199876d5286459c693b263b78a019f355.gz",
+      "archiveBytes": 179,
+      "archiveSha256": "1ed528c0f8299e3ff4ec7d5caf8553dbb75c5eb338cb85dd91c47328fa58bb0d",
+      "bytes": 191,
+      "path": "target/task-tmp/chunked-massive/cache-before-r5.json",
+      "sha256": "fad175c4df5a5919690456b843a72b8199876d5286459c693b263b78a019f355"
+    },
+    "target/task-tmp/chunked-massive/check-build.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "bytes": 0,
+      "path": "target/task-tmp/chunked-massive/check-build.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/chunked-massive/check-io.py": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/e740098c7445afdbabde40af259375ab923ecf5853c82385210598a9c4502445.gz",
+      "archiveBytes": 876,
+      "archiveSha256": "87ddf864efc269de13a9b46df4d34c46401a9b2db90172474a112e81accba3aa",
+      "bytes": 1646,
+      "path": "target/task-tmp/chunked-massive/check-io.py",
+      "sha256": "e740098c7445afdbabde40af259375ab923ecf5853c82385210598a9c4502445"
+    },
+    "target/task-tmp/chunked-massive/check.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/7a2fe355cd784dfe3cb2a95c41880b6f41c24dd111dcf9ea04c8a305c1d7d299.gz",
+      "archiveBytes": 87,
+      "archiveSha256": "7f0337ec65aa6167f46a11754d86502e4471d4f95aefa9f170f466367272f503",
+      "bytes": 73,
+      "path": "target/task-tmp/chunked-massive/check.log",
+      "sha256": "7a2fe355cd784dfe3cb2a95c41880b6f41c24dd111dcf9ea04c8a305c1d7d299"
+    },
+    "target/task-tmp/chunked-massive/check.rs": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/fc757c38651d4821de590a14ce58ee31d58928b156254569aeae9ed0899c0312.gz",
+      "archiveBytes": 351,
+      "archiveSha256": "9015ec0802100b41a7e931930265a4586e73b54d58d4a05a16a99d5bfda129d7",
+      "bytes": 525,
+      "path": "target/task-tmp/chunked-massive/check.rs",
+      "sha256": "fc757c38651d4821de590a14ce58ee31d58928b156254569aeae9ed0899c0312"
+    },
+    "target/task-tmp/chunked-massive/drop-own-cache.py": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/2fe6d6c8ba42a595d8e1782df78eb529785ff357cbd175010dd4fc45bf85aba9.gz",
+      "archiveBytes": 490,
+      "archiveSha256": "01cb7a9539f73c5fc3f7b1f1f6be2ac9d5f19ab31f99dd7c915fa4c48be2edc4",
+      "bytes": 885,
+      "path": "target/task-tmp/chunked-massive/drop-own-cache.py",
+      "sha256": "2fe6d6c8ba42a595d8e1782df78eb529785ff357cbd175010dd4fc45bf85aba9"
+    },
+    "target/task-tmp/chunked-massive/fixture.py": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/b26afd4a404dfc9e4419cd4e9c5686c86a1ce31337e0a4b064ed853a1c78ac59.gz",
+      "archiveBytes": 3525,
+      "archiveSha256": "2d1baf775ce3bbb52a0615763223b1aed02a451915d0c5a5aeb1c803c0e18fa8",
+      "bytes": 10072,
+      "path": "target/task-tmp/chunked-massive/fixture.py",
+      "sha256": "b26afd4a404dfc9e4419cd4e9c5686c86a1ce31337e0a4b064ed853a1c78ac59"
+    },
+    "target/task-tmp/chunked-massive/full-validation-final.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/bb3972f8faceb46bbff84457eccdbde3ed5328e56d2196c4c74cd00af0de64a5.gz",
+      "archiveBytes": 1051,
+      "archiveSha256": "4cae3799ed34684a90b81ed0dfd0390ad9ef3f1055f3a0224f603e202ec7e407",
+      "bytes": 2990,
+      "path": "target/task-tmp/chunked-massive/full-validation-final.json",
+      "sha256": "bb3972f8faceb46bbff84457eccdbde3ed5328e56d2196c4c74cd00af0de64a5"
+    },
+    "target/task-tmp/chunked-massive/full-validation-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/bb3972f8faceb46bbff84457eccdbde3ed5328e56d2196c4c74cd00af0de64a5.gz",
+      "archiveBytes": 1051,
+      "archiveSha256": "4cae3799ed34684a90b81ed0dfd0390ad9ef3f1055f3a0224f603e202ec7e407",
+      "bytes": 2990,
+      "path": "target/task-tmp/chunked-massive/full-validation-final.log",
+      "sha256": "bb3972f8faceb46bbff84457eccdbde3ed5328e56d2196c4c74cd00af0de64a5"
+    },
+    "target/task-tmp/chunked-massive/full-validation.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/3e848e91a9c43d51c165fa2f86922c8ab78e737cf0bf69c0f10ef649aba42f72.gz",
+      "archiveBytes": 372,
+      "archiveSha256": "8c845a482e2c12651d35b3cb29c2a0af90c0727c3487f931a9b348e29b0330b5",
+      "bytes": 530,
+      "path": "target/task-tmp/chunked-massive/full-validation.json",
+      "sha256": "3e848e91a9c43d51c165fa2f86922c8ab78e737cf0bf69c0f10ef649aba42f72"
+    },
+    "target/task-tmp/chunked-massive/generate-4p5b.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/e36ce75567ee1d37d8397e5661032e4d751c9127b9ec68a9164e21355cee9325.gz",
+      "archiveBytes": 2291,
+      "archiveSha256": "b8a99c151ba6245a259ad821f0addf9eb7f3f85f644a3ce17298c8d550227ba3",
+      "bytes": 23252,
+      "path": "target/task-tmp/chunked-massive/generate-4p5b.log",
+      "sha256": "e36ce75567ee1d37d8397e5661032e4d751c9127b9ec68a9164e21355cee9325"
+    },
+    "target/task-tmp/chunked-massive/integration/abi-declarations-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/eb8c840abbbfbbcc7b2fc02f6c1c2909f93ea1a5c8d5ab31aed178cc9a757485.gz",
+      "archiveBytes": 62,
+      "archiveSha256": "6b122b899451b0ab6c58d466a84b6cd6390ee050b4f5aa113c6b0d9afeba9beb",
+      "bytes": 42,
+      "path": "target/task-tmp/chunked-massive/integration/abi-declarations-final.log",
+      "sha256": "eb8c840abbbfbbcc7b2fc02f6c1c2909f93ea1a5c8d5ab31aed178cc9a757485"
+    },
+    "target/task-tmp/chunked-massive/integration/abi-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "aa3af828689b39e5cb48e96ed8fa99ca3d3a9326510eb29838bb24208e32deba",
+      "bytes": 52,
+      "path": "target/task-tmp/chunked-massive/integration/abi-final.log",
+      "sha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306"
+    },
+    "target/task-tmp/chunked-massive/integration/assets-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef.gz",
+      "archiveBytes": 104,
+      "archiveSha256": "a9024230f03cfab4b76058c9f343d5ede416ef53be37bda0ca0cf926621cec18",
+      "bytes": 88,
+      "path": "target/task-tmp/chunked-massive/integration/assets-final.log",
+      "sha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef"
+    },
+    "target/task-tmp/chunked-massive/integration/ci-remaining-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/704a3dfcffb49cd3f6304502aab0572806a95c0445623c5c02a6d46c434c6dcd.gz",
+      "archiveBytes": 63,
+      "archiveSha256": "4feecba42dc8d5b080c3e5ca7642375b0fb22e7baad589b85623ef56dc8ef378",
+      "bytes": 181,
+      "path": "target/task-tmp/chunked-massive/integration/ci-remaining-final.log",
+      "sha256": "704a3dfcffb49cd3f6304502aab0572806a95c0445623c5c02a6d46c434c6dcd"
+    },
+    "target/task-tmp/chunked-massive/integration/ci-workflow-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/2fcc44f5438a26267fc9982a5f5eb9fba4386d672379d6bca25e3d2f98574ef0.gz",
+      "archiveBytes": 237,
+      "archiveSha256": "aa5d51ae2397eaddfb2131e1c1270333240e1e627111b3f4ba5a68d4e3041a00",
+      "bytes": 644,
+      "path": "target/task-tmp/chunked-massive/integration/ci-workflow-final.log",
+      "sha256": "2fcc44f5438a26267fc9982a5f5eb9fba4386d672379d6bca25e3d2f98574ef0"
+    },
+    "target/task-tmp/chunked-massive/integration/client-build.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f.gz",
+      "archiveBytes": 1056,
+      "archiveSha256": "0ec158082729c6b01bd0aace89545273e72b5754490fcffd63c6aeb3621acdf3",
+      "bytes": 5448,
+      "path": "target/task-tmp/chunked-massive/integration/client-build.log",
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "target/task-tmp/chunked-massive/integration/core-ci-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/ed6823af1e5543e52c25024f418f33f69d9e5952bd7bb5f881e99c5610201f6f.gz",
+      "archiveBytes": 109,
+      "archiveSha256": "9b5ed03b126f4020cdef674fe0002b0a26c58d639d5bd9c0c10326ad7773c3e6",
+      "bytes": 832,
+      "path": "target/task-tmp/chunked-massive/integration/core-ci-final.log",
+      "sha256": "ed6823af1e5543e52c25024f418f33f69d9e5952bd7bb5f881e99c5610201f6f"
+    },
+    "target/task-tmp/chunked-massive/integration/core-lf-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/498705f28ccc0360842ad7a3aec7c9336cfc47c7753ae66b412c75bb3ed57062.gz",
+      "archiveBytes": 51,
+      "archiveSha256": "3fbd57063b488add4828708b2643a745c0651d4b6c51899285b6b22e910fc422",
+      "bytes": 98,
+      "path": "target/task-tmp/chunked-massive/integration/core-lf-final.log",
+      "sha256": "498705f28ccc0360842ad7a3aec7c9336cfc47c7753ae66b412c75bb3ed57062"
+    },
+    "target/task-tmp/chunked-massive/integration/core-sealed-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/2598047cc30925b09ef2c3d40d7fb0421dbdb2d82f4d87566df89308bf097c2f.gz",
+      "archiveBytes": 1372,
+      "archiveSha256": "0bc869935209fc59320afd80e4200bfb7f7e96ebe47d82fb984bd3e593ce7e74",
+      "bytes": 3906,
+      "path": "target/task-tmp/chunked-massive/integration/core-sealed-final.log",
+      "sha256": "2598047cc30925b09ef2c3d40d7fb0421dbdb2d82f4d87566df89308bf097c2f"
+    },
+    "target/task-tmp/chunked-massive/integration/core-union.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/8edb3baa72c2833acdc16ead5be942f08734a436b2bb94128bfcb52d921b67f3.gz",
+      "archiveBytes": 51,
+      "archiveSha256": "628986d35899169c2c44cf85e5318336ed851e9f2d913512dbf0dea8867261dd",
+      "bytes": 98,
+      "path": "target/task-tmp/chunked-massive/integration/core-union.log",
+      "sha256": "8edb3baa72c2833acdc16ead5be942f08734a436b2bb94128bfcb52d921b67f3"
+    },
+    "target/task-tmp/chunked-massive/integration/diff-check-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "bytes": 0,
+      "path": "target/task-tmp/chunked-massive/integration/diff-check-final.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/chunked-massive/integration/evidence-seal-delivery.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "bytes": 0,
+      "path": "target/task-tmp/chunked-massive/integration/evidence-seal-delivery.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/chunked-massive/integration/evidence-seal-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/8da9803ad441cfe80ae309c5943589f2a131283de72024bdf4df4b956f133059.gz",
+      "archiveBytes": 123,
+      "archiveSha256": "5158985d278568823f300e91875b18c0ea0849a4fdac470a84094cffb671e0eb",
+      "bytes": 131,
+      "path": "target/task-tmp/chunked-massive/integration/evidence-seal-final.log",
+      "sha256": "8da9803ad441cfe80ae309c5943589f2a131283de72024bdf4df4b956f133059"
+    },
+    "target/task-tmp/chunked-massive/integration/fixture-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/3ea1ef0fdd7f0189191bf8a08a9d3d1f6101d93dd51586cd8b1fd86fbc92e456.gz",
+      "archiveBytes": 51,
+      "archiveSha256": "1c4c20a7cc94cde3427c27e6efe10dbad7a330cc7f3eab54129007b12b212573",
+      "bytes": 98,
+      "path": "target/task-tmp/chunked-massive/integration/fixture-final.log",
+      "sha256": "3ea1ef0fdd7f0189191bf8a08a9d3d1f6101d93dd51586cd8b1fd86fbc92e456"
+    },
+    "target/task-tmp/chunked-massive/integration/fixture-format.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/43affe539ba0ae8b202b306a3294d04f3b7fc062316c1c825399076d966c8f2d.gz",
+      "archiveBytes": 43,
+      "archiveSha256": "bdcf56554df5ea2fa19921144e34c15fbd87094e7e44ffbb1f27bd30959f6629",
+      "bytes": 23,
+      "path": "target/task-tmp/chunked-massive/integration/fixture-format.log",
+      "sha256": "43affe539ba0ae8b202b306a3294d04f3b7fc062316c1c825399076d966c8f2d"
+    },
+    "target/task-tmp/chunked-massive/integration/fixture-tests.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/25d70ef1aeb5de22ad330bccb5f2f922e7e5ea94e58a76b8be5c5b151fb5ead3.gz",
+      "archiveBytes": 51,
+      "archiveSha256": "5efb42e64b3c572c7cff86d7804586275d7cef0addd54f54db67eb7204236837",
+      "bytes": 99,
+      "path": "target/task-tmp/chunked-massive/integration/fixture-tests.log",
+      "sha256": "25d70ef1aeb5de22ad330bccb5f2f922e7e5ea94e58a76b8be5c5b151fb5ead3"
+    },
+    "target/task-tmp/chunked-massive/integration/format-current.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/3926259571176267c7245e8c4a1e66910d34ad08ab95185aab4f02656f937034.gz",
+      "archiveBytes": 43,
+      "archiveSha256": "9dcdd67c92e1789fedd601d574c7f1f3a93c05004bdcf94823ee3f2d9ce83e77",
+      "bytes": 23,
+      "path": "target/task-tmp/chunked-massive/integration/format-current.log",
+      "sha256": "3926259571176267c7245e8c4a1e66910d34ad08ab95185aab4f02656f937034"
+    },
+    "target/task-tmp/chunked-massive/integration/format-sealed-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/155c90c7098dde4977a385faae917ce4c44aeccbd0bd67d36a41b5ad944395fb.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "dbfd59bf9b7093266f4a0edf3865bd544adeec5890969aed18ecb11e5e5c471f",
+      "bytes": 29,
+      "path": "target/task-tmp/chunked-massive/integration/format-sealed-final.log",
+      "sha256": "155c90c7098dde4977a385faae917ce4c44aeccbd0bd67d36a41b5ad944395fb"
+    },
+    "target/task-tmp/chunked-massive/integration/format.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/b1d6f78c9224b9883374a6a0c44483c647a44864497ae71408d46f93f768df82.gz",
+      "archiveBytes": 59,
+      "archiveSha256": "f57f46d0b6f3954d7c40b9549a20cea81af6c45903788165296730e5826aa272",
+      "bytes": 44,
+      "path": "target/task-tmp/chunked-massive/integration/format.log",
+      "sha256": "b1d6f78c9224b9883374a6a0c44483c647a44864497ae71408d46f93f768df82"
+    },
+    "target/task-tmp/chunked-massive/integration/foundation-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/741208f5fb6a89c6e7b14fb399085e85654a7989a4ab5e993babf02c9eb68f91.gz",
+      "archiveBytes": 2113,
+      "archiveSha256": "95b304440f072c47f46b2375bf80544d5a04a262d56b83614da298b0012729ae",
+      "bytes": 8218,
+      "path": "target/task-tmp/chunked-massive/integration/foundation-final.log",
+      "sha256": "741208f5fb6a89c6e7b14fb399085e85654a7989a4ab5e993babf02c9eb68f91"
+    },
+    "target/task-tmp/chunked-massive/integration/historical-preservation.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/cd17cc6b6bb1587c35907cc1de43287a558451dc29cb650fbeac006fec1142eb.gz",
+      "archiveBytes": 167,
+      "archiveSha256": "15700b91c3ff49e488e451ac580be034fe939600cbbeba99af2830b78662577f",
+      "bytes": 235,
+      "path": "target/task-tmp/chunked-massive/integration/historical-preservation.json",
+      "sha256": "cd17cc6b6bb1587c35907cc1de43287a558451dc29cb650fbeac006fec1142eb"
+    },
+    "target/task-tmp/chunked-massive/integration/historical-preservation.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/cd17cc6b6bb1587c35907cc1de43287a558451dc29cb650fbeac006fec1142eb.gz",
+      "archiveBytes": 167,
+      "archiveSha256": "15700b91c3ff49e488e451ac580be034fe939600cbbeba99af2830b78662577f",
+      "bytes": 235,
+      "path": "target/task-tmp/chunked-massive/integration/historical-preservation.log",
+      "sha256": "cd17cc6b6bb1587c35907cc1de43287a558451dc29cb650fbeac006fec1142eb"
+    },
+    "target/task-tmp/chunked-massive/integration/hooks-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89",
+      "bytes": 240,
+      "path": "target/task-tmp/chunked-massive/integration/hooks-final.log",
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/chunked-massive/integration/hooks-preseal.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89",
+      "bytes": 240,
+      "path": "target/task-tmp/chunked-massive/integration/hooks-preseal.log",
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/chunked-massive/integration/hooks-sealed-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89",
+      "bytes": 240,
+      "path": "target/task-tmp/chunked-massive/integration/hooks-sealed-final.log",
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/chunked-massive/integration/installed-proof/test_installed_kernel_chunked_0/chunked.ipynb": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/8104cd9fa5c69b6161e79deb44e829c454d88c68e67218e1f199170a2b88cc8d.gz",
+      "archiveBytes": 1838,
+      "archiveSha256": "e62561988d37c48264f2f5accca6aed73f7fba60623a72b9043815b2094bb19b",
+      "bytes": 5350,
+      "path": "target/task-tmp/chunked-massive/integration/installed-proof/test_installed_kernel_chunked_0/chunked.ipynb",
+      "sha256": "8104cd9fa5c69b6161e79deb44e829c454d88c68e67218e1f199170a2b88cc8d"
+    },
+    "target/task-tmp/chunked-massive/integration/installed-proof/test_installed_kernel_chunked_0/data/kernels/python3/kernel.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/c25bc536ab652911567d06306c2af01074caaf0b4637ec6e8375af33e0d93327.gz",
+      "archiveBytes": 207,
+      "archiveSha256": "6352ba0e70087e2f91e6411f11a62f0b0c865c8a84c901474e98a1f8a8d7c332",
+      "bytes": 274,
+      "path": "target/task-tmp/chunked-massive/integration/installed-proof/test_installed_kernel_chunked_0/data/kernels/python3/kernel.json",
+      "sha256": "c25bc536ab652911567d06306c2af01074caaf0b4637ec6e8375af33e0d93327"
+    },
+    "target/task-tmp/chunked-massive/integration/installed-proof/test_installed_kernel_chunked_0/install.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/7b47349fc3c37555a9297de0b957b0ac48096488ac315921d01884e5929150a9.gz",
+      "archiveBytes": 1190,
+      "archiveSha256": "b6789189786def0afea9091207c49123b6436feeca4c751280845ddbbc62bc55",
+      "bytes": 2582,
+      "path": "target/task-tmp/chunked-massive/integration/installed-proof/test_installed_kernel_chunked_0/install.log",
+      "sha256": "7b47349fc3c37555a9297de0b957b0ac48096488ac315921d01884e5929150a9"
+    },
+    "target/task-tmp/chunked-massive/integration/installed-proof/test_installed_kernel_chunked_0/server.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "bytes": 0,
+      "path": "target/task-tmp/chunked-massive/integration/installed-proof/test_installed_kernel_chunked_0/server.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/chunked-massive/integration/installed-proof/test_installed_kernel_chunked_0/site.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/e4237d211ffda8a37a1b5ba810eb5433a5818a177e25684daf375979b75b5ca9.gz",
+      "archiveBytes": 145,
+      "archiveSha256": "4cbd608ff5f293ff18bffa4afe9b1689d0aa9f6778c1f7ab2af89c1b6aa4b517",
+      "bytes": 174,
+      "path": "target/task-tmp/chunked-massive/integration/installed-proof/test_installed_kernel_chunked_0/site.log",
+      "sha256": "e4237d211ffda8a37a1b5ba810eb5433a5818a177e25684daf375979b75b5ca9"
+    },
+    "target/task-tmp/chunked-massive/integration/installed-proof/test_installed_kernel_chunked_0/venv.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/cc1ed237454d11747d2e41d289b452e0067ba85c70c4d552e7380958854d4744.gz",
+      "archiveBytes": 214,
+      "archiveSha256": "2885aa389115cb63326409895f52993abf650b296d41ded81047928f869e5693",
+      "bytes": 370,
+      "path": "target/task-tmp/chunked-massive/integration/installed-proof/test_installed_kernel_chunked_0/venv.log",
+      "sha256": "cc1ed237454d11747d2e41d289b452e0067ba85c70c4d552e7380958854d4744"
+    },
+    "target/task-tmp/chunked-massive/integration/installed-proof/test_installed_kernel_chunked_0/wheel.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/71c148dd4097f5ab3eac993872c516aa4212bc5c96b38c56d86d6a67babd8ea8.gz",
+      "archiveBytes": 169,
+      "archiveSha256": "caf4478f85c7370754949509b3c9f8436302e4e3de7abcb450561fdd4aac999a",
+      "bytes": 189,
+      "path": "target/task-tmp/chunked-massive/integration/installed-proof/test_installed_kernel_chunked_0/wheel.log",
+      "sha256": "71c148dd4097f5ab3eac993872c516aa4212bc5c96b38c56d86d6a67babd8ea8"
+    },
+    "target/task-tmp/chunked-massive/integration/installed-styled-final-isolated.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/e7fabd99226b12c4ff36033192c83fa0f41a7cb72443876add076d03f7ee9d46.gz",
+      "archiveBytes": 50,
+      "archiveSha256": "663eba1dbe865f21cdad0f417b68f3bc1c12aae9899776862dcadaca2948d367",
+      "bytes": 99,
+      "path": "target/task-tmp/chunked-massive/integration/installed-styled-final-isolated.log",
+      "sha256": "e7fabd99226b12c4ff36033192c83fa0f41a7cb72443876add076d03f7ee9d46"
+    },
+    "target/task-tmp/chunked-massive/integration/installed-styled-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/eec9c8e30e49931c4271e335536b58daefd10581743aac4a8f7c1dc37a49ffc2.gz",
+      "archiveBytes": 7123,
+      "archiveSha256": "daba567627e5d4624b0ac4dae839b0a09424bc14ca220cfa1e604d670119286a",
+      "bytes": 28039,
+      "path": "target/task-tmp/chunked-massive/integration/installed-styled-final.log",
+      "sha256": "eec9c8e30e49931c4271e335536b58daefd10581743aac4a8f7c1dc37a49ffc2"
+    },
+    "target/task-tmp/chunked-massive/integration/installed-styled-r2.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/95d241b4947f85f8adb19400044c8d4622d4e545b683c638150ed56920196045.gz",
+      "archiveBytes": 50,
+      "archiveSha256": "1bb70fbf56b0c97a0791f3838c10bebe10fa3b95ab148af2d20799851b33046d",
+      "bytes": 99,
+      "path": "target/task-tmp/chunked-massive/integration/installed-styled-r2.log",
+      "sha256": "95d241b4947f85f8adb19400044c8d4622d4e545b683c638150ed56920196045"
+    },
+    "target/task-tmp/chunked-massive/integration/installed-styled.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/e54c9ef5472c3a8be554267092f56021b49a71362de93431c447d819d9557191.gz",
+      "archiveBytes": 7158,
+      "archiveSha256": "6b183c25235f6fd2e8b74fb129a46f92068615d9532c3456a3617a1f3f2ad3e3",
+      "bytes": 28094,
+      "path": "target/task-tmp/chunked-massive/integration/installed-styled.log",
+      "sha256": "e54c9ef5472c3a8be554267092f56021b49a71362de93431c447d819d9557191"
+    },
+    "target/task-tmp/chunked-massive/integration/inventory-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/246cddcfdb0a58e45817737eb308f9968757055137a1f5a616e798b8b14876e5.gz",
+      "archiveBytes": 160,
+      "archiveSha256": "3488f0b208b6d554eb9812a4a20b458808f6366efb23aecb2833e2f8a52d83f1",
+      "bytes": 200,
+      "path": "target/task-tmp/chunked-massive/integration/inventory-final.log",
+      "sha256": "246cddcfdb0a58e45817737eb308f9968757055137a1f5a616e798b8b14876e5"
+    },
+    "target/task-tmp/chunked-massive/integration/jupyter-startup-control.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/d522677b5aedb0390b519c29bd469d3cf6798dbf60e123ed0024c9c1efacf08a.gz",
+      "archiveBytes": 125,
+      "archiveSha256": "462c522a52cd146c26c00856fa656f0d5c34a5aa42bbc1154cec450568b6dec5",
+      "bytes": 121,
+      "path": "target/task-tmp/chunked-massive/integration/jupyter-startup-control.json",
+      "sha256": "d522677b5aedb0390b519c29bd469d3cf6798dbf60e123ed0024c9c1efacf08a"
+    },
+    "target/task-tmp/chunked-massive/integration/jupyter-startup-control.py": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/dd355656e46af0a7eadcd4c80d5e8ae13ea66328bd3ea785662a4da8e4879f3d.gz",
+      "archiveBytes": 919,
+      "archiveSha256": "70706c323db36fc3b9e8c104dff5a9a293d5e1800411d043b1158c283611c46e",
+      "bytes": 1668,
+      "path": "target/task-tmp/chunked-massive/integration/jupyter-startup-control.py",
+      "sha256": "dd355656e46af0a7eadcd4c80d5e8ae13ea66328bd3ea785662a4da8e4879f3d"
+    },
+    "target/task-tmp/chunked-massive/integration/jupyter-startup-imports.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/c438fc80805c9f8fbbdcd1de78ab6a548bd3334255189bb015bb20264909200b.gz",
+      "archiveBytes": 14449,
+      "archiveSha256": "1837939f7ba29c15fe5d0dbb36e6ae1f176d68b53e847366b8f5eb2cad387c70",
+      "bytes": 82789,
+      "path": "target/task-tmp/chunked-massive/integration/jupyter-startup-imports.log",
+      "sha256": "c438fc80805c9f8fbbdcd1de78ab6a548bd3334255189bb015bb20264909200b"
+    },
+    "target/task-tmp/chunked-massive/integration/jupyter-version.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/75bc01dba3bbb2740a058357f1370627d0d110d65ed1ed7277a3b0bfb13e179c.gz",
+      "archiveBytes": 26,
+      "archiveSha256": "8c2de67543aa92ba4de2892bbd55697e7a435485603d58ff9e2a3573ecca36d9",
+      "bytes": 6,
+      "path": "target/task-tmp/chunked-massive/integration/jupyter-version.log",
+      "sha256": "75bc01dba3bbb2740a058357f1370627d0d110d65ed1ed7277a3b0bfb13e179c"
+    },
+    "target/task-tmp/chunked-massive/integration/main-fetch.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/6a4e71b88276fc65e74499338284d6be97cf4ab6e757a8f0512c2f64c61ac5a2.gz",
+      "archiveBytes": 90,
+      "archiveSha256": "ef1925fca4cecc74c279fca5486a69ac0d51430d5f0bb412197f2e4421ec7e15",
+      "bytes": 89,
+      "path": "target/task-tmp/chunked-massive/integration/main-fetch.log",
+      "sha256": "6a4e71b88276fc65e74499338284d6be97cf4ab6e757a8f0512c2f64c61ac5a2"
+    },
+    "target/task-tmp/chunked-massive/integration/make-check-ci-expansion.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/1855e996a50a6f89c394eea8b2545330e6f90c98b1bdbb8917fbfe655e0acda1.gz",
+      "archiveBytes": 147,
+      "archiveSha256": "b5ae764339a35e4fff0eef9f267cee456646519f8a26a2f1ff669bdec099c914",
+      "bytes": 230,
+      "path": "target/task-tmp/chunked-massive/integration/make-check-ci-expansion.log",
+      "sha256": "1855e996a50a6f89c394eea8b2545330e6f90c98b1bdbb8917fbfe655e0acda1"
+    },
+    "target/task-tmp/chunked-massive/integration/node-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/645599678db359832438f7a68325f67425db2f6fa59268f39f89bcd3a9663528.gz",
+      "archiveBytes": 6330,
+      "archiveSha256": "f666c2a6a0b1408db4388aaa9b8dc6d75abc5fa9946acda3fe79e5b330502885",
+      "bytes": 20962,
+      "path": "target/task-tmp/chunked-massive/integration/node-final.log",
+      "sha256": "645599678db359832438f7a68325f67425db2f6fa59268f39f89bcd3a9663528"
+    },
+    "target/task-tmp/chunked-massive/integration/node-full-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/86a32888296d31139afc5cb8e7a8ff1455a49e7d8450a205bcfe3d023e9cf33c.gz",
+      "archiveBytes": 40321,
+      "archiveSha256": "ba01f1362186a13f0bfc0022eef280560ab6fb0291daee8cc0592ea1ab393b28",
+      "bytes": 239520,
+      "path": "target/task-tmp/chunked-massive/integration/node-full-final.log",
+      "sha256": "86a32888296d31139afc5cb8e7a8ff1455a49e7d8450a205bcfe3d023e9cf33c"
+    },
+    "target/task-tmp/chunked-massive/integration/node-live-r2.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/473ea7c5e8db3729905005f702fba49797504f75668b3d6bf696c96eed720a5a.gz",
+      "archiveBytes": 652,
+      "archiveSha256": "c2f4eae5ad3d3033ff205c42afca033da5a7def33ca98dd499f653e0ac1208d9",
+      "bytes": 2418,
+      "path": "target/task-tmp/chunked-massive/integration/node-live-r2.log",
+      "sha256": "473ea7c5e8db3729905005f702fba49797504f75668b3d6bf696c96eed720a5a"
+    },
+    "target/task-tmp/chunked-massive/integration/node-live.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/a5369a99a196a264d91371349255f2d7debe2b2c857c5c28af134dd0896f3f10.gz",
+      "archiveBytes": 929,
+      "archiveSha256": "fa2ebea6fc6bd82ca1ece1c8fa6605131a93c5a4c082475ca1dfdb4a6988ef3e",
+      "bytes": 2962,
+      "path": "target/task-tmp/chunked-massive/integration/node-live.log",
+      "sha256": "a5369a99a196a264d91371349255f2d7debe2b2c857c5c28af134dd0896f3f10"
+    },
+    "target/task-tmp/chunked-massive/integration/node-styled-settled.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/1eaca9bae04aa96b433294df60f36e994193add19dce6f5a920be2a7624785a6.gz",
+      "archiveBytes": 652,
+      "archiveSha256": "0e8bd4bc621436fd22715eed20d4f6f1b2c4dcdbbd17cccac3cf2056cfcd81b3",
+      "bytes": 2412,
+      "path": "target/task-tmp/chunked-massive/integration/node-styled-settled.log",
+      "sha256": "1eaca9bae04aa96b433294df60f36e994193add19dce6f5a920be2a7624785a6"
+    },
+    "target/task-tmp/chunked-massive/integration/ownership-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/f3ceb79e2053881caa485918899cc3feb68c3130e617e1ecb77d31e9a39001cb.gz",
+      "archiveBytes": 78,
+      "archiveSha256": "15af168584a5ce85126f77167928dd794967ebb726798f3ad8f4f10a2a2915bb",
+      "bytes": 60,
+      "path": "target/task-tmp/chunked-massive/integration/ownership-final.log",
+      "sha256": "f3ceb79e2053881caa485918899cc3feb68c3130e617e1ecb77d31e9a39001cb"
+    },
+    "target/task-tmp/chunked-massive/integration/python-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/96be128583047806b1ab614e81d7e34f2d60bb00577a3d830648b05179a10d8a.gz",
+      "archiveBytes": 53,
+      "archiveSha256": "57addba4f66be069c9a8f631f615156b478173090aa1e2b49ac23b8ea1b94160",
+      "bytes": 100,
+      "path": "target/task-tmp/chunked-massive/integration/python-final.log",
+      "sha256": "96be128583047806b1ab614e81d7e34f2d60bb00577a3d830648b05179a10d8a"
+    },
+    "target/task-tmp/chunked-massive/integration/python-live-r2.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/0030b57d74f690c4a9feaa95eb06933100182a207063af1e475bb866b1c2236b.gz",
+      "archiveBytes": 53,
+      "archiveSha256": "6f958c3f3cb2d96035d32c5615708aaa3fb82bc6298c7ecb7d3eee4e498009cf",
+      "bytes": 100,
+      "path": "target/task-tmp/chunked-massive/integration/python-live-r2.log",
+      "sha256": "0030b57d74f690c4a9feaa95eb06933100182a207063af1e475bb866b1c2236b"
+    },
+    "target/task-tmp/chunked-massive/integration/python-live.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/6edb4fa7ed9cfaa8c3b2f3122f0889586216005a450f3aeabd136a1ae0dc6958.gz",
+      "archiveBytes": 607,
+      "archiveSha256": "588906ecad35af8b6cf4625fe4ad6abbab4510c9155c89ae74df3d0f28756407",
+      "bytes": 2302,
+      "path": "target/task-tmp/chunked-massive/integration/python-live.log",
+      "sha256": "6edb4fa7ed9cfaa8c3b2f3122f0889586216005a450f3aeabd136a1ae0dc6958"
+    },
+    "target/task-tmp/chunked-massive/integration/python-styled-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/59804ce2cd46d726e83bad3c80084b0a074bec2416ae85436a18afe54ca369cf.gz",
+      "archiveBytes": 53,
+      "archiveSha256": "e68f299aeda7b716fcf038f3dcf5eb063980b4f811553b6a5d8fc335e3892c23",
+      "bytes": 100,
+      "path": "target/task-tmp/chunked-massive/integration/python-styled-final.log",
+      "sha256": "59804ce2cd46d726e83bad3c80084b0a074bec2416ae85436a18afe54ca369cf"
+    },
+    "target/task-tmp/chunked-massive/integration/python312-lifecycle-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/acece800b21226d99cf0a0c2e2b3215ba75546087edd5d9fc793e6ee16aa25de.gz",
+      "archiveBytes": 66,
+      "archiveSha256": "c314d008ccde92a845dd0acc756e183316774842d8a9b9dac5d4f86b41d9aab6",
+      "bytes": 113,
+      "path": "target/task-tmp/chunked-massive/integration/python312-lifecycle-final.log",
+      "sha256": "acece800b21226d99cf0a0c2e2b3215ba75546087edd5d9fc793e6ee16aa25de"
+    },
+    "target/task-tmp/chunked-massive/integration/ruff-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd",
+      "bytes": 19,
+      "path": "target/task-tmp/chunked-massive/integration/ruff-final.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/chunked-massive/integration/ruff-format-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/155c90c7098dde4977a385faae917ce4c44aeccbd0bd67d36a41b5ad944395fb.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "dbfd59bf9b7093266f4a0edf3865bd544adeec5890969aed18ecb11e5e5c471f",
+      "bytes": 29,
+      "path": "target/task-tmp/chunked-massive/integration/ruff-format-final.log",
+      "sha256": "155c90c7098dde4977a385faae917ce4c44aeccbd0bd67d36a41b5ad944395fb"
+    },
+    "target/task-tmp/chunked-massive/integration/ruff-sealed-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd",
+      "bytes": 19,
+      "path": "target/task-tmp/chunked-massive/integration/ruff-sealed-final.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/chunked-massive/integration/seal-sources.py": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/b1ac0ee9094a73069e89b31176aa4b285de11d0cf884fc05cd7aed2443b6b80d.gz",
+      "archiveBytes": 1153,
+      "archiveSha256": "a443322de0d5c80fd74a6341068821d7dae55e3c0427fe63471d1a02e6be4d42",
+      "bytes": 2624,
+      "path": "target/task-tmp/chunked-massive/integration/seal-sources.py",
+      "sha256": "b1ac0ee9094a73069e89b31176aa4b285de11d0cf884fc05cd7aed2443b6b80d"
+    },
+    "target/task-tmp/chunked-massive/integration/source-bindings-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/7d3a30c86d433cb3decdf74027bc22b33f06d43131639519ce0e018117c7be98.gz",
+      "archiveBytes": 48,
+      "archiveSha256": "f0f1347d8ca01895538e2c24abb55ddd52272bcc938ae67f16295d9bc311b496",
+      "bytes": 28,
+      "path": "target/task-tmp/chunked-massive/integration/source-bindings-final.log",
+      "sha256": "7d3a30c86d433cb3decdf74027bc22b33f06d43131639519ce0e018117c7be98"
+    },
+    "target/task-tmp/chunked-massive/integration/source-bindings-lf-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/7d3a30c86d433cb3decdf74027bc22b33f06d43131639519ce0e018117c7be98.gz",
+      "archiveBytes": 48,
+      "archiveSha256": "f0f1347d8ca01895538e2c24abb55ddd52272bcc938ae67f16295d9bc311b496",
+      "bytes": 28,
+      "path": "target/task-tmp/chunked-massive/integration/source-bindings-lf-final.log",
+      "sha256": "7d3a30c86d433cb3decdf74027bc22b33f06d43131639519ce0e018117c7be98"
+    },
+    "target/task-tmp/chunked-massive/integration/style-node-r2.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/e80ae2a1f01d6f9cbd99f01319230abcfab6905aea9b43d5dfbcb7936083a19d.gz",
+      "archiveBytes": 243,
+      "archiveSha256": "d9d34e70ef02dd8f8df34f66cff4f3c2602f88b11ab938d003bda4d4fb9cbbfa",
+      "bytes": 620,
+      "path": "target/task-tmp/chunked-massive/integration/style-node-r2.log",
+      "sha256": "e80ae2a1f01d6f9cbd99f01319230abcfab6905aea9b43d5dfbcb7936083a19d"
+    },
+    "target/task-tmp/chunked-massive/integration/style-node.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/40b95e1ac8cb1e18351738fa60d5b8f361c2a883dcf3667f8d2869d35122fc71.gz",
+      "archiveBytes": 603,
+      "archiveSha256": "b34cb10d58c9550279a3cde1d7a2d89a293d7f80f52bc9a983473b7351ab9a59",
+      "bytes": 1628,
+      "path": "target/task-tmp/chunked-massive/integration/style-node.log",
+      "sha256": "40b95e1ac8cb1e18351738fa60d5b8f361c2a883dcf3667f8d2869d35122fc71"
+    },
+    "target/task-tmp/chunked-massive/integration/style-old-node-r2.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/a43bcdf41f922b3b93b27d64e3d112cb3f0b19a7b4ac6edf99d84356f8b5a2d7.gz",
+      "archiveBytes": 597,
+      "archiveSha256": "c002bc7a2354ee23f2e9a6393632a2385ef47304b43ce79b31310d7b5c9e150c",
+      "bytes": 1596,
+      "path": "target/task-tmp/chunked-massive/integration/style-old-node-r2.log",
+      "sha256": "a43bcdf41f922b3b93b27d64e3d112cb3f0b19a7b4ac6edf99d84356f8b5a2d7"
+    },
+    "target/task-tmp/chunked-massive/integration/style-old-node-r3.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/50331118476dee5cacef9464363f19d2934e98b32ff8735c0f8167c004d6b746.gz",
+      "archiveBytes": 684,
+      "archiveSha256": "f173dc4e381b79d758a136e96bc9e9ef4cced4c0660f398f94e7fe311b5a2f06",
+      "bytes": 2057,
+      "path": "target/task-tmp/chunked-massive/integration/style-old-node-r3.log",
+      "sha256": "50331118476dee5cacef9464363f19d2934e98b32ff8735c0f8167c004d6b746"
+    },
+    "target/task-tmp/chunked-massive/integration/style-old-node.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/36bafbb8f7679b9be0be106b0c02f6678728494966f75c49bade5301f0fdfac1.gz",
+      "archiveBytes": 598,
+      "archiveSha256": "8a7e805cc1a3424dac5eba60c7564641a65817230db0acd1b0075c8c5c7f1d48",
+      "bytes": 1596,
+      "path": "target/task-tmp/chunked-massive/integration/style-old-node.log",
+      "sha256": "36bafbb8f7679b9be0be106b0c02f6678728494966f75c49bade5301f0fdfac1"
+    },
+    "target/task-tmp/chunked-massive/integration/style-old-node.mjs": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/88f0f7f77c240bb63733ac368549fb7d88245dfe586e0be9c42ffab9c3d72d8e.gz",
+      "archiveBytes": 3491,
+      "archiveSha256": "11681311ef6fb7dcdb2cdefb4e36eb559db6c94744638a1c3da84df46e5eeac8",
+      "bytes": 11916,
+      "path": "target/task-tmp/chunked-massive/integration/style-old-node.mjs",
+      "sha256": "88f0f7f77c240bb63733ac368549fb7d88245dfe586e0be9c42ffab9c3d72d8e"
+    },
+    "target/task-tmp/chunked-massive/integration/style-old-python.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/c883615106e64207478cbdf133215861f0f7b6920fa3348f21b05beeadbd3a33.gz",
+      "archiveBytes": 1565,
+      "archiveSha256": "338517d33e5986472ec95882d3b00a4f2ca6f5759e7b34b22dbdc62dabf7dbce",
+      "bytes": 10535,
+      "path": "target/task-tmp/chunked-massive/integration/style-old-python.log",
+      "sha256": "c883615106e64207478cbdf133215861f0f7b6920fa3348f21b05beeadbd3a33"
+    },
+    "target/task-tmp/chunked-massive/integration/style-python.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/c24705cefcd42a0dde2632227679980b831903a46e828d7ee8dfbb140e28df40.gz",
+      "archiveBytes": 65,
+      "archiveSha256": "b3e746701ca38baee03418c81d82ed8badc4eec01d7b4b7d855665a5ac2949dd",
+      "bytes": 113,
+      "path": "target/task-tmp/chunked-massive/integration/style-python.log",
+      "sha256": "c24705cefcd42a0dde2632227679980b831903a46e828d7ee8dfbb140e28df40"
+    },
+    "target/task-tmp/chunked-massive/integration/styled-http-final/after-stale-paint.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/78b9b1f33e41a898c9370da135c94e548121ecf62f0298ac86d4c54894a311e7.gz",
+      "archiveBytes": 3491,
+      "archiveSha256": "08fafdcef3d1b1487055a1285d2f3c651288cf53cec0e280b3810b03389e1023",
+      "bytes": 5276,
+      "path": "target/task-tmp/chunked-massive/integration/styled-http-final/after-stale-paint.png",
+      "sha256": "78b9b1f33e41a898c9370da135c94e548121ecf62f0298ac86d4c54894a311e7"
+    },
+    "target/task-tmp/chunked-massive/integration/styled-http-final/before-stale-paint.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/78b9b1f33e41a898c9370da135c94e548121ecf62f0298ac86d4c54894a311e7.gz",
+      "archiveBytes": 3491,
+      "archiveSha256": "08fafdcef3d1b1487055a1285d2f3c651288cf53cec0e280b3810b03389e1023",
+      "bytes": 5276,
+      "path": "target/task-tmp/chunked-massive/integration/styled-http-final/before-stale-paint.png",
+      "sha256": "78b9b1f33e41a898c9370da135c94e548121ecf62f0298ac86d4c54894a311e7"
+    },
+    "target/task-tmp/chunked-massive/integration/styled-http-final/corrupt-oracle-paint.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/78b9b1f33e41a898c9370da135c94e548121ecf62f0298ac86d4c54894a311e7.gz",
+      "archiveBytes": 3491,
+      "archiveSha256": "08fafdcef3d1b1487055a1285d2f3c651288cf53cec0e280b3810b03389e1023",
+      "bytes": 5276,
+      "path": "target/task-tmp/chunked-massive/integration/styled-http-final/corrupt-oracle-paint.png",
+      "sha256": "78b9b1f33e41a898c9370da135c94e548121ecf62f0298ac86d4c54894a311e7"
+    },
+    "target/task-tmp/chunked-massive/integration/styled-http-final/corrupt-retained-paint.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/78b9b1f33e41a898c9370da135c94e548121ecf62f0298ac86d4c54894a311e7.gz",
+      "archiveBytes": 3491,
+      "archiveSha256": "08fafdcef3d1b1487055a1285d2f3c651288cf53cec0e280b3810b03389e1023",
+      "bytes": 5276,
+      "path": "target/task-tmp/chunked-massive/integration/styled-http-final/corrupt-retained-paint.png",
+      "sha256": "78b9b1f33e41a898c9370da135c94e548121ecf62f0298ac86d4c54894a311e7"
+    },
+    "target/task-tmp/chunked-massive/integration/styled-http-final/failure-oracle-paint.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/bf4d8e07c481170725373d5a4101e8254d91c9a00e518f6cd6b44e4ef0269e2e.gz",
+      "archiveBytes": 19467,
+      "archiveSha256": "8d98470606482b2c80a604fd1678ceeafb79799409c384a01fd283feacb14c23",
+      "bytes": 21586,
+      "path": "target/task-tmp/chunked-massive/integration/styled-http-final/failure-oracle-paint.png",
+      "sha256": "bf4d8e07c481170725373d5a4101e8254d91c9a00e518f6cd6b44e4ef0269e2e"
+    },
+    "target/task-tmp/chunked-massive/integration/styled-http-final/failure-retained-paint.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/bf4d8e07c481170725373d5a4101e8254d91c9a00e518f6cd6b44e4ef0269e2e.gz",
+      "archiveBytes": 19467,
+      "archiveSha256": "8d98470606482b2c80a604fd1678ceeafb79799409c384a01fd283feacb14c23",
+      "bytes": 21586,
+      "path": "target/task-tmp/chunked-massive/integration/styled-http-final/failure-retained-paint.png",
+      "sha256": "bf4d8e07c481170725373d5a4101e8254d91c9a00e518f6cd6b44e4ef0269e2e"
+    },
+    "target/task-tmp/chunked-massive/integration/styled-http-final/oracle-paint.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/59ad8e3454df45c840166fec8ecd570c83770c849751150d1a2a27b59c5c1c27.gz",
+      "archiveBytes": 36204,
+      "archiveSha256": "f13d1e5456289b6c5923158dfd1fd606f5da773573eaeab3ad9e51e3de7c44d9",
+      "bytes": 37298,
+      "path": "target/task-tmp/chunked-massive/integration/styled-http-final/oracle-paint.png",
+      "sha256": "59ad8e3454df45c840166fec8ecd570c83770c849751150d1a2a27b59c5c1c27"
+    },
+    "target/task-tmp/chunked-massive/integration/styled-http-final/oracle.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/92ede045a866d2389cfd4d1a1e2d53dad8f0bdcfd136c7573d1e0495f8d8170e.gz",
+      "archiveBytes": 24723,
+      "archiveSha256": "5cb2451d75def0691342f9bda26f01d8942b84fa85b7b29441d939ec207b336f",
+      "bytes": 25446,
+      "path": "target/task-tmp/chunked-massive/integration/styled-http-final/oracle.png",
+      "sha256": "92ede045a866d2389cfd4d1a1e2d53dad8f0bdcfd136c7573d1e0495f8d8170e"
+    },
+    "target/task-tmp/chunked-massive/integration/styled-http-final/oracle.xybf": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/14dbce1493725df83598394adb9eb8949147c424f081a662ac9d7409af946e6b.gz",
+      "archiveBytes": 1814,
+      "archiveSha256": "9902ffb8e2e9346dacd5ddd81c6edc6b494f65a4d50a93efa33b6a870df5b1a4",
+      "bytes": 4640,
+      "path": "target/task-tmp/chunked-massive/integration/styled-http-final/oracle.xybf",
+      "sha256": "14dbce1493725df83598394adb9eb8949147c424f081a662ac9d7409af946e6b"
+    },
+    "target/task-tmp/chunked-massive/integration/styled-http-final/overview-control-paint.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/b12e56f7150d7e1722bf0933ed6ad3f8fa3eb72fd41f85c1de8e74eba1229cd4.gz",
+      "archiveBytes": 10771,
+      "archiveSha256": "756a53f797991573af719dba1d52f06fbe0f6ac4e06343dc012632495dc18f1b",
+      "bytes": 11732,
+      "path": "target/task-tmp/chunked-massive/integration/styled-http-final/overview-control-paint.png",
+      "sha256": "b12e56f7150d7e1722bf0933ed6ad3f8fa3eb72fd41f85c1de8e74eba1229cd4"
+    },
+    "target/task-tmp/chunked-massive/integration/styled-http-final/overview-control.xybf": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/171c1533c8711f147be9c54183de2f5fbc6c2d516d56d707d3f465c1a731aa58.gz",
+      "archiveBytes": 6788,
+      "archiveSha256": "34d5b58f14893dbef4f3f7882ccfc1e473b823d7359a412d27b300a455953e8d",
+      "bytes": 17528,
+      "path": "target/task-tmp/chunked-massive/integration/styled-http-final/overview-control.xybf",
+      "sha256": "171c1533c8711f147be9c54183de2f5fbc6c2d516d56d707d3f465c1a731aa58"
+    },
+    "target/task-tmp/chunked-massive/integration/styled-http-final/partial-oracle-paint.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/78b9b1f33e41a898c9370da135c94e548121ecf62f0298ac86d4c54894a311e7.gz",
+      "archiveBytes": 3491,
+      "archiveSha256": "08fafdcef3d1b1487055a1285d2f3c651288cf53cec0e280b3810b03389e1023",
+      "bytes": 5276,
+      "path": "target/task-tmp/chunked-massive/integration/styled-http-final/partial-oracle-paint.png",
+      "sha256": "78b9b1f33e41a898c9370da135c94e548121ecf62f0298ac86d4c54894a311e7"
+    },
+    "target/task-tmp/chunked-massive/integration/styled-http-final/partial-retained-paint.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/78b9b1f33e41a898c9370da135c94e548121ecf62f0298ac86d4c54894a311e7.gz",
+      "archiveBytes": 3491,
+      "archiveSha256": "08fafdcef3d1b1487055a1285d2f3c651288cf53cec0e280b3810b03389e1023",
+      "bytes": 5276,
+      "path": "target/task-tmp/chunked-massive/integration/styled-http-final/partial-retained-paint.png",
+      "sha256": "78b9b1f33e41a898c9370da135c94e548121ecf62f0298ac86d4c54894a311e7"
+    },
+    "target/task-tmp/chunked-massive/integration/styled-http-final/pointer-debug.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/6673c94164cceaffc4be2972db7f549cdb12dfcd90c972771c51e58c5b6bbe33.gz",
+      "archiveBytes": 1849,
+      "archiveSha256": "032c400a29e22a910cf90628156c3473fbd4f43055031513b5ecdd909391cf0e",
+      "bytes": 11455,
+      "path": "target/task-tmp/chunked-massive/integration/styled-http-final/pointer-debug.json",
+      "sha256": "6673c94164cceaffc4be2972db7f549cdb12dfcd90c972771c51e58c5b6bbe33"
+    },
+    "target/task-tmp/chunked-massive/integration/styled-http-final/refined-paint.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/59ad8e3454df45c840166fec8ecd570c83770c849751150d1a2a27b59c5c1c27.gz",
+      "archiveBytes": 36204,
+      "archiveSha256": "f13d1e5456289b6c5923158dfd1fd606f5da773573eaeab3ad9e51e3de7c44d9",
+      "bytes": 37298,
+      "path": "target/task-tmp/chunked-massive/integration/styled-http-final/refined-paint.png",
+      "sha256": "59ad8e3454df45c840166fec8ecd570c83770c849751150d1a2a27b59c5c1c27"
+    },
+    "target/task-tmp/chunked-massive/integration/styled-http-final/refined.png": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/92ede045a866d2389cfd4d1a1e2d53dad8f0bdcfd136c7573d1e0495f8d8170e.gz",
+      "archiveBytes": 24723,
+      "archiveSha256": "5cb2451d75def0691342f9bda26f01d8942b84fa85b7b29441d939ec207b336f",
+      "bytes": 25446,
+      "path": "target/task-tmp/chunked-massive/integration/styled-http-final/refined.png",
+      "sha256": "92ede045a866d2389cfd4d1a1e2d53dad8f0bdcfd136c7573d1e0495f8d8170e"
+    },
+    "target/task-tmp/chunked-massive/integration/styled-http-final/report.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/8b2814317cb7671dd665e81756d9c35dff95af1bb89b78bc2be6218675fc5fd4.gz",
+      "archiveBytes": 3219,
+      "archiveSha256": "a2a748856800d0074f0a960c8a058116aa1fcb0259a1b8ac85cacb5d32e51f71",
+      "bytes": 25393,
+      "path": "target/task-tmp/chunked-massive/integration/styled-http-final/report.json",
+      "sha256": "8b2814317cb7671dd665e81756d9c35dff95af1bb89b78bc2be6218675fc5fd4"
+    },
+    "target/task-tmp/chunked-massive/integration/typing-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd",
+      "bytes": 19,
+      "path": "target/task-tmp/chunked-massive/integration/typing-final.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/chunked-massive/integration/typing-scoped-r2.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd",
+      "bytes": 19,
+      "path": "target/task-tmp/chunked-massive/integration/typing-scoped-r2.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/chunked-massive/integration/typing-scoped.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/d8c825a286ee73bdaf65c9627c52ca8fa77870053895a30513d5dcef904f3d3f.gz",
+      "archiveBytes": 270,
+      "archiveSha256": "2358e60d093331dd932ea0ab5e273cda7cc728befe922b0f6555abd3c8925815",
+      "bytes": 1076,
+      "path": "target/task-tmp/chunked-massive/integration/typing-scoped.log",
+      "sha256": "d8c825a286ee73bdaf65c9627c52ca8fa77870053895a30513d5dcef904f3d3f"
+    },
+    "target/task-tmp/chunked-massive/integration/validators.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/edff81168bb26e4b797573f88b654facac610e39354a0e932449cc1eadaa2ce4.gz",
+      "archiveBytes": 216,
+      "archiveSha256": "7353ea4d6654299e235231ddf4c107591e9bb9e61a25e244b936c3fba7cf6b3d",
+      "bytes": 894,
+      "path": "target/task-tmp/chunked-massive/integration/validators.json",
+      "sha256": "edff81168bb26e4b797573f88b654facac610e39354a0e932449cc1eadaa2ce4"
+    },
+    "target/task-tmp/chunked-massive/integration/validators.py": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/28b80ccba1deecb6ae27a334c37a8c9d3f3aaed5c550892ab3d2c1110957d30b.gz",
+      "archiveBytes": 445,
+      "archiveSha256": "3d40310756c1c75c57d9b126d50e0a55e39c60000379431773b6497853bb9ad6",
+      "bytes": 939,
+      "path": "target/task-tmp/chunked-massive/integration/validators.py",
+      "sha256": "28b80ccba1deecb6ae27a334c37a8c9d3f3aaed5c550892ab3d2c1110957d30b"
+    },
+    "target/task-tmp/chunked-massive/integration/verify-format.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/413a709001976657cb743636fd34e48fc41d8d302d665460d3f874b3313da127.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "8d0525b20a8061b8cfed186f3e9acc067824d7316cd6cf3e3fe158909cda1bc3",
+      "bytes": 19,
+      "path": "target/task-tmp/chunked-massive/integration/verify-format.log",
+      "sha256": "413a709001976657cb743636fd34e48fc41d8d302d665460d3f874b3313da127"
+    },
+    "target/task-tmp/chunked-massive/integration/verify-negative.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/e72e283ad78511f048730960efe662bea06dd1b81cab95afbf02fd6b7780c309.gz",
+      "archiveBytes": 132,
+      "archiveSha256": "128dafecc518a17190a5da9d038151447089e8b8d83bd1c1bc068c7bade4dba8",
+      "bytes": 223,
+      "path": "target/task-tmp/chunked-massive/integration/verify-negative.json",
+      "sha256": "e72e283ad78511f048730960efe662bea06dd1b81cab95afbf02fd6b7780c309"
+    },
+    "target/task-tmp/chunked-massive/integration/verify-negative.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/e72e283ad78511f048730960efe662bea06dd1b81cab95afbf02fd6b7780c309.gz",
+      "archiveBytes": 132,
+      "archiveSha256": "128dafecc518a17190a5da9d038151447089e8b8d83bd1c1bc068c7bade4dba8",
+      "bytes": 223,
+      "path": "target/task-tmp/chunked-massive/integration/verify-negative.log",
+      "sha256": "e72e283ad78511f048730960efe662bea06dd1b81cab95afbf02fd6b7780c309"
+    },
+    "target/task-tmp/chunked-massive/integration/verify-negative.py": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/a07c05d6f90dc51f5f95cd60c1abc13c1d66286d5162c78c666e4873c606d5f9.gz",
+      "archiveBytes": 884,
+      "archiveSha256": "34d050393931f895557dd748e0c5e46f771879978bbf18be15083692fd837802",
+      "bytes": 1713,
+      "path": "target/task-tmp/chunked-massive/integration/verify-negative.py",
+      "sha256": "a07c05d6f90dc51f5f95cd60c1abc13c1d66286d5162c78c666e4873c606d5f9"
+    },
+    "target/task-tmp/chunked-massive/integration/verify-preservation.py": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/3c79070014778514ab48ec0e0e9b02959b227820231ef1dd1d7bbf58968e0d7d.gz",
+      "archiveBytes": 630,
+      "archiveSha256": "61124d5dae84d8aae17c66253417696c72f10caa8ca9fa8651625dbd5ef8be7c",
+      "bytes": 1092,
+      "path": "target/task-tmp/chunked-massive/integration/verify-preservation.py",
+      "sha256": "3c79070014778514ab48ec0e0e9b02959b227820231ef1dd1d7bbf58968e0d7d"
+    },
+    "target/task-tmp/chunked-massive/integration/wasm-declarations-final.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "bytes": 0,
+      "path": "target/task-tmp/chunked-massive/integration/wasm-declarations-final.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/chunked-massive/io-validation.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/89c8ad263d91aefc29bc0aed75db6f14563b21845b7c558c87b047b46dc325e1.gz",
+      "archiveBytes": 432,
+      "archiveSha256": "29ea403904d76f3a59b520df9285ebde4679304251951ea3e56fa5587000d8ea",
+      "bytes": 1040,
+      "path": "target/task-tmp/chunked-massive/io-validation.json",
+      "sha256": "89c8ad263d91aefc29bc0aed75db6f14563b21845b7c558c87b047b46dc325e1"
+    },
+    "target/task-tmp/chunked-massive/io-validation.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/89c8ad263d91aefc29bc0aed75db6f14563b21845b7c558c87b047b46dc325e1.gz",
+      "archiveBytes": 432,
+      "archiveSha256": "29ea403904d76f3a59b520df9285ebde4679304251951ea3e56fa5587000d8ea",
+      "bytes": 1040,
+      "path": "target/task-tmp/chunked-massive/io-validation.log",
+      "sha256": "89c8ad263d91aefc29bc0aed75db6f14563b21845b7c558c87b047b46dc325e1"
+    },
+    "target/task-tmp/chunked-massive/journey.mjs": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/fd5c738375de09d55d08c03a66b3448a8dc8c432cf9421efcb4ccbf025201a3a.gz",
+      "archiveBytes": 4387,
+      "archiveSha256": "2b7f0c4835635eaae34cf4b1a0edc2d26687d6d4608ea21e7433401ff8340fdc",
+      "bytes": 11820,
+      "path": "target/task-tmp/chunked-massive/journey.mjs",
+      "sha256": "fd5c738375de09d55d08c03a66b3448a8dc8c432cf9421efcb4ccbf025201a3a"
+    },
+    "target/task-tmp/chunked-massive/reference.xygc": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/91b8164a903aec70988957ec88eaf7dd81815799a6864d45f70ee6f384783bf4.gz",
+      "archiveBytes": 47946,
+      "archiveSha256": "3b21586fd796eba551f2b665036d50dd3ddada1e6e94913aaec0ef3d7508a320",
+      "bytes": 184784,
+      "path": "target/task-tmp/chunked-massive/reference.xygc",
+      "sha256": "91b8164a903aec70988957ec88eaf7dd81815799a6864d45f70ee6f384783bf4"
+    },
+    "target/task-tmp/chunked-massive/small-generate.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "bytes": 0,
+      "path": "target/task-tmp/chunked-massive/small-generate.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/chunked-massive/small-native.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/3fd13491b43cc49dfc00fb470b612b2cc72ee916f55f82747b09beb720454c3a.gz",
+      "archiveBytes": 190,
+      "archiveSha256": "dbdd354db5cb7545c64399e5cd3f4c5f34b68d3c12122fb3182c168efdbefe7a",
+      "bytes": 363,
+      "path": "target/task-tmp/chunked-massive/small-native.log",
+      "sha256": "3fd13491b43cc49dfc00fb470b612b2cc72ee916f55f82747b09beb720454c3a"
+    },
+    "target/task-tmp/chunked-massive/small-verify.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/c300b6c8cf0583671648f9483944df9210a53be533c5dd480e400ab50bbcffcf.gz",
+      "archiveBytes": 55,
+      "archiveSha256": "0f4ba2ea8f6c79700d11343b3a2ccbd5e7da8dc944f80b04cd4c753c013a97ff",
+      "bytes": 44,
+      "path": "target/task-tmp/chunked-massive/small-verify.log",
+      "sha256": "c300b6c8cf0583671648f9483944df9210a53be533c5dd480e400ab50bbcffcf"
+    },
+    "target/task-tmp/chunked-massive/small.xygc": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/91b8164a903aec70988957ec88eaf7dd81815799a6864d45f70ee6f384783bf4.gz",
+      "archiveBytes": 47946,
+      "archiveSha256": "3b21586fd796eba551f2b665036d50dd3ddada1e6e94913aaec0ef3d7508a320",
+      "bytes": 184784,
+      "path": "target/task-tmp/chunked-massive/small.xygc",
+      "sha256": "91b8164a903aec70988957ec88eaf7dd81815799a6864d45f70ee6f384783bf4"
+    },
+    "target/task-tmp/chunked-massive/small.xygc.generation.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/ae17e7aa58952fe9a0b2b22f26be21ac934d6211340664302cee9a81347aed04.gz",
+      "archiveBytes": 539,
+      "archiveSha256": "a2d69797a5614eaba4bdec4c205f7d992da405882372585883d8a63ed26a436c",
+      "bytes": 993,
+      "path": "target/task-tmp/chunked-massive/small.xygc.generation.json",
+      "sha256": "ae17e7aa58952fe9a0b2b22f26be21ac934d6211340664302cee9a81347aed04"
+    },
+    "target/task-tmp/chunked-massive/small.xygc.oracle.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/aee875901e6177fedd9682cd17a7594ddf3328f9e39a91d199b7c9031c79f217.gz",
+      "archiveBytes": 15857,
+      "archiveSha256": "badcaddfaa4d1d6875a3d3637936431561e084a9ecfad3e34f4f38b528f6ff49",
+      "bytes": 105230,
+      "path": "target/task-tmp/chunked-massive/small.xygc.oracle.json",
+      "sha256": "aee875901e6177fedd9682cd17a7594ddf3328f9e39a91d199b7c9031c79f217"
+    },
+    "target/task-tmp/chunked-massive/source-4p5b.xygc.generation.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/1f1c0f87c31aed172746596dc74d24cc17d6749b9164522681fa341d7077e394.gz",
+      "archiveBytes": 562,
+      "archiveSha256": "600577b2f7f19b59f6430232a7a6e60ef76d03357ffca26e37c98d60c7125229",
+      "bytes": 1023,
+      "path": "target/task-tmp/chunked-massive/source-4p5b.xygc.generation.json",
+      "sha256": "1f1c0f87c31aed172746596dc74d24cc17d6749b9164522681fa341d7077e394"
+    },
+    "target/task-tmp/chunked-massive/source-4p5b.xygc.oracle.json": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/a780f831854c6ba5f649d324013d0d2e71b26750b00668d44361481d3046254a.gz",
+      "archiveBytes": 254822,
+      "archiveSha256": "43a5d986431304bfc33c1ec605cd7fba571491ad2366caf39f7b411ab053ea70",
+      "bytes": 2372209,
+      "path": "target/task-tmp/chunked-massive/source-4p5b.xygc.oracle.json",
+      "sha256": "a780f831854c6ba5f649d324013d0d2e71b26750b00668d44361481d3046254a"
+    },
+    "target/task-tmp/chunked-massive/source-reads-r4.strace": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/f10345d602a43c49999330944ced0c1ecdee5a1a358667cd47ea22609c3a37c1.gz",
+      "archiveBytes": 1560,
+      "archiveSha256": "d3d27c3f65245b7ed679889959fe5823013df2b4956354117d739055ebf28dbd",
+      "bytes": 9978,
+      "path": "target/task-tmp/chunked-massive/source-reads-r4.strace",
+      "sha256": "f10345d602a43c49999330944ced0c1ecdee5a1a358667cd47ea22609c3a37c1"
+    },
+    "target/task-tmp/chunked-massive/source-reads-r5.strace": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/f5198284fda46992dfee846f4e2ff10665a44064b3579df5ef200dbe06d10552.gz",
+      "archiveBytes": 1599,
+      "archiveSha256": "04f33ba87ed574a4ff90119b094e41c44435fa7a36dc9b82c1735372c9b2852c",
+      "bytes": 10406,
+      "path": "target/task-tmp/chunked-massive/source-reads-r5.strace",
+      "sha256": "f5198284fda46992dfee846f4e2ff10665a44064b3579df5ef200dbe06d10552"
+    },
+    "target/task-tmp/chunked-massive/verify-4p5b.log": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/5566c86a74c3f1f7b459c232d8b20217a7a0e91bf9c79687e8f234aa482dbe0b.gz",
+      "archiveBytes": 522,
+      "archiveSha256": "110fa5b6c537fc8ba194931f8e87c5400aa92acf441ea7ab99adb7609668e24f",
+      "bytes": 3720,
+      "path": "target/task-tmp/chunked-massive/verify-4p5b.log",
+      "sha256": "5566c86a74c3f1f7b459c232d8b20217a7a0e91bf9c79687e8f234aa482dbe0b"
+    }
+  },
+  "failures": "All retained failed setup, assertion and prior CI attempts remain failures; see README and archived raw logs",
+  "fresh": {
+    "abiSmoke": {
+      "checks": 673,
+      "exit": 0,
+      "log": "target/task-tmp/chunked-massive/integration/abi-final.log"
+    },
+    "ciOtherMakeTargetModules": {
+      "log": "target/task-tmp/chunked-massive/integration/ci-remaining-final.log",
+      "passed": 106
+    },
+    "ciWorkflowCommand": {
+      "exit": 0,
+      "log": "target/task-tmp/chunked-massive/integration/ci-workflow-final.log"
+    },
+    "coreFixtureAndWorkflowTests": {
+      "log": "target/task-tmp/chunked-massive/integration/core-ci-final.log",
+      "passed": 684
+    },
+    "finalRealCrLfAfterExplicitPins": {
+      "log": "target/task-tmp/chunked-massive/integration/core-lf-final.log",
+      "passed": 7
+    },
+    "foundation": {
+      "exit": 0,
+      "log": "target/task-tmp/chunked-massive/integration/foundation-final.log"
+    },
+    "fullNode": {
+      "existingSkips": 2,
+      "log": "target/task-tmp/chunked-massive/integration/node-full-final.log",
+      "passed": 1144
+    },
+    "fullSourceScan": {
+      "log": "target/task-tmp/chunked-massive/verify-4p5b.log",
+      "passed": true
+    },
+    "historicalEvidencePreservation": [
+      {
+        "historicalEvidenceGitBlobsUnchanged": 16200,
+        "parent": "a0a5087ef2fe3326155d0eddad647f9d80d72a31"
+      },
+      {
+        "historicalEvidenceGitBlobsUnchanged": 16169,
+        "parent": "87ad5d739d139be7b4a15b41a3015d15b77d67aa"
+      }
+    ],
+    "hooks": {
+      "exit": 0,
+      "log": "target/task-tmp/chunked-massive/integration/hooks-sealed-final.log"
+    },
+    "independentVerifierNegatives": {
+      "log": "target/task-tmp/chunked-massive/integration/verify-negative.log",
+      "passed": 3
+    },
+    "installedStyledJupyter": {
+      "log": "target/task-tmp/chunked-massive/integration/installed-styled-final-isolated.log",
+      "passed": 1
+    },
+    "python312Lifecycle": {
+      "deselectedBrowserCases": 2,
+      "log": "target/task-tmp/chunked-massive/integration/python312-lifecycle-final.log",
+      "passed": 11
+    },
+    "pythonStyledAndFixture": {
+      "log": "target/task-tmp/chunked-massive/integration/python-styled-final.log",
+      "passed": 16
+    },
+    "ruff": {
+      "exit": 0,
+      "logs": [
+        "target/task-tmp/chunked-massive/integration/ruff-sealed-final.log",
+        "target/task-tmp/chunked-massive/integration/format-sealed-final.log"
+      ]
+    },
+    "scopedTyping": {
+      "exit": 0,
+      "log": "target/task-tmp/chunked-massive/integration/typing-final.log"
+    },
+    "styledHttpAndUnit": {
+      "log": "target/task-tmp/chunked-massive/integration/node-styled-settled.log",
+      "passed": 10
+    },
+    "validators": [
+      {
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "python",
+          "scripts/gen_abi_manifest.py",
+          "--check"
+        ],
+        "exit": 0,
+        "name": "abi-declarations"
+      },
+      {
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "python",
+          "scripts/gen_wasm_abi.py",
+          "--check"
+        ],
+        "exit": 0,
+        "name": "wasm-declarations"
+      },
+      {
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "python",
+          "scripts/verify_wasm_assets.py"
+        ],
+        "exit": 0,
+        "name": "assets"
+      },
+      {
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "python",
+          "scripts/verify_ownership.py"
+        ],
+        "exit": 0,
+        "name": "ownership"
+      },
+      {
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "python",
+          "scripts/check_release_inventory.py"
+        ],
+        "exit": 0,
+        "name": "inventory"
+      }
+    ]
+  },
+  "inherited": [
+    "a0 root product/source-bound qualification",
+    "87 producer proof remains receipt-only, no independent approval due to repaired P2",
+    "Rust/native/WASM compilation after 298 input equality checks"
+  ],
+  "installedFinalWheel": {
+    "archive": {
+      "archive": "spec/performance/chunked-beyond-ram-native-2026-11-08/evidence/7ca29ce8a7a921832bf15f4bdac06b4cf3d837c58aa5f83bdbe8170d1f45773b.gz",
+      "archiveBytes": 6324272,
+      "archiveSha256": "08df02ba08509a036cdba38473c9c41018d081b5d947b353e34b2cf7543554af",
+      "bytes": 6338876,
+      "path": "/var/tmp/xyg-chunked-installed-final-20261108-c/test_installed_kernel_chunked_0/wheel/xyg-0.0.1.dev3121+a0a5087ef-py3-none-linux_x86_64.whl",
+      "sha256": "7ca29ce8a7a921832bf15f4bdac06b4cf3d837c58aa5f83bdbe8170d1f45773b"
+    },
+    "nativeAndClientMatchPinned": true,
+    "sourceMatchesCurrent": true
+  },
+  "parents": [
+    "a0a5087ef2fe3326155d0eddad647f9d80d72a31",
+    "87ad5d739d139be7b4a15b41a3015d15b77d67aa"
+  ],
+  "protection": {
+    "combinedPaths": [
+      ".gitattributes",
+      "examples/vanilla-ts/README.md",
+      "examples/vanilla-ts/chunked-native-host.mjs",
+      "packages/xy-node/src/chunked-live.js",
+      "packages/xy-node/test/chunked-live-browser.test.mjs",
+      "packages/xy-node/test/chunked-live.test.mjs",
+      "python/xyg/_chunked_live.py",
+      "spec/design-dossier.md",
+      "spec/design/chunked-native-viewport.md",
+      "tests/test_chunked_installed.py",
+      "tests/test_chunked_live.py",
+      "tests/test_graphforge_contract_corpus.py"
+    ],
+    "path": "spec/performance/chunked-beyond-ram-native-2026-11-08/protection.json",
+    "protectedPaths": 20201,
+    "sha256": "7763c4e2bc35f50cc5c14ef4e0683c3ac4692a494a87e4d0073fad720909a9af"
+  },
+  "readmeSha256": "11acb3369560a21fe32de69afa544cdc9f68f8d1ac701dfba66933f382571591",
+  "recordedAt": "2026-11-08T02:18:03.587225+00:00",
+  "remaining": [
+    "Independent final-diff review",
+    "Fresh hosted CI and mandatory merge queue",
+    "Global CPU/source/WASM/GPU budgets and default qualification",
+    "Gradual overview detail, installed beyond-RAM, browser/WASM paging, linked-filter spill",
+    "All-host exports/accessibility/massive pressure/performance and competitors"
+  ],
+  "schemaVersion": 1,
+  "scope": "Bounded native navigation/style integration and actual materialized beyond-RAM Node functional proof; milestones remain open",
+  "source": {
+    "allocatedBytes": 72003354624,
+    "bytes": 72003345112,
+    "committed": false,
+    "fullScanEveryDetailRow": true,
+    "path": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/chunked-massive/source-4p5b.xygc",
+    "rows": 4500000000,
+    "sha256FromCompleteScan": "d97c734e31fc8fa31d5bd543c83f52bd9dbd7b5ca6e96244c82feb1b931894a9"
+  },
+  "sourceBindings": {
+    "path": "spec/performance/chunked-beyond-ram-native-2026-11-08/current-bindings.json",
+    "sha256": "cf4dd57b01056ed232f442f4fd16e975eec555c0a9a8f150d18a75031f60b0de"
+  },
+  "wasm": {
+    "gzip6": 784435,
+    "raw": 1897547
+  }
+}

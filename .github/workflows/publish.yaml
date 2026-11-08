@@ -267,16 +267,12 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
-      - name: Build raw browser adapter without raster or PNG
+      - name: Build raw browser adapter with shared frozen PNG
         run: |
           set -euo pipefail
           cargo build -p xyg-wasm --release --target wasm32-unknown-unknown
-          cargo tree -p xyg-wasm --target wasm32-unknown-unknown | tee wasm-tree.txt
-          test -s wasm-tree.txt
-          if grep -Eq '(^| )png v' wasm-tree.txt; then
-            echo "::error::direct-browser xyg-wasm unexpectedly enables native PNG"
-            exit 1
-          fi
+          cargo tree -p xyg-wasm --target wasm32-unknown-unknown --edges normal --prefix none --format '{p}|{f}' --color never | tee wasm-tree.txt
+          python3 scripts/check_wasm_features.py wasm-tree.txt
       - name: Build static worker and package WASM artifact
         run: |
           npm ci

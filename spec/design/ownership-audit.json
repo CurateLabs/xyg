@@ -435,6 +435,14 @@
       "rationale": "The safe engine is the single implementation of parity-affecting behavior."
     },
     {
+      "path": "crates/xyg-engine/src/calendar.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
       "path": "crates/xyg-engine/src/canonical_drill.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",
@@ -2035,6 +2043,22 @@
       "rationale": "The safe engine is the single implementation of parity-affecting behavior."
     },
     {
+      "path": "crates/xyg-engine/src/temporal_scene_dense.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/temporal_scene_jobs.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
       "path": "crates/xyg-engine/src/textblock.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",
@@ -2772,6 +2796,14 @@
     },
     {
       "path": "packages/xy-node/src/chunked-columns.js",
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
+      "path": "packages/xy-node/src/chunked-live.js",
       "current_owner": "Node host",
       "policy": "node-host",
       "disposition": "keep-host",
@@ -3548,6 +3580,14 @@
     },
     {
       "path": "python/xyg/_chromium.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_chunked_live.py",
       "current_owner": "Python host",
       "policy": "python-host",
       "disposition": "keep-host",

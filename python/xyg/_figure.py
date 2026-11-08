@@ -85,6 +85,14 @@ class Selection:
         self.per_trace = per_trace  # {trace_id: np.ndarray[uint32]}
 
     @property
+    def source_row_ids(self) -> dict[int, np.ndarray]:
+        """Exact u64 artifact identities for chunked-chart selections."""
+        ids = getattr(self._figure, "_chunked_row_ids", None)
+        if ids is None:
+            return {}
+        return {tid: ids[indices] for tid, indices in self.per_trace.items() if tid == 0}
+
+    @property
     def index(self) -> np.ndarray:
         """Concatenated selected indices across all traces (single-trace charts
         are the common case, where this is just that trace's indices)."""
@@ -119,6 +127,11 @@ class Figure(AnnotationsMixin, PayloadMixin):
     # Set only by the public temporal composition adapter; ordinary figures
     # retain the existing absent-field behavior in Scene/export dispatch.
     _temporal_composition: TemporalChart
+    # Annotation-only: ordinary figures keep these fields absent.
+    _chunked_row_ids: Any
+    _chunked_provenance: dict[str, Any]
+    _chunked_generation: str
+    _chunked_live: tuple[str, dict[str, int]]
 
     def __init__(
         self,

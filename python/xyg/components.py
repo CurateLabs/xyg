@@ -3800,6 +3800,10 @@ class Chart(Component):
             budget_bytes=budget_bytes,
         )
 
+    _chunked_live: tuple[str, dict[str, int]]
+    source_row_ids: Any
+    source_provenance: dict[str, Any]
+
     def __init__(
         self,
         kind: str,
@@ -4297,6 +4301,12 @@ class Chart(Component):
         fig._validate_interaction()
         if self._composition_legend is not None:
             fig.legend_options = {**fig.legend_options, **self._composition_legend}
+        source = getattr(self, "_chunked_live", None)
+        if source is not None:
+            fig._chunked_row_ids = self.source_row_ids
+            fig._chunked_provenance = self.source_provenance
+            fig._chunked_generation = str(source[1]["generation"])
+            fig._chunked_live = source
         self._figure = fig
         return fig
 
@@ -4329,6 +4339,10 @@ class Chart(Component):
         the chart are wired onto it. ``wasm_ticks`` is an explicit
         ``worker_url`` / ``wasm`` pair for hosted Rust/WASM ticks.
         """
+        if self._widget is not None and getattr(
+            getattr(self._widget, "_chunked_binding", None), "closed", False
+        ):
+            self._widget = None
         if self._widget is None:
             from .widget import FigureWidget
 

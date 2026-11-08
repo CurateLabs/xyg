@@ -1014,3 +1014,6 @@ receipts. ABI404/WASM36 add the shared XYFX retained Scene export/recovery path;
 Rust owns bounded phase splitting, shared-SDF contours, carrier consistency and
 actual private Worker frame acquisition. Native PNG uses the existing raster
 renderer; WASM PNG remains an explicit resource error under unchanged caps.
+
+Native chunked-chart viewport continuation and its remaining acceptance are specified
+in [the local native viewport contract](chunked-native-viewport.md).

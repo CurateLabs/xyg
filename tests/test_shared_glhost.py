@@ -309,25 +309,27 @@ _FIFTY_VIEW_PROBE = r"""
 """
 
 
-def _sixty_view_shader_cache_probe() -> str:
-    figures = [
-        xyg.chart(xyg.line(x=[0, 1, 2], y=[0, 1, 0]), width=62, height=82).figure(),
-        xyg.chart(xyg.scatter(x=[0, 1, 2], y=[0, 1, 0]), width=62, height=82).figure(),
-        xyg.chart(xyg.hist([0, 1, 1, 2], bins=3), width=62, height=82).figure(),
-        xyg.chart(
-            xyg.bar(
-                ["a", "b"],
-                [[1, 2], [2, 1]],
-                mode="grouped",
-                series=["A", "B"],
-            ),
-            width=62,
-            height=82,
-        ).figure(),
-        xyg.chart(xyg.heatmap([[0, 1], [2, 3]], colormap="turbo"), width=62, height=82).figure(),
+def _mixed_chart_payloads(
+    width: int = 62, height: int = 82, *, keyboard: bool = False
+) -> list[dict]:
+    marks = [
+        xyg.line(x=[0, 1, 2], y=[0, 1, 0], color="#ff0000" if keyboard else None),
+        xyg.scatter(x=[0, 1, 2], y=[0, 1, 0], color="#0000ff" if keyboard else None),
+        xyg.hist([0, 1, 1, 2], bins=3),
+        xyg.bar(
+            ["a", "b"],
+            [[1, 2], [2, 1]],
+            mode="grouped",
+            series=["A", "B"],
+        ),
+        xyg.heatmap([[0, 1], [2, 3]], colormap="turbo"),
     ]
     payloads = []
-    for figure in figures:
+    for mark in marks:
+        children = [mark]
+        if keyboard:
+            children.append(xyg.interaction_config(hover=True, click=True))
+        figure = xyg.chart(*children, width=width, height=height).figure()
         spec, blob = figure.build_payload()
         payloads.append(
             {
@@ -336,6 +338,11 @@ def _sixty_view_shader_cache_probe() -> str:
             }
         )
 
+    return payloads
+
+
+def _sixty_view_shader_cache_probe() -> str:
+    payloads = _mixed_chart_payloads()
     probe = r"""
   (() => {
     const payloads = __XY_MIXED_PAYLOADS__;
@@ -1844,3 +1851,5 @@ def test_dashboard_gpu_allocation_oracle_and_lifecycle(tmp_path: Path) -> None:
     )
     report = json.loads((tmp_path / "dashboard-gpu" / "report.json").read_text())
     assert report["result"], report
+    assert report["mixed"]["charts"] == 32, report
+    assert report["mixed"]["remainingAllocations"] == 0, report

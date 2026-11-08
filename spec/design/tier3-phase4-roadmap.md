@@ -404,3 +404,9 @@ receipt is `spec/performance/chunked-chart-snapshots-2026-11-07/README.md`.
 No larger-than-RAM, automatic live refinement, browser/WASM orchestration,
 competitive performance, remote-source or full #110/#109/#113 acceptance claim
 follows from this bounded snapshot integration.
+
+Native local chunked charts now refine committed viewport gestures through the
+existing renderer, with exact accepted-frame source identity and cancellation.
+The installed Jupyter/anywidget and public Node binary HTTP journeys, lifecycle
+contract, required CI discovery and remaining issue-wide acceptance are specified
+in [the local native viewport contract](chunked-native-viewport.md).
