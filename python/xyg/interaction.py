@@ -250,7 +250,7 @@ def _json_scalar(value: Any) -> Any:
 
 def row_dict(fig: "Figure", t: "Trace", idx: int) -> dict[str, Any]:
     """Project one canonical trace row using the exact pick-result shape."""
-    del fig  # Kept in the signature for symmetry with other interaction helpers.
+
     if t.grid_shape is not None:
         # Heatmap x/y contain only the outer edges. The client already has the
         # cell center (including categorical labels), so return only grid data.
@@ -285,6 +285,9 @@ def row_dict(fig: "Figure", t: "Trace", idx: int) -> dict[str, Any]:
         "x_kind": t.x.kind,
         "y_kind": t.y.kind,
     }
+    source_ids = getattr(fig, "_chunked_row_ids", None)
+    if source_ids is not None and t.id == 0:
+        out["source_row_id"] = str(int(source_ids[idx]))
     cc = t.color_ch
     if cc and cc.mode == "continuous" and cc.values is not None:
         out["color_value"] = _json_scalar(float(cc.values[idx]))

@@ -232,8 +232,8 @@ class ChunkedColumns:
 
         No range reads detail for the initial overview. Explicit ranges use
         Rust admission and paged selection; an oversized scene fails closed.
-        Returned charts are snapshots. Keep this source open for navigation,
-        then close it deterministically. ``source_row_ids`` and
+        HTML exports remain snapshots. Notebook widgets own an independent native reader for navigation; close
+        the widget deterministically. ``source_row_ids`` and
         ``source_provenance`` describe the snapshot's canonical source.
         """
         from .components import scatter, scatter_chart
@@ -254,9 +254,13 @@ class ChunkedColumns:
                 page_bytes=page_bytes,
                 generation=generation,
             )
-        chart = scatter_chart(scatter(x, y))
+        chart = scatter_chart(scatter(x, y, density=False))
         chart.source_row_ids = row_ids
         chart.source_provenance = {**provenance, "path": self.path}
+        chart._chunked_live = (
+            self.path,
+            dict(budget_bytes=budget_bytes, page_bytes=page_bytes, generation=generation),
+        )
         return chart
 
     def cancel_before(self, generation: int) -> None:

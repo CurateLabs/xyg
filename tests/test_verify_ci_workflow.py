@@ -5606,6 +5606,8 @@ def test_colored_hardware_environment_ignores_unrelated_comparison_stacks(ceilin
     [
         'export XYG_TEST_CHROMIUM="$XYG_CHROMIUM"',
         "export XY_REQUIRE_BROWSER=1",
+        ".venv/bin/pytest -q tests/test_chunked_live.py tests/test_chunked_lifecycle.py tests/test_chunked_installed.py",
+        ".venv/bin/pytest -q --ignore=tests/test_chunked_live.py --ignore=tests/test_chunked_lifecycle.py --ignore=tests/test_chunked_installed.py",
     ],
 )
 def test_chunked_chart_rendering_cannot_be_disabled_in_ci(tmp_path: Path, command: str) -> None:

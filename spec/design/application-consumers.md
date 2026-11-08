@@ -287,3 +287,9 @@ selecting and closing each port separately can return the same port repeatedly.
 This is not an exclusive lease through packaging and process startup: an external
 process can still race later binding, which remains a failing startup. No browser
 assertion, timeout, host-isolation check or release gate is relaxed.
+
+Native local chunked charts now refine committed viewport gestures through the
+existing renderer, with exact accepted-frame source identity and cancellation.
+The installed Jupyter/anywidget and public Node binary HTTP journeys, lifecycle
+contract, required CI discovery and remaining issue-wide acceptance are specified
+in [the local native viewport contract](chunked-native-viewport.md).

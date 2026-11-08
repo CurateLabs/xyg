@@ -28,10 +28,11 @@ def _artifact(path, rows, chunk_rows=4):
             f.write(struct.pack("<2d", x, y))
 
 
-def _artifact_with_overview(path, rows, chunk_rows=4):
+def _artifact_with_overview(path, rows, chunk_rows=4, overview_indices=None):
     chunks = [rows[i : i + chunk_rows] for i in range(0, len(rows), chunk_rows)]
     data_offset = 64 + 48 * len(chunks)
-    overview = [(i, x, y) for i, (x, y) in enumerate(rows)]
+    indices = range(len(rows)) if overview_indices is None else overview_indices
+    overview = [(i, *rows[i]) for i in indices]
     header = bytearray(64)
     struct.pack_into(
         "<4sIQIIQQI",

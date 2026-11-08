@@ -1399,6 +1399,9 @@ These additions use the existing ownership policies without adding a host policy
 | `packages/xy-node/src/temporal-graph-frozen.js` | Node host | `node-host` | `keep-host`; This file is a Node-specific shell around shared engine and paint-client contracts. | — |
 | `js/src/67_frozen_graph.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation. | #59 |
 
+| `python/xyg/_chunked_live.py` | Python host | `python-host` | `keep-host`; bounded native read/ACK lifecycle and exact identity transport | — |
+| `packages/xy-node/src/chunked-live.js` | Node host | `node-host` | `keep-host`; asynchronous native read/ACK lifecycle and exact identity transport | — |
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.
@@ -1549,3 +1552,12 @@ validation, locking and lifetime sequence.
 Both Worker entries call `wasm_frozen_graph.ts` for bounded XYFX byte staging
 and owned output copying. The module and strict-CSP offline classic Worker
 invoke the same Rust export/recovery operation; no export policy enters JS.
+
+Native chunked-chart continuation owns only lifecycle and transport:
+
+| Source | Policy | Disposition |
+| --- | --- | --- |
+| `python/xyg/_chunked_live.py` | python-host | keep-host |
+| `packages/xy-node/src/chunked-live.js` | node-host | keep-host |
+
+Rust retains admission, chunk selection, canonical predicates, identity and paint encoding.

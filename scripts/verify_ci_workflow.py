@@ -2121,7 +2121,8 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         'export XYG_CHROMIUM="$(node -e "console.log(require(\'playwright\').chromium.executablePath())")"',
         'export XYG_TEST_CHROMIUM="$XYG_CHROMIUM"',
         "export XY_REQUIRE_BROWSER=1",
-        ".venv/bin/pytest -q",
+        ".venv/bin/pytest -q tests/test_chunked_live.py tests/test_chunked_lifecycle.py tests/test_chunked_installed.py",
+        ".venv/bin/pytest -q --ignore=tests/test_chunked_live.py --ignore=tests/test_chunked_lifecycle.py --ignore=tests/test_chunked_installed.py",
     )
     graph_step = "GraphForge native/WASM equivalence"
     step_order = list(test_steps)
