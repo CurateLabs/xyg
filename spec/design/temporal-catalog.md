@@ -40,6 +40,20 @@ Source rows are copied into immutable Python tuples/Node frozen row snapshots.
 Line timestamps must be ascending; null rows break runs. No source sort,
 decimation or identity conversion occurs in a host.
 
+Half-open sample membership is distinct from visible line support. The line
+compiler retains only the valid adjacent endpoint needed at each window edge,
+including an endpoint exactly at the upper bound. It clips supporting geometry
+to the window using i128 timestamp differences and interpolation between bounded
+projected ordinates before Scene/f32 lowering. The support retains its authored
+source ID; an interpolated boundary is not a new canonical observation. Null
+rows always break the run. Other instant families continue to exclude upper-
+bound observations. Crossing, duplicate-time, null-gap and signed-extreme
+fixtures exercise the shared native/Worker compiler and existing painter.
+The [line-window correction receipt](../performance/temporal-line-window-2026-11-07/README.md)
+records failing prior artifacts, complete native/Worker Scene oracles and actual
+painted crossings. The combined native405/WASM38 module remains within the fixed
+caps; the earlier package and threshold50 paragraphs below are historical.
+
 Tick policy is integer microsecond ticks below 28 days and Gregorian first-of-
 month ticks above it. Month indices advance through the civil calendar, not
 30-day durations. UTC labels include six fractional digits. Display timezone

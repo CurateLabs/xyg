@@ -140,14 +140,44 @@ pub fn compile(bytes: &[u8], budget: usize) -> Result<Vec<u8>, TemporalError> {
             if (ev[i] != 0 && ends[i] <= lo) || (sv[i] != 0 && starts[i] >= hi) {
                 continue;
             }
-        } else if source.validity()[i] == 0 || starts[i] < lo || starts[i] >= hi {
+        } else if source.validity()[i] == 0
+            || (kind != 3 && (starts[i] < lo || starts[i] >= hi))
+        {
             continue;
         }
-        let a = if interval && sv[i] == 0 {
+        let mut a = if interval && sv[i] == 0 {
             lo
         } else {
             starts[i].max(lo)
         };
+        let mut ordinate = y(values[i]);
+        if kind == 3 {
+            // Half-open sample membership is not segment visibility. Keep just
+            // the valid adjacent support at either window edge, clipped before
+            // Scene/f32 lowering. Null rows still terminate the polyline run.
+            let support = if starts[i] < lo {
+                if i + 1 == n || sv[i + 1] == 0 || starts[i + 1] < lo {
+                    continue;
+                }
+                Some((i, i + 1, lo))
+            } else if starts[i] >= hi {
+                if i == 0 || sv[i - 1] == 0 || starts[i - 1] >= hi {
+                    continue;
+                }
+                Some((i - 1, i, hi))
+            } else {
+                None
+            };
+            if let Some((left, right, edge)) = support {
+                let fraction = (edge as i128 - starts[left] as i128) as f64
+                    / (starts[right] as i128 - starts[left] as i128) as f64;
+                // Projected y is bounded even for opposite finite f64 extremes.
+                // Interpolate there rather than subtracting authored values.
+                let base = y(values[left]);
+                ordinate = base + (y(values[right]) - base) * fraction;
+                a = edge;
+            }
+        }
         let b = if ev[i] == 0 { hi } else { ends[i].min(hi) };
         kinds.push(if interval || kind == 4 {
             2
@@ -160,11 +190,11 @@ pub fn compile(bytes: &[u8], budget: usize) -> Result<Vec<u8>, TemporalError> {
         out_ids.push(ids[i]);
         x0.push(project(a));
         y0.push(if interval {
-            y(values[i]) - 4.0
+            ordinate - 4.0
         } else if kind == 4 {
-            y(values[i]).min(y(0.0))
+            ordinate.min(y(0.0))
         } else {
-            y(values[i])
+            ordinate
         });
         x1.push(if interval {
             project(b)
@@ -174,9 +204,9 @@ pub fn compile(bytes: &[u8], budget: usize) -> Result<Vec<u8>, TemporalError> {
             0.0
         });
         y1.push(if interval {
-            y(values[i]) + 4.0
+            ordinate + 4.0
         } else if kind == 4 {
-            y(values[i]).max(y(0.0))
+            ordinate.max(y(0.0))
         } else {
             0.0
         });
@@ -323,6 +353,54 @@ pub fn temporal_ticks(lo: i64, hi: i64, target: usize) -> Vec<i64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    fn line_request(rows: &[(Option<i64>, f64)], lo: i64, hi: i64) -> Vec<u8> {
+        let mut request = vec![0; 128];
+        request[..4].copy_from_slice(b"XYTM");
+        for (offset, value) in [(4, 1u32), (8, 3), (12, rows.len() as u32), (56, 3), (64, 2)] {
+            request[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
+        }
+        for (offset, value) in [(16, 900f64), (24, 420.), (80, 1.)] {
+            request[offset..offset + 8].copy_from_slice(&value.to_le_bytes());
+        }
+        for (offset, value) in [(32, lo), (40, hi), (48, lo)] {
+            request[offset..offset + 8].copy_from_slice(&value.to_le_bytes());
+        }
+        request[72..80].copy_from_slice(&[31, 119, 180, 255, 31, 119, 180, 255]);
+        request.extend_from_slice(b"UTC");
+        for (i, &(time, value)) in rows.iter().enumerate() {
+            request.extend_from_slice(&time.unwrap_or(0).to_le_bytes());
+            request.extend_from_slice(&0i64.to_le_bytes());
+            request.extend_from_slice(&value.to_le_bytes());
+            request.extend_from_slice(&(i as u64 + 42).to_le_bytes());
+            request.extend_from_slice(&[u8::from(time.is_some()), 0, 0, 0, 0, 0, 0, 0]);
+        }
+        request
+    }
+    #[test]
+    fn line_clips_adjacent_window_support_and_keeps_null_breaks() {
+        let request = line_request(&[(Some(-1), 0.), (Some(11), 12.)], 0, 10);
+        let bytes = compile(&request, MAX_BYTES).unwrap();
+        let scene = crate::scene::SceneDocument::decode(&bytes).unwrap();
+        assert_eq!(scene.record_count(), 2);
+        assert!(scene.to_svg().contains("points=\"65,345 876,75\""));
+        let request = line_request(&[(Some(-1), 0.), (None, 6.), (Some(11), 12.)], 0, 10);
+        let bytes = compile(&request, MAX_BYTES).unwrap();
+        let scene = crate::scene::SceneDocument::decode(&bytes).unwrap();
+        assert_eq!(scene.record_count(), 1);
+        assert!(!scene.to_svg().contains("<polyline"));
+    }
+    #[test]
+    fn line_window_interpolation_handles_extreme_integer_times_and_values() {
+        for values in [[0., 12.], [-f64::MAX, f64::MAX]] {
+            let request = line_request(&[(Some(i64::MIN), values[0]), (Some(i64::MAX), values[1])], -1, 1);
+            let bytes = compile(&request, MAX_BYTES).unwrap();
+            let scene = crate::scene::SceneDocument::decode(&bytes).unwrap();
+            assert_eq!(scene.record_count(), 2);
+            let svg = scene.to_svg();
+            assert!(svg.contains("points=\"65,210 876,210\""));
+            assert!(!svg.contains("NaN") && !svg.contains("Infinity"));
+        }
+    }
     #[test]
     fn extreme_finite_values_remain_visible() {
         for extent in [1e308, f64::MAX] {

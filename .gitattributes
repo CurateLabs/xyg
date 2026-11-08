@@ -1029,3 +1029,8 @@ spec/performance/temporal-aggregate-frozen-2026-11-07/**/*.gz -text
 spec/performance/temporal-aggregate-frozen-2026-11-07/**/*.png -text
 spec/performance/temporal-aggregate-frozen-2026-11-07/**/*.xyfg -text
 scripts/verify_temporal_aggregate_artifacts.py text eol=lf
+
+# Temporal line window clipping and provenance.
+spec/performance/temporal-line-window-2026-11-07/** text eol=lf
+spec/performance/temporal-line-window-2026-11-07/**/*.gz -text
+tests/fixtures/temporal/line-window-edges.json text eol=lf

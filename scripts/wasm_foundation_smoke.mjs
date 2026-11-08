@@ -20,6 +20,7 @@ const allowed = new Set([
   "/spec/wasm/abi.json",
   "/tests/fixtures/temporal/assertion-history.json",
   "/tests/fixtures/temporal/catalog-six-families.json",
+  "/tests/fixtures/temporal/line-window-edges.json",
   "/tests/fixtures/figure_scene_v3.json",
   "/tests/fixtures/authored_scene_v20.json",
   "/tests/fixtures/xyts_cross_host.json",
@@ -176,6 +177,9 @@ try {
         (kind) => !result.temporalCatalogProof.some((entry) => entry.kind === kind)))) {
     throw new Error("browser foundation smoke omitted a temporal catalog family");
   }
+  if (!only && result.temporalLineWindowProof?.length !== 8) {
+    throw new Error("browser foundation smoke omitted temporal line-window coverage");
+  }
   if (!only) console.log(`direct-browser density policy ${JSON.stringify(result.densityPolicy)}`);
   if (!only) console.log(`direct-browser linked density ${JSON.stringify(result.filterDensityProof)}`);
   await page.addScriptTag({ url: `http://127.0.0.1:${address.port}/packages/xy-client/dist/standalone.js` });
@@ -221,6 +225,7 @@ try {
       filterDensityProof: result.filterDensityProof,
       temporalCatalogProof: result.temporalCatalogProof,
       temporalExtremeProof: result.temporalExtremeProof,
+      temporalLineWindowProof: result.temporalLineWindowProof,
       limitations: [
         "Three bounded generated-file cases through each packaged ESM/IIFE entry: absent inline bootstrap, malformed inline bootstrap rejected before Worker allocation, and absent retained source.",
         "Rust produces the overview through the packaged XYAG/XYAO Worker; fixture framing supplies the painter envelope.",

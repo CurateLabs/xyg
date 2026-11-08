@@ -1,13 +1,61 @@
 """Public exact temporal catalog regressions; no host timestamp float ingress."""
 
+import hashlib
+import json
 import struct
 import xml.etree.ElementTree as ET
 from html.parser import HTMLParser
+from pathlib import Path
 
 import pytest
 
 import xyg
 from xyg import _temporal_scene
+
+LINE_WINDOW = json.loads(
+    (Path(__file__).parent / "fixtures/temporal/line-window-edges.json").read_text()
+)
+
+
+@pytest.mark.parametrize("case", LINE_WINDOW["cases"], ids=lambda case: case["name"])
+def test_line_window_clips_support_without_erasing_crossing_segments(case):
+    rows = [
+        (None if t is None else int(t), None, v, i + 42)
+        for i, (t, v) in enumerate(zip(case["times"], case["values"], strict=True))
+    ]
+    chart = xyg.temporal_chart(
+        "line",
+        rows,
+        domain=tuple(map(int, case["domain"])),
+        timezone="UTC",
+        width=LINE_WINDOW["width"],
+        height=LINE_WINDOW["height"],
+        stroke_width=4,
+    )
+    assert hashlib.sha256(chart.figure().to_scene()).hexdigest() == case["sceneSha256"]
+    svg = chart.to_svg()
+    paths = ET.fromstring(svg).findall(".//{*}g[@clip-path]//{*}polyline")
+    points = [
+        list(map(float, point.split(",")))
+        for path in paths
+        for point in path.attrib["points"].split()
+    ]
+    # Singleton runs draw no segment. Null rows must never be bridged.
+    if not case["points"]:
+        assert all(len(path.attrib["points"].split()) < 2 for path in paths)
+    else:
+        assert [v for pair in points for v in pair] == pytest.approx(
+            [v for pair in case["points"] for v in pair], abs=0.001
+        )
+    assert chart.rows == tuple(rows)
+
+
+@pytest.mark.parametrize("kind", ["event", "scatter", "bar"])
+def test_non_line_instant_membership_remains_half_open(kind):
+    chart = xyg.temporal_chart(
+        kind, [(0, None, 1, 42), (10, None, 1, 43)], domain=(0, 10), timezone="UTC"
+    )
+    assert struct.unpack_from("<Q", chart.figure().to_scene(), 16)[0] == 1
 
 
 @pytest.mark.parametrize("kind", _temporal_scene.KINDS)

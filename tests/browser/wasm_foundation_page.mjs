@@ -2297,6 +2297,7 @@ async function run() {
   if (catalogOracle.schema !== "xyg.temporal-catalog-native-oracle/v1" || catalogOracle.cases.length !== 6) throw Error("temporal oracle fixture is incomplete");
   const temporalCatalogProof = [];
   const temporalExtremeProof = [];
+  const temporalLineWindowProof = [];
   const catalogWorker = createXygWasmWorker({workerUrl:"/packages/xy-client/dist/wasm-worker.js", wasm:wasmModule, maxArenaBytes:16*1024*1024});
   const digest = async bytes => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), b=>b.toString(16).padStart(2,"0")).join("");
   await catalogWorker.ready;
@@ -2321,6 +2322,34 @@ async function run() {
         if (!ink) throw Error(`temporal ${oracle.kind} has no source-colored painted marks`);
         temporalCatalogProof.push({kind:oracle.kind,sceneSha256,sceneBytes:scene.byteLength,sourceIds:ids,sourceColorPixels:ink});
       } finally { view?.destroy();host.remove(); }
+    }
+    const lineWindow = await (await fetch("/tests/fixtures/temporal/line-window-edges.json")).json();
+    if (lineWindow.schema !== "xyg.temporal-line-window/v1" || lineWindow.cases.length !== 8) throw Error("line-window fixture is incomplete");
+    for (const fixture of lineWindow.cases) {
+      const request = encodeTemporalScene({kind:"line",rows:fixture.times.map((t,i)=>[t===null?null:BigInt(t),null,fixture.values[i],BigInt(i+42)]),domain:fixture.domain.map(BigInt),timezone:"UTC",width:lineWindow.width,height:lineWindow.height,strokeWidth:4});
+      const scene = await catalogWorker.temporalSceneCompile(request).result;
+      if(await digest(scene)!==fixture.sceneSha256)throw Error(`temporal line-window native/Worker Scene differs: ${fixture.name}`);
+      const host = document.body.appendChild(document.createElement("div"));
+      let view;
+      try {
+        view = await renderWasmScene({el:host,scene,worker:catalogWorker,transfer:false});view._drawNow();
+        const canvas=view.canvas,pixels=canvas.getContext("2d").getImageData(0,0,canvas.width,canvas.height).data;
+        const sourceInk = (at) => Math.abs(pixels[at]-31)<=3 && Math.abs(pixels[at+1]-119)<=3 && Math.abs(pixels[at+2]-180)<=3 && pixels[at+3]>0;
+        const guards=[];
+        for(let i=1;i<fixture.points.length;i++) {
+          const a=fixture.points[i-1],b=fixture.points[i];
+          if(a[0]===b[0]&&a[1]===b[1])continue;
+          const x=(a[0]+b[0])/2,y=(a[1]+b[1])/2;let ink=0;
+          for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++) {
+            const px=Math.round((x-65)*canvas.width/811)+dx,py=Math.round((y-48)*canvas.height/324)+dy;
+            if(px>=0&&px<canvas.width&&py>=0&&py<canvas.height&&sourceInk((py*canvas.width+px)*4))ink++;
+          }
+          if(!ink)throw Error(`temporal line disappeared at window edge: ${fixture.name}`);
+          guards.push(ink);
+        }
+        if(!fixture.points.length)for(let at=0;at<pixels.length;at+=4)if(sourceInk(at))throw Error(`temporal line bridged a null or outside run: ${fixture.name}`);
+        temporalLineWindowProof.push({name:fixture.name,sceneSha256:await digest(scene),guards});
+      } finally {view?.destroy();host.remove();}
     }
     for (const extent of [1e308, Number.MAX_VALUE]) {
       const request = encodeTemporalScene({kind:"scatter",rows:[[-1n,null,-extent,1n],[0n,null,0,2n],[1n,null,extent,3n]],domain:[-2n,8n],timezone:"UTC",width:900,height:420});
@@ -4984,7 +5013,7 @@ async function run() {
   } catch (error) {
     if (!(error instanceof TypeError)) throw error;
   }
-  return { ok: true, densityPolicy, densityNoRefinement, temporalControllerProof, filterDensityProof, temporalCatalogProof, temporalExtremeProof };
+  return { ok: true, densityPolicy, densityNoRefinement, temporalControllerProof, filterDensityProof, temporalCatalogProof, temporalExtremeProof, temporalLineWindowProof };
 }
 
 globalThis.__xygWasmFoundation = run().catch((error) => ({

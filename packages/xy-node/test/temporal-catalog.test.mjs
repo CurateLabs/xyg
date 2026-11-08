@@ -7,6 +7,19 @@ import {temporalSceneCompile} from '../src/temporal-scene.js';
 import {temporalSceneSize} from '../src/temporal-scene-framing.js';
 const oracle=JSON.parse(readFileSync(new URL('../../../tests/fixtures/temporal/catalog-six-families.json',import.meta.url)));
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
+const lineWindow=JSON.parse(readFileSync(new URL('../../../tests/fixtures/temporal/line-window-edges.json',import.meta.url)));
+for(const fixture of lineWindow.cases)test(`temporal line window: ${fixture.name}`,()=>{
+ const rows=fixture.times.map((t,i)=>[t===null?null:BigInt(t),null,fixture.values[i],BigInt(i+42)]);
+ const chart=temporalChart('line',rows,{domain:fixture.domain.map(BigInt),timezone:'UTC',width:lineWindow.width,height:lineWindow.height,strokeWidth:4});
+ assert.equal(digest(new Uint8Array(chart.toScene())),fixture.sceneSha256);
+ const svg=Buffer.from(chart.toSvg()).toString();
+ const paths=[...svg.matchAll(/<polyline points="([^"]*)"/g)].map(m=>m[1].trim().split(/\s+/).filter(Boolean).map(p=>p.split(',').map(Number)));
+ if(!fixture.points.length)assert.ok(paths.every(p=>p.length<2),'nulls and wholly outside runs draw no segment');
+ else{
+  const actual=paths.flat(2),expected=fixture.points.flat();assert.equal(actual.length,expected.length);
+  for(let i=0;i<actual.length;i++)assert.ok(Math.abs(actual[i]-expected[i])<=0.001,`${fixture.name}: coordinate ${i}`);
+ }
+});
 for(const kind of ['event','interval','gantt','line','bar','scatter'])test(`public temporal ${kind}`,()=>{
  const origin=9223372036854775707n;
  const rows=[[origin+1n,origin+4n,1,18446744073709551615n],[origin+5n,null,2,42n]];
