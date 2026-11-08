@@ -61,13 +61,32 @@ Controller disposal initiates the same cleanup; callers await binding cleanup to
 prove settlement. Duplicate cleanup is idempotent. An uncertain drain retains
 its exact correlation and source claim; cleanup rejects and may be retried.
 
-Snapshot and mounted bindings share the existing one-binding-per-source registry;
-there is no independent query pump. Observer removal alone cannot release this
+Canonical and indexed mounted bindings and canonical snapshot bindings retain
+source-wide exclusion. Mounted selected hierarchy adapters instead claim their
+validated, privately issued lane. Distinct explicit `fork()` / `fork_async()`
+lanes may bind independently while retaining the same original source and Scope.
+Same-lane binding and canonical/snapshot collisions remain refused; mutable
+public metadata, subclasses and unissued lanes do not grant this exception. Observer removal alone cannot release this
 claim. No ready mount and no posted temporal request means premount cleanup can
 finish immediately without inventing a native acknowledgement. Otherwise source
 exclusion remains until the exact active completion confirms drain, or actual
 native mount release/realm destruction settles the admitted operation. Mere
 transport disconnect, garbage collection or elapsed time is not release proof.
+
+Automatic mounted work uses a process FIFO before posting XYHT. Each ready
+binding has at most one queued entry and one latest intent; new notifications do
+not move its queue position. Premount bindings do not enter the queue, and close
+removes a waiting entry. Python protects admission with a thread lock and posts
+at most one coordinator wake to the selected owning loop; no asyncio primitive
+crosses loops. The existing protected notification inbox is unchanged.
+
+The admission reservation belongs to the exact binding through actual native
+Abort/Retire ACK and its correlated completion, or real realm release. A claimed
+`drained` completion cannot release a still-owned native staging slot. Failed
+delivery keeps the reservation for explicit exact drain retry. Manual native
+preparation still fails explicitly on occupied staging, including a reservation
+for another adapter. Resource errors do not trigger polling or automatic retry.
+The reservation adds no native owner, cap, or data-policy decision.
 
 The host keeps one active intent and one latest pending snapshot. Same-turn
 changes coalesce before posting. New intent posts at most one invalidation per
@@ -226,9 +245,12 @@ explicit held-preparation failure injection; it preserves the failed exit while
 separately asserting actual native-owner cleanup. See the
 [held-reply cleanup correction](../performance/geo-hierarchy-held-reply-cleanup-2026-11-08/README.md). These are source-checkout tests in installed applications, not
 installed-XYG-wheel acceptance. The separately started notebook server must
-serve the exact committed input; this does not qualify cold startup. Five
-simultaneous automatic bindings, mixed tiles and broader host/scale/accessibility
-qualification remain open. Existing static/indexed/hierarchy,
+serve the exact committed input; this does not qualify cold startup. Five issued automatic lanes now have direct-tier source-checkout Node22/native
+strict-CSP browser proof and Python public-widget admission proof. The current
+qualification and unresolved reduced redraw mismatch are recorded in
+[the five-lane candidate](../performance/geo-five-temporal-2026-11-08/README.md).
+Five-widget installed-application readiness/cleanup, reduced exact pixel stability,
+mixed tiles and broader host/scale/accessibility qualification remain open. Existing static/indexed/hierarchy,
 explicit live mounts and snapshot/export evidence remain distinct. The packaged
 Node22/native bridge and real VS Code1.103.2 (embedded Node22.17.0) application
 journey exercise the same painter. A separate VS Code1.145.2/Node24.22.1 probe is

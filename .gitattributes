@@ -1402,3 +1402,11 @@ tests/fixtures/css_color_bridge.json text eol=lf
 spec/performance/browser-css-color-2026-11-08/** text eol=lf
 spec/performance/browser-css-color-2026-11-08/**/*.gz -text
 spec/performance/browser-css-color-2026-11-08/**/*.png -text
+
+# Automatic shared hierarchy temporal candidate evidence.
+spec/performance/geo-five-temporal-2026-11-08/** text eol=lf
+spec/performance/geo-five-temporal-2026-11-08/**/*.gz -text
+spec/performance/geo-five-temporal-2026-11-08/**/*.png -text
+tests/browser/geo_five_temporal_test.mjs text eol=lf
+tests/test_geo_five_temporal.py text eol=lf
+packages/xy-node/test/geo-five-temporal*.mjs text eol=lf

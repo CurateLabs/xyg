@@ -1,8 +1,16 @@
+import {automaticAdmission} from './geo-live-host.js';
+import {hierarchyLaneAuthority} from './geo-hierarchy.js';
 /** Scheduling and independent native leases; Rust owns every geographic decision. */
 import { temporalControllerState, temporalControllerSubscribeState } from './abi.js';
 import { RetainedGeoSource } from './geo-retained.js';
 import { GeoSpatialIndex } from './geo-spatial.js';
 const bindings = new WeakMap();
+function claim(binding,key){
+ let claims=bindings.get(binding.source);
+ if(claims&&(key===binding.source||claims.has(binding.source)||claims.has(key)))throw Error('source already has a temporal binding');
+ if(!claims){claims=new Map();bindings.set(binding.source,claims);}claims.set(key,binding);binding.claimKey=key;
+}
+function unclaim(binding){const claims=bindings.get(binding.source);if(claims?.get(binding.claimKey)===binding){claims.delete(binding.claimKey);if(!claims.size)bindings.delete(binding.source);}}
 const MAX = 0xffffffffffffffffn;
 function copyQuery(query) {
   const value=structuredClone(query);
@@ -39,17 +47,16 @@ export class GeoTemporalBinding {
     if(!layer || layer.source.constructor!==RetainedGeoSource || chart.tileSession)throw new TypeError('temporal binding requires canonical retained points');
     const {query,sequence}=chart._inputs(layer);
     if(temporalControllerState(handle).disposed)throw Error('controller disposed');
-    if(bindings.has(layer.source))throw Error('source already has a temporal binding');
     this.source=layer.source;this.template=copyChart(chart);this.layer=this.template.layers[0];
     this.#query=copyQuery(query);this.sequence=sequence;this.mode=mode;
     this.closed=false;this.generation=0;this.running=Promise.resolve();this.lock=Promise.resolve();
-    bindings.set(this.source,this);
+    claim(this,this.source);
     try {
       this.unsubscribe=temporalControllerSubscribeState(handle,state=>this.accept(state));
       this.accept(temporalControllerState(handle));
     } catch(error) {
       this.closed=true;this.unsubscribe?.();
-      if(bindings.get(this.source)===this)bindings.delete(this.source);
+      unclaim(this);
       throw error;
     }
   }
@@ -109,7 +116,7 @@ export class GeoTemporalBinding {
   dispose() {
     return this.disposing??=Promise.resolve().then(async()=>{
       this.detach();await this.whenIdle();
-      await this.exclusive(async()=>{if(this.#retiring){await this.#retiring.dispose();this.#retiring=undefined;}if(this.#frame){await this.#frame.dispose();this.#frame=undefined;}bindings.delete(this.source);});
+      await this.exclusive(async()=>{if(this.#retiring){await this.#retiring.dispose();this.#retiring=undefined;}if(this.#frame){await this.#frame.dispose();this.#frame=undefined;}unclaim(this);});
     }).catch(error=>{this.disposing=undefined;throw error;});
   }
 }
@@ -120,11 +127,12 @@ export class MountedGeoTemporalBinding {
     if(!['cursor','range'].includes(mode))throw TypeError('mode must be cursor or range');
     if(source?.constructor!==RetainedGeoSource&&source?.constructor!==GeoSpatialIndex)throw TypeError('canonical retained source or spatial index required');
     if(temporalControllerState(handle).disposed)throw Error('controller disposed');
-    if(bindings.has(source))throw Error('source already has a temporal binding');
     this.source=source;this.host=host;this.mode=mode;this.generation=0;this.sent=-1;this.serial=0;this.wake();
-    bindings.set(source,this);
+    const lane=host.adapter.hierarchyLane;
+    if(lane){const authority=hierarchyLaneAuthority(lane);if(!authority||authority!==host.adapter.hierarchyAuthority||authority.source!==source||authority.bridge!==source.bridge||!authority.selected||lane.closed||lane.disposing)throw Error('hierarchy lane unavailable or authority changed');}
+    claim(this,lane??source);
     try{this.unsubscribe=temporalControllerSubscribeState(handle,state=>this.accept(state));this.accept(temporalControllerState(handle));}
-    catch(error){this.unsubscribe?.();bindings.delete(source);throw error;}
+    catch(error){this.unsubscribe?.();unclaim(this);throw error;}
   }
   wake(){this.changed?.resolve();let resolve;const promise=new Promise(r=>resolve=r);this.changed={promise,resolve};}
   accept(state){
@@ -145,24 +153,26 @@ export class MountedGeoTemporalBinding {
     this.scheduled=false;
     if(this.active){if((this.closed||this.active.generation!==this.generation)&&!this.active.invalidated){const active=this.active;active.invalidated=true;this.send(3).catch(error=>{if(this.active===active)this.failed(error);});}this.wake();return;}
     if(this.closed||!this.host.mount||this.sent===this.generation){this.wake();return;}
+    if(!automaticAdmission.request(this)){this.wake();return;}
     this.active={mount:this.host.mount,request:`temporal:${++this.host.serial}`,generation:this.generation,invalidated:false};
     this.sent=this.generation;const active=this.active;this.send(this.time[0]).catch(error=>{if(this.active===active)this.failed(error);});this.wake();
   }
   message(message){
     if(!this.active||message.mount!==this.active.mount||message.request!==this.active.request||!['accepted','superseded','failed'].includes(message.status))return;
     if(message.drained!==true){this.failed(Error(message.error??'geographic drain unconfirmed'));return;}
+    if(!automaticAdmission.release(this)){this.failed(Error('native candidate drain unconfirmed'));return;}
     this.active=undefined;this.blocked=false;this.error=message.status==='failed'?Error(message.error??'geographic update failed'):undefined;this.schedule();
   }
-  released(mount){if(this.active?.mount===mount){this.active=undefined;this.blocked=false;}this.sent=-1;this.schedule();}
+  released(mount){if(this.active&&this.active.mount!==mount)return;if(!automaticAdmission.release(this))return;if(this.active?.mount===mount){this.active=undefined;this.blocked=false;}this.sent=-1;this.schedule();}
   async whenIdle(){for(;;){if(this.blocked||!this.active&&!this.scheduled&&(this.closed||this.host.mount&&this.sent===this.generation))return;await this.changed.promise;}}
-  detach(){if(!this.closed){this.closed=true;this.unsubscribe();this.schedule();}}
+  detach(){if(!this.closed){this.closed=true;this.unsubscribe();automaticAdmission.cancel(this);this.schedule();}}
   dispose(){
     if(this.disposing)return this.disposing;
     const retry=this.blocked;this.detach();
     return this.disposing=(async()=>{
       if(retry&&this.active){this.blocked=false;try{await this.send(4);}catch(error){this.failed(error);}}
       await this.whenIdle();if(this.blocked)throw this.error;
-      if(bindings.get(this.source)===this)bindings.delete(this.source);
+      unclaim(this);
     })().catch(error=>{this.disposing=undefined;throw error;});
   }
 }

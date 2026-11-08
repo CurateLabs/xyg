@@ -16,6 +16,87 @@ from ._geo_retained import _attach_frame
 _SLOT = threading.Lock()
 
 
+class _AutomaticAdmission:
+    """Process FIFO; only owning loops touch binding state, never shared Futures."""
+
+    def __init__(self):
+        self.lock = threading.RLock()
+        self.owner = None
+        self.queue = {}
+        self.waking = None
+
+    def _wake(self):
+        if self.waking is not None and self.waking._loop.is_closed():
+            self.queue.pop(self.waking, None)
+            self.waking = None
+        if self.owner is not None or _SLOT.locked() or self.waking is not None:
+            return
+        while self.queue:
+            binding = next(iter(self.queue))
+            if binding._loop.is_closed():
+                del self.queue[binding]
+                continue
+            self.waking = binding
+            try:
+                binding._loop.call_soon_threadsafe(self._deliver, binding)
+                return
+            except RuntimeError:
+                self.waking = None
+                del self.queue[binding]
+
+    def _deliver(self, binding):
+        with self.lock:
+            if self.waking is binding:
+                self.waking = None
+            if binding not in self.queue:
+                self._wake()
+                return
+        binding._schedule()
+
+    def request(self, binding):
+        with self.lock:
+            if self.owner is binding:
+                return True
+            self.queue.setdefault(binding, None)
+            if self.owner is None and not _SLOT.locked() and next(iter(self.queue)) is binding:
+                del self.queue[binding]
+                self.owner = binding
+                return True
+            self._wake()
+            return False
+
+    def release(self, binding):
+        with self.lock:
+            if self.owner is binding:
+                if binding._widget._adapter._live_candidate._owns_slot:
+                    return False
+                self.owner = None
+            self.queue.pop(binding, None)
+            self._wake()
+            return True
+
+    def cancel(self, binding):
+        with self.lock:
+            self.queue.pop(binding, None)
+            # Posted work keeps its reservation until native settlement.
+            if binding._active is None and self.owner is binding:
+                self.owner = None
+            self._wake()
+
+    def acquire_native(self, candidate):
+        with self.lock:
+            if self.owner is not None and self.owner._widget._adapter is not candidate.adapter:
+                return False
+            return _SLOT.acquire(blocking=False)
+
+    def native_released(self):
+        with self.lock:
+            self._wake()
+
+
+_ADMISSION = _AutomaticAdmission()
+
+
 class GeoLiveCandidate:
     """Private per-adapter candidate and retired owner, never caller paint."""
 
@@ -54,6 +135,7 @@ class GeoLiveCandidate:
         if self._owns_slot:
             self._owns_slot = False
             _SLOT.release()
+            _ADMISSION.native_released()
 
     def replay_prepare(self, raw):
         return (
@@ -126,7 +208,7 @@ class GeoLiveCandidate:
         baseline = viewport.encode_request(accepted_camera, operation)
         if camera_request[:8] != baseline[:8] or camera_request[12:80] != baseline[12:80]:
             raise ValueError("camera delta does not name accepted camera")
-        if not _SLOT.acquire(blocking=False):
+        if not _ADMISSION.acquire_native(self):
             raise RuntimeError("another geographic replacement awaits retirement ACK")
         self._owns_slot = True
         self.prepare_request = bytes(raw)

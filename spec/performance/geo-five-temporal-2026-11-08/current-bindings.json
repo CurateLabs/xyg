@@ -1,0 +1,244 @@
+{
+  "parent": "b007e2d7cafac6d107d6bb409eac89f8a79ee4c9",
+  "sources": {
+    ".gitattributes": {
+      "bytes": 99370,
+      "sha256": "1d48e5db6856e8e3da821044e84b46e5998f9a2debd186cd6a806849918fca46"
+    },
+    "packages/xy-node/src/geo-live-host.js": {
+      "bytes": 13254,
+      "sha256": "b0572976b9fb92d0733f50ed7a61cb4c587334644a5b1e1babc76a80d6aec7b3"
+    },
+    "packages/xy-node/src/geo-temporal.js": {
+      "bytes": 11227,
+      "sha256": "c0d8004918efd070a5acf83aaabf3d51c3deaecff60898a6cd855a3ae9b40ece"
+    },
+    "packages/xy-node/test/geo-five-temporal-fixture.mjs": {
+      "bytes": 1693,
+      "sha256": "bf9e5549b7c12cf52c317b059684e3e0077d03f21614e0de051da0af7ef7a988"
+    },
+    "packages/xy-node/test/geo-five-temporal.test.mjs": {
+      "bytes": 1210,
+      "sha256": "ee028ef68d36ab251f58f45911605df4131369b3ccc930b618a0600ff96b0414"
+    },
+    "packages/xy-node/test/geo-mounted-hierarchy-temporal-fixture.mjs": {
+      "bytes": 1946,
+      "sha256": "8a67be891377994fc8a0a842297de15f513fdef70da1ebe2f4480d31763ec06f"
+    },
+    "python/xyg/_geo_live_host.py": {
+      "bytes": 19511,
+      "sha256": "445180597dfe3fd5818866b521516394186ca2c25f873e813db2900ac6230508"
+    },
+    "python/xyg/_geo_temporal.py": {
+      "bytes": 23982,
+      "sha256": "77ef7ac550cf572433bdbc08f5f8f4b607b9618c84be7741d04f69f3f66f8c9b"
+    },
+    "spec/design/geo-live-hierarchy-host.md": {
+      "bytes": 7040,
+      "sha256": "43851b37357d4cf4eaac29decc3bb98dd98cdb5ebd926808d2420a0a6aef1457"
+    },
+    "spec/design/geo-mounted-temporal-hosts.md": {
+      "bytes": 17742,
+      "sha256": "0f4d8401623c0f573f270e2d07077f4462dc70000c94d642bd2a4c2e58592770"
+    },
+    "tests/browser/geo_five_temporal_test.mjs": {
+      "bytes": 9470,
+      "sha256": "a017b5af41e32b405f9a42fb08742ebc55ae68e0d47d4d1af83935a47a7d8444"
+    },
+    "tests/test_geo_five_temporal.py": {
+      "bytes": 4557,
+      "sha256": "bd68b2b0686732f831f654071cb4c4440be59bfc1eee29014b631dab4f9c480f"
+    }
+  },
+  "artifacts": {
+    "README.md": {
+      "bytes": 6048,
+      "sha256": "1069b52383926ec52c7c21d27e1b5b5d6a7e3432778077244d0f3a1e0f64789f"
+    },
+    "before-node-runner.py.gz": {
+      "bytes": 728,
+      "sha256": "c5cb93519b6ab75043dc0f2d01102a0a4281ecb929664fee96e2c4805318bec1"
+    },
+    "before-python.py.gz": {
+      "bytes": 912,
+      "sha256": "16eb21c7f2b1b255ea6b9d27200c522e970a82ea57bc57e3a785c2f36ab23471"
+    },
+    "environment.json": {
+      "bytes": 1557,
+      "sha256": "b1192decefa074dce46e969a5d7ab30efc47f863832246ff5a9a22dd8af32e40"
+    },
+    "failure-reduced.png": {
+      "bytes": 17628,
+      "sha256": "e54e728bc14c37fe75bac74541331b119e08f992b39968a98e6ac0aac76f2b73"
+    },
+    "five-direct.png": {
+      "bytes": 16296,
+      "sha256": "6d49c8ec698d9958327c763cf58f69a5caf9c474c14c929560591dc292e23005"
+    },
+    "five-range.png": {
+      "bytes": 16296,
+      "sha256": "6d49c8ec698d9958327c763cf58f69a5caf9c474c14c929560591dc292e23005"
+    },
+    "five.png": {
+      "bytes": 16296,
+      "sha256": "6d49c8ec698d9958327c763cf58f69a5caf9c474c14c929560591dc292e23005"
+    },
+    "logs/before-node-final.log.gz": {
+      "bytes": 282,
+      "sha256": "3a43660fd9f6994ac15e9d69c532b13bfe4c07fe5a6e918417eb22ebddd1c255"
+    },
+    "logs/before-python-final.log.gz": {
+      "bytes": 193,
+      "sha256": "fcd3f05c998a5000bc881c78371001964d71a5497dfcf4e8dd33632026e88419"
+    },
+    "logs/before-python.log.gz": {
+      "bytes": 683,
+      "sha256": "67e2ecf13b242dfa81879db66ff7b9b42092dbf44e6b757dcb58ff2d78e45223"
+    },
+    "logs/browser-direct-expanded.log.gz": {
+      "bytes": 174,
+      "sha256": "281564d7417c64d617504277b498f1b756459ab14007d572200d020f5867b67c"
+    },
+    "logs/browser-direct-last.log.gz": {
+      "bytes": 174,
+      "sha256": "281564d7417c64d617504277b498f1b756459ab14007d572200d020f5867b67c"
+    },
+    "logs/browser-direct-sha.log.gz": {
+      "bytes": 232,
+      "sha256": "96d77cde523cb8039cb876b270a99a9188f21698ada925fbf52619aa79308b5a"
+    },
+    "logs/browser-final.log.gz": {
+      "bytes": 174,
+      "sha256": "2b1c205838257c2a7b9e0f673486be270bafc950721be64290c21254cd2a7068"
+    },
+    "logs/browser-first.log.gz": {
+      "bytes": 275,
+      "sha256": "8578edf27995a28378a314b47839f0146323f8fbcc27b3819d81d87eb4f548bd"
+    },
+    "logs/browser-range-last.log.gz": {
+      "bytes": 174,
+      "sha256": "281564d7417c64d617504277b498f1b756459ab14007d572200d020f5867b67c"
+    },
+    "logs/browser-range-sha.log.gz": {
+      "bytes": 232,
+      "sha256": "96d77cde523cb8039cb876b270a99a9188f21698ada925fbf52619aa79308b5a"
+    },
+    "logs/browser-reduced-2.log.gz": {
+      "bytes": 407,
+      "sha256": "14d4b52bc5e4bcdb2bd9fbb40e8ccd943a6de5d6b3ea00e15f8e718fc23f371e"
+    },
+    "logs/browser-reduced-3.log.gz": {
+      "bytes": 398,
+      "sha256": "d78756372a4c1a1d58d4b37c9b6b05045f41a62442da42a778c518cb98e04db6"
+    },
+    "logs/browser-reduced-sha.log.gz": {
+      "bytes": 527,
+      "sha256": "dff3aa1a755cde799f0a62e7b6bf7acbd0e7ac03dd376a514294a68735e97906"
+    },
+    "logs/browser-reduced.log.gz": {
+      "bytes": 407,
+      "sha256": "14d4b52bc5e4bcdb2bd9fbb40e8ccd943a6de5d6b3ea00e15f8e718fc23f371e"
+    },
+    "logs/format-last.log.gz": {
+      "bytes": 49,
+      "sha256": "8cd5f225682ffca45687dd8745b22472958f12e1240e6e3d27ec30d05fb216cc"
+    },
+    "logs/format.log.gz": {
+      "bytes": 49,
+      "sha256": "8cd5f225682ffca45687dd8745b22472958f12e1240e6e3d27ec30d05fb216cc"
+    },
+    "logs/hooks-last.log.gz": {
+      "bytes": 72,
+      "sha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "logs/hooks.log.gz": {
+      "bytes": 72,
+      "sha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "logs/node-final-2.log.gz": {
+      "bytes": 21476,
+      "sha256": "b565101aea551451b0dcfca7da1bb5d29e95390eb99f1fc33435db0b17e753c2"
+    },
+    "logs/node-final-3.log.gz": {
+      "bytes": 25729,
+      "sha256": "67250b25050bf651ac5f012883d8c9828739ae704858f0ee53ba96c1eaebd668"
+    },
+    "logs/node-final.log.gz": {
+      "bytes": 22744,
+      "sha256": "fa799253bec66790527ef8952e19bb391cff4d09b80a0ac85db0953728e030f9"
+    },
+    "logs/node-five-final.log.gz": {
+      "bytes": 222,
+      "sha256": "7a05a7ce1ccaf88022b758b37b700692be94d186570f9a09754896277a1918dc"
+    },
+    "logs/node-five.log.gz": {
+      "bytes": 488,
+      "sha256": "d0d97c5809caff80f3140d37ae79d37543328bb6ca054cbe0e3423566ee2a921"
+    },
+    "logs/node-last.log.gz": {
+      "bytes": 1467,
+      "sha256": "564072514fe79042fe5d21b000a721e3780405b6277072846477691bc68cea36"
+    },
+    "logs/node-tests.log.gz": {
+      "bytes": 1415,
+      "sha256": "481ea671c626ed2f3d097eeb39188d929ceb46b016db61c18d6892e8afb4a71a"
+    },
+    "logs/python-final.log.gz": {
+      "bytes": 62,
+      "sha256": "1d3c6e95dc48e941ddaf7e1920acff0e623ef7a136b69e79b731f8a7dbda9e46"
+    },
+    "logs/python-five-final.log.gz": {
+      "bytes": 49,
+      "sha256": "e22f4e90e552369ffd607325651f47fa425ea8a55353c729eac2c8cd1a5ffd9e"
+    },
+    "logs/python-five-last.log.gz": {
+      "bytes": 50,
+      "sha256": "2e39803ff7c1ad10e584e6dd820630b1ef1e99eea01284e986ed7891658d23c5"
+    },
+    "logs/python-five.log.gz": {
+      "bytes": 1867,
+      "sha256": "9772d6b10231b2d1153ada45aa0bba9d463c34b85f304db1621121f586789a44"
+    },
+    "logs/python-last.log.gz": {
+      "bytes": 61,
+      "sha256": "e5f0fce7c292e10cab0865534f8b9b0b6ba96cc2caccfb73adbc0b53d5af02bf"
+    },
+    "logs/python-tests.log.gz": {
+      "bytes": 52,
+      "sha256": "e5778dc61b811c0249d8d54bd00d8bcbf19415072e60cc41ba7e7dcd666a7588"
+    },
+    "logs/ruff-last.log.gz": {
+      "bytes": 39,
+      "sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "logs/ruff.log.gz": {
+      "bytes": 39,
+      "sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "predecessor/packages/xy-node/src/geo-live-host.js.gz": {
+      "bytes": 3282,
+      "sha256": "1e87eacb75de9e7d4611d364a1ebf7bb7857666b0881bbb491d0d0b33576afb7"
+    },
+    "predecessor/packages/xy-node/src/geo-temporal.js.gz": {
+      "bytes": 3032,
+      "sha256": "57ae5fb4e059f69b2d5dfad4ef15ca5c66280f171b4f59b9b4093b4bf6c9ae13"
+    },
+    "predecessor/packages/xy-node/test/geo-mounted-hierarchy-temporal-fixture.mjs.gz": {
+      "bytes": 865,
+      "sha256": "ede2b2e3205f2a880795fc2b41615a65e2594d68a521953faea7ae4f734e7aaa"
+    },
+    "predecessor/python/xyg/_geo_live_host.py.gz": {
+      "bytes": 3551,
+      "sha256": "b439ea7600cd01de7a417e61e366d066a5c7e996359ab8a65c3fbc17089004cd"
+    },
+    "predecessor/python/xyg/_geo_temporal.py.gz": {
+      "bytes": 4925,
+      "sha256": "0894597c55521c0f3ec1ed761e113edb367f617bee1eec945d1d8070366fcff9"
+    },
+    "checks.json": {
+      "bytes": 1476,
+      "sha256": "36900192c75b52e94aa61af5aa7e9e00940671b456a8ce18e65d71d84163f179"
+    }
+  },
+  "note": "Self hash intentionally excluded; final commit/tree and canonical diff bound in external handoff.json."
+}
