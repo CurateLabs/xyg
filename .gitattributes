@@ -1388,3 +1388,17 @@ spec/performance/geo-hierarchy-application-remount-2026-11-08/**/*.png -text
 spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/** text eol=lf
 spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/**/*.gz -text
 spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/**/*.png -text
+
+# Browser CSS color conversion successor.
+js/src/20_theme.ts text eol=lf
+scripts/css_color_bridge_smoke.mjs text eol=lf
+scripts/wasm_foundation_smoke.mjs text eol=lf
+scripts/gen_capability_matrix.py text eol=lf
+docs/styling/capabilities.md text eol=lf
+docs/styling/themes-and-tokens.md text eol=lf
+spec/api/capability-matrix.md text eol=lf
+spec/design-dossier.md text eol=lf
+tests/fixtures/css_color_bridge.json text eol=lf
+spec/performance/browser-css-color-2026-11-08/** text eol=lf
+spec/performance/browser-css-color-2026-11-08/**/*.gz -text
+spec/performance/browser-css-color-2026-11-08/**/*.png -text

@@ -320,6 +320,23 @@ chart = xyg.area_chart(
 In an application, resolve reactive theme choices into ordinary classes, styles, or CSS
 variables. XYG does not duplicate application conditions or state.
 
+Browser CSS tokens and constant mark colors can also use modern color functions:
+
+~~~css
+.analytics-theme {
+  --chart-accent: oklch(65% 0.18 250);
+  --chart-grid: color-mix(in srgb, currentColor 15%, transparent);
+}
+~~~
+
+The browser resolves variables and inheritance. Modern computed formats are
+converted to the existing sRGB RGBA8 painter colors; this does not enable HDR or
+wide-gamut canvas output. Legacy `rgb()`/`rgba()` keeps its existing alpha
+precision. Browser-only color functions still need a browser: this bridge does
+not add a CSS cascade to native SVG/PNG export or an effective-theme snapshot.
+Use literal hex/RGB paint when output must be resolved without a browser.
+
+
 ## What survives each output
 
 Browser-backed output can run a CSS cascade; browser-free output cannot. Put

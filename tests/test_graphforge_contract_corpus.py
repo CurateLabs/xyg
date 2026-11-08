@@ -11,9 +11,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-CURRENT_BINDINGS = Path(
-    "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/current-bindings.json"
-)
+CURRENT_BINDINGS = Path("spec/performance/browser-css-color-2026-11-08/current-bindings.json")
 
 
 def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> None:
@@ -247,6 +245,7 @@ def test_dense_navigation_successor_preserves_qualified_source_parents():
         "spec/performance/dense-union-module-status-2026-11-08/current-bindings.json",
         "spec/performance/geo-hierarchy-temporal-remount-2026-11-08/current-bindings.json",
         "spec/performance/geo-hierarchy-application-remount-2026-11-08/current-bindings.json",
+        "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/current-bindings.json",
     }
     assert {parent["path"] for parent in current["parents"]} == expected
     for parent in current["parents"]:

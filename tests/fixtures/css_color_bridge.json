@@ -1,0 +1,287 @@
+{
+  "mark": {
+    "spec": {
+      "protocol": 14,
+      "width": 240,
+      "height": 200,
+      "title": null,
+      "x_axis": {
+        "id": "x",
+        "kind": "linear",
+        "label": null,
+        "range": [
+          -1.0,
+          1.0
+        ],
+        "side": "bottom",
+        "domain": [
+          -1.0,
+          1.0
+        ]
+      },
+      "y_axis": {
+        "id": "y",
+        "kind": "linear",
+        "label": null,
+        "range": [
+          -1.0,
+          1.0
+        ],
+        "side": "left",
+        "domain": [
+          -1.0,
+          1.0
+        ]
+      },
+      "axes": {
+        "x": {
+          "id": "x",
+          "kind": "linear",
+          "label": null,
+          "range": [
+            -1.0,
+            1.0
+          ],
+          "side": "bottom",
+          "domain": [
+            -1.0,
+            1.0
+          ]
+        },
+        "y": {
+          "id": "y",
+          "kind": "linear",
+          "label": null,
+          "range": [
+            -1.0,
+            1.0
+          ],
+          "side": "left",
+          "domain": [
+            -1.0,
+            1.0
+          ]
+        }
+      },
+      "traces": [
+        {
+          "id": 0,
+          "kind": "scatter",
+          "name": null,
+          "style": {
+            "opacity": 1.0
+          },
+          "tier": "direct",
+          "n_points": 1,
+          "n_marks": 1,
+          "x_axis": "x",
+          "y_axis": "y",
+          "x": 0,
+          "y": 1,
+          "color": {
+            "mode": "constant",
+            "color": "var(--test-mark)"
+          },
+          "size": {
+            "mode": "constant",
+            "size": 40.0
+          }
+        }
+      ],
+      "columns": [
+        {
+          "byte_offset": 0,
+          "len": 1,
+          "offset": 0.0,
+          "scale": 1.0,
+          "kind": "float"
+        },
+        {
+          "byte_offset": 4,
+          "len": 1,
+          "offset": 0.0,
+          "scale": 1.0,
+          "kind": "float"
+        }
+      ],
+      "backend": "native",
+      "show_legend": false,
+      "view": {
+        "ranges": {
+          "x": [
+            -1.0,
+            1.0
+          ],
+          "y": [
+            -1.0,
+            1.0
+          ]
+        }
+      },
+      "legend": {
+        "loc": null,
+        "ncols": 1
+      },
+      "dom": {
+        "style": {
+          "--test-mark": "red",
+          "--chart-bg": "white",
+          "--chart-grid": "transparent",
+          "--chart-axis": "transparent"
+        }
+      }
+    },
+    "payload": "AAAAAAAAAAA="
+  },
+  "category": {
+    "spec": {
+      "protocol": 14,
+      "width": 240,
+      "height": 200,
+      "title": null,
+      "x_axis": {
+        "id": "x",
+        "kind": "linear",
+        "label": null,
+        "range": [
+          -1.0,
+          1.0
+        ],
+        "side": "bottom",
+        "domain": [
+          -1.0,
+          1.0
+        ]
+      },
+      "y_axis": {
+        "id": "y",
+        "kind": "linear",
+        "label": null,
+        "range": [
+          -1.0,
+          1.0
+        ],
+        "side": "left",
+        "domain": [
+          -1.0,
+          1.0
+        ]
+      },
+      "axes": {
+        "x": {
+          "id": "x",
+          "kind": "linear",
+          "label": null,
+          "range": [
+            -1.0,
+            1.0
+          ],
+          "side": "bottom",
+          "domain": [
+            -1.0,
+            1.0
+          ]
+        },
+        "y": {
+          "id": "y",
+          "kind": "linear",
+          "label": null,
+          "range": [
+            -1.0,
+            1.0
+          ],
+          "side": "left",
+          "domain": [
+            -1.0,
+            1.0
+          ]
+        }
+      },
+      "traces": [
+        {
+          "id": 0,
+          "kind": "scatter",
+          "name": null,
+          "style": {
+            "opacity": 1.0
+          },
+          "tier": "direct",
+          "n_points": 2,
+          "n_marks": 2,
+          "x_axis": "x",
+          "y_axis": "y",
+          "x": 0,
+          "y": 1,
+          "color": {
+            "mode": "categorical",
+            "categories": [
+              "A",
+              "B"
+            ],
+            "buf": 2,
+            "dtype": "u8",
+            "palette": [
+              "#ff0000",
+              "#0000ff"
+            ]
+          },
+          "size": {
+            "mode": "constant",
+            "size": 40.0
+          }
+        }
+      ],
+      "columns": [
+        {
+          "byte_offset": 0,
+          "len": 2,
+          "offset": 0.0,
+          "scale": 1.0,
+          "kind": "float"
+        },
+        {
+          "byte_offset": 8,
+          "len": 2,
+          "offset": 0.0,
+          "scale": 1.0,
+          "kind": "float"
+        },
+        {
+          "byte_offset": 16,
+          "len": 2,
+          "dtype": "u8"
+        }
+      ],
+      "backend": "native",
+      "show_legend": true,
+      "view": {
+        "ranges": {
+          "x": [
+            -1.0,
+            1.0
+          ],
+          "y": [
+            -1.0,
+            1.0
+          ]
+        }
+      },
+      "palette": [
+        "#ff0000",
+        "#0000ff"
+      ],
+      "legend": {
+        "loc": null,
+        "ncols": 1
+      },
+      "dom": {
+        "style": {
+          "--chart-bg": "transparent",
+          "--chart-grid": "transparent",
+          "--chart-axis": "transparent"
+        }
+      }
+    },
+    "payload": "AAAAvwAAAD8AAAAAAAAAAAABAAA="
+  }
+}

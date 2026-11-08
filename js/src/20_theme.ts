@@ -4,24 +4,59 @@
 
 // A computed-style `rgb()`/`rgba()` string as unit RGBA, or null if the value
 // is not one (`transparent` resolves to rgba(0,0,0,0) and parses fine; a
-// keyword like `none` does not). Every consumer of a computed color goes
-// through here so the two readers below cannot drift.
+// keyword like `none` does not). Non-rgb computed formats are converted by
+// the browser below; authored color grammar remains browser-owned.
 function parseRgbFunc(raw) {
   const m = raw && raw.match(/rgba?\(([^)]+)\)/);
   if (!m) return null;
   const parts = m[1].split(/[,/\s]+/).filter(Boolean).map(Number);
+  if (parts.length < 3 || parts.length > 4 || !parts.every(Number.isFinite)) return null;
   const [r, g, b, a = 1] = parts;
   return [r / 255, g / 255, b / 255, a];
 }
 
+// Computed CSS Color4 values can remain oklch()/color() rather than rgb().
+// Let the browser convert those to its sRGB RGBA8 paint contract. One private
+// pixel per document is bounded; no chart/data render path or CSS color parser
+// is introduced. Keep legacy rgb() precision on the existing fast path.
+const cssColorContexts = new WeakMap<Document, CanvasRenderingContext2D>();
+
+function computedColor(doc, raw) {
+  const rgb = parseRgbFunc(raw);
+  if (rgb || !raw) return rgb;
+  let context = cssColorContexts.get(doc);
+  if (!context) {
+    const canvas = doc.createElement("canvas");
+    canvas.width = canvas.height = 1;
+    context = canvas.getContext("2d", { willReadFrequently: true });
+    if (!context) return null;
+    cssColorContexts.set(doc, context);
+  }
+  // Canvas retains its previous fillStyle when it cannot consume a value.
+  // Two sentinels distinguish refusal from a valid color equal to either one.
+  context.fillStyle = "#010203";
+  context.fillStyle = raw;
+  if (context.fillStyle === "#010203") {
+    context.fillStyle = "#040506";
+    context.fillStyle = raw;
+    if (context.fillStyle === "#040506") return null;
+  }
+  context.globalCompositeOperation = "copy";
+  context.fillRect(0, 0, 1, 1);
+  return Array.from(context.getImageData(0, 0, 1, 1).data, value => value / 255);
+}
+
 function resolveCssColor(host, expr) {
-  const probe = document.createElement("span");
+  const doc = host.ownerDocument || document;
+  if (!doc.defaultView) return null;
+  const probe = doc.createElement("span");
   probe.style.display = "none";
   probe.style.color = expr;
+  if (!probe.style.color) return null;
   host.appendChild(probe);
-  const rgb = getComputedStyle(probe).color;
+  const rgb = doc.defaultView.getComputedStyle(probe).color;
   host.removeChild(probe);
-  return parseRgbFunc(rgb);
+  return computedColor(doc, rgb);
 }
 
 function cssToken(el, name) {
@@ -50,7 +85,7 @@ export function parseColor(host, c, fallback) {
   // Validated figures never land here — the Python build gate rejects
   // malformed colors (src/css.rs) — but a hand-written spec can. Say so
   // instead of silently painting the fallback color.
-  if (typeof console !== "undefined" && console.warn) {
+  if (host.isConnected && typeof console !== "undefined" && console.warn) {
     console.warn(`xy: unresolvable color ${JSON.stringify(expr)}; using fallback`);
   }
   return fallback;
@@ -67,7 +102,10 @@ export function parseColor(host, c, fallback) {
 export function chartBackdrop(root, themeBg) {
   if (Array.isArray(themeBg) && themeBg[3] > 0.01) return themeBg;
   for (let el = root; el; el = el.parentElement) {
-    const c = parseRgbFunc(getComputedStyle(el).backgroundColor);
+    const doc = el.ownerDocument || document;
+    const c = doc.defaultView
+      ? computedColor(doc, doc.defaultView.getComputedStyle(el).backgroundColor)
+      : null;
     if (c && c[3] > 0.01) return [c[0], c[1], c[2], 1];
   }
   return root.closest && root.closest(".dark") ? [0.043, 0.051, 0.063, 1] : [1, 1, 1, 1];

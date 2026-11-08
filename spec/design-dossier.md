@@ -3137,9 +3137,19 @@ tokens are consumed directly by the stylesheet (`XY_CHROME_CSS`, zero-specificit
 `:where()` rules) rather than through the renderer. One implementation reality (audit
 round 4): `getComputedStyle` returns a custom property's *raw token stream*, not a
 resolved color — so color tokens are resolved via a hidden **probe element** (assign
-`color: var(--chart-bg)`, read back the browser-computed rgb), which handles every CSS
-color format (`oklch()`, `color-mix()`, named colors) without shipping a CSS color
-parser. Crucially, **because
+`color: var(--chart-bg)`, read the browser-computed color). Computed values can
+remain `oklch()` or `color(...)`; assuming they always serialize as rgb silently
+lost valid colors. The browser converts those remaining formats through one
+private1×1 Canvas2D pixel per document into sRGB RGBA8, used by the existing
+mark uniforms and ancestor-backdrop reader. Legacy computed rgb/rgba retains
+its existing float alpha precision. This is a browser CSS conversion bridge,
+not a CSS color parser or a second chart renderer; it does not add headless CSS
+resolution, HDR/wide-gamut output or global memory-budget qualification.
+Disconnected roots keep their existing temporary theme fallback and re-resolve
+on connection without reporting valid colors as malformed. Invalid literal
+assignments warn and retain the supplied fallback; nonfinite computed channels
+cannot reach uniforms. See the [bounded color evidence](performance/browser-css-color-2026-11-08/README.md).
+Crucially, **because
 tokens flow through CSS variables, the cascade, inheritance, and media queries all
 work** — the *variables* cascade even though the pixels don't, so per-container
 theming, brand overrides, and `@media (prefers-color-scheme)` behave exactly as a CSS
@@ -3200,9 +3210,11 @@ author expects.
 - **Live re-resolution.** The client watches `matchMedia('(prefers-color-scheme: dark)')`
   and a `MutationObserver` on the container's `class`/`data-theme`/`style`, re-resolving
   tokens on any change. Because of the retained scene graph (§7), **a theme change is
-  uniform + LUT updates, never a data re-upload** — theme/dark-mode switching stays at
-  60 fps even on a 100M-point figure, and a dashboard theme flip repaints every linked
-  view in one frame.
+  uniform + LUT updates, never a data re-upload**. The acceptance target remains
+  60 fps even on a100M-point figure, with a dashboard theme flip repainting every
+  linked view in one frame. The bounded CSS-color checks establish no source
+  geometry uploads for their fixture; they do not qualify that massive-scale
+  frame-rate target or global Canvas2D/driver memory.
 - **Programmatic parity.** Everything a token sets is also settable from Python
   (`fig.theme(...)`) so notebook users who never touch CSS get the same control; the
   CSS bridge is the web-author's path to the same renderer state, not a separate system.

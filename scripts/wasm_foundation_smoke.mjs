@@ -272,3 +272,13 @@ if (!only && !browserPackage) {
     cwd: root, stdio: "inherit", env: process.env,
   });
 }
+
+// Browser-only CSS colors share the existing renderer and full source CI gate.
+// Staged package / focused density runs keep their explicitly bounded scope.
+if (!only && !browserPackage) {
+  execFileSync(process.execPath, [join(root, "scripts/css_color_bridge_smoke.mjs")], {
+    cwd: root, stdio: "inherit", timeout: 120000,
+    env: { ...process.env, XYG_COLOR_CLIENT: join(browserDist, "index.js"),
+      ...(reportPath ? { XYG_COLOR_REPORT: `${reportPath}.css-color.json` } : {}) },
+  });
+}

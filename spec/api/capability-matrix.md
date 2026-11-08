@@ -76,6 +76,12 @@ domains; adjacent domains with too few representable stops fail closed.
 - **1** shipped extension point.
 - **1** known default divergence between renderers, listed below rather than left to be discovered.
 
+Browser CSS tokens and constant mark colors resolve modern color functions
+through the browser into the existing sRGB RGBA8 painter. This does not add
+native/headless CSS-cascade support or HDR output; legacy RGB alpha remains
+unchanged. Exact color planes, opaque paint, detached recovery and limits:
+[bounded CSS color evidence](../performance/browser-css-color-2026-11-08/README.md).
+
 ## Mark style properties
 
 The subset a mark's `style=` mapping accepts. Anything outside it raises
