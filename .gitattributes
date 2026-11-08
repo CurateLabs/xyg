@@ -1402,3 +1402,12 @@ tests/fixtures/css_color_bridge.json text eol=lf
 spec/performance/browser-css-color-2026-11-08/** text eol=lf
 spec/performance/browser-css-color-2026-11-08/**/*.gz -text
 spec/performance/browser-css-color-2026-11-08/**/*.png -text
+
+# Co-owned temporal-job graph admission successor evidence.
+crates/xyg-wasm/src/graphforge_session.rs text eol=lf
+scripts/graph_temporal_owner_conformance.mjs text eol=lf
+spec/design/graph-interaction.md text eol=lf
+spec/design/temporal-catalog.md text eol=lf
+tests/fixtures/graph-temporal-owners.json text eol=lf
+spec/performance/graph-temporal-owner-charge-2026-11-08/** text eol=lf
+spec/performance/graph-temporal-owner-charge-2026-11-08/**/*.gz -text

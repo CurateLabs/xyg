@@ -1089,6 +1089,19 @@ retries the same sequence at the exact limit and checks the replacement output
 and cached retry. Removing either the document discount or the complete
 replacement charge fails this regression.
 
+Ordinary WASM instances may already own XYTJ temporal-composition jobs before
+GraphSession Open. Their pending scan/source and accepted Scene capacities stay
+live. The graph adapter adds `temporal_scene::jobs::retained` for those exact
+instance-owned handles to the checked external charge before Open and all later
+graph transactions. Staging admission already reserves those owners; a graph
+operation cannot consume their reservation and strand even zero-byte staging.
+Resource refusal preserves the graph publication, retry state and temporal jobs.
+Restoring the declared budget permits an identical refused request to retry.
+Ordinary temporal commands remain refused while a GraphSession owns the instance;
+close that session before explicitly closing or reusing its earlier temporal jobs.
+This repair does not establish a process-wide CPU/RSS/GPU budget or all-product
+coexistence. The bounded regression is linked from the ordinary foundation gate.
+
 Current Owned state is charged additionally. Inside the authoritative owner
 lock, before cloning bound state, actual state items and exact UTF-8 bytes are
 also charged at 1,024/item and 128/text byte. This includes all four planes,
