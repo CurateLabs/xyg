@@ -33,9 +33,15 @@ def main():
     native = Path(
         os.environ.get("XYG_NATIVE_LIB", ROOT / "target/release/libxyg_core.so")
     ).resolve()
+    indexed = os.environ.get("XYG_GEO_INDEXED") == "1"
+    hierarchy = os.environ.get("XYG_GEO_HIERARCHY") == "1"
+    if indexed and hierarchy:
+        parser.error("select one explicit indexed or hierarchy producer")
     fixture = (
-        "vscode_geo_mounted_indexed_temporal"
-        if os.environ.get("XYG_GEO_INDEXED") == "1"
+        "vscode_geo_mounted_hierarchy_temporal"
+        if hierarchy
+        else "vscode_geo_mounted_indexed_temporal"
+        if indexed
         else "vscode_geo_mounted_temporal"
     )
     if not args.code.is_file() or not native.is_file():

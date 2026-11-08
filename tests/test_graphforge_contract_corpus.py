@@ -12,7 +12,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 CURRENT_BINDINGS = Path(
-    "spec/performance/geo-hierarchy-temporal-remount-2026-11-08/current-bindings.json"
+    "spec/performance/geo-hierarchy-application-remount-2026-11-08/current-bindings.json"
 )
 
 
@@ -245,6 +245,7 @@ def test_dense_navigation_successor_preserves_qualified_source_parents():
         "spec/performance/wasm-frozen-feature-ci-2026-11-08/current-bindings.json",
         "spec/performance/dense-native-navigation-union-2026-11-08/current-bindings.json",
         "spec/performance/dense-union-module-status-2026-11-08/current-bindings.json",
+        "spec/performance/geo-hierarchy-temporal-remount-2026-11-08/current-bindings.json",
     }
     assert {parent["path"] for parent in current["parents"]} == expected
     for parent in current["parents"]:

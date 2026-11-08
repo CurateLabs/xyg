@@ -1373,3 +1373,13 @@ tests/test_graphforge_contract_corpus.py text eol=lf
 spec/performance/geo-hierarchy-temporal-remount-2026-11-08/** text eol=lf
 spec/performance/geo-hierarchy-temporal-remount-2026-11-08/**/*.gz -text
 spec/performance/geo-hierarchy-temporal-remount-2026-11-08/**/*.png -text
+
+# Actual selected hierarchy application remount evidence.
+scripts/geo_notebook_mounted_temporal_smoke.mjs text eol=lf
+scripts/geo_vscode_mounted_temporal_smoke.py text eol=lf
+tests/geo_mounted_hierarchy_temporal_fixture.py text eol=lf
+tests/notebook_geo_mounted_hierarchy_temporal.ipynb text eol=lf
+tests/vscode_geo_mounted_hierarchy_temporal/** text eol=lf
+spec/performance/geo-hierarchy-application-remount-2026-11-08/** text eol=lf
+spec/performance/geo-hierarchy-application-remount-2026-11-08/**/*.gz -text
+spec/performance/geo-hierarchy-application-remount-2026-11-08/**/*.png -text

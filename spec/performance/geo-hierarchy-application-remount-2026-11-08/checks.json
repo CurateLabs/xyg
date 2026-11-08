@@ -1,0 +1,571 @@
+{
+  "allCompiledInputsUnchanged": 324,
+  "base": "4003b564d1b5073c38cce7bdf43dc941306c68a0",
+  "captures": {
+    "spec/performance/geo-hierarchy-application-remount-2026-11-08/captures/jupyter-3.png": {
+      "bytes": 198104,
+      "sha256": "e5a2d8bf395a080fbd583490d810b9d03c5f4810302657925028e0ad58f2e312"
+    },
+    "spec/performance/geo-hierarchy-application-remount-2026-11-08/captures/jupyter-4.png": {
+      "bytes": 198041,
+      "sha256": "cdd55c8399fa7bd57dfa12ac636ad03d370c2819c74d7bdb97a573475a7509b9"
+    },
+    "spec/performance/geo-hierarchy-application-remount-2026-11-08/captures/jupyter-5.png": {
+      "bytes": 151066,
+      "sha256": "b0354bf59976813c0fcf884fdb2d8838af9b24b91ed8d5a1788b553d59072553"
+    },
+    "spec/performance/geo-hierarchy-application-remount-2026-11-08/captures/vscode.png": {
+      "bytes": 35424,
+      "sha256": "09fd657bdb851a577ea15a1b6b1bc286923b6226369536c95552da9ff9188c1f"
+    }
+  },
+  "compiledInputs": {
+    "allUnchanged": 324,
+    "path": "spec/performance/dense-native-navigation-union-2026-11-08/compiled-input-equality.json",
+    "sha256": "c8ee716be372c060085e1faa448b81630ddcfa60f3dc23b1879423eb12c00495"
+  },
+  "environment": {
+    "executable": "/home/ubuntu/.t3/worktrees/xyg/t3-1319e871/.venv/bin/python",
+    "packages": {
+      "Pillow": "12.3.0",
+      "anywidget": "0.11.0",
+      "ipykernel": "7.4.0",
+      "ipywidgets": "8.1.8",
+      "jupyterlab": "4.6.5",
+      "playwright": "1.61.0"
+    },
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "python": "3.11.17 (main, Oct  1 2026, 20:58:47) [Clang 22.1.3 ]"
+  },
+  "evidence": {
+    "target/task-tmp/geo-hierarchy-applications/canonical-notebook/browser.log": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/f6783a1a7a39b67a4b53065113d80fa41c013a2af4579f35c11d4c04e9f068be.gz",
+      "archiveBytes": 953,
+      "archiveSha256": "4eb77bbfe4bfde1e2923299bb4e0d5c8dc00a1f3e4fc769bc8a48b13f78da951",
+      "bytes": 4736,
+      "sha256": "f6783a1a7a39b67a4b53065113d80fa41c013a2af4579f35c11d4c04e9f068be"
+    },
+    "target/task-tmp/geo-hierarchy-applications/canonical-notebook/geographic.ipynb": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/861c7e7ba56916f90e035a811a4143c3ed26e94577424dcd542e986b5451624d.gz",
+      "archiveBytes": 1539,
+      "archiveSha256": "7b90a9c6877f33ab1e4dc819c880860ae0b3984d8f1cf36df77f34fb6c816718",
+      "bytes": 7015,
+      "sha256": "861c7e7ba56916f90e035a811a4143c3ed26e94577424dcd542e986b5451624d"
+    },
+    "target/task-tmp/geo-hierarchy-applications/canonical-notebook/report.json": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/d66391573c67de3d376793af6629cc3bcd6f73f614890bcfe586f273909deed3.gz",
+      "archiveBytes": 973,
+      "archiveSha256": "10bd423eca0d5ddc7fc21973535766e680911230a8df52d4657888563c0b038d",
+      "bytes": 5093,
+      "sha256": "d66391573c67de3d376793af6629cc3bcd6f73f614890bcfe586f273909deed3"
+    },
+    "target/task-tmp/geo-hierarchy-applications/canonical-notebook/server.json": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/0e6e592340f5fa63331ceb9c845adf1b49b6a71ab4f7acef2b9c5b85b81a5b99.gz",
+      "archiveBytes": 130,
+      "archiveSha256": "664f6c66ba3ae96adf462dcc3c1e48eed796599133f0b0bc26f0db6872f0c56c",
+      "bytes": 131,
+      "sha256": "0e6e592340f5fa63331ceb9c845adf1b49b6a71ab4f7acef2b9c5b85b81a5b99"
+    },
+    "target/task-tmp/geo-hierarchy-applications/canonical-notebook/server.log": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/adb8fde4e1ab8a654d18a74fbd17b3f6d12ed5f5646ff47d00855ec18df3b3e7.gz",
+      "archiveBytes": 1294,
+      "archiveSha256": "ea0db187692f5e79a24f7825fb43124d4b89d6460f0906a4ebb0be829723a9d3",
+      "bytes": 3989,
+      "sha256": "adb8fde4e1ab8a654d18a74fbd17b3f6d12ed5f5646ff47d00855ec18df3b3e7"
+    },
+    "target/task-tmp/geo-hierarchy-applications/canonical-notebook/start.py": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/80451ecafbef2f3163efc072971cd73cfab75df378b08b192ce83653bfcf5600.gz",
+      "archiveBytes": 406,
+      "archiveSha256": "9e8a4a7bf3a92b83671ec13327e31b23a6d197291c38a198ca114a915c7e60e3",
+      "bytes": 625,
+      "sha256": "80451ecafbef2f3163efc072971cd73cfab75df378b08b192ce83653bfcf5600"
+    },
+    "target/task-tmp/geo-hierarchy-applications/changed-sources.json": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/26d8e3e257d91a6d4ffbb9e0a2d862034b2e0442e561c6116dde17bbcc21ff1d.gz",
+      "archiveBytes": 219,
+      "archiveSha256": "5f7e9a2e5bd824f70df2e8cc223bfc5edc483e886034473c049023d7dcd847af",
+      "bytes": 570,
+      "sha256": "26d8e3e257d91a6d4ffbb9e0a2d862034b2e0442e561c6116dde17bbcc21ff1d"
+    },
+    "target/task-tmp/geo-hierarchy-applications/core.log": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/ac644938e63357a7a42001d932b83a50874c42481341da637b4ef87c4b034464.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "e3c2c8226b1d212e90416ff614796dee09ad0a69cbfefe41b6028705d70b64e0",
+      "bytes": 99,
+      "sha256": "ac644938e63357a7a42001d932b83a50874c42481341da637b4ef87c4b034464"
+    },
+    "target/task-tmp/geo-hierarchy-applications/environment.json": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/097f948a79d6d2f651e3e4767a8238b3690f662a644486c7a04f42de755d28f1.gz",
+      "archiveBytes": 286,
+      "archiveSha256": "94c86dcba4c73d6f7ea899a03012c8ef0ad50611b3963491c06783b152438dc2",
+      "bytes": 392,
+      "sha256": "097f948a79d6d2f651e3e4767a8238b3690f662a644486c7a04f42de755d28f1"
+    },
+    "target/task-tmp/geo-hierarchy-applications/format.log": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/e921aaaf65986c6531c59f2065c35ed00cdcc7f22c1a12a135443e5e76f7f46a.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "ce42a3224112748d5dc59f4bfc1494cb313915f5b0b64f25ced5cbd42a51ed87",
+      "bytes": 29,
+      "sha256": "e921aaaf65986c6531c59f2065c35ed00cdcc7f22c1a12a135443e5e76f7f46a"
+    },
+    "target/task-tmp/geo-hierarchy-applications/hierarchy-notebook-final/browser.log": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/2ca9f65e300ba9935fb2b652b1e09f90b0c7714ffdb5fb733bab3468540df78c.gz",
+      "archiveBytes": 1421,
+      "archiveSha256": "0a4cd1dfe9a9745a36eb44bcbd3fa8a9c3b65434078b18045104f8b1f0606659",
+      "bytes": 5087,
+      "sha256": "2ca9f65e300ba9935fb2b652b1e09f90b0c7714ffdb5fb733bab3468540df78c"
+    },
+    "target/task-tmp/geo-hierarchy-applications/hierarchy-notebook-final/geographic.ipynb": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/dc032a4412fd219b2710a035b095064b768c648218d692e76ed5c73d32fc7a21.gz",
+      "archiveBytes": 2447,
+      "archiveSha256": "34c4a25598ae191c99376b8e565949434b1500b5d751c07e5793348887c7b2ed",
+      "bytes": 11104,
+      "sha256": "dc032a4412fd219b2710a035b095064b768c648218d692e76ed5c73d32fc7a21"
+    },
+    "target/task-tmp/geo-hierarchy-applications/hierarchy-notebook-final/report.json": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/9c39f60769f2d40da27d69b925e5f091c5548dbd85fc11850a59f489b63e810a.gz",
+      "archiveBytes": 1509,
+      "archiveSha256": "258f4efe9e40a887bd17ae868d04522188dc239c947be65fb2f3246a598fd3af",
+      "bytes": 5835,
+      "sha256": "9c39f60769f2d40da27d69b925e5f091c5548dbd85fc11850a59f489b63e810a"
+    },
+    "target/task-tmp/geo-hierarchy-applications/hierarchy-notebook-final/server.json": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/e069947cd7f1aebb9c10dc0fbe46f24861b9ff1f43195588724c7c9162a35449.gz",
+      "archiveBytes": 132,
+      "archiveSha256": "eaa2114bf887c6dc868f601bfaa82a2c033b28a349a945d5fae25a7bba18de2c",
+      "bytes": 137,
+      "sha256": "e069947cd7f1aebb9c10dc0fbe46f24861b9ff1f43195588724c7c9162a35449"
+    },
+    "target/task-tmp/geo-hierarchy-applications/hierarchy-notebook-final/server.log": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/98ed3d3e2137e705e135eb0529e2dd5ee77192976391a7062e24dc5afcc57338.gz",
+      "archiveBytes": 1297,
+      "archiveSha256": "8ef4a720db9aca02d4ec69526fe1ee0f1c205067efb7f46efa3d088cf8c7053b",
+      "bytes": 4007,
+      "sha256": "98ed3d3e2137e705e135eb0529e2dd5ee77192976391a7062e24dc5afcc57338"
+    },
+    "target/task-tmp/geo-hierarchy-applications/hierarchy-notebook-final/start.py": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/80451ecafbef2f3163efc072971cd73cfab75df378b08b192ce83653bfcf5600.gz",
+      "archiveBytes": 406,
+      "archiveSha256": "9e8a4a7bf3a92b83671ec13327e31b23a6d197291c38a198ca114a915c7e60e3",
+      "bytes": 625,
+      "sha256": "80451ecafbef2f3163efc072971cd73cfab75df378b08b192ce83653bfcf5600"
+    },
+    "target/task-tmp/geo-hierarchy-applications/hooks-preseal.log": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/eb18c927e6630648f89fe3e7d46697d62a51a4172e01ed374c5865d9e2a6d189.gz",
+      "archiveBytes": 1241,
+      "archiveSha256": "864ded68fbaf7a63345727458d758b7b12a4155959763df738a5b05b2d50be32",
+      "bytes": 3925,
+      "sha256": "eb18c927e6630648f89fe3e7d46697d62a51a4172e01ed374c5865d9e2a6d189"
+    },
+    "target/task-tmp/geo-hierarchy-applications/hooks.log": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/geo-hierarchy-applications/node22.log": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/daa248e545898ccd771f898ce7d357e6447e06d15dd8e62b0765d9d9014a9a5a.gz",
+      "archiveBytes": 976,
+      "archiveSha256": "24accc00e6df0b619b5bff5a084cfc95a6cdcaf278322c3ab5dea60e38605aff",
+      "bytes": 3870,
+      "sha256": "daa248e545898ccd771f898ce7d357e6447e06d15dd8e62b0765d9d9014a9a5a"
+    },
+    "target/task-tmp/geo-hierarchy-applications/prestarted-negative-report.json": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/ea471c357505b470e94902b95b3b26953d463668ff2b54675153bf020db826fb.gz",
+      "archiveBytes": 215,
+      "archiveSha256": "f9679b94d2dd6c5beec02f405effd04ed42d0383577da8f71a71330485dd44b9",
+      "bytes": 402,
+      "sha256": "ea471c357505b470e94902b95b3b26953d463668ff2b54675153bf020db826fb"
+    },
+    "target/task-tmp/geo-hierarchy-applications/prestarted-negatives.log": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/ceb702448ebbb86b2274864c32069074146382037a26b788c424d089486117cb.gz",
+      "archiveBytes": 203,
+      "archiveSha256": "382715b4ba3c9f96b54ea892efcdd455442efb24465bb3f0584ba3377a245825",
+      "bytes": 329,
+      "sha256": "ceb702448ebbb86b2274864c32069074146382037a26b788c424d089486117cb"
+    },
+    "target/task-tmp/geo-hierarchy-applications/prestarted-negatives.mjs": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/8cca67c923b13804bfc8c53655526f9478786eab648f3e8a93988ba83a0311f1.gz",
+      "archiveBytes": 870,
+      "archiveSha256": "0094f82682c7a723c724adbf39094e998c24bf7b8c258882f7e712220aa559ea",
+      "bytes": 1558,
+      "sha256": "8cca67c923b13804bfc8c53655526f9478786eab648f3e8a93988ba83a0311f1"
+    },
+    "target/task-tmp/geo-hierarchy-applications/python311.log": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/c2d8ca47ef7ac3eba3a939a0b23b6f78c486e4fd410da79fa94cbedc2936ca41.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "1862909b6bb8a232480d68bed558feb9284bf779ad9f7f5d791dd21548f9697a",
+      "bytes": 99,
+      "sha256": "c2d8ca47ef7ac3eba3a939a0b23b6f78c486e4fd410da79fa94cbedc2936ca41"
+    },
+    "target/task-tmp/geo-hierarchy-applications/python312.log": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/a9cce4dcdad0d3c89d5170e7cb8d58b84e2c43c1d7a90df948001fca218871fc.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "963333d237f6cf992262d40ffee1960a39b80f3761400e65b1bc27083c6bd07a",
+      "bytes": 99,
+      "sha256": "a9cce4dcdad0d3c89d5170e7cb8d58b84e2c43c1d7a90df948001fca218871fc"
+    },
+    "target/task-tmp/geo-hierarchy-applications/ruff.log": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/geo-hierarchy-applications/runtime-equality.json": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/e09d30a81b82608af285a083e9c63242fbbfe39749f2fe30ba210417cb23d838.gz",
+      "archiveBytes": 713,
+      "archiveSha256": "c334a70423b99cb60435380b84b3793da854bbdb670869c82f1d498da159a589",
+      "bytes": 1590,
+      "sha256": "e09d30a81b82608af285a083e9c63242fbbfe39749f2fe30ba210417cb23d838"
+    },
+    "target/task-tmp/geo-hierarchy-applications/seal-sources.log": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/11ae65db2a276d1c3178a3791105261b5b8774104b87ba980fc2da634a050251.gz",
+      "archiveBytes": 74,
+      "archiveSha256": "474d8a13e67976ebc2de5953c571cd92da66c514f1e4b54fa193270ce20c5188",
+      "bytes": 61,
+      "sha256": "11ae65db2a276d1c3178a3791105261b5b8774104b87ba980fc2da634a050251"
+    },
+    "target/task-tmp/geo-hierarchy-applications/seal-sources.py": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/5a707108f39fc488967cb55e06c6dacebf44a6a63d7504a74417b2ad39ea144f.gz",
+      "archiveBytes": 862,
+      "archiveSha256": "d23f7d9f2a4399bb0be726039b61d5a2bb1fcb1d05d4916d33d76db6de4df4ce",
+      "bytes": 1891,
+      "sha256": "5a707108f39fc488967cb55e06c6dacebf44a6a63d7504a74417b2ad39ea144f"
+    },
+    "target/task-tmp/geo-hierarchy-temporal/formal-notebook-r1/browser.log": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/ad45f997a288e3f6d1d9682e6db0cad160288cccff17b79f493dee5bc8a6ce24.gz",
+      "archiveBytes": 1419,
+      "archiveSha256": "dcf84b30d799efa4c3227387e2cf7fac9f201a8becbb3a5f33c2bde691a5eac0",
+      "bytes": 5087,
+      "sha256": "ad45f997a288e3f6d1d9682e6db0cad160288cccff17b79f493dee5bc8a6ce24"
+    },
+    "target/task-tmp/geo-hierarchy-temporal/formal-notebook-r1/geographic.ipynb": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/35cd8e7661324315caa49dc0c8378f7ce6bdc2e6d8c2f6b25f179ee7174fb2d7.gz",
+      "archiveBytes": 2086,
+      "archiveSha256": "eb8426ea2183321ac59e2dfed23db992d571dd67b7700ad8cbe5ca59d66e43e2",
+      "bytes": 9401,
+      "sha256": "35cd8e7661324315caa49dc0c8378f7ce6bdc2e6d8c2f6b25f179ee7174fb2d7"
+    },
+    "target/task-tmp/geo-hierarchy-temporal/formal-notebook-r1/report.json": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/4a413b309334be3e4172e482a0060717e7c6629f40a2d9e8630764b8c7ed43e7.gz",
+      "archiveBytes": 1506,
+      "archiveSha256": "c480aef0ac4e6ef86cb833fe399685515df40d03c110455220a88fb98ee453d9",
+      "bytes": 5835,
+      "sha256": "4a413b309334be3e4172e482a0060717e7c6629f40a2d9e8630764b8c7ed43e7"
+    },
+    "target/task-tmp/geo-hierarchy-temporal/formal-notebook-r1/server.json": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/9f068f722f9bd372fdf116cf000c350409975255415b28f69784345aca982f9c.gz",
+      "archiveBytes": 129,
+      "archiveSha256": "cba9949b655165f23c392a314cfb0b19469a9307917aab81a13497ecff8afd5a",
+      "bytes": 127,
+      "sha256": "9f068f722f9bd372fdf116cf000c350409975255415b28f69784345aca982f9c"
+    },
+    "target/task-tmp/geo-hierarchy-temporal/formal-notebook-r1/server.log": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/775998db2743029fdc485fbd0f7f9b4b853af07fe12cdca23110ba7c94984019.gz",
+      "archiveBytes": 1523,
+      "archiveSha256": "d696a0c43b8f9fb6e1a2541525d24fb39e7243b0d75aae4a4dbed94236ee5664",
+      "bytes": 4961,
+      "sha256": "775998db2743029fdc485fbd0f7f9b4b853af07fe12cdca23110ba7c94984019"
+    },
+    "target/task-tmp/geo-hierarchy-temporal/formal-notebook-r1/start.py": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/80451ecafbef2f3163efc072971cd73cfab75df378b08b192ce83653bfcf5600.gz",
+      "archiveBytes": 406,
+      "archiveSha256": "9e8a4a7bf3a92b83671ec13327e31b23a6d197291c38a198ca114a915c7e60e3",
+      "bytes": 625,
+      "sha256": "80451ecafbef2f3163efc072971cd73cfab75df378b08b192ce83653bfcf5600"
+    },
+    "target/task-tmp/geo-hierarchy-temporal/vscode/formal-r1.log": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/85cb8b8bf3e134b4fe3b56f757b9dc316c8db968de38fad0ed9380a18b8648f6.gz",
+      "archiveBytes": 634,
+      "archiveSha256": "d4a0dd11a11fda1ff44550dc5b611c2c059a25f687efc3c0602aac40fa58d194",
+      "bytes": 2281,
+      "sha256": "85cb8b8bf3e134b4fe3b56f757b9dc316c8db968de38fad0ed9380a18b8648f6"
+    },
+    "target/task-tmp/geo-hierarchy-temporal/vscode/formal-r1/application.log": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/8fb91e009d87cbf68b85af27007afa0d620e68315b240ee9923cef036672a23c.gz",
+      "archiveBytes": 25716,
+      "archiveSha256": "0693a098d8917156631bb8620147a85dd3eb9393082642af9003e7f46222d3fc",
+      "bytes": 129244,
+      "sha256": "8fb91e009d87cbf68b85af27007afa0d620e68315b240ee9923cef036672a23c"
+    },
+    "target/task-tmp/geo-hierarchy-temporal/vscode/formal-r1/command.json": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/e27bf86a48b9698704a4138f0c0f52a7703433560b30cfd8a0bbf5a6919f145a.gz",
+      "archiveBytes": 528,
+      "archiveSha256": "e45e323c0e4b4b990e8c6fcbbf3741835fbeb94fb719d1330e630a182ea7bf54",
+      "bytes": 1493,
+      "sha256": "e27bf86a48b9698704a4138f0c0f52a7703433560b30cfd8a0bbf5a6919f145a"
+    },
+    "target/task-tmp/geo-hierarchy-temporal/vscode/formal-r1/report.json": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/e4449beb271740c46baec52a846512cc35fa24521a0b30349c2176edab4b4e75.gz",
+      "archiveBytes": 665,
+      "archiveSha256": "2712d1a4cb6637a15992f8a224474adbddc083c3426d00a57bba687ae353e501",
+      "bytes": 2747,
+      "sha256": "e4449beb271740c46baec52a846512cc35fa24521a0b30349c2176edab4b4e75"
+    },
+    "target/task-tmp/geo-hierarchy-temporal/vscode/formal-r1/xvfb.log": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/geo-hierarchy-temporal/vscode/formal-r2.log": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/85cb8b8bf3e134b4fe3b56f757b9dc316c8db968de38fad0ed9380a18b8648f6.gz",
+      "archiveBytes": 634,
+      "archiveSha256": "d4a0dd11a11fda1ff44550dc5b611c2c059a25f687efc3c0602aac40fa58d194",
+      "bytes": 2281,
+      "sha256": "85cb8b8bf3e134b4fe3b56f757b9dc316c8db968de38fad0ed9380a18b8648f6"
+    },
+    "target/task-tmp/geo-hierarchy-temporal/vscode/formal-r2/application.log": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/899fdb0c47671f2ac7d6bef504a87eb06d13b08e64711fd7a1f52ca30044c8a9.gz",
+      "archiveBytes": 25603,
+      "archiveSha256": "3bdc66bd016daa363b6925a4975e4d1290e9e5830e499cca6d7b4a0fed326ff0",
+      "bytes": 129259,
+      "sha256": "899fdb0c47671f2ac7d6bef504a87eb06d13b08e64711fd7a1f52ca30044c8a9"
+    },
+    "target/task-tmp/geo-hierarchy-temporal/vscode/formal-r2/command.json": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/62ff7ab70a74120fe08628058ed8cb84fc7347ceb60c1c96174422ae0fa738dc.gz",
+      "archiveBytes": 528,
+      "archiveSha256": "a8e5b48a7d986cd7eb9fc6adb1a4520a348cbd0d5151312907aa3c392c605add",
+      "bytes": 1493,
+      "sha256": "62ff7ab70a74120fe08628058ed8cb84fc7347ceb60c1c96174422ae0fa738dc"
+    },
+    "target/task-tmp/geo-hierarchy-temporal/vscode/formal-r2/report.json": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/e4449beb271740c46baec52a846512cc35fa24521a0b30349c2176edab4b4e75.gz",
+      "archiveBytes": 665,
+      "archiveSha256": "2712d1a4cb6637a15992f8a224474adbddc083c3426d00a57bba687ae353e501",
+      "bytes": 2747,
+      "sha256": "e4449beb271740c46baec52a846512cc35fa24521a0b30349c2176edab4b4e75"
+    },
+    "target/task-tmp/geo-hierarchy-temporal/vscode/formal-r2/xvfb.log": {
+      "archive": "spec/performance/geo-hierarchy-application-remount-2026-11-08/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "externalExecutables": {
+    "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome": {
+      "bytes": 301186376,
+      "sha256": "377a9fc07b495c3b8d0ab8ec1fdfd153641759f9756fea34d8dfce4de82f5025"
+    },
+    "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin/node": {
+      "bytes": 124902584,
+      "sha256": "94efd062ed066c1a0b332e18249859c905e920eeada5df55d24c99b919629a90"
+    },
+    "/home/ubuntu/.t3/worktrees/xyg/t3-5af28b44/target/task-tmp/mounted-temporal-continuation/vscode-node22/code": {
+      "bytes": 195299104,
+      "sha256": "d1a85801f176b2cfdceee8618d54a56a159accaee42bef8cbaa8bdb707d96b93"
+    }
+  },
+  "fresh": {
+    "CoreRealCrLf": {
+      "exit": 0,
+      "log": "target/task-tmp/geo-hierarchy-applications/core.log",
+      "passed": 8
+    },
+    "Node22": {
+      "exit": 0,
+      "log": "target/task-tmp/geo-hierarchy-applications/node22.log",
+      "passed": 17
+    },
+    "Python311": {
+      "environment": "Existing3.11,uv--active--no-sync,explicitPYTHONPATH/native",
+      "exit": 0,
+      "log": "target/task-tmp/geo-hierarchy-applications/python311.log",
+      "passed": 66
+    },
+    "Python312": {
+      "exit": 0,
+      "log": "target/task-tmp/geo-hierarchy-applications/python312.log",
+      "passed": 66
+    },
+    "actualJupyter": {
+      "coldStartupQualified": false,
+      "exactInputSha256": "dc032a4412fd219b2710a035b095064b768c648218d692e76ed5c73d32fc7a21",
+      "exit": 0,
+      "kernelPython": "3.11.17",
+      "nativeAbi": 405,
+      "phasePixelHashes": [
+        "72770d298e3f56332ca0de592b79e214b35dd4cba7a902cd471e885a55dfe564",
+        "124617c1f65e92d3bc895fbd869e4bb16a30754b198f59e6e973949b9aaa1b01",
+        "72770d298e3f56332ca0de592b79e214b35dd4cba7a902cd471e885a55dfe564"
+      ],
+      "phasePixels": [
+        14,
+        0,
+        14
+      ],
+      "report": "target/task-tmp/geo-hierarchy-applications/hierarchy-notebook-final/report.json",
+      "separatelyStartedServer": true,
+      "trust": [
+        {
+          "key": "ArrowRight",
+          "trusted": true
+        }
+      ]
+    },
+    "actualVsCode": {
+      "cameraRoute": "Public programmatic view.update; not a trusted canvas pan",
+      "embeddedNode": "v22.17.0",
+      "exit": 0,
+      "report": "target/task-tmp/geo-hierarchy-temporal/vscode/formal-r2/report.json",
+      "rgbaRetention": true,
+      "sequence": {
+        "abortedSequence": "11",
+        "acceptedSequence": "10",
+        "newSequence": "12"
+      },
+      "vscode": "1.103.2"
+    },
+    "existingCanonicalJupyter": {
+      "exit": 0,
+      "phasePixels": [
+        47,
+        0,
+        47
+      ],
+      "report": "target/task-tmp/geo-hierarchy-applications/canonical-notebook/report.json"
+    },
+    "format": {
+      "exit": 0,
+      "log": "target/task-tmp/geo-hierarchy-applications/format.log"
+    },
+    "hooks": {
+      "exit": 0,
+      "log": "target/task-tmp/geo-hierarchy-applications/hooks.log"
+    },
+    "ruff": {
+      "exit": 0,
+      "log": "target/task-tmp/geo-hierarchy-applications/ruff.log"
+    }
+  },
+  "module": {
+    "capsUnchanged": true,
+    "gzipHeadroom": 47,
+    "node22Gzip6": 786385,
+    "raw": 1895719
+  },
+  "negativeControls": {
+    "operatorAdmission": {
+      "cases": [
+        {
+          "exit": 1,
+          "expected": "prestarted server notebook differs from the committed input",
+          "name": "different-input"
+        },
+        {
+          "exit": 1,
+          "expected": "prestarted Jupyter must be an unauthenticated private loopback server",
+          "name": "remote-prestarted"
+        },
+        {
+          "exit": 1,
+          "expected": "select one explicit indexed or hierarchy producer",
+          "name": "two-producers"
+        }
+      ],
+      "exit": 0,
+      "note": "Control HTTP server returns a deliberately different input; it provides no product ACKs"
+    }
+  },
+  "parentPreservation": {
+    "allHistoricalPerformanceEvidenceUnchanged": true,
+    "changedParentPaths": [
+      ".gitattributes",
+      "scripts/geo_notebook_mounted_temporal_smoke.mjs",
+      "scripts/geo_vscode_mounted_temporal_smoke.py",
+      "spec/design/geo-mounted-temporal-hosts.md",
+      "tests/test_graphforge_contract_corpus.py"
+    ],
+    "noMissingPaths": true,
+    "noProductionChange": true,
+    "protectedModeObjects": 21538
+  },
+  "preservedFailuresAndLimits": [
+    "Initial required hooks failed notebook style checks and formatted it; final corrected input was rerun through actual Jupyter",
+    "Initial passing pre-format notebook and VSCode captures retained but not substituted for final-source runs",
+    "Earlier Jupyter cold-startup and Worker timing/disposal failures remain unresolved; no reliability repair is claimed",
+    "Reports retain anywidget deprecation,GL readback and CSSColor4 fallback warnings; no full theme/alpha claim",
+    "No native/WASM/client rebuild,fullCI,72GB rescan,shipping or milestone closure in this continuation"
+  ],
+  "pythonStaticCopies": {
+    "python/xyg/static/index.js": {
+      "bytes": 855560,
+      "sha256": "af48bff857ca4515d55ff5828e7020f5fcf5aa164aa41632fba404688ada0758"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 855580,
+      "sha256": "d7524c3c12713526423d5120b839d237ab1c949d7cbe1b913f19d928549fa819"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "bytes": 2548750,
+      "sha256": "128586393e0a576b7d54f6d8354e297d3ccc4cf72e2594280510075e6c08b20f"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "0460b161e4b45690a2a6f18bce57549a088d8ee0606d76afc2f352227f72fbc1"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1895719,
+      "sha256": "4cd1e964a16fb8be527b552dae50f94729e80d79ed8bcf936b53601914c8feba"
+    }
+  },
+  "readmeSha256": "ef50df26f9cd38d4dd9e510c9ea3b602f4a3b8bfb410f10f3483bcb2c2ad4fcc",
+  "recordedAt": "2026-11-08T04:53:30.601655+00:00",
+  "remaining": [
+    "Independent exact final review,current-main freshness,hosted final-head checks and mandatory mergequeue",
+    "Five simultaneous automatic bindings,ordinary hierarchy/overview/mixedtiles,installedXYG wheel,globalbudgets,fullaccessibility,massive/competitor qualification"
+  ],
+  "reusedQualification": "spec/performance/dense-native-navigation-union-2026-11-08/qualification.json",
+  "schemaVersion": 1,
+  "scope": "Actual source-checkout selected hierarchy temporal abort/release/remount in installed JupyterLab and VSCode; test/operator/spec/evidence only",
+  "shippingArtifacts": {
+    "packages/xy-client/dist/index.js": {
+      "bytes": 855560,
+      "sha256": "af48bff857ca4515d55ff5828e7020f5fcf5aa164aa41632fba404688ada0758"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 855580,
+      "sha256": "d7524c3c12713526423d5120b839d237ab1c949d7cbe1b913f19d928549fa819"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2548750,
+      "sha256": "128586393e0a576b7d54f6d8354e297d3ccc4cf72e2594280510075e6c08b20f"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "0460b161e4b45690a2a6f18bce57549a088d8ee0606d76afc2f352227f72fbc1"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1895719,
+      "sha256": "4cd1e964a16fb8be527b552dae50f94729e80d79ed8bcf936b53601914c8feba"
+    },
+    "target/release/libxyg_core.so": {
+      "bytes": 6374200,
+      "sha256": "1ac386f0d7af618a757fb51cca883f0c409f3991c976f7a9df0562f69524d316"
+    }
+  },
+  "sourceBindings": {
+    "current": 3361,
+    "historical": 811,
+    "path": "spec/performance/geo-hierarchy-application-remount-2026-11-08/current-bindings.json",
+    "provenanceParents": 5,
+    "sha256": "4399df5b52ee4e10ba2208ad8d886f86d4f30093c96d5357a38d63dd471e2748"
+  }
+}

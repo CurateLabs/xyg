@@ -210,8 +210,21 @@ qualifies the bounded packaged Node/native browser lane: temporal cursor/range,
 private hierarchy publication authority, complete selected intent, supersession,
 storage failure, drain retry, remount and acknowledged cleanup. Python native
 regressions verify the same exact control bytes after a real hierarchy abort and
-remount. Actual hierarchy Jupyter/VS Code remount, five simultaneous automatic
-bindings and mixed tiles remain unqualified. Existing static/indexed/hierarchy,
+remount. The subsequent
+[selected hierarchy application follow-up](../performance/geo-hierarchy-application-remount-2026-11-08/README.md)
+qualifies bounded actual Jupyter/anywidget and VS Code remount journeys using the
+same native source and painter. `XYG_GEO_HIERARCHY=1` selects their dedicated
+fixtures in the existing application operators. The notebook uses trusted
+keyboard camera input, a real held native preparation/abort, Output clear with
+release ACK, redisplay and exact full-canvas RGBA restoration. VS Code uses a
+public programmatic camera update, native read supersession/failure, actual
+prepared abort and WebviewPanel reload/disposal, with full-canvas RGBA retention.
+Both retain private hierarchy authority, exact u64 selection and independent
+caller leases. These are source-checkout tests in installed applications, not
+installed-XYG-wheel acceptance. The separately started notebook server must
+serve the exact committed input; this does not qualify cold startup. Five
+simultaneous automatic bindings, mixed tiles and broader host/scale/accessibility
+qualification remain open. Existing static/indexed/hierarchy,
 explicit live mounts and snapshot/export evidence remain distinct. The packaged
 Node22/native bridge and real VS Code1.103.2 (embedded Node22.17.0) application
 journey exercise the same painter. A separate VS Code1.145.2/Node24.22.1 probe is
