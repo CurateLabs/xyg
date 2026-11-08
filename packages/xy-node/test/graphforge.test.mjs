@@ -624,3 +624,31 @@ test("analytical selection and picks retain native source rows across overlays",
       (e) => e.code === "GF_COMPOSE_REQUEST_INVALID");
   }
 });
+
+
+test("row encoders reject values outside u64 rather than wrapping into valid membership", () => {
+  for (const key of ["rows", "selectedRows"]) {
+    for (const invalid of [-1n, 1n << 64n, (1n << 64n) + 1n, -1, 0.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+      assert.throws(() => encodeGraphForgeRequest({ layers: [{ result: arrow("triad_census"), intent: "bar-chart", [key]: [invalid] }] }),
+        error => error.code === "GF_COMPOSE_REQUEST_INVALID");
+    }
+    assert.ok(encodeGraphForgeRequest({ layers: [{ result: arrow("triad_census"), intent: "bar-chart", [key]: [0n, 0xffffffffffffffffn] }] }).length > 0);
+  }
+});
+
+test("selection overlays preserve export legends and native pick membership", () => {
+  for (const [name, intent] of [["triad_census", "bar-chart"], ["node2vec", "parallel-coordinates"], ["node2vec-1d", "parallel-coordinates"], ["node2vec", "embedding-coordinates"]]) {
+    const layer = { result: name === "node2vec-1d" ? derivedFixture(name) : arrow(name), intent, resultId: "legend:source",
+      ...(intent === "embedding-coordinates" ? { coordinates: derivedFixture("node2vec-coordinates"), extra: "drop" } : {}) };
+    const plain = graphforgeChart(composeGraphForge({ layers: [layer] }));
+    const selected = composeGraphForge({ layers: [{ ...layer, selectedRows: [0] }] });
+    const fig = graphforgeChart(selected);
+    assert.deepEqual(fig.traces.filter(trace => trace.name).map(trace => trace.name), plain.traces.filter(trace => trace.name).map(trace => trace.name));
+    const label = fig.traces[0].name;
+    const count = figure => Buffer.from(figure.toSvg()).toString("utf8").split(`>${label}<`).length - 1;
+    assert.equal(count(fig), count(plain), name);
+    assert.ok(fig.toPng().length > 0);
+    fig.buildPayload();
+    assert.deepEqual(fig.graphforgeRowsForPick(selected, { trace: 1, index: 0 }), [0]);
+  }
+});

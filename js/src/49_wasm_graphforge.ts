@@ -193,8 +193,15 @@ export function encodeWasmGraphForgeRequest(input: XygGraphForgeInput): ArrayBuf
     if (layer.generation != null) sections.push({ name: "layer.generation", index, dtype: DT.uuid, values: uuidToBytes(layer.generation, `layers[${index}].generation`) });
     if (layer.missing != null) sections.push({ name: "layer.missing", index, dtype: DT.utf8, values: layer.missing });
     if (layer.extra != null) sections.push({ name: "layer.extra", index, dtype: DT.utf8, values: layer.extra });
-    if (layer.rows != null) sections.push({ name: "layer.rows", index, dtype: DT.u64, values: Array.from(layer.rows, (row) => BigInt(row)) });
-    if (layer.selectedRows != null) sections.push({ name: "layer.selected_rows", index, dtype: DT.u64, values: Array.from(layer.selectedRows, (row) => BigInt(row)) });
+    for (const [key, name] of [["rows", "layer.rows"], ["selectedRows", "layer.selected_rows"]] as const) {
+      if (layer[key] == null) continue;
+      const values = Array.from(layer[key], (row) => {
+        if (typeof row === "bigint" ? row < 0n || row > NONE_U64 : !Number.isSafeInteger(row) || row < 0)
+          throw Object.assign(new TypeError("rows must be unsigned 64-bit integers"), { code: "GF_COMPOSE_REQUEST_INVALID" });
+        return BigInt(row);
+      });
+      sections.push({ name, index, dtype: DT.u64, values });
+    }
     if (layer.coordinates != null) sections.push({ name: "layer.coordinates", index, dtype: DT.bytes, values: bytesOf(layer.coordinates, `layers[${index}].coordinates`) });
   });
   if (input.select != null) {

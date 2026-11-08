@@ -161,8 +161,8 @@ export function encodeGraphForgeRequest({ base = {}, layers = [], select = null,
     for (const [key, section] of [["rows", "layer.rows"], ["selectedRows", "layer.selected_rows"]]) {
       if (layer[key] == null) continue;
       const rows = [...layer[key]].map((row) => {
-        if (!(Number.isSafeInteger(row) && row >= 0) && typeof row !== "bigint") {
-          throw hostError("GF_COMPOSE_REQUEST_INVALID", "rows must be non-negative integers");
+        if (typeof row === "bigint" ? row < 0n || row > NONE_U64 : !Number.isSafeInteger(row) || row < 0) {
+          throw hostError("GF_COMPOSE_REQUEST_INVALID", "rows must be unsigned 64-bit integers");
         }
         return BigInt(row);
       });
@@ -683,7 +683,7 @@ function graphforgeBarChart(composition, opts) {
   const selected = Array.from(composition.chart.selected, (value, i) => value ? i : -1).filter((i) => i >= 0);
   if (selected.length) {
     fig.bar(Float64Array.from(selected), Float64Array.from(selected, (i) => values[i]), {
-      name: valueName, color: fig.traces[0].style.color,
+      color: fig.traces[0].style.color,
       stroke: selectionColor(opts), strokeWidth: 3,
     });
     fig.traces[1].tooltip_rows = selected.map((i) => fig.traces[0].tooltip_rows[i]);
@@ -718,7 +718,7 @@ function graphforgeParallelChart(composition, opts) {
     const rowMaps = [composition.vectors.resultRows];
     if (selected.length) {
       fig.scatter(new Float64Array(selected.length), Float64Array.from(selected, (i) => values[i]), {
-        name: "embedding", style: { color: selectionColor(opts), size: 7 },
+        style: { color: selectionColor(opts), size: 7 },
         tooltip_rows: selected.map((i) => fig.traces[0].tooltip_rows[i]), _composed: true,
       });
       rowMaps.push(selected.map((i) => composition.vectors.resultRows[i]));
@@ -752,7 +752,7 @@ function graphforgeParallelChart(composition, opts) {
   if (selected.length) {
     fig.segments(Float64Array.from(selected, (i) => x0[i]), Float64Array.from(selected, (i) => y0[i]),
       Float64Array.from(selected, (i) => x1[i]), Float64Array.from(selected, (i) => y1[i]), {
-        name: "embedding", color: selectionColor(opts), width: 3,
+        color: selectionColor(opts), width: 3,
         tooltip_rows: selected.map((i) => rows[i]),
       });
     rowMaps.push(selected.map((i) => sourceRows[i]));
@@ -783,7 +783,7 @@ function graphforgeScatterChart(composition, opts) {
   const rowMaps = [composition.points.resultRows];
   if (selected.length) {
     fig.scatter(Float64Array.from(selected, (i) => x[i]), Float64Array.from(selected, (i) => y[i]), {
-      name: "embedding", style: { color: selectionColor(opts), size: 7 },
+      style: { color: selectionColor(opts), size: 7 },
       tooltip_rows: selected.map((i) => rows[i]), _composed: true,
     });
     rowMaps.push(selected.map((i) => composition.points.resultRows[i]));

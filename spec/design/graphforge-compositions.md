@@ -553,13 +553,16 @@ marks only admitted members after row filtering and UUID/coordinate joins.
 Selecting an excluded row does not add it back. Empty/absent selection clears
 all selected bytes. Duplicates, out-of-range source rows, and row-selection on
 graph/table intents fail with `GF_COMPOSE_REQUEST_INVALID` (graph selections
-remain `select.uuid`). Existing generation validation applies unchanged.
+remain `select.uuid`). Both host encoders reject unsafe numeric row values and
+bigints outside u64 before framing, so invalid input cannot wrap into valid
+membership. Existing generation validation applies unchanged.
 
 Node `composition.selectResultRows(resultId, rows)` (and its WASM equivalent)
 returns only admitted native source rows for the exact opaque result identity;
 unknown identities return an empty selection. `graphforgeChart` paints selected
 members with a contrasting outline or heavier line/point overlay, preserving
-the full unselected chart and domain. `figure.graphforgeRowsForPick(composition,
+the full unselected chart and domain. Overlays are unnamed so static exports
+retain one legend entry per base series; their native pick mapping is unchanged. `figure.graphforgeRowsForPick(composition,
 {trace,index})` relays exact native source rows for original marks and selected
 overlays, including every segment of a parallel-coordinate vector. The host
 Figure retains the same native gather indices used for geometry after finite
