@@ -251,12 +251,16 @@ record the bounded contract and actual proof.
 | `js/src/63_graph_gpu.ts` | GPU-v1 trust-boundary validation and raw buffer presentation through existing GLHost |
 | `js/src/49_wasm_chart.ts` | Bounded O(series) validation/framing and lifecycle handle; no record expansion or mark defaults |
 | `js/src/49_wasm_ticks.ts` | XYTK/XYTO codec plus latest-wins primary Cartesian ChartView attachment |
-| `dist/xyg-wasm.wasm` | Separately built direct-browser engine adapter; never copied into the Python static tree |
+| `dist/xyg-wasm.wasm` | Separately built direct-browser engine adapter; the single package producer also copies its verified bytes into Python static assets |
 
 The WASM adapter disables `xyg-engine`'s default full `raster` feature and enables
 its shared `frozen-raster` capability for retained graph PNG. Native full-scene
 formats remain unchanged; frozen Scene/XYPB/SVG/HTML/PNG share Rust lowering,
 and HTML uses the shipped painter. The raw module must request no ambient WebAssembly imports.
+CI verifies the resolved normal feature graph: shared `frozen-raster` and the
+pinned vendored PNG are required, while full native `raster`/`default` features
+and `xyg-core` remain forbidden. It does not infer native format policy from
+the presence of PNG compression dependencies.
 
 **Historical artifact size.** Through ABI35, `dist/xyg-wasm.wasm` used the workspace release
 profile (`opt-level = 3`, fat LTO, one codegen unit, stripped) and is about

@@ -134,11 +134,23 @@ them from the one producer.
 
 | Step | Contract |
 | --- | --- |
-| Producer | CI job `wasm_assets` runs the fail-closed raw build and PNG-dependency check, `node js/build.mjs`, the packaging contract tests, `npm run build:wasm`, and `scripts/verify_wasm_assets.py`, then uploads `wasm-assets` (`if-no-files-found: error`). Locally: `node js/build.mjs && npm run build:wasm`. |
+| Producer | CI job `wasm_assets` runs the fail-closed raw build and resolved browser feature-graph check, `node js/build.mjs`, the packaging contract tests, `npm run build:wasm`, and `scripts/verify_wasm_assets.py`, then uploads `wasm-assets` (`if-no-files-found: error`). Locally: `node js/build.mjs && npm run build:wasm`. |
 | Consumers | `test`, `wasm_foundation`, `python_floor`, `matplotlib_reference`, `benchmark_methodology`, `wheels`, `sdist` list `wasm_assets` in `needs`, run `node js/build.mjs` (`wasm-worker.js` is built, not part of the artifact), download `wasm-assets`, and verify before use. No consumer runs `npm run build:wasm`, `js/package-wasm.mjs`, or the wasm32 `cargo build` itself. `publish.yaml` has the same shape: producer `wasm-assets`; consumers `wheels`, `wasm` (PyEmscripten), `sdist`, `browser-package`; `XYG_REQUIRE_WASM=1` plus `--require-wasm` on the wheels and sdist, `--require-wasm` on the Pyodide wheel. |
 | Verifier | `scripts/verify_wasm_assets.py` (stdlib only; "stale" means manifest-, ABI- or client-build-inconsistent, not proof of freshness against the Rust source) checks presence in both locations, WebAssembly magic, `sha256`/`bytes` against `xyg-wasm.manifest.json`, ABI/Scene/painter versions against `spec/wasm/abi.json`, inline module hash, inline classic-worker freshness, and dist/static equality. One diagnostic names the files and the producer command. |
 | Artifacts | `XYG_REQUIRE_WASM=1` makes `hatch_build.py` fail without verified assets; the wheel and sdist jobs run `verify_wheel.py` / `verify_sdist.py --require-wasm`. |
 | Aggregate | A failed or skipped `wasm_assets` skips its consumers; `Release surfaces` lists it and every applicable consumer, so the aggregate fails (see [production-readiness.md](../process/production-readiness.md)). |
+
+The resolved normal dependency graph is retained with `cargo tree --edges normal
+--prefix none --format '{p}|{f}' --color never`. `scripts/check_wasm_features.py` requires the
+local engine's exact `frozen-raster` feature and pinned vendored PNG, rejects
+full native `raster`/`default` features, unexpected engine features and `xyg-core`,
+and fails on missing or malformed evidence. Explicit `--color never` keeps
+evidence parseable when the runner sets `CARGO_TERM_COLOR=always`. PNG's own compression dependencies
+are expected; their presence does not enable the engine's native format policy.
+Both CI and publication producers run this same check. The earlier blanket PNG
+absence check predates shared frozen PNG and incorrectly refused the implemented
+shipping contract. Package size/export/import/ABI validation remains unchanged.
+The bounded feature negatives run in the existing `make check-ci` aggregate.
 
 Scheduled workflows `ceiling-benchmark.yml`, `density-100m.yml`, and `docs.yml` do not
 exercise the WASM tick path (only `bench_interaction.py`, `bench_dashboard.py`, and the

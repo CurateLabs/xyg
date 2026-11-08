@@ -1315,3 +1315,16 @@ spec/performance/chunked-beyond-ram-native-2026-11-08/**/*.gz -text
 # Native beyond-RAM integration qualification.
 spec/performance/chunked-beyond-ram-native-2026-11-08/** text eol=lf
 spec/performance/chunked-beyond-ram-native-2026-11-08/**/*.gz -text
+
+# Shared frozen PNG CI feature-policy evidence.
+.github/workflows/ci.yml text eol=lf
+.github/workflows/publish.yaml text eol=lf
+Makefile text eol=lf
+scripts/check_wasm_features.py text eol=lf
+scripts/verify_ci_workflow.py text eol=lf
+tests/test_wasm_feature_graph.py text eol=lf
+spec/design/browser-wasm.md text eol=lf
+spec/design/build-ci.md text eol=lf
+tests/test_graphforge_contract_corpus.py text eol=lf
+spec/performance/wasm-frozen-feature-ci-2026-11-08/** text eol=lf
+spec/performance/wasm-frozen-feature-ci-2026-11-08/**/*.gz -text

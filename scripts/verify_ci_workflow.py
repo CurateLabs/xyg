@@ -1226,16 +1226,12 @@ def _require_wasm_asset_contract(
     _require_step_runs_exactly(
         errors,
         producer,
-        "Build raw browser adapter without raster or PNG",
+        "Build raw browser adapter with shared frozen PNG",
         "exact fail-closed wasm32 build and dependency evidence commands",
         "set -euo pipefail",
         "cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
-        "cargo tree -p xyg-wasm --target wasm32-unknown-unknown | tee wasm-tree.txt",
-        "test -s wasm-tree.txt",
-        "if grep -Eq '(^| )png v' wasm-tree.txt; then",
-        'echo "::error::direct-browser xyg-wasm unexpectedly enables native PNG"',
-        "exit 1",
-        "fi",
+        "cargo tree -p xyg-wasm --target wasm32-unknown-unknown --edges normal --prefix none --format '{p}|{f}' --color never | tee wasm-tree.txt",
+        "python3 scripts/check_wasm_features.py wasm-tree.txt",
     )
     _require_step_runs_exactly(
         errors,
