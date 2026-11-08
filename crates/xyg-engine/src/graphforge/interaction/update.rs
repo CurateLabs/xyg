@@ -78,11 +78,11 @@ impl GraphSession {
             return Err(InteractionStatus::Stale);
         }
         self.reserve_revision()?;
-        let same_generation = next.generation == self.generation;
+        let same_generation = next.source.generation == self.source.generation;
         let dropped = world.state.retain_identities(
-            |id| next.identity.node_index(id).is_some(),
-            |id| next.identity.edge_index(id).is_some(),
-            |key| same_generation && next.identity.resolve_derived_key(key).is_some(),
+            |id| next.source.identity.node_index(id).is_some(),
+            |id| next.source.identity.edge_index(id).is_some(),
+            |key| same_generation && next.source.identity.resolve_derived_key(key).is_some(),
         );
         let mut pins_changed = false;
         if replace_pins {
@@ -106,17 +106,19 @@ impl GraphSession {
     }
 
     pub(super) fn matches_temporal(&self, graph: &TemporalGraph) -> bool {
-        self.identity.node_uuids() == graph.node_ids()
+        self.source.identity.node_uuids() == graph.node_ids()
             && self
+                .source
                 .identity
                 .persisted_edge_uuids()
                 .eq(graph.edge_ids().iter().copied())
             && self
+                .source
                 .edge_source
                 .iter()
-                .zip(self.edge_target.iter())
+                .zip(self.source.edge_target.iter())
                 .enumerate()
-                .filter(|(i, _)| !self.identity.is_derived(*i))
+                .filter(|(i, _)| !self.source.identity.is_derived(*i))
                 .map(|(_, (&s, &t))| (s, t))
                 .eq(graph.edge_endpoints())
     }

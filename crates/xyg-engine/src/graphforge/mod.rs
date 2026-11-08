@@ -80,10 +80,7 @@ impl Hash for UuidKey {
     fn hash<H: Hasher>(&self, state: &mut H) {
         let lo = u64::from_le_bytes(self.0[..8].try_into().unwrap());
         let hi = u64::from_le_bytes(self.0[8..].try_into().unwrap());
-        let mut z = lo ^ hi.rotate_left(29) ^ 0x9E37_79B9_7F4A_7C15;
-        z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
-        z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
-        state.write_u64(z ^ (z >> 31));
+        state.write_u64(crate::index_slots::mixed_words(lo, hi));
     }
 }
 

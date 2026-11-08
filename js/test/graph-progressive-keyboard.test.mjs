@@ -30,3 +30,15 @@ for(const [name,mutate]of [
  ['stale live summary',r=>alter(r,1,p=>p.live='stale')],
  ['empty escape prevented',r=>r.actions[5].event.prevented=true],
 ])test('reject '+name,()=>{const r=fixture();mutate(r);assert.throws(()=>assertProgressiveKeyboard(r));});
+
+function queuedFixture(){
+ const r=fixture();for(const a of r.actions){a.command={operation:a.event.operation,instanceId:a.event.instanceId,ordinal:a.event.commands,requestId:a.publication.ordinal+100};a.publication.requestId=a.command.requestId;primary(r).publications[a.publication.ordinal].requestId=a.command.requestId;}
+ const a=r.actions[1];a.event.operation=15;a.event.commands=a.command.ordinal-1;return r;
+}
+test('queued trusted intent binds its eventual Rust command and exact publication',()=>assertProgressiveKeyboard(queuedFixture()));
+for(const [name,mutate]of [
+ ['wrong queued opcode',r=>r.actions[1].command.operation=15],
+ ['foreign queued reply',r=>r.actions[1].command.requestId++],
+ ['queued command absent',r=>r.actions[1].command.ordinal=r.actions[1].beforeCommands],
+ ['queued intent bypassed',r=>r.actions[1].command.ordinal+=2],
+])test('reject '+name,()=>{const r=queuedFixture();mutate(r);assert.throws(()=>assertProgressiveKeyboard(r));});

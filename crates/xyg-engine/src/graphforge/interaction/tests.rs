@@ -764,6 +764,49 @@ fn colliding_result_ids_never_cross_resolve() {
 }
 
 #[test]
+fn canonical_state_tree_order_is_exact_transport_order_without_sort_scratch() {
+    let layers = [
+        Some("zz"),
+        Some("aa"),
+        None,
+        Some(""),
+        Some("é"),
+        Some("aA"),
+    ];
+    let mut edges = vec![E::Persisted(id(1))];
+    edges.extend((0..layers.len()).map(|i| E::Overlay {
+        layer: i as u32,
+        path: i as u64,
+        order: 0,
+    }));
+    let bytes = handmade(&[id(2), id(1)], &edges, &layers);
+    let doc = ComposedDocument::decode(&bytes).unwrap();
+    let identity = GraphIdentity::<AllCollide>::from_document(&doc).unwrap();
+    let mut state = ElementSet::default();
+    state.nodes.extend([id(2), id(1)]);
+    state.edges.insert(id(1));
+    for i in (1..edges.len()).rev() {
+        state.derived.insert(identity.derived_key(i).unwrap());
+    }
+    let mut foreign = identity.derived_key(1).unwrap();
+    foreign.result_id = Some("foreign".into());
+    state.derived.insert(foreign);
+    let actual: Vec<_> = identity
+        .refs_of(&state)
+        .iter()
+        .map(|r| identity.to_transport(r).unwrap())
+        .collect();
+    let mut expected = actual.clone();
+    expected.reverse();
+    expected.sort_by(super::coordination::compare);
+    assert_eq!(actual, expected);
+    assert_eq!(actual.len(), 3 + layers.len());
+    assert!(actual
+        .windows(2)
+        .all(|p| super::coordination::compare(&p[0], &p[1]) == std::cmp::Ordering::Less));
+}
+
+#[test]
 fn replacing_a_result_id_invalidates_state_keyed_to_the_old_string() {
     let before = overlay_doc(&[Some("aa"), Some("bb")]);
     let after = overlay_doc(&[Some("zz"), Some("bb")]);
@@ -1177,25 +1220,12 @@ fn candidates_share_immutable_source_but_replace_it_atomically() {
     .unwrap();
     original.render(None).unwrap();
     let mut candidate = original.clone();
-    macro_rules! shared {
-        ($($field:ident),+) => { $(assert!(Arc::ptr_eq(&original.$field, &candidate.$field), stringify!($field));)+ };
-    }
-    shared!(
-        identity,
-        labels,
-        parent,
-        parent_valid,
-        edge_source,
-        edge_target,
-        edge_ordinal,
-        node_style,
-        edge_style
-    );
+    assert!(Arc::ptr_eq(&original.source, &candidate.source));
     assert!(Arc::ptr_eq(
         original.published.as_ref().unwrap(),
         candidate.published.as_ref().unwrap()
     ));
-    candidate.positions.as_mut().unwrap().0[0] = 99.;
+    Arc::make_mut(&mut candidate.positions.as_mut().unwrap().0)[0] = 99.;
     candidate.collapsed[0] = 1;
     assert_eq!(original.positions.as_ref().unwrap().0[0], 0.);
     assert_eq!(original.collapsed[0], 0);
@@ -1206,22 +1236,12 @@ fn candidates_share_immutable_source_but_replace_it_atomically() {
             .unwrap_err(),
         InteractionStatus::Invalid
     );
-    shared!(
-        identity,
-        labels,
-        parent,
-        parent_valid,
-        edge_source,
-        edge_target,
-        edge_ordinal,
-        node_style,
-        edge_style
-    );
+    assert!(Arc::ptr_eq(&original.source, &candidate.source));
     let replacement = handmade_with(2, &[[4; 16], [5; 16]], &[E::Persisted([6; 16])], &[], None);
     candidate
         .update(header(&candidate, 1), &replacement, SessionLoad::default())
         .unwrap();
-    assert!(!Arc::ptr_eq(&original.identity, &candidate.identity));
-    assert_eq!(original.identity.node_uuids(), &[[1; 16], [2; 16]]);
-    assert_eq!(candidate.identity.node_uuids(), &[[4; 16], [5; 16]]);
+    assert!(!Arc::ptr_eq(&original.source, &candidate.source));
+    assert_eq!(original.source.identity.node_uuids(), &[[1; 16], [2; 16]]);
+    assert_eq!(candidate.source.identity.node_uuids(), &[[4; 16], [5; 16]]);
 }

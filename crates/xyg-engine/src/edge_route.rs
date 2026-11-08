@@ -5,8 +5,6 @@
 //! segments with optional arrowheads. Rust owns the geometry; hosts only
 //! upload the returned columns.
 
-use std::collections::HashMap;
-
 /// Straight-line polyline segments a curved (Bezier-class) shaft tessellates
 /// into. Fixed and deterministic: same input always yields the same segment
 /// count and geometry, independent of host or viewport.
@@ -98,25 +96,13 @@ pub fn edge_route_segments(
         return None;
     }
 
-    // Bundle ranks: undirected key so reciprocal + parallel siblings separate.
-    let mut bundles: HashMap<(u64, u64), Vec<usize>> = HashMap::new();
-    for (i, (&s, &t)) in sources.iter().zip(targets.iter()).enumerate() {
-        if s >= n_nodes || t >= n_nodes {
-            return None;
-        }
-        let key = if s <= t { (s, t) } else { (t, s) };
-        bundles.entry(key).or_default().push(i);
+    if sources.iter().chain(targets).any(|&v| v >= n_nodes) {
+        return None;
     }
-    let mut rank = vec![0i32; e];
-    let mut bundle_size = vec![1i32; e];
-    for members in bundles.values_mut() {
-        members.sort_unstable();
-        let size = members.len() as i32;
-        for (r, &idx) in members.iter().enumerate() {
-            rank[idx] = r as i32;
-            bundle_size[idx] = size;
-        }
-    }
+    let (rank, bundle_size) = crate::index_slots::stable_ranks(e, &|i| {
+        let (s, t) = (sources[i], targets[i]);
+        [s.min(t), s.max(t)]
+    })?;
 
     let mut written = 0usize;
     let mut emit = |edge_i: u64, x0: f64, y0: f64, x1: f64, y1: f64| {
@@ -142,11 +128,11 @@ pub fn edge_route_segments(
             continue;
         }
         let edge_i = i as u64;
-        let size = bundle_size[i];
+        let size = bundle_size[i] as i32;
         let offset = if size <= 1 || separation == 0.0 {
             0.0
         } else {
-            (rank[i] as f64 - 0.5 * (size - 1) as f64) * separation
+            (rank[i] as i32 as f64 - 0.5 * (size - 1) as f64) * separation
         };
 
         if s == t {
@@ -157,7 +143,7 @@ pub fn edge_route_segments(
                 separation.max(0.35)
             };
             let theta = std::f64::consts::FRAC_PI_2
-                + (rank[i] as f64) * (std::f64::consts::TAU / size.max(1) as f64);
+                + (rank[i] as i32 as f64) * (std::f64::consts::TAU / size.max(1) as f64);
             let (st, ct) = theta.sin_cos();
             let cx = sx + r * ct;
             let cy = sy + r * st;
@@ -203,7 +189,7 @@ pub fn edge_route_segments(
             let bow = if size <= 1 {
                 curve_sep
             } else {
-                (rank[i] as f64 - 0.5 * (size - 1) as f64) * curve_sep
+                (rank[i] as i32 as f64 - 0.5 * (size - 1) as f64) * curve_sep
             };
             let cx = (x0 + x1) * 0.5 + bow * ux;
             let cy = (y0 + y1) * 0.5 + bow * uy;

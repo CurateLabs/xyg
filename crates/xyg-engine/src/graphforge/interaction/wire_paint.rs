@@ -5,7 +5,12 @@ use super::wire::*;
 use super::InteractionStatus;
 use crate::graph_style::{ResolvedGraphStyle, SemanticPaintLayers};
 
-fn style_bytes(style: &ResolvedGraphStyle, layers: &SemanticPaintLayers, out: &mut Vec<u8>) {
+#[cfg_attr(target_arch = "wasm32", inline(never))]
+pub(super) fn style_bytes(
+    style: &ResolvedGraphStyle,
+    layers: &SemanticPaintLayers,
+    out: &mut Vec<u8>,
+) {
     out.extend(style.fill);
     out.extend(style.stroke);
     out.extend(style.halo);
@@ -26,81 +31,123 @@ fn style_bytes(style: &ResolvedGraphStyle, layers: &SemanticPaintLayers, out: &m
     }
     out.extend([u8::from(layers.head), 0, 0, 0]);
 }
+#[cfg_attr(target_arch = "wasm32", inline(never))]
+fn plane(
+    b: &mut Builder,
+    name: &str,
+    dtype: Dtype,
+    rows: usize,
+    width: usize,
+    word: &dyn Fn(usize, usize) -> [u8; 8],
+) {
+    let count = rows.checked_mul(width).expect("inspection column count");
+    let mut payload = Vec::with_capacity(count.checked_mul(8).expect("inspection column bytes"));
+    for row in 0..rows {
+        for column in 0..width {
+            payload.extend_from_slice(&word(row, column));
+        }
+    }
+    b.push(name, 0, dtype, count, payload);
+}
+#[cfg_attr(target_arch = "wasm32", inline(never))]
+pub(super) fn styles<'a>(
+    b: &mut Builder,
+    name: &str,
+    rows: usize,
+    row: &dyn Fn(usize) -> (&'a ResolvedGraphStyle, &'a SemanticPaintLayers),
+) {
+    let mut bytes = Vec::with_capacity(rows.checked_mul(60).expect("style column bytes"));
+    for i in 0..rows {
+        let (style, layers) = row(i);
+        style_bytes(style, layers, &mut bytes);
+    }
+    b.push(name, 0, Dtype::Bytes, bytes.len(), bytes);
+}
 pub(super) fn encode(b: &mut Builder, p: &PaintGeometry) {
-    b.f64s(
+    // One checked column packer, no source-sized intermediate scalar vectors.
+    // Attribute order is the unchanged inspection snapshot contract.
+    plane(
+        b,
         "paint.node.center.f64",
-        0,
-        &p.nodes.iter().flat_map(|n| n.center).collect::<Vec<_>>(),
+        Dtype::F64,
+        p.nodes.len(),
+        2,
+        &|i, j| p.nodes[i].center[j].to_le_bytes(),
     );
-    let mut nodes = Vec::new();
-    for n in &p.nodes {
-        style_bytes(&n.style, &n.layers, &mut nodes);
-    }
-    b.bytes("paint.node.style.bytes", 0, &nodes);
-    let mut edges = Vec::new();
-    for (s, l) in p.edge_styles.iter().zip(&p.edge_layers) {
-        style_bytes(s, l, &mut edges);
-    }
-    b.bytes("paint.edge.style.bytes", 0, &edges);
-    b.u64s(
+    styles(b, "paint.node.style.bytes", p.nodes.len(), &|i| {
+        (&p.nodes[i].style, &p.nodes[i].layers)
+    });
+    styles(b, "paint.edge.style.bytes", p.edge_styles.len(), &|i| {
+        (&p.edge_styles[i], &p.edge_layers[i])
+    });
+    plane(
+        b,
         "paint.piece.index.u64",
-        0,
-        &p.pieces
-            .iter()
-            .flat_map(|p| {
-                [
-                    p.edge as u64,
-                    u64::from(p.single_piece) | (u64::from(p.head.is_some()) << 1),
-                ]
-            })
-            .collect::<Vec<_>>(),
+        Dtype::U64,
+        p.pieces.len(),
+        2,
+        &|i, j| {
+            let p = &p.pieces[i];
+            [
+                p.edge as u64,
+                u64::from(p.single_piece) | (u64::from(p.head.is_some()) << 1),
+            ][j]
+                .to_le_bytes()
+        },
     );
-    b.f64s(
+    plane(
+        b,
         "paint.piece.geometry.f64",
-        0,
-        &p.pieces
-            .iter()
-            .flat_map(|p| {
-                let h = p.head.unwrap_or([[0.; 2]; 3]);
-                [
-                    p.start[0],
-                    p.start[1],
-                    p.end[0],
-                    p.end[1],
-                    p.half_width,
-                    p.dash.0,
-                    p.dash.1,
-                    p.dash_offset,
-                    h[0][0],
-                    h[0][1],
-                    h[1][0],
-                    h[1][1],
-                    h[2][0],
-                    h[2][1],
-                ]
-            })
-            .collect::<Vec<_>>(),
+        Dtype::F64,
+        p.pieces.len(),
+        14,
+        &|i, j| {
+            let p = &p.pieces[i];
+            let h = p.head.unwrap_or([[0.; 2]; 3]);
+            [
+                p.start[0],
+                p.start[1],
+                p.end[0],
+                p.end[1],
+                p.half_width,
+                p.dash.0,
+                p.dash.1,
+                p.dash_offset,
+                h[0][0],
+                h[0][1],
+                h[1][0],
+                h[1][1],
+                h[2][0],
+                h[2][1],
+            ][j]
+                .to_le_bytes()
+        },
     );
-    b.u64s(
+    plane(
+        b,
         "paint.frame.node.u64",
-        0,
-        &p.frames.iter().map(|f| f.node as u64).collect::<Vec<_>>(),
+        Dtype::U64,
+        p.frames.len(),
+        1,
+        &|i, _| (p.frames[i].node as u64).to_le_bytes(),
     );
-    b.f64s(
+    plane(
+        b,
         "paint.frame.geometry.f64",
-        0,
-        &p.frames
-            .iter()
-            .flat_map(|f| {
-                [
-                    f.bounds[0],
-                    f.bounds[1],
-                    f.bounds[2],
-                    f.bounds[3],
-                    f.half_width,
-                ]
-            })
-            .collect::<Vec<_>>(),
+        Dtype::F64,
+        p.frames.len(),
+        5,
+        &|i, j| {
+            let f = &p.frames[i];
+            [
+                f.bounds[0],
+                f.bounds[1],
+                f.bounds[2],
+                f.bounds[3],
+                f.half_width,
+            ][j]
+                .to_le_bytes()
+        },
     );
 }
 

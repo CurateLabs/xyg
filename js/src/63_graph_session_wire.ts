@@ -197,6 +197,7 @@ export interface GraphSessionResult extends GraphSessionHeader {
   disclosure: { refs: GraphSessionRef[]; collapsed: boolean[] };
   companion: { rows: string[][]; refs: GraphSessionRef[]; total: number };
   summary: string;
+  continuationStepLimit: number | null;
   relayout: { steps: bigint; alpha: number; done: boolean } | null;
 }
 function reader(input: Uint8Array | ArrayBuffer) {
@@ -299,8 +300,16 @@ export function decodeGraphSessionResult(input: Uint8Array | ArrayBuffer): Graph
       if (!Number.isFinite(alpha) || alpha < 0 || alpha > 1 || done > 1) fail("relayout report");
       relayout = { steps, alpha, done: !!done };
     }
+    let continuationStepLimit: number | null = null;
+    const admissionPlanes=[...r.sections.values()].filter(s=>s.name==="relayout.admission.u32");
+    if (admissionPlanes.length) {
+      if(admissionPlanes.length!==1||admissionPlanes[0]!.index!==0)fail("relayout admission planes");
+      const admission = u32("relayout.admission.u32", 2);
+      if (admission[0] !== 1 || admission[1]! > 64) fail("relayout admission version/bound");
+      continuationStepLimit = admission[1]!;
+    }
     return {
-      relayout, ...r.header, sections: r.sections,
+      continuationStepLimit, relayout, ...r.header, sections: r.sections,
       selection: { refs: selectedRefs, indices, layerOffsets, layers, rows, resultIds }, changed, focus, focusRing,
       focusAction: { refs: actionRefs, disclosureEligible: !!facts[1], collapsed: !!facts[2], pinEligible: !!facts[3], pinned: !!facts[4], moveCapability: !!facts[5] },
       clearAction: { applicable: !!clear[1] },

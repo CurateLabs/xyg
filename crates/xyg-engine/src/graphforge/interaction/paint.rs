@@ -6,6 +6,8 @@ use crate::graph_style::{self, ResolvedGraphStyle, SemanticPaintLayers, Semantic
 
 #[derive(Clone)]
 pub(super) struct SourceStyle {
+    len: usize,
+    neutral: bool,
     class: Vec<u8>,
     epistemic: Vec<u8>,
     status: Vec<u8>,
@@ -20,6 +22,21 @@ impl SourceStyle {
         side: &str,
         n: usize,
     ) -> Result<Self, InteractionStatus> {
+        if ["class", "epistemic", "status", "metric", "flags"]
+            .iter()
+            .all(|key| !doc.has_section(&format!("{side}.{key}")))
+        {
+            return Ok(Self {
+                len: n,
+                neutral: true,
+                class: Vec::new(),
+                epistemic: Vec::new(),
+                status: Vec::new(),
+                metric: Vec::new(),
+                flags: Vec::new(),
+                semantic: false,
+            });
+        }
         let read = |key: &str| -> Result<Vec<u8>, InteractionStatus> {
             let values = doc
                 .optional_u8s(&format!("{side}.{key}"))
@@ -47,6 +64,8 @@ impl SourceStyle {
             return invalid();
         }
         Ok(Self {
+            len: n,
+            neutral: false,
             class: read("class")?,
             epistemic: read("epistemic")?,
             status: read("status")?,
@@ -59,12 +78,56 @@ impl SourceStyle {
         })
     }
 
+    pub(super) fn retained_bytes(&self) -> Option<usize> {
+        self.class
+            .capacity()
+            .checked_add(self.epistemic.capacity())?
+            .checked_add(self.status.capacity())?
+            .checked_add(self.metric.capacity().checked_mul(8)?)?
+            .checked_add(self.flags.capacity().checked_mul(4)?)
+    }
+    pub fn initial_flags(&self) -> Vec<u32> {
+        if self.neutral {
+            vec![0; self.len]
+        } else {
+            self.flags.clone()
+        }
+    }
+
     pub fn resolve(
         &self,
         flags: &[u32],
         edge: bool,
     ) -> Result<Vec<ResolvedGraphStyle>, InteractionStatus> {
-        let mut out = vec![neutral(); self.class.len()];
+        if flags.len() != self.len {
+            return invalid();
+        }
+        let mut out = vec![neutral(); self.len];
+        if self.neutral {
+            let mut previous = None;
+            let mut row = [neutral()];
+            for (target, &flag) in out.iter_mut().zip(flags) {
+                let flag = flag & graph_style::KNOWN_STATE_FLAGS;
+                if previous != Some(flag) {
+                    graph_style::resolve_semantic_styles(
+                        SemanticStyleInput {
+                            classes: &[0],
+                            epistemic: &[0],
+                            statuses: &[0],
+                            metric: &[f64::NAN],
+                            flags: &[flag],
+                            edge,
+                            theme: graph_style::THEME_LIGHT,
+                        },
+                        &mut row,
+                    )
+                    .ok_or(InteractionStatus::Invalid)?;
+                    previous = Some(flag);
+                }
+                *target = row[0];
+            }
+            return Ok(out);
+        }
         let flags: Vec<_> = flags
             .iter()
             .map(|f| f & graph_style::KNOWN_STATE_FLAGS)
@@ -216,6 +279,7 @@ fn admit_outline_span(
     Ok(())
 }
 
+#[inline(never)]
 pub(super) fn build(
     session: &GraphSession,
     output: &RenderOutput,
@@ -226,8 +290,20 @@ pub(super) fn build(
     source_edge_flags: &[u32],
     visible: &super::render::Visible,
 ) -> Result<PaintGeometry, InteractionStatus> {
-    let source_nodes = session.node_style.resolve(source_node_flags, false)?;
-    let source_edges = session.edge_style.resolve(source_edge_flags, true)?;
+    let aggregate_tier = output.tier == crate::graph::LodTier::Aggregate;
+    let source_nodes = if aggregate_tier {
+        Vec::new()
+    } else {
+        session
+            .source
+            .node_style
+            .resolve(source_node_flags, false)?
+    };
+    let source_edges = if aggregate_tier {
+        Vec::new()
+    } else {
+        session.source.edge_style.resolve(source_edge_flags, true)?
+    };
     let map = |x: f64, y: f64| {
         if let Some(c) = camera {
             c.project(x, y)
@@ -236,7 +312,6 @@ pub(super) fn build(
         }
     };
     let mut paint = PaintGeometry::default();
-    let aggregate_tier = output.tier == crate::graph::LodTier::Aggregate;
     // Aggregate paint deliberately omits source semantic summaries (§28), using
     // the same resolver's neutral aggregate row, never an arbitrary member.
     let aggregate = |edge: bool, flags: u32| {
@@ -267,8 +342,20 @@ pub(super) fn build(
             (0, 0)
         } else {
             (
-                session.node_style.class[source],
-                session.node_style.epistemic[source],
+                session
+                    .source
+                    .node_style
+                    .class
+                    .get(source)
+                    .copied()
+                    .unwrap_or(0),
+                session
+                    .source
+                    .node_style
+                    .epistemic
+                    .get(source)
+                    .copied()
+                    .unwrap_or(0),
             )
         };
         paint.nodes.push(NodePaint {
@@ -288,8 +375,20 @@ pub(super) fn build(
             (0, 0)
         } else {
             (
-                session.edge_style.class[source],
-                session.edge_style.epistemic[source],
+                session
+                    .source
+                    .edge_style
+                    .class
+                    .get(source)
+                    .copied()
+                    .unwrap_or(0),
+                session
+                    .source
+                    .edge_style
+                    .epistemic
+                    .get(source)
+                    .copied()
+                    .unwrap_or(0),
             )
         };
         paint.edge_styles.push(style);
@@ -331,7 +430,7 @@ pub(super) fn build(
         &output.node_y,
         &output.edge_source,
         &output.edge_target,
-        session.directed,
+        session.source.directed,
         0.08,
         0.35,
         false,
@@ -361,10 +460,10 @@ pub(super) fn build(
             continue;
         }
         let layers = paint.edge_layers[edge];
-        let head = if session.edge_style.semantic {
+        let head = if session.source.edge_style.semantic {
             layers.head
         } else {
-            session.directed
+            session.source.directed
         };
         let flags = ends[i * edge_route::EDGE_ENDS_STRIDE + 6] as u8;
         for node in [s, t] {
@@ -437,7 +536,7 @@ pub(super) fn build(
             head,
         });
     }
-    if output.tier != crate::graph::LodTier::Aggregate && session.parent_valid.contains(&1) {
+    if output.tier != crate::graph::LodTier::Aggregate && session.source.parent_valid.contains(&1) {
         let (x, y) = session
             .positions
             .as_ref()
