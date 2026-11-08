@@ -53,3 +53,11 @@ It covers five different-dimensional views, live pointer preview/cancel,
 keyboard edit/commit/cancel/clear, exact counts/membership, texture pixels and
 context/append/rebuild. Full 100M/≥50 FPS, automatic native widget transport,
 assistive hardware and competitor qualification remain open under #112.
+
+
+The repository-only `chunked-native-host.mjs` exports `createChunkedNativeApp` for
+local native chunked scatter: two independent `chart.liveHost` owners, raw XYBF
+paint/selection attachments and ordinary HTTP controls. The existing normal Node
+test command runs its trusted gesture, exact fullscan paint/data/identity, lasso,
+failure-retention and remount journey in `chunked-live-browser.test.mjs`. This
+consumer uses Node built-ins and the existing client; no framework ships with XYG.

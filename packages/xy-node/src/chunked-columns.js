@@ -27,9 +27,10 @@ export class ChunkedColumns {
   constructor(path) {
     const bytes = Buffer.from(String(path), "utf8");
     this.handle = xyChunkedColumnsOpen(pointer(bytes, "uint8_t *"), bytes.length);
-    if (this.handle === 0n) throw new Error(`cannot open checked XYGC artifact ${JSON.stringify(String(path))}`);
+    if (this.handle === 0n || this.handle === 0) throw new Error(`cannot open checked XYGC artifact ${JSON.stringify(String(path))}`);
     this.path = String(path);
-    this.rows = xyChunkedColumnsRows(this.handle);
+    try { this.rows = xyChunkedColumnsRows(this.handle); }
+    catch (error) { xyChunkedColumnsFree(this.handle); this.handle = 0n; throw error; }
   }
   overview({ maxPoints = 2048 } = {}) { return readOverview(this,maxPoints); }
   read([x0, x1], { yRange = null, budgetBytes = 64 << 20, generation = 0 } = {}) {
@@ -93,12 +94,12 @@ export class ChunkedColumns {
         generation: stats[0], firstChunk: stats[1], chunksConsidered: stats[2], chunksRead: stats[3], bytesRead: stats[4],
       }};
     }
-    const chart = scatterChart(result.x, result.y);
+    const chart = scatterChart(result.x, result.y, {density:false});
     chart.sourceRowIds = result.rowIds;
     chart.sourceProvenance = {...result.provenance, path: this.path};
-    chart.liveHost = (send) => {
+    chart.liveHost = (send, callbacks = {}) => {
       const source = new ChunkedColumns(this.path);
-      try { return new ChunkedLiveHost(source, chart, {budgetBytes,pageBytes,generation}, send); }
+      try { return new ChunkedLiveHost(source, chart, {budgetBytes,pageBytes,generation}, send, callbacks); }
       catch (error) { source.close(); throw error; }
     };
     return chart;

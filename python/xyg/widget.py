@@ -115,9 +115,22 @@ class FigureWidget(anywidget.AnyWidget):
             binding.close()
         super().close()
 
+    async def when_idle(self):
+        """Wait for the latest chunked intent and real painter acknowledgement."""
+        if self._chunked_binding is not None:
+            await self._chunked_binding.when_idle()
+
     def _configure_transport(self, spec: dict[str, Any]) -> None:
         """Attach private subscriptions without changing browser behavior."""
         if hasattr(self._figure, "_chunked_row_ids"):
+            spec["interaction"] = {
+                **spec.get("interaction", {}),
+                **{
+                    name: True
+                    for name in ("hover", "click", "select")
+                    if getattr(self._callbacks, "on_" + name) is not None
+                },
+            }
             spec["chunked"] = {"frame": self._figure._chunked_generation}
         if self._callbacks.on_view_change is not None or hasattr(self._figure, "_chunked_live"):
             spec["interaction"] = {

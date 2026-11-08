@@ -127,6 +127,11 @@ class Figure(AnnotationsMixin, PayloadMixin):
     # Set only by the public temporal composition adapter; ordinary figures
     # retain the existing absent-field behavior in Scene/export dispatch.
     _temporal_composition: TemporalChart
+    # Annotation-only: ordinary figures keep these fields absent.
+    _chunked_row_ids: Any
+    _chunked_provenance: dict[str, Any]
+    _chunked_generation: str
+    _chunked_live: tuple[str, dict[str, int]]
 
     def __init__(
         self,

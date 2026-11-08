@@ -254,12 +254,10 @@ class ChunkedColumns:
                 page_bytes=page_bytes,
                 generation=generation,
             )
-        chart = scatter_chart(scatter(x, y))
+        chart = scatter_chart(scatter(x, y, density=False))
         chart.source_row_ids = row_ids
         chart.source_provenance = {**provenance, "path": self.path}
-        chart.figure()._chunked_row_ids = row_ids
-        chart.figure()._chunked_generation = str(generation)
-        chart.figure()._chunked_live = (
+        chart._chunked_live = (
             self.path,
             dict(budget_bytes=budget_bytes, page_bytes=page_bytes, generation=generation),
         )

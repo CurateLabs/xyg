@@ -5,13 +5,16 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import os
 import subprocess
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-CURRENT_BINDINGS = Path("spec/performance/combined-wasm-layout-2026-11-07/current-bindings.json")
+CURRENT_BINDINGS = Path(
+    "spec/performance/chunked-native-installed-2026-11-07/current-bindings.json"
+)
 
 
 def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> None:
@@ -54,7 +57,16 @@ def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> N
 
     def git(*args: str) -> None:
         subprocess.run(
-            ["git", "-C", str(tmp_path), *args], check=True, capture_output=True, text=True
+            ["git", "-C", str(tmp_path), *args],
+            check=True,
+            capture_output=True,
+            text=True,
+            env={
+                **os.environ,
+                "GIT_DIR": str(tmp_path / ".git"),
+                "GIT_WORK_TREE": str(tmp_path),
+                "GIT_CONFIG_GLOBAL": os.devnull,
+            },
         )
 
     git("init", "--quiet")

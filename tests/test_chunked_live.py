@@ -53,6 +53,7 @@ def test_widget_refines_isolated_and_drains(tmp_path):
                 frame=message["spec"]["chunked"]["frame"],
             )
         )
+        await widget.when_idle()
         assert list(widget.source_row_ids) == list(range(30, 41))
         assert widget._figure.pick(0, 0)["source_row_id"] == "30"
         assert list(other._figure._chunked_row_ids) == [0, 63]
@@ -252,7 +253,12 @@ def test_public_widget_browser_gesture(tmp_path, host):
                     "new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))"
                 )
                 assert await page.evaluate("window.frames.length") == 0
-                assert not hasattr(widget, "source_row_ids")
+                if process is None:
+                    assert list(widget.source_row_ids) == list(
+                        widget._chunked_binding.initial_figure._chunked_row_ids
+                    )
+                else:
+                    assert not hasattr(widget, "source_row_ids")
                 await page.screenshot(path=str(tmp_path / "disabled.png"))
                 disabled = False
                 await page.mouse.wheel(0, -250)

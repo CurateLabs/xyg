@@ -591,5 +591,8 @@ identities and u8 validity into Rust. Only derived ordinary Scene/painter
 geometry uses floating coordinates. This is authoring ingress, not a new live
 message or a temporal JSON-number protocol.
 
-Native chunked-chart viewport continuation and its remaining acceptance are specified
+Native local chunked charts now refine committed viewport gestures through the
+existing renderer, with exact accepted-frame source identity and cancellation.
+The installed Jupyter/anywidget and public Node binary HTTP journeys, lifecycle
+contract, required CI discovery and remaining issue-wide acceptance are specified
 in [the local native viewport contract](chunked-native-viewport.md).

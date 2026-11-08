@@ -348,8 +348,35 @@ Object.assign(ChartView.prototype, {
   // updates GPU buffers in place with a tail-only upload; everything else
   // rebuilds. Payloads may use split or legacy packed layout.
   // XYGC replacements retain the camera, original home, and history verbatim.
+  _chunkedMemoryReport() {
+    const payloadOwners = new Set((Array.isArray(this._payload) ? this._payload : [this._payload]).filter(Boolean).map(b => b.buffer || b));
+    let gpuBytes = 0;
+    const gl = this.gl, seen = new Set();
+    if (gl && !this._glLost) {
+      const previous = gl.getParameter(gl.ARRAY_BUFFER_BINDING);
+      for (const owner of [this, ...this.gpuTraces]) for (const buffer of Object.values(owner)) {
+        if (!buffer || seen.has(buffer) || Object.prototype.toString.call(buffer) !== "[object WebGLBuffer]" || !gl.isBuffer(buffer)) continue;
+        seen.add(buffer); gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gpuBytes += gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
+      }
+      gl.bindBuffer(gl.ARRAY_BUFFER, previous);
+    }
+    return {paint_payload_capacity_bytes: [...payloadOwners].reduce((n, b: any) => n + b.byteLength, 0),
+      renderer_buffer_bytes_observed: gpuBytes, renderer_buffer_count: seen.size,
+      frontend_canvas_rgba8_bytes: this.canvas.width * this.canvas.height * 4,
+      pick_rgba8_subset_bytes: this.pickTex ? this._pickW * this._pickH * 4 : 0,
+      renderer_requested_client_bytes: String(this._glHost?.clientResourceBytes(this) || 0n),
+      renderer_shared_rgba_and_storage_bytes: String(this._glHost?.sharedResourceBytes() || 0n),
+      renderer_host_storage: this._glHost ? Object.fromEntries(Object.entries(this._glHost.storageSnapshot())
+        .map(([key, value]) => [key, typeof value === "bigint" ? String(value) : value])) : null,
+      process_or_gpu_total: false};
+  },
+
   _applyChunkedFrame(msg, buffers) {
-    const spec = msg.spec;
+    // Refinement replaces data, not the original chart's layout/home metadata.
+    const spec = {...this.spec, columns: msg.spec?.columns, traces: msg.spec?.traces,
+      buffer_layout: msg.spec?.buffer_layout, chunked: {...this.spec.chunked, ...msg.spec?.chunked}};
+    if (this._destroyed || this._glLost || !this.gl || (this._glHost && !this._glHost.clientAdmitted(this))) return false;
     if (!spec?.chunked || !payloadCoherent(spec, buffers)) return false;
     const payload = payloadBuffers(spec, spec.buffer_layout === "split" ? buffers : buffers[0]);
     const next = [];
@@ -374,8 +401,7 @@ Object.assign(ChartView.prototype, {
     this._hoverId = -1;
     this._lastHoverXY = null;
     this._a11yKeyboardReadout = null;
-    const seen = new Set();
-    for (const trace of this.gpuTraces) this._destroyTraceResources(trace, seen);
+    const previousPayload = this._payload, previousTraces = this.gpuTraces;
     this.spec = spec;
     this._payload = payload;
     this.gpuTraces = next;
@@ -383,8 +409,16 @@ Object.assign(ChartView.prototype, {
     this._restoreSceneIds();
     this._reapplyLegendVisibility();
     this._updatePickable();
-    this.draw();
-    this._dispatchChartEvent("chunked_frame", {frame: spec.chunked.frame, view: this._eventView("refine")});
+    let painted = false;
+    try { painted = this._drawNow() !== false; }
+    catch (error) { this._dispatchChartEvent("chunked_error", {message: String(error)}); }
+    if (!painted) {
+      this.spec = previousSpec; this._payload = previousPayload; this.gpuTraces = previousTraces;
+      const seen = new Set(); for (const trace of next) this._destroyTraceResources(trace, seen);
+      this._updatePickable(); this.draw(); return false;
+    }
+    const seen = new Set();
+    for (const trace of previousTraces) this._destroyTraceResources(trace, seen);
     return true;
   },
 
@@ -875,12 +909,22 @@ Object.assign(ChartView.prototype, {
       if (msg.bounds) this._lastBrush = { mode: "box", ...msg.bounds };
       else if (msg.polygon) this._lastBrush = { mode: "poly", points: msg.polygon };
       if (!msg.traces || !msg.traces.length) this._lastBrush = null;
+      const sourceRows = [];
+      for (const ref of msg.source_row_ids || []) {
+        const raw = buffers?.[ref.buffer];
+        const span = raw instanceof ArrayBuffer ? {buffer: raw, byteOffset: 0, byteLength: raw.byteLength} : raw;
+        if (!span || ref.dtype !== "u64" || !Number.isSafeInteger(ref.length) || ref.length < 0
+            || span.byteLength !== ref.length * 8 || span.byteOffset % 8) return;
+        sourceRows.push({trace: ref.trace, ids: new BigUint64Array(span.buffer, span.byteOffset, ref.length)});
+      }
       this._applySelectionBuffers(msg, buffers);
       this._selectionCount = msg.total || 0;
       this.draw();
       if (msg.suppress_event !== true && this._interactionFlag("select", true)) {
         this._dispatchChartEvent("select", {
           total: this._selectionCount,
+          source_row_ids: sourceRows,
+          frame: msg.chunked_frame,
           view: this._eventView("select"),
         });
       }

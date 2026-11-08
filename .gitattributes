@@ -1018,3 +1018,269 @@ tests/vscode_geo_mounted_indexed_temporal/*.json text eol=lf
 python/xyg/_geo_selected.py text eol=lf
 tests/test_geo_indexed_host.py text eol=lf
 tests/test_geo_host.py text eol=lf
+
+# Installed native viewport successor source and immutable evidence pins.
+.cargo/config.toml text eol=lf
+.gitattributes text eol=lf
+.github/workflows/ci.yml text eol=lf
+examples/vanilla-ts/README.md text eol=lf
+examples/vanilla-ts/chunked-native-host.mjs text eol=lf
+js/optimize-wasm.mjs text eol=lf
+js/src/54_kernel.ts text eol=lf
+js/src/60_entries.ts text eol=lf
+packages/xy-node/README.md text eol=lf
+packages/xy-node/package.json text eol=lf
+packages/xy-node/src/chunked-columns.js text eol=lf
+packages/xy-node/src/chunked-live.js text eol=lf
+packages/xy-node/src/temporal-graph-frozen.js text eol=lf
+packages/xy-node/test/chunked-live-bridge.mjs text eol=lf
+packages/xy-node/test/chunked-live-browser.test.mjs text eol=lf
+packages/xy-node/test/chunked-live.test.mjs text eol=lf
+packages/xy-node/test/geo-host.test.mjs text eol=lf
+python/xyg/_chunked_live.py text eol=lf
+python/xyg/_figure.py text eol=lf
+python/xyg/_ooc.py text eol=lf
+python/xyg/channel.py text eol=lf
+python/xyg/components.py text eol=lf
+python/xyg/interaction.py text eol=lf
+python/xyg/widget.py text eol=lf
+scripts/verify_ci_workflow.py text eol=lf
+spec/design-dossier.md text eol=lf
+spec/design/application-consumers.md text eol=lf
+spec/design/browser-wasm.md text eol=lf
+spec/design/build-ci.md text eol=lf
+spec/design/chunked-native-viewport.md text eol=lf
+spec/design/dual-host-parity.json text eol=lf
+spec/design/host-parity.md text eol=lf
+spec/design/ownership-audit.json text eol=lf
+spec/design/ownership-audit.md text eol=lf
+spec/design/tier3-phase4-roadmap.md text eol=lf
+spec/design/tier3-testing.md text eol=lf
+spec/design/wire-protocol.md text eol=lf
+spec/performance/combined-wasm-layout-2026-11-07/README.md text eol=lf
+spec/performance/combined-wasm-layout-2026-11-07/artifacts/25ad6dacad480bc508f9fd64aa22eacdb3897111b5afa5ba2c529bd545bf1c03.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/artifacts/5b1abdeaa42555664758fe60ec6de47946e32a2c51629d2f0eeab5144a0c47a8.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/artifacts/7deaf0acc25810c48c0a3afeece04bbea7d472bce0513d9c8bc4c814e789cfb8.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/artifacts/92d462383f511002c25c75befb04b2dd0bc710b1a068375514b7306371e41143.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/artifacts/9cc2a1cb109e5c4889e15ff2e75c8602d9ebe6586bb4df5149054c8beafd01d9.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/artifacts/dab0b7410f5756efe97fe23bafd00551afc64312dc9da2584d05be8fb2642b7a.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/artifacts/dbc7007bc40ef1ccd4963b2e0c4c9f15bb6808649c5bd609329df889d9056b3e.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/artifacts/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/artifacts/e6ccf05c1ca0a8fa9f7cccd5546053ab6eac051d43508d65011336e0b9fc4d67.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/checks.json text eol=lf
+spec/performance/combined-wasm-layout-2026-11-07/compiled-source-inputs.json text eol=lf
+spec/performance/combined-wasm-layout-2026-11-07/current-bindings.json text eol=lf
+spec/performance/combined-wasm-layout-2026-11-07/evidence/00fe94ac109a3b34071e1dfea348dce3ff12b2c259fb59050826d330efd789f5.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/011ddcf0661e7cd809096d6244d71320ef0b7aeee754e488c9aa6bbf62a3d2f0.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/0272bc26370eee3a35679d01b373d21c49f5cf3a0466490b97c8c68c1c7cdf0f.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/042a6ee7bd96cebda82134531247d5d87d0344ecbb1c9c46d2ff6d502b9488f4.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/0761a7419b6003491592ec81e828eb4691a622c6ba5bcfe04d29d347e729dca9.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/0d5467e46d2e13409571e89de9961fd0b9fd4994073c1de638b7d5485aceef89.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/0e0985efaad427996b132f67aa6f0e193c032a4c421750e15d838d9672fa3c68.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/0f83f823bb39aba8fccfaf153eb35e0c01d40b32c5f9282eb78a6cfe83163e47.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/0fb41ff8b658a4fb6ea6df11af8c02b64c61b83857289f1f40e8fc2e43a27106.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/12d70a96c1d14db02e3c8e822a27348c0952e9e53f0e4b9e4d4425b993f2c682.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/132ebadfeb1b89c52554128fcaf01b85edc5f9b690b5dba6efefb5713c21b410.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/141caad4a25b4fe7486eff9c80c519470d73f0769cf60bb54b90978685cb6dda.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/1476fc3ddd5181a37489bdf7aaf604cbea6b8508248335810bded6ed261da0d9.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/16857541b66e60d57c75e5fefd71b091b276da0cd8c7cb8582ed8608502f275c.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/1882833fcd4b63481274368f0eaf1543f9e87b2a27845292cf2bf70dba131ae1.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/19c425b85267e5f5d5308503947928fcd8fb2456c0be0a19fbbe304e54cc8d5f.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/1a8d68d3868c8a469e9fed71b9deafa3d347279a2b1d1c8ce9e55f93a5814edd.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/1cf06957ad95183da44417f8d54d794206c9648c3d3495e14e000dca8960305c.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/1f1e0ae2e37779b9a6e76f7850a2ca68b7f9dd519f6e423b60c222aa4a991158.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/2018c16850ab6f20c9589ffa2e8776a99d994149aff503e0ae2758a17415f5ff.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/20ea9d4b0c6c69a40622ddaa8fdbb0c2cb8b43c19ca6e29eb5756f1808517cba.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/21611e6f3de2606301f2f60a6346e4f223ba5fae01737db6f4371ac6919c5b12.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/21d20ddeca24a66bedf4897485c8004c103692f4ab152b7e44361d01ce32ada3.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/241755d53164151c2aa589549448179dad744faaa38e5a13798a66b51e8fdb7e.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/25ad6dacad480bc508f9fd64aa22eacdb3897111b5afa5ba2c529bd545bf1c03.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/28057a6ab025ab3279a9f6b293ed3dc84beba75025de67a7473725ee8ae0a443.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/29745f349e29c9071fa9eee966709b8dd6de4bcc19bd1f38b61c10406bba5c34.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/2b1967be80603dad6fd803867b52f429ec67105de94cd571d775e5248cf083aa.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/2cdf6eac8be3143ea2a72141ca6f3509a9cc81837d0b6d45ecf95d94142060b8.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/307e308708d3b29aea66ac8b30c0e70d6093146c108aa697218aedabd859fb91.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/311b2566b392f0a59c6362f9918c077bcaca4fd25ec8e45fa5fad95c99136d95.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/31947034fee03aa28db6d8bdd72d41b84f3f79702f90055b22957aea833f4fec.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/31ed8579a8d863bad4116a35fba90ca23a4ef1312b7d393695e9cfec1147bf91.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/329003c487a484c6dd1a6ab70139847ca1cab87fdee1c32aed62a0c5facd3fbb.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/35daa48445de6c4f41329b92064d60af98ea443d785ac93fe4c933a36f27964b.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/379b4dac23080c2e178700d3644f98d89bcfa59f85133dc1861a8b11ce0e50e8.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/37d1ec1d4e86b36fd2081b9ed5171dc25be425b4c2abbfe1e35f2fc20188e0f9.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/37de6bdbb9882fa7669dcbb793d113b6cd788944c20bbdf6ed08390ed83034a1.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/3ca189717a211f909c9bb0064f69169d18c58dc8de18e6c4b44fabda224081f6.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/3d79b707c17cebd10d708c9493ecb6346c4710b5b55bb419f19ab12fafe4f841.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/3efa8ea35d7493873f7e1b3ef40579afb78e5923eca4f3c82799c3ec9b1d8c80.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/4082a9d85536efdf03feedae58651252d87393acfdb016422c87a64cb8715c7f.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/40999463b6d14b0306c598ea3f50a6f3ee445a05122c63f2ea6a95c8eb4c4459.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/42b8d4d87753f9103ac02d0b33f9a3c6f6e68193684dd88198095d247c8e7392.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/43a727ba17d01ce85f4366ff7d52302e1e0b33dfe958e2dc0ae548144dbd010c.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/4453d9610a62a79b6a900bf2a3d67145ea2e95cf799286690cff9365a63ff06b.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/447ee495b80b862e9e25026037eba5176e42fb9081903395581c025ee5d9e187.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/469dab77316ca8cc544910eca3e88690bc6b4c8870e69f1214ec58ef3d11657e.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/47a5ab364e5f964348da6db915038b2f2f284d0b2bc40a662540689834d52006.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/491337a65ce16983108cef4fc22b3582010c7f52ee48a5e47f814135cd41e4c8.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/4a56d93214ec747ad9eccbba82577d3f6c5e84f91e8f4867f135c4fe1760f868.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/4b75b363d3abfe8633de8e4a372dcb06ed26a8317483f9a630b20ad0aab4303f.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/4dabafe6828f241317a2a5437b03f9a0c9917bbfb8bd79058073fafa11318c45.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/4f50b4e3591d7f71c5a116867f4909a52ad38111ac4b9297ba1e8491d5100b19.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/4f8741df7a141d1b3d18ca84e8eb4d65f64334921665c90e236c7bd54cff61c8.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/4ff9a4f11bc1406ae7d5430a1073453f60d60e48d330e85006cae0f02eb7c8b4.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/51de07412803df56fed0a5768867e0a313b4d4a27e6c67ca3a3b5a344124fa80.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/523a9da5d5b92f14634ec7a2bb8ac4caabfcb44990f816ad211b3f8c5dd77db5.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/5705eaefc7f311a9746f6fbd02bd31f59bc6b92720253adaee5af7c2618d9c40.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/5964d74f2f3a4fbd52e93a0f28b3ed61beb5c9138a319786ff6718f1c343884e.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/5b1abdeaa42555664758fe60ec6de47946e32a2c51629d2f0eeab5144a0c47a8.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/5e73cf69101238ffc9b7100219250afdb839aaf5f1ffae2904f2c01f36568f0f.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/5fb8e9fd8d56dc8a2853ec4d3d9a2351c1167ef7a7d310a05ce618e53c866157.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/5fcf05282274f41d173d27e7a4c0f2a3adc1bb572b4c15982825acd38f3505dd.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/61cb63d79bbd157d0e35f6c5d98ff802e2b5120474e3655e62ce7900e02aca12.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/62c9547079f55f821de382b78d940d0616a9dac4ec9ba2670fa940ca5a85adba.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/648c6e246887094f6f52f3a7fd08035fd79f8a8943f145d7d3c114a6f1078345.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/65ab234fcf9f518e2663960f297245128624d2d277a299721a3a83f32369684b.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/6708e63edaaf57c53b448567133bca28a2e9924ec2cca7987eac7c8ac9a1ee08.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/6841d883f6b91005cc02cebd9d523a14828e15cfddd7443593eb6ec71bc7140f.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/69222f2a2610abaf752cfd5e900be34e501b49fd865e406e360e81aaab0ecbe9.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/69d65191cbf74dc4c43fcef90ba1333323f64c24e9aa6dca065f0e4b66b5b852.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/6d75ccb9cdca313ca1ca055f6b0138e0d42191eb881b842b94f2b55cfea955ad.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/6d81db9e54a53a1147365b3261c059e84553a8aca702f4e8c144f2e14cc04119.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/73134d3c92880e911d2d8a346069a868e496b3dddd6e47cb859c3d988b27e033.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/73c2bb400eb58aa2529414e81c883ebac0d38eff7b507546ca477181629bcd0d.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/73e116ad43eda90b42f241246fbfc8503e47bb7c2ba1bc99e48af29b5f2ce3f2.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/75dd9eb55ecc9f2032dac98c5b5f9e3c71c0f53e3ef16b68eb6e216d80505d22.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/7661ea81ca276ef9a803bc4b10c8b72d0fcc4a4cf6e2f1d5d4299cac415b015e.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/785f32afd6af76ad56a27cf6c51f3802ad77b22a6dae5927e3ac3a67767fd841.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/78da1caea0f0e49ad01de8dda68fdb699ad12569b96adc46a7f80b8eb44ef92d.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/7b0c80c6474c1846a9b0fac7518b7cf28d883ee385783b70b65ea5e21181eb27.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/7b1b26c8b032a940ab6c1bd93c46e94c098c1c7e4fac6e57da9a4433de4ba084.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/7c8e7ddc911bbff87c2fbcc6a97f1f4a491401f99d3e42815afc2296bc588473.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/7cd058d64ff2646dea45fd0cfb9afd8c637d18cae935b58d0727bac0877f2b50.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/7f8a10366e0af63f0ae542f733305444dcbe4064246386a4a2a71d9e1b245a00.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/845659eb9c1cf9d326b03deeb1e571f30e8376828d3a718c02614da7296c9fbb.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/8463edceda14663445b76427f4b889fda16532deedb15738394b7ec229701119.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/847f2c92619c051318531cddde49d0dcceb781ab11e6107ab18c2c8a8f442ed7.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/85beb7baa3424f1c3361cc8d94f51db3fc3d48dc7558523b9e3f0a7899f35cd9.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/86b4b1cb20b0aa65ade77479d6b17599e09123b660ceb57eae6bbd0054f4f5db.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/86d4ad95a1a287b8ad40d2aa423d4538bcb44837c009061769b336f1b215d412.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/88cb12a72a6ccb2c01fcd8df8ca08a59aa978f9945b77f67523419409429671a.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/8dd79bbf4aee3497da4a4374d172f11b37bc766284169e1f408a7631558631b9.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/918442b9c9f96e55b9a931d49ca6efd3dcae1008395786916cf903a62ec19662.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/9273505826e53b5721c9b1a7247a75cd66f7852d127bd7f6869f1767fb9cb34b.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/92bd17cb68576bb1d9f3e9a52b2d3881992ce731034891e38156d27287b29c90.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/986b036c7ac0f009f07b74defd82cba2db13e7a5ee379522cb78b23f61c7f028.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/99999894403f7a848fc02f5f1aeee0975e2e96c19995183f7eb9484d1c40c389.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/9aa7b8a923d80d62df25b6f3ef28e49792dfa88de75400acc59d6f4ed39cd918.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/9c00fdaadaeb52f6c1d4fbbea2568e46b2300589f497a55853ad791092a1283b.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/9d0776e8a87659997b8c5de2d1254c02f8d847f4646687c4dbb3b17de49d2d66.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/a03d81a62746e81bbc035d278d5ebc73be03be673f7fee0a4e3a9ca31fa0eceb.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/a2cf88b128314efa9716d2b248c9013d30d3df977e081a0380e32179e97a1550.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/a3281f405268560cdf304897801b4287218ce934ed9bdbbe7a585733f9d87950.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/a4020f61c0cfeb4d4e1b82d8dba58c6311d0ccffc129b216dd49c3ee73f58686.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/a8d8684d778be20be9c203d329736445d9a90232b232c0e970604d0c9a133d7d.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/a9b8e374ee24e58b5223646acaee8a47204793a3a348447dbebb7d52610755e7.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/a9c14ae37279f8d5cd6b17cdd750b8ccaca14b70eb9eb093cbba0f895d00afbd.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/a9c38d638994ed878589264f5d624a95589dc199f0fee0153a22f557658fceaf.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/a9c5bd226acaeba9e25a9949ca2d052408ea334ce75db31da492bb1b659e93b5.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/aa1400c2fd1b37af1fc0ad00a55c0c967c400287d46bb8d5118fd05df1e85482.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/ab52f8b21edf99ed47d8d8e117e859f52e75bcd9e776b944bab01bb73e811225.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/ad1cbb389dea815e2bd310e4ebe53d137d1fb926d259f874c2dafc13c452b594.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/b19eb4ac3dc1cc272a4fe58841d872e98f30661e58dfd7842c24074437c2e739.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/b4c11af9ab5323170a01cc97ae5bc30422c5597c532d971a201a623e2714d142.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/b67bfd6ea4426ebef754c8003fbd3cc632a763777baf2f7f9c85f41abce1fdc5.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/b6c9bde64eaf0b1eb673bdc8b37431a8e24ac9fe77f5fb854929694d76ec39ea.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/b7e43b00491bf49fde791a4af031f53b82607a5bf5984a573ff94ab8e8f11276.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/b8c7da8610be87051acf4b376adef45405e93727648c6a096d75b991e70cf361.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/b9f1ef6bf58314812be7d71572aeae800757c588f3479ea7809949cff5fc1519.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/bc532a42c150373e7d6eff27dc29a2ad9a7f5de61e0a6223b708e5f3a14a2022.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/befe3d9f9ff735dea91ebd17ab7ab0f4d8567df8650b455c859784463db70655.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/c2ca2c69d4295e4e3909f498d4f84ac8f4dcf2de0d5a6dc6c597e6917c38ab9a.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/c30fe1b2cbf72a20a74fc92cbef7061b4ebbf1f856772fc1a9cc68786d88db14.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/c4643889bc98973b84460e63a64b5d112ebab9505f96b90970e4405c94182e65.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/c729946f31c20d3ddd67ed5037cea8b833a102f5d144c867eb39727572fff81c.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/c780ca4138b6d305109dbe19eb5029b358f97449f86f7bfaad660729529754a3.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/c8d28893649e32c1c892a98edd5fd520d2b0a81d05d722615fe0bcd11ace17de.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/c92c5718833e933b683f16353b3041a9e7e524cc57975e520b62eb4a60ffd5fd.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/ca8df1a5be26721397b621704a526d195660877045ae6fb5b868f1f0570d21b1.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/cb19a74d0533a54e0c765d2693ba67986ab6570692a549b862b85f78b1847b9e.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/ce62bd37f0135a0f752b4f876f4dd62342877d2100f36ad9597594c0570b4aee.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/ce682545ebc525b11c935537b8b47ea303e1e588ff2715858061bcb5bc8a1793.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/cebe3222af3de751950a0f7b18e45bca0f2cfbdb176ea8699e22bdfbd1090863.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/cec3ee8c76c1485425a3a38cec9b709c900db3c2f0d06e833b62d41a66720555.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/d01eea44989af573f9f877cda31ce12488b0b8fabf538252444bb8a6f3889520.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/d05d6a50ba4e480d1ca0f96208ed2bb0a7d9497b4f239b4bedcae738e1c0a805.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/d07be18820a0628db079b312825c6feb92097fcd1ddd91f89280e26fe9106e62.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/d17c164d2d1b1a73f81b8e938202feefa3eb7ed766d8c84c43acb776cce64400.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/d186b71b93393ada67ac812f51c228c21795988f97baf7e7944a7ab605762d92.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/d378702d8644f2616909d71978479b0b684f4477871e68316d5c9280d88a52e9.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/d4c3ff0566f70b61119ba58f1d12c76dcee30e4352a7dac9f97042a51417a9c5.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/d5a7ed6ddf82e93777c24d1041899e10525e1f8974db5d8c7a4ae4cdcaf8204d.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/d6f14fa414f78cc9fa069b992a2381a482fd9b613d9c0482bf01a39931f158e1.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/d89bb74361e69f92bfecc8aa8fe0eeda2da2e77112e30590c10f092dcad0e36d.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/d8c5847dab1d6ebefa0655d719fba6b3ccdad13f2095bca1b0f1f26e50958610.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/d8c59094e5dedf1d6ba9dda518881b6aa408782892aa68f95527c7cae490a1e0.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/da8f8797de9087ade6f442536475de0749df3aea2da4092293184daf837acb96.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/dcb1a482272eae96bbffe5cfa91e1e5543004b9d0b9c2630da5f474a769111c7.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/dd1cf01bea3bb39cc4767fde1820b479658f27a1e564c39d70b6c9f23bc27df2.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/de74f77ff717e1bc87751f8640e0bff90b060a22239bf30df42b66f62a0c6f56.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/dff7c59514c91a9a2ce758b2f2d09204f1c7a0781d01ff14a4087d9947763fe8.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/e13dd7515a42bb0b5c1c77b5a82a3bfeed988291e2e002fc68833102bc589b8f.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/e184449ea3e4a7255247795b01449cf5b88ae9c10fbd056f6e10a6be17615dda.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/e2777fe1b56d602b298fd967a51b07d51f5094e132b69c4300d419c22c5193b7.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/e2e707b1c554f70acff950fea374cfe6c18d4e8b4eb138ce24ecb252821eaabb.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/e3251c38c89b3738fd9d624b1808a5878f389012965885b62b3cc6ef90e14a43.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/e45efa91f78d3471c5dba207002668eb2cb2d9e2173fa488d58000f0704a5f60.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/e47464cd85a30210f9cbe6ec12af0aee391c3aa8ec4c01afdc2b814b823a7d6d.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/e78330a33e69b77cb86c16cd34970155330265cef67f405d93dce59b74220482.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/e7bcb6b142f37aff761686e86ef5968cb10fc466e2158180b706ffaa87653ce9.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/e857ac26fad4bba7bc113ff9065d1973911e579038887781014d839265ede569.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/e867508d06a93dee11a5a9b1bff44906eaf66a1b4f72f137f2eafac724d76bc6.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/eb8c840abbbfbbcc7b2fc02f6c1c2909f93ea1a5c8d5ab31aed178cc9a757485.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/ec04e88ce591b24e5685abc8aa37ac8d49f72885da76b185c4ef6416379309aa.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/ecd7995a4f1549f6eb1aaa55da949f727c9283c84ffe6e7981d913cf6ad8572f.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/edefe2a9bcc24edaebfa626b6e0249334975969a91d59488c51813a6b2609cc1.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/ee6d49aa7e6d0e84111358bd58beac6663a37d987af1d86239cb4286a8881d91.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/efecd869da8075b282c023e214202ffdba3cf7a18e5776e933934a355e47cea1.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/f02d3429d83cd3166bdc9115f437b63cb68fc88a8a6b937dafe747652d5079be.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/f0c4245c70d3a2b0c6636b9785294cbe2636f7b262aceb2aceac19dd3f8900cb.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/f1cb4edecb943da69a3ad2bad3e65fb578c73e6e7145ecff35d81d04fe01ce99.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/f2af185cfb174bbb82962d012b4709648a5e8f4c657dce29078c7c014a577292.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/f389f11530d146516e4021e83ea4735f0380fc8579d5202f47e0f8c9947a3948.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/f54bd830f98d1012799bd1dd4d6817b185663e93f980c7dd5624a29e32302b91.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/f7334fc326de07bfa8aeec957274cd81a881299a06ea3eb796397ad07b29ecfe.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/fadf4294cf55ddc21687f29ccff995650b6a19bea1f4b95401fe460f61b729da.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/evidence/fb7a53aa65f6d3e3b1304e62c1f0b9a5d93346bbda90d65eeddd2b8852155bc1.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/predecessor/.cargo__config.toml.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/predecessor/.gitattributes.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/predecessor/js__optimize-wasm.mjs.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/predecessor/packages__xy-node__src__temporal-graph-frozen.js.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/predecessor/packages__xy-node__test__geo-host.test.mjs.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/predecessor/spec__design__browser-wasm.md.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/predecessor/spec__design__build-ci.md.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/predecessor/tests__test_geo_host.py.gz -text
+spec/performance/combined-wasm-layout-2026-11-07/predecessor/tests__test_graphforge_contract_corpus.py.gz -text
+spec/releases/0.6.0-api-inventory.json text eol=lf
+tests/test_chunked_installed.py text eol=lf
+tests/test_chunked_lifecycle.py text eol=lf
+tests/test_chunked_live.py text eol=lf
+tests/test_chunked_required_ci.py text eol=lf
+tests/test_geo_host.py text eol=lf
+tests/test_graphforge_contract_corpus.py text eol=lf
+tests/test_verify_ci_workflow.py text eol=lf
+uv.lock text eol=lf
+spec/performance/chunked-native-installed-2026-11-07/** text eol=lf
+spec/performance/chunked-native-installed-2026-11-07/**/*.gz -text
+spec/performance/chunked-native-viewport-2026-11-07/** text eol=lf
+spec/performance/chunked-native-viewport-2026-11-07/**/*.png -text
+spec/performance/chunked-native-viewport-2026-11-07/**/*.gz -text
+spec/performance/chunked-native-viewport-2026-11-07/**/*.xygc -text
+spec/performance/chunked-native-viewport-2026-11-07/**/*.bin -text
+spec/performance/chunked-native-viewport-2026-11-07/**/*.xybf -text
+spec/performance/chunked-native-viewport-2026-11-07/**/*.whl -text

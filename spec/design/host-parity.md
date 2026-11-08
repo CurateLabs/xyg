@@ -2187,5 +2187,8 @@ Scene/XYPB/SVG/HTML/PNG share these paths under the unchanged single-module
 package caps. PNG is byte-identical through the shared Rust raster/encoder. See [the versioned frozen contract](temporal-graph-frozen.md).
 Historical ABI402/403 acquisition/native receipts remain immutable.
 
-Native chunked-chart viewport continuation and its remaining acceptance are specified
+Native local chunked charts now refine committed viewport gestures through the
+existing renderer, with exact accepted-frame source identity and cancellation.
+The installed Jupyter/anywidget and public Node binary HTTP journeys, lifecycle
+contract, required CI discovery and remaining issue-wide acceptance are specified
 in [the local native viewport contract](chunked-native-viewport.md).

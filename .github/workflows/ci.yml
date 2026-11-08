@@ -444,7 +444,9 @@ jobs:
           # absence. (A crash or non-zero exit already fails unconditionally.)
           export XYG_TEST_CHROMIUM="$XYG_CHROMIUM"
           export XY_REQUIRE_BROWSER=1
-          .venv/bin/pytest -q
+          # Required native viewport cases execute once, without optional-browser skips.
+          .venv/bin/pytest -q tests/test_chunked_live.py tests/test_chunked_lifecycle.py tests/test_chunked_installed.py
+          .venv/bin/pytest -q --ignore=tests/test_chunked_live.py --ignore=tests/test_chunked_lifecycle.py --ignore=tests/test_chunked_installed.py
 
       # End-to-end: a real Figure (line decimation + scatter) through to_html's
       # exact payload path, rendered in Chromium, pixels read back. Complements

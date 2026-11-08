@@ -1,0 +1,24 @@
+{
+  "chromium": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+  "compiledInputsMatch": 298,
+  "installed": "/var/tmp/pytest-of-ubuntu/pytest-248/test_installed_kernel_chunked_0",
+  "node": "v22.23.4",
+  "nodeExecutable": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin/node",
+  "physicalMemory": "MemTotal:       32538392 kB",
+  "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+  "python": "3.11.17 (main, Oct  1 2026, 20:58:47) [Clang 22.1.3 ]",
+  "pythonExecutable": "/home/ubuntu/.t3/worktrees/xyg/t3-1319e871/.venv/bin/python",
+  "rust": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "tmpdir": "/var/tmp",
+  "typingStatus": "22 diagnostics in unchanged Root source files; changed sources clean; installed consumer passes 135 exports",
+  "typingUnchangedRootSources": {
+    "python/xyg/_geoscale.py": "32a0dc248513104de7d046a2b75b658f5703e472bfaf6ba4082a266cc968f781",
+    "python/xyg/_geoviewport.py": "b470bc8d27250a97709e3770ca7107b5bec8bf1d69e8b63eeaa2f9e90bd53379",
+    "python/xyg/_graphforge.py": "fd4119bd8e912445cd0d22b9e0dfd993b5c7c50327f9719bbcb33f1c2ee7cb41",
+    "python/xyg/_native.py": "5b42601a393472e92cd0ccb3bbf11eb7a6d8238bfd414979dbbb4938775b1c44",
+    "python/xyg/_static_document.py": "e36080b115954a9dbea6a7b55507ffcef1f419b43d6fccfda6f5824ae021baf1",
+    "python/xyg/pyplot/__init__.py": "ee74636372156daffacb19ec71689863e97512ba4855361b1c9ad8bd5991f9d9",
+    "python/xyg/pyplot/_axes.py": "1c97924ff11092b564db1838ae4227061121bfb572c9e26a28426376c8709d9b",
+    "python/xyg/pyplot/_axisgrid.py": "0d1fbd9c9cdc4c3e51fe39f2b38fdfe49dcfc497d86209d85a800d103a718eb2"
+  }
+}

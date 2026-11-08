@@ -120,11 +120,19 @@ function attachHostWasmTicks(view: ChartView & { _dispatchChartEvent?: Function 
 }
 
 export function render({ model, el }) {
-  const spec = model.get("spec");
+  const spec = model._xygChunkedPacket?.spec || model.get("spec");
   if (spec?.graph_host === true) return renderGraphHost({model,el,attachTicks:attachHostWasmTicks});
   if (spec?.geo_host === true) return renderGeoHost({model,el});
-  const buffer = payloadBuffers(spec, model.get("buffers"));
-  const chunkedEpoch = String(model._xygChunkedMountEpoch = (model._xygChunkedMountEpoch || 0) + 1);
+  const buffer = payloadBuffers(spec, model._xygChunkedPacket?.buffers || model.get("buffers"));
+  if (spec.chunked && model._xygChunkedActiveView) {
+    const old = model._xygChunkedActiveView;
+    model._xygChunkedSavedState = {state: old.root.xy.state(), past: old._historyPast, future: old._historyFuture};
+  }
+  const epochKey = Symbol.for("xyg.chunked.mount.epoch");
+  const epochOwner: any = el.ownerDocument.defaultView || globalThis;
+  const epoch = BigInt(spec.chunked?.mount_epoch || "0") > (epochOwner[epochKey] || 0n)
+    ? BigInt(spec.chunked.mount_epoch) : (epochOwner[epochKey] || 0n);
+  const chunkedEpoch = String(epochOwner[epochKey] = epoch + 1n);
   const chunkedMount = spec.chunked ? Array.from(crypto.getRandomValues(new Uint32Array(4))).join("-") : null;
   let chunkedIntent = 0n;
   let chunkedFrame = spec.chunked?.frame;
@@ -147,21 +155,42 @@ export function render({ model, el }) {
   };
   const view = new ChartView(el, spec, buffer, comm);
   if (chunkedMount) {
-    model.send({type: "chunked_mount", mount: chunkedMount, mount_epoch: chunkedEpoch}, {}, []);
+    model._xygChunkedActiveView = view;
+    model.send({type: "chunked_mount", mount: chunkedMount, mount_epoch: chunkedEpoch, chunked_frame: chunkedFrame}, {}, []);
+    const saved = model._xygChunkedSavedState || (spec.chunked.state ? {state: spec.chunked.state, past: [], future: []} : null);
+    if (saved) {
+      view.root.xy.applyState(saved.state, {animate: false, history: false});
+      view._historyPast = saved.past; view._historyFuture = saved.future;
+    }
     const onChunkedFrame = (msg, buffers) => {
+      if (msg?.type === "chunked_error" && msg.mount === chunkedMount && msg.intent === String(chunkedIntent)) {
+        view._dispatchChartEvent("chunked_error", {error: msg.error, view: view.root.xy.state()});
+        return;
+      }
       if (msg?.type !== "chunked_frame" || msg.mount !== chunkedMount) return;
       const reject = () => model.send({type: "chunked_rejected", mount: chunkedMount,
         intent: msg.intent, frame: msg.spec?.chunked?.frame}, {}, []);
-      if (msg.intent !== String(chunkedIntent)) { reject(); return; }
+      if (model._xygChunkedActiveView !== view || msg.intent !== String(chunkedIntent)) { reject(); return; }
       if (view._applyChunkedFrame(msg, buffers)) {
         chunkedFrame = msg.spec.chunked.frame;
+        model._xygChunkedPacket = {spec: view.spec, buffers};
         model.send({type: "chunked_painted", mount: chunkedMount,
           intent: msg.intent, frame: chunkedFrame}, {}, []);
+        // Expose the frame only after the comm's pick/selection token advanced
+        // and its genuine paint acknowledgement was queued first.
+        view._dispatchChartEvent("chunked_frame", {frame: chunkedFrame, view: view._eventView("refine"), memory: view._chunkedMemoryReport()});
+        if (view._stateSelection && !view._stateSelection.rows) {
+          view.root.xy.applyState({selection: view._stateSelection}, {animate: false, history: false});
+        }
       } else reject();
     };
     model.on("msg:custom", onChunkedFrame);
     view._chunkedCleanup = () => {
       model.off?.("msg:custom", onChunkedFrame);
+      if (model._xygChunkedActiveView === view) {
+        model._xygChunkedSavedState = {state: view.root.xy.state(), past: view._historyPast, future: view._historyFuture};
+        model._xygChunkedActiveView = null;
+      }
       model.send({type: "chunked_unmount", mount: chunkedMount}, {}, []);
     };
   }
