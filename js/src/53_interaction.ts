@@ -970,11 +970,11 @@ Object.assign(ChartView.prototype, {
     }
   },
 
-  // Republish hydration has already restored the durable geometry through
-  // _applyStatePatch. Fill the rebuilt trace masks from the resident CPU
-  // columns while the authoritative kernel reply is in flight, without
-  // replaying a user gesture. The explicit option keeps this path private to
-  // restoration callers; an unavailable or lost GL context skips the preview.
+  // Republish/context hydration retains durable geometry on the view. Fill
+  // rebuilt trace masks from resident CPU columns without replaying a gesture.
+  // Kernel previews use their scatter-only selection universe; standalone
+  // restoration uses the same eligible marks as its original local gesture.
+  // An unavailable or lost GL context skips the preview.
   _restoreSelectionLocalMask(selection, opts: any = {}) {
     if (opts.localMask !== true || this._glLost || !this.gl
         || !selection || typeof selection !== "object") {
@@ -988,7 +988,7 @@ Object.assign(ChartView.prototype, {
         Math.max(x0, x1),
         Math.min(y0, y1),
         Math.max(y0, y1),
-        { dispatch: false, localMask: true },
+        { dispatch: false, localMask: this.comm != null },
       );
       return true;
     }
@@ -999,7 +999,7 @@ Object.assign(ChartView.prototype, {
         return false;
       }
       const polygon = selection.polygon.map((point) => [point[0], point[1]]);
-      this._selectLocalPolygon(polygon, { dispatch: false, localMask: true });
+      this._selectLocalPolygon(polygon, { dispatch: false, localMask: this.comm != null });
       return true;
     }
     return false;

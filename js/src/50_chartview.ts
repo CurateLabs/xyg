@@ -2025,6 +2025,10 @@ export class ChartView {
       try {
         this._initGl(this._payload);
         this._glLost = false;
+        // Durable brush geometry belongs to the view, while its mask belongs
+        // to the rebuilt traces. Restore it before publishing the first frame;
+        // neither a new gesture nor an authoritative host event is needed.
+        this._restoreSelectionLocalMask(this._stateSelection, { localMask: true });
         // Compile the programs this chart actually uses and submit a complete
         // frame before advertising the replacement context as live. Under
         // process-wide pressure Chrome can lose a just-created context during

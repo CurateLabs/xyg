@@ -1034,3 +1034,8 @@ scripts/verify_temporal_aggregate_artifacts.py text eol=lf
 spec/performance/temporal-line-window-2026-11-07/** text eol=lf
 spec/performance/temporal-line-window-2026-11-07/**/*.gz -text
 tests/fixtures/temporal/line-window-edges.json text eol=lf
+
+# Mixed-family dashboard selection restoration evidence.
+spec/performance/dashboard-mixed-selection-2026-11-08/** text eol=lf
+spec/performance/dashboard-mixed-selection-2026-11-08/**/*.gz -text
+spec/design/view-state.md text eol=lf
