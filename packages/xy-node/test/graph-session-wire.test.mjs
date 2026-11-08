@@ -711,6 +711,7 @@ test("10k document ingress reserves retry ownership separately from event text",
   try {
     const initial=pair.run(21,[field('camera.f64','f64',[.01,.01,320,160,640,320,1])]);
     assert.equal(value(initial,'gpu.header.u32')[2],n);
+    assert.deepEqual([...value(initial,"relayout.admission.u32")],[1,64],"Rust continues admitting the supported ten-step request");
     const next=pair.run(15,[],{7:10});
     assert.notDeepEqual(value(next,'paint.node.center.f64'),value(initial,'paint.node.center.f64'));
     // Linear memory cannot shrink: this observes all preceding intra-call growth.

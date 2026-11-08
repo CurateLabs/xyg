@@ -328,16 +328,12 @@ pub fn layout_breadthfirst(
 /// Place nodes from a per-node layer id (shared by BFS and hierarchical).
 fn place_by_layer(layer: &[i32], out_x: &mut [f64], out_y: &mut [f64]) {
     let n = layer.len();
-    let mut per_layer: HashMap<i32, u64> = HashMap::new();
-    for &layer_id in layer {
-        *per_layer.entry(layer_id).or_insert(0) += 1;
-    }
-    let mut seen: HashMap<i32, u64> = HashMap::new();
+    let (rank, count) =
+        crate::index_slots::stable_ranks(n, &|i| [layer[i] as u64, 0]).expect("layer capacity");
     for i in 0..n {
         let layer_id = layer[i];
-        let idx = *seen.get(&layer_id).unwrap_or(&0);
-        *seen.entry(layer_id).or_insert(0) += 1;
-        let count = *per_layer.get(&layer_id).unwrap_or(&1);
+        let idx = rank[i];
+        let count = count[i];
         out_x[i] = if count <= 1 {
             0.0
         } else {
@@ -454,9 +450,9 @@ pub fn layout_hierarchical(
 #[derive(Clone)]
 pub struct ForceState {
     pub n: usize,
-    pub edges: Vec<(u64, u64)>,
+    pub edges: std::sync::Arc<Vec<(u64, u64)>>,
     /// Undirected degree per node (self-loops count once).
-    pub degree: Vec<f64>,
+    pub degree: std::sync::Arc<Vec<f64>>,
     pub x: Vec<f64>,
     pub y: Vec<f64>,
     pub vx: Vec<f64>,
@@ -474,14 +470,14 @@ pub struct ForceState {
     /// All-pairs shortest-path distances (row-major n×n) for KK / stress.
     pub dist: Option<Vec<f64>>,
     /// Connected-component index used by CoSE to keep disconnected groups apart.
-    pub component: Vec<usize>,
+    pub component: std::sync::Arc<Vec<usize>>,
     pub component_count: usize,
     /// CoSE-only option policy; defaults preserve the original profile.
     pub cose: CoseOptions,
     /// CoSE pin mask. Pinned nodes remain bit-identical to ingress positions.
-    pub pinned: Vec<bool>,
+    pub pinned: std::sync::Arc<Vec<bool>>,
     /// CoSE compound parents (`COSE_NO_PARENT` for roots).
-    pub parents: Vec<u64>,
+    pub parents: std::sync::Arc<Vec<u64>>,
 }
 
 fn splitmix64(state: &mut u64) -> u64 {
@@ -629,28 +625,51 @@ fn connected_components_with_parents(
 /// force evaluation. Without this, both pairwise and grid repulsion have a
 /// zero direction and a connected graph can remain fully overlapped forever.
 fn seed_cose_overlaps(x: &mut [f64], y: &mut [f64], pinned: &[u8], seed: u64, scale: f64) {
-    let mut occurrences = HashMap::<(u64, u64), u64>::new();
-    for (index, (px, py)) in x.iter_mut().zip(y.iter_mut()).enumerate() {
-        let key = (
-            if *px == 0.0 { 0 } else { px.to_bits() },
-            if *py == 0.0 { 0 } else { py.to_bits() },
-        );
-        let occurrence = occurrences.entry(key).or_default();
-        if *occurrence > 0 && pinned.get(index).copied().unwrap_or(0) == 0 {
+    let bits = |v: f64| if v == 0. { 0 } else { v.to_bits() };
+    let (rank, size) = crate::index_slots::stable_ranks(x.len(), &|i| [bits(x[i]), bits(y[i])])
+        .expect("force identity capacity");
+    drop(size);
+    for index in 0..x.len() {
+        let occurrence = rank[index];
+        if occurrence > 0 && pinned.get(index).copied().unwrap_or(0) == 0 {
             let mut state = seed
                 ^ (index as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15)
-                ^ occurrence.wrapping_mul(0xBF58_476D_1CE4_E5B9);
+                ^ (occurrence as u64).wrapping_mul(0xBF58_476D_1CE4_E5B9);
             let angle = std::f64::consts::TAU * rand01(&mut state);
-            let radius = scale * 1e-6 * (*occurrence as f64).sqrt();
+            let radius = scale * 1e-6 * (occurrence as f64).sqrt();
             let (sin, cos) = portable_sin_cos(angle);
-            *px += radius * cos;
-            *py += radius * sin;
+            x[index] += radius * cos;
+            y[index] += radius * sin;
         }
-        *occurrence += 1;
     }
 }
 
 impl ForceState {
+    pub(crate) fn retained_bytes(&self) -> Option<usize> {
+        self.private_clone_bytes()?
+            .checked_add(self.edges.capacity().checked_mul(16)?)?
+            .checked_add(self.degree.capacity().checked_mul(8)?)?
+            .checked_add(
+                self.component
+                    .capacity()
+                    .checked_mul(std::mem::size_of::<usize>())?,
+            )?
+            .checked_add(self.parents.capacity().checked_mul(8)?)?
+            .checked_add(self.pinned.capacity())
+    }
+    pub(crate) fn private_clone_bytes(&self) -> Option<usize> {
+        self.x
+            .capacity()
+            .checked_add(self.y.capacity())?
+            .checked_add(self.vx.capacity())?
+            .checked_add(self.vy.capacity())?
+            .checked_mul(8)?
+            .checked_add(
+                self.dist
+                    .as_ref()
+                    .map_or(Some(0), |d| d.capacity().checked_mul(8))?,
+            )
+    }
     pub fn new(
         n_nodes: u64,
         sources: &[u64],
@@ -745,13 +764,19 @@ impl ForceState {
             .zip(targets.iter())
             .map(|(&s, &t)| (s, t))
             .collect();
-        let mut degree = vec![0.0f64; n];
-        for &(s, t) in &edges {
-            let i = s as usize;
-            let j = t as usize;
-            degree[i] += 1.0;
-            if i != j {
-                degree[j] += 1.0;
+        let mut degree = if algo == LAYOUT_COSE {
+            Vec::new()
+        } else {
+            vec![0.0f64; n]
+        };
+        if algo != LAYOUT_COSE {
+            for &(s, t) in edges.iter() {
+                let i = s as usize;
+                let j = t as usize;
+                degree[i] += 1.0;
+                if i != j {
+                    degree[j] += 1.0;
+                }
             }
         }
         let k = if algo == LAYOUT_COSE {
@@ -779,10 +804,15 @@ impl ForceState {
         } else {
             (Vec::new(), 0)
         };
+        let component = if component_count <= 1 {
+            Vec::new()
+        } else {
+            component
+        };
         Some(Self {
             n,
-            edges,
-            degree,
+            edges: std::sync::Arc::new(edges),
+            degree: std::sync::Arc::new(degree),
             x,
             y,
             vx: vec![0.0; n],
@@ -795,19 +825,19 @@ impl ForceState {
             rng,
             algo,
             dist,
-            component,
+            component: std::sync::Arc::new(component),
             component_count,
             cose,
-            pinned: if pinned.is_empty() {
+            pinned: std::sync::Arc::new(if pinned.is_empty() {
                 vec![false; n]
             } else {
                 pinned.iter().map(|&value| value != 0).collect()
-            },
-            parents: if parents.is_empty() {
+            }),
+            parents: std::sync::Arc::new(if parents.is_empty() {
                 vec![COSE_NO_PARENT; n]
             } else {
                 parents.to_vec()
-            },
+            }),
         })
     }
 
@@ -841,7 +871,7 @@ impl ForceState {
             } else {
                 self.apply_repulsion_exact(&mut fx, &mut fy, 1.0);
             }
-            for &(s, t) in &self.edges {
+            for &(s, t) in self.edges.iter() {
                 let i = s as usize;
                 let j = t as usize;
                 let dx = self.x[i] - self.x[j];
@@ -875,7 +905,7 @@ impl ForceState {
             } else {
                 self.apply_repulsion_grid_bh(&mut fx, &mut fy, 1.0, 0.0);
             }
-            for &(s, t) in &self.edges {
+            for &(s, t) in self.edges.iter() {
                 let i = s as usize;
                 let j = t as usize;
                 let dx = self.x[i] - self.x[j];
@@ -925,7 +955,7 @@ impl ForceState {
             } else {
                 self.apply_repulsion_grid_bh(&mut fx, &mut fy, 1.0, 0.0);
             }
-            for &(s, t) in &self.edges {
+            for &(s, t) in self.edges.iter() {
                 let i = s as usize;
                 let j = t as usize;
                 let dx = self.x[i] - self.x[j];
@@ -963,7 +993,7 @@ impl ForceState {
             let mut fx = vec![0.0; n];
             let mut fy = vec![0.0; n];
             self.apply_repulsion_grid_bh(&mut fx, &mut fy, 1.0, 0.0);
-            for &(s, t) in &self.edges {
+            for &(s, t) in self.edges.iter() {
                 let i = s as usize;
                 let j = t as usize;
                 let dx = self.x[i] - self.x[j];
@@ -1117,7 +1147,7 @@ impl ForceState {
                 fx[parent] += compound_fx;
                 fy[parent] += compound_fy;
             }
-            for &(s, t) in &self.edges {
+            for &(s, t) in self.edges.iter() {
                 let (i, j) = (s as usize, t as usize);
                 if i == j {
                     continue;
@@ -1840,6 +1870,87 @@ pub fn build_render(
     out_n_edges: &mut u64,
     out_edge_membership: Option<(&mut [u64], &mut [u64])>,
 ) -> Option<LodDecision> {
+    build_render_owned(
+        n_nodes,
+        x,
+        y,
+        sources,
+        targets,
+        node_budget,
+        edge_budget,
+        viewport,
+        out_node_x,
+        out_node_y,
+        out_member_of,
+        out_edge_sources,
+        out_edge_targets,
+        out_n_nodes,
+        out_n_edges,
+        out_edge_membership,
+        false,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn build_render_preallocated(
+    n_nodes: u64,
+    x: &[f64],
+    y: &[f64],
+    sources: &[u64],
+    targets: &[u64],
+    node_budget: u64,
+    edge_budget: u64,
+    viewport: Option<Viewport>,
+    out_node_x: &mut [f64],
+    out_node_y: &mut [f64],
+    out_member_of: &mut [u64],
+    out_edge_sources: &mut [u64],
+    out_edge_targets: &mut [u64],
+    out_n_nodes: &mut u64,
+    out_n_edges: &mut u64,
+    out_edge_membership: Option<(&mut [u64], &mut [u64])>,
+) -> Option<LodDecision> {
+    build_render_owned(
+        n_nodes,
+        x,
+        y,
+        sources,
+        targets,
+        node_budget,
+        edge_budget,
+        viewport,
+        out_node_x,
+        out_node_y,
+        out_member_of,
+        out_edge_sources,
+        out_edge_targets,
+        out_n_nodes,
+        out_n_edges,
+        out_edge_membership,
+        true,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn build_render_owned(
+    n_nodes: u64,
+    x: &[f64],
+    y: &[f64],
+    sources: &[u64],
+    targets: &[u64],
+    node_budget: u64,
+    edge_budget: u64,
+    viewport: Option<Viewport>,
+    out_node_x: &mut [f64],
+    out_node_y: &mut [f64],
+    out_member_of: &mut [u64],
+    out_edge_sources: &mut [u64],
+    out_edge_targets: &mut [u64],
+    out_n_nodes: &mut u64,
+    out_n_edges: &mut u64,
+    out_edge_membership: Option<(&mut [u64], &mut [u64])>,
+    preallocated: bool,
+) -> Option<LodDecision> {
     let Ok(n) = usize::try_from(n_nodes) else {
         return None;
     };
@@ -1965,12 +2076,23 @@ pub fn build_render(
         out_member_of[src] = tmp_member[local];
     }
 
+    drop(active);
+    drop(active_idx);
+    drop(ax);
+    drop(ay);
+    drop(tmp_x);
+    drop(tmp_y);
+    drop(tmp_member);
     // Map source edges into render (cluster) index space.
     // Aggregate tiers collapse multi-edges and drop same-cluster loops; Direct
     // / EdgeSample preserve parallel edges, reciprocal pairs, and self-loops so
     // GraphForge edge identity can stay 1:1 with paint when under budget (#33).
     let clustered = cluster_count < n_active_u64 || n_active_u64 > node_budget;
-    let mut aggregated: Vec<(u64, u64)> = Vec::new();
+    let mut aggregated: Vec<(u64, u64)> = if preallocated {
+        Vec::with_capacity(sources.len())
+    } else {
+        Vec::new()
+    };
     // Aggregated-list slot each source edge landed in (u64::MAX = dropped);
     // only tracked when the caller asked for membership.
     let track = out_edge_membership.is_some();
@@ -1980,7 +2102,7 @@ pub fn build_render(
         Vec::new()
     };
     if clustered {
-        let mut edge_set: HashMap<(u64, u64), u64> = HashMap::new();
+        let mut edge_set = crate::index_slots::IndexSlots::new(sources.len())?;
         for (edge, (&s, &t)) in sources.iter().zip(targets.iter()).enumerate() {
             if s >= n_nodes || t >= n_nodes {
                 return None;
@@ -1990,13 +2112,17 @@ pub fn build_render(
             if cs == u64::MAX || ct == u64::MAX || cs == ct {
                 continue;
             }
-            let key = (cs, ct);
-            let slot = *edge_set.entry(key).or_insert_with(|| {
-                aggregated.push(key);
-                aggregated.len() as u64 - 1
-            });
+            let (slot, prior) = edge_set.find([cs, ct], &|i| [aggregated[i].0, aggregated[i].1])?;
+            let index = if let Some(index) = prior {
+                index
+            } else {
+                let index = aggregated.len();
+                aggregated.push((cs, ct));
+                edge_set.set(slot, index);
+                index
+            };
             if track {
-                slot_of_edge[edge] = slot;
+                slot_of_edge[edge] = index as u64;
             }
         }
     } else {
@@ -2142,19 +2268,16 @@ pub fn layout_radial(
             }
         }
     }
-    let mut ring: HashMap<i32, Vec<usize>> = HashMap::new();
-    for (i, &d) in dist.iter().enumerate() {
-        let key = if d < 0 { 9999 } else { d };
-        ring.entry(key).or_default().push(i);
-    }
-    for (d, nodes) in ring {
-        let r = (d as f64).max(0.0);
-        let m = nodes.len();
-        for (k, &i) in nodes.iter().enumerate() {
-            let a = std::f64::consts::TAU * (k as f64) / (m as f64).max(1.0);
-            out_x[i] = r * a.cos();
-            out_y[i] = r * a.sin();
-        }
+    let distance = |i: usize| if dist[i] < 0 { 9999 } else { dist[i] };
+    let Some((rank, size)) = crate::index_slots::stable_ranks(n, &|i| [distance(i) as u64, 0])
+    else {
+        return false;
+    };
+    for i in 0..n {
+        let r = (distance(i) as f64).max(0.0);
+        let a = std::f64::consts::TAU * (rank[i] as f64) / (size[i] as f64).max(1.0);
+        out_x[i] = r * a.cos();
+        out_y[i] = r * a.sin();
     }
     out_x[root as usize] = 0.0;
     out_y[root as usize] = 0.0;
@@ -2191,6 +2314,46 @@ pub fn layout_concentric(n: usize, degrees: &[u64], out_x: &mut [f64], out_y: &m
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn overlap_ranks_preserve_prior_key_count_jitter_bits() {
+        for seed in [0, 7, u64::MAX] {
+            let original_x: Vec<_> = (0..127)
+                .map(|i| if i % 3 == 0 { -0.0 } else { (i % 11) as f64 })
+                .collect();
+            let original_y: Vec<_> = (0..127).map(|i| (i % 5) as f64).collect();
+            let pins: Vec<_> = (0..127).map(|i| u8::from(i % 7 == 0)).collect();
+            let (mut x, mut y) = (original_x.clone(), original_y.clone());
+            seed_cose_overlaps(&mut x, &mut y, &pins, seed, 12.);
+            let (mut expected_x, mut expected_y) = (original_x, original_y);
+            let mut occurrences = std::collections::BTreeMap::new();
+            for i in 0..127 {
+                let bits = |v: f64| if v == 0. { 0 } else { v.to_bits() };
+                let occurrence = occurrences
+                    .entry((bits(expected_x[i]), bits(expected_y[i])))
+                    .or_insert(0u64);
+                if *occurrence > 0 && pins[i] == 0 {
+                    let mut state = seed
+                        ^ (i as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15)
+                        ^ occurrence.wrapping_mul(0xBF58_476D_1CE4_E5B9);
+                    let angle = std::f64::consts::TAU * rand01(&mut state);
+                    let radius = 12. * 1e-6 * (*occurrence as f64).sqrt();
+                    let (sin, cos) = portable_sin_cos(angle);
+                    expected_x[i] += radius * cos;
+                    expected_y[i] += radius * sin;
+                }
+                *occurrence += 1;
+            }
+            assert!(x
+                .iter()
+                .zip(expected_x)
+                .all(|(a, b)| a.to_bits() == b.to_bits()));
+            assert!(y
+                .iter()
+                .zip(expected_y)
+                .all(|(a, b)| a.to_bits() == b.to_bits()));
+        }
+    }
+
     #[test]
     fn grid_repulsion_is_bit_identical_for_any_thread_count() {
         let n = 30_000u64;
@@ -2680,7 +2843,12 @@ mod tests {
         let lists = (0..kept)
             .map(|r| members[offsets[r] as usize..offsets[r + 1] as usize].to_vec())
             .collect();
-        (d.tier, edge_s[..kept].to_vec(), edge_t[..kept].to_vec(), lists)
+        (
+            d.tier,
+            edge_s[..kept].to_vec(),
+            edge_t[..kept].to_vec(),
+            lists,
+        )
     }
 
     #[test]
@@ -2716,8 +2884,15 @@ mod tests {
         }
         // Stride sampling under edge_budget: each kept edge names exactly the
         // sampled source edge, never a neighbour.
-        let (tier, es, et, lists) =
-            render_membership(&x, &y, &[0, 1, 2, 0, 1, 2], &[1, 2, 0, 2, 0, 1], 100, 3, None);
+        let (tier, es, et, lists) = render_membership(
+            &x,
+            &y,
+            &[0, 1, 2, 0, 1, 2],
+            &[1, 2, 0, 2, 0, 1],
+            100,
+            3,
+            None,
+        );
         assert_eq!(tier, LodTier::EdgeSample);
         assert_eq!(lists.len(), 3);
         let (src, dst) = ([0u64, 1, 2, 0, 1, 2], [1u64, 2, 0, 2, 0, 1]);

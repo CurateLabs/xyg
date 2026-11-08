@@ -72,6 +72,14 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   let camera = cameraCopy(options.camera);
   const lane = claimGraphWorker(options.worker, report), doc = options.el.ownerDocument;
   let disposed = false, terminal = false, busy = true, needsRefresh = false, sequence = 2n, output: GraphSessionResult | null = null;
+  // One user intent may replace another while Rust is advancing force. Framing
+  // waits for that reply's publication; no stale revision/sequence is retained.
+  let busyOperation: number | null = null;
+  let pendingUi: { start: () => void; reject: (reason: unknown) => void } | null = null;
+  const uiBlocked = () => pendingTime !== null || temporalPumping || (busy && busyOperation !== 15);
+  function rejectPendingUi(error: unknown) {
+    const pending = pendingUi; pendingUi = null; pending?.reject(error);
+  }
   let continuation = progressive, frame: number | null = null, deadline: ReturnType<typeof setTimeout> | null = null;
   let disposal: Promise<void> | null = null, page = 0;
   const surface = doc.createElement("div"), companion = doc.createElement("div"), live = doc.createElement("div");
@@ -104,6 +112,7 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   function report(error: unknown) {
     if (disposed) return;
     stopContinuation();
+    rejectPendingUi(error);
     if (error instanceof XygWasmError && error.code.startsWith("XYG_WASM_")) {
       if (terminalFailure) return;
       terminal = true; terminalFailure = error;
@@ -129,20 +138,27 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
       if (busy) { scheduleContinuation(); return; }
       // One bounded Rust operation per presentation opportunity. Worker replies
       // are accepted immediately; no transport ACK is held to pace the force.
-      void run({ operation: 15, steps: XYG_WASM_GRAPH_DEFAULT_CHUNK_STEPS }, "render").catch(() => {});
+      const steps = Math.min(XYG_WASM_GRAPH_DEFAULT_CHUNK_STEPS,
+        output?.continuationStepLimit ?? XYG_WASM_GRAPH_DEFAULT_CHUNK_STEPS);
+      if (steps === 0) { report(new XygWasmError("GF_INTERACTION_BUDGET", "Rust admits no continuation step")); return; }
+      void run({ operation: 15, steps }, "render").catch(() => {});
     });
   }
   function setBusy(value: boolean) {
     busy = value;
-    if (!value) { pumpTemporal(); scheduleContinuation(); }
+    if (!value) {
+      const pending = pendingUi; pendingUi = null;
+      pending?.start();
+      pumpTemporal(); scheduleContinuation();
+    }
     if (disposed || terminal || (!busy && !pendingTime && !temporalPumping)) {
       for (const resolve of idleWaiters) resolve(); idleWaiters.clear();
     }
     if (disposed) return;
-    surface.setAttribute("aria-busy", String(value));
+    surface.setAttribute("aria-busy", String(busy));
     for (const button of companion.querySelectorAll("button")) {
       const unavailable = button === previous ? page === 0 : button === next ? !output || (page + 1) * 50 >= output.companion.total : false;
-      button.setAttribute("aria-disabled", String(value || unavailable || needsRefresh));
+      button.setAttribute("aria-disabled", String(busy || unavailable || needsRefresh));
     }
   }
   function install(bytes: ArrayBuffer, candidateCamera: XygWasmGraphCamera, candidatePage: number, requireProgress = false): XygWasmGraphSnapshot {
@@ -262,6 +278,7 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
     const key = `${state.cursor}/${state.rangeStart}/${state.rangeEnd}/${state.window}`;
     if (timeKey === key) return;
     timeKey = key; pendingTime = state; intent++;
+    rejectPendingUi(new XygWasmError("GF_INTERACTION_STALE", "Temporal intent superseded queued graph input", -1));
     // No checkpoint built for older membership may paint while intent is newer.
     if (frame !== null) cancelAnimationFrame(frame);
     frame = null;
@@ -273,14 +290,20 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   function admit(input: Pick<GraphSessionRequest, "operation"> & Partial<GraphSessionRequest>, kind: "focus" | "select" | "render", candidateCamera = camera, candidatePage = page): Promise<XygWasmGraphSnapshot> {
     if (disposed) throw new XygWasmError("XYG_WASM_DISPOSED", "Graph attachment was disposed");
     if (terminal) throw new XygWasmError("XYG_WASM_DISPOSED", "Graph Worker lifetime ended; mutation outcome may be unknown");
-    if (pendingTime || temporalPumping || busy) throw new XygWasmError("XYG_WASM_GRAPH_BUSY", "One graph UI action is already outstanding");
+    if (pendingTime || temporalPumping || uiBlocked() || (busy && input.operation === 15)) throw new XygWasmError("XYG_WASM_GRAPH_BUSY", "One graph UI action is already outstanding");
     if (needsRefresh && input.operation !== 21) throw new XygWasmError("GF_INTERACTION_STALE", "Refresh the graph publication before further input", -1);
+    if (busy) {
+      rejectPendingUi(new XygWasmError("GF_INTERACTION_STALE", "Newer graph input superseded queued intent", -1));
+      return new Promise((resolve, reject) => {
+        pendingUi = { reject, start: () => { run(input, kind, candidateCamera, candidatePage).then(resolve, reject); } };
+      });
+    }
     const pending = request(input, candidateCamera, candidatePage);
-    setBusy(true);
+    busyOperation = input.operation; setBusy(true);
     return pending.then(value => {
       if (!disposed) dispatch(kind, value);
       return value;
-    }).catch(error => { report(error); throw error; }).finally(() => setBusy(false));
+    }).catch(error => { report(error); throw error; }).finally(() => { busyOperation = null; setBusy(false); });
   }
   function run(input: Pick<GraphSessionRequest, "operation"> & Partial<GraphSessionRequest>, kind: "focus" | "select" | "render", candidateCamera = camera, candidatePage = page): Promise<XygWasmGraphSnapshot> {
     try { return admit(input, kind, candidateCamera, candidatePage); }
@@ -290,7 +313,7 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
     void run(input, kind).catch(() => {});
   }
   const keyDown = (event: KeyboardEvent) => {
-    if (disposed || terminal || busy || needsRefresh || !output || event.defaultPrevented || event.repeat || event.altKey || event.shiftKey) return;
+    if (disposed || terminal || uiBlocked() || needsRefresh || !output || event.defaultPrevented || event.repeat || event.altKey || event.shiftKey) return;
     if (["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"].includes(event.key) && !event.ctrlKey && !event.metaKey) {
       event.preventDefault(); submit({ operation: 5, direction: ["ArrowRight", "ArrowDown"].includes(event.key) ? 1 : -1 }, "focus");
     } else if (event.key === "Enter") {
@@ -346,7 +369,7 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
     return [x * camera[4] / contentWidth, y * camera[5] / contentHeight];
   }
   const primaryClick = (event: MouseEvent) => {
-    if (disposed || terminal || busy || needsRefresh || !output || event.defaultPrevented || event.altKey ||
+    if (disposed || terminal || uiBlocked() || needsRefresh || !output || event.defaultPrevented || event.altKey ||
         event.button !== 0 || event.buttons !== 0 || event.detail !== 1) return;
     const coordinates = clickCoordinates(event);
     if (!coordinates) return;
@@ -395,7 +418,7 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   // Do not await ready in cleanup: its failure path itself awaits disposal.
   function dispose(): Promise<void> {
     if (disposal) return disposal;
-    disposed = true; intent++; pendingTime = null; unsubscribeTime?.(); unsubscribeTime = null; stopContinuation();
+    disposed = true; rejectPendingUi(new XygWasmError("XYG_WASM_DISPOSED", "Graph attachment was disposed")); intent++; pendingTime = null; unsubscribeTime?.(); unsubscribeTime = null; stopContinuation();
     for (const resolve of idleWaiters) resolve(); idleWaiters.clear();
     painter.canvas.removeEventListener("click", primaryClick);
     surface.removeEventListener("keydown", keyDown); previous.removeEventListener("click", previousPage); next.removeEventListener("click", nextPage);

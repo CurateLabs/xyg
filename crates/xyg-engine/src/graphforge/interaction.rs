@@ -57,8 +57,9 @@ pub use pick::{
 };
 pub use render::{Camera, RenderOutput, NOT_RENDERED};
 pub mod wire;
-mod wire_paint;
 mod wire_memory;
+mod wire_packet;
+mod wire_paint;
 
 /// Default direct-tier budgets (`_graph.py` `layout_render`).
 pub const DEFAULT_NODE_BUDGET: u64 = 200_000;
@@ -142,7 +143,9 @@ pub struct TemporalHandle(pub u64);
 /// registry that owns it. `false` means the graph is gone (disposed).
 pub trait TemporalHost: Send + Sync {
     /// Process-local lock identity; adapters for one owner return the same key.
-    fn owner_identity(&self) -> usize { self as *const Self as *const () as usize }
+    fn owner_identity(&self) -> usize {
+        self as *const Self as *const () as usize
+    }
     fn with_graph(&self, handle: TemporalHandle, f: &mut dyn FnMut(&mut TemporalGraph)) -> bool;
 }
 
@@ -213,29 +216,35 @@ struct Hover {
     edges: Vec<usize>,
 }
 
-#[derive(Clone)]
-pub struct GraphSession {
-    // Only set on an admitted wire transaction candidate.
-    transaction_world: Option<(Vec<u8>, Vec<u8>, u64)>,
-    instance_id: u64,
-    coordination: coordination::Link,
+#[cfg_attr(test, derive(Clone))]
+struct Source {
     identity: GraphIdentity,
     labels: Vec<String>,
     generation: Option<Uuid>,
     /// Compound parent per node (`COSE_NO_PARENT` for roots), from the document.
-    parent: Vec<u64>,
+    parent: Arc<Vec<u64>>,
     directed: bool,
     node_style: paint::SourceStyle,
     edge_style: paint::SourceStyle,
     /// `1` where `parent` is a real parent.
     parent_valid: Vec<u8>,
     /// Composed edge endpoints (dense node indices).
-    edge_source: Vec<u64>,
-    edge_target: Vec<u64>,
+    edge_source: Arc<Vec<u64>>,
+    edge_target: Arc<Vec<u64>>,
     /// Ordinal of each persisted edge among persisted edges (the temporal
     /// graph's edge order); `u32::MAX` for derived edges.
     edge_ordinal: Vec<u32>,
-    positions: Option<(Vec<f64>, Vec<f64>)>,
+}
+
+#[derive(Clone)]
+pub struct GraphSession {
+    // Only set on an admitted wire transaction candidate.
+    transaction_world: Option<(Vec<u8>, Vec<u8>, u64)>,
+    transaction_bytes: Option<usize>,
+    instance_id: u64,
+    coordination: coordination::Link,
+    source: Arc<Source>,
+    positions: Option<(Arc<Vec<f64>>, Arc<Vec<f64>>)>,
     collapsed: Vec<u8>,
     budgets: (u64, u64),
     seed: u64,
@@ -252,7 +261,7 @@ pub struct GraphSession {
     published_revision: u32,
     hover: Hover,
     move_origin: Option<layout::MoveOrigin>,
-    relayout: Option<layout::Relayout>,
+    relayout: Option<Arc<layout::Relayout>>,
     /// Render node a focus ring is walking around.
     ring_anchor: Option<u64>,
     /// Deterministic work units the session has performed, for the bounded
@@ -279,19 +288,31 @@ impl GraphSession {
         load: SessionLoad,
         instance_id: u64,
     ) -> Result<Self, InteractionStatus> {
-        if !load.cose.is_valid() { return invalid(); }
+        if !load.cose.is_valid() {
+            return invalid();
+        }
         let doc = ComposedDocument::decode(document).map_err(|_| InteractionStatus::Invalid)?;
         let identity =
             GraphIdentity::from_document(&doc).map_err(|_| InteractionStatus::Invalid)?;
         let n = identity.node_count();
-        let container = super::container::Container::decode(document, super::container::DOCUMENT_MAGIC).map_err(|_| InteractionStatus::Invalid)?;
+        let container =
+            super::container::Container::decode(document, super::container::DOCUMENT_MAGIC)
+                .map_err(|_| InteractionStatus::Invalid)?;
         let mut labels = Vec::new();
-        for (name,count) in [("node.label",n),("edge.label",identity.edge_count())] {
-            if let Some(section) = container.get(name,0) {
-                let text = section.as_texts(name).map_err(|_| InteractionStatus::Invalid)?;
-                if text.len()!=count {return invalid();}
+        for (name, count) in [("node.label", n), ("edge.label", identity.edge_count())] {
+            if let Some(section) = container.get(name, 0) {
+                let text = section
+                    .as_texts(name)
+                    .map_err(|_| InteractionStatus::Invalid)?;
+                if text.len() != count {
+                    return invalid();
+                }
                 labels.extend(text.into_iter().map(str::to_owned));
-            } else { labels.resize(labels.len()+count,String::new()); }
+            } else {
+                if name == "node.label" && container.get("edge.label", 0).is_some() {
+                    labels.resize(count, String::new());
+                }
+            }
         }
         let generation = doc.generation().map_err(|_| InteractionStatus::Invalid)?;
         let parent = Self::hierarchy(&doc, n)?;
@@ -322,7 +343,7 @@ impl GraphSession {
             return invalid();
         }
         let mut persisted = 0u32;
-        let edge_ordinal = (0..edges)
+        let edge_ordinal: Vec<u32> = (0..edges)
             .map(|edge| {
                 if identity.is_derived(edge) {
                     u32::MAX
@@ -338,7 +359,7 @@ impl GraphSession {
             (Some(x), Some(y))
                 if x.len() == n && y.len() == n && x.iter().chain(&y).all(|v| v.is_finite()) =>
             {
-                Some((x, y))
+                Some((Arc::new(x), Arc::new(y)))
             }
             _ => return invalid(),
         };
@@ -383,22 +404,25 @@ impl GraphSession {
         );
         Ok(Self {
             transaction_world: None,
+            transaction_bytes: None,
             instance_id,
             coordination: coordination::Link::default(),
-            identity,
-            labels,
-            generation,
-            parent_valid: parent
-                .iter()
-                .map(|&p| u8::from(p != COSE_NO_PARENT))
-                .collect(),
-            parent,
-            directed,
-            node_style,
-            edge_style,
-            edge_source,
-            edge_target,
-            edge_ordinal,
+            source: Arc::new(Source {
+                identity,
+                labels,
+                generation,
+                parent_valid: parent
+                    .iter()
+                    .map(|&p| u8::from(p != COSE_NO_PARENT))
+                    .collect(),
+                parent: Arc::new(parent),
+                directed,
+                node_style,
+                edge_style,
+                edge_source: Arc::new(edge_source),
+                edge_target: Arc::new(edge_target),
+                edge_ordinal,
+            }),
             positions,
             collapsed,
             budgets,
@@ -459,16 +483,16 @@ impl GraphSession {
     }
 
     pub fn identity(&self) -> &GraphIdentity {
-        &self.identity
+        &self.source.identity
     }
 
     pub fn generation(&self) -> Option<Uuid> {
-        self.generation
+        self.source.generation
     }
 
     /// Compound parent of `node` (dense), if it has one.
     pub fn parent_of(&self, node: usize) -> Option<usize> {
-        let parent = self.parent[node];
+        let parent = self.source.parent[node];
         (parent != COSE_NO_PARENT).then_some(parent as usize)
     }
 
@@ -531,16 +555,16 @@ impl GraphSession {
         &mut self,
         f: impl FnOnce(&mut Self, World<'_>) -> R,
     ) -> Result<R, InteractionStatus> {
-        self.locked_validated(|_,_| Ok(()), f)
+        self.locked_validated(|_, _| Ok(()), f)
     }
 
     /// Validate against the canonical owner before splitting its state/world.
     /// Used by wire updates so endpoint validation and reply share one access.
     fn locked_validated<R>(
         &mut self,
-        validate: impl FnOnce(&Self, &TemporalGraph)->Result<(), InteractionStatus>,
-        f: impl FnOnce(&mut Self, World<'_>)->R,
-    )->Result<R, InteractionStatus> {
+        validate: impl FnOnce(&Self, &TemporalGraph) -> Result<(), InteractionStatus>,
+        f: impl FnOnce(&mut Self, World<'_>) -> R,
+    ) -> Result<R, InteractionStatus> {
         #[cfg(target_arch = "wasm32")]
         {
             let (mut validate, mut f) = (Some(validate), Some(f));
@@ -565,9 +589,9 @@ impl GraphSession {
 
     fn locked_validated_impl<R>(
         &mut self,
-        validate: impl FnOnce(&Self, &TemporalGraph)->Result<(), InteractionStatus>,
-        f: impl FnOnce(&mut Self, World<'_>)->R,
-    )->Result<R, InteractionStatus> {
+        validate: impl FnOnce(&Self, &TemporalGraph) -> Result<(), InteractionStatus>,
+        f: impl FnOnce(&mut Self, World<'_>) -> R,
+    ) -> Result<R, InteractionStatus> {
         let bound = match &self.slot {
             StateSlot::Bound { host, handle } => Some((Arc::clone(host), *handle)),
             StateSlot::Owned(_) => None,
@@ -596,8 +620,9 @@ impl GraphSession {
         let session = &mut *self;
         let found = host.with_graph(handle, &mut |graph| {
             if let Some(f) = f.take() {
-                if let Err(error)=validate.take().expect("one owner access")(session,graph) {
-                    out=Some(Err(error));return;
+                if let Err(error) = validate.take().expect("one owner access")(session, graph) {
+                    out = Some(Err(error));
+                    return;
                 }
                 let (state, visibility, temporal_revision) = graph.world_parts();
                 out = Some(Ok(f(
@@ -658,8 +683,9 @@ impl GraphSession {
         let mut bound = None;
         let found = host.with_graph(handle, &mut |graph| {
             bound = Some((
-                self.identity.node_uuids() == graph.node_ids()
+                self.source.identity.node_uuids() == graph.node_ids()
                     && self
+                        .source
                         .identity
                         .persisted_edge_uuids()
                         .eq(graph.edge_ids().iter().copied()),
@@ -704,7 +730,9 @@ impl GraphSession {
         #[cfg(target_arch = "wasm32")]
         {
             let mut apply = Some(apply);
-            self.operate_erased(header, &mut |s, w| apply.take().expect("one graph operation")(s, w))
+            self.operate_erased(header, &mut |s, w| {
+                apply.take().expect("one graph operation")(s, w)
+            })
         }
         #[cfg(not(target_arch = "wasm32"))]
         self.operate_impl(header, apply)
@@ -760,7 +788,9 @@ impl GraphSession {
         let mut groups = BTreeSet::new();
         for element in refs {
             match self.resolve(element)? {
-                render::Resolved::Element(index) => self.identity.insert_into(&mut set, index),
+                render::Resolved::Element(index) => {
+                    self.source.identity.insert_into(&mut set, index)
+                }
                 render::Resolved::Group { render } => {
                     groups.insert(render);
                 }
@@ -775,7 +805,8 @@ impl GraphSession {
                 .nodes
                 .iter()
                 .filter(|id| {
-                    self.identity
+                    self.source
+                        .identity
                         .node_index(id)
                         .is_some_and(|node| groups.contains(&(render.member_of[node] as usize)))
                 })
@@ -791,7 +822,8 @@ impl GraphSession {
             }
             for &group in &groups {
                 for &member in render.members_of_node(group) {
-                    self.identity
+                    self.source
+                        .identity
                         .insert_into(&mut set, ElementIndex::Node(member as usize));
                 }
                 expanded += render.members_of_node(group).len() as u64;
@@ -825,7 +857,7 @@ impl GraphSession {
         Ok(OpOutcome {
             render_revision: self.render_revision,
             state_changed: !changed.is_empty(),
-            changed: self.identity.refs_of(&changed),
+            changed: self.source.identity.refs_of(&changed),
             unmatched,
             selected: world.state.selection().len(),
             ..OpOutcome::default()
@@ -861,11 +893,19 @@ impl GraphSession {
             let mut delta = ElementSet::default();
             let mut unmatched = 0u32;
             for id in uuids {
-                let node = session.identity.node_index(id).map(ElementIndex::Node);
-                let edge = session.identity.edge_index(id).map(ElementIndex::Edge);
+                let node = session
+                    .source
+                    .identity
+                    .node_index(id)
+                    .map(ElementIndex::Node);
+                let edge = session
+                    .source
+                    .identity
+                    .edge_index(id)
+                    .map(ElementIndex::Edge);
                 unmatched += u32::from(node.is_none() && edge.is_none());
                 for index in node.into_iter().chain(edge) {
-                    session.identity.insert_into(&mut delta, index);
+                    session.source.identity.insert_into(&mut delta, index);
                 }
             }
             session.work += uuids.len() as u64;
@@ -882,7 +922,7 @@ impl GraphSession {
             session.queue_selection(world.state);
             Ok(OpOutcome {
                 render_revision: session.render_revision,
-                changed: session.identity.refs_of(&before),
+                changed: session.source.identity.refs_of(&before),
                 state_changed: cleared,
                 ..OpOutcome::default()
             })
@@ -899,13 +939,14 @@ impl GraphSession {
             let focus = match target {
                 None => None,
                 Some(element) => Some(match session.resolve(element)? {
-                    render::Resolved::Element(index) => session.identity.focus_of(index),
+                    render::Resolved::Element(index) => session.source.identity.focus_of(index),
                     // An aggregate is focused through its lowest-index visible
                     // member; focus is UUID-keyed, so it cannot name the group.
                     render::Resolved::Group { render } => {
                         let published = session.published().ok_or(InteractionStatus::Stale)?;
                         let stand_in = published.focus_node[render];
                         session
+                            .source
                             .identity
                             .focus_of(ElementIndex::Node(stand_in as usize))
                     }
@@ -938,7 +979,7 @@ impl GraphSession {
 
     /// Current selection as local references.
     pub fn selection(&self) -> Result<Vec<ElementRef>, InteractionStatus> {
-        self.read_state(|state| self.identity.refs_of(state.selection()))
+        self.read_state(|state| self.source.identity.refs_of(state.selection()))
     }
 
     /// Pinned nodes (UUID-keyed, seeded from `load.pinned`).
@@ -951,7 +992,7 @@ impl GraphSession {
         self.read_state(|state| {
             state
                 .focus()
-                .and_then(|focus| self.identity.focus_ref(focus))
+                .and_then(|focus| self.source.identity.focus_ref(focus))
         })
     }
 }

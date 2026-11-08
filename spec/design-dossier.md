@@ -1425,6 +1425,15 @@ The retained plain-graph phase specialization is specified in
 [graph interaction admission](design/graph-interaction.md#plain-retained-graph-phase-admission-default-arena).
 It retains canonical identities and the existing culling/LOD policy, separates
 OPEN from later publication work, and charges immutable CSR pick capacities.
+Transaction candidates also share immutable document identities, labels, topology
+and source styles; mutable positions, force and reducer state remain private.
+The closed source certificate now admits checked phase/class ownership instead
+of a document multiplier. General/UPDATE retains whole-old + whole-new
+admission. Cooperative continuation consumes a separately versioned Rust work
+bound; all caps, force, LOD, pick and continuation intervals remain unchanged.
+One bounded latest user intent can wait behind an outstanding force command;
+it frames after that reply publishes and is rejected on supersession/disposal.
+Engine allocation probes alone do not qualify public render/interaction rungs.
 The 16 MiB default and 384 MiB maximum remain unchanged; this bounded graph
 qualification does not establish full process/GPU memory or M4 completion.
 

@@ -1402,3 +1402,13 @@ tests/fixtures/css_color_bridge.json text eol=lf
 spec/performance/browser-css-color-2026-11-08/** text eol=lf
 spec/performance/browser-css-color-2026-11-08/**/*.gz -text
 spec/performance/browser-css-color-2026-11-08/**/*.png -text
+
+# Combined history and original byte archives.
+spec/performance/active-m4-m7-integration-2026-11-08/** text eol=lf
+spec/performance/active-m4-m7-integration-2026-11-08/**/*.gz -text
+spec/performance/active-m4-m7-integration-2026-11-08/**/*.png -text
+
+# Public graph receipt is part of the combined Windows byte contract.
+spec/performance/graph-public-scale-ownership-2026-11-08/** text eol=lf
+spec/performance/graph-public-scale-ownership-2026-11-08/**/*.gz -text
+spec/performance/graph-public-scale-ownership-2026-11-08/**/*.png -text
