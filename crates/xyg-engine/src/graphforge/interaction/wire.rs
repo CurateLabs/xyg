@@ -1494,7 +1494,7 @@ fn serialize(s: &mut GraphSession, r: &Request<'_>, out: &OpOutcome, document: &
                 "{} relationships",
                 s.edge_source
                     .iter()
-                    .zip(&s.edge_target)
+                    .zip(s.edge_target.iter())
                     .filter(|(a, b)| **a == n as u64 || **b == n as u64)
                     .count()
             ),
@@ -1657,7 +1657,7 @@ fn summary(s: &GraphSession, state: &GraphInteractionState, f: &ElementRef) -> R
                 "{} relationships",
                 s.edge_source
                     .iter()
-                    .zip(&s.edge_target)
+                    .zip(s.edge_target.iter())
                     .filter(|(a, b)| **a == i as u64 || **b == i as u64)
                     .count()
             ),

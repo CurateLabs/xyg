@@ -1425,6 +1425,10 @@ The retained plain-graph phase specialization is specified in
 [graph interaction admission](design/graph-interaction.md#plain-retained-graph-phase-admission-default-arena).
 It retains canonical identities and the existing culling/LOD policy, separates
 OPEN from later publication work, and charges immutable CSR pick capacities.
+Transaction candidates also share immutable document identities, labels, topology
+and source styles; mutable positions, force and reducer state remain private.
+The source-sharing change retains every preceding admission reservation and
+does not qualify public 100k/1M render or scheduling.
 The 16 MiB default and 384 MiB maximum remain unchanged; this bounded graph
 qualification does not establish full process/GPU memory or M4 completion.
 

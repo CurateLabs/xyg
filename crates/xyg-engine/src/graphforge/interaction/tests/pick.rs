@@ -26,8 +26,8 @@ fn styles(s: &mut GraphSession, classes: &[u8], statuses: &[u8]) {
         b.u8s("edge.status", 0, statuses);
     });
     let d = ComposedDocument::decode(&bytes).unwrap();
-    s.node_style = SourceStyle::read(&d, "node", classes.len()).unwrap();
-    s.edge_style = SourceStyle::read(&d, "edge", statuses.len()).unwrap();
+    s.node_style = Arc::new(SourceStyle::read(&d, "node", classes.len()).unwrap());
+    s.edge_style = Arc::new(SourceStyle::read(&d, "edge", statuses.len()).unwrap());
 }
 fn extend(doc: &[u8], add: impl FnOnce(&mut Builder)) -> Vec<u8> {
     let c = Container::decode(doc, DOCUMENT_MAGIC).unwrap();

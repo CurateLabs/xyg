@@ -114,6 +114,17 @@ fn ledger(n: usize, authored: bool) {
         LIVE.load(SeqCst) - baseline,
         PEAK.load(SeqCst) - baseline
     );
+    // OPEN has no publication or force state. A speculative clone owns only
+    // collapse flags, optional authored positions and small state metadata;
+    // identity, labels, topology and static style capacities are shared.
+    let before_clone = LIVE.load(SeqCst);
+    let candidate = session.session().clone();
+    let clone_bytes = LIVE.load(SeqCst) - before_clone;
+    assert!(clone_bytes <= n * (if authored { 17 } else { 1 }) + 8192);
+    assert_eq!(candidate.identity().node_uuids(), node_ids);
+    drop(candidate);
+    assert_eq!(LIVE.load(SeqCst), before_clone);
+    println!("SOURCE_SHARED_CLONE n={n} authored={authored} requested={clone_bytes}");
     let mut render = request(2, 0, 21, None);
     if n == 1000 {
         let c = xyg_engine::graphforge::container::Container::decode(&render, b"XYGI").unwrap();

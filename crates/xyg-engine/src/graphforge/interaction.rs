@@ -219,22 +219,25 @@ pub struct GraphSession {
     transaction_world: Option<(Vec<u8>, Vec<u8>, u64)>,
     instance_id: u64,
     coordination: coordination::Link,
-    identity: GraphIdentity,
-    labels: Vec<String>,
+    // Document-owned immutable planes: candidates share these until UPDATE
+    // installs a completely decoded replacement (dossier §27). Mutable force,
+    // positions and reducer state remain transaction-private.
+    identity: Arc<GraphIdentity>,
+    labels: Arc<Vec<String>>,
     generation: Option<Uuid>,
     /// Compound parent per node (`COSE_NO_PARENT` for roots), from the document.
-    parent: Vec<u64>,
+    parent: Arc<Vec<u64>>,
     directed: bool,
-    node_style: paint::SourceStyle,
-    edge_style: paint::SourceStyle,
+    node_style: Arc<paint::SourceStyle>,
+    edge_style: Arc<paint::SourceStyle>,
     /// `1` where `parent` is a real parent.
-    parent_valid: Vec<u8>,
+    parent_valid: Arc<Vec<u8>>,
     /// Composed edge endpoints (dense node indices).
-    edge_source: Vec<u64>,
-    edge_target: Vec<u64>,
+    edge_source: Arc<Vec<u64>>,
+    edge_target: Arc<Vec<u64>>,
     /// Ordinal of each persisted edge among persisted edges (the temporal
     /// graph's edge order); `u32::MAX` for derived edges.
-    edge_ordinal: Vec<u32>,
+    edge_ordinal: Arc<Vec<u32>>,
     positions: Option<(Vec<f64>, Vec<f64>)>,
     collapsed: Vec<u8>,
     budgets: (u64, u64),
@@ -322,7 +325,7 @@ impl GraphSession {
             return invalid();
         }
         let mut persisted = 0u32;
-        let edge_ordinal = (0..edges)
+        let edge_ordinal: Vec<u32> = (0..edges)
             .map(|edge| {
                 if identity.is_derived(edge) {
                     u32::MAX
@@ -385,20 +388,19 @@ impl GraphSession {
             transaction_world: None,
             instance_id,
             coordination: coordination::Link::default(),
-            identity,
-            labels,
+            identity: Arc::new(identity),
+            labels: Arc::new(labels),
             generation,
-            parent_valid: parent
-                .iter()
-                .map(|&p| u8::from(p != COSE_NO_PARENT))
-                .collect(),
-            parent,
+            parent_valid: Arc::new(
+                parent.iter().map(|&p| u8::from(p != COSE_NO_PARENT)).collect(),
+            ),
+            parent: Arc::new(parent),
             directed,
-            node_style,
-            edge_style,
-            edge_source,
-            edge_target,
-            edge_ordinal,
+            node_style: Arc::new(node_style),
+            edge_style: Arc::new(edge_style),
+            edge_source: Arc::new(edge_source),
+            edge_target: Arc::new(edge_target),
+            edge_ordinal: Arc::new(edge_ordinal),
             positions,
             collapsed,
             budgets,

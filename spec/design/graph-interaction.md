@@ -1543,6 +1543,26 @@ built. The actual preceding publication remains fully charged once; no deep
 clone of its row vectors is hidden in the new-work reserve. Only the admitted
 candidate installs the new Arc after serialization succeeds. The test-only
 revision-exhaustion helper uses Arc::make_mut to construct its synthetic boundary.
+### Immutable document ownership (unqualified larger rungs)
+
+Transaction candidates share immutable document identity maps, labels, hierarchy,
+parent validity, canonical edge endpoints/ordinals and source styles through
+`Arc`. UPDATE decodes a separate source and installs it only after the existing
+transaction succeeds. Positions, collapse flags, force vectors and reducer state
+remain private. The OPEN clone allocation ledger bounds the remaining copied
+planes by one byte/node (17 bytes/node with authored f64 x/y), plus 8 KiB of
+metadata; pointer-identity tests cover every shared plane and failed/successful
+replacement. These are structural ownership proofs in the existing engine test
+suite, not rendered size-ladder acceptance.
+
+The preceding 48D, row-work, serialization, external and retry reservations remain
+unchanged. Sharing alone does not justify lowering those envelopes: actual
+publication, force, serialization and host/WASM/GPU phase peaks still need a
+complete per-class proof. Public 100k rendering still refuses at the unchanged
+384 MiB logical cap, and 1M public render/scheduling remains unqualified. No
+larger-rung interaction, all-host acceptance or original #35/#36 closure is
+claimed by this ownership change.
+
 ### Native frozen-publication borrowing
 
 The [native immutable temporal checkpoint](temporal-graph-frozen.md) borrows a

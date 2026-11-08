@@ -114,7 +114,7 @@ impl GraphSession {
             && self
                 .edge_source
                 .iter()
-                .zip(&self.edge_target)
+                .zip(self.edge_target.iter())
                 .enumerate()
                 .filter(|(i, _)| !self.identity.is_derived(*i))
                 .map(|(_, (&s, &t))| (s, t))

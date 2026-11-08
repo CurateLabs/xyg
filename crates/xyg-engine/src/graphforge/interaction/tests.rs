@@ -1161,3 +1161,67 @@ mod session;
 mod pick;
 
 mod wire;
+
+#[test]
+fn candidates_share_immutable_source_but_replace_it_atomically() {
+    let document = handmade_with(2, &[[1; 16], [2; 16]], &[E::Persisted([3; 16])], &[], None);
+    let mut original = GraphSession::create(
+        &document,
+        SessionLoad {
+            x: Some(vec![0., 20.]),
+            y: Some(vec![0., 20.]),
+            ..SessionLoad::default()
+        },
+        7,
+    )
+    .unwrap();
+    original.render(None).unwrap();
+    let mut candidate = original.clone();
+    macro_rules! shared {
+        ($($field:ident),+) => { $(assert!(Arc::ptr_eq(&original.$field, &candidate.$field), stringify!($field));)+ };
+    }
+    shared!(
+        identity,
+        labels,
+        parent,
+        parent_valid,
+        edge_source,
+        edge_target,
+        edge_ordinal,
+        node_style,
+        edge_style
+    );
+    assert!(Arc::ptr_eq(
+        original.published.as_ref().unwrap(),
+        candidate.published.as_ref().unwrap()
+    ));
+    candidate.positions.as_mut().unwrap().0[0] = 99.;
+    candidate.collapsed[0] = 1;
+    assert_eq!(original.positions.as_ref().unwrap().0[0], 0.);
+    assert_eq!(original.collapsed[0], 0);
+    // Malformed replacement leaves every shared source pointer intact.
+    assert_eq!(
+        candidate
+            .update(header(&candidate, 1), b"bad", SessionLoad::default())
+            .unwrap_err(),
+        InteractionStatus::Invalid
+    );
+    shared!(
+        identity,
+        labels,
+        parent,
+        parent_valid,
+        edge_source,
+        edge_target,
+        edge_ordinal,
+        node_style,
+        edge_style
+    );
+    let replacement = handmade_with(2, &[[4; 16], [5; 16]], &[E::Persisted([6; 16])], &[], None);
+    candidate
+        .update(header(&candidate, 1), &replacement, SessionLoad::default())
+        .unwrap();
+    assert!(!Arc::ptr_eq(&original.identity, &candidate.identity));
+    assert_eq!(original.identity.node_uuids(), &[[1; 16], [2; 16]]);
+    assert_eq!(candidate.identity.node_uuids(), &[[4; 16], [5; 16]]);
+}
