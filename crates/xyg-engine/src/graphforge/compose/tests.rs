@@ -52,6 +52,7 @@ struct LayerSpec {
     extra: Option<&'static str>,
     result_id: Option<&'static str>,
     rows: Option<Vec<u64>>,
+    selected_rows: Option<Vec<u64>>,
     coordinates: Option<Vec<u8>>,
 }
 
@@ -94,6 +95,9 @@ fn request(bases: &[&str], generation: Option<Uuid>, layers: &[LayerSpec]) -> Ve
         }
         if let Some(rows) = &spec.rows {
             builder.u64s("layer.rows", i, rows);
+        }
+        if let Some(rows) = &spec.selected_rows {
+            builder.u64s("layer.selected_rows", i, rows);
         }
         if let Some(coordinates) = &spec.coordinates {
             builder.bytes("layer.coordinates", i, coordinates);
@@ -538,6 +542,7 @@ fn groups_beyond_seven_share_one_bucket() {
         missing: None,
         extra: None,
         rows: None,
+        selected_rows: Vec::new(),
         coordinates: None,
     };
     let layer = prepare_layer(0, &req).unwrap();
@@ -1489,7 +1494,12 @@ fn a_zero_layer_request_composes_the_base_graph_end_to_end() {
     assert_eq!((source[0], target[0]), (source[1], target[1]));
     assert_eq!((source[2], target[2]), (1, 1));
     // The Scene paints every node and every relationship, including the loop.
-    let scene = doc.0.get("scene.canonical", 0).unwrap().as_bytes("s").unwrap();
+    let scene = doc
+        .0
+        .get("scene.canonical", 0)
+        .unwrap()
+        .as_bytes("s")
+        .unwrap();
     let document = crate::scene::SceneDocument::decode(scene).unwrap();
     assert_eq!(painted_edge_ids(&document), (1..=5).collect());
     let svg = document.to_svg();
@@ -1541,7 +1551,12 @@ fn default_relationship_types_label_below_every_node_caption() {
     assert_eq!(doc.f64s("edge.label_priority", 0), vec![-1.0; 5]);
     assert!(doc.f64s("node.label_priority", 0).iter().all(|&p| p == 0.0));
     // The static Scene prints node captions only; types wait for hover.
-    let scene = doc.0.get("scene.canonical", 0).unwrap().as_bytes("s").unwrap();
+    let scene = doc
+        .0
+        .get("scene.canonical", 0)
+        .unwrap()
+        .as_bytes("s")
+        .unwrap();
     let svg = crate::scene::SceneDocument::decode(scene).unwrap().to_svg();
     assert!(svg.contains("ada") && svg.contains("Prof"));
     assert!(!svg.contains("KNOWS") && !svg.contains("WORKS_AT"));
@@ -1563,8 +1578,15 @@ fn directed_default_views_mark_every_edge_for_an_arrowhead_and_undirected_ones_d
         .contains(&"directed relationship"));
     let scene = |bytes: &[u8]| {
         let doc = Doc::new(bytes);
-        let scene = doc.0.get("scene.canonical", 0).unwrap().as_bytes("s").unwrap();
-        crate::scene::SceneDocument::decode(scene).unwrap().record_count()
+        let scene = doc
+            .0
+            .get("scene.canonical", 0)
+            .unwrap()
+            .as_bytes("s")
+            .unwrap();
+        crate::scene::SceneDocument::decode(scene)
+            .unwrap()
+            .record_count()
     };
     assert!(scene(&directed) > scene(&undirected));
 }
@@ -1588,4 +1610,58 @@ fn label_classes_bucket_beyond_six_like_every_group() {
     let (codes, bucket) = rank_codes(&[1, 5, 1, 1, 1, 1, 1], &|a, b| a < b);
     assert!(!bucket);
     assert_eq!(codes, [2, 1, 3, 4, 5, 6, 7]);
+}
+
+#[test]
+fn analytical_row_selection_tracks_admitted_source_rows_without_filtering() {
+    for (name, intent, prefix) in [
+        ("triad_census", "bar-chart", "chart"),
+        ("node2vec", "parallel-coordinates", "vector"),
+        ("node2vec", "embedding-coordinates", "point"),
+    ] {
+        let mut spec = view(name, intent, false);
+        if intent == "embedding-coordinates" {
+            spec.coordinates = Some(derived("node2vec-coordinates"));
+            spec.extra = Some("drop");
+        }
+        spec.rows = Some(vec![2, 0, 1]);
+        spec.selected_rows = Some(vec![0]);
+        spec.result_id = Some("result:exact");
+        let document = compose_view(spec.clone(), false).unwrap();
+        let doc = Doc::new(&document);
+        assert_eq!(doc.u64s(&format!("{prefix}.result_row"), 0), vec![2, 0, 1]);
+        assert_eq!(doc.u8s(&format!("{prefix}.selected")), &[0, 1, 0]);
+        spec.selected_rows = Some(vec![3]); // Valid source row excluded by the filter.
+        let document = compose_view(spec.clone(), false).unwrap();
+        assert_eq!(
+            Doc::new(&document).u8s(&format!("{prefix}.selected")),
+            &[0, 0, 0]
+        );
+        spec.selected_rows = Some(vec![]);
+        let document = compose_view(spec, false).unwrap();
+        assert_eq!(
+            Doc::new(&document).u8s(&format!("{prefix}.selected")),
+            &[0, 0, 0]
+        );
+    }
+}
+
+#[test]
+fn analytical_row_selection_rejects_invalid_source_rows_and_stale_generation() {
+    for rows in [vec![0, 0], vec![u64::MAX]] {
+        let mut spec = view("triad_census", "bar-chart", false);
+        spec.selected_rows = Some(rows);
+        assert_eq!(
+            fail(request(&[], None, &[spec])).0,
+            "GF_COMPOSE_REQUEST_INVALID"
+        );
+    }
+    let mut spec = view("node2vec", "parallel-coordinates", true);
+    spec.generation = Some([7; 16]);
+    spec.selected_rows = Some(vec![0]);
+    let (base, generation) = base_of("node2vec");
+    assert_eq!(
+        fail(request(&[base], Some(generation), &[spec])).0,
+        "GF_COMPOSE_GENERATION_STALE"
+    );
 }

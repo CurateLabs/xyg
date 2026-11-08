@@ -78,6 +78,8 @@ pub struct LayerRequest<'a> {
     pub extra: Option<ExtraPolicy>,
     /// Explicit result rows to compose (ordered overlays); all rows if absent.
     pub rows: Option<Vec<u64>>,
+    /// Source result rows painted selected, without filtering the composition.
+    pub selected_rows: Vec<u64>,
     /// Caller-provided 2D coordinates (Arrow IPC: `node_uuid`, `x`, `y`).
     pub coordinates: Option<&'a [u8]>,
 }
@@ -127,6 +129,7 @@ const KNOWN: &[&str] = &[
     "layer.missing",
     "layer.extra",
     "layer.rows",
+    "layer.selected_rows",
     "layer.coordinates",
     "render.width",
     "render.height",
@@ -303,6 +306,12 @@ pub fn decode(bytes: &[u8]) -> GfResult<Request<'_>> {
                 .map(|s| s.as_u64("layer.rows"))
                 .transpose()
                 .map_err(layer_error)?,
+            selected_rows: container
+                .get("layer.selected_rows", i)
+                .map(|s| s.as_u64("layer.selected_rows"))
+                .transpose()
+                .map_err(layer_error)?
+                .unwrap_or_default(),
             coordinates: container
                 .get("layer.coordinates", i)
                 .map(|s| s.as_bytes("layer.coordinates"))

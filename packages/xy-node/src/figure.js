@@ -3790,6 +3790,7 @@ export class Figure {
    */
   buildPayload({ split = false, wasmSource = false, pxWidth = null } = {}) {
     const pw = new PayloadWriter({ split, wasmSource });
+    for (const trace of this.traces) trace._graphforgePaintRows = null;
     const widthPx = pxWidth ?? Math.max(16, Math.floor(this.width));
     // Every trace encodes against its own bound axes, and every declared axis
     // ships a spec and a view range — a y2 trace drawn on the primary scale is

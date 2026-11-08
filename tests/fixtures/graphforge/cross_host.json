@@ -1119,7 +1119,7 @@
         }
       ],
       "request_sha256": "f68b77a87f02270ab7a1b7af7845d1a63e9519c2e96104cf315f01adf2551b8a",
-      "document_sha256": "a680ef193ff754a95cc3dfbd74a0c99767ad37f5e60a7991e9fa007852763a87"
+      "document_sha256": "bafb3f466767bf9d6e75eba4027b71258abfaf0f3087035c10b3f5de5700afa7"
     },
     {
       "name": "modularity",
@@ -1161,7 +1161,7 @@
         }
       ],
       "request_sha256": "809f24ffaa31449b5d5f4984618b087e0f0f38b1d378eb884a10beb56486123b",
-      "document_sha256": "89f25ed7ce40e4c90b0e23a8038444dfe385411cc931672abea193476aac9ffd"
+      "document_sha256": "658a5e5d349c31732ac60f92105feca608a5da3fdf0bec5ec5b6b3c8f9e6c8fd"
     },
     {
       "name": "dyad_census",
@@ -1175,7 +1175,7 @@
         }
       ],
       "request_sha256": "5eaa5cb486cb1cb67dafb2a98b0b4b8e839fc320a47eea1334653bd43b382e2b",
-      "document_sha256": "ee6506d6e85e4fd6e5662e2dc12df3f6c09838810bc8a45a6d3ed36b2404ed88"
+      "document_sha256": "7280c93da756d845e87d2f4697f5304b71bf9de6fcc62932ab13f72dd12c0351"
     },
     {
       "name": "count_automorphisms",
@@ -1203,7 +1203,7 @@
         }
       ],
       "request_sha256": "c23537e0f2dc4ba10218a0cccb97534721f6d048e2965e3c3fcfc1f3351f1ee3",
-      "document_sha256": "55ea881ad176ca035552eab6dd2044eb445d58e0328c7a5358c6620f9fc381cb"
+      "document_sha256": "5282821b00effc823f04545156039514da84878d057e51c5fae23a5a85de118f"
     },
     {
       "name": "graphsage",
@@ -1217,7 +1217,7 @@
         }
       ],
       "request_sha256": "c74e8e694604cc523771367055a2bc01f1163033cc8ec3d1c92ccf978259ed11",
-      "document_sha256": "8540657bb3f0f544cb220e68da3e956497143567b61c2a7da830379097093855"
+      "document_sha256": "42c8e47eb7144ec1292843b58d0628fb1ea538b633b86f83d0ec23a8a8daa7f1"
     },
     {
       "name": "fast_random_projection",
@@ -1231,7 +1231,7 @@
         }
       ],
       "request_sha256": "fa1cd42d59fb59cb49b318aff00a6007e50659d6266cd3428a855e0ebe979b66",
-      "document_sha256": "0d34e74e11ffd46b9b99e5d56b2435e103728a3844d9aebb2c40620ac2de1e96"
+      "document_sha256": "b85614b0e71730a20273cff876b9598d12edeaebdb734915e80758411eced2c5"
     },
     {
       "name": "hashgnn",
@@ -1245,7 +1245,7 @@
         }
       ],
       "request_sha256": "5039e2b9a1f76d40c935763449ddb7abb39c8ff63bf07fec362fe4d1d03eeb9b",
-      "document_sha256": "a4c41d39c909201c8879ae8e3ca4b249123db017e845f2f65b74426154383afe"
+      "document_sha256": "cc813748ff86fb0a5eca28cae2046427cd8ba6c45e04571feda4be614589eceb"
     },
     {
       "name": "node_similarity",
@@ -1402,7 +1402,7 @@
         }
       ],
       "request_sha256": "b7dd850fd39558c8dd1ec6ca5082ae79d505bae49107cefa89bcc2c6f25b53e3",
-      "document_sha256": "df87a3397134677eab5be528b2f3f33d89b9c1061d0ba5afb3f56bb0ff5c2efb"
+      "document_sha256": "7caba13e2b2d0567ad33bad8ae33a299122fe4e4af6f260cbeb6b01b576cb53f"
     },
     {
       "name": "stale generation",

@@ -96,6 +96,12 @@ function cases() {
   out.push(["coordinates", {
     layers: [{ result: arrow("node2vec"), intent: "embedding-coordinates", coordinates: fs.readFileSync(path.join(DERIVED, "node2vec-coordinates.arrow")) }],
   }]);
+  for (const [algorithm, intent] of [["triad_census", "bar-chart"], ["node2vec", "parallel-coordinates"], ["node2vec", "embedding-coordinates"]]) {
+    const layer = { result: arrow(algorithm), intent, resultId: "result:selection", rows: [2, 0, 1], selectedRows: [0],
+      ...(intent === "embedding-coordinates" ? { coordinates: fs.readFileSync(path.join(DERIVED, "node2vec-coordinates.arrow")), extra: "drop" } : {}) };
+    out.push([`${intent} native source-row selection`, { layers: [layer] }]);
+    out.push([`${intent} invalid source-row selection`, { layers: [{ ...layer, selectedRows: [0, 0] }] }]);
+  }
   // Error documents must match too.
   out.push(["stale generation", { base: base("cyclic"), layers: [{ result: arrow("pagerank"), intent: "graph", generation: MANIFEST.bases.dag.generation }] }]);
   out.push(["incompatible base", { base: base("dag"), layers: [{ result: arrow("pagerank"), intent: "graph", generation: MANIFEST.bases.dag.generation }] }]);
@@ -205,7 +211,27 @@ test("a 100-node GraphForge run renders identical Scenes on both hosts", { skip 
 
 test("the browser bundle frames the same request bytes and decodes the same identities", { skip }, async () => {
   const client = await import(pathToFileURL(BUNDLE).href);
+  for (const key of ["rows", "selectedRows"]) {
+    for (const invalid of [-1n, 1n << 64n, (1n << 64n) + 1n, -1, 0.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+      const input = { layers: [{ result: arrow("triad_census"), intent: "bar-chart", [key]: [invalid] }] };
+      assert.throws(() => encodeGraphForgeRequest(input), error => error.code === "GF_COMPOSE_REQUEST_INVALID");
+      assert.throws(() => client.encodeWasmGraphForgeRequest(input), error => error.code === "GF_COMPOSE_REQUEST_INVALID");
+    }
+    const input = { layers: [{ result: arrow("triad_census"), intent: "bar-chart", [key]: [0n, 0xffffffffffffffffn] }] };
+    assert.deepEqual(new Uint8Array(client.encodeWasmGraphForgeRequest(input)), encodeGraphForgeRequest(input));
+  }
   const gen = MANIFEST.bases.cyclic.generation;
+  const toSelectionBytes = (b) => new Uint8Array(b instanceof ArrayBuffer ? b : b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength));
+  for (const [label, selectionInput] of cases().filter(([label]) => label.includes("native source-row selection"))) {
+    const nativeRequest = encodeGraphForgeRequest(selectionInput);
+    assert.deepEqual(toSelectionBytes(client.encodeWasmGraphForgeRequest(selectionInput)), nativeRequest, label);
+    const selectedDocument = composeGraphForgeRequest(nativeRequest);
+    const nativeComposition = decodeGraphForgeDocument(selectedDocument);
+    const browserComposition = client.decodeWasmGraphForgeDocument(selectedDocument);
+    assert.deepEqual(browserComposition.selectResultRows("result:selection", [0, 0, 3]), nativeComposition.selectResultRows("result:selection", [0, 0, 3]));
+    assert.deepEqual(browserComposition.selectResultRows("other-result", [0]), []);
+  }
+
   const input = {
     base: base("cyclic"),
     layers: [

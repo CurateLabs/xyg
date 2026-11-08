@@ -299,7 +299,7 @@ and diagnostic functional proofs are recorded separately in
 checkout tests do not establish shipping-asset acceptance. Historical S3
 measurements above continue to describe their own source, not this ABI.
 
-**Current S4 packaging gates are 1,817 KiB raw / 742 KiB gzip6**
+**S4 foundation packaging gates were 1,817 KiB raw / 742 KiB gzip6**
 (1,860,608 / 759,808 bytes). After complete-paint, exact-identity, live-owner
 stamp and default-arena admission repairs, independent correctness and policy
 review approved the source and a separately recorded functionality decision.
@@ -313,6 +313,28 @@ change. Both gates remain hard limits with no automatic allowance for later
 growth. The [S4 package decision receipt](../performance/graph-s4-package-budget-2026-10-31/README.md)
 records the separate real shipping build, paired-asset verification and full
 strict-CSP foundation. Historical FAIL/diagnostic records remain unchanged.
+**GraphForge analytical selection extension (2026-11-07).** The raw gate is
+now **1,819 KiB (1,862,656 bytes)**; gzip6 remains **742 KiB (759,808 bytes)**.
+The admitted-source-row selection plane is now reachable through the existing
+GraphForge composition entry point for bar, parallel and explicit-coordinate
+views. It validates row membership, preserves filtering and generation checks,
+and emits aligned selection/provenance; this is required for table-to-chart
+round trips. Unknown schemas also gain a concrete recovery action.
+
+The first candidate failed the existing raw gate at 1,862,942 bytes. Removing
+three monomorphized selection loops in favor of one provenance encoder reduced
+duplication; that candidate exceeded gzip6 by 31 bytes. Concise recovery text
+retains both actions and measures 1,862,008 raw bytes, under the unchanged gzip6
+gate. 1,819 KiB is the smallest next-KiB raw limit admitting that complete
+functionality, leaving 648 raw bytes. The final gzip6 artifact is 759,804 bytes,
+leaving 4 bytes; cross-platform packaging remains required. The value-free
+[package receipt](../performance/graphforge-selected-rows-package-2026-11-07.json)
+binds these measurements to source/artifact hashes. No compiler/profile/toolchain/dependency,
+optimizer, exports, arena, validation or runtime limits change. All size/ABI/
+asset guards remain hard gates. Native/WASM fixture equality and selection
+regressions qualify behavior separately; this size decision asserts no runtime
+speed, graph accessibility or broad release-matrix acceptance.
+
 The 16 MiB browser default and 384 MiB maximum are unchanged. This package
 decision establishes no runtime speed, S5–S7, #36, M4 or release acceptance.
 

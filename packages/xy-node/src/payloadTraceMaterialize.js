@@ -12,6 +12,7 @@ import {
   payloadChannelWireEncode,
   payloadTransitionEntryAttach,
   payloadVisibleIndices,
+  rectFiniteSel,
   u8Ptr,
   u32Ptr,
 } from "./encode.js";
@@ -698,6 +699,17 @@ export function emitTraceMaterialized(figure, t, pw, xr, yr, pxWidth) {
       prefiltered: sv.getInt32(4, true) !== 0,
       baseCol,
     });
+  }
+  if (t._graphforgeResultRows != null) {
+    // Reuse Rust's public native finite/gather selectors for the same marks.
+    // Plain segments have no decimation; cardinality mismatch refuses a pick.
+    const source = t.kind === "scatter" ? sel
+      : ["bar", "segments"].includes(t.kind) ? rectFiniteSel(t, t.x0, t.x1, t.y0, t.y1) : undefined;
+    if (source !== undefined) {
+      const rows = source == null ? t._graphforgeResultRows : Array.from(source, (i) => t._graphforgeResultRows[i]);
+      const painted = t.kind === "scatter" ? pw.columns[entry.x]?.len : entry.n_marks;
+      t._graphforgePaintRows = rows.length === painted ? rows : null;
+    }
   }
   if (sv.getInt32(32, true)) {
     const shipped = sv.getInt32(36, true) ? (sel ?? []).map((i) => t.tooltip_rows[i]) : t.tooltip_rows;

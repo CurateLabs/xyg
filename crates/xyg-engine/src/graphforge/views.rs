@@ -85,6 +85,24 @@ fn decide(decisions: &mut Vec<Decision>, code: &'static str, layer: &Layer<'_>, 
     }
 }
 
+/// Encode provenance and selection together after row filtering and joins.
+fn row_provenance(
+    out: &mut Builder,
+    row_name: &str,
+    selected_name: &str,
+    layer: &Layer<'_>,
+    rows: &[u64],
+) {
+    let mut selected = layer.request.selected_rows.clone();
+    selected.sort_unstable();
+    let flags: Vec<u8> = rows
+        .iter()
+        .map(|row| u8::from(selected.binary_search(row).is_ok()))
+        .collect();
+    out.u64s(row_name, 0, rows);
+    out.u8s(selected_name, 0, &flags);
+}
+
 /// Shortest round-trip text for a float (identical on every host).
 fn float_text(value: f64) -> String {
     if value.is_nan() {
@@ -241,9 +259,11 @@ fn bar_chart(layer: &Layer<'_>, mut decisions: Vec<Decision>) -> GfResult<Vec<u8
     out.texts("chart.category", 0, &names);
     out.f64s("chart.value", 0, &bars);
     out.f64s("chart.domain", 0, &bar_domain(&bars));
-    out.u64s(
+    row_provenance(
+        &mut out,
         "chart.result_row",
-        0,
+        "chart.selected",
+        layer,
         &layer.rows.iter().map(|&r| r as u64).collect::<Vec<_>>(),
     );
     encode_decisions(&mut out, &decisions);
@@ -436,9 +456,11 @@ fn parallel_coordinates(
         0,
         &embedding.rows.iter().map(|r| r.1).collect::<Vec<_>>(),
     );
-    out.u64s(
+    row_provenance(
+        &mut out,
         "vector.result_row",
-        0,
+        "vector.selected",
+        layer,
         &embedding
             .rows
             .iter()
@@ -624,9 +646,11 @@ fn coordinates(
         0,
         &rows.iter().map(|r| r.1).collect::<Vec<_>>(),
     );
-    out.u64s(
+    row_provenance(
+        &mut out,
         "point.result_row",
-        0,
+        "point.selected",
+        layer,
         &rows.iter().map(|r| r.0 as u64).collect::<Vec<_>>(),
     );
     out.u64s(

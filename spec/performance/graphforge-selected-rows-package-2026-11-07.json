@@ -1,0 +1,24 @@
+{
+  "scope": "GraphForge admitted-source-row selection packaging; no runtime performance or broad release qualification claim",
+  "base": "9f4339feaf8b4d320115fd0bbf51f1313331bf57",
+  "node": "v22.22.3",
+  "platform": "darwin-arm64",
+  "rust": "1.96.0",
+  "optimizedBytes": 1862008,
+  "gzip6Bytes": 759804,
+  "wasmSha256": "87c5062fd70a2f06285c2e2102355f68765d4015584323f70f014c3400fc6544",
+  "limits": {
+    "raw": 1862656,
+    "gzip6": 759808
+  },
+  "sourceSha256": {
+    "crates/xyg-engine/src/graphforge/compose.rs": "65e713ea268a8bbe944cdeac35291a8d642dc120c041161ccd87dcd314bbd7b2",
+    "crates/xyg-engine/src/graphforge/request.rs": "122413668dd0477c3bbaaedf1c8ee51bb5b07d25bda567e350542d8b393b1fe1",
+    "crates/xyg-engine/src/graphforge/recognize.rs": "6d3650131060e121d92096ec8f788426597ae45635b3ac1cad3825e89262f174",
+    "crates/xyg-engine/src/graphforge/views.rs": "d887970dbcbeabdd2a0315f394300fdb56a7b6d38637477aaf3ef44fea31681d",
+    "Cargo.lock": "b521317a3cee01d9e04f40fd97e2c7638d648f57052a42078dcb7c8593a4433a",
+    "rust-toolchain.toml": "e59c5da37d1f9f4e0f815bc188cb6056fc7410c9cdaa9673c2d44da557c75d12",
+    "js/package-wasm.mjs": "af493e6c4125fd82fa9196f60e4e7a2d133ed2856d96aafad1de8621c04f9418",
+    "js/optimize-wasm.mjs": "c9cf5458bebced72e5478d6a681c8df2a9ee3668273bad5c4f5d860d6c7f4658"
+  }
+}
