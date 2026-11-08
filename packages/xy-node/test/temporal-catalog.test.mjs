@@ -7,6 +7,19 @@ import {temporalSceneCompile} from '../src/temporal-scene.js';
 import {temporalSceneSize} from '../src/temporal-scene-framing.js';
 const oracle=JSON.parse(readFileSync(new URL('../../../tests/fixtures/temporal/catalog-six-families.json',import.meta.url)));
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
+const lineWindow=JSON.parse(readFileSync(new URL('../../../tests/fixtures/temporal/line-window-edges.json',import.meta.url)));
+for(const fixture of lineWindow.cases)test(`temporal line window: ${fixture.name}`,()=>{
+ const rows=fixture.times.map((t,i)=>[t===null?null:BigInt(t),null,fixture.values[i],BigInt(i+42)]);
+ const chart=temporalChart('line',rows,{domain:fixture.domain.map(BigInt),timezone:'UTC',width:lineWindow.width,height:lineWindow.height,strokeWidth:4});
+ assert.equal(digest(new Uint8Array(chart.toScene())),fixture.sceneSha256);
+ const svg=Buffer.from(chart.toSvg()).toString();
+ const paths=[...svg.matchAll(/<polyline points="([^"]*)"/g)].map(m=>m[1].trim().split(/\s+/).filter(Boolean).map(p=>p.split(',').map(Number)));
+ if(!fixture.points.length)assert.ok(paths.every(p=>p.length<2),'nulls and wholly outside runs draw no segment');
+ else{
+  const actual=paths.flat(2),expected=fixture.points.flat();assert.equal(actual.length,expected.length);
+  for(let i=0;i<actual.length;i++)assert.ok(Math.abs(actual[i]-expected[i])<=0.001,`${fixture.name}: coordinate ${i}`);
+ }
+});
 for(const kind of ['event','interval','gantt','line','bar','scatter'])test(`public temporal ${kind}`,()=>{
  const origin=9223372036854775707n;
  const rows=[[origin+1n,origin+4n,1,18446744073709551615n],[origin+5n,null,2,42n]];
@@ -89,4 +102,28 @@ for(const kind of ['event','interval','gantt','line','bar','scatter'])test(`dens
  assert.ok(chart.toScene().length<2e6);assert.match(Buffer.from(chart.toSvg()).toString(),/<rect/);
  chart.temporalViewport([1n,BigInt(n)]);assert.throws(()=>chart.temporalMembers(metadata,key));
  chart.temporalDispose();assert.throws(()=>chart.toScene(),/disposed/);
+});
+
+test('native cooperative cancel preserves accepted state and releases source claims',()=>{
+ const rows=Array.from({length:10000},(_,i)=>[BigInt(i),null,i%5,BigInt(i+42)]);
+ const chart=temporalChart('line',rows,{domain:[0n,10000n],timezone:'UTC',dense:true,width:900,height:420});
+ const accepted=chart.temporalBegin(),picture=accepted.result();
+ const pending=chart.temporalBegin(),ack=pending.step();assert.ok(new DataView(ack.buffer).getBigUint64(48,true)>0n);
+ pending.cancel();pending.cancel();assert.throws(()=>pending.result());
+ const old=chart.temporalBegin(),newer=chart.temporalBegin();old.cancel();assert.throws(()=>old.result());assert.deepEqual(newer.result(),picture);
+ for(let i=0;i<70;i++){const job=chart.temporalBegin();job.step();job.cancel();}
+ assert.deepEqual(chart.temporalBegin().result(),picture);chart.temporalDispose();
+});
+
+test('native async waiter cancellation releases its private scan and permits reuse',async()=>{
+ const chart=temporalChart('line',Array.from({length:100000},(_,i)=>[BigInt(i),null,i%5,BigInt(i)]),{domain:[0n,100000n],timezone:'UTC',dense:true,width:900,height:420});
+ const picture=chart.toScene(),job=chart.temporalBegin(),controller=new AbortController();
+ const result=job.resultAsync({signal:controller.signal});controller.abort();await assert.rejects(result,/cancelled/);
+ assert.deepEqual(await chart.temporalBegin().resultAsync(),picture);chart.temporalDispose();
+});
+
+test('native viewport invalidates a pending public claim',()=>{
+ const chart=temporalChart('line',Array.from({length:10000},(_,i)=>[BigInt(i),null,i%5,BigInt(i)]),{domain:[0n,10000n],timezone:'UTC',dense:true});
+ const before=chart.temporalBegin().result(),pending=chart.temporalBegin();pending.step();chart.temporalViewport([100n,1000n]);assert.throws(()=>pending.result());
+ assert.notDeepEqual(chart.temporalBegin().result(),before);chart.temporalDispose();
 });

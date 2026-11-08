@@ -141,6 +141,8 @@ export class XygWasmError extends Error {
 }
 
 type Pending = {
+  temporal?:boolean;
+  temporalFailure?:XygWasmError;
   resolve(value: any): void;
   reject(reason: XygWasmError): void;
   progress?(value: any): void;
@@ -269,6 +271,7 @@ function geographicOrigin(owner: XygWasmWorker): GeographicWorkerOrigin {
 export class XygWasmWorker {
   private worker: Worker;
   private pending = new Map<number, Pending>();
+  private temporalPending:number|null=null;
   private nextRequestId = 1;
   private nextSequence = 1;
   private ownedGeoChain: Promise<void> = Promise.resolve();
@@ -785,9 +788,38 @@ export class XygWasmWorker {
     } };
   }
 
-  temporalSceneCompile(request: ArrayBuffer, options: { sequence?: number } = {}): XygWasmTask<ArrayBuffer> {
+  temporalSceneCompile(request:ArrayBuffer,options:{sequence?:number;onProgress?:(reply:ArrayBuffer)=>void;session?:{lifetime?:number;disposed?:boolean}}={}):XygWasmTask<ArrayBuffer>{
+    if(!(request instanceof ArrayBuffer)||request.byteLength<128||new DataView(request).getUint32(4,true)!==2)return this.temporalSceneCommand(request,options);
+    this.assertLive();if(this.temporalPending!==null)throw new Error("temporal operation already in flight");if(request.byteLength>this.maxArenaBytes)throw new RangeError('temporal request exceeds arena');
+    if(options.session?.disposed)throw new Error('temporal composition disposed');
+    const sequence=options.sequence??this.nextSequence++;
+    if(!Number.isInteger(sequence)||sequence<=0||sequence>0xffffffff)throw new RangeError('sequence must be a nonzero u32');
+    this.nextSequence=Math.max(this.nextSequence,sequence+1);
+    const requestId=this.allocateRequest(),result=this.promiseFor<ArrayBuffer>(requestId);
+    this.temporalPending=requestId;let cancelled=false;
+    result.then(()=>{if(this.temporalPending===requestId)this.temporalPending=null;},()=>{if(this.temporalPending===requestId)this.temporalPending=null;});
+    const pending=this.pending.get(requestId)!;const resolve=pending.resolve;
+    pending.resolve=value=>{if(cancelled)pending.reject(new XygWasmError('XYG_WASM_CANCELLED','temporal scan cancelled',6));else resolve(value);};pending.sequence=sequence;pending.progress=options.onProgress;pending.temporal=true;
+    if(options.session&&!options.session.lifetime)options.session.lifetime=this.allocateRequest();
+    try{this.worker.postMessage({type:'temporal.scene',requestId,sequence,request,lifetime:options.session?.lifetime??0},[request]);}
+    catch(cause){this.pending.delete(requestId);this.temporalPending=null;throw cause;}
+    return {requestId,sequence,result,cancel:()=>{cancelled=true;if(!this.disposed&&this.pending.has(requestId))this.worker.postMessage({type:'cancel',requestId,sequence});}};
+  }
+  temporalScenePreview(source:ArrayBuffer):XygWasmTask<ArrayBuffer>{
+    const b=new ArrayBuffer(64+source.byteLength),v=new DataView(b);new Uint8Array(b).set([88,89,84,74]);v.setUint32(4,1,true);v.setUint32(8,6,true);new Uint8Array(b,64).set(new Uint8Array(source));return this.temporalSceneCommand(b);
+  }
+  temporalSceneRelease(session:{lifetime?:number;disposed?:boolean;disposal?:Promise<void>}):Promise<void>{
+    if(session.disposal)return session.disposal;session.disposed=true;
+    if(this.disposed||!session.lifetime)return session.disposal=Promise.resolve();
+    const requestId=this.allocateRequest(),result=this.promiseFor<void>(requestId);session.disposal=result;
+    result.catch(()=>{});
+    try{this.worker.postMessage({type:'temporal.release',requestId,lifetime:session.lifetime});}catch(cause){const pending=this.pending.get(requestId);this.pending.delete(requestId);pending?.reject(cause);}
+    return result;
+  }
+
+  temporalSceneCommand(request: ArrayBuffer, options: { sequence?: number } = {}): XygWasmTask<ArrayBuffer> {
     this.assertLive();
-    if (!(request instanceof ArrayBuffer) || request.byteLength < 128 || request.byteLength > this.maxArenaBytes) throw new TypeError("temporal Scene request must be a bounded ArrayBuffer");
+    if (!(request instanceof ArrayBuffer) || request.byteLength < (request.byteLength>=64&&new DataView(request).getUint32(0,true)===0x4a545958?64:128) || request.byteLength > this.maxArenaBytes) throw new TypeError("temporal Scene request must be a bounded ArrayBuffer");
     const sequence = options.sequence ?? this.nextSequence++;
     if (!Number.isInteger(sequence) || sequence <= 0 || sequence > 0xffffffff) throw new RangeError("sequence must be a nonzero u32");
     this.nextSequence = Math.max(this.nextSequence, sequence + 1);
@@ -1125,6 +1157,10 @@ export class XygWasmWorker {
       try {
         pending.progress?.(message.value);
       } catch (cause) {
+        if(pending.temporal){
+          pending.progress=undefined;pending.temporalFailure=new XygWasmError('XYG_WASM_PROGRESS_CALLBACK_FAILED',cause instanceof Error?cause.message:'worker progress callback failed');
+          if(!this.disposed)this.worker.postMessage({type:'cancel',requestId:message.requestId,sequence:pending.sequence});return;
+        }
         this.pending.delete(message.requestId);
         pending.reject(new XygWasmError(
           "XYG_WASM_PROGRESS_CALLBACK_FAILED",
@@ -1142,6 +1178,7 @@ export class XygWasmWorker {
     }
     this.pending.delete(message.requestId);
     geographicWorkerOrigins.get(this)?.mutations.delete(message.requestId);
+    if(pending.temporalFailure){pending.reject(pending.temporalFailure);return;}
     if (message.ok) {
       pending.resolve(message.value);
     } else {

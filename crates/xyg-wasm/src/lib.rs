@@ -311,6 +311,7 @@ struct Instance {
     graph_session: Option<xyg_engine::graphforge::interaction::wire::WireSession>,
     graph_job: Option<graph::GraphJob>,
     compile_job: Option<CompileJob>,
+    temporal_jobs: Vec<u64>,
     geo_transport: Option<xyg_engine::geo_transport::GeoTransportLease>,
 }
 
@@ -488,6 +489,7 @@ impl Registry {
                 graph_session: None,
                 graph_job: None,
                 compile_job: None,
+                temporal_jobs: Vec::new(),
                 geo_transport: None,
             }),
         };
@@ -647,6 +649,10 @@ pub extern "C" fn xyg_wasm_density_first_paint_plan(
         }
 }
 
+impl Drop for Instance {
+    fn drop(&mut self){for handle in self.temporal_jobs.drain(..){xyg_engine::temporal_scene::jobs::close(handle);}}
+}
+
 #[no_mangle]
 pub extern "C" fn xyg_wasm_instance_new(max_arena_bytes: usize) -> u32 {
     registry().allocate(max_arena_bytes)
@@ -778,6 +784,15 @@ pub extern "C" fn xyg_wasm_graphforge_composition_version() -> u32 {
     xyg_engine::graphforge::compose::COMPOSITION_VERSION
 }
 
+// Shared reservation for co-owned graph authorities, including temporal jobs.
+fn graph_residency(instance: &Instance) -> usize {
+    instance.graph_session.as_ref().map_or(0, |session| {
+        session.retained_budget().saturating_add(
+            instance.temporal_graph.as_ref().map_or(0, |graph| graph.retained_bytes()),
+        )
+    })
+}
+
 #[no_mangle]
 pub extern "C" fn xyg_wasm_arena_resize(handle: u32, length: usize) -> i32 {
     with_instance_mut(handle, |instance| {
@@ -788,11 +803,8 @@ pub extern "C" fn xyg_wasm_arena_resize(handle: u32, length: usize) -> i32 {
         // S4 co-owned sessions account for both retained authorities. Standalone
         // XYTG keeps its existing staging/work/output contract; charging its
         // conservative session-only reserve here would strand accepted owners.
-        let retained = instance.graph_session.as_ref().map_or(0, |session| {
-            session.retained_budget().saturating_add(
-                instance.temporal_graph.as_ref().map_or(0, |graph| graph.retained_bytes()),
-            )
-        });
+        let retained = graph_residency(instance);
+        let retained=retained.saturating_add(xyg_engine::temporal_scene::jobs::retained(&instance.temporal_jobs));
         if length.saturating_add(retained) > instance.max_arena_bytes {
             return fail(
                 instance,

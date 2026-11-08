@@ -2,8 +2,9 @@
 
 **Status:** Rust engine plus native Python/Node and direct-browser/WASM frame
 transport, immutable native snapshots and retained Worker export through the
-shared Scene/painter/raster path. Graph LOD aggregate membership, broader
-installed-host export attachment and massive playback evidence remain required
+shared Scene/painter/raster path. Actual bounded Direct/Aggregate membership
+and frozen-render parity are covered; broader installed-host export attachment
+and massive playback evidence remain required
 before issue 45 closes.
 
 **Authority:** [temporal.md](temporal.md) defines canonical i64 UTC micros and
@@ -165,8 +166,8 @@ state. #45 remains open until:
   direct-browser boundary golden now covered by packed validity intervals;
 - temporal controller events attach to chart composition without application
   glue (the direct frame/layout latest-wins coordinator is now covered);
-- direct and aggregate graph LOD report exact deterministic membership;
-- HTML/PNG/SVG adapters attach and render frozen temporal provenance; and
+- extend the bounded exact Direct/Aggregate membership proof to the required scale evidence;
+- extend the proven browser/native HTML/PNG/SVG attachment to remaining supported hosts; and
 - large/massive playback, accessibility, and native-versus-WASM parity evidence
   passes the documented budgets.
 
@@ -309,3 +310,9 @@ offline ChartView presentation. These bounded proofs do not close full #45
 scale, aggregate membership, installed-host, accessibility or competitor
 acceptance. Prior acquisition/native-only and PNG-refusal statements describe
 historical checkpoints.
+
+The actual Worker [aggregate/direct frozen regression](temporal-graph-frozen.md#actual-temporal-aggregatedirect-regression-2026-11-07)
+now proves exact bounded temporal CSR and rendered export membership, including
+hidden/reappearing UUID state. This supersedes the missing finite aggregate
+proof listed above; it does not waive the remaining scale, accessibility,
+GraphForge corpus or supported installed-host acceptance work.

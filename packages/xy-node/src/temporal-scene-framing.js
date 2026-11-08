@@ -35,7 +35,7 @@ export function encodeTemporalScene(input                    )              {
       v.setUint32(at,value,true);
     }
   }
-  if(input.operation===1){if(!input.publication||input.publication.byteLength<64)throw new TypeError('membership requires XYTL publication');b.set(new Uint8Array(input.publication,20,16),104);}
+  if(input.operation===1||input.operation===3){if(!input.publication||input.publication.byteLength<64)throw new TypeError('membership requires XYTL publication');b.set(new Uint8Array(input.publication,20,16),104);}
   v.setFloat64(80,input.strokeWidth??1,true);b.set(zone,128);b.set(title,128+zone.length);
   input.rows.forEach(([start,end,value,id],i)=>{const at=128+zone.length+title.length+i*40;
     v.setBigInt64(at,start===null?0n:exact(start),true);v.setBigInt64(at+8,end===null?0n:exact(end),true);

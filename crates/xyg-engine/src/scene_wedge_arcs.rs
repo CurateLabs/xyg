@@ -15,6 +15,8 @@
 //! keep their flattened path. Scenes without exact wedges emit no sidecar, so
 //! their bytes are unchanged.
 
+use crate::scene::SceneByteWrite;
+
 use super::*;
 
 pub const XYWA_MAGIC: &[u8; 4] = b"XYWA";
@@ -100,14 +102,14 @@ impl SceneWedgeArcs {
     pub(crate) fn encode(&self) -> Vec<u8> {
         let mut out = Vec::with_capacity(XYWA_HEADER_BYTES + self.entries.len() * XYWA_ENTRY_BYTES);
         out.extend_from_slice(XYWA_MAGIC);
-        out.extend_from_slice(&XYWA_VERSION.to_le_bytes());
-        out.extend_from_slice(&(self.entries.len() as u32).to_le_bytes());
-        out.extend_from_slice(&0u32.to_le_bytes());
-        out.extend_from_slice(&self.cx.to_le_bytes());
-        out.extend_from_slice(&self.cy.to_le_bytes());
+        out.push_word(XYWA_VERSION);
+        out.push_word(self.entries.len() as u32);
+        out.push_word(0u32);
+        out.push_word(self.cx);
+        out.push_word(self.cy);
         for entry in &self.entries {
-            out.extend_from_slice(&(entry.first as u32).to_le_bytes());
-            out.extend_from_slice(&(entry.count as u32).to_le_bytes());
+            out.push_word(entry.first as u32);
+            out.push_word(entry.count as u32);
             for value in [
                 entry.outer,
                 entry.inner,
@@ -116,7 +118,7 @@ impl SceneWedgeArcs {
                 entry.inner_start,
                 entry.inner_end,
             ] {
-                out.extend_from_slice(&value.to_le_bytes());
+                out.push_word(value);
             }
         }
         out

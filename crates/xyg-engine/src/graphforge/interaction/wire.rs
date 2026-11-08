@@ -1287,7 +1287,7 @@ fn selection_projection(b: &mut Builder, s: &GraphSession, state: &GraphInteract
     // The temporal owner may retain derived keys belonging to another
     // composition. refs_of deliberately omits those without mutating the owner.
     if refs.len() > MAX_GRAPH_SELECTION_REFS { return bad(); }
-    refs.sort_by(super::coordination::compare);
+    crate::shared_sort::by(&mut refs, super::coordination::compare);
     let picked_source = pick.and_then(|p| p.source.as_ref());
     let selected = refs.len();
     let targets = selected + usize::from(picked_source.is_some());

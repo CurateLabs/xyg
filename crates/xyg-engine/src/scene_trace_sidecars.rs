@@ -15,6 +15,8 @@
 //! ABI 170 copies scatter `marker_glyph` UTF-8 through the existing XYSD
 //! marker slot so extras can emit XYMG.
 
+use crate::scene::SceneByteWrite;
+
 use crate::scene_trace_attach::{XYTT_HEADER_BYTES, XYTT_MAGIC, XYTT_PREFIX_BYTES, XYTT_VERSION};
 use crate::scene_trace_compile::XYTO_MAGIC;
 
@@ -450,9 +452,9 @@ pub fn pack_trace_sidecars(attached: &[u8], names: &[u8]) -> Result<Vec<u8>, Tra
     }
     let mut out = Vec::new();
     out.extend_from_slice(XYSD_MAGIC);
-    out.extend_from_slice(&XYSD_VERSION.to_le_bytes());
-    out.extend_from_slice(&(traces.len() as u32).to_le_bytes());
-    out.extend_from_slice(&0u32.to_le_bytes());
+    out.push_word(XYSD_VERSION);
+    out.push_word(traces.len() as u32);
+    out.push_word(0u32);
     for (trace, name) in traces.iter().zip(labels.iter()) {
         write_sidecar(&mut out, trace, name);
     }

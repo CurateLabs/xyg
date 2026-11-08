@@ -41,6 +41,8 @@
 //! `color_ch` uses style fill.
 //! Encoded Scene v31 is unchanged.
 
+use crate::scene::SceneByteWrite;
+
 use crate::css::{self, Checked};
 use crate::kernels::DEFAULT_MARK_COLOR;
 use crate::scene::marker_glyph_text;
@@ -672,7 +674,7 @@ fn parse_gradient_blob(
 fn encode_gradient(space: u8, dir: u8, stops: &[(f64, [u8; 4])]) -> Vec<u8> {
     let mut out = vec![space, dir, stops.len() as u8, 0];
     for (t, rgba) in stops {
-        out.extend_from_slice(&(*t as f32).to_le_bytes());
+        out.push_word(*t as f32);
         out.extend_from_slice(rgba);
     }
     out
@@ -857,27 +859,27 @@ fn resolve_style(
         Vec::with_capacity(52 + fill.len() + stroke.len() + line_color.len() + color_b.len());
     record.push(kind_code(input.kind));
     record.push(flags);
-    record.extend_from_slice(&0u16.to_le_bytes());
-    record.extend_from_slice(&(input.opacity as f32).to_le_bytes());
-    record.extend_from_slice(&(input.fill_opacity as f32).to_le_bytes());
-    record.extend_from_slice(&(input.stroke_opacity as f32).to_le_bytes());
-    record.extend_from_slice(&(input.line_opacity as f32).to_le_bytes());
-    record.extend_from_slice(&stroke_width.to_le_bytes());
-    record.extend_from_slice(&width.to_le_bytes());
-    record.extend_from_slice(&line_width.to_le_bytes());
-    record.extend_from_slice(&(fill.len() as u16).to_le_bytes());
-    record.extend_from_slice(&(stroke.len() as u16).to_le_bytes());
-    record.extend_from_slice(&(line_color.len() as u16).to_le_bytes());
-    record.extend_from_slice(&(color_b.len() as u16).to_le_bytes());
+    record.push_word(0u16);
+    record.push_word(input.opacity as f32);
+    record.push_word(input.fill_opacity as f32);
+    record.push_word(input.stroke_opacity as f32);
+    record.push_word(input.line_opacity as f32);
+    record.push_word(stroke_width);
+    record.push_word(width);
+    record.push_word(line_width);
+    record.push_word(fill.len() as u16);
+    record.push_word(stroke.len() as u16);
+    record.push_word(line_color.len() as u16);
+    record.push_word(color_b.len() as u16);
     record.extend_from_slice(fill);
     record.extend_from_slice(stroke);
     record.extend_from_slice(line_color);
     record.extend_from_slice(color_b);
     let mut envelope = Vec::with_capacity(16 + record.len());
     envelope.extend_from_slice(b"XYMS");
-    envelope.extend_from_slice(&1u32.to_le_bytes());
-    envelope.extend_from_slice(&1u32.to_le_bytes());
-    envelope.extend_from_slice(&0u32.to_le_bytes());
+    envelope.push_word(1u32);
+    envelope.push_word(1u32);
+    envelope.push_word(0u32);
     envelope.extend_from_slice(&record);
     match scene_style::resolve_mark_styles(&envelope) {
         Ok(mut styles) => styles
@@ -1198,7 +1200,7 @@ fn write_compiled(out: &mut Vec<u8>, compiled: &Compiled) {
     prefix[96..104].copy_from_slice(&compiled.wedge_gap.to_le_bytes());
     out.extend_from_slice(&prefix);
     for value in dash {
-        out.extend_from_slice(&value.to_le_bytes());
+        out.push_word(value);
     }
     out.extend_from_slice(marker);
     out.extend_from_slice(gradient);
@@ -1231,9 +1233,9 @@ pub fn pack_trace_compile(bytes: &[u8]) -> Result<Vec<u8>, TraceCompileError> {
     }
     let mut out = Vec::new();
     out.extend_from_slice(XYTO_MAGIC);
-    out.extend_from_slice(&XYTO_VERSION.to_le_bytes());
-    out.extend_from_slice(&(n_traces as u32).to_le_bytes());
-    out.extend_from_slice(&0u32.to_le_bytes());
+    out.push_word(XYTO_VERSION);
+    out.push_word(n_traces as u32);
+    out.push_word(0u32);
     for item in &compiled {
         write_compiled(&mut out, item);
     }

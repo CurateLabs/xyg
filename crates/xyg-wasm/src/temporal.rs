@@ -299,6 +299,7 @@ mod tests {
     #[test]
     fn create_step_and_dispose_are_packed_and_rust_owned() {
         let mut instance = Instance {
+            temporal_jobs: Vec::new(),
             arena: vec![0; 88],
             output: vec![],
             max_arena_bytes: 4096,

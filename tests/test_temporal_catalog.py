@@ -1,13 +1,62 @@
 """Public exact temporal catalog regressions; no host timestamp float ingress."""
 
+import hashlib
+import json
 import struct
 import xml.etree.ElementTree as ET
 from html.parser import HTMLParser
+from itertools import pairwise
+from pathlib import Path
 
 import pytest
 
 import xyg
 from xyg import _temporal_scene
+
+LINE_WINDOW = json.loads(
+    (Path(__file__).parent / "fixtures/temporal/line-window-edges.json").read_text()
+)
+
+
+@pytest.mark.parametrize("case", LINE_WINDOW["cases"], ids=lambda case: case["name"])
+def test_line_window_clips_support_without_erasing_crossing_segments(case):
+    rows = [
+        (None if t is None else int(t), None, v, i + 42)
+        for i, (t, v) in enumerate(zip(case["times"], case["values"], strict=True))
+    ]
+    chart = xyg.temporal_chart(
+        "line",
+        rows,
+        domain=tuple(map(int, case["domain"])),
+        timezone="UTC",
+        width=LINE_WINDOW["width"],
+        height=LINE_WINDOW["height"],
+        stroke_width=4,
+    )
+    assert hashlib.sha256(chart.figure().to_scene()).hexdigest() == case["sceneSha256"]
+    svg = chart.to_svg()
+    paths = ET.fromstring(svg).findall(".//{*}g[@clip-path]//{*}polyline")
+    points = [
+        list(map(float, point.split(",")))
+        for path in paths
+        for point in path.attrib["points"].split()
+    ]
+    # Singleton runs draw no segment. Null rows must never be bridged.
+    if not case["points"]:
+        assert all(len(path.attrib["points"].split()) < 2 for path in paths)
+    else:
+        assert [v for pair in points for v in pair] == pytest.approx(
+            [v for pair in case["points"] for v in pair], abs=0.001
+        )
+    assert chart.rows == tuple(rows)
+
+
+@pytest.mark.parametrize("kind", ["event", "scatter", "bar"])
+def test_non_line_instant_membership_remains_half_open(kind):
+    chart = xyg.temporal_chart(
+        kind, [(0, None, 1, 42), (10, None, 1, 43)], domain=(0, 10), timezone="UTC"
+    )
+    assert struct.unpack_from("<Q", chart.figure().to_scene(), 16)[0] == 1
 
 
 @pytest.mark.parametrize("kind", _temporal_scene.KINDS)
@@ -233,7 +282,10 @@ def test_dense_exact_public_membership_and_paint(kind):
     assert struct.unpack_from("<Q", meta, 44)[0] == count
     columns = (900 - 89) // 4
     lanes = 1 if kind in ("line", "bar") else 16
-    records = [struct.unpack_from("<QQQdd", meta, at) for at in range(64, len(meta), 40)]
+    records = [
+        struct.unpack_from("<QQQdd", meta, at)
+        for at in range(64, len(meta), struct.unpack_from("<I", meta, 60)[0] or 40)
+    ]
     assert len(records) <= columns * lanes
     for key, members, _, low, high in records[:: max(1, len(records) // 7)]:
         column, lane = divmod(key, lanes)
@@ -340,3 +392,200 @@ def test_dense_output_capacity_is_atomic():
     )
     assert status != 0
     assert bytes(sentinel) == bytes([0xA5] * 64)
+
+
+def _dense_line_reference(rows, domain, column, columns=202):
+    from fractions import Fraction as Q
+
+    lo, hi = domain
+    left, right = (
+        Q(lo) + Q(column * (hi - lo), columns),
+        Q(lo) + Q((column + 1) * (hi - lo), columns),
+    )
+    low, high = min(0, *(v for _, _, v, _ in rows)), max(1, *(v for _, _, v, _ in rows))
+
+    def y(value):
+        return (Q(high) - Q(value)) / (Q(high) - Q(low)) * 324
+
+    observations = [
+        identity
+        for time, _, _, identity in rows
+        if time is not None and lo <= time < hi and left <= time < right
+    ]
+    contributors = set(observations)
+    ordinates = [y(value) for time, _, value, identity in rows if identity in observations]
+    for a, b in pairwise(rows):
+        if a[0] is None or b[0] is None or b[0] < left or a[0] >= right:
+            continue
+        if a[0] == b[0]:
+            ordinates.extend([y(a[2]), y(b[2])])
+        else:
+            for edge in [max(Q(a[0]), left), min(Q(b[0]), right)]:
+                ordinates.append(y(a[2]) + (y(b[2]) - y(a[2])) * (edge - a[0]) / (b[0] - a[0]))
+        contributors.update([a[3], b[3]])
+    supports = [
+        identity
+        for *_, identity in rows
+        if identity in contributors and identity not in observations
+    ]
+    return (
+        observations,
+        supports,
+        (float(min(ordinates)), float(max(ordinates))) if ordinates else None,
+    )
+
+
+@pytest.mark.parametrize(
+    "times,values,domain",
+    [
+        ([-1, 11], [0, 12], (0, 10)),
+        ([0, 10], [0, 10], (0, 10)),
+        ([-1, None, 11], [0, 6, 12], (0, 10)),
+        ([0, 0, 5, 5, 10], [0, 9, 3, 7, 1], (0, 10)),
+        (
+            [-(1 << 63), (1 << 63) - 1],
+            [-float.fromhex("0x1.fffffffffffffp+1023"), float.fromhex("0x1.fffffffffffffp+1023")],
+            (-1, 1),
+        ),
+        ([-5, 0, None, 10, 15], [2, 3, 4, 5, 6], (0, 10)),
+    ],
+)
+def test_dense_line_clipped_envelopes_and_real_supports(times, values, domain):
+    rows = [
+        (time, None, value, 2**63 + i)
+        for i, (time, value) in enumerate(zip(times, values, strict=True))
+    ]
+    chart = xyg.temporal_chart(
+        "line", rows, domain=domain, timezone="UTC", dense=True, width=900, height=420
+    )
+    metadata = chart.temporal_metadata()
+    assert struct.unpack_from("<Q", metadata, 4)[0] == 3
+    records = {
+        struct.unpack_from("<Q", metadata, at)[0]: struct.unpack_from("<9Q", metadata, at)
+        for at in range(64, len(metadata), 72)
+    }
+    for column in range(202):
+        observations, supports, extent = _dense_line_reference(rows, domain, column)
+        if extent is None:
+            assert column not in records
+            continue
+        assert column in records
+        record = records[column]
+        assert record[1] == len(observations)
+        assert record[5] == len(supports)
+        bounds = struct.unpack("<2d", struct.pack("<2Q", record[7], record[8]))
+        assert bounds == pytest.approx(extent, abs=1e-10)
+        for query, expected in [
+            (chart.temporal_members, observations),
+            (chart.temporal_supports, supports),
+        ]:
+            page = query(metadata, column)
+            assert list(struct.unpack_from(f"<{(len(page) - 64) // 8}Q", page, 64)) == expected
+    svg = chart.to_svg()
+    assert "NaN" not in svg and "Infinity" not in svg
+    chart.temporal_dispose()
+
+
+def test_native_temporal_scan_cancel_reuse_and_accepted_state():
+    chart = xyg.temporal_chart(
+        "line",
+        [(i, None, i % 5, 2**63 + i) for i in range(100000)],
+        domain=(0, 100000),
+        timezone="UTC",
+        dense=True,
+    )
+    accepted = chart.temporal_begin()
+    picture = accepted.result()
+    op = chart.temporal_begin()
+    ack = op.step()
+    assert struct.unpack_from("<Q", ack, 40)[0] == 16384
+    assert struct.unpack_from("<I", ack, 8)[0] == 0
+    op.cancel()
+    op.cancel()
+    with pytest.raises(ValueError):
+        op.result()
+    assert op.session.accepted(accepted.revision) == picture
+    # Cancelling an older waiter must not revoke a newer claimant.
+    old = chart.temporal_begin()
+    new = chart.temporal_begin()
+    old.cancel()
+    with pytest.raises(ValueError):
+        old.result()
+    assert new.result() == picture
+    for _ in range(70):
+        pending = chart.temporal_begin()
+        pending.step()
+        pending.cancel()
+    assert chart.temporal_begin().result() == picture
+    pending = chart.temporal_begin()
+    chart.temporal_viewport((100, 10000))
+    with pytest.raises(ValueError):
+        pending.result()
+    changed = chart.temporal_begin().result()
+    assert changed != picture
+    pending = chart.temporal_begin()
+    chart.temporal_dispose()
+    with pytest.raises(ValueError):
+        pending.result()
+
+
+def test_native_async_waiter_cancel_does_not_publish_or_poison_reuse():
+    import asyncio
+
+    async def run():
+        chart = xyg.temporal_chart(
+            "line",
+            [(i, None, i % 5, i) for i in range(100000)],
+            domain=(0, 100000),
+            timezone="UTC",
+            dense=True,
+        )
+        old = chart.temporal_begin()
+        picture = old.result()
+        job = chart.temporal_begin()
+        waiter = asyncio.create_task(job.result_async())
+        await asyncio.sleep(0)
+        waiter.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await waiter
+        assert job.session.accepted(old.revision) == picture
+        assert await chart.temporal_begin().result_async() == picture
+        chart.temporal_dispose()
+
+    asyncio.run(run())
+
+
+def test_native_concurrent_cancel_stops_an_actual_public_interval_scan():
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Event
+
+    chart = xyg.temporal_chart(
+        "interval",
+        [(None, None, 0, i) for i in range(10000)],
+        domain=(0, 10000),
+        timezone="UTC",
+        dense=True,
+    )
+    accepted = chart.temporal_begin()
+    picture = accepted.result()
+    pending = chart.temporal_begin()
+    scanning = Event()
+
+    def run():
+        while True:
+            ack = pending.step()
+            if struct.unpack_from("<Q", ack, 32)[0] == 1:
+                assert struct.unpack_from("<Q", ack, 48)[0] > 0
+                scanning.set()
+            if struct.unpack_from("<Q", ack, 8)[0] == 1:
+                return pending.result()
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        waiter = pool.submit(run)
+        assert scanning.wait(10), "Rust scan did not report a bounded checkpoint"
+        pending.cancel()
+        with pytest.raises(ValueError):
+            waiter.result(timeout=10)
+    assert pending.session.accepted(accepted.revision) == picture
+    assert chart.temporal_begin().result() == picture
+    chart.temporal_dispose()

@@ -1,0 +1,204 @@
+{
+  "schema": "xyg.temporal-line-window/v1",
+  "width": 900,
+  "height": 420,
+  "cases": [
+    {
+      "name": "crosses-both",
+      "times": [
+        "-1",
+        "11"
+      ],
+      "values": [
+        0,
+        12
+      ],
+      "domain": [
+        "0",
+        "10"
+      ],
+      "points": [
+        [
+          65,
+          345
+        ],
+        [
+          876,
+          75
+        ]
+      ],
+      "sceneSha256": "5bbbc119042618406bc3aa6e363e8b70d100b1717e0d12901fff9059536c6c27"
+    },
+    {
+      "name": "ends-at-hi",
+      "times": [
+        "0",
+        "10"
+      ],
+      "values": [
+        0,
+        10
+      ],
+      "domain": [
+        "0",
+        "10"
+      ],
+      "points": [
+        [
+          65,
+          372
+        ],
+        [
+          876,
+          48
+        ]
+      ],
+      "sceneSha256": "15874793ae907149eb56aaa7eae926194e0caacc6f189c90ad5560c3c6e37e4a"
+    },
+    {
+      "name": "left-neighbor",
+      "times": [
+        "-1",
+        "1"
+      ],
+      "values": [
+        0,
+        2
+      ],
+      "domain": [
+        "0",
+        "10"
+      ],
+      "points": [
+        [
+          65,
+          210
+        ],
+        [
+          146.1,
+          48
+        ]
+      ],
+      "sceneSha256": "42a917b740ce9fc58a345c7ddce7d092c82aca274bb69f7cc0e8f007d5e15767"
+    },
+    {
+      "name": "null-break",
+      "times": [
+        "-1",
+        null,
+        "11"
+      ],
+      "values": [
+        0,
+        6,
+        12
+      ],
+      "domain": [
+        "0",
+        "10"
+      ],
+      "points": [],
+      "sceneSha256": "341440a8635afe9dd0f68787df7e9be7699f6f2f21f20e0a3bd00dc1afa7074a"
+    },
+    {
+      "name": "before-window",
+      "times": [
+        "-3",
+        "-1"
+      ],
+      "values": [
+        0,
+        2
+      ],
+      "domain": [
+        "0",
+        "10"
+      ],
+      "points": [],
+      "sceneSha256": "7f36e87681061ad8448c7dab6e5ab625181c64b2e4d7a407b40ac71754c62ec5"
+    },
+    {
+      "name": "after-window",
+      "times": [
+        "11",
+        "12"
+      ],
+      "values": [
+        0,
+        2
+      ],
+      "domain": [
+        "0",
+        "10"
+      ],
+      "points": [],
+      "sceneSha256": "7f36e87681061ad8448c7dab6e5ab625181c64b2e4d7a407b40ac71754c62ec5"
+    },
+    {
+      "name": "extreme-times",
+      "times": [
+        "-9223372036854775808",
+        "9223372036854775807"
+      ],
+      "values": [
+        0,
+        12
+      ],
+      "domain": [
+        "-1",
+        "1"
+      ],
+      "points": [
+        [
+          65,
+          210
+        ],
+        [
+          876,
+          210
+        ]
+      ],
+      "sceneSha256": "039eb97fab51c5e945698cce593aca2cfc0fecea7858b928f45e50e2dd32f300"
+    },
+    {
+      "name": "repeated-times",
+      "times": [
+        "-1",
+        "0",
+        "0",
+        "10",
+        "11"
+      ],
+      "values": [
+        0,
+        3,
+        6,
+        12,
+        15
+      ],
+      "domain": [
+        "0",
+        "10"
+      ],
+      "points": [
+        [
+          65,
+          307.2
+        ],
+        [
+          65,
+          307.2
+        ],
+        [
+          65,
+          242.4
+        ],
+        [
+          876,
+          112.8
+        ]
+      ],
+      "sceneSha256": "2c6e5fd5c968b4665909f0552457c4d6b1a1dfdf2307046a6139c21635f9a03b"
+    }
+  ]
+}

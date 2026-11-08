@@ -33238,7 +33238,13 @@ pub unsafe extern "C" fn xyg_temporal_scene_compile(request: *const u8, request_
     ffi_guard(-1, || {
         if request.is_null() || out_length.is_null() || (out.is_null() && cap != 0) {return -1;}
         if request_len>budget || budget>xyg_engine::temporal_scene::MAX_BYTES {return -11;}
-        let result=match xyg_engine::temporal_scene::compile(std::slice::from_raw_parts(request,request_len),budget){Ok(v)=>v,Err(e)=>return e as i32};
+        let input=std::slice::from_raw_parts(request,request_len);
+        if input.get(..4)==Some(b"XYTJ") && input.len()>=64 && input[8..12]!=3u32.to_le_bytes(){
+            if out.is_null(){*out_length=64;return 0;}
+            if cap<64{return -9;}
+        }
+        let value=if input.get(..4)==Some(b"XYTJ") {xyg_engine::temporal_scene::jobs::execute_with_capacity(input,budget,if out.is_null(){None}else{Some(cap)})}else{xyg_engine::temporal_scene::compile(input,budget)};
+        let result=match value{Ok(v)=>v,Err(e)=>return e as i32};
         if !out.is_null() && cap<result.len(){return -9;}
         if !out.is_null(){std::ptr::copy_nonoverlapping(result.as_ptr(),out,result.len());}
         *out_length=result.len();0

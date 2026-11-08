@@ -71,6 +71,7 @@ _EXPORTS = {
     "Spring": ".components",
     "Theme": ".components",
     "TemporalController": ".temporal_controller",
+    "TemporalSession": "._temporal_scene",
     "TemporalGraph": ".temporal_graph",
     "FrozenTemporalGraph": "._temporal_graph_frozen",
     "TemporalGraphError": ".temporal_graph",
@@ -209,6 +210,7 @@ __all__ = [
     "TemporalController",
     "TemporalGraph",
     "TemporalGraphError",
+    "TemporalSession",
     "Theme",
     "Tooltip",
     "ZoneMaps",
@@ -368,6 +370,7 @@ if TYPE_CHECKING:
     )
     from ._ooc import ChunkedColumns
     from ._temporal_graph_frozen import FrozenTemporalGraph
+    from ._temporal_scene import TemporalSession
     from .columns import Column, ColumnStore, ZoneMaps
     from .components import (
         Animation,

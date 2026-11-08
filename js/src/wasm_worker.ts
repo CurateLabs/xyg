@@ -82,6 +82,7 @@ function statusCode(status: number): string {
 }
 
 function disposeRust() {
+  if(activeTemporal)clearTimeout(activeTemporal.timer);activeTemporal=null;temporalSources.clear();
   try {
     if (exports && handle) exports.xyg_wasm_instance_dispose(handle);
   } catch {
@@ -1140,16 +1141,13 @@ function admitOperationSequence(message: any, deferred = false): boolean {
   if (deferred ? sequence !== operationSequenceWatermark : sequence <= operationSequenceWatermark) {
     error(message.requestId, "XYG_WASM_STALE_SEQUENCE", "request sequence is stale", XYG_WASM_STATUS.STALE_SEQUENCE); return false;
   }
+  if(!deferred&&activeTemporal&&sequence>activeTemporal.message.sequence)abortTemporal('superseded by newer intent');
   if (!deferred) operationSequenceWatermark = sequence;
   return true;
 }
 
-function runGeoIngest(message: any, owned = false) {
-  queued.delete(message.requestId);
-  if (!owned && !admitOperationSequence(message, true)) return;
-  if (!exports || !handle || lifecycle !== "initialized") { error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return; }
-  try {
-    if (!(message.request instanceof ArrayBuffer) || message.request.byteLength < (message.type.startsWith("geo.scale.") || message.type.startsWith("geo.snapshot.") ? 256 : message.type.startsWith("geo.tile.") ? 128 : message.type === "geo.scene" ? 192 : (message.type === "temporal.scene" || message.type === "geo.viewport" || message.type === "geo.catalog") ? 128 : 64) || message.request.byteLength > operationBudgetBytes) { error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "geographic descriptor is malformed"); return; }
+function interruptTemporalPeers(){
+    if(!exports||!handle)return;
     if (activeCompile) terminateActiveCompile("a geographic ingestion");
     if (activeGraph) {
       const previous = activeGraph; clearTimeout(previous.timer); queued.delete(previous.requestId);
@@ -1171,6 +1169,65 @@ function runGeoIngest(message: any, owned = false) {
       streamObservation("cancelled", previous);
       error(previous.requestId, "XYG_WASM_CANCELLED", "aggregate stream was superseded by geographic ingestion", XYG_WASM_STATUS.CANCELLED);
     }
+}
+// Temporal scan transport: Rust alone chooses work units, progress and publication.
+let activeTemporal:any=null;
+const temporalSources=new Map<number,bigint>();
+function temporalCall(op:number,owner:bigint,sequence:number,source?:ArrayBuffer):ArrayBuffer{
+  if(!exports||!handle)throw new Error('temporal Worker disposed');
+  const packet=new ArrayBuffer(64+(source?.byteLength??0)),v=new DataView(packet);
+  new Uint8Array(packet).set([88,89,84,74]);v.setUint32(4,1,true);v.setUint32(8,op,true);v.setBigUint64(16,owner,true);v.setBigUint64(24,owner?BigInt(sequence):0n,true);
+  if(source)new Uint8Array(packet,64).set(new Uint8Array(source));
+  let status=exports.xyg_wasm_arena_resize(handle,packet.byteLength);
+  if(status===0){new Uint8Array(exports.memory.buffer,exports.xyg_wasm_arena_ptr(handle),packet.byteLength).set(new Uint8Array(packet));status=exports.xyg_wasm_temporal_scene_compile(handle,sequence,0,packet.byteLength);}
+  if(status!==0)throw {status,message:readXygWasmError(exports,handle)};
+  return new Uint8Array(exports.memory.buffer,exports.xyg_wasm_output_ptr(handle),exports.xyg_wasm_output_len(handle)).slice().buffer;
+}
+function cleanupTemporal(job:any,cancel:boolean){
+  clearTimeout(job.timer);if(activeTemporal===job)activeTemporal=null;
+  try{if(cancel)temporalCall(4,job.owner,job.message.sequence);if(!job.message.lifetime)temporalCall(5,job.owner,job.message.sequence);}catch{}
+}
+function abortTemporal(reason:string){const job=activeTemporal;if(!job)return;cleanupTemporal(job,true);error(job.message.requestId,'XYG_WASM_CANCELLED',reason,6);}
+function stepTemporal(job:any){
+  if(activeTemporal!==job)return;
+  try{
+    const ack=temporalCall(2,job.owner,job.message.sequence);
+    job.done=new DataView(ack).getUint32(8,true)===1;
+    scope.postMessage({requestId:job.message.requestId,ok:true,progress:true,value:ack},[ack]);
+    // Read status before transfer detaches the acknowledgement.
+    job.timer=setTimeout(()=>continueTemporal(job),0);
+  }catch(cause){cleanupTemporal(job,true);const e=cause as any;error(job.message.requestId,statusCode(e.status??1),e.message??String(e),e.status);}
+}
+function continueTemporal(job:any){
+  if(activeTemporal!==job)return;
+  try{
+    // A step acknowledgement is cached as a scalar transport flag, never policy.
+    if(job.done){const output=temporalCall(3,job.owner,job.message.sequence);cleanupTemporal(job,false);reply(job.message.requestId,output,[output]);}
+    else stepTemporal(job);
+  }catch(cause){cleanupTemporal(job,true);const e=cause as any;error(job.message.requestId,statusCode(e.status??1),e.message??String(e),e.status);}
+}
+function beginTemporal(message:any){
+  if(!exports||!handle){error(message.requestId,'XYG_WASM_NOT_READY','Worker is not initialized');return;}
+  abortTemporal('superseded by a newer temporal request');
+  let job:any=null;
+  try{
+    if(message.request.byteLength>operationBudgetBytes)throw new Error('temporal request exceeds operation budget');
+    interruptTemporalPeers();
+    let owner=temporalSources.get(message.lifetime);
+    if(!owner){owner=new DataView(temporalCall(0,0n,message.sequence)).getBigUint64(16,true);if(message.lifetime)temporalSources.set(message.lifetime,owner);}
+    job={message,owner,timer:0,done:false};activeTemporal=job;
+    temporalCall(1,owner,message.sequence,message.request);message.request=null;
+    job.timer=setTimeout(()=>stepTemporal(job),0);
+  }catch(cause){if(job)cleanupTemporal(job,true);const e=cause as any;error(message.requestId,statusCode(e.status??1),e.message??String(e),e.status);}
+}
+
+function runGeoIngest(message: any, owned = false) {
+  queued.delete(message.requestId);
+  if (!owned && !admitOperationSequence(message, true)) return;
+  if (!exports || !handle || lifecycle !== "initialized") { error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return; }
+  try {
+    if (!(message.request instanceof ArrayBuffer) || message.request.byteLength < (message.type.startsWith("geo.scale.") || message.type.startsWith("geo.snapshot.") ? 256 : message.type.startsWith("geo.tile.") ? 128 : message.type === "geo.scene" ? 192 : (message.type === "temporal.scene") ? 64 : (message.type === "geo.viewport" || message.type === "geo.catalog") ? 128 : 64) || message.request.byteLength > operationBudgetBytes) { error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "geographic descriptor is malformed"); return; }
+    interruptTemporalPeers();
     let status = exports.xyg_wasm_arena_resize(handle, message.request.byteLength);
     if (status !== XYG_WASM_STATUS.OK) { rustError(message.requestId, statusCode(status), readXygWasmError(exports, handle), status); return; }
     const ptr = exports.xyg_wasm_arena_ptr(handle) >>> 0;
@@ -1339,6 +1396,8 @@ scope.onmessage = (event: MessageEvent<any>) => {
   // Ownership mutations and immutable reads cannot be discarded by a later
   // request. Execute at receipt; the main-thread ownership FIFO sequences them.
   // Session cancellation remains the explicit Rust command9.
+  if(message?.type==='temporal.scene'&&message.request instanceof ArrayBuffer&&message.request.byteLength>=128&&new DataView(message.request).getUint32(4,true)===2){beginTemporal(message);return;}
+  if(message?.type==='temporal.scene'&&message.request instanceof ArrayBuffer&&message.request.byteLength>=64&&new DataView(message.request).getUint32(0,true)===0x4a545958){runGeoIngest(message,true);return;}
   if(["geo.scale.execute","geo.scale.read","geo.tile.execute","geo.tile.read","geo.snapshot.execute","geo.snapshot.read"].includes(message?.type)) {runGeoIngest(message,true);return;}
   if (message?.type === "aggregate.stream_begin") { beginAggregateStream(message); return; }
   if (
@@ -1383,7 +1442,13 @@ scope.onmessage = (event: MessageEvent<any>) => {
     return;
   }
   if (message?.type === "graph.cose") { const timer = setTimeout(() => runGraph(message), 0); queued.set(message.requestId, timer as unknown as number); return; }
+  if(message?.type==='temporal.release'){
+    if(activeAggregate||activeAggregateStream||activeGraph||activeCompile){setTimeout(()=>scope.onmessage?.({data:message} as any),0);return;}
+    if(activeTemporal?.message.lifetime===message.lifetime)abortTemporal('temporal composition disposed');
+    const owner=temporalSources.get(message.lifetime);if(owner){try{temporalCall(5,owner,operationSequenceWatermark||1);}catch{}temporalSources.delete(message.lifetime);}reply(message.requestId,undefined);return;
+  }
   if (message?.type === "cancel") {
+    if(activeTemporal?.message.requestId===message.requestId){abortTemporal("temporal scan cancelled");return;}
     const timer = queued.get(message.requestId);
     if (timer !== undefined) {
       clearTimeout(timer);

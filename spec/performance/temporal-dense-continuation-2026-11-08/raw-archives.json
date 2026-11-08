@@ -1,0 +1,2888 @@
+[
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/96bbb5a53ee2a3c6b9f1cc7a0900ea5e9b5ffc58c4ab0c678e97776d739112df.gz",
+    "bytes": 858400,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/bar.html",
+    "sha256": "96bbb5a53ee2a3c6b9f1cc7a0900ea5e9b5ffc58c4ab0c678e97776d739112df"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/3e71533aa43c64d03383eccc29460e359b13da3018a19b6b5218baf1be3e1c65.gz",
+    "bytes": 464,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/bar.members",
+    "sha256": "3e71533aa43c64d03383eccc29460e359b13da3018a19b6b5218baf1be3e1c65"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/b34ce4ca7f584c0938a276e51cf2d5bada824ee5457d66311a17996544696315.gz",
+    "bytes": 8144,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/bar.metadata",
+    "sha256": "b34ce4ca7f584c0938a276e51cf2d5bada824ee5457d66311a17996544696315"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9312efc269708a330426734093fb4a45f765af037d3dbf943b98ba85ce03a05b.gz",
+    "bytes": 80631,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/bar.png",
+    "sha256": "9312efc269708a330426734093fb4a45f765af037d3dbf943b98ba85ce03a05b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/238a1f5197ac8fdf21a093cd4f7c3fe10b34bab181d12e90ed8f1a06ac704173.gz",
+    "bytes": 400131,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/bar.request",
+    "sha256": "238a1f5197ac8fdf21a093cd4f7c3fe10b34bab181d12e90ed8f1a06ac704173"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/82d89d4dda4658636847f982344cf1188759ed8b7ff19c73b483f437505eb88b.gz",
+    "bytes": 12031,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/bar.scene",
+    "sha256": "82d89d4dda4658636847f982344cf1188759ed8b7ff19c73b483f437505eb88b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d66b4ac3f5881dc32fd9fa24285a5866b198ed6e1f90729e4204394fb81a3e39.gz",
+    "bytes": 26072,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/bar.svg",
+    "sha256": "d66b4ac3f5881dc32fd9fa24285a5866b198ed6e1f90729e4204394fb81a3e39"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f939086c8d5411a240f8624899d5618ee5e55088d444fcbae988d92e92bfbf09.gz",
+    "bytes": 7748,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/captures.json",
+    "sha256": "f939086c8d5411a240f8624899d5618ee5e55088d444fcbae988d92e92bfbf09"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/490e866dfa2bab0df224275750542151b430d785c92c285c69c6e3167945c976.gz",
+    "bytes": 858400,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/event.html",
+    "sha256": "490e866dfa2bab0df224275750542151b430d785c92c285c69c6e3167945c976"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/b40d6a2a684eeafdabb75b182a063b914414c408a563d0726611d31d92edc2ae.gz",
+    "bytes": 464,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/event.members",
+    "sha256": "b40d6a2a684eeafdabb75b182a063b914414c408a563d0726611d31d92edc2ae"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/770dbb10110e354c831bbc404c42b269c18edb92d1468a02a3e0c9b199829f27.gz",
+    "bytes": 8144,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/event.metadata",
+    "sha256": "770dbb10110e354c831bbc404c42b269c18edb92d1468a02a3e0c9b199829f27"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/6fb9e7516fd24fec8c1729c0fb8a0b45b6f3ef98c1157b98c0f3c1bbe9b2931d.gz",
+    "bytes": 81912,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/event.png",
+    "sha256": "6fb9e7516fd24fec8c1729c0fb8a0b45b6f3ef98c1157b98c0f3c1bbe9b2931d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d5416daf0b2f1911fc0782100d100703e130c98d02c2bf8c9f3d6f7483ce4db9.gz",
+    "bytes": 400131,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/event.request",
+    "sha256": "d5416daf0b2f1911fc0782100d100703e130c98d02c2bf8c9f3d6f7483ce4db9"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9b4825f72da206a6b016067b51b66013c55f9725877baf70ffcb6575644fc3d9.gz",
+    "bytes": 12031,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/event.scene",
+    "sha256": "9b4825f72da206a6b016067b51b66013c55f9725877baf70ffcb6575644fc3d9"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/4103ab10842d3943b9350fc4fea0fd4d9e5c42fdfa07c376bbb9ddfd15a8e61a.gz",
+    "bytes": 27486,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/event.svg",
+    "sha256": "4103ab10842d3943b9350fc4fea0fd4d9e5c42fdfa07c376bbb9ddfd15a8e61a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/490e866dfa2bab0df224275750542151b430d785c92c285c69c6e3167945c976.gz",
+    "bytes": 858400,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/gantt.html",
+    "sha256": "490e866dfa2bab0df224275750542151b430d785c92c285c69c6e3167945c976"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/493e6e08c59f8f8f9f769be28f7708705ef13e3a537f0b6ddd001c145ac66de5.gz",
+    "bytes": 464,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/gantt.members",
+    "sha256": "493e6e08c59f8f8f9f769be28f7708705ef13e3a537f0b6ddd001c145ac66de5"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/3049c5c1352ef2af031aa68c217be5f771389d80a242c3ba8543d52604e751b6.gz",
+    "bytes": 8144,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/gantt.metadata",
+    "sha256": "3049c5c1352ef2af031aa68c217be5f771389d80a242c3ba8543d52604e751b6"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/6fb9e7516fd24fec8c1729c0fb8a0b45b6f3ef98c1157b98c0f3c1bbe9b2931d.gz",
+    "bytes": 81912,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/gantt.png",
+    "sha256": "6fb9e7516fd24fec8c1729c0fb8a0b45b6f3ef98c1157b98c0f3c1bbe9b2931d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f048739fc9c78fdb9b663a617844d1e88a163a4646422045ce78d25b18494f85.gz",
+    "bytes": 400131,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/gantt.request",
+    "sha256": "f048739fc9c78fdb9b663a617844d1e88a163a4646422045ce78d25b18494f85"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9b4825f72da206a6b016067b51b66013c55f9725877baf70ffcb6575644fc3d9.gz",
+    "bytes": 12031,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/gantt.scene",
+    "sha256": "9b4825f72da206a6b016067b51b66013c55f9725877baf70ffcb6575644fc3d9"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/4103ab10842d3943b9350fc4fea0fd4d9e5c42fdfa07c376bbb9ddfd15a8e61a.gz",
+    "bytes": 27486,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/gantt.svg",
+    "sha256": "4103ab10842d3943b9350fc4fea0fd4d9e5c42fdfa07c376bbb9ddfd15a8e61a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/490e866dfa2bab0df224275750542151b430d785c92c285c69c6e3167945c976.gz",
+    "bytes": 858400,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/interval.html",
+    "sha256": "490e866dfa2bab0df224275750542151b430d785c92c285c69c6e3167945c976"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/68c36c7c259ef4f2792c3dfd7ae96bb341e0b2136ef5ee4398f47412162d0454.gz",
+    "bytes": 464,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/interval.members",
+    "sha256": "68c36c7c259ef4f2792c3dfd7ae96bb341e0b2136ef5ee4398f47412162d0454"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/14e7bf860a9d723c2205ca60a93e365e04409b9527d7ab1f32a39ed7d5e46a2c.gz",
+    "bytes": 8144,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/interval.metadata",
+    "sha256": "14e7bf860a9d723c2205ca60a93e365e04409b9527d7ab1f32a39ed7d5e46a2c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/6fb9e7516fd24fec8c1729c0fb8a0b45b6f3ef98c1157b98c0f3c1bbe9b2931d.gz",
+    "bytes": 81912,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/interval.png",
+    "sha256": "6fb9e7516fd24fec8c1729c0fb8a0b45b6f3ef98c1157b98c0f3c1bbe9b2931d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/46525ee05ca003bae41039e65830af9f69986f587a5c50533c45f888d0642626.gz",
+    "bytes": 400131,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/interval.request",
+    "sha256": "46525ee05ca003bae41039e65830af9f69986f587a5c50533c45f888d0642626"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9b4825f72da206a6b016067b51b66013c55f9725877baf70ffcb6575644fc3d9.gz",
+    "bytes": 12031,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/interval.scene",
+    "sha256": "9b4825f72da206a6b016067b51b66013c55f9725877baf70ffcb6575644fc3d9"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/4103ab10842d3943b9350fc4fea0fd4d9e5c42fdfa07c376bbb9ddfd15a8e61a.gz",
+    "bytes": 27486,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/interval.svg",
+    "sha256": "4103ab10842d3943b9350fc4fea0fd4d9e5c42fdfa07c376bbb9ddfd15a8e61a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/96bbb5a53ee2a3c6b9f1cc7a0900ea5e9b5ffc58c4ab0c678e97776d739112df.gz",
+    "bytes": 858400,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/line.html",
+    "sha256": "96bbb5a53ee2a3c6b9f1cc7a0900ea5e9b5ffc58c4ab0c678e97776d739112df"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e6555b8c953d38819953e5fb5137f5441689b33aac10e61887e38dc424bf65c5.gz",
+    "bytes": 464,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/line.members",
+    "sha256": "e6555b8c953d38819953e5fb5137f5441689b33aac10e61887e38dc424bf65c5"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/bcf8fd0aef44423a0db1a3e978285f74430e3638a7705c08090a2b8d6667f549.gz",
+    "bytes": 14608,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/line.metadata",
+    "sha256": "bcf8fd0aef44423a0db1a3e978285f74430e3638a7705c08090a2b8d6667f549"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9312efc269708a330426734093fb4a45f765af037d3dbf943b98ba85ce03a05b.gz",
+    "bytes": 80631,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/line.png",
+    "sha256": "9312efc269708a330426734093fb4a45f765af037d3dbf943b98ba85ce03a05b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e14e165d66b75bdf0090246e4b9d0cf38a3227085cbdab8db309cc4a9e38b7a5.gz",
+    "bytes": 400131,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/line.request",
+    "sha256": "e14e165d66b75bdf0090246e4b9d0cf38a3227085cbdab8db309cc4a9e38b7a5"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/82d89d4dda4658636847f982344cf1188759ed8b7ff19c73b483f437505eb88b.gz",
+    "bytes": 12031,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/line.scene",
+    "sha256": "82d89d4dda4658636847f982344cf1188759ed8b7ff19c73b483f437505eb88b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e2007485fa0cc74893ab604213e028373ebbed3ddbae86f9825d81d5b666f21f.gz",
+    "bytes": 72,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/line.supports",
+    "sha256": "e2007485fa0cc74893ab604213e028373ebbed3ddbae86f9825d81d5b666f21f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d66b4ac3f5881dc32fd9fa24285a5866b198ed6e1f90729e4204394fb81a3e39.gz",
+    "bytes": 26072,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/line.svg",
+    "sha256": "d66b4ac3f5881dc32fd9fa24285a5866b198ed6e1f90729e4204394fb81a3e39"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/490e866dfa2bab0df224275750542151b430d785c92c285c69c6e3167945c976.gz",
+    "bytes": 858400,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/scatter.html",
+    "sha256": "490e866dfa2bab0df224275750542151b430d785c92c285c69c6e3167945c976"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/1268497eedbe7ca324373640c0205bb3baae86edf8f3cef83417c46096ca55ee.gz",
+    "bytes": 464,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/scatter.members",
+    "sha256": "1268497eedbe7ca324373640c0205bb3baae86edf8f3cef83417c46096ca55ee"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/aa7ef054a184c74dc79942f9d44c7763a28a360447bc933b12a17a541a61f918.gz",
+    "bytes": 8144,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/scatter.metadata",
+    "sha256": "aa7ef054a184c74dc79942f9d44c7763a28a360447bc933b12a17a541a61f918"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/6fb9e7516fd24fec8c1729c0fb8a0b45b6f3ef98c1157b98c0f3c1bbe9b2931d.gz",
+    "bytes": 81912,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/scatter.png",
+    "sha256": "6fb9e7516fd24fec8c1729c0fb8a0b45b6f3ef98c1157b98c0f3c1bbe9b2931d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/648b8871ea1e0d2d40a38d61e14805e9842b72940ea1655fd77c85effce30a3b.gz",
+    "bytes": 400131,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/scatter.request",
+    "sha256": "648b8871ea1e0d2d40a38d61e14805e9842b72940ea1655fd77c85effce30a3b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9b4825f72da206a6b016067b51b66013c55f9725877baf70ffcb6575644fc3d9.gz",
+    "bytes": 12031,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/scatter.scene",
+    "sha256": "9b4825f72da206a6b016067b51b66013c55f9725877baf70ffcb6575644fc3d9"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/4103ab10842d3943b9350fc4fea0fd4d9e5c42fdfa07c376bbb9ddfd15a8e61a.gz",
+    "bytes": 27486,
+    "path": "target/task-tmp/temporal-dense-continuation/native-final/scatter.svg",
+    "sha256": "4103ab10842d3943b9350fc4fea0fd4d9e5c42fdfa07c376bbb9ddfd15a8e61a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/3e71533aa43c64d03383eccc29460e359b13da3018a19b6b5218baf1be3e1c65.gz",
+    "bytes": 464,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/bar.members",
+    "sha256": "3e71533aa43c64d03383eccc29460e359b13da3018a19b6b5218baf1be3e1c65"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/b34ce4ca7f584c0938a276e51cf2d5bada824ee5457d66311a17996544696315.gz",
+    "bytes": 8144,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/bar.metadata",
+    "sha256": "b34ce4ca7f584c0938a276e51cf2d5bada824ee5457d66311a17996544696315"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9312efc269708a330426734093fb4a45f765af037d3dbf943b98ba85ce03a05b.gz",
+    "bytes": 80631,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/bar.png",
+    "sha256": "9312efc269708a330426734093fb4a45f765af037d3dbf943b98ba85ce03a05b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/82d89d4dda4658636847f982344cf1188759ed8b7ff19c73b483f437505eb88b.gz",
+    "bytes": 12031,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/bar.scene",
+    "sha256": "82d89d4dda4658636847f982344cf1188759ed8b7ff19c73b483f437505eb88b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d66b4ac3f5881dc32fd9fa24285a5866b198ed6e1f90729e4204394fb81a3e39.gz",
+    "bytes": 26072,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/bar.svg",
+    "sha256": "d66b4ac3f5881dc32fd9fa24285a5866b198ed6e1f90729e4204394fb81a3e39"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c4414163c88092c3074171725461c28269ac72495b1fba1bff43e16bc5b85454.gz",
+    "bytes": 5568,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/captures.json",
+    "sha256": "c4414163c88092c3074171725461c28269ac72495b1fba1bff43e16bc5b85454"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/b40d6a2a684eeafdabb75b182a063b914414c408a563d0726611d31d92edc2ae.gz",
+    "bytes": 464,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/event.members",
+    "sha256": "b40d6a2a684eeafdabb75b182a063b914414c408a563d0726611d31d92edc2ae"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/770dbb10110e354c831bbc404c42b269c18edb92d1468a02a3e0c9b199829f27.gz",
+    "bytes": 8144,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/event.metadata",
+    "sha256": "770dbb10110e354c831bbc404c42b269c18edb92d1468a02a3e0c9b199829f27"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/6fb9e7516fd24fec8c1729c0fb8a0b45b6f3ef98c1157b98c0f3c1bbe9b2931d.gz",
+    "bytes": 81912,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/event.png",
+    "sha256": "6fb9e7516fd24fec8c1729c0fb8a0b45b6f3ef98c1157b98c0f3c1bbe9b2931d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9b4825f72da206a6b016067b51b66013c55f9725877baf70ffcb6575644fc3d9.gz",
+    "bytes": 12031,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/event.scene",
+    "sha256": "9b4825f72da206a6b016067b51b66013c55f9725877baf70ffcb6575644fc3d9"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/4103ab10842d3943b9350fc4fea0fd4d9e5c42fdfa07c376bbb9ddfd15a8e61a.gz",
+    "bytes": 27486,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/event.svg",
+    "sha256": "4103ab10842d3943b9350fc4fea0fd4d9e5c42fdfa07c376bbb9ddfd15a8e61a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/493e6e08c59f8f8f9f769be28f7708705ef13e3a537f0b6ddd001c145ac66de5.gz",
+    "bytes": 464,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/gantt.members",
+    "sha256": "493e6e08c59f8f8f9f769be28f7708705ef13e3a537f0b6ddd001c145ac66de5"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/3049c5c1352ef2af031aa68c217be5f771389d80a242c3ba8543d52604e751b6.gz",
+    "bytes": 8144,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/gantt.metadata",
+    "sha256": "3049c5c1352ef2af031aa68c217be5f771389d80a242c3ba8543d52604e751b6"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/6fb9e7516fd24fec8c1729c0fb8a0b45b6f3ef98c1157b98c0f3c1bbe9b2931d.gz",
+    "bytes": 81912,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/gantt.png",
+    "sha256": "6fb9e7516fd24fec8c1729c0fb8a0b45b6f3ef98c1157b98c0f3c1bbe9b2931d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9b4825f72da206a6b016067b51b66013c55f9725877baf70ffcb6575644fc3d9.gz",
+    "bytes": 12031,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/gantt.scene",
+    "sha256": "9b4825f72da206a6b016067b51b66013c55f9725877baf70ffcb6575644fc3d9"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/4103ab10842d3943b9350fc4fea0fd4d9e5c42fdfa07c376bbb9ddfd15a8e61a.gz",
+    "bytes": 27486,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/gantt.svg",
+    "sha256": "4103ab10842d3943b9350fc4fea0fd4d9e5c42fdfa07c376bbb9ddfd15a8e61a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/68c36c7c259ef4f2792c3dfd7ae96bb341e0b2136ef5ee4398f47412162d0454.gz",
+    "bytes": 464,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/interval.members",
+    "sha256": "68c36c7c259ef4f2792c3dfd7ae96bb341e0b2136ef5ee4398f47412162d0454"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/14e7bf860a9d723c2205ca60a93e365e04409b9527d7ab1f32a39ed7d5e46a2c.gz",
+    "bytes": 8144,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/interval.metadata",
+    "sha256": "14e7bf860a9d723c2205ca60a93e365e04409b9527d7ab1f32a39ed7d5e46a2c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/6fb9e7516fd24fec8c1729c0fb8a0b45b6f3ef98c1157b98c0f3c1bbe9b2931d.gz",
+    "bytes": 81912,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/interval.png",
+    "sha256": "6fb9e7516fd24fec8c1729c0fb8a0b45b6f3ef98c1157b98c0f3c1bbe9b2931d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9b4825f72da206a6b016067b51b66013c55f9725877baf70ffcb6575644fc3d9.gz",
+    "bytes": 12031,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/interval.scene",
+    "sha256": "9b4825f72da206a6b016067b51b66013c55f9725877baf70ffcb6575644fc3d9"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/4103ab10842d3943b9350fc4fea0fd4d9e5c42fdfa07c376bbb9ddfd15a8e61a.gz",
+    "bytes": 27486,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/interval.svg",
+    "sha256": "4103ab10842d3943b9350fc4fea0fd4d9e5c42fdfa07c376bbb9ddfd15a8e61a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e6555b8c953d38819953e5fb5137f5441689b33aac10e61887e38dc424bf65c5.gz",
+    "bytes": 464,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/line.members",
+    "sha256": "e6555b8c953d38819953e5fb5137f5441689b33aac10e61887e38dc424bf65c5"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/bcf8fd0aef44423a0db1a3e978285f74430e3638a7705c08090a2b8d6667f549.gz",
+    "bytes": 14608,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/line.metadata",
+    "sha256": "bcf8fd0aef44423a0db1a3e978285f74430e3638a7705c08090a2b8d6667f549"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9312efc269708a330426734093fb4a45f765af037d3dbf943b98ba85ce03a05b.gz",
+    "bytes": 80631,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/line.png",
+    "sha256": "9312efc269708a330426734093fb4a45f765af037d3dbf943b98ba85ce03a05b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/82d89d4dda4658636847f982344cf1188759ed8b7ff19c73b483f437505eb88b.gz",
+    "bytes": 12031,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/line.scene",
+    "sha256": "82d89d4dda4658636847f982344cf1188759ed8b7ff19c73b483f437505eb88b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e2007485fa0cc74893ab604213e028373ebbed3ddbae86f9825d81d5b666f21f.gz",
+    "bytes": 72,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/line.supports",
+    "sha256": "e2007485fa0cc74893ab604213e028373ebbed3ddbae86f9825d81d5b666f21f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d66b4ac3f5881dc32fd9fa24285a5866b198ed6e1f90729e4204394fb81a3e39.gz",
+    "bytes": 26072,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/line.svg",
+    "sha256": "d66b4ac3f5881dc32fd9fa24285a5866b198ed6e1f90729e4204394fb81a3e39"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/1268497eedbe7ca324373640c0205bb3baae86edf8f3cef83417c46096ca55ee.gz",
+    "bytes": 464,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/scatter.members",
+    "sha256": "1268497eedbe7ca324373640c0205bb3baae86edf8f3cef83417c46096ca55ee"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/aa7ef054a184c74dc79942f9d44c7763a28a360447bc933b12a17a541a61f918.gz",
+    "bytes": 8144,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/scatter.metadata",
+    "sha256": "aa7ef054a184c74dc79942f9d44c7763a28a360447bc933b12a17a541a61f918"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/6fb9e7516fd24fec8c1729c0fb8a0b45b6f3ef98c1157b98c0f3c1bbe9b2931d.gz",
+    "bytes": 81912,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/scatter.png",
+    "sha256": "6fb9e7516fd24fec8c1729c0fb8a0b45b6f3ef98c1157b98c0f3c1bbe9b2931d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9b4825f72da206a6b016067b51b66013c55f9725877baf70ffcb6575644fc3d9.gz",
+    "bytes": 12031,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/scatter.scene",
+    "sha256": "9b4825f72da206a6b016067b51b66013c55f9725877baf70ffcb6575644fc3d9"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/4103ab10842d3943b9350fc4fea0fd4d9e5c42fdfa07c376bbb9ddfd15a8e61a.gz",
+    "bytes": 27486,
+    "path": "target/task-tmp/temporal-dense-continuation/python-final/scatter.svg",
+    "sha256": "4103ab10842d3943b9350fc4fea0fd4d9e5c42fdfa07c376bbb9ddfd15a8e61a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e195517638836dc1e226f78fde9d74b746bc24024b443bbcebc1f6fae465e4f9.gz",
+    "bytes": 34081,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json",
+    "sha256": "e195517638836dc1e226f78fde9d74b746bc24024b443bbcebc1f6fae465e4f9"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/94783c427aeb5b95f0a407443199f7462c8706f409107e86bf851d674822ec4c.gz",
+    "bytes": 165934,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/captures.json",
+    "sha256": "94783c427aeb5b95f0a407443199f7462c8706f409107e86bf851d674822ec4c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f5ec5542807779b9e347bf461657c3525753ba2510e1f4eb2a2de67ae6383415.gz",
+    "bytes": 3734584,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-0.html",
+    "sha256": "f5ec5542807779b9e347bf461657c3525753ba2510e1f4eb2a2de67ae6383415"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/cdae125f09dffbb580484834f16a5e1de5641fad4515fc041b67df19fb1980b9.gz",
+    "bytes": 2423,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-0.offline.png",
+    "sha256": "cdae125f09dffbb580484834f16a5e1de5641fad4515fc041b67df19fb1980b9"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/5268eff5a73b52085224948804ee7689467cd84812467fb10d3d1825baa1ce9c.gz",
+    "bytes": 116644,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-0.painter",
+    "sha256": "5268eff5a73b52085224948804ee7689467cd84812467fb10d3d1825baa1ce9c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/a95fafc8c4cad9a26cad0c3a20f3e7bc2390191d66dafd7726cd32d72809c59a.gz",
+    "bytes": 24160,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-0.png",
+    "sha256": "a95fafc8c4cad9a26cad0c3a20f3e7bc2390191d66dafd7726cd32d72809c59a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d04633e2c2e0e0bbddf18f706a73122974f64922bfdd6c68b29523871406c4bf.gz",
+    "bytes": 540984,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-0.scene",
+    "sha256": "d04633e2c2e0e0bbddf18f706a73122974f64922bfdd6c68b29523871406c4bf"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f609e4c8c251b65539682b3ab7bac6e04b2890a66e99c980f16afcb42fe51375.gz",
+    "bytes": 167512,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-0.svg",
+    "sha256": "f609e4c8c251b65539682b3ab7bac6e04b2890a66e99c980f16afcb42fe51375"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e8693a06e2b7062de2397691dcc3bfcee049ca27b8906919ebb59e5ddc280080.gz",
+    "bytes": 10568,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-0.xyfg",
+    "sha256": "e8693a06e2b7062de2397691dcc3bfcee049ca27b8906919ebb59e5ddc280080"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/fd63ed851137c71a7157e5994a506b365848c7971fcc1669e6d7afafce512c3f.gz",
+    "bytes": 3471916,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-1.html",
+    "sha256": "fd63ed851137c71a7157e5994a506b365848c7971fcc1669e6d7afafce512c3f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/aea817bb06f937d7ef0797e465b2fda598ebb601fde7d53b40cbc48285f95aaa.gz",
+    "bytes": 2405,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-1.offline.png",
+    "sha256": "aea817bb06f937d7ef0797e465b2fda598ebb601fde7d53b40cbc48285f95aaa"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/998126d40ad27bd6aa6b193fda5475d88696dbba3914a47c5550147daba8d0c1.gz",
+    "bytes": 82148,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-1.painter",
+    "sha256": "998126d40ad27bd6aa6b193fda5475d88696dbba3914a47c5550147daba8d0c1"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c320ac9774715d9eea152b2d7be782191901354beb41eb8bf3c59ce9297540fd.gz",
+    "bytes": 26312,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-1.png",
+    "sha256": "c320ac9774715d9eea152b2d7be782191901354beb41eb8bf3c59ce9297540fd"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/cb7d6ddf27a0079a306fde11063e4a3e7a7274edc2d78cdfe809f73dce03bca2.gz",
+    "bytes": 377808,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-1.scene",
+    "sha256": "cb7d6ddf27a0079a306fde11063e4a3e7a7274edc2d78cdfe809f73dce03bca2"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/ea9e1632aac417be003708d571afd8ac8124045670571ec27af71be57b0d4690.gz",
+    "bytes": 128427,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-1.svg",
+    "sha256": "ea9e1632aac417be003708d571afd8ac8124045670571ec27af71be57b0d4690"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c335fd81a6996bd07558ed1cc00316f83b0d7ba45502b8651cb8327891ab9a96.gz",
+    "bytes": 11016,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-1.xyfg",
+    "sha256": "c335fd81a6996bd07558ed1cc00316f83b0d7ba45502b8651cb8327891ab9a96"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/0244cd9467785cd7f72e2c2c49c59b1691ef67ebbeb662c4bc3a93a2c413ead7.gz",
+    "bytes": 3739608,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-2.html",
+    "sha256": "0244cd9467785cd7f72e2c2c49c59b1691ef67ebbeb662c4bc3a93a2c413ead7"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/699cd80ff2cb323a5dffc575cc4b686f2edd3c9ca56bb8ffe17e847f4c25e167.gz",
+    "bytes": 2600,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-2.offline.png",
+    "sha256": "699cd80ff2cb323a5dffc575cc4b686f2edd3c9ca56bb8ffe17e847f4c25e167"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/fb7537a77ce69e95e18ca91ad4c17feb1db93a2d7ab5bbc4f1793876bb9cb754.gz",
+    "bytes": 117620,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-2.painter",
+    "sha256": "fb7537a77ce69e95e18ca91ad4c17feb1db93a2d7ab5bbc4f1793876bb9cb754"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/fca2e73bf7a7350b9293a6a3d284329facf9439d1a8dc7f2500ffafa4c6dd8c0.gz",
+    "bytes": 26380,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-2.png",
+    "sha256": "fca2e73bf7a7350b9293a6a3d284329facf9439d1a8dc7f2500ffafa4c6dd8c0"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/2d7cef57a609889f2733d0f4a5241a92c351d397c5f7e4a10c982d1a1245b9e7.gz",
+    "bytes": 543176,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-2.scene",
+    "sha256": "2d7cef57a609889f2733d0f4a5241a92c351d397c5f7e4a10c982d1a1245b9e7"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e1bab96a3a0d3d9b6c9d5d17419f34bf4fa78621d5dddac6284ee95af7e7c840.gz",
+    "bytes": 170911,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-2.svg",
+    "sha256": "e1bab96a3a0d3d9b6c9d5d17419f34bf4fa78621d5dddac6284ee95af7e7c840"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e8713944e7f0981d45d94cec71c78b5dc45aac93efd4baf8235c6c91ccd3e6fa.gz",
+    "bytes": 10968,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-2.xyfg",
+    "sha256": "e8713944e7f0981d45d94cec71c78b5dc45aac93efd4baf8235c6c91ccd3e6fa"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/4c93f2056acc619a23a6a14b5130a818a28f805142a5a1716476768f15473bdd.gz",
+    "bytes": 3734488,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-3.html",
+    "sha256": "4c93f2056acc619a23a6a14b5130a818a28f805142a5a1716476768f15473bdd"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/cdae125f09dffbb580484834f16a5e1de5641fad4515fc041b67df19fb1980b9.gz",
+    "bytes": 2423,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-3.offline.png",
+    "sha256": "cdae125f09dffbb580484834f16a5e1de5641fad4515fc041b67df19fb1980b9"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/5268eff5a73b52085224948804ee7689467cd84812467fb10d3d1825baa1ce9c.gz",
+    "bytes": 116644,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-3.painter",
+    "sha256": "5268eff5a73b52085224948804ee7689467cd84812467fb10d3d1825baa1ce9c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/81ddab6146dda61213221e00393ec8da423d8f478ea775330da0539dbcad59dc.gz",
+    "bytes": 24064,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-3.png",
+    "sha256": "81ddab6146dda61213221e00393ec8da423d8f478ea775330da0539dbcad59dc"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d04633e2c2e0e0bbddf18f706a73122974f64922bfdd6c68b29523871406c4bf.gz",
+    "bytes": 540984,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-3.scene",
+    "sha256": "d04633e2c2e0e0bbddf18f706a73122974f64922bfdd6c68b29523871406c4bf"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/38f9c215f1f049f39d01f537eb479a6d8a4f628527bb6aec5e8fdb678e74823b.gz",
+    "bytes": 167416,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-3.svg",
+    "sha256": "38f9c215f1f049f39d01f537eb479a6d8a4f628527bb6aec5e8fdb678e74823b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f64f3e91b8d4aec25a55bd76b04e3f1927ed2e1c525ad439797086e9e782fbf6.gz",
+    "bytes": 10520,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-3.xyfg",
+    "sha256": "f64f3e91b8d4aec25a55bd76b04e3f1927ed2e1c525ad439797086e9e782fbf6"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/79b65c83fac9b31743925d4bbfc8bf23a4c4107dd943fe7d540914f3dd9b8974.gz",
+    "bytes": 3150012,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-4.html",
+    "sha256": "79b65c83fac9b31743925d4bbfc8bf23a4c4107dd943fe7d540914f3dd9b8974"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/a100e4b42b509f9ed9135fd0dcf4f1329d0a2cf4a6e460ba9f36150f4fa5b8a2.gz",
+    "bytes": 2233,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-4.offline.png",
+    "sha256": "a100e4b42b509f9ed9135fd0dcf4f1329d0a2cf4a6e460ba9f36150f4fa5b8a2"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/85d0e198a8d119c79a02d0a58bd589f0a6e84047e452caf576636d566d575604.gz",
+    "bytes": 39236,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-4.painter",
+    "sha256": "85d0e198a8d119c79a02d0a58bd589f0a6e84047e452caf576636d566d575604"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/a7f96ab19df84fce54741c9c393df5e5714ef8fe38797939ec687af76a0ba741.gz",
+    "bytes": 22209,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-4.png",
+    "sha256": "a7f96ab19df84fce54741c9c393df5e5714ef8fe38797939ec687af76a0ba741"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9f4d95d013a7bb85630b49fff7111f8bb305f85e994d5994b08e44fefccea86c.gz",
+    "bytes": 180648,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-4.scene",
+    "sha256": "9f4d95d013a7bb85630b49fff7111f8bb305f85e994d5994b08e44fefccea86c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/16fd961928b2dfe5b4229eafd93b86435ea49a05a5311a29dbe6f69bbb58556a.gz",
+    "bytes": 67189,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-4.svg",
+    "sha256": "16fd961928b2dfe5b4229eafd93b86435ea49a05a5311a29dbe6f69bbb58556a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c2d4a851b9a209fdbb4b0152141b89581ff94b6077ab6f30d5c5890810ae8545.gz",
+    "bytes": 10112,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-4.xyfg",
+    "sha256": "c2d4a851b9a209fdbb4b0152141b89581ff94b6077ab6f30d5c5890810ae8545"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/a95b6c69b0cd08f261921f68f59562424a088ad496f3e5f6279cc14af7e4d1df.gz",
+    "bytes": 3471916,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-5.html",
+    "sha256": "a95b6c69b0cd08f261921f68f59562424a088ad496f3e5f6279cc14af7e4d1df"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/aea817bb06f937d7ef0797e465b2fda598ebb601fde7d53b40cbc48285f95aaa.gz",
+    "bytes": 2405,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-5.offline.png",
+    "sha256": "aea817bb06f937d7ef0797e465b2fda598ebb601fde7d53b40cbc48285f95aaa"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/998126d40ad27bd6aa6b193fda5475d88696dbba3914a47c5550147daba8d0c1.gz",
+    "bytes": 82148,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-5.painter",
+    "sha256": "998126d40ad27bd6aa6b193fda5475d88696dbba3914a47c5550147daba8d0c1"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/ed94a25710ba2f939e8784e0cc32a35e32f120e439243ef48ce88ee98b56bdfd.gz",
+    "bytes": 26312,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-5.png",
+    "sha256": "ed94a25710ba2f939e8784e0cc32a35e32f120e439243ef48ce88ee98b56bdfd"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/cb7d6ddf27a0079a306fde11063e4a3e7a7274edc2d78cdfe809f73dce03bca2.gz",
+    "bytes": 377808,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-5.scene",
+    "sha256": "cb7d6ddf27a0079a306fde11063e4a3e7a7274edc2d78cdfe809f73dce03bca2"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/3594d22424d19ec1d7a77b646f63ec0ea93e1a893cd63936929c266a7615d9b0.gz",
+    "bytes": 128427,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-5.svg",
+    "sha256": "3594d22424d19ec1d7a77b646f63ec0ea93e1a893cd63936929c266a7615d9b0"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/cfc158212a4c39d94be153b811800eaa58cf1309fb2f967c9ad8b83ec429733e.gz",
+    "bytes": 11016,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/frame-5.xyfg",
+    "sha256": "cfc158212a4c39d94be153b811800eaa58cf1309fb2f967c9ad8b83ec429733e"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9f2178f8f5545d604b2f21ac5da4fd6172c35bebc9d31e12fa2fe854b81ecbd1.gz",
+    "bytes": 2310,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/live-0.png",
+    "sha256": "9f2178f8f5545d604b2f21ac5da4fd6172c35bebc9d31e12fa2fe854b81ecbd1"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/ca6b1ced92e0b66b4987bd48392ea80bae7b63474533a9ab7632db1a63261a0b.gz",
+    "bytes": 2382,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/live-1.png",
+    "sha256": "ca6b1ced92e0b66b4987bd48392ea80bae7b63474533a9ab7632db1a63261a0b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9b3e7c71687d2c54edcde60f2f79e0f68a8998f3fb8900ecb0e5f58edadfe38d.gz",
+    "bytes": 2506,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/live-2.png",
+    "sha256": "9b3e7c71687d2c54edcde60f2f79e0f68a8998f3fb8900ecb0e5f58edadfe38d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9f2178f8f5545d604b2f21ac5da4fd6172c35bebc9d31e12fa2fe854b81ecbd1.gz",
+    "bytes": 2310,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/live-3.png",
+    "sha256": "9f2178f8f5545d604b2f21ac5da4fd6172c35bebc9d31e12fa2fe854b81ecbd1"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f457903ade13efd7348d739a6f46a06fc5499d6bfe8fc6a8a7c009723f0f0d42.gz",
+    "bytes": 1392,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/live-4.png",
+    "sha256": "f457903ade13efd7348d739a6f46a06fc5499d6bfe8fc6a8a7c009723f0f0d42"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/ca6b1ced92e0b66b4987bd48392ea80bae7b63474533a9ab7632db1a63261a0b.gz",
+    "bytes": 2382,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/live-5.png",
+    "sha256": "ca6b1ced92e0b66b4987bd48392ea80bae7b63474533a9ab7632db1a63261a0b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d7c063f58c442c3d15f105bbbab2408639ab28093dc54086e0562843a7c37486.gz",
+    "bytes": 33,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/report.json",
+    "sha256": "d7c063f58c442c3d15f105bbbab2408639ab28093dc54086e0562843a7c37486"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e555717ea476e90a279279978498d4227ca3fa61b9e5b0f7d7d73fdc0f4c20bd.gz",
+    "bytes": 419066,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/wire.json",
+    "sha256": "e555717ea476e90a279279978498d4227ca3fa61b9e5b0f7d7d73fdc0f4c20bd"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/1377e7bdf4a51739bb55e5b7536589216c7f0ec528a74331a3a94dcc7b05c682.gz",
+    "bytes": 33949645,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.aggregate-graph/worker.json",
+    "sha256": "1377e7bdf4a51739bb55e5b7536589216c7f0ec528a74331a3a94dcc7b05c682"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+    "bytes": 11369,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.esm-malformed-inline-artifact.png",
+    "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+    "bytes": 11369,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.esm-missing-inline-artifact.png",
+    "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66.gz",
+    "bytes": 11315,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.esm-missing-retained-source.png",
+    "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/891547157cfad086b753787e354bd4dceba5967e2d74bc49cc294e85e32287b6.gz",
+    "bytes": 3507095,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/inline-worker-png.html",
+    "sha256": "891547157cfad086b753787e354bd4dceba5967e2d74bc49cc294e85e32287b6"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d89bb74361e69f92bfecc8aa8fe0eeda2da2e77112e30590c10f092dcad0e36d.gz",
+    "bytes": 1050,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/report.json",
+    "sha256": "d89bb74361e69f92bfecc8aa8fe0eeda2da2e77112e30590c10f092dcad0e36d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d11e521d6f430eefdfbdfe2d19591061d64be9c54a0529142cb95f9501a27d57.gz",
+    "bytes": 4037040,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-0.html",
+    "sha256": "d11e521d6f430eefdfbdfe2d19591061d64be9c54a0529142cb95f9501a27d57"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/73c2bb400eb58aa2529414e81c883ebac0d38eff7b507546ca477181629bcd0d.gz",
+    "bytes": 5440,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-0.offline.png",
+    "sha256": "73c2bb400eb58aa2529414e81c883ebac0d38eff7b507546ca477181629bcd0d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/6708e63edaaf57c53b448567133bca28a2e9924ec2cca7987eac7c8ac9a1ee08.gz",
+    "bytes": 157260,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-0.painter",
+    "sha256": "6708e63edaaf57c53b448567133bca28a2e9924ec2cca7987eac7c8ac9a1ee08"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/b67bfd6ea4426ebef754c8003fbd3cc632a763777baf2f7f9c85f41abce1fdc5.gz",
+    "bytes": 39129,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-0.png",
+    "sha256": "b67bfd6ea4426ebef754c8003fbd3cc632a763777baf2f7f9c85f41abce1fdc5"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/299251add870696c72f21a545c291f77ab278b2c7e47fd15e90c2a654f50fb0a.gz",
+    "bytes": 4037040,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-0.scale2.html",
+    "sha256": "299251add870696c72f21a545c291f77ab278b2c7e47fd15e90c2a654f50fb0a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/1476fc3ddd5181a37489bdf7aaf604cbea6b8508248335810bded6ed261da0d9.gz",
+    "bytes": 9246,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-0.scale2.offline.png",
+    "sha256": "1476fc3ddd5181a37489bdf7aaf604cbea6b8508248335810bded6ed261da0d9"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c729946f31c20d3ddd67ed5037cea8b833a102f5d144c867eb39727572fff81c.gz",
+    "bytes": 60346,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-0.scale2.png",
+    "sha256": "c729946f31c20d3ddd67ed5037cea8b833a102f5d144c867eb39727572fff81c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/a9c38d638994ed878589264f5d624a95589dc199f0fee0153a22f557658fceaf.gz",
+    "bytes": 725400,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-0.scene",
+    "sha256": "a9c38d638994ed878589264f5d624a95589dc199f0fee0153a22f557658fceaf"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9273505826e53b5721c9b1a7247a75cd66f7852d127bd7f6869f1767fb9cb34b.gz",
+    "bytes": 221391,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-0.svg",
+    "sha256": "9273505826e53b5721c9b1a7247a75cd66f7852d127bd7f6869f1767fb9cb34b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/b4c11af9ab5323170a01cc97ae5bc30422c5597c532d971a201a623e2714d142.gz",
+    "bytes": 11776,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-0.xyfg",
+    "sha256": "b4c11af9ab5323170a01cc97ae5bc30422c5597c532d971a201a623e2714d142"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/a13c632fae28b8ebe62892f00416fd85eaa2e51848256556bb6d23ba303efb95.gz",
+    "bytes": 3214492,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-1.html",
+    "sha256": "a13c632fae28b8ebe62892f00416fd85eaa2e51848256556bb6d23ba303efb95"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/29745f349e29c9071fa9eee966709b8dd6de4bcc19bd1f38b61c10406bba5c34.gz",
+    "bytes": 4555,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-1.offline.png",
+    "sha256": "29745f349e29c9071fa9eee966709b8dd6de4bcc19bd1f38b61c10406bba5c34"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e13dd7515a42bb0b5c1c77b5a82a3bfeed988291e2e002fc68833102bc589b8f.gz",
+    "bytes": 48396,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-1.painter",
+    "sha256": "e13dd7515a42bb0b5c1c77b5a82a3bfeed988291e2e002fc68833102bc589b8f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d186b71b93393ada67ac812f51c228c21795988f97baf7e7944a7ab605762d92.gz",
+    "bytes": 38002,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-1.png",
+    "sha256": "d186b71b93393ada67ac812f51c228c21795988f97baf7e7944a7ab605762d92"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/01d8b3c3b8f5f229c85995d2344e6e92b790aa6d5ea19f3077e9669718a86358.gz",
+    "bytes": 3214492,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-1.scale2.html",
+    "sha256": "01d8b3c3b8f5f229c85995d2344e6e92b790aa6d5ea19f3077e9669718a86358"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/ee6d49aa7e6d0e84111358bd58beac6663a37d987af1d86239cb4286a8881d91.gz",
+    "bytes": 7340,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-1.scale2.offline.png",
+    "sha256": "ee6d49aa7e6d0e84111358bd58beac6663a37d987af1d86239cb4286a8881d91"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/311b2566b392f0a59c6362f9918c077bcaca4fd25ec8e45fa5fad95c99136d95.gz",
+    "bytes": 55097,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-1.scale2.png",
+    "sha256": "311b2566b392f0a59c6362f9918c077bcaca4fd25ec8e45fa5fad95c99136d95"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/4a56d93214ec747ad9eccbba82577d3f6c5e84f91e8f4867f135c4fe1760f868.gz",
+    "bytes": 217352,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-1.scene",
+    "sha256": "4a56d93214ec747ad9eccbba82577d3f6c5e84f91e8f4867f135c4fe1760f868"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/2018c16850ab6f20c9589ffa2e8776a99d994149aff503e0ae2758a17415f5ff.gz",
+    "bytes": 85689,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-1.svg",
+    "sha256": "2018c16850ab6f20c9589ffa2e8776a99d994149aff503e0ae2758a17415f5ff"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/a9c14ae37279f8d5cd6b17cdd750b8ccaca14b70eb9eb093cbba0f895d00afbd.gz",
+    "bytes": 11776,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-1.xyfg",
+    "sha256": "a9c14ae37279f8d5cd6b17cdd750b8ccaca14b70eb9eb093cbba0f895d00afbd"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c88fd2e66aebff5670af6378ec0c6d3b1488175f1f5736cbfbdbb741d386b714.gz",
+    "bytes": 3232380,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-2.html",
+    "sha256": "c88fd2e66aebff5670af6378ec0c6d3b1488175f1f5736cbfbdbb741d386b714"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/35daa48445de6c4f41329b92064d60af98ea443d785ac93fe4c933a36f27964b.gz",
+    "bytes": 4983,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-2.offline.png",
+    "sha256": "35daa48445de6c4f41329b92064d60af98ea443d785ac93fe4c933a36f27964b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c92c5718833e933b683f16353b3041a9e7e524cc57975e520b62eb4a60ffd5fd.gz",
+    "bytes": 50556,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-2.painter",
+    "sha256": "c92c5718833e933b683f16353b3041a9e7e524cc57975e520b62eb4a60ffd5fd"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/379b4dac23080c2e178700d3644f98d89bcfa59f85133dc1861a8b11ce0e50e8.gz",
+    "bytes": 39207,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-2.png",
+    "sha256": "379b4dac23080c2e178700d3644f98d89bcfa59f85133dc1861a8b11ce0e50e8"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/89b18cc71c487805b18e6ca2f4fe103007070da1051245112ad24e749a2cc1d2.gz",
+    "bytes": 3232380,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-2.scale2.html",
+    "sha256": "89b18cc71c487805b18e6ca2f4fe103007070da1051245112ad24e749a2cc1d2"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/2cdf6eac8be3143ea2a72141ca6f3509a9cc81837d0b6d45ecf95d94142060b8.gz",
+    "bytes": 8215,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-2.scale2.offline.png",
+    "sha256": "2cdf6eac8be3143ea2a72141ca6f3509a9cc81837d0b6d45ecf95d94142060b8"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/40999463b6d14b0306c598ea3f50a6f3ee445a05122c63f2ea6a95c8eb4c4459.gz",
+    "bytes": 59901,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-2.scale2.png",
+    "sha256": "40999463b6d14b0306c598ea3f50a6f3ee445a05122c63f2ea6a95c8eb4c4459"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/19c425b85267e5f5d5308503947928fcd8fb2456c0be0a19fbbe304e54cc8d5f.gz",
+    "bytes": 228608,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-2.scene",
+    "sha256": "19c425b85267e5f5d5308503947928fcd8fb2456c0be0a19fbbe304e54cc8d5f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e78330a33e69b77cb86c16cd34970155330265cef67f405d93dce59b74220482.gz",
+    "bytes": 87468,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-2.svg",
+    "sha256": "e78330a33e69b77cb86c16cd34970155330265cef67f405d93dce59b74220482"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e3251c38c89b3738fd9d624b1808a5878f389012965885b62b3cc6ef90e14a43.gz",
+    "bytes": 11776,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-2.xyfg",
+    "sha256": "e3251c38c89b3738fd9d624b1808a5878f389012965885b62b3cc6ef90e14a43"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/6b3874cc3cb0580b2b1953755df9d0059bdbb5e5d4541fcfd12d85181bd8a98a.gz",
+    "bytes": 3222236,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-3.html",
+    "sha256": "6b3874cc3cb0580b2b1953755df9d0059bdbb5e5d4541fcfd12d85181bd8a98a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/7f8a10366e0af63f0ae542f733305444dcbe4064246386a4a2a71d9e1b245a00.gz",
+    "bytes": 5086,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-3.offline.png",
+    "sha256": "7f8a10366e0af63f0ae542f733305444dcbe4064246386a4a2a71d9e1b245a00"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/43a727ba17d01ce85f4366ff7d52302e1e0b33dfe958e2dc0ae548144dbd010c.gz",
+    "bytes": 49332,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-3.painter",
+    "sha256": "43a727ba17d01ce85f4366ff7d52302e1e0b33dfe958e2dc0ae548144dbd010c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/0272bc26370eee3a35679d01b373d21c49f5cf3a0466490b97c8c68c1c7cdf0f.gz",
+    "bytes": 38994,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-3.png",
+    "sha256": "0272bc26370eee3a35679d01b373d21c49f5cf3a0466490b97c8c68c1c7cdf0f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9b0a55b74a03426f34a4f3020ef32ec8f186324f5f7f5e00796eb521cb653181.gz",
+    "bytes": 3222236,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-3.scale2.html",
+    "sha256": "9b0a55b74a03426f34a4f3020ef32ec8f186324f5f7f5e00796eb521cb653181"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f54bd830f98d1012799bd1dd4d6817b185663e93f980c7dd5624a29e32302b91.gz",
+    "bytes": 8474,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-3.scale2.offline.png",
+    "sha256": "f54bd830f98d1012799bd1dd4d6817b185663e93f980c7dd5624a29e32302b91"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/37d1ec1d4e86b36fd2081b9ed5171dc25be425b4c2abbfe1e35f2fc20188e0f9.gz",
+    "bytes": 58510,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-3.scale2.png",
+    "sha256": "37d1ec1d4e86b36fd2081b9ed5171dc25be425b4c2abbfe1e35f2fc20188e0f9"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f1cb4edecb943da69a3ad2bad3e65fb578c73e6e7145ecff35d81d04fe01ce99.gz",
+    "bytes": 222224,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-3.scene",
+    "sha256": "f1cb4edecb943da69a3ad2bad3e65fb578c73e6e7145ecff35d81d04fe01ce99"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/447ee495b80b862e9e25026037eba5176e42fb9081903395581c025ee5d9e187.gz",
+    "bytes": 86672,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-3.svg",
+    "sha256": "447ee495b80b862e9e25026037eba5176e42fb9081903395581c025ee5d9e187"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/847f2c92619c051318531cddde49d0dcceb781ab11e6107ab18c2c8a8f442ed7.gz",
+    "bytes": 11776,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-3.xyfg",
+    "sha256": "847f2c92619c051318531cddde49d0dcceb781ab11e6107ab18c2c8a8f442ed7"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/8dc34e4f4c8cfde7fd7d1711d134361f15a2dc26175bcfb342a99a4f1aab98e6.gz",
+    "bytes": 3218448,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-4.html",
+    "sha256": "8dc34e4f4c8cfde7fd7d1711d134361f15a2dc26175bcfb342a99a4f1aab98e6"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/469dab77316ca8cc544910eca3e88690bc6b4c8870e69f1214ec58ef3d11657e.gz",
+    "bytes": 5046,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-4.offline.png",
+    "sha256": "469dab77316ca8cc544910eca3e88690bc6b4c8870e69f1214ec58ef3d11657e"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f7334fc326de07bfa8aeec957274cd81a881299a06ea3eb796397ad07b29ecfe.gz",
+    "bytes": 48828,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-4.painter",
+    "sha256": "f7334fc326de07bfa8aeec957274cd81a881299a06ea3eb796397ad07b29ecfe"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d8c59094e5dedf1d6ba9dda518881b6aa408782892aa68f95527c7cae490a1e0.gz",
+    "bytes": 38405,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-4.png",
+    "sha256": "d8c59094e5dedf1d6ba9dda518881b6aa408782892aa68f95527c7cae490a1e0"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/dce766b5532e4c569c28c6d2c2029f8bcdd5fc57ac03ef985d427067796ce01b.gz",
+    "bytes": 3218448,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-4.scale2.html",
+    "sha256": "dce766b5532e4c569c28c6d2c2029f8bcdd5fc57ac03ef985d427067796ce01b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/fadf4294cf55ddc21687f29ccff995650b6a19bea1f4b95401fe460f61b729da.gz",
+    "bytes": 8125,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-4.scale2.offline.png",
+    "sha256": "fadf4294cf55ddc21687f29ccff995650b6a19bea1f4b95401fe460f61b729da"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9c00fdaadaeb52f6c1d4fbbea2568e46b2300589f497a55853ad791092a1283b.gz",
+    "bytes": 57404,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-4.scale2.png",
+    "sha256": "9c00fdaadaeb52f6c1d4fbbea2568e46b2300589f497a55853ad791092a1283b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/4b75b363d3abfe8633de8e4a372dcb06ed26a8317483f9a630b20ad0aab4303f.gz",
+    "bytes": 219888,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-4.scene",
+    "sha256": "4b75b363d3abfe8633de8e4a372dcb06ed26a8317483f9a630b20ad0aab4303f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/fb7a53aa65f6d3e3b1304e62c1f0b9a5d93346bbda90d65eeddd2b8852155bc1.gz",
+    "bytes": 86457,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-4.svg",
+    "sha256": "fb7a53aa65f6d3e3b1304e62c1f0b9a5d93346bbda90d65eeddd2b8852155bc1"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/7b1b26c8b032a940ab6c1bd93c46e94c098c1c7e4fac6e57da9a4433de4ba084.gz",
+    "bytes": 11776,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-4.xyfg",
+    "sha256": "7b1b26c8b032a940ab6c1bd93c46e94c098c1c7e4fac6e57da9a4433de4ba084"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/ce0c4f14b8b49fefb6af0d690497f83771442935406e597f7cbf62f9c807ca8c.gz",
+    "bytes": 3234120,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-5-parent.html",
+    "sha256": "ce0c4f14b8b49fefb6af0d690497f83771442935406e597f7cbf62f9c807ca8c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c8d28893649e32c1c892a98edd5fd520d2b0a81d05d722615fe0bcd11ace17de.gz",
+    "bytes": 5273,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-5-parent.offline.png",
+    "sha256": "c8d28893649e32c1c892a98edd5fd520d2b0a81d05d722615fe0bcd11ace17de"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/12d70a96c1d14db02e3c8e822a27348c0952e9e53f0e4b9e4d4425b993f2c682.gz",
+    "bytes": 51068,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-5-parent.painter",
+    "sha256": "12d70a96c1d14db02e3c8e822a27348c0952e9e53f0e4b9e4d4425b993f2c682"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/329003c487a484c6dd1a6ab70139847ca1cab87fdee1c32aed62a0c5facd3fbb.gz",
+    "bytes": 42961,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-5-parent.png",
+    "sha256": "329003c487a484c6dd1a6ab70139847ca1cab87fdee1c32aed62a0c5facd3fbb"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/74e3c0086e67ed7b6d9590e73dac449c87fda28b49a15bcdcc5c43499f19577a.gz",
+    "bytes": 3234120,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-5-parent.scale2.html",
+    "sha256": "74e3c0086e67ed7b6d9590e73dac449c87fda28b49a15bcdcc5c43499f19577a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/edefe2a9bcc24edaebfa626b6e0249334975969a91d59488c51813a6b2609cc1.gz",
+    "bytes": 9175,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-5-parent.scale2.offline.png",
+    "sha256": "edefe2a9bcc24edaebfa626b6e0249334975969a91d59488c51813a6b2609cc1"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e857ac26fad4bba7bc113ff9065d1973911e579038887781014d839265ede569.gz",
+    "bytes": 67944,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-5-parent.scale2.png",
+    "sha256": "e857ac26fad4bba7bc113ff9065d1973911e579038887781014d839265ede569"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e45efa91f78d3471c5dba207002668eb2cb2d9e2173fa488d58000f0704a5f60.gz",
+    "bytes": 229520,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-5-parent.scene",
+    "sha256": "e45efa91f78d3471c5dba207002668eb2cb2d9e2173fa488d58000f0704a5f60"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c4643889bc98973b84460e63a64b5d112ebab9505f96b90970e4405c94182e65.gz",
+    "bytes": 87092,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-5-parent.svg",
+    "sha256": "c4643889bc98973b84460e63a64b5d112ebab9505f96b90970e4405c94182e65"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/011ddcf0661e7cd809096d6244d71320ef0b7aeee754e488c9aa6bbf62a3d2f0.gz",
+    "bytes": 11696,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-5-parent.xyfg",
+    "sha256": "011ddcf0661e7cd809096d6244d71320ef0b7aeee754e488c9aa6bbf62a3d2f0"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9867877d190de33eced936bea1c0abac1e69aace8160f6e81f40de0b1908720a.gz",
+    "bytes": 3233680,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-5.html",
+    "sha256": "9867877d190de33eced936bea1c0abac1e69aace8160f6e81f40de0b1908720a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/3d79b707c17cebd10d708c9493ecb6346c4710b5b55bb419f19ab12fafe4f841.gz",
+    "bytes": 5197,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-5.offline.png",
+    "sha256": "3d79b707c17cebd10d708c9493ecb6346c4710b5b55bb419f19ab12fafe4f841"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/61cb63d79bbd157d0e35f6c5d98ff802e2b5120474e3655e62ce7900e02aca12.gz",
+    "bytes": 50844,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-5.painter",
+    "sha256": "61cb63d79bbd157d0e35f6c5d98ff802e2b5120474e3655e62ce7900e02aca12"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f02d3429d83cd3166bdc9115f437b63cb68fc88a8a6b937dafe747652d5079be.gz",
+    "bytes": 38760,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-5.png",
+    "sha256": "f02d3429d83cd3166bdc9115f437b63cb68fc88a8a6b937dafe747652d5079be"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/1fd45930798b007b8eeefe1335a6fbc362049037d2a033d12f7fa10994d19750.gz",
+    "bytes": 3233680,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-5.scale2.html",
+    "sha256": "1fd45930798b007b8eeefe1335a6fbc362049037d2a033d12f7fa10994d19750"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/21d20ddeca24a66bedf4897485c8004c103692f4ab152b7e44361d01ce32ada3.gz",
+    "bytes": 8720,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-5.scale2.offline.png",
+    "sha256": "21d20ddeca24a66bedf4897485c8004c103692f4ab152b7e44361d01ce32ada3"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/31ed8579a8d863bad4116a35fba90ca23a4ef1312b7d393695e9cfec1147bf91.gz",
+    "bytes": 59214,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-5.scale2.png",
+    "sha256": "31ed8579a8d863bad4116a35fba90ca23a4ef1312b7d393695e9cfec1147bf91"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/986b036c7ac0f009f07b74defd82cba2db13e7a5ee379522cb78b23f61c7f028.gz",
+    "bytes": 229296,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-5.scene",
+    "sha256": "986b036c7ac0f009f07b74defd82cba2db13e7a5ee379522cb78b23f61c7f028"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/b6c9bde64eaf0b1eb673bdc8b37431a8e24ac9fe77f5fb854929694d76ec39ea.gz",
+    "bytes": 88503,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-5.svg",
+    "sha256": "b6c9bde64eaf0b1eb673bdc8b37431a8e24ac9fe77f5fb854929694d76ec39ea"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/0fb41ff8b658a4fb6ea6df11af8c02b64c61b83857289f1f40e8fc2e43a27106.gz",
+    "bytes": 11776,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.frozen-graph/shape-5.xyfg",
+    "sha256": "0fb41ff8b658a4fb6ea6df11af8c02b64c61b83857289f1f40e8fc2e43a27106"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+    "bytes": 11369,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.iife-malformed-inline-artifact.png",
+    "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+    "bytes": 11369,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.iife-missing-inline-artifact.png",
+    "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66.gz",
+    "bytes": 11315,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.iife-missing-retained-source.png",
+    "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c74189ff3dd6fd7a4f281b375d1bcbb0bbd4fbb034c0d885b7b4c741d11e1cf2.gz",
+    "bytes": 103396,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.retained-temporal.json",
+    "sha256": "c74189ff3dd6fd7a4f281b375d1bcbb0bbd4fbb034c0d885b7b4c741d11e1cf2"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e47464cd85a30210f9cbe6ec12af0aee391c3aa8ec4c01afdc2b814b823a7d6d.gz",
+    "bytes": 44546,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.retained-temporal.json.boundary.png",
+    "sha256": "e47464cd85a30210f9cbe6ec12af0aee391c3aa8ec4c01afdc2b814b823a7d6d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/a03d81a62746e81bbc035d278d5ebc73be03be673f7fee0a4e3a9ca31fa0eceb.gz",
+    "bytes": 44231,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.retained-temporal.json.initial.png",
+    "sha256": "a03d81a62746e81bbc035d278d5ebc73be03be673f7fee0a4e3a9ca31fa0eceb"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e6e0a6c6908017ff71bcbdc005d392e2835e8c0c0444204435d4c81b5dd350b7.gz",
+    "bytes": 3636335,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-confirm.json.retained-temporal.json.wire.json",
+    "sha256": "e6e0a6c6908017ff71bcbdc005d392e2835e8c0c0444204435d4c81b5dd350b7"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/998adcacd5998c001b352a8398bb09836eeb4ebf6e4da59d0cd7cb245fd732e0.gz",
+    "bytes": 34075,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json",
+    "sha256": "998adcacd5998c001b352a8398bb09836eeb4ebf6e4da59d0cd7cb245fd732e0"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/94783c427aeb5b95f0a407443199f7462c8706f409107e86bf851d674822ec4c.gz",
+    "bytes": 165934,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/captures.json",
+    "sha256": "94783c427aeb5b95f0a407443199f7462c8706f409107e86bf851d674822ec4c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f5ec5542807779b9e347bf461657c3525753ba2510e1f4eb2a2de67ae6383415.gz",
+    "bytes": 3734584,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-0.html",
+    "sha256": "f5ec5542807779b9e347bf461657c3525753ba2510e1f4eb2a2de67ae6383415"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/cdae125f09dffbb580484834f16a5e1de5641fad4515fc041b67df19fb1980b9.gz",
+    "bytes": 2423,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-0.offline.png",
+    "sha256": "cdae125f09dffbb580484834f16a5e1de5641fad4515fc041b67df19fb1980b9"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/5268eff5a73b52085224948804ee7689467cd84812467fb10d3d1825baa1ce9c.gz",
+    "bytes": 116644,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-0.painter",
+    "sha256": "5268eff5a73b52085224948804ee7689467cd84812467fb10d3d1825baa1ce9c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/a95fafc8c4cad9a26cad0c3a20f3e7bc2390191d66dafd7726cd32d72809c59a.gz",
+    "bytes": 24160,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-0.png",
+    "sha256": "a95fafc8c4cad9a26cad0c3a20f3e7bc2390191d66dafd7726cd32d72809c59a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d04633e2c2e0e0bbddf18f706a73122974f64922bfdd6c68b29523871406c4bf.gz",
+    "bytes": 540984,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-0.scene",
+    "sha256": "d04633e2c2e0e0bbddf18f706a73122974f64922bfdd6c68b29523871406c4bf"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f609e4c8c251b65539682b3ab7bac6e04b2890a66e99c980f16afcb42fe51375.gz",
+    "bytes": 167512,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-0.svg",
+    "sha256": "f609e4c8c251b65539682b3ab7bac6e04b2890a66e99c980f16afcb42fe51375"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e8693a06e2b7062de2397691dcc3bfcee049ca27b8906919ebb59e5ddc280080.gz",
+    "bytes": 10568,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-0.xyfg",
+    "sha256": "e8693a06e2b7062de2397691dcc3bfcee049ca27b8906919ebb59e5ddc280080"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/fd63ed851137c71a7157e5994a506b365848c7971fcc1669e6d7afafce512c3f.gz",
+    "bytes": 3471916,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-1.html",
+    "sha256": "fd63ed851137c71a7157e5994a506b365848c7971fcc1669e6d7afafce512c3f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/aea817bb06f937d7ef0797e465b2fda598ebb601fde7d53b40cbc48285f95aaa.gz",
+    "bytes": 2405,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-1.offline.png",
+    "sha256": "aea817bb06f937d7ef0797e465b2fda598ebb601fde7d53b40cbc48285f95aaa"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/998126d40ad27bd6aa6b193fda5475d88696dbba3914a47c5550147daba8d0c1.gz",
+    "bytes": 82148,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-1.painter",
+    "sha256": "998126d40ad27bd6aa6b193fda5475d88696dbba3914a47c5550147daba8d0c1"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c320ac9774715d9eea152b2d7be782191901354beb41eb8bf3c59ce9297540fd.gz",
+    "bytes": 26312,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-1.png",
+    "sha256": "c320ac9774715d9eea152b2d7be782191901354beb41eb8bf3c59ce9297540fd"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/cb7d6ddf27a0079a306fde11063e4a3e7a7274edc2d78cdfe809f73dce03bca2.gz",
+    "bytes": 377808,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-1.scene",
+    "sha256": "cb7d6ddf27a0079a306fde11063e4a3e7a7274edc2d78cdfe809f73dce03bca2"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/ea9e1632aac417be003708d571afd8ac8124045670571ec27af71be57b0d4690.gz",
+    "bytes": 128427,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-1.svg",
+    "sha256": "ea9e1632aac417be003708d571afd8ac8124045670571ec27af71be57b0d4690"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c335fd81a6996bd07558ed1cc00316f83b0d7ba45502b8651cb8327891ab9a96.gz",
+    "bytes": 11016,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-1.xyfg",
+    "sha256": "c335fd81a6996bd07558ed1cc00316f83b0d7ba45502b8651cb8327891ab9a96"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/0244cd9467785cd7f72e2c2c49c59b1691ef67ebbeb662c4bc3a93a2c413ead7.gz",
+    "bytes": 3739608,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-2.html",
+    "sha256": "0244cd9467785cd7f72e2c2c49c59b1691ef67ebbeb662c4bc3a93a2c413ead7"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/699cd80ff2cb323a5dffc575cc4b686f2edd3c9ca56bb8ffe17e847f4c25e167.gz",
+    "bytes": 2600,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-2.offline.png",
+    "sha256": "699cd80ff2cb323a5dffc575cc4b686f2edd3c9ca56bb8ffe17e847f4c25e167"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/fb7537a77ce69e95e18ca91ad4c17feb1db93a2d7ab5bbc4f1793876bb9cb754.gz",
+    "bytes": 117620,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-2.painter",
+    "sha256": "fb7537a77ce69e95e18ca91ad4c17feb1db93a2d7ab5bbc4f1793876bb9cb754"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/fca2e73bf7a7350b9293a6a3d284329facf9439d1a8dc7f2500ffafa4c6dd8c0.gz",
+    "bytes": 26380,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-2.png",
+    "sha256": "fca2e73bf7a7350b9293a6a3d284329facf9439d1a8dc7f2500ffafa4c6dd8c0"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/2d7cef57a609889f2733d0f4a5241a92c351d397c5f7e4a10c982d1a1245b9e7.gz",
+    "bytes": 543176,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-2.scene",
+    "sha256": "2d7cef57a609889f2733d0f4a5241a92c351d397c5f7e4a10c982d1a1245b9e7"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e1bab96a3a0d3d9b6c9d5d17419f34bf4fa78621d5dddac6284ee95af7e7c840.gz",
+    "bytes": 170911,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-2.svg",
+    "sha256": "e1bab96a3a0d3d9b6c9d5d17419f34bf4fa78621d5dddac6284ee95af7e7c840"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e8713944e7f0981d45d94cec71c78b5dc45aac93efd4baf8235c6c91ccd3e6fa.gz",
+    "bytes": 10968,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-2.xyfg",
+    "sha256": "e8713944e7f0981d45d94cec71c78b5dc45aac93efd4baf8235c6c91ccd3e6fa"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/4c93f2056acc619a23a6a14b5130a818a28f805142a5a1716476768f15473bdd.gz",
+    "bytes": 3734488,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-3.html",
+    "sha256": "4c93f2056acc619a23a6a14b5130a818a28f805142a5a1716476768f15473bdd"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/cdae125f09dffbb580484834f16a5e1de5641fad4515fc041b67df19fb1980b9.gz",
+    "bytes": 2423,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-3.offline.png",
+    "sha256": "cdae125f09dffbb580484834f16a5e1de5641fad4515fc041b67df19fb1980b9"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/5268eff5a73b52085224948804ee7689467cd84812467fb10d3d1825baa1ce9c.gz",
+    "bytes": 116644,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-3.painter",
+    "sha256": "5268eff5a73b52085224948804ee7689467cd84812467fb10d3d1825baa1ce9c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/81ddab6146dda61213221e00393ec8da423d8f478ea775330da0539dbcad59dc.gz",
+    "bytes": 24064,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-3.png",
+    "sha256": "81ddab6146dda61213221e00393ec8da423d8f478ea775330da0539dbcad59dc"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d04633e2c2e0e0bbddf18f706a73122974f64922bfdd6c68b29523871406c4bf.gz",
+    "bytes": 540984,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-3.scene",
+    "sha256": "d04633e2c2e0e0bbddf18f706a73122974f64922bfdd6c68b29523871406c4bf"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/38f9c215f1f049f39d01f537eb479a6d8a4f628527bb6aec5e8fdb678e74823b.gz",
+    "bytes": 167416,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-3.svg",
+    "sha256": "38f9c215f1f049f39d01f537eb479a6d8a4f628527bb6aec5e8fdb678e74823b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f64f3e91b8d4aec25a55bd76b04e3f1927ed2e1c525ad439797086e9e782fbf6.gz",
+    "bytes": 10520,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-3.xyfg",
+    "sha256": "f64f3e91b8d4aec25a55bd76b04e3f1927ed2e1c525ad439797086e9e782fbf6"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/79b65c83fac9b31743925d4bbfc8bf23a4c4107dd943fe7d540914f3dd9b8974.gz",
+    "bytes": 3150012,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-4.html",
+    "sha256": "79b65c83fac9b31743925d4bbfc8bf23a4c4107dd943fe7d540914f3dd9b8974"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/a100e4b42b509f9ed9135fd0dcf4f1329d0a2cf4a6e460ba9f36150f4fa5b8a2.gz",
+    "bytes": 2233,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-4.offline.png",
+    "sha256": "a100e4b42b509f9ed9135fd0dcf4f1329d0a2cf4a6e460ba9f36150f4fa5b8a2"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/85d0e198a8d119c79a02d0a58bd589f0a6e84047e452caf576636d566d575604.gz",
+    "bytes": 39236,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-4.painter",
+    "sha256": "85d0e198a8d119c79a02d0a58bd589f0a6e84047e452caf576636d566d575604"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/a7f96ab19df84fce54741c9c393df5e5714ef8fe38797939ec687af76a0ba741.gz",
+    "bytes": 22209,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-4.png",
+    "sha256": "a7f96ab19df84fce54741c9c393df5e5714ef8fe38797939ec687af76a0ba741"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9f4d95d013a7bb85630b49fff7111f8bb305f85e994d5994b08e44fefccea86c.gz",
+    "bytes": 180648,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-4.scene",
+    "sha256": "9f4d95d013a7bb85630b49fff7111f8bb305f85e994d5994b08e44fefccea86c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/16fd961928b2dfe5b4229eafd93b86435ea49a05a5311a29dbe6f69bbb58556a.gz",
+    "bytes": 67189,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-4.svg",
+    "sha256": "16fd961928b2dfe5b4229eafd93b86435ea49a05a5311a29dbe6f69bbb58556a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c2d4a851b9a209fdbb4b0152141b89581ff94b6077ab6f30d5c5890810ae8545.gz",
+    "bytes": 10112,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-4.xyfg",
+    "sha256": "c2d4a851b9a209fdbb4b0152141b89581ff94b6077ab6f30d5c5890810ae8545"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/a95b6c69b0cd08f261921f68f59562424a088ad496f3e5f6279cc14af7e4d1df.gz",
+    "bytes": 3471916,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-5.html",
+    "sha256": "a95b6c69b0cd08f261921f68f59562424a088ad496f3e5f6279cc14af7e4d1df"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/aea817bb06f937d7ef0797e465b2fda598ebb601fde7d53b40cbc48285f95aaa.gz",
+    "bytes": 2405,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-5.offline.png",
+    "sha256": "aea817bb06f937d7ef0797e465b2fda598ebb601fde7d53b40cbc48285f95aaa"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/998126d40ad27bd6aa6b193fda5475d88696dbba3914a47c5550147daba8d0c1.gz",
+    "bytes": 82148,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-5.painter",
+    "sha256": "998126d40ad27bd6aa6b193fda5475d88696dbba3914a47c5550147daba8d0c1"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/ed94a25710ba2f939e8784e0cc32a35e32f120e439243ef48ce88ee98b56bdfd.gz",
+    "bytes": 26312,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-5.png",
+    "sha256": "ed94a25710ba2f939e8784e0cc32a35e32f120e439243ef48ce88ee98b56bdfd"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/cb7d6ddf27a0079a306fde11063e4a3e7a7274edc2d78cdfe809f73dce03bca2.gz",
+    "bytes": 377808,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-5.scene",
+    "sha256": "cb7d6ddf27a0079a306fde11063e4a3e7a7274edc2d78cdfe809f73dce03bca2"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/3594d22424d19ec1d7a77b646f63ec0ea93e1a893cd63936929c266a7615d9b0.gz",
+    "bytes": 128427,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-5.svg",
+    "sha256": "3594d22424d19ec1d7a77b646f63ec0ea93e1a893cd63936929c266a7615d9b0"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/cfc158212a4c39d94be153b811800eaa58cf1309fb2f967c9ad8b83ec429733e.gz",
+    "bytes": 11016,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/frame-5.xyfg",
+    "sha256": "cfc158212a4c39d94be153b811800eaa58cf1309fb2f967c9ad8b83ec429733e"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9f2178f8f5545d604b2f21ac5da4fd6172c35bebc9d31e12fa2fe854b81ecbd1.gz",
+    "bytes": 2310,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/live-0.png",
+    "sha256": "9f2178f8f5545d604b2f21ac5da4fd6172c35bebc9d31e12fa2fe854b81ecbd1"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/ca6b1ced92e0b66b4987bd48392ea80bae7b63474533a9ab7632db1a63261a0b.gz",
+    "bytes": 2382,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/live-1.png",
+    "sha256": "ca6b1ced92e0b66b4987bd48392ea80bae7b63474533a9ab7632db1a63261a0b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9b3e7c71687d2c54edcde60f2f79e0f68a8998f3fb8900ecb0e5f58edadfe38d.gz",
+    "bytes": 2506,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/live-2.png",
+    "sha256": "9b3e7c71687d2c54edcde60f2f79e0f68a8998f3fb8900ecb0e5f58edadfe38d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9f2178f8f5545d604b2f21ac5da4fd6172c35bebc9d31e12fa2fe854b81ecbd1.gz",
+    "bytes": 2310,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/live-3.png",
+    "sha256": "9f2178f8f5545d604b2f21ac5da4fd6172c35bebc9d31e12fa2fe854b81ecbd1"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f457903ade13efd7348d739a6f46a06fc5499d6bfe8fc6a8a7c009723f0f0d42.gz",
+    "bytes": 1392,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/live-4.png",
+    "sha256": "f457903ade13efd7348d739a6f46a06fc5499d6bfe8fc6a8a7c009723f0f0d42"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/ca6b1ced92e0b66b4987bd48392ea80bae7b63474533a9ab7632db1a63261a0b.gz",
+    "bytes": 2382,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/live-5.png",
+    "sha256": "ca6b1ced92e0b66b4987bd48392ea80bae7b63474533a9ab7632db1a63261a0b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d7c063f58c442c3d15f105bbbab2408639ab28093dc54086e0562843a7c37486.gz",
+    "bytes": 33,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/report.json",
+    "sha256": "d7c063f58c442c3d15f105bbbab2408639ab28093dc54086e0562843a7c37486"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e555717ea476e90a279279978498d4227ca3fa61b9e5b0f7d7d73fdc0f4c20bd.gz",
+    "bytes": 419066,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/wire.json",
+    "sha256": "e555717ea476e90a279279978498d4227ca3fa61b9e5b0f7d7d73fdc0f4c20bd"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/1377e7bdf4a51739bb55e5b7536589216c7f0ec528a74331a3a94dcc7b05c682.gz",
+    "bytes": 33949645,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.aggregate-graph/worker.json",
+    "sha256": "1377e7bdf4a51739bb55e5b7536589216c7f0ec528a74331a3a94dcc7b05c682"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+    "bytes": 11369,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.esm-malformed-inline-artifact.png",
+    "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+    "bytes": 11369,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.esm-missing-inline-artifact.png",
+    "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66.gz",
+    "bytes": 11315,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.esm-missing-retained-source.png",
+    "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/891547157cfad086b753787e354bd4dceba5967e2d74bc49cc294e85e32287b6.gz",
+    "bytes": 3507095,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/inline-worker-png.html",
+    "sha256": "891547157cfad086b753787e354bd4dceba5967e2d74bc49cc294e85e32287b6"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d89bb74361e69f92bfecc8aa8fe0eeda2da2e77112e30590c10f092dcad0e36d.gz",
+    "bytes": 1050,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/report.json",
+    "sha256": "d89bb74361e69f92bfecc8aa8fe0eeda2da2e77112e30590c10f092dcad0e36d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d11e521d6f430eefdfbdfe2d19591061d64be9c54a0529142cb95f9501a27d57.gz",
+    "bytes": 4037040,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-0.html",
+    "sha256": "d11e521d6f430eefdfbdfe2d19591061d64be9c54a0529142cb95f9501a27d57"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/73c2bb400eb58aa2529414e81c883ebac0d38eff7b507546ca477181629bcd0d.gz",
+    "bytes": 5440,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-0.offline.png",
+    "sha256": "73c2bb400eb58aa2529414e81c883ebac0d38eff7b507546ca477181629bcd0d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/6708e63edaaf57c53b448567133bca28a2e9924ec2cca7987eac7c8ac9a1ee08.gz",
+    "bytes": 157260,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-0.painter",
+    "sha256": "6708e63edaaf57c53b448567133bca28a2e9924ec2cca7987eac7c8ac9a1ee08"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/b67bfd6ea4426ebef754c8003fbd3cc632a763777baf2f7f9c85f41abce1fdc5.gz",
+    "bytes": 39129,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-0.png",
+    "sha256": "b67bfd6ea4426ebef754c8003fbd3cc632a763777baf2f7f9c85f41abce1fdc5"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/299251add870696c72f21a545c291f77ab278b2c7e47fd15e90c2a654f50fb0a.gz",
+    "bytes": 4037040,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-0.scale2.html",
+    "sha256": "299251add870696c72f21a545c291f77ab278b2c7e47fd15e90c2a654f50fb0a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/1476fc3ddd5181a37489bdf7aaf604cbea6b8508248335810bded6ed261da0d9.gz",
+    "bytes": 9246,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-0.scale2.offline.png",
+    "sha256": "1476fc3ddd5181a37489bdf7aaf604cbea6b8508248335810bded6ed261da0d9"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c729946f31c20d3ddd67ed5037cea8b833a102f5d144c867eb39727572fff81c.gz",
+    "bytes": 60346,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-0.scale2.png",
+    "sha256": "c729946f31c20d3ddd67ed5037cea8b833a102f5d144c867eb39727572fff81c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/a9c38d638994ed878589264f5d624a95589dc199f0fee0153a22f557658fceaf.gz",
+    "bytes": 725400,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-0.scene",
+    "sha256": "a9c38d638994ed878589264f5d624a95589dc199f0fee0153a22f557658fceaf"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9273505826e53b5721c9b1a7247a75cd66f7852d127bd7f6869f1767fb9cb34b.gz",
+    "bytes": 221391,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-0.svg",
+    "sha256": "9273505826e53b5721c9b1a7247a75cd66f7852d127bd7f6869f1767fb9cb34b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/b4c11af9ab5323170a01cc97ae5bc30422c5597c532d971a201a623e2714d142.gz",
+    "bytes": 11776,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-0.xyfg",
+    "sha256": "b4c11af9ab5323170a01cc97ae5bc30422c5597c532d971a201a623e2714d142"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/a13c632fae28b8ebe62892f00416fd85eaa2e51848256556bb6d23ba303efb95.gz",
+    "bytes": 3214492,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-1.html",
+    "sha256": "a13c632fae28b8ebe62892f00416fd85eaa2e51848256556bb6d23ba303efb95"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/29745f349e29c9071fa9eee966709b8dd6de4bcc19bd1f38b61c10406bba5c34.gz",
+    "bytes": 4555,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-1.offline.png",
+    "sha256": "29745f349e29c9071fa9eee966709b8dd6de4bcc19bd1f38b61c10406bba5c34"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e13dd7515a42bb0b5c1c77b5a82a3bfeed988291e2e002fc68833102bc589b8f.gz",
+    "bytes": 48396,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-1.painter",
+    "sha256": "e13dd7515a42bb0b5c1c77b5a82a3bfeed988291e2e002fc68833102bc589b8f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d186b71b93393ada67ac812f51c228c21795988f97baf7e7944a7ab605762d92.gz",
+    "bytes": 38002,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-1.png",
+    "sha256": "d186b71b93393ada67ac812f51c228c21795988f97baf7e7944a7ab605762d92"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/01d8b3c3b8f5f229c85995d2344e6e92b790aa6d5ea19f3077e9669718a86358.gz",
+    "bytes": 3214492,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-1.scale2.html",
+    "sha256": "01d8b3c3b8f5f229c85995d2344e6e92b790aa6d5ea19f3077e9669718a86358"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/ee6d49aa7e6d0e84111358bd58beac6663a37d987af1d86239cb4286a8881d91.gz",
+    "bytes": 7340,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-1.scale2.offline.png",
+    "sha256": "ee6d49aa7e6d0e84111358bd58beac6663a37d987af1d86239cb4286a8881d91"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/311b2566b392f0a59c6362f9918c077bcaca4fd25ec8e45fa5fad95c99136d95.gz",
+    "bytes": 55097,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-1.scale2.png",
+    "sha256": "311b2566b392f0a59c6362f9918c077bcaca4fd25ec8e45fa5fad95c99136d95"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/4a56d93214ec747ad9eccbba82577d3f6c5e84f91e8f4867f135c4fe1760f868.gz",
+    "bytes": 217352,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-1.scene",
+    "sha256": "4a56d93214ec747ad9eccbba82577d3f6c5e84f91e8f4867f135c4fe1760f868"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/2018c16850ab6f20c9589ffa2e8776a99d994149aff503e0ae2758a17415f5ff.gz",
+    "bytes": 85689,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-1.svg",
+    "sha256": "2018c16850ab6f20c9589ffa2e8776a99d994149aff503e0ae2758a17415f5ff"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/a9c14ae37279f8d5cd6b17cdd750b8ccaca14b70eb9eb093cbba0f895d00afbd.gz",
+    "bytes": 11776,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-1.xyfg",
+    "sha256": "a9c14ae37279f8d5cd6b17cdd750b8ccaca14b70eb9eb093cbba0f895d00afbd"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c88fd2e66aebff5670af6378ec0c6d3b1488175f1f5736cbfbdbb741d386b714.gz",
+    "bytes": 3232380,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-2.html",
+    "sha256": "c88fd2e66aebff5670af6378ec0c6d3b1488175f1f5736cbfbdbb741d386b714"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/35daa48445de6c4f41329b92064d60af98ea443d785ac93fe4c933a36f27964b.gz",
+    "bytes": 4983,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-2.offline.png",
+    "sha256": "35daa48445de6c4f41329b92064d60af98ea443d785ac93fe4c933a36f27964b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c92c5718833e933b683f16353b3041a9e7e524cc57975e520b62eb4a60ffd5fd.gz",
+    "bytes": 50556,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-2.painter",
+    "sha256": "c92c5718833e933b683f16353b3041a9e7e524cc57975e520b62eb4a60ffd5fd"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/379b4dac23080c2e178700d3644f98d89bcfa59f85133dc1861a8b11ce0e50e8.gz",
+    "bytes": 39207,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-2.png",
+    "sha256": "379b4dac23080c2e178700d3644f98d89bcfa59f85133dc1861a8b11ce0e50e8"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/89b18cc71c487805b18e6ca2f4fe103007070da1051245112ad24e749a2cc1d2.gz",
+    "bytes": 3232380,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-2.scale2.html",
+    "sha256": "89b18cc71c487805b18e6ca2f4fe103007070da1051245112ad24e749a2cc1d2"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/2cdf6eac8be3143ea2a72141ca6f3509a9cc81837d0b6d45ecf95d94142060b8.gz",
+    "bytes": 8215,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-2.scale2.offline.png",
+    "sha256": "2cdf6eac8be3143ea2a72141ca6f3509a9cc81837d0b6d45ecf95d94142060b8"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/40999463b6d14b0306c598ea3f50a6f3ee445a05122c63f2ea6a95c8eb4c4459.gz",
+    "bytes": 59901,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-2.scale2.png",
+    "sha256": "40999463b6d14b0306c598ea3f50a6f3ee445a05122c63f2ea6a95c8eb4c4459"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/19c425b85267e5f5d5308503947928fcd8fb2456c0be0a19fbbe304e54cc8d5f.gz",
+    "bytes": 228608,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-2.scene",
+    "sha256": "19c425b85267e5f5d5308503947928fcd8fb2456c0be0a19fbbe304e54cc8d5f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e78330a33e69b77cb86c16cd34970155330265cef67f405d93dce59b74220482.gz",
+    "bytes": 87468,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-2.svg",
+    "sha256": "e78330a33e69b77cb86c16cd34970155330265cef67f405d93dce59b74220482"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e3251c38c89b3738fd9d624b1808a5878f389012965885b62b3cc6ef90e14a43.gz",
+    "bytes": 11776,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-2.xyfg",
+    "sha256": "e3251c38c89b3738fd9d624b1808a5878f389012965885b62b3cc6ef90e14a43"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/6b3874cc3cb0580b2b1953755df9d0059bdbb5e5d4541fcfd12d85181bd8a98a.gz",
+    "bytes": 3222236,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-3.html",
+    "sha256": "6b3874cc3cb0580b2b1953755df9d0059bdbb5e5d4541fcfd12d85181bd8a98a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/7f8a10366e0af63f0ae542f733305444dcbe4064246386a4a2a71d9e1b245a00.gz",
+    "bytes": 5086,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-3.offline.png",
+    "sha256": "7f8a10366e0af63f0ae542f733305444dcbe4064246386a4a2a71d9e1b245a00"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/43a727ba17d01ce85f4366ff7d52302e1e0b33dfe958e2dc0ae548144dbd010c.gz",
+    "bytes": 49332,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-3.painter",
+    "sha256": "43a727ba17d01ce85f4366ff7d52302e1e0b33dfe958e2dc0ae548144dbd010c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/0272bc26370eee3a35679d01b373d21c49f5cf3a0466490b97c8c68c1c7cdf0f.gz",
+    "bytes": 38994,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-3.png",
+    "sha256": "0272bc26370eee3a35679d01b373d21c49f5cf3a0466490b97c8c68c1c7cdf0f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9b0a55b74a03426f34a4f3020ef32ec8f186324f5f7f5e00796eb521cb653181.gz",
+    "bytes": 3222236,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-3.scale2.html",
+    "sha256": "9b0a55b74a03426f34a4f3020ef32ec8f186324f5f7f5e00796eb521cb653181"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f54bd830f98d1012799bd1dd4d6817b185663e93f980c7dd5624a29e32302b91.gz",
+    "bytes": 8474,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-3.scale2.offline.png",
+    "sha256": "f54bd830f98d1012799bd1dd4d6817b185663e93f980c7dd5624a29e32302b91"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/37d1ec1d4e86b36fd2081b9ed5171dc25be425b4c2abbfe1e35f2fc20188e0f9.gz",
+    "bytes": 58510,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-3.scale2.png",
+    "sha256": "37d1ec1d4e86b36fd2081b9ed5171dc25be425b4c2abbfe1e35f2fc20188e0f9"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f1cb4edecb943da69a3ad2bad3e65fb578c73e6e7145ecff35d81d04fe01ce99.gz",
+    "bytes": 222224,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-3.scene",
+    "sha256": "f1cb4edecb943da69a3ad2bad3e65fb578c73e6e7145ecff35d81d04fe01ce99"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/447ee495b80b862e9e25026037eba5176e42fb9081903395581c025ee5d9e187.gz",
+    "bytes": 86672,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-3.svg",
+    "sha256": "447ee495b80b862e9e25026037eba5176e42fb9081903395581c025ee5d9e187"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/847f2c92619c051318531cddde49d0dcceb781ab11e6107ab18c2c8a8f442ed7.gz",
+    "bytes": 11776,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-3.xyfg",
+    "sha256": "847f2c92619c051318531cddde49d0dcceb781ab11e6107ab18c2c8a8f442ed7"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/8dc34e4f4c8cfde7fd7d1711d134361f15a2dc26175bcfb342a99a4f1aab98e6.gz",
+    "bytes": 3218448,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-4.html",
+    "sha256": "8dc34e4f4c8cfde7fd7d1711d134361f15a2dc26175bcfb342a99a4f1aab98e6"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/469dab77316ca8cc544910eca3e88690bc6b4c8870e69f1214ec58ef3d11657e.gz",
+    "bytes": 5046,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-4.offline.png",
+    "sha256": "469dab77316ca8cc544910eca3e88690bc6b4c8870e69f1214ec58ef3d11657e"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f7334fc326de07bfa8aeec957274cd81a881299a06ea3eb796397ad07b29ecfe.gz",
+    "bytes": 48828,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-4.painter",
+    "sha256": "f7334fc326de07bfa8aeec957274cd81a881299a06ea3eb796397ad07b29ecfe"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d8c59094e5dedf1d6ba9dda518881b6aa408782892aa68f95527c7cae490a1e0.gz",
+    "bytes": 38405,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-4.png",
+    "sha256": "d8c59094e5dedf1d6ba9dda518881b6aa408782892aa68f95527c7cae490a1e0"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/dce766b5532e4c569c28c6d2c2029f8bcdd5fc57ac03ef985d427067796ce01b.gz",
+    "bytes": 3218448,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-4.scale2.html",
+    "sha256": "dce766b5532e4c569c28c6d2c2029f8bcdd5fc57ac03ef985d427067796ce01b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/fadf4294cf55ddc21687f29ccff995650b6a19bea1f4b95401fe460f61b729da.gz",
+    "bytes": 8125,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-4.scale2.offline.png",
+    "sha256": "fadf4294cf55ddc21687f29ccff995650b6a19bea1f4b95401fe460f61b729da"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9c00fdaadaeb52f6c1d4fbbea2568e46b2300589f497a55853ad791092a1283b.gz",
+    "bytes": 57404,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-4.scale2.png",
+    "sha256": "9c00fdaadaeb52f6c1d4fbbea2568e46b2300589f497a55853ad791092a1283b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/4b75b363d3abfe8633de8e4a372dcb06ed26a8317483f9a630b20ad0aab4303f.gz",
+    "bytes": 219888,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-4.scene",
+    "sha256": "4b75b363d3abfe8633de8e4a372dcb06ed26a8317483f9a630b20ad0aab4303f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/fb7a53aa65f6d3e3b1304e62c1f0b9a5d93346bbda90d65eeddd2b8852155bc1.gz",
+    "bytes": 86457,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-4.svg",
+    "sha256": "fb7a53aa65f6d3e3b1304e62c1f0b9a5d93346bbda90d65eeddd2b8852155bc1"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/7b1b26c8b032a940ab6c1bd93c46e94c098c1c7e4fac6e57da9a4433de4ba084.gz",
+    "bytes": 11776,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-4.xyfg",
+    "sha256": "7b1b26c8b032a940ab6c1bd93c46e94c098c1c7e4fac6e57da9a4433de4ba084"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/ce0c4f14b8b49fefb6af0d690497f83771442935406e597f7cbf62f9c807ca8c.gz",
+    "bytes": 3234120,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-5-parent.html",
+    "sha256": "ce0c4f14b8b49fefb6af0d690497f83771442935406e597f7cbf62f9c807ca8c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c8d28893649e32c1c892a98edd5fd520d2b0a81d05d722615fe0bcd11ace17de.gz",
+    "bytes": 5273,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-5-parent.offline.png",
+    "sha256": "c8d28893649e32c1c892a98edd5fd520d2b0a81d05d722615fe0bcd11ace17de"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/12d70a96c1d14db02e3c8e822a27348c0952e9e53f0e4b9e4d4425b993f2c682.gz",
+    "bytes": 51068,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-5-parent.painter",
+    "sha256": "12d70a96c1d14db02e3c8e822a27348c0952e9e53f0e4b9e4d4425b993f2c682"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/329003c487a484c6dd1a6ab70139847ca1cab87fdee1c32aed62a0c5facd3fbb.gz",
+    "bytes": 42961,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-5-parent.png",
+    "sha256": "329003c487a484c6dd1a6ab70139847ca1cab87fdee1c32aed62a0c5facd3fbb"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/74e3c0086e67ed7b6d9590e73dac449c87fda28b49a15bcdcc5c43499f19577a.gz",
+    "bytes": 3234120,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-5-parent.scale2.html",
+    "sha256": "74e3c0086e67ed7b6d9590e73dac449c87fda28b49a15bcdcc5c43499f19577a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/edefe2a9bcc24edaebfa626b6e0249334975969a91d59488c51813a6b2609cc1.gz",
+    "bytes": 9175,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-5-parent.scale2.offline.png",
+    "sha256": "edefe2a9bcc24edaebfa626b6e0249334975969a91d59488c51813a6b2609cc1"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e857ac26fad4bba7bc113ff9065d1973911e579038887781014d839265ede569.gz",
+    "bytes": 67944,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-5-parent.scale2.png",
+    "sha256": "e857ac26fad4bba7bc113ff9065d1973911e579038887781014d839265ede569"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e45efa91f78d3471c5dba207002668eb2cb2d9e2173fa488d58000f0704a5f60.gz",
+    "bytes": 229520,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-5-parent.scene",
+    "sha256": "e45efa91f78d3471c5dba207002668eb2cb2d9e2173fa488d58000f0704a5f60"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c4643889bc98973b84460e63a64b5d112ebab9505f96b90970e4405c94182e65.gz",
+    "bytes": 87092,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-5-parent.svg",
+    "sha256": "c4643889bc98973b84460e63a64b5d112ebab9505f96b90970e4405c94182e65"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/011ddcf0661e7cd809096d6244d71320ef0b7aeee754e488c9aa6bbf62a3d2f0.gz",
+    "bytes": 11696,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-5-parent.xyfg",
+    "sha256": "011ddcf0661e7cd809096d6244d71320ef0b7aeee754e488c9aa6bbf62a3d2f0"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9867877d190de33eced936bea1c0abac1e69aace8160f6e81f40de0b1908720a.gz",
+    "bytes": 3233680,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-5.html",
+    "sha256": "9867877d190de33eced936bea1c0abac1e69aace8160f6e81f40de0b1908720a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/3d79b707c17cebd10d708c9493ecb6346c4710b5b55bb419f19ab12fafe4f841.gz",
+    "bytes": 5197,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-5.offline.png",
+    "sha256": "3d79b707c17cebd10d708c9493ecb6346c4710b5b55bb419f19ab12fafe4f841"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/61cb63d79bbd157d0e35f6c5d98ff802e2b5120474e3655e62ce7900e02aca12.gz",
+    "bytes": 50844,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-5.painter",
+    "sha256": "61cb63d79bbd157d0e35f6c5d98ff802e2b5120474e3655e62ce7900e02aca12"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f02d3429d83cd3166bdc9115f437b63cb68fc88a8a6b937dafe747652d5079be.gz",
+    "bytes": 38760,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-5.png",
+    "sha256": "f02d3429d83cd3166bdc9115f437b63cb68fc88a8a6b937dafe747652d5079be"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/1fd45930798b007b8eeefe1335a6fbc362049037d2a033d12f7fa10994d19750.gz",
+    "bytes": 3233680,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-5.scale2.html",
+    "sha256": "1fd45930798b007b8eeefe1335a6fbc362049037d2a033d12f7fa10994d19750"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/21d20ddeca24a66bedf4897485c8004c103692f4ab152b7e44361d01ce32ada3.gz",
+    "bytes": 8720,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-5.scale2.offline.png",
+    "sha256": "21d20ddeca24a66bedf4897485c8004c103692f4ab152b7e44361d01ce32ada3"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/31ed8579a8d863bad4116a35fba90ca23a4ef1312b7d393695e9cfec1147bf91.gz",
+    "bytes": 59214,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-5.scale2.png",
+    "sha256": "31ed8579a8d863bad4116a35fba90ca23a4ef1312b7d393695e9cfec1147bf91"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/986b036c7ac0f009f07b74defd82cba2db13e7a5ee379522cb78b23f61c7f028.gz",
+    "bytes": 229296,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-5.scene",
+    "sha256": "986b036c7ac0f009f07b74defd82cba2db13e7a5ee379522cb78b23f61c7f028"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/b6c9bde64eaf0b1eb673bdc8b37431a8e24ac9fe77f5fb854929694d76ec39ea.gz",
+    "bytes": 88503,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-5.svg",
+    "sha256": "b6c9bde64eaf0b1eb673bdc8b37431a8e24ac9fe77f5fb854929694d76ec39ea"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/0fb41ff8b658a4fb6ea6df11af8c02b64c61b83857289f1f40e8fc2e43a27106.gz",
+    "bytes": 11776,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.frozen-graph/shape-5.xyfg",
+    "sha256": "0fb41ff8b658a4fb6ea6df11af8c02b64c61b83857289f1f40e8fc2e43a27106"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+    "bytes": 11369,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.iife-malformed-inline-artifact.png",
+    "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+    "bytes": 11369,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.iife-missing-inline-artifact.png",
+    "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66.gz",
+    "bytes": 11315,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.iife-missing-retained-source.png",
+    "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/4feec4b531d880f51fd6a1f11de8527a682155404e7f813a674aedd4ea94a5ee.gz",
+    "bytes": 103395,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.retained-temporal.json",
+    "sha256": "4feec4b531d880f51fd6a1f11de8527a682155404e7f813a674aedd4ea94a5ee"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e47464cd85a30210f9cbe6ec12af0aee391c3aa8ec4c01afdc2b814b823a7d6d.gz",
+    "bytes": 44546,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.retained-temporal.json.boundary.png",
+    "sha256": "e47464cd85a30210f9cbe6ec12af0aee391c3aa8ec4c01afdc2b814b823a7d6d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/a03d81a62746e81bbc035d278d5ebc73be03be673f7fee0a4e3a9ca31fa0eceb.gz",
+    "bytes": 44231,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.retained-temporal.json.initial.png",
+    "sha256": "a03d81a62746e81bbc035d278d5ebc73be03be673f7fee0a4e3a9ca31fa0eceb"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/da9e28aff54368eccb5d6fda0d2844d44b04ae210dd2d6e33867a89f3ebb08b8.gz",
+    "bytes": 3637065,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation-final2.json.retained-temporal.json.wire.json",
+    "sha256": "da9e28aff54368eccb5d6fda0d2844d44b04ae210dd2d6e33867a89f3ebb08b8"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/159aba5fba7b9359fc4be1c7b8310e76c1b38170214ce471dc2028b68412ec3f.gz",
+    "bytes": 34033,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json",
+    "sha256": "159aba5fba7b9359fc4be1c7b8310e76c1b38170214ce471dc2028b68412ec3f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/67b7d6530106654cf79e18bb9c0f70ef397d92b08a677a15ab40f4c09852e3cd.gz",
+    "bytes": 165933,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/captures.json",
+    "sha256": "67b7d6530106654cf79e18bb9c0f70ef397d92b08a677a15ab40f4c09852e3cd"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f5ec5542807779b9e347bf461657c3525753ba2510e1f4eb2a2de67ae6383415.gz",
+    "bytes": 3734584,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-0.html",
+    "sha256": "f5ec5542807779b9e347bf461657c3525753ba2510e1f4eb2a2de67ae6383415"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/cdae125f09dffbb580484834f16a5e1de5641fad4515fc041b67df19fb1980b9.gz",
+    "bytes": 2423,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-0.offline.png",
+    "sha256": "cdae125f09dffbb580484834f16a5e1de5641fad4515fc041b67df19fb1980b9"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/5268eff5a73b52085224948804ee7689467cd84812467fb10d3d1825baa1ce9c.gz",
+    "bytes": 116644,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-0.painter",
+    "sha256": "5268eff5a73b52085224948804ee7689467cd84812467fb10d3d1825baa1ce9c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/a95fafc8c4cad9a26cad0c3a20f3e7bc2390191d66dafd7726cd32d72809c59a.gz",
+    "bytes": 24160,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-0.png",
+    "sha256": "a95fafc8c4cad9a26cad0c3a20f3e7bc2390191d66dafd7726cd32d72809c59a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d04633e2c2e0e0bbddf18f706a73122974f64922bfdd6c68b29523871406c4bf.gz",
+    "bytes": 540984,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-0.scene",
+    "sha256": "d04633e2c2e0e0bbddf18f706a73122974f64922bfdd6c68b29523871406c4bf"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f609e4c8c251b65539682b3ab7bac6e04b2890a66e99c980f16afcb42fe51375.gz",
+    "bytes": 167512,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-0.svg",
+    "sha256": "f609e4c8c251b65539682b3ab7bac6e04b2890a66e99c980f16afcb42fe51375"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e8693a06e2b7062de2397691dcc3bfcee049ca27b8906919ebb59e5ddc280080.gz",
+    "bytes": 10568,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-0.xyfg",
+    "sha256": "e8693a06e2b7062de2397691dcc3bfcee049ca27b8906919ebb59e5ddc280080"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/fd63ed851137c71a7157e5994a506b365848c7971fcc1669e6d7afafce512c3f.gz",
+    "bytes": 3471916,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-1.html",
+    "sha256": "fd63ed851137c71a7157e5994a506b365848c7971fcc1669e6d7afafce512c3f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/aea817bb06f937d7ef0797e465b2fda598ebb601fde7d53b40cbc48285f95aaa.gz",
+    "bytes": 2405,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-1.offline.png",
+    "sha256": "aea817bb06f937d7ef0797e465b2fda598ebb601fde7d53b40cbc48285f95aaa"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/998126d40ad27bd6aa6b193fda5475d88696dbba3914a47c5550147daba8d0c1.gz",
+    "bytes": 82148,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-1.painter",
+    "sha256": "998126d40ad27bd6aa6b193fda5475d88696dbba3914a47c5550147daba8d0c1"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c320ac9774715d9eea152b2d7be782191901354beb41eb8bf3c59ce9297540fd.gz",
+    "bytes": 26312,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-1.png",
+    "sha256": "c320ac9774715d9eea152b2d7be782191901354beb41eb8bf3c59ce9297540fd"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/cb7d6ddf27a0079a306fde11063e4a3e7a7274edc2d78cdfe809f73dce03bca2.gz",
+    "bytes": 377808,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-1.scene",
+    "sha256": "cb7d6ddf27a0079a306fde11063e4a3e7a7274edc2d78cdfe809f73dce03bca2"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/ea9e1632aac417be003708d571afd8ac8124045670571ec27af71be57b0d4690.gz",
+    "bytes": 128427,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-1.svg",
+    "sha256": "ea9e1632aac417be003708d571afd8ac8124045670571ec27af71be57b0d4690"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c335fd81a6996bd07558ed1cc00316f83b0d7ba45502b8651cb8327891ab9a96.gz",
+    "bytes": 11016,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-1.xyfg",
+    "sha256": "c335fd81a6996bd07558ed1cc00316f83b0d7ba45502b8651cb8327891ab9a96"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/0244cd9467785cd7f72e2c2c49c59b1691ef67ebbeb662c4bc3a93a2c413ead7.gz",
+    "bytes": 3739608,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-2.html",
+    "sha256": "0244cd9467785cd7f72e2c2c49c59b1691ef67ebbeb662c4bc3a93a2c413ead7"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/699cd80ff2cb323a5dffc575cc4b686f2edd3c9ca56bb8ffe17e847f4c25e167.gz",
+    "bytes": 2600,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-2.offline.png",
+    "sha256": "699cd80ff2cb323a5dffc575cc4b686f2edd3c9ca56bb8ffe17e847f4c25e167"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/fb7537a77ce69e95e18ca91ad4c17feb1db93a2d7ab5bbc4f1793876bb9cb754.gz",
+    "bytes": 117620,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-2.painter",
+    "sha256": "fb7537a77ce69e95e18ca91ad4c17feb1db93a2d7ab5bbc4f1793876bb9cb754"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/fca2e73bf7a7350b9293a6a3d284329facf9439d1a8dc7f2500ffafa4c6dd8c0.gz",
+    "bytes": 26380,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-2.png",
+    "sha256": "fca2e73bf7a7350b9293a6a3d284329facf9439d1a8dc7f2500ffafa4c6dd8c0"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/2d7cef57a609889f2733d0f4a5241a92c351d397c5f7e4a10c982d1a1245b9e7.gz",
+    "bytes": 543176,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-2.scene",
+    "sha256": "2d7cef57a609889f2733d0f4a5241a92c351d397c5f7e4a10c982d1a1245b9e7"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e1bab96a3a0d3d9b6c9d5d17419f34bf4fa78621d5dddac6284ee95af7e7c840.gz",
+    "bytes": 170911,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-2.svg",
+    "sha256": "e1bab96a3a0d3d9b6c9d5d17419f34bf4fa78621d5dddac6284ee95af7e7c840"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e8713944e7f0981d45d94cec71c78b5dc45aac93efd4baf8235c6c91ccd3e6fa.gz",
+    "bytes": 10968,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-2.xyfg",
+    "sha256": "e8713944e7f0981d45d94cec71c78b5dc45aac93efd4baf8235c6c91ccd3e6fa"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/4c93f2056acc619a23a6a14b5130a818a28f805142a5a1716476768f15473bdd.gz",
+    "bytes": 3734488,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-3.html",
+    "sha256": "4c93f2056acc619a23a6a14b5130a818a28f805142a5a1716476768f15473bdd"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/cdae125f09dffbb580484834f16a5e1de5641fad4515fc041b67df19fb1980b9.gz",
+    "bytes": 2423,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-3.offline.png",
+    "sha256": "cdae125f09dffbb580484834f16a5e1de5641fad4515fc041b67df19fb1980b9"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/5268eff5a73b52085224948804ee7689467cd84812467fb10d3d1825baa1ce9c.gz",
+    "bytes": 116644,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-3.painter",
+    "sha256": "5268eff5a73b52085224948804ee7689467cd84812467fb10d3d1825baa1ce9c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/81ddab6146dda61213221e00393ec8da423d8f478ea775330da0539dbcad59dc.gz",
+    "bytes": 24064,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-3.png",
+    "sha256": "81ddab6146dda61213221e00393ec8da423d8f478ea775330da0539dbcad59dc"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d04633e2c2e0e0bbddf18f706a73122974f64922bfdd6c68b29523871406c4bf.gz",
+    "bytes": 540984,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-3.scene",
+    "sha256": "d04633e2c2e0e0bbddf18f706a73122974f64922bfdd6c68b29523871406c4bf"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/38f9c215f1f049f39d01f537eb479a6d8a4f628527bb6aec5e8fdb678e74823b.gz",
+    "bytes": 167416,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-3.svg",
+    "sha256": "38f9c215f1f049f39d01f537eb479a6d8a4f628527bb6aec5e8fdb678e74823b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f64f3e91b8d4aec25a55bd76b04e3f1927ed2e1c525ad439797086e9e782fbf6.gz",
+    "bytes": 10520,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-3.xyfg",
+    "sha256": "f64f3e91b8d4aec25a55bd76b04e3f1927ed2e1c525ad439797086e9e782fbf6"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/79b65c83fac9b31743925d4bbfc8bf23a4c4107dd943fe7d540914f3dd9b8974.gz",
+    "bytes": 3150012,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-4.html",
+    "sha256": "79b65c83fac9b31743925d4bbfc8bf23a4c4107dd943fe7d540914f3dd9b8974"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/a100e4b42b509f9ed9135fd0dcf4f1329d0a2cf4a6e460ba9f36150f4fa5b8a2.gz",
+    "bytes": 2233,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-4.offline.png",
+    "sha256": "a100e4b42b509f9ed9135fd0dcf4f1329d0a2cf4a6e460ba9f36150f4fa5b8a2"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/85d0e198a8d119c79a02d0a58bd589f0a6e84047e452caf576636d566d575604.gz",
+    "bytes": 39236,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-4.painter",
+    "sha256": "85d0e198a8d119c79a02d0a58bd589f0a6e84047e452caf576636d566d575604"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/a7f96ab19df84fce54741c9c393df5e5714ef8fe38797939ec687af76a0ba741.gz",
+    "bytes": 22209,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-4.png",
+    "sha256": "a7f96ab19df84fce54741c9c393df5e5714ef8fe38797939ec687af76a0ba741"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9f4d95d013a7bb85630b49fff7111f8bb305f85e994d5994b08e44fefccea86c.gz",
+    "bytes": 180648,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-4.scene",
+    "sha256": "9f4d95d013a7bb85630b49fff7111f8bb305f85e994d5994b08e44fefccea86c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/16fd961928b2dfe5b4229eafd93b86435ea49a05a5311a29dbe6f69bbb58556a.gz",
+    "bytes": 67189,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-4.svg",
+    "sha256": "16fd961928b2dfe5b4229eafd93b86435ea49a05a5311a29dbe6f69bbb58556a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c2d4a851b9a209fdbb4b0152141b89581ff94b6077ab6f30d5c5890810ae8545.gz",
+    "bytes": 10112,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-4.xyfg",
+    "sha256": "c2d4a851b9a209fdbb4b0152141b89581ff94b6077ab6f30d5c5890810ae8545"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/bd39a1b5776b2b6f9b6d04b08411e8415fd98b2f10bc73e13db67142cfaa7f18.gz",
+    "bytes": 3471916,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-5.html",
+    "sha256": "bd39a1b5776b2b6f9b6d04b08411e8415fd98b2f10bc73e13db67142cfaa7f18"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/aea817bb06f937d7ef0797e465b2fda598ebb601fde7d53b40cbc48285f95aaa.gz",
+    "bytes": 2405,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-5.offline.png",
+    "sha256": "aea817bb06f937d7ef0797e465b2fda598ebb601fde7d53b40cbc48285f95aaa"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/998126d40ad27bd6aa6b193fda5475d88696dbba3914a47c5550147daba8d0c1.gz",
+    "bytes": 82148,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-5.painter",
+    "sha256": "998126d40ad27bd6aa6b193fda5475d88696dbba3914a47c5550147daba8d0c1"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/4db51acad8ffc9e4950ba7147997da1c8b8a358b4fe1f579adf49f5b4f77872c.gz",
+    "bytes": 26312,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-5.png",
+    "sha256": "4db51acad8ffc9e4950ba7147997da1c8b8a358b4fe1f579adf49f5b4f77872c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/cb7d6ddf27a0079a306fde11063e4a3e7a7274edc2d78cdfe809f73dce03bca2.gz",
+    "bytes": 377808,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-5.scene",
+    "sha256": "cb7d6ddf27a0079a306fde11063e4a3e7a7274edc2d78cdfe809f73dce03bca2"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/03b6983946631dca020580f80b62e883692b3017848b3cabc74323c96f19f292.gz",
+    "bytes": 128427,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-5.svg",
+    "sha256": "03b6983946631dca020580f80b62e883692b3017848b3cabc74323c96f19f292"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/786b2caee97999a867f01ecd3026da04d11090c9422014f2c5391810b71ba81d.gz",
+    "bytes": 11016,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/frame-5.xyfg",
+    "sha256": "786b2caee97999a867f01ecd3026da04d11090c9422014f2c5391810b71ba81d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9f2178f8f5545d604b2f21ac5da4fd6172c35bebc9d31e12fa2fe854b81ecbd1.gz",
+    "bytes": 2310,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/live-0.png",
+    "sha256": "9f2178f8f5545d604b2f21ac5da4fd6172c35bebc9d31e12fa2fe854b81ecbd1"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/ca6b1ced92e0b66b4987bd48392ea80bae7b63474533a9ab7632db1a63261a0b.gz",
+    "bytes": 2382,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/live-1.png",
+    "sha256": "ca6b1ced92e0b66b4987bd48392ea80bae7b63474533a9ab7632db1a63261a0b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9b3e7c71687d2c54edcde60f2f79e0f68a8998f3fb8900ecb0e5f58edadfe38d.gz",
+    "bytes": 2506,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/live-2.png",
+    "sha256": "9b3e7c71687d2c54edcde60f2f79e0f68a8998f3fb8900ecb0e5f58edadfe38d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9f2178f8f5545d604b2f21ac5da4fd6172c35bebc9d31e12fa2fe854b81ecbd1.gz",
+    "bytes": 2310,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/live-3.png",
+    "sha256": "9f2178f8f5545d604b2f21ac5da4fd6172c35bebc9d31e12fa2fe854b81ecbd1"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f457903ade13efd7348d739a6f46a06fc5499d6bfe8fc6a8a7c009723f0f0d42.gz",
+    "bytes": 1392,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/live-4.png",
+    "sha256": "f457903ade13efd7348d739a6f46a06fc5499d6bfe8fc6a8a7c009723f0f0d42"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/ca6b1ced92e0b66b4987bd48392ea80bae7b63474533a9ab7632db1a63261a0b.gz",
+    "bytes": 2382,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/live-5.png",
+    "sha256": "ca6b1ced92e0b66b4987bd48392ea80bae7b63474533a9ab7632db1a63261a0b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d7c063f58c442c3d15f105bbbab2408639ab28093dc54086e0562843a7c37486.gz",
+    "bytes": 33,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/report.json",
+    "sha256": "d7c063f58c442c3d15f105bbbab2408639ab28093dc54086e0562843a7c37486"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/a8c352d5d7eb8051e55108a2015a6d2199c66ceaadcd0f74952094660529c4e7.gz",
+    "bytes": 439649,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/wire.json",
+    "sha256": "a8c352d5d7eb8051e55108a2015a6d2199c66ceaadcd0f74952094660529c4e7"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/0117e6d0d5ce48bde4dfc073ed59eeadf3057bc68c4b666772e8daa350340409.gz",
+    "bytes": 33949645,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.aggregate-graph/worker.json",
+    "sha256": "0117e6d0d5ce48bde4dfc073ed59eeadf3057bc68c4b666772e8daa350340409"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+    "bytes": 11369,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.esm-malformed-inline-artifact.png",
+    "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+    "bytes": 11369,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.esm-missing-inline-artifact.png",
+    "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66.gz",
+    "bytes": 11315,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.esm-missing-retained-source.png",
+    "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/891547157cfad086b753787e354bd4dceba5967e2d74bc49cc294e85e32287b6.gz",
+    "bytes": 3507095,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/inline-worker-png.html",
+    "sha256": "891547157cfad086b753787e354bd4dceba5967e2d74bc49cc294e85e32287b6"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d89bb74361e69f92bfecc8aa8fe0eeda2da2e77112e30590c10f092dcad0e36d.gz",
+    "bytes": 1050,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/report.json",
+    "sha256": "d89bb74361e69f92bfecc8aa8fe0eeda2da2e77112e30590c10f092dcad0e36d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d11e521d6f430eefdfbdfe2d19591061d64be9c54a0529142cb95f9501a27d57.gz",
+    "bytes": 4037040,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-0.html",
+    "sha256": "d11e521d6f430eefdfbdfe2d19591061d64be9c54a0529142cb95f9501a27d57"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/73c2bb400eb58aa2529414e81c883ebac0d38eff7b507546ca477181629bcd0d.gz",
+    "bytes": 5440,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-0.offline.png",
+    "sha256": "73c2bb400eb58aa2529414e81c883ebac0d38eff7b507546ca477181629bcd0d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/6708e63edaaf57c53b448567133bca28a2e9924ec2cca7987eac7c8ac9a1ee08.gz",
+    "bytes": 157260,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-0.painter",
+    "sha256": "6708e63edaaf57c53b448567133bca28a2e9924ec2cca7987eac7c8ac9a1ee08"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/b67bfd6ea4426ebef754c8003fbd3cc632a763777baf2f7f9c85f41abce1fdc5.gz",
+    "bytes": 39129,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-0.png",
+    "sha256": "b67bfd6ea4426ebef754c8003fbd3cc632a763777baf2f7f9c85f41abce1fdc5"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/299251add870696c72f21a545c291f77ab278b2c7e47fd15e90c2a654f50fb0a.gz",
+    "bytes": 4037040,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-0.scale2.html",
+    "sha256": "299251add870696c72f21a545c291f77ab278b2c7e47fd15e90c2a654f50fb0a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/1476fc3ddd5181a37489bdf7aaf604cbea6b8508248335810bded6ed261da0d9.gz",
+    "bytes": 9246,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-0.scale2.offline.png",
+    "sha256": "1476fc3ddd5181a37489bdf7aaf604cbea6b8508248335810bded6ed261da0d9"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c729946f31c20d3ddd67ed5037cea8b833a102f5d144c867eb39727572fff81c.gz",
+    "bytes": 60346,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-0.scale2.png",
+    "sha256": "c729946f31c20d3ddd67ed5037cea8b833a102f5d144c867eb39727572fff81c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/a9c38d638994ed878589264f5d624a95589dc199f0fee0153a22f557658fceaf.gz",
+    "bytes": 725400,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-0.scene",
+    "sha256": "a9c38d638994ed878589264f5d624a95589dc199f0fee0153a22f557658fceaf"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9273505826e53b5721c9b1a7247a75cd66f7852d127bd7f6869f1767fb9cb34b.gz",
+    "bytes": 221391,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-0.svg",
+    "sha256": "9273505826e53b5721c9b1a7247a75cd66f7852d127bd7f6869f1767fb9cb34b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/b4c11af9ab5323170a01cc97ae5bc30422c5597c532d971a201a623e2714d142.gz",
+    "bytes": 11776,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-0.xyfg",
+    "sha256": "b4c11af9ab5323170a01cc97ae5bc30422c5597c532d971a201a623e2714d142"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/a13c632fae28b8ebe62892f00416fd85eaa2e51848256556bb6d23ba303efb95.gz",
+    "bytes": 3214492,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-1.html",
+    "sha256": "a13c632fae28b8ebe62892f00416fd85eaa2e51848256556bb6d23ba303efb95"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/29745f349e29c9071fa9eee966709b8dd6de4bcc19bd1f38b61c10406bba5c34.gz",
+    "bytes": 4555,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-1.offline.png",
+    "sha256": "29745f349e29c9071fa9eee966709b8dd6de4bcc19bd1f38b61c10406bba5c34"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e13dd7515a42bb0b5c1c77b5a82a3bfeed988291e2e002fc68833102bc589b8f.gz",
+    "bytes": 48396,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-1.painter",
+    "sha256": "e13dd7515a42bb0b5c1c77b5a82a3bfeed988291e2e002fc68833102bc589b8f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d186b71b93393ada67ac812f51c228c21795988f97baf7e7944a7ab605762d92.gz",
+    "bytes": 38002,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-1.png",
+    "sha256": "d186b71b93393ada67ac812f51c228c21795988f97baf7e7944a7ab605762d92"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/01d8b3c3b8f5f229c85995d2344e6e92b790aa6d5ea19f3077e9669718a86358.gz",
+    "bytes": 3214492,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-1.scale2.html",
+    "sha256": "01d8b3c3b8f5f229c85995d2344e6e92b790aa6d5ea19f3077e9669718a86358"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/ee6d49aa7e6d0e84111358bd58beac6663a37d987af1d86239cb4286a8881d91.gz",
+    "bytes": 7340,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-1.scale2.offline.png",
+    "sha256": "ee6d49aa7e6d0e84111358bd58beac6663a37d987af1d86239cb4286a8881d91"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/311b2566b392f0a59c6362f9918c077bcaca4fd25ec8e45fa5fad95c99136d95.gz",
+    "bytes": 55097,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-1.scale2.png",
+    "sha256": "311b2566b392f0a59c6362f9918c077bcaca4fd25ec8e45fa5fad95c99136d95"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/4a56d93214ec747ad9eccbba82577d3f6c5e84f91e8f4867f135c4fe1760f868.gz",
+    "bytes": 217352,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-1.scene",
+    "sha256": "4a56d93214ec747ad9eccbba82577d3f6c5e84f91e8f4867f135c4fe1760f868"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/2018c16850ab6f20c9589ffa2e8776a99d994149aff503e0ae2758a17415f5ff.gz",
+    "bytes": 85689,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-1.svg",
+    "sha256": "2018c16850ab6f20c9589ffa2e8776a99d994149aff503e0ae2758a17415f5ff"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/a9c14ae37279f8d5cd6b17cdd750b8ccaca14b70eb9eb093cbba0f895d00afbd.gz",
+    "bytes": 11776,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-1.xyfg",
+    "sha256": "a9c14ae37279f8d5cd6b17cdd750b8ccaca14b70eb9eb093cbba0f895d00afbd"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c88fd2e66aebff5670af6378ec0c6d3b1488175f1f5736cbfbdbb741d386b714.gz",
+    "bytes": 3232380,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-2.html",
+    "sha256": "c88fd2e66aebff5670af6378ec0c6d3b1488175f1f5736cbfbdbb741d386b714"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/35daa48445de6c4f41329b92064d60af98ea443d785ac93fe4c933a36f27964b.gz",
+    "bytes": 4983,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-2.offline.png",
+    "sha256": "35daa48445de6c4f41329b92064d60af98ea443d785ac93fe4c933a36f27964b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c92c5718833e933b683f16353b3041a9e7e524cc57975e520b62eb4a60ffd5fd.gz",
+    "bytes": 50556,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-2.painter",
+    "sha256": "c92c5718833e933b683f16353b3041a9e7e524cc57975e520b62eb4a60ffd5fd"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/379b4dac23080c2e178700d3644f98d89bcfa59f85133dc1861a8b11ce0e50e8.gz",
+    "bytes": 39207,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-2.png",
+    "sha256": "379b4dac23080c2e178700d3644f98d89bcfa59f85133dc1861a8b11ce0e50e8"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/89b18cc71c487805b18e6ca2f4fe103007070da1051245112ad24e749a2cc1d2.gz",
+    "bytes": 3232380,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-2.scale2.html",
+    "sha256": "89b18cc71c487805b18e6ca2f4fe103007070da1051245112ad24e749a2cc1d2"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/2cdf6eac8be3143ea2a72141ca6f3509a9cc81837d0b6d45ecf95d94142060b8.gz",
+    "bytes": 8215,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-2.scale2.offline.png",
+    "sha256": "2cdf6eac8be3143ea2a72141ca6f3509a9cc81837d0b6d45ecf95d94142060b8"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/40999463b6d14b0306c598ea3f50a6f3ee445a05122c63f2ea6a95c8eb4c4459.gz",
+    "bytes": 59901,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-2.scale2.png",
+    "sha256": "40999463b6d14b0306c598ea3f50a6f3ee445a05122c63f2ea6a95c8eb4c4459"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/19c425b85267e5f5d5308503947928fcd8fb2456c0be0a19fbbe304e54cc8d5f.gz",
+    "bytes": 228608,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-2.scene",
+    "sha256": "19c425b85267e5f5d5308503947928fcd8fb2456c0be0a19fbbe304e54cc8d5f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e78330a33e69b77cb86c16cd34970155330265cef67f405d93dce59b74220482.gz",
+    "bytes": 87468,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-2.svg",
+    "sha256": "e78330a33e69b77cb86c16cd34970155330265cef67f405d93dce59b74220482"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e3251c38c89b3738fd9d624b1808a5878f389012965885b62b3cc6ef90e14a43.gz",
+    "bytes": 11776,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-2.xyfg",
+    "sha256": "e3251c38c89b3738fd9d624b1808a5878f389012965885b62b3cc6ef90e14a43"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/6b3874cc3cb0580b2b1953755df9d0059bdbb5e5d4541fcfd12d85181bd8a98a.gz",
+    "bytes": 3222236,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-3.html",
+    "sha256": "6b3874cc3cb0580b2b1953755df9d0059bdbb5e5d4541fcfd12d85181bd8a98a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/7f8a10366e0af63f0ae542f733305444dcbe4064246386a4a2a71d9e1b245a00.gz",
+    "bytes": 5086,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-3.offline.png",
+    "sha256": "7f8a10366e0af63f0ae542f733305444dcbe4064246386a4a2a71d9e1b245a00"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/43a727ba17d01ce85f4366ff7d52302e1e0b33dfe958e2dc0ae548144dbd010c.gz",
+    "bytes": 49332,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-3.painter",
+    "sha256": "43a727ba17d01ce85f4366ff7d52302e1e0b33dfe958e2dc0ae548144dbd010c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/0272bc26370eee3a35679d01b373d21c49f5cf3a0466490b97c8c68c1c7cdf0f.gz",
+    "bytes": 38994,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-3.png",
+    "sha256": "0272bc26370eee3a35679d01b373d21c49f5cf3a0466490b97c8c68c1c7cdf0f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9b0a55b74a03426f34a4f3020ef32ec8f186324f5f7f5e00796eb521cb653181.gz",
+    "bytes": 3222236,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-3.scale2.html",
+    "sha256": "9b0a55b74a03426f34a4f3020ef32ec8f186324f5f7f5e00796eb521cb653181"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f54bd830f98d1012799bd1dd4d6817b185663e93f980c7dd5624a29e32302b91.gz",
+    "bytes": 8474,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-3.scale2.offline.png",
+    "sha256": "f54bd830f98d1012799bd1dd4d6817b185663e93f980c7dd5624a29e32302b91"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/37d1ec1d4e86b36fd2081b9ed5171dc25be425b4c2abbfe1e35f2fc20188e0f9.gz",
+    "bytes": 58510,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-3.scale2.png",
+    "sha256": "37d1ec1d4e86b36fd2081b9ed5171dc25be425b4c2abbfe1e35f2fc20188e0f9"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f1cb4edecb943da69a3ad2bad3e65fb578c73e6e7145ecff35d81d04fe01ce99.gz",
+    "bytes": 222224,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-3.scene",
+    "sha256": "f1cb4edecb943da69a3ad2bad3e65fb578c73e6e7145ecff35d81d04fe01ce99"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/447ee495b80b862e9e25026037eba5176e42fb9081903395581c025ee5d9e187.gz",
+    "bytes": 86672,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-3.svg",
+    "sha256": "447ee495b80b862e9e25026037eba5176e42fb9081903395581c025ee5d9e187"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/847f2c92619c051318531cddde49d0dcceb781ab11e6107ab18c2c8a8f442ed7.gz",
+    "bytes": 11776,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-3.xyfg",
+    "sha256": "847f2c92619c051318531cddde49d0dcceb781ab11e6107ab18c2c8a8f442ed7"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/8dc34e4f4c8cfde7fd7d1711d134361f15a2dc26175bcfb342a99a4f1aab98e6.gz",
+    "bytes": 3218448,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-4.html",
+    "sha256": "8dc34e4f4c8cfde7fd7d1711d134361f15a2dc26175bcfb342a99a4f1aab98e6"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/469dab77316ca8cc544910eca3e88690bc6b4c8870e69f1214ec58ef3d11657e.gz",
+    "bytes": 5046,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-4.offline.png",
+    "sha256": "469dab77316ca8cc544910eca3e88690bc6b4c8870e69f1214ec58ef3d11657e"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f7334fc326de07bfa8aeec957274cd81a881299a06ea3eb796397ad07b29ecfe.gz",
+    "bytes": 48828,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-4.painter",
+    "sha256": "f7334fc326de07bfa8aeec957274cd81a881299a06ea3eb796397ad07b29ecfe"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/d8c59094e5dedf1d6ba9dda518881b6aa408782892aa68f95527c7cae490a1e0.gz",
+    "bytes": 38405,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-4.png",
+    "sha256": "d8c59094e5dedf1d6ba9dda518881b6aa408782892aa68f95527c7cae490a1e0"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/dce766b5532e4c569c28c6d2c2029f8bcdd5fc57ac03ef985d427067796ce01b.gz",
+    "bytes": 3218448,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-4.scale2.html",
+    "sha256": "dce766b5532e4c569c28c6d2c2029f8bcdd5fc57ac03ef985d427067796ce01b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/fadf4294cf55ddc21687f29ccff995650b6a19bea1f4b95401fe460f61b729da.gz",
+    "bytes": 8125,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-4.scale2.offline.png",
+    "sha256": "fadf4294cf55ddc21687f29ccff995650b6a19bea1f4b95401fe460f61b729da"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9c00fdaadaeb52f6c1d4fbbea2568e46b2300589f497a55853ad791092a1283b.gz",
+    "bytes": 57404,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-4.scale2.png",
+    "sha256": "9c00fdaadaeb52f6c1d4fbbea2568e46b2300589f497a55853ad791092a1283b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/4b75b363d3abfe8633de8e4a372dcb06ed26a8317483f9a630b20ad0aab4303f.gz",
+    "bytes": 219888,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-4.scene",
+    "sha256": "4b75b363d3abfe8633de8e4a372dcb06ed26a8317483f9a630b20ad0aab4303f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/fb7a53aa65f6d3e3b1304e62c1f0b9a5d93346bbda90d65eeddd2b8852155bc1.gz",
+    "bytes": 86457,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-4.svg",
+    "sha256": "fb7a53aa65f6d3e3b1304e62c1f0b9a5d93346bbda90d65eeddd2b8852155bc1"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/7b1b26c8b032a940ab6c1bd93c46e94c098c1c7e4fac6e57da9a4433de4ba084.gz",
+    "bytes": 11776,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-4.xyfg",
+    "sha256": "7b1b26c8b032a940ab6c1bd93c46e94c098c1c7e4fac6e57da9a4433de4ba084"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/ce0c4f14b8b49fefb6af0d690497f83771442935406e597f7cbf62f9c807ca8c.gz",
+    "bytes": 3234120,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-5-parent.html",
+    "sha256": "ce0c4f14b8b49fefb6af0d690497f83771442935406e597f7cbf62f9c807ca8c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c8d28893649e32c1c892a98edd5fd520d2b0a81d05d722615fe0bcd11ace17de.gz",
+    "bytes": 5273,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-5-parent.offline.png",
+    "sha256": "c8d28893649e32c1c892a98edd5fd520d2b0a81d05d722615fe0bcd11ace17de"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/12d70a96c1d14db02e3c8e822a27348c0952e9e53f0e4b9e4d4425b993f2c682.gz",
+    "bytes": 51068,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-5-parent.painter",
+    "sha256": "12d70a96c1d14db02e3c8e822a27348c0952e9e53f0e4b9e4d4425b993f2c682"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/329003c487a484c6dd1a6ab70139847ca1cab87fdee1c32aed62a0c5facd3fbb.gz",
+    "bytes": 42961,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-5-parent.png",
+    "sha256": "329003c487a484c6dd1a6ab70139847ca1cab87fdee1c32aed62a0c5facd3fbb"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/74e3c0086e67ed7b6d9590e73dac449c87fda28b49a15bcdcc5c43499f19577a.gz",
+    "bytes": 3234120,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-5-parent.scale2.html",
+    "sha256": "74e3c0086e67ed7b6d9590e73dac449c87fda28b49a15bcdcc5c43499f19577a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/edefe2a9bcc24edaebfa626b6e0249334975969a91d59488c51813a6b2609cc1.gz",
+    "bytes": 9175,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-5-parent.scale2.offline.png",
+    "sha256": "edefe2a9bcc24edaebfa626b6e0249334975969a91d59488c51813a6b2609cc1"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e857ac26fad4bba7bc113ff9065d1973911e579038887781014d839265ede569.gz",
+    "bytes": 67944,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-5-parent.scale2.png",
+    "sha256": "e857ac26fad4bba7bc113ff9065d1973911e579038887781014d839265ede569"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e45efa91f78d3471c5dba207002668eb2cb2d9e2173fa488d58000f0704a5f60.gz",
+    "bytes": 229520,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-5-parent.scene",
+    "sha256": "e45efa91f78d3471c5dba207002668eb2cb2d9e2173fa488d58000f0704a5f60"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/c4643889bc98973b84460e63a64b5d112ebab9505f96b90970e4405c94182e65.gz",
+    "bytes": 87092,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-5-parent.svg",
+    "sha256": "c4643889bc98973b84460e63a64b5d112ebab9505f96b90970e4405c94182e65"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/011ddcf0661e7cd809096d6244d71320ef0b7aeee754e488c9aa6bbf62a3d2f0.gz",
+    "bytes": 11696,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-5-parent.xyfg",
+    "sha256": "011ddcf0661e7cd809096d6244d71320ef0b7aeee754e488c9aa6bbf62a3d2f0"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/9867877d190de33eced936bea1c0abac1e69aace8160f6e81f40de0b1908720a.gz",
+    "bytes": 3233680,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-5.html",
+    "sha256": "9867877d190de33eced936bea1c0abac1e69aace8160f6e81f40de0b1908720a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/3d79b707c17cebd10d708c9493ecb6346c4710b5b55bb419f19ab12fafe4f841.gz",
+    "bytes": 5197,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-5.offline.png",
+    "sha256": "3d79b707c17cebd10d708c9493ecb6346c4710b5b55bb419f19ab12fafe4f841"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/61cb63d79bbd157d0e35f6c5d98ff802e2b5120474e3655e62ce7900e02aca12.gz",
+    "bytes": 50844,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-5.painter",
+    "sha256": "61cb63d79bbd157d0e35f6c5d98ff802e2b5120474e3655e62ce7900e02aca12"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/f02d3429d83cd3166bdc9115f437b63cb68fc88a8a6b937dafe747652d5079be.gz",
+    "bytes": 38760,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-5.png",
+    "sha256": "f02d3429d83cd3166bdc9115f437b63cb68fc88a8a6b937dafe747652d5079be"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/1fd45930798b007b8eeefe1335a6fbc362049037d2a033d12f7fa10994d19750.gz",
+    "bytes": 3233680,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-5.scale2.html",
+    "sha256": "1fd45930798b007b8eeefe1335a6fbc362049037d2a033d12f7fa10994d19750"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/21d20ddeca24a66bedf4897485c8004c103692f4ab152b7e44361d01ce32ada3.gz",
+    "bytes": 8720,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-5.scale2.offline.png",
+    "sha256": "21d20ddeca24a66bedf4897485c8004c103692f4ab152b7e44361d01ce32ada3"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/31ed8579a8d863bad4116a35fba90ca23a4ef1312b7d393695e9cfec1147bf91.gz",
+    "bytes": 59214,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-5.scale2.png",
+    "sha256": "31ed8579a8d863bad4116a35fba90ca23a4ef1312b7d393695e9cfec1147bf91"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/986b036c7ac0f009f07b74defd82cba2db13e7a5ee379522cb78b23f61c7f028.gz",
+    "bytes": 229296,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-5.scene",
+    "sha256": "986b036c7ac0f009f07b74defd82cba2db13e7a5ee379522cb78b23f61c7f028"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/b6c9bde64eaf0b1eb673bdc8b37431a8e24ac9fe77f5fb854929694d76ec39ea.gz",
+    "bytes": 88503,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-5.svg",
+    "sha256": "b6c9bde64eaf0b1eb673bdc8b37431a8e24ac9fe77f5fb854929694d76ec39ea"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/0fb41ff8b658a4fb6ea6df11af8c02b64c61b83857289f1f40e8fc2e43a27106.gz",
+    "bytes": 11776,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.frozen-graph/shape-5.xyfg",
+    "sha256": "0fb41ff8b658a4fb6ea6df11af8c02b64c61b83857289f1f40e8fc2e43a27106"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+    "bytes": 11369,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.iife-malformed-inline-artifact.png",
+    "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+    "bytes": 11369,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.iife-missing-inline-artifact.png",
+    "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66.gz",
+    "bytes": 11315,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.iife-missing-retained-source.png",
+    "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/ae9da1b5788dd5368770525ada8683ca05aaf70a2a7a8c0c60c67e334ad00ce8.gz",
+    "bytes": 103396,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.retained-temporal.json",
+    "sha256": "ae9da1b5788dd5368770525ada8683ca05aaf70a2a7a8c0c60c67e334ad00ce8"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/e47464cd85a30210f9cbe6ec12af0aee391c3aa8ec4c01afdc2b814b823a7d6d.gz",
+    "bytes": 44546,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.retained-temporal.json.boundary.png",
+    "sha256": "e47464cd85a30210f9cbe6ec12af0aee391c3aa8ec4c01afdc2b814b823a7d6d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/a03d81a62746e81bbc035d278d5ebc73be03be673f7fee0a4e3a9ca31fa0eceb.gz",
+    "bytes": 44231,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.retained-temporal.json.initial.png",
+    "sha256": "a03d81a62746e81bbc035d278d5ebc73be03be673f7fee0a4e3a9ca31fa0eceb"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/raw/425ae71a10402663ec3d00cf40463549b3c01bf06dc848f6795b8272c7f8e83e.gz",
+    "bytes": 3774640,
+    "path": "target/task-tmp/temporal-dense-continuation/foundation.json.retained-temporal.json.wire.json",
+    "sha256": "425ae71a10402663ec3d00cf40463549b3c01bf06dc848f6795b8272c7f8e83e"
+  }
+]

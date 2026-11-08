@@ -7962,6 +7962,7 @@ class TemporalChart(Chart):
         self.temporal_stroke = stroke
         self.temporal_width = stroke_width
         self.temporal_budget = budget
+        self._temporal_session = None
         self._dense_source = None
         if dense:
             from ._temporal_scene import request
@@ -7992,6 +7993,7 @@ class TemporalChart(Chart):
         """Set the exact next compile viewport; source identity remains immutable."""
         if self._temporal_disposed:
             raise ValueError("temporal composition disposed")
+        self.temporal_cancel()
         self.domain = tuple(domain)
         if width is not None:
             self.width = width
@@ -7999,11 +8001,30 @@ class TemporalChart(Chart):
             self.height = height
         return self
 
+    def temporal_cancel(self):
+        """Cancel the current Rust claim, preserving the last accepted result."""
+        if self._temporal_session is not None:
+            self._temporal_session.cancel()
+
     def temporal_dispose(self):
         """Release the retained source and prohibit subsequent queries/compilation."""
         self._temporal_disposed = True
         self.rows = ()
         self._dense_source = None
+        if self._temporal_session is not None:
+            self._temporal_session.close()
+
+    def temporal_begin(self):
+        """Start a cooperatively stepped native Scene operation."""
+        if not self.dense:
+            raise ValueError("incremental temporal operations require dense=True")
+        return self._compile_temporal(defer=True)
+
+    def temporal_supports(self, metadata, cell, *, offset=0, limit=256):
+        """Exact authored support vertices, excluding this cell's observations."""
+        return self._compile_temporal(
+            operation=3, cell=cell, offset=offset, limit=limit, metadata=metadata
+        )
 
     def temporal_metadata(self):
         """Return binary XYTL tier/count/provenance/resource metadata."""
@@ -8016,7 +8037,16 @@ class TemporalChart(Chart):
         )
 
     def _compile_temporal(
-        self, width=None, height=None, *, operation=0, cell=0, offset=0, limit=0, metadata=None
+        self,
+        width=None,
+        height=None,
+        *,
+        operation=0,
+        cell=0,
+        offset=0,
+        limit=0,
+        metadata=None,
+        defer=False,
     ):
         from . import _temporal_scene
 
@@ -8054,15 +8084,23 @@ class TemporalChart(Chart):
             start = 128 + sum(struct.unpack_from("<2I", source, 56))
             framed = bytearray(packet)
             framed[12:16] = source[12:16]
+            if self._temporal_session is None:
+                self._temporal_session = _temporal_scene.TemporalSession(self.temporal_budget)
+            self._temporal_session.preview(framed)
             framed.extend(memoryview(source)[start:])
             packet = bytes(framed)
             del framed
-        if operation == 1:
+        if operation in (1, 3):
             if not isinstance(metadata, bytes) or metadata[:4] != b"XYTL" or len(metadata) < 64:
                 raise ValueError("membership requires XYTL publication metadata")
             packet = bytearray(packet)
             packet[104:120] = metadata[20:36]
             packet = bytes(packet)
+        if self.dense:
+            if self._temporal_session is None:
+                self._temporal_session = _temporal_scene.TemporalSession(self.temporal_budget)
+            job = self._temporal_session.begin(packet)
+            return job if defer else job.result()
         return _temporal_scene.compile_request(packet, self.temporal_budget)
 
 

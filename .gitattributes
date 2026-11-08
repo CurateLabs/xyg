@@ -1031,3 +1031,26 @@ crates/xyg-engine/src/temporal_scene_dense.rs text eol=lf
 spec/performance/temporal-dense-lod-2026-11-07/**/*.scene -text
 spec/performance/temporal-dense-lod-2026-11-07/**/*.xyfg -text
 spec/performance/temporal-dense-lod-2026-11-07/**/*.painter -text
+# Actual temporal aggregate/direct membership and rendered export evidence.
+spec/performance/temporal-aggregate-frozen-2026-11-07/** text eol=lf
+spec/performance/temporal-aggregate-frozen-2026-11-07/**/*.gz -text
+spec/performance/temporal-aggregate-frozen-2026-11-07/**/*.png -text
+spec/performance/temporal-aggregate-frozen-2026-11-07/**/*.xyfg -text
+scripts/verify_temporal_aggregate_artifacts.py text eol=lf
+
+# Temporal line window clipping and provenance.
+spec/performance/temporal-line-window-2026-11-07/** text eol=lf
+spec/performance/temporal-line-window-2026-11-07/**/*.gz -text
+tests/fixtures/temporal/line-window-edges.json text eol=lf
+
+# Dense temporal clipped supports and cooperative ownership continuation.
+spec/performance/temporal-dense-continuation-2026-11-08/** text eol=lf
+spec/performance/temporal-dense-continuation-2026-11-08/**/*.gz -text
+spec/performance/temporal-dense-continuation-2026-11-08/**/*.png -text
+spec/performance/temporal-dense-continuation-2026-11-08/**/*.scene -text
+spec/performance/temporal-dense-continuation-2026-11-08/**/*.painter -text
+spec/performance/temporal-dense-continuation-2026-11-08/**/*.xyfg -text
+crates/xyg-engine/src/temporal_scene_jobs.rs text eol=lf
+crates/xyg-engine/src/calendar.rs text eol=lf
+crates/xyg-engine/src/scene_figure_support_pack.rs text eol=lf
+crates/xyg-engine/src/scene_xycf_pack.rs text eol=lf

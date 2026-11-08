@@ -2299,6 +2299,7 @@ async function run() {
   const temporalCatalogProof = [];
   const temporalExtremeProof = [];
   const temporalDenseProof = [];
+  const temporalLineWindowProof = [];
   const catalogWorker = createXygWasmWorker({workerUrl:"/packages/xy-client/dist/wasm-worker.js", wasm:wasmModule, maxArenaBytes:16*1024*1024});
   const digest = async bytes => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), b=>b.toString(16).padStart(2,"0")).join("");
   await catalogWorker.ready;
@@ -2330,7 +2331,9 @@ async function run() {
       const meta=await composition.metadata(), m=new DataView(meta);
       const key=Number(m.getBigUint64(64,true)), count=m.getBigUint64(72,true);
       const members=await composition.members(meta,key), v=new DataView(members);
-      if(v.getUint32(60,true)!==Number(count)||v.getBigUint64(64,true)!==2n**63n)throw Error('dense temporal membership mismatch');
+      const expected=rows.filter(([start,end])=>kind==='interval'||kind==='gantt'?start*202n<10000n&&end>0n:start*202n/10000n===0n).map(row=>row[3]);
+      const actual=Array.from({length:(members.byteLength-64)/8},(_,i)=>v.getBigUint64(64+i*8,true));
+      if(count!==BigInt(expected.length)||v.getUint32(60,true)!==expected.length||actual.some((id,i)=>id!==expected[i])||actual.length!==expected.length)throw Error('dense temporal membership differs from independent rational source oracle');
       const scene=await composition.scene();
       const host=document.body.appendChild(document.createElement('div'));
       const view=await renderWasmScene({el:host,scene,worker:catalogWorker,transfer:false});
@@ -2349,8 +2352,76 @@ async function run() {
       composition.cancel();
       let cancelled=false;try{await old;}catch{cancelled=true;}
       if(!cancelled)throw Error('cancelled temporal publication escaped');
-      composition.dispose();
+      await composition.dispose();
     }
+    const lineWindow = await (await fetch("/tests/fixtures/temporal/line-window-edges.json")).json();
+    if (lineWindow.schema !== "xyg.temporal-line-window/v1" || lineWindow.cases.length !== 8) throw Error("line-window fixture is incomplete");
+    for (const fixture of lineWindow.cases) {
+      const request = encodeTemporalScene({kind:"line",rows:fixture.times.map((t,i)=>[t===null?null:BigInt(t),null,fixture.values[i],BigInt(i+42)]),domain:fixture.domain.map(BigInt),timezone:"UTC",width:lineWindow.width,height:lineWindow.height,strokeWidth:4});
+      const scene = await catalogWorker.temporalSceneCompile(request).result;
+      if(await digest(scene)!==fixture.sceneSha256)throw Error(`temporal line-window native/Worker Scene differs: ${fixture.name}`);
+      const host = document.body.appendChild(document.createElement("div"));
+      let view;
+      try {
+        view = await renderWasmScene({el:host,scene,worker:catalogWorker,transfer:false});view._drawNow();
+        const canvas=view.canvas,pixels=canvas.getContext("2d").getImageData(0,0,canvas.width,canvas.height).data;
+        const sourceInk = (at) => Math.abs(pixels[at]-31)<=3 && Math.abs(pixels[at+1]-119)<=3 && Math.abs(pixels[at+2]-180)<=3 && pixels[at+3]>0;
+        const guards=[];
+        for(let i=1;i<fixture.points.length;i++) {
+          const a=fixture.points[i-1],b=fixture.points[i];
+          if(a[0]===b[0]&&a[1]===b[1])continue;
+          const x=(a[0]+b[0])/2,y=(a[1]+b[1])/2;let ink=0;
+          for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++) {
+            const px=Math.round((x-65)*canvas.width/811)+dx,py=Math.round((y-48)*canvas.height/324)+dy;
+            if(px>=0&&px<canvas.width&&py>=0&&py<canvas.height&&sourceInk((py*canvas.width+px)*4))ink++;
+          }
+          if(!ink)throw Error(`temporal line disappeared at window edge: ${fixture.name}`);
+          guards.push(ink);
+        }
+        if(!fixture.points.length)for(let at=0;at<pixels.length;at+=4)if(sourceInk(at))throw Error(`temporal line bridged a null or outside run: ${fixture.name}`);
+        temporalLineWindowProof.push({name:fixture.name,sceneSha256:await digest(scene),guards});
+      } finally {view?.destroy();host.remove();}
+    }
+    for(const fixture of lineWindow.cases){
+      const comp=new TemporalComposition(catalogWorker,{kind:'line',rows:fixture.times.map((t,i)=>[t===null?null:BigInt(t),null,fixture.values[i],BigInt(i+42)]),domain:fixture.domain.map(BigInt),timezone:'UTC',width:900,height:420});
+      const metadata=await comp.metadata();const mv=new DataView(metadata);
+      if(mv.getBigUint64(4,true)!==3n||mv.getUint32(60,true)!==72)throw Error('dense line provenance schema');
+      if(fixture.name==='crosses-both'){
+        if(mv.getBigUint64(72,true)!==0n||mv.getBigUint64(104,true)!==2n)throw Error('boundary support became observations');
+        const observed=await comp.members(metadata,0),support=await comp.supports(metadata,0),v=new DataView(support);
+        if(observed.byteLength!==64||v.getBigUint64(64,true)!==42n||v.getBigUint64(72,true)!==43n)throw Error('dense support IDs missing');
+      }
+      const occupied=Array.from({length:(metadata.byteLength-64)/72},(_,i)=>Number(mv.getBigUint64(64+i*72,true)));
+      for(const cell of [...new Set([occupied[0],occupied[Math.floor(occupied.length/2)],occupied.at(-1)])].filter(c=>c!==undefined)){
+        const lo=BigInt(fixture.domain[0]),span=BigInt(fixture.domain[1])-lo,left=lo*202n+BigInt(cell)*span,right=left+span;
+        const observed=[],supported=[];
+        fixture.times.forEach((time,i)=>{if(time===null)return;const t=BigInt(time),isSample=t>=lo&&t<lo+span&&(t-lo)*202n/span===BigInt(cell);if(isSample){observed.push(BigInt(i+42));return;}
+          if([i-1,i+1].some(j=>j>=0&&j<fixture.times.length&&fixture.times[j]!==null&&BigInt(fixture.times[Math.min(i,j)])*202n<right&&BigInt(fixture.times[Math.max(i,j)])*202n>=left))supported.push(BigInt(i+42));
+        });
+        for(const [query,expected] of [[()=>comp.members(metadata,cell),observed],[()=>comp.supports(metadata,cell),supported]]){const page=await query(),v=new DataView(page),actual=Array.from({length:(page.byteLength-64)/8},(_,i)=>v.getBigUint64(64+i*8,true));if(v.getUint32(60,true)!==expected.length||actual.length!==expected.length||actual.some((id,i)=>id!==expected[i]))throw Error(`dense clipped membership differs from authored oracle: ${fixture.name}`);}
+      }
+      const scene=await comp.scene(),host=document.body.appendChild(document.createElement('div'));
+      const view=await renderWasmScene({el:host,scene,worker:catalogWorker,transfer:false});view._drawNow();
+      const canvas=view.canvas,pixels=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+      const ink=(x,y)=>{let found=0;for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){const px=Math.round(x)+dx,py=Math.round(y)+dy;if(px>=0&&px<canvas.width&&py>=0&&py<canvas.height){const at=(py*canvas.width+px)*4;if(pixels[at]+5<pixels[at+2]&&pixels[at+1]<pixels[at+2])found++;}}return found;};
+      for(let i=1;i<fixture.points.length;i++){
+        const a=fixture.points[i-1],b=fixture.points[i];
+        for(const fraction of [.25,.5,.75]){const x=a[0]+(b[0]-a[0])*fraction,y=a[1]+(b[1]-a[1])*fraction;
+          if(!ink((x-65)*canvas.width/811,(y-48)*canvas.height/324))throw Error(`dense clipped envelope missing: ${fixture.name}`);}
+      }
+      if(!fixture.points.length)for(let at=0;at<pixels.length;at+=4)if(pixels[at]+5<pixels[at+2]&&pixels[at+1]<pixels[at+2])throw Error('dense null/outside run painted');
+      temporalDenseProof.push({name:fixture.name,sceneSha256:await digest(scene),metadataSha256:await digest(metadata),sceneBytes:scene.byteLength});
+      view.destroy();host.remove();await comp.dispose();
+    }
+    const cancelComp=new TemporalComposition(catalogWorker,{kind:'line',rows:Array.from({length:10000},(_,i)=>[BigInt(i),null,i%5,BigInt(i)]),domain:[0n,10000n],timezone:'UTC'});
+    const previous=await cancelComp.scene();let stopped=false,rejectedScan=false;
+    try{await cancelComp.scene({onProgress:ack=>{const v=new DataView(ack);if(v.getUint32(32,true)===1&&v.getBigUint64(48,true)>0n){stopped=true;cancelComp.cancel();}}});}catch(e){rejectedScan=true;if(!stopped)throw e;}
+    if(!stopped||!rejectedScan)throw Error('cooperative scan did not cancel before publication');
+    const recovered=await cancelComp.scene();if(await digest(previous)!==await digest(recovered))throw Error('cancel changed accepted source');
+    await cancelComp.dispose();
+    const exhausted=createXygWasmWorker({workerUrl:'/packages/xy-client/dist/wasm-worker.js',wasm:wasmModule,maxArenaBytes:16*1024*1024});await exhausted.ready;
+    await exhausted.temporalSceneCompile(encodeTemporalScene({kind:'line',rows:[[0n,null,0,42n],[10n,null,10,43n]],domain:[0n,10n],timezone:'UTC',dense:true}),{sequence:0xffffffff}).result;
+    await exhausted.dispose();
     for (const extent of [1e308, Number.MAX_VALUE]) {
       const request = encodeTemporalScene({kind:"scatter",rows:[[-1n,null,-extent,1n],[0n,null,0,2n],[1n,null,extent,3n]],domain:[-2n,8n],timezone:"UTC",width:900,height:420});
       const scene = await catalogWorker.temporalSceneCompile(request).result;
@@ -5013,7 +5084,7 @@ async function run() {
   } catch (error) {
     if (!(error instanceof TypeError)) throw error;
   }
-  return { ok: true, densityPolicy, densityNoRefinement, temporalControllerProof, filterDensityProof, temporalCatalogProof, temporalExtremeProof, temporalDenseProof };
+  return { ok: true, densityPolicy, densityNoRefinement, temporalControllerProof, filterDensityProof, temporalCatalogProof, temporalExtremeProof, temporalDenseProof, temporalLineWindowProof };
 }
 
 globalThis.__xygWasmFoundation = run().catch((error) => ({

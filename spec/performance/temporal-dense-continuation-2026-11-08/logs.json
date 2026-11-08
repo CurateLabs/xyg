@@ -1,0 +1,770 @@
+[
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-abi-smoke.log.gz",
+    "bytes": 52,
+    "path": "/var/tmp/dense-cont-abi-smoke.log",
+    "sha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-abi.log.gz",
+    "bytes": 42,
+    "path": "/var/tmp/dense-cont-abi.log",
+    "sha256": "eb8c840abbbfbbcc7b2fc02f6c1c2909f93ea1a5c8d5ab31aed178cc9a757485"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-browser-confirm.log.gz",
+    "bytes": 8364,
+    "path": "/var/tmp/dense-cont-browser-confirm.log",
+    "sha256": "8569d20b1ebbed9f4f00aa928e7f076c869af2dd1c13b6ba93a036079a6dbe37"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-browser-final.log.gz",
+    "bytes": 569,
+    "path": "/var/tmp/dense-cont-browser-final.log",
+    "sha256": "7b618749988ae061e95e6348c5490ea37ce1883cb8f08c9043002a6021bb5be7"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-browser-final2.log.gz",
+    "bytes": 8366,
+    "path": "/var/tmp/dense-cont-browser-final2.log",
+    "sha256": "2cbf5381a86936ae3066249e8f8b6274c4ac638c76389aedba7444a61c644d97"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-browser1.log.gz",
+    "bytes": 8358,
+    "path": "/var/tmp/dense-cont-browser1.log",
+    "sha256": "aa6f54b45717d1f6ce4dea8459d07af60fa675d0ac4154c23e8e9015ae83178f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-capture-final.log.gz",
+    "bytes": 7748,
+    "path": "/var/tmp/dense-cont-capture-final.log",
+    "sha256": "f939086c8d5411a240f8624899d5618ee5e55088d444fcbae988d92e92bfbf09"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-capture.log.gz",
+    "bytes": 7748,
+    "path": "/var/tmp/dense-cont-capture.log",
+    "sha256": "f939086c8d5411a240f8624899d5618ee5e55088d444fcbae988d92e92bfbf09"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-client-final.log.gz",
+    "bytes": 5448,
+    "path": "/var/tmp/dense-cont-client-final.log",
+    "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-client-qualified.log.gz",
+    "bytes": 5448,
+    "path": "/var/tmp/dense-cont-client-qualified.log",
+    "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-client.log.gz",
+    "bytes": 516,
+    "path": "/var/tmp/dense-cont-client.log",
+    "sha256": "7bae3a2121bc3fcee6637437ba6f1b37c9b74c98b04f3498cd5673ee5e4b53e5"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-client10.log.gz",
+    "bytes": 5448,
+    "path": "/var/tmp/dense-cont-client10.log",
+    "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-client2.log.gz",
+    "bytes": 5448,
+    "path": "/var/tmp/dense-cont-client2.log",
+    "sha256": "b22f12dec8a0ea5a6a978379f0ee90e44449a837a6e608509dee334d0471a1ee"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-client3.log.gz",
+    "bytes": 138,
+    "path": "/var/tmp/dense-cont-client3.log",
+    "sha256": "ae306382f4fd51b1c59314cf5c8287da626c6e98351077273659221f58f5490d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-client4.log.gz",
+    "bytes": 5448,
+    "path": "/var/tmp/dense-cont-client4.log",
+    "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-client5.log.gz",
+    "bytes": 5448,
+    "path": "/var/tmp/dense-cont-client5.log",
+    "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-client6.log.gz",
+    "bytes": 5448,
+    "path": "/var/tmp/dense-cont-client6.log",
+    "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-client7.log.gz",
+    "bytes": 5448,
+    "path": "/var/tmp/dense-cont-client7.log",
+    "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-client8.log.gz",
+    "bytes": 5448,
+    "path": "/var/tmp/dense-cont-client8.log",
+    "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-client9.log.gz",
+    "bytes": 5448,
+    "path": "/var/tmp/dense-cont-client9.log",
+    "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-core-current.log.gz",
+    "bytes": 98,
+    "path": "/var/tmp/dense-cont-core-current.log",
+    "sha256": "13c5c8f405e65a10e40cc6380db29613206c505c2dfb4f6671b8c572d853e320"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-core-frozen.log.gz",
+    "bytes": 99,
+    "path": "/var/tmp/dense-cont-core-frozen.log",
+    "sha256": "03309d01ca6e5d05546977b3bf5e9c5e79f5aa6693713f5eaf153d197d5a9ab0"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-core-precheck.log.gz",
+    "bytes": 2981,
+    "path": "/var/tmp/dense-cont-core-precheck.log",
+    "sha256": "b35b31a6951ad590d525d27e11544de55733951d26a2f047370f539d95d2a11d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-force-recheck.log.gz",
+    "bytes": 5859,
+    "path": "/var/tmp/dense-cont-force-recheck.log",
+    "sha256": "d484a98feaccf3bd270684a99b6eefbe548375c5abd938ea4cf1cd54703efed6"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-format-first.log.gz",
+    "bytes": 115,
+    "path": "/var/tmp/dense-cont-format-first.log",
+    "sha256": "99579c93ad14fc0c341b151b6b179eb945d3e188fba53a6c629e81958dc9e54d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-format-qualified.log.gz",
+    "bytes": 29,
+    "path": "/var/tmp/dense-cont-format-qualified.log",
+    "sha256": "8c3e57f25afe8d8f1d2c8f36f27edbcc1ce3cc53595f02517fd5ec39ff770676"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-inventory-after.log.gz",
+    "bytes": 97,
+    "path": "/var/tmp/dense-cont-inventory-after.log",
+    "sha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-inventory-before.log.gz",
+    "bytes": 109,
+    "path": "/var/tmp/dense-cont-inventory-before.log",
+    "sha256": "f5204dec6d349e067f9bc7177a91f68d70ab8ff9322eee2e6377615df6e3c771"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-inventory-check.log.gz",
+    "bytes": 183,
+    "path": "/var/tmp/dense-cont-inventory-check.log",
+    "sha256": "bdd50838468d40eae3f95b477e29f48ab7de50484daef0c3f88022cf96214c3b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-inventory-producer.log.gz",
+    "bytes": 89,
+    "path": "/var/tmp/dense-cont-inventory-producer.log",
+    "sha256": "cd975729990937c1b50b0dcb92208fc69c6ee6bdcc541598bd86dfdced8fbdaa"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-line-generator-wheel.log.gz",
+    "bytes": 0,
+    "path": "/var/tmp/dense-cont-line-generator-wheel.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-line-generator.log.gz",
+    "bytes": 0,
+    "path": "/var/tmp/dense-cont-line-generator.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-native-calendar.log.gz",
+    "bytes": 247,
+    "path": "/var/tmp/dense-cont-native-calendar.log",
+    "sha256": "78d73037b0c5ddc75cc534b5d7c36fde163527e2a6cb50af0725d36635b95a58"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-native-complete.log.gz",
+    "bytes": 683,
+    "path": "/var/tmp/dense-cont-native-complete.log",
+    "sha256": "cb8ccbccef9dc4a56af552568764f468bc6573f1ef5f4749c5f16a12e3e40a23"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-native-final-scan.log.gz",
+    "bytes": 247,
+    "path": "/var/tmp/dense-cont-native-final-scan.log",
+    "sha256": "76db00b51feb21426672a1f0b6c40379f064a1327b8b2d1ae0a50b94e245d473"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-native-final.log.gz",
+    "bytes": 247,
+    "path": "/var/tmp/dense-cont-native-final.log",
+    "sha256": "22fe3731e85dc5a7c0242a9036db936861dfc2241c044bebc9fe13f322cecd04"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-native-memberfold.log.gz",
+    "bytes": 247,
+    "path": "/var/tmp/dense-cont-native-memberfold.log",
+    "sha256": "e4bcf907c76f0afae5ffb322bf3fcf5b85f7d2869873a81d9bc2319a5020d066"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-native-oneword.log.gz",
+    "bytes": 247,
+    "path": "/var/tmp/dense-cont-native-oneword.log",
+    "sha256": "775204b63e71a15370a84d820f6f45648eee1272a65839b60f24d896e4e75967"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-native-preview.log.gz",
+    "bytes": 247,
+    "path": "/var/tmp/dense-cont-native-preview.log",
+    "sha256": "222f5c5e2970dae59874f54d6f475a8b7adc9b1d3c560c07747ebaa56328f562"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-native-qualified.log.gz",
+    "bytes": 683,
+    "path": "/var/tmp/dense-cont-native-qualified.log",
+    "sha256": "8a4f57eedac7be4902e301c7d10a022396a1c30fce072b3e635ad595d8c35c9f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-native-readshare.log.gz",
+    "bytes": 247,
+    "path": "/var/tmp/dense-cont-native-readshare.log",
+    "sha256": "76db00b51feb21426672a1f0b6c40379f064a1327b8b2d1ae0a50b94e245d473"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-native-share.log.gz",
+    "bytes": 247,
+    "path": "/var/tmp/dense-cont-native-share.log",
+    "sha256": "253b1682839af19162fe88a7dd83446932ccc1f22d66ba3da4508058e4d31c31"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-native-staticwords.log.gz",
+    "bytes": 301,
+    "path": "/var/tmp/dense-cont-native-staticwords.log",
+    "sha256": "a72a687ca440a1fae49bdd85f5916032ca8d5bf13308555082c6f31b1e148308"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-native-supportpack.log.gz",
+    "bytes": 247,
+    "path": "/var/tmp/dense-cont-native-supportpack.log",
+    "sha256": "78d73037b0c5ddc75cc534b5d7c36fde163527e2a6cb50af0725d36635b95a58"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-native.log.gz",
+    "bytes": 650,
+    "path": "/var/tmp/dense-cont-native.log",
+    "sha256": "b9e469180d9bd3b82b9acce442b0962555ec32ec705e62dbc25f1f08d04eb08a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-node-calendar.log.gz",
+    "bytes": 4094,
+    "path": "/var/tmp/dense-cont-node-calendar.log",
+    "sha256": "51e0169d4acd1ba2da2aee73abc77b47ef5cd74469aaaad4e301973cba1bef4a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-node-normal.log.gz",
+    "bytes": 239778,
+    "path": "/var/tmp/dense-cont-node-normal.log",
+    "sha256": "a0e694e246999755d6ffa4502856e67336f5d8ded40edbb78c041920d6e1b00f"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-node-normal2.log.gz",
+    "bytes": 238689,
+    "path": "/var/tmp/dense-cont-node-normal2.log",
+    "sha256": "0f953b44b0e50d603b5125297615f490db7a147067abf5c83b27690ccab8d652"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-node-viewport.log.gz",
+    "bytes": 4269,
+    "path": "/var/tmp/dense-cont-node-viewport.log",
+    "sha256": "c4eef4e94b4887c6cb3ba4b3d7ab8d1be1c614981834a5d2943f55b384660029"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-node1.log.gz",
+    "bytes": 3640,
+    "path": "/var/tmp/dense-cont-node1.log",
+    "sha256": "45b51cdc6cc3996b75a2ab5ce76746524f4c3702739ea56ea6dd25241ae8482b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-node2.log.gz",
+    "bytes": 3867,
+    "path": "/var/tmp/dense-cont-node2.log",
+    "sha256": "f39cdb1a7ee8d88656373b35cbb2a3b5b56b095bdea8f38b6cbb50726c2e4410"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-node3.log.gz",
+    "bytes": 4095,
+    "path": "/var/tmp/dense-cont-node3.log",
+    "sha256": "5fc23c871acfe584397778fa0d1cd4c257c26264bc7d7dfc074fe4ce08dbb468"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-append.log.gz",
+    "bytes": 673,
+    "path": "/var/tmp/dense-cont-package-append.log",
+    "sha256": "81ea4bd2f046514d644f09a7354a9998dcdd9af7567fe17bd93f00777279654a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-calendar-core.log.gz",
+    "bytes": 673,
+    "path": "/var/tmp/dense-cont-package-calendar-core.log",
+    "sha256": "da2053f707846486a1d7ae57650d36ad85dc4a18994fe894d73838c4596d4730"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-calendar-noinline.log.gz",
+    "bytes": 673,
+    "path": "/var/tmp/dense-cont-package-calendar-noinline.log",
+    "sha256": "6c1045d5a70a57cc396e5a9f9787231415d662992961b88afde64e1c0d534ab7"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-calendarshare.log.gz",
+    "bytes": 673,
+    "path": "/var/tmp/dense-cont-package-calendarshare.log",
+    "sha256": "916feb4fd8c0205457b9b0fb4e139f628c19d2584c882fe6e5a50d50ec72b824"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-math.log.gz",
+    "bytes": 673,
+    "path": "/var/tmp/dense-cont-package-math.log",
+    "sha256": "d4a3338f7be9a6c46924234007fa3e0d5c7ec5c7c975c69947feab5bef280a26"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-memberfold.log.gz",
+    "bytes": 493,
+    "path": "/var/tmp/dense-cont-package-memberfold.log",
+    "sha256": "c6231c6e013b4cec86cc489c671341d796ec94d3a66bb69d00abaa6d2fffe437"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-oneword.log.gz",
+    "bytes": 673,
+    "path": "/var/tmp/dense-cont-package-oneword.log",
+    "sha256": "edbbbc7416470b6ee3a969b555022572f15256b5fa34c992b0820f3dd49eb3b4"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-readshare.log.gz",
+    "bytes": 673,
+    "path": "/var/tmp/dense-cont-package-readshare.log",
+    "sha256": "3abf77699b56a21d3a9b4d6934571a909651c9b2c9f7d283cb9dc737d362854e"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-share.log.gz",
+    "bytes": 673,
+    "path": "/var/tmp/dense-cont-package-share.log",
+    "sha256": "302ab11e9c61272b9421d6e653128dd7aaace9c881890933632dfd686e0a522e"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-sharedwords.log.gz",
+    "bytes": 673,
+    "path": "/var/tmp/dense-cont-package-sharedwords.log",
+    "sha256": "1ffa94af919971bb2c0b86f1c6c1bc4715f5f7c1ee3a75ca68b50a78b4d399d7"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-sortshare.log.gz",
+    "bytes": 673,
+    "path": "/var/tmp/dense-cont-package-sortshare.log",
+    "sha256": "6c06504a2bd5a7aa620165b025d8745b65bd6b83a9df085fed91a8b2d302bea3"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-staticwords.log.gz",
+    "bytes": 673,
+    "path": "/var/tmp/dense-cont-package-staticwords.log",
+    "sha256": "1a931e1260322c41c4d5b4e0485340b649ceb01423c68ab6ff4c60c34ee88413"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-supportpack.log.gz",
+    "bytes": 673,
+    "path": "/var/tmp/dense-cont-package-supportpack.log",
+    "sha256": "6c1045d5a70a57cc396e5a9f9787231415d662992961b88afde64e1c0d534ab7"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-words-complete.log.gz",
+    "bytes": 673,
+    "path": "/var/tmp/dense-cont-package-words-complete.log",
+    "sha256": "3091c3aaea03f07c48f9bac9948ef11c9a3343406ed1d9cc644524f6c09f325d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-words.log.gz",
+    "bytes": 673,
+    "path": "/var/tmp/dense-cont-package-words.log",
+    "sha256": "81ea4bd2f046514d644f09a7354a9998dcdd9af7567fe17bd93f00777279654a"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package1.log.gz",
+    "bytes": 673,
+    "path": "/var/tmp/dense-cont-package1.log",
+    "sha256": "016129d62150eef2e2be557e078a9880f02599d508ede4e57c10cf618a6ba7f3"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-parity-final.log.gz",
+    "bytes": 478,
+    "path": "/var/tmp/dense-cont-parity-final.log",
+    "sha256": "773110e33ebf52614f10b24a348353a6c8ed821fd852259424484db8b6db9a7b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-parity-qualified.log.gz",
+    "bytes": 477,
+    "path": "/var/tmp/dense-cont-parity-qualified.log",
+    "sha256": "9a3894c3602659541b9c4014a9af95346a729a063647dd6470bdcd59054af109"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-parity1.log.gz",
+    "bytes": 345,
+    "path": "/var/tmp/dense-cont-parity1.log",
+    "sha256": "1b32e6b79cfe8881c1477406c47945a1715b7108c95542f5776c10facba95996"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-parity2.log.gz",
+    "bytes": 478,
+    "path": "/var/tmp/dense-cont-parity2.log",
+    "sha256": "773110e33ebf52614f10b24a348353a6c8ed821fd852259424484db8b6db9a7b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-precommit-initial.log.gz",
+    "bytes": 240,
+    "path": "/var/tmp/dense-cont-precommit-initial.log",
+    "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-python-calendar.log.gz",
+    "bytes": 100,
+    "path": "/var/tmp/dense-cont-python-calendar.log",
+    "sha256": "6b0a10e6e823d60454cae94faedc98c35c6d3efd6d50c7204d550768f4ffd375"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-python-captures.log.gz",
+    "bytes": 5568,
+    "path": "/var/tmp/dense-cont-python-captures.log",
+    "sha256": "c4414163c88092c3074171725461c28269ac72495b1fba1bff43e16bc5b85454"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-python-memberfold.log.gz",
+    "bytes": 100,
+    "path": "/var/tmp/dense-cont-python-memberfold.log",
+    "sha256": "d95f2cd33f62e14fd0a5c3c3e0776aaedef837c8d333aeb9624390e36cc849a3"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-python-qualified.log.gz",
+    "bytes": 99,
+    "path": "/var/tmp/dense-cont-python-qualified.log",
+    "sha256": "6301d11f1ae4bcf538af32cd2f26aabe18010a78df31b8a7c50b4dd45c7b93b6"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-python-readshare.log.gz",
+    "bytes": 99,
+    "path": "/var/tmp/dense-cont-python-readshare.log",
+    "sha256": "314d6a254bfb5da1c48d195cdbb3518613da8a8a5292c39c212740d6f83fb05b"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-python-viewport.log.gz",
+    "bytes": 99,
+    "path": "/var/tmp/dense-cont-python-viewport.log",
+    "sha256": "d9d1e07bbad3428a8d9de70c568c0679179c182c0e01916587caa7d1bfc70c46"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-python-wheel.log.gz",
+    "bytes": 100,
+    "path": "/var/tmp/dense-cont-python-wheel.log",
+    "sha256": "c90a0a2f37c89ec0d8cf3689a8f43cea154c8027b16269fef4d992ee0756a567"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-python1.log.gz",
+    "bytes": 99,
+    "path": "/var/tmp/dense-cont-python1.log",
+    "sha256": "7a282695a81bce71443077ec455a756da015ccc9c5aaaca02b92dd654518db3d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-python2.log.gz",
+    "bytes": 2234,
+    "path": "/var/tmp/dense-cont-python2.log",
+    "sha256": "78ff3e2d2b7158d5b1bfd17feb6010f12697ea328218142692e56daa0628c61d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-python3.log.gz",
+    "bytes": 99,
+    "path": "/var/tmp/dense-cont-python3.log",
+    "sha256": "a1a86e27031c613303cfc07bd8e4f10ca3121ca41c425f37c8cc09ed66b68e8e"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-python4.log.gz",
+    "bytes": 99,
+    "path": "/var/tmp/dense-cont-python4.log",
+    "sha256": "70321449c91e3792e076b644b92be394d414e0c0941e6f755cc4cd4e66aa8245"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-ruff-first.log.gz",
+    "bytes": 5004,
+    "path": "/var/tmp/dense-cont-ruff-first.log",
+    "sha256": "12982cfddc577004efec8c3857ed8539c43cd32e8078c1ec76efa7d6eecbcaf6"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-ruff-fix.log.gz",
+    "bytes": 2081,
+    "path": "/var/tmp/dense-cont-ruff-fix.log",
+    "sha256": "283e42b51aebeeb9c653577effe3605be3eaf7a3bcaab3f598dfb8990ebcee02"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-ruff-qualified.log.gz",
+    "bytes": 19,
+    "path": "/var/tmp/dense-cont-ruff-qualified.log",
+    "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-ruff1.log.gz",
+    "bytes": 2081,
+    "path": "/var/tmp/dense-cont-ruff1.log",
+    "sha256": "283e42b51aebeeb9c653577effe3605be3eaf7a3bcaab3f598dfb8990ebcee02"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-ruff2.log.gz",
+    "bytes": 4388,
+    "path": "/var/tmp/dense-cont-ruff2.log",
+    "sha256": "2b80f7ceb93967a79ba597b03cae7d436c0a380063fcbee1fde60f7d36dcbf45"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-rust-final.log.gz",
+    "bytes": 1628,
+    "path": "/var/tmp/dense-cont-rust-final.log",
+    "sha256": "b3f1f5748c75c259220edd84b15fd8e0dce414dcfd46e3985831b5bf74503b45"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-rust-memberfold.log.gz",
+    "bytes": 1628,
+    "path": "/var/tmp/dense-cont-rust-memberfold.log",
+    "sha256": "7ecd0ebd27fdf924cd9693ffee46437b653f47b4646fd8fdbe15e0ccef472ab0"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-rust-workspace-final.log.gz",
+    "bytes": 182419,
+    "path": "/var/tmp/dense-cont-rust-workspace-final.log",
+    "sha256": "f6e80b75b1a26c90fc55492bb9f86d83e2cf76a8f55aa4a231d83c743fbe5e64"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-rust-workspace.log.gz",
+    "bytes": 1831,
+    "path": "/var/tmp/dense-cont-rust-workspace.log",
+    "sha256": "36a4850704d315f24f6e979a9425a7cae4ff73938f55fcddc9ac2421fa0aad61"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-rust-workspace2.log.gz",
+    "bytes": 708,
+    "path": "/var/tmp/dense-cont-rust-workspace2.log",
+    "sha256": "a48b76b15a52c3e6be859d0dd8803d05df15ca0439bb921cb1ac41fa658c7b44"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-rust-workspace3.log.gz",
+    "bytes": 181368,
+    "path": "/var/tmp/dense-cont-rust-workspace3.log",
+    "sha256": "9c035239082565fa9b0b37b5be0d456dfbe67e26257fadf4d79333e23cf123d8"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-rust.log.gz",
+    "bytes": 1167,
+    "path": "/var/tmp/dense-cont-rust.log",
+    "sha256": "442686e6296a397995607c8b88af22ba1db77104a1d0123b68175da588285fda"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-rust2.log.gz",
+    "bytes": 751,
+    "path": "/var/tmp/dense-cont-rust2.log",
+    "sha256": "7e05ec208d0f113c00c818e36eee5760ef2daacce3c5191228aab6c0c30ed8f8"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-rust3.log.gz",
+    "bytes": 38206,
+    "path": "/var/tmp/dense-cont-rust3.log",
+    "sha256": "9365712f5c75e9ba651f0a7dd390ec349abd8da3b2fe216d479dbf27384db270"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-support-parity-wheel.log.gz",
+    "bytes": 591,
+    "path": "/var/tmp/dense-cont-support-parity-wheel.log",
+    "sha256": "0a989093de9c122ef7d3f6d5296969e6aebf8a91ddb90f9554187554c6123468"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-support-parity.log.gz",
+    "bytes": 591,
+    "path": "/var/tmp/dense-cont-support-parity.log",
+    "sha256": "0a989093de9c122ef7d3f6d5296969e6aebf8a91ddb90f9554187554c6123468"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-ty-final.log.gz",
+    "bytes": 19,
+    "path": "/var/tmp/dense-cont-ty-final.log",
+    "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-ty-qualified.log.gz",
+    "bytes": 19,
+    "path": "/var/tmp/dense-cont-ty-qualified.log",
+    "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-ty1.log.gz",
+    "bytes": 19,
+    "path": "/var/tmp/dense-cont-ty1.log",
+    "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-ty2.log.gz",
+    "bytes": 19,
+    "path": "/var/tmp/dense-cont-ty2.log",
+    "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-ty3.log.gz",
+    "bytes": 19,
+    "path": "/var/tmp/dense-cont-ty3.log",
+    "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-verify-wasm.log.gz",
+    "bytes": 88,
+    "path": "/var/tmp/dense-cont-verify-wasm.log",
+    "sha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-wasm-abi.log.gz",
+    "bytes": 0,
+    "path": "/var/tmp/dense-cont-wasm-abi.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-wasm-append.log.gz",
+    "bytes": 3786,
+    "path": "/var/tmp/dense-cont-wasm-append.log",
+    "sha256": "a18e893841468c4bb6bf112615bd41afcd21eb248c0fbed85ae9d86713f3b267"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-wasm-calendar-core.log.gz",
+    "bytes": 3786,
+    "path": "/var/tmp/dense-cont-wasm-calendar-core.log",
+    "sha256": "a8fcd8db90d908c609383369e5eaf947aea4b728dc755d5218ce2948ade23b7c"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-wasm-calendar-noinline.log.gz",
+    "bytes": 3786,
+    "path": "/var/tmp/dense-cont-wasm-calendar-noinline.log",
+    "sha256": "2f33330ad07e9812f0a9087ad05e054c6d695d3aa6f9aafbe457f5a9678853a9"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-wasm-calendarshare.log.gz",
+    "bytes": 3786,
+    "path": "/var/tmp/dense-cont-wasm-calendarshare.log",
+    "sha256": "3ede77622be2b7c7a90d4ce9b9a9902ed16ddb7dd0cb6db6bbfccebde2a63da9"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-wasm-math.log.gz",
+    "bytes": 3786,
+    "path": "/var/tmp/dense-cont-wasm-math.log",
+    "sha256": "e8b76a76db52a2c127ae4698b1b132d2a93e887b6849b53420fbed694ed45234"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-wasm-memberfold.log.gz",
+    "bytes": 3840,
+    "path": "/var/tmp/dense-cont-wasm-memberfold.log",
+    "sha256": "25b822dc0164fa2a68e5b96e1b736704d478242122ee582a787932ab8f079148"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-wasm-oneword.log.gz",
+    "bytes": 4032,
+    "path": "/var/tmp/dense-cont-wasm-oneword.log",
+    "sha256": "0301bad695ff9b14c37883b8a1b362d12d22cc5273ea36da79e74778d2529fba"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-wasm-preview.log.gz",
+    "bytes": 3786,
+    "path": "/var/tmp/dense-cont-wasm-preview.log",
+    "sha256": "a18e893841468c4bb6bf112615bd41afcd21eb248c0fbed85ae9d86713f3b267"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-wasm-quantum.log.gz",
+    "bytes": 3786,
+    "path": "/var/tmp/dense-cont-wasm-quantum.log",
+    "sha256": "c87895b199f8cbccdc8077f8b0a5e4a516d365f7380553a1119b9f7ff2ec24a2"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-wasm-readshare-final.log.gz",
+    "bytes": 3601,
+    "path": "/var/tmp/dense-cont-wasm-readshare-final.log",
+    "sha256": "8496ce476b6d5210481c92b3338abc9cb1c91d220efeeeaf2020f20ed4525448"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-wasm-readshare.log.gz",
+    "bytes": 3786,
+    "path": "/var/tmp/dense-cont-wasm-readshare.log",
+    "sha256": "d3a59a93e003de772d93f94e0605c91d108640033a222d4c44924519f71941af"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-wasm-share.log.gz",
+    "bytes": 3786,
+    "path": "/var/tmp/dense-cont-wasm-share.log",
+    "sha256": "84733c9119b826ba6a42b0d108965c94669fc8b5b0416e6bee5066ce34eb5884"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-wasm-sharedwords.log.gz",
+    "bytes": 4499,
+    "path": "/var/tmp/dense-cont-wasm-sharedwords.log",
+    "sha256": "4421d0d41c90bef6eb5c3fc56948dd601165ca22c6a8ac29d45e5aa9a36e80c5"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-wasm-sortshare.log.gz",
+    "bytes": 3786,
+    "path": "/var/tmp/dense-cont-wasm-sortshare.log",
+    "sha256": "c87895b199f8cbccdc8077f8b0a5e4a516d365f7380553a1119b9f7ff2ec24a2"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-wasm-state.log.gz",
+    "bytes": 3840,
+    "path": "/var/tmp/dense-cont-wasm-state.log",
+    "sha256": "69eae008a0d55acf0ab1befd40bdcff8ac3b5a15395d9eb238fed947172c6754"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-wasm-staticwords.log.gz",
+    "bytes": 3786,
+    "path": "/var/tmp/dense-cont-wasm-staticwords.log",
+    "sha256": "618d45b3ccdc8f1f5e97142aaa556a0291904a51c099eb2bed6736e3fa02c75d"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-wasm-supportpack.log.gz",
+    "bytes": 5460,
+    "path": "/var/tmp/dense-cont-wasm-supportpack.log",
+    "sha256": "77df78a0c4c16a8b4cf348e50851f1419c057ec9bc289b436d9cf417717215a3"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-wasm-verified-wheel.log.gz",
+    "bytes": 88,
+    "path": "/var/tmp/dense-cont-wasm-verified-wheel.log",
+    "sha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-wasm-words.log.gz",
+    "bytes": 29610,
+    "path": "/var/tmp/dense-cont-wasm-words.log",
+    "sha256": "6c96120dc52ec2ec6b1c043e3610065dab97267bfe0d70fc690b2341d1355ed7"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-wasm.log.gz",
+    "bytes": 4195,
+    "path": "/var/tmp/dense-cont-wasm.log",
+    "sha256": "7260d3390dfd5d173b42e2bcb8cd9f488b6d349301a38a08728303c730852bae"
+  },
+  {
+    "archive": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-wheel.log.gz",
+    "bytes": 477,
+    "path": "/var/tmp/dense-cont-wheel.log",
+    "sha256": "bbd034b6babc7472dbc70b28c3866df10bfd4a148a79c9036b6ff7d8f00ba3b7"
+  }
+]

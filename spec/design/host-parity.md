@@ -2173,15 +2173,17 @@ nonlinear/large-offset compatibility and massive performance remain open. The [n
 include synchronous Worker cancellation limits and logical memory accounting.
 ## Temporal catalog candidate (#46)
 
-[Temporal catalog](temporal-catalog.md) records the exact XYTM framing and
-bounded Python/Node Figure and browser WASM entry points. Opt-in XYTM v2 adds
-Rust-owned occupancy/envelope Scenes, binary metadata and exact paged canonical
-membership through public composition viewport/query/disposal methods. Native,
-Python, Node and six actual packaged Worker/painter journeys have bounded parity
-evidence in `spec/performance/temporal-dense-lod-2026-11-07/`. The combined module
-passes the unchanged package caps. Reviewed crossing-segment line clipping still
-needs integration; full installed-host, source-residency, scale and accessible
-controller journeys remain release blockers. This is not #46 completion.
+[Temporal catalog](temporal-catalog.md) specifies XYTM v1/v2, XYTL v2/v3 and
+XYTJ v1. Public Python/Node and browser compositions use one Rust compiler,
+ordinary Scene painter, exact paged observation/support IDs, clipped incident
+line envelopes and bounded cooperative scan steps. Native async waiters and
+actual Worker cancellation share the Rust ownership/progress/publication rules.
+Direct-line and six-family historical fixtures remain unchanged. Source/host
+reservations have explicit boundaries; retained canonical data remains sized by N.
+Continuation evidence and two immutable parents live in
+`spec/performance/temporal-dense-continuation-2026-11-08/`. Full installed-host,
+scale and accessible controller journeys remain release blockers; #46 remains open.
+
 ### Immutable temporal graph snapshots and retained exports
 
 Python/Node and the actual browser Worker use Rust-owned XYFG snapshots and

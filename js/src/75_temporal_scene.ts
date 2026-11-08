@@ -3,7 +3,7 @@ export interface TemporalSceneInput {
   kind: 'event'|'interval'|'gantt'|'line'|'bar'|'scatter';
   rows: readonly (readonly [bigint|null,bigint|null,number,bigint])[];
   domain: readonly [bigint,bigint]; cursor?: bigint; timezone: string;
-  publication?: ArrayBuffer; dense?: boolean; operation?: 0|1|2; cell?: number; offset?: number; limit?: number;
+  publication?: ArrayBuffer; dense?: boolean; operation?: 0|1|2|3; cell?: number; offset?: number; limit?: number;
   precision?: number; width?: number; height?: number; title?: string;
   color?: Uint8Array; stroke?: Uint8Array; strokeWidth?: number;
 }
@@ -36,7 +36,7 @@ export function encodeTemporalScene(input: TemporalSceneInput): ArrayBuffer {
       v.setUint32(at,value,true);
     }
   }
-  if(input.operation===1){if(!input.publication||input.publication.byteLength<64)throw new TypeError('membership requires XYTL publication');b.set(new Uint8Array(input.publication,20,16),104);}
+  if(input.operation===1||input.operation===3){if(!input.publication||input.publication.byteLength<64)throw new TypeError('membership requires XYTL publication');b.set(new Uint8Array(input.publication,20,16),104);}
   v.setFloat64(80,input.strokeWidth??1,true);b.set(zone,128);b.set(title,128+zone.length);
   input.rows.forEach(([start,end,value,id],i)=>{const at=128+zone.length+title.length+i*40;
     v.setBigInt64(at,start===null?0n:exact(start),true);v.setBigInt64(at+8,end===null?0n:exact(end),true);
@@ -50,6 +50,8 @@ export class TemporalComposition {
   private revision=0;
   private publications=new WeakMap<ArrayBuffer,number>();
   private busy=false;
+  private session:{lifetime?:number;disposed?:boolean;disposal?:Promise<void>}={};
+  private active:{cancel:()=>void}|null=null;
   constructor(private worker: import('./47_wasm').XygWasmWorker, input: TemporalSceneInput) {
     this.source=encodeTemporalScene({...input,dense:true});
   }
@@ -62,26 +64,31 @@ export class TemporalComposition {
     this.cancel();return this;
   }
   private live(){if(!this.source)throw new Error('temporal composition disposed');}
-  cancel(){this.revision++;}
-  dispose(){this.cancel();this.source=null;}
-  private async execute(operation:number,cell=0,offset=0,limit=0,publication?:ArrayBuffer):Promise<ArrayBuffer>{
+  cancel(){this.revision++;this.active?.cancel();}
+  dispose(){this.cancel();this.source=null;return this.worker.temporalSceneRelease(this.session);}
+
+  private async execute(operation:number,cell=0,offset=0,limit=0,publication?:ArrayBuffer,onProgress?:(reply:ArrayBuffer)=>void):Promise<ArrayBuffer>{
     this.live();if(this.busy)throw new Error('temporal operation already in flight');
     this.busy=true;
     try {
-    const revision=this.revision,packet=this.source!.slice(0),view=new DataView(packet);
+    const revision=this.revision,header=new DataView(this.source!);
+    const preview=this.worker.temporalScenePreview(this.source!.slice(0,128+header.getUint32(56,true)+header.getUint32(60,true)));this.active=preview;await preview.result;
+    if(revision!==this.revision||!this.source)throw new Error('stale temporal publication');
+    const packet=this.source!.slice(0),view=new DataView(packet);
     for(const [at,value] of [[88,operation],[92,cell],[96,offset],[100,limit]]){
       if(!Number.isInteger(value)||value<0||value>0xffffffff)throw new RangeError('dense query fields require u32');
       view.setUint32(at,value,true);
     }
-    if(operation===1){
+    if(operation===1||operation===3){
       if(!publication||this.publications.get(publication)!==revision)throw new Error('stale or foreign temporal publication');
       new Uint8Array(packet,104,16).set(new Uint8Array(publication,20,16));
     }
-    const task=this.worker.temporalSceneCompile(packet);
+    const task=this.worker.temporalSceneCompile(packet,{session:this.session,onProgress});this.active=task;
     const result=await task.result;if(revision!==this.revision||!this.source)throw new Error('stale temporal publication');if(operation===2)this.publications.set(result,revision);return result;
-    } finally {this.busy=false;}
+    } finally {this.busy=false;this.active=null;}
   }
-  scene(){return this.execute(0);}
+  scene(options:{onProgress?:(reply:ArrayBuffer)=>void}={}){return this.execute(0,0,0,0,undefined,options.onProgress);}
   metadata(){return this.execute(2);}
+  supports(publication:ArrayBuffer,cell:number,offset=0,limit=256){return this.execute(3,cell,offset,limit,publication);}
   members(publication:ArrayBuffer,cell:number,offset=0,limit=256){return this.execute(1,cell,offset,limit,publication);}
 }

@@ -3839,7 +3839,10 @@ and global process budgets (#111) are not certified by this standalone candidate
 ### Dense temporal composition candidate (#46)
 
 Opt-in XYTM v2 shares the ordinary Scene painter and leaves v1 unchanged.
+XYTJ v1 sessions provide bounded Rust scan steps, cancellation and atomic accepted
+state; XYTL v3 line metadata separates half-open observations from exact clipped
+support provenance. Retained sources remain sized by N under explicit admission.
 The exact time-cell, lane-occupancy, line/bar envelope, paged membership and
-resource refusal contracts are in [temporal-catalog.md](design/temporal-catalog.md#dense-opt-in-candidate-xytm-v2).
+resource refusal contracts are in [temporal-catalog.md](design/temporal-catalog.md#dense-opt-in-composition-xytm-v2-and-xytj-v1).
 This candidate has bounded derived output; full admitted source retention is
 still data-sized. It is not 100M/out-of-core evidence or #46 completion.

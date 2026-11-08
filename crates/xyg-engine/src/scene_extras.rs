@@ -10,6 +10,8 @@
 //! multi-character UTF-8 (XYMG v2, max 64 bytes). Combined `marker_path` +
 //! `marker_glyph` stays fail-closed.
 
+use crate::scene::SceneByteWrite;
+
 use crate::polar::{XYPL_MAGIC, XYPL_V1_BYTES};
 use crate::scene::{
     marker_glyph_text, xymg_padded_len, MAX_SCENE_STYLES, XYDS_MAGIC, XYDS_MAX_VALUES, XYDS_VERSION,
@@ -100,9 +102,9 @@ fn encode_xyds(entries: &[DashEntry]) -> Result<Vec<u8>, ExtrasError> {
         return Err(ExtrasError::Limit);
     }
     let mut out = Vec::from(*XYDS_MAGIC);
-    out.extend_from_slice(&XYDS_VERSION.to_le_bytes());
-    out.extend_from_slice(&(entries.len() as u32).to_le_bytes());
-    out.extend_from_slice(&0u32.to_le_bytes());
+    out.push_word(XYDS_VERSION);
+    out.push_word(entries.len() as u32);
+    out.push_word(0u32);
     let mut seen = std::collections::BTreeSet::new();
     for entry in entries {
         if entry.count < 2
@@ -111,14 +113,14 @@ fn encode_xyds(entries: &[DashEntry]) -> Result<Vec<u8>, ExtrasError> {
         {
             return Err(ExtrasError::Payload);
         }
-        out.extend_from_slice(&entry.style_ref.to_le_bytes());
-        out.extend_from_slice(&(u32::from(entry.count)).to_le_bytes());
+        out.push_word(entry.style_ref);
+        out.push_word(u32::from(entry.count));
         for index in 0..entry.count as usize {
             let value = entry.values[index];
             if !value.is_finite() || value <= 0.0 {
                 return Err(ExtrasError::Payload);
             }
-            out.extend_from_slice(&value.to_le_bytes());
+            out.push_word(value);
         }
     }
     Ok(out)
@@ -132,9 +134,9 @@ fn encode_xylc(entries: &[CapEntry]) -> Result<Vec<u8>, ExtrasError> {
         return Err(ExtrasError::Limit);
     }
     let mut out = Vec::from(*XYLC_MAGIC);
-    out.extend_from_slice(&XYLC_VERSION.to_le_bytes());
-    out.extend_from_slice(&(entries.len() as u32).to_le_bytes());
-    out.extend_from_slice(&0u32.to_le_bytes());
+    out.push_word(XYLC_VERSION);
+    out.push_word(entries.len() as u32);
+    out.push_word(0u32);
     let mut seen = std::collections::BTreeSet::new();
     for entry in entries {
         if (entry.cap != LINECAP_BUTT && entry.cap != LINECAP_SQUARE)
@@ -142,7 +144,7 @@ fn encode_xylc(entries: &[CapEntry]) -> Result<Vec<u8>, ExtrasError> {
         {
             return Err(ExtrasError::Payload);
         }
-        out.extend_from_slice(&entry.style_ref.to_le_bytes());
+        out.push_word(entry.style_ref);
         out.push(entry.cap);
         out.extend_from_slice(&[0u8, 0, 0]);
     }
@@ -157,9 +159,9 @@ fn encode_xymp(entries: &[MarkerEntry]) -> Result<Vec<u8>, ExtrasError> {
         return Err(ExtrasError::Limit);
     }
     let mut out = Vec::from(*XYMP_MAGIC);
-    out.extend_from_slice(&XYMP_VERSION.to_le_bytes());
-    out.extend_from_slice(&(entries.len() as u32).to_le_bytes());
-    out.extend_from_slice(&0u32.to_le_bytes());
+    out.push_word(XYMP_VERSION);
+    out.push_word(entries.len() as u32);
+    out.push_word(0u32);
     let mut seen = std::collections::BTreeSet::new();
     for entry in entries {
         let n_vertices: usize = entry.contours.iter().map(Vec::len).sum();
@@ -171,16 +173,16 @@ fn encode_xymp(entries: &[MarkerEntry]) -> Result<Vec<u8>, ExtrasError> {
         {
             return Err(ExtrasError::Payload);
         }
-        out.extend_from_slice(&entry.style_ref.to_le_bytes());
-        out.extend_from_slice(&(u32::from(entry.filled)).to_le_bytes());
-        out.extend_from_slice(&(entry.contours.len() as u32).to_le_bytes());
-        out.extend_from_slice(&(n_vertices as u32).to_le_bytes());
+        out.push_word(entry.style_ref);
+        out.push_word(u32::from(entry.filled));
+        out.push_word(entry.contours.len() as u32);
+        out.push_word(n_vertices as u32);
         for contour in &entry.contours {
             if contour.len() < 2 || (entry.filled && contour.len() < 3) {
                 return Err(ExtrasError::Payload);
             }
-            out.extend_from_slice(&(contour.len() as u32).to_le_bytes());
-            out.extend_from_slice(&0u32.to_le_bytes());
+            out.push_word(contour.len() as u32);
+            out.push_word(0u32);
             for &(x, y) in contour {
                 if !x.is_finite()
                     || !y.is_finite()
@@ -189,8 +191,8 @@ fn encode_xymp(entries: &[MarkerEntry]) -> Result<Vec<u8>, ExtrasError> {
                 {
                     return Err(ExtrasError::Payload);
                 }
-                out.extend_from_slice(&x.to_le_bytes());
-                out.extend_from_slice(&y.to_le_bytes());
+                out.push_word(x);
+                out.push_word(y);
             }
         }
     }
@@ -205,9 +207,9 @@ fn encode_xygr(entries: &[GradEntry]) -> Result<Vec<u8>, ExtrasError> {
         return Err(ExtrasError::Limit);
     }
     let mut out = Vec::from(*XYGR_MAGIC);
-    out.extend_from_slice(&XYGR_VERSION.to_le_bytes());
-    out.extend_from_slice(&(entries.len() as u32).to_le_bytes());
-    out.extend_from_slice(&0u32.to_le_bytes());
+    out.push_word(XYGR_VERSION);
+    out.push_word(entries.len() as u32);
+    out.push_word(0u32);
     let mut seen = std::collections::BTreeSet::new();
     for entry in entries {
         if entry.stops.len() < 2
@@ -221,16 +223,16 @@ fn encode_xygr(entries: &[GradEntry]) -> Result<Vec<u8>, ExtrasError> {
         if entry.plot_space {
             flags |= XYGR_FLAG_PLOT_SPACE;
         }
-        out.extend_from_slice(&entry.style_ref.to_le_bytes());
-        out.extend_from_slice(&flags.to_le_bytes());
-        out.extend_from_slice(&(entry.stops.len() as u32).to_le_bytes());
-        out.extend_from_slice(&0u32.to_le_bytes());
+        out.push_word(entry.style_ref);
+        out.push_word(flags);
+        out.push_word(entry.stops.len() as u32);
+        out.push_word(0u32);
         let mut prev_t = f32::NEG_INFINITY;
         for &(t, rgba) in &entry.stops {
             if !t.is_finite() || !(0.0..=1.0).contains(&t) || t < prev_t {
                 return Err(ExtrasError::Payload);
             }
-            out.extend_from_slice(&t.to_le_bytes());
+            out.push_word(t);
             out.extend_from_slice(&rgba);
             prev_t = t;
         }
@@ -246,17 +248,17 @@ fn encode_xymg(entries: &[GlyphEntry]) -> Result<Vec<u8>, ExtrasError> {
         return Err(ExtrasError::Limit);
     }
     let mut out = Vec::from(*XYMG_MAGIC);
-    out.extend_from_slice(&XYMG_VERSION.to_le_bytes());
-    out.extend_from_slice(&(entries.len() as u32).to_le_bytes());
-    out.extend_from_slice(&0u32.to_le_bytes());
+    out.push_word(XYMG_VERSION);
+    out.push_word(entries.len() as u32);
+    out.push_word(0u32);
     let mut seen = std::collections::BTreeSet::new();
     for entry in entries {
         if marker_glyph_text(&entry.glyph).is_none() || !seen.insert(entry.style_ref) {
             return Err(ExtrasError::Payload);
         }
         let padded = xymg_padded_len(entry.glyph.len()).ok_or(ExtrasError::Limit)?;
-        out.extend_from_slice(&entry.style_ref.to_le_bytes());
-        out.extend_from_slice(&(entry.glyph.len() as u32).to_le_bytes());
+        out.push_word(entry.style_ref);
+        out.push_word(entry.glyph.len() as u32);
         out.extend_from_slice(&entry.glyph);
         out.resize(out.len() + (padded - entry.glyph.len()), 0);
     }
@@ -287,19 +289,19 @@ fn wrap_extras(polar: &[u8], paint: &[u8], dash: &[u8]) -> Result<Vec<u8>, Extra
     if dash.is_empty() {
         let mut out = Vec::with_capacity(16 + polar.len() + paint.len());
         out.extend_from_slice(XYEX_MAGIC);
-        out.extend_from_slice(&XYEX_VERSION.to_le_bytes());
-        out.extend_from_slice(&(polar.len() as u32).to_le_bytes());
-        out.extend_from_slice(&(paint.len() as u32).to_le_bytes());
+        out.push_word(XYEX_VERSION);
+        out.push_word(polar.len() as u32);
+        out.push_word(paint.len() as u32);
         out.extend_from_slice(polar);
         out.extend_from_slice(paint);
         return Ok(out);
     }
     let mut out = Vec::with_capacity(20 + polar.len() + paint.len() + dash.len());
     out.extend_from_slice(XYEX_MAGIC);
-    out.extend_from_slice(&XYEX_VERSION_DASH.to_le_bytes());
-    out.extend_from_slice(&(polar.len() as u32).to_le_bytes());
-    out.extend_from_slice(&(paint.len() as u32).to_le_bytes());
-    out.extend_from_slice(&(dash.len() as u32).to_le_bytes());
+    out.push_word(XYEX_VERSION_DASH);
+    out.push_word(polar.len() as u32);
+    out.push_word(paint.len() as u32);
+    out.push_word(dash.len() as u32);
     out.extend_from_slice(polar);
     out.extend_from_slice(paint);
     out.extend_from_slice(dash);

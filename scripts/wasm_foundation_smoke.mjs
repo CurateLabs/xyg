@@ -20,6 +20,7 @@ const allowed = new Set([
   "/spec/wasm/abi.json",
   "/tests/fixtures/temporal/assertion-history.json",
   "/tests/fixtures/temporal/catalog-six-families.json",
+  "/tests/fixtures/temporal/line-window-edges.json",
   "/tests/fixtures/figure_scene_v3.json",
   "/tests/fixtures/authored_scene_v20.json",
   "/tests/fixtures/xyts_cross_host.json",
@@ -134,7 +135,7 @@ try {
   const page = await browser.newPage();
   const external = [];
   const pageErrors = [];
-  page.on("pageerror", (error) => pageErrors.push(error.message));
+  page.on("pageerror", (error) => pageErrors.push(error.stack ?? error.message));
   page.on("request", (request) => {
     const url = new URL(request.url());
     if (url.hostname !== "127.0.0.1") external.push(request.url());
@@ -162,7 +163,7 @@ try {
   } finally {
     clearTimeout(timeout);
   }
-  if (pageErrors.length) throw new Error(`browser page errors: ${pageErrors.join(" | ")}`);
+  if (pageErrors.length) throw new Error(`browser page errors: ${pageErrors.join(" | ")}; foundation: ${result?.error ?? "completed"}`);
   if (!result?.ok) throw new Error(result?.error ?? "browser foundation smoke failed");
   if (!only && (!Array.isArray(result.densityPolicy) || result.densityPolicy.length !== 2)) {
     throw new Error("browser foundation smoke omitted massive density policy evidence");
@@ -175,6 +176,9 @@ try {
       || ["event", "interval", "gantt", "line", "bar", "scatter"].some(
         (kind) => !result.temporalCatalogProof.some((entry) => entry.kind === kind)))) {
     throw new Error("browser foundation smoke omitted a temporal catalog family");
+  }
+  if (!only && result.temporalLineWindowProof?.length !== 8) {
+    throw new Error("browser foundation smoke omitted temporal line-window coverage");
   }
   if (!only) console.log(`direct-browser density policy ${JSON.stringify(result.densityPolicy)}`);
   if (!only) console.log(`direct-browser linked density ${JSON.stringify(result.filterDensityProof)}`);
@@ -222,6 +226,7 @@ try {
       temporalCatalogProof: result.temporalCatalogProof,
       temporalDenseProof: result.temporalDenseProof,
       temporalExtremeProof: result.temporalExtremeProof,
+      temporalLineWindowProof: result.temporalLineWindowProof,
       limitations: [
         "Three bounded generated-file cases through each packaged ESM/IIFE entry: absent inline bootstrap, malformed inline bootstrap rejected before Worker allocation, and absent retained source.",
         "Rust produces the overview through the packaged XYAG/XYAO Worker; fixture framing supplies the painter envelope.",
@@ -257,6 +262,13 @@ if (!only && !browserPackage) {
 // The full source gate includes native/WASM oracles; staged-package scope is unchanged.
 if (!only && !browserPackage) {
   execFileSync(process.execPath, [join(root, "scripts/temporal_graph_frozen_smoke.mjs"), ...(reportPath ? [`${reportPath}.frozen-graph`] : [])], {
+    cwd: root, stdio: "inherit", env: process.env,
+  });
+}
+
+// Exact aggregate/direct temporal membership and frozen rendered artifacts.
+if (!only && !browserPackage) {
+  execFileSync(process.execPath, [join(root, "scripts/temporal_graph_aggregate_smoke.mjs"), ...(reportPath ? [`${reportPath}.aggregate-graph`] : [])], {
     cwd: root, stdio: "inherit", env: process.env,
   });
 }

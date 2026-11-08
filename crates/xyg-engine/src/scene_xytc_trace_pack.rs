@@ -4,6 +4,8 @@
 //! dispatch orchestration, sub-kernel flag assembly, and XYTR prefix/payload
 //! concat so Python/Node cannot drift on field-byte walks.
 
+use crate::scene::SceneByteWrite;
+
 use crate::kernels::{
     scene_xytc_color2_flags_pack, scene_xytc_color_channel_pack, scene_xytc_dash_pattern_pack,
     scene_xytc_hex_pitch_pack, scene_xytc_meta_flags_pack, scene_xytc_numeric_style_pack,
@@ -205,7 +207,7 @@ fn write_xytr_record(
     out.extend_from_slice(color_const);
     out.extend_from_slice(fill_space);
     for value in dash_pattern {
-        out.extend_from_slice(&value.to_le_bytes());
+        out.push_word(value);
     }
     out.extend_from_slice(marker_blob);
     out.extend_from_slice(gradient_blob);

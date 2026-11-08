@@ -6,6 +6,7 @@ import base64
 import ctypes
 import html as _html
 import struct
+from contextlib import suppress
 
 from . import _native, export
 
@@ -147,3 +148,100 @@ window.temporalView=hydrateWasmPainter(document.getElementById('chart'), {{paint
     if path is not None:
         export._atomic_write_text(path, document)
     return document
+
+
+class TemporalOperation:
+    """One revision of a retained Rust temporal session; steps and cancel are native."""
+
+    def __init__(self, session, revision):
+        self.session = session
+        self.revision = revision
+        self.ready = False
+
+    def step(self):
+        ack = self.session._command(2, self.revision)
+        self.ready = struct.unpack_from("<I", ack, 8)[0] == 1
+        return ack
+
+    def result(self):
+        while not self.ready:
+            self.step()
+        return self.session._command(3, self.revision)
+
+    async def result_async(self):
+        """Yield between Rust steps and cancel this claim if its waiter is cancelled."""
+        import asyncio
+
+        try:
+            while not self.ready:
+                self.step()
+                await asyncio.sleep(0)
+            return self.session._command(3, self.revision)
+        except BaseException:
+            with suppress(Exception):
+                self.cancel()
+            raise
+
+    def cancel(self):
+        return self.session._command(4, self.revision)
+
+    def close(self):
+        self.cancel()
+
+
+class TemporalSession:
+    """Retain accepted Rust state until a complete replacement is published."""
+
+    def __init__(self, budget=MAX_BYTES):
+        self.budget = budget
+        self.handle = 0
+        self.revision = 0
+        ack = self._command(0, 0)
+        self.handle = struct.unpack_from("<Q", ack, 16)[0]
+
+    def _command(self, op, revision, source=b""):
+        if op and not self.handle:
+            raise ValueError("temporal session disposed")
+        header = bytearray(64)
+        struct.pack_into(
+            "<4sIIIQQ",
+            header,
+            0,
+            b"XYTJ",
+            1,
+            op,
+            0,
+            0 if op == 6 else self.handle,
+            0 if op == 5 else revision,
+        )
+        return compile_request(bytes(header) + source, self.budget)
+
+    def preview(self, packet):
+        size = 128 + sum(struct.unpack_from("<2I", packet, 56))
+        return self._command(6, 0, packet[:size])
+
+    def begin(self, packet):
+        self.preview(packet)
+        if self.revision >= (1 << 64) - 1:
+            raise OverflowError("temporal revision exhausted")
+        self.revision += 1
+        self._command(1, self.revision, packet)
+        return TemporalOperation(self, self.revision)
+
+    def cancel(self):
+        if self.handle and self.revision:
+            return self._command(4, self.revision)
+
+    def accepted(self, revision):
+        return self._command(3, revision)
+
+    def close(self):
+        if self.handle:
+            try:
+                self._command(5, self.revision)
+            finally:
+                self.handle = 0
+
+    def __del__(self):
+        with suppress(Exception):
+            self.close()

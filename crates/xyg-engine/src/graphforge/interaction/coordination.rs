@@ -122,7 +122,7 @@ impl GraphSession {
             .iter()
             .filter_map(|r| self.identity.to_transport(r))
             .collect();
-        refs.sort_by(compare);
+        crate::shared_sort::by(&mut refs, compare);
         self.coordination.pending = Some(GraphCoordinationEvent {
             group_id: self.coordination.group,
             source_instance: self.instance_id,

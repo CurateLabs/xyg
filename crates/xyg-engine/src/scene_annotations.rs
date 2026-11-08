@@ -21,6 +21,8 @@
 //! Annotation `markup` is the #308 XYFS/XYEP pin
 //! (`XYG_SCENE_UNSUPPORTED_ANNOTATION_MARKUP`). Polar stays fail-closed.
 
+use crate::scene::SceneByteWrite;
+
 use crate::css::{apply_opacity_rgba8, color_rgba8};
 use crate::scene::{
     MAX_AUTHORED_STRAIGHT_ARROWS, MAX_AUTHORED_TEXT_ANNOTATIONS, MAX_SCENE_ANNOTATION_INPUT_BYTES,
@@ -373,8 +375,8 @@ pub fn wrapped_rows_from_meta<'a>(
 
 fn push_section(out: &mut Vec<u8>, magic: &[u8; 4], version: u32, count: u32, body: &[u8]) {
     out.extend_from_slice(magic);
-    out.extend_from_slice(&version.to_le_bytes());
-    out.extend_from_slice(&count.to_le_bytes());
+    out.push_word(version);
+    out.push_word(count);
     out.extend_from_slice(body);
 }
 
@@ -420,8 +422,8 @@ pub fn pack_annotations(input: AnnotationFrameInput<'_>) -> Result<Vec<u8>, Anno
         require_finite(&[row.x, row.y])?;
         require_style(row.flags, row.border_width)?;
         require_text(row.text, true, &mut text_budget)?;
-        xyat.extend_from_slice(&row.x.to_le_bytes());
-        xyat.extend_from_slice(&row.y.to_le_bytes());
+        xyat.push_word(row.x);
+        xyat.push_word(row.y);
         xyat.extend_from_slice(&row.rgba);
         if xyat_version >= 2 {
             xyat.extend_from_slice(&fill_bytes(row.flags, row.fill));
@@ -429,9 +431,9 @@ pub fn pack_annotations(input: AnnotationFrameInput<'_>) -> Result<Vec<u8>, Anno
         if xyat_version >= 3 {
             let (rgba, width) = border_pair(row.flags, row.border_rgba, row.border_width);
             xyat.extend_from_slice(&rgba);
-            xyat.extend_from_slice(&width.to_le_bytes());
+            xyat.push_word(width);
         }
-        xyat.extend_from_slice(&(row.text.len() as u32).to_le_bytes());
+        xyat.push_word(row.text.len() as u32);
         xyat.extend_from_slice(row.text);
     }
     if text_budget > MAX_SCENE_TEXT_BYTES {
@@ -448,7 +450,7 @@ pub fn pack_annotations(input: AnnotationFrameInput<'_>) -> Result<Vec<u8>, Anno
         if !seen.insert(row.stable_id) {
             return Err(AnnotationError::Order);
         }
-        xyal.extend_from_slice(&row.stable_id.to_le_bytes());
+        xyal.push_word(row.stable_id);
         xyal.extend_from_slice(&row.rgba);
         if xyal_version >= 3 {
             xyal.extend_from_slice(&fill_bytes(row.flags, row.fill));
@@ -456,9 +458,9 @@ pub fn pack_annotations(input: AnnotationFrameInput<'_>) -> Result<Vec<u8>, Anno
         if xyal_version >= 4 {
             let (rgba, width) = border_pair(row.flags, row.border_rgba, row.border_width);
             xyal.extend_from_slice(&rgba);
-            xyal.extend_from_slice(&width.to_le_bytes());
+            xyal.push_word(width);
         }
-        xyal.extend_from_slice(&(row.text.len() as u32).to_le_bytes());
+        xyal.push_word(row.text.len() as u32);
         xyal.extend_from_slice(row.text);
     }
     if attached_budget > MAX_SCENE_TEXT_BYTES {
@@ -482,14 +484,14 @@ pub fn pack_annotations(input: AnnotationFrameInput<'_>) -> Result<Vec<u8>, Anno
         if !arrow_ids.insert(row.stable_id) {
             return Err(AnnotationError::Order);
         }
-        xyar.extend_from_slice(&row.stable_id.to_le_bytes());
-        xyar.extend_from_slice(&row.x0.to_le_bytes());
-        xyar.extend_from_slice(&row.y0.to_le_bytes());
-        xyar.extend_from_slice(&row.x1.to_le_bytes());
-        xyar.extend_from_slice(&row.y1.to_le_bytes());
+        xyar.push_word(row.stable_id);
+        xyar.push_word(row.x0);
+        xyar.push_word(row.y0);
+        xyar.push_word(row.x1);
+        xyar.push_word(row.y1);
         xyar.extend_from_slice(&row.rgba);
-        xyar.extend_from_slice(&row.opacity.to_le_bytes());
-        xyar.extend_from_slice(&row.width.to_le_bytes());
+        xyar.push_word(row.opacity);
+        xyar.push_word(row.width);
         if xyar_version >= 2 {
             let shape = &row.shape;
             xyar.extend_from_slice(&[shape.head as u8, shape.tail as u8, 0, 0, 0, 0, 0, 0]);
@@ -499,7 +501,7 @@ pub fn pack_annotations(input: AnnotationFrameInput<'_>) -> Result<Vec<u8>, Anno
                 .chain([&shape.gap_start, &shape.gap_end])
                 .chain(&shape.label_clear)
             {
-                xyar.extend_from_slice(&value.to_le_bytes());
+                xyar.push_word(value);
             }
         }
     }
@@ -514,23 +516,23 @@ pub fn pack_annotations(input: AnnotationFrameInput<'_>) -> Result<Vec<u8>, Anno
         if !(0.0..=1.0).contains(&row.opacity) || row.width <= 0.0 || row.anchor > 2 {
             return Err(AnnotationError::NonFinite);
         }
-        xyac.extend_from_slice(&row.x.to_le_bytes());
-        xyac.extend_from_slice(&row.y.to_le_bytes());
-        xyac.extend_from_slice(&row.dx.to_le_bytes());
-        xyac.extend_from_slice(&row.dy.to_le_bytes());
+        xyac.push_word(row.x);
+        xyac.push_word(row.y);
+        xyac.push_word(row.dx);
+        xyac.push_word(row.dy);
         xyac.extend_from_slice(&row.rgba);
-        xyac.extend_from_slice(&row.opacity.to_le_bytes());
-        xyac.extend_from_slice(&row.width.to_le_bytes());
+        xyac.push_word(row.opacity);
+        xyac.push_word(row.width);
         xyac.push(row.anchor);
         xyac.extend_from_slice(&[0, 0, 0]);
-        xyac.extend_from_slice(&(row.text.len() as u32).to_le_bytes());
+        xyac.push_word(row.text.len() as u32);
         if xyac_version >= 2 {
             xyac.extend_from_slice(&fill_bytes(row.flags, row.fill));
         }
         if xyac_version >= 3 {
             let (rgba, width) = border_pair(row.flags, row.border_rgba, row.border_width);
             xyac.extend_from_slice(&rgba);
-            xyac.extend_from_slice(&width.to_le_bytes());
+            xyac.push_word(width);
         }
         xyac.extend_from_slice(row.text);
     }
@@ -567,22 +569,22 @@ pub fn pack_annotations(input: AnnotationFrameInput<'_>) -> Result<Vec<u8>, Anno
         } else if row.border_width != 0.0 {
             return Err(AnnotationError::Length);
         }
-        xyaw.extend_from_slice(&row.x.to_le_bytes());
-        xyaw.extend_from_slice(&row.y.to_le_bytes());
-        xyaw.extend_from_slice(&row.dx.to_le_bytes());
-        xyaw.extend_from_slice(&row.dy.to_le_bytes());
-        xyaw.extend_from_slice(&row.wrap.to_le_bytes());
+        xyaw.push_word(row.x);
+        xyaw.push_word(row.y);
+        xyaw.push_word(row.dx);
+        xyaw.push_word(row.dy);
+        xyaw.push_word(row.wrap);
         xyaw.extend_from_slice(&row.rgba);
         xyaw.extend_from_slice(&row.fill);
         xyaw.extend_from_slice(&if has_border { row.border_rgba } else { [0; 4] });
-        xyaw.extend_from_slice(&(if has_border { row.border_width } else { 0.0 }).to_le_bytes());
+        xyaw.push_word(if has_border { row.border_width } else { 0.0 });
         xyaw.push(row.kind);
         xyaw.push(row.anchor);
         xyaw.extend_from_slice(&[row.space, 0]);
         if xyaw_v2 {
-            xyaw.extend_from_slice(&row.rotation.to_le_bytes());
+            xyaw.push_word(row.rotation);
         }
-        xyaw.extend_from_slice(&(row.text.len() as u32).to_le_bytes());
+        xyaw.push_word(row.text.len() as u32);
         xyaw.extend_from_slice(row.text);
     }
     if wrapped_budget > MAX_SCENE_LABEL_TEXT_BYTES {
@@ -651,13 +653,13 @@ pub fn pack_annotations(input: AnnotationFrameInput<'_>) -> Result<Vec<u8>, Anno
     }
     let mut out = Vec::with_capacity(total);
     out.extend_from_slice(b"XYAD");
-    out.extend_from_slice(&(if xyad_v3 { 3u32 } else { 2u32 }).to_le_bytes());
-    out.extend_from_slice(&(xyat_section.len() as u32).to_le_bytes());
-    out.extend_from_slice(&(xyal_section.len() as u32).to_le_bytes());
-    out.extend_from_slice(&(xyar_section.len() as u32).to_le_bytes());
-    out.extend_from_slice(&(xyac_section.len() as u32).to_le_bytes());
+    out.push_word(if xyad_v3 { 3u32 } else { 2u32 });
+    out.push_word(xyat_section.len() as u32);
+    out.push_word(xyal_section.len() as u32);
+    out.push_word(xyar_section.len() as u32);
+    out.push_word(xyac_section.len() as u32);
     if xyad_v3 {
-        out.extend_from_slice(&(xyaw_section.len() as u32).to_le_bytes());
+        out.push_word(xyaw_section.len() as u32);
     }
     out.extend_from_slice(&xyat_section);
     out.extend_from_slice(&xyal_section);
@@ -1416,13 +1418,13 @@ pub fn pack_annotation_facts(
         .ok_or(AnnotationError::Limit)?;
     let mut out = Vec::with_capacity(total);
     out.extend_from_slice(XYAO_MAGIC);
-    out.extend_from_slice(&XYAO_VERSION.to_le_bytes());
-    out.extend_from_slice(&n_styles.to_le_bytes());
-    out.extend_from_slice(&n_mark_rows.to_le_bytes());
-    out.extend_from_slice(&xyad_len.to_le_bytes());
-    out.extend_from_slice(&0u32.to_le_bytes());
-    out.extend_from_slice(&style_ref_base.to_le_bytes());
-    out.extend_from_slice(&0u32.to_le_bytes());
+    out.push_word(XYAO_VERSION);
+    out.push_word(n_styles);
+    out.push_word(n_mark_rows);
+    out.push_word(xyad_len);
+    out.push_word(0u32);
+    out.push_word(style_ref_base);
+    out.push_word(0u32);
     for style in &styles {
         out.extend_from_slice(&encode_style(style));
     }
