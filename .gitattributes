@@ -1410,3 +1410,16 @@ spec/performance/geo-five-temporal-2026-11-08/**/*.png -text
 tests/browser/geo_five_temporal_test.mjs text eol=lf
 tests/test_geo_five_temporal.py text eol=lf
 packages/xy-node/test/geo-five-temporal*.mjs text eol=lf
+
+# Qualified automatic temporal successor; predecessor receipts stay immutable.
+js/src/50_chartview.ts text eol=lf
+scripts/geo_notebook_five_temporal_smoke.mjs text eol=lf
+scripts/qualify_geo_five_temporal.py text eol=lf
+tests/geo_five_temporal_fixture.py text eol=lf
+tests/notebook_geo_five_temporal.ipynb text eol=lf
+tests/browser/geo_idle_paint_diagnostic.mjs text eol=lf
+packages/xy-node/test/geo-kind4-diagnostic.mjs text eol=lf
+spec/performance/geo-five-temporal-successor-2026-11-08/** text eol=lf
+spec/performance/geo-five-temporal-successor-2026-11-08/**/*.gz -text
+spec/performance/geo-five-temporal-successor-2026-11-08/**/*.png -text
+spec/performance/geo-five-temporal-successor-2026-11-08/**/*.bin -text

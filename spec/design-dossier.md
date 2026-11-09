@@ -2537,6 +2537,16 @@ means uniform in the axis's scale coordinates, not in raw data. Concretely:
 
 ## 29. Transport Matrix — copies, format, and fallback per environment
 
+Shared WebGL presentation creates its existing Canvas2D copy surface with an
+explicit `willReadFrequently: false` preference. On the qualified Chromium
+backend, an omitted preference changed four RGBA bytes by one LSB on repeated
+reads of the identical copied GPU plane; explicit false preserves the existing
+accelerated copy and stable RGBA. This changes no shader, dithering, antialiasing,
+color table, copy count, data tier or comparison tolerance. GPU and presentation
+plane isolation and before/final controls are retained in
+[the five-view temporal successor](performance/geo-five-temporal-successor-2026-11-08/README.md).
+Other browser/driver and historical AA failures remain separately qualified.
+
 The unit being counted: **physical copies of the data payload after it leaves the
 user's data structure**, and whether any step re-encodes.
 

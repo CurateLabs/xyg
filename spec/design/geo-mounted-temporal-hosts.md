@@ -245,12 +245,31 @@ explicit held-preparation failure injection; it preserves the failed exit while
 separately asserting actual native-owner cleanup. See the
 [held-reply cleanup correction](../performance/geo-hierarchy-held-reply-cleanup-2026-11-08/README.md). These are source-checkout tests in installed applications, not
 installed-XYG-wheel acceptance. The separately started notebook server must
-serve the exact committed input; this does not qualify cold startup. Five issued automatic lanes now have direct-tier source-checkout Node22/native
-strict-CSP browser proof and Python public-widget admission proof. The current
-qualification and unresolved reduced redraw mismatch are recorded in
-[the five-lane candidate](../performance/geo-five-temporal-2026-11-08/README.md).
-Five-widget installed-application readiness/cleanup, reduced exact pixel stability,
-mixed tiles and broader host/scale/accessibility qualification remain open. Existing static/indexed/hierarchy,
+serve the exact committed input; this does not qualify cold startup.
+
+Five issued automatic lanes now have direct/reduced source-checkout Node22/native
+strict-CSP browser qualification, with exact complete membership and RGBA checks,
+half-open empty/restored predicates, independent cameras, shared/linked/independent
+controllers, page failure, stale genuine receipts, cancellation, uncertain Abort
+ACK retry, and actual five-view release/remount. One Source and one Scope serve
+one original lane plus four forks. The16/eight-Data/one-staging and128/384 MiB
+native bounds are unchanged. No source copy or new data policy is introduced.
+
+The installed JupyterLab4.6.5/anywidget journey also mounts five public widgets,
+holds actual native preparation through supersession, verifies every independent
+ready handshake, changes each camera with trusted keyboard events, and clears
+and redisplays five Outputs through actual release ACKs. Complete per-view RGBA
+is restored. It runs both on one owning loop and on two concurrent owning loops
+in separate threads. Python3.11.17 and3.12.15 lifecycle checks are separate from
+the installed Python3.11 application proof. Current raw qualification, diagnostic
+controls, executable identity correction, and remaining milestone criteria are in
+[the successor evidence](../performance/geo-five-temporal-successor-2026-11-08/README.md).
+The [initial candidate](../performance/geo-five-temporal-2026-11-08/README.md)
+remains immutable historical evidence, including its failures.
+
+These remain source-checkout application tests, not published-wheel, five-view
+installed VS Code, massive/performance, mixed-tile or all-browser qualification.
+Existing static/indexed/hierarchy,
 explicit live mounts and snapshot/export evidence remain distinct. The packaged
 Node22/native bridge and real VS Code1.103.2 (embedded Node22.17.0) application
 journey exercise the same painter. A separate VS Code1.145.2/Node24.22.1 probe is

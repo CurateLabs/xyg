@@ -124,3 +124,43 @@ def test_admission_closed_queued_loop_cannot_starve_ready_loop():
         asyncio.run(run())
     finally:
         abandoned.close()
+
+
+def test_failed_foreign_loop_binding_rolls_back_only_its_issued_lane():
+    from geo_five_temporal_fixture import five_hierarchy_widgets
+
+    async def run():
+        source, scope, lanes, widgets, chart = five_hierarchy_widgets()
+        controller = xyg.TemporalController(instance_id=992, domain=(-100, 100))
+        bindings = [widget.bind_temporal(controller) for widget in widgets]
+        try:
+            await bindings[0].aclose()
+
+            def foreign():
+                async def attempt():
+                    with pytest.raises(RuntimeError, match="another event loop"):
+                        widgets[0].bind_temporal(controller)
+
+                asyncio.run(attempt())
+
+            await asyncio.to_thread(foreign)
+            for widget in widgets[1:]:
+                with pytest.raises(RuntimeError, match="already"):
+                    widget.bind_temporal(controller)
+            bindings[0] = widgets[0].bind_temporal(controller)
+            with pytest.raises(RuntimeError, match="already"):
+                chart.bind_temporal(controller)
+        finally:
+            for binding in bindings:
+                await binding.aclose()
+            for widget in widgets:
+                widget.close()
+                if widget._geo_rpc_task:
+                    await widget._geo_rpc_task
+            controller.close()
+            source.close()
+            for lane in lanes:
+                lane.close()
+            scope.close()
+
+    asyncio.run(run())

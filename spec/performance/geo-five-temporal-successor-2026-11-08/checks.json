@@ -1,0 +1,433 @@
+{
+  "parent": "4e2496892fe258f09f2911249005292be43bd5ad",
+  "boundedFunctionalFinishline": "qualified locally; full M6/#50/#39 remains open",
+  "fresh": {
+    "python311": 120,
+    "python312": 120,
+    "nodeGeographic": {
+      "passed": 589,
+      "failed": 0,
+      "skipped": 1
+    },
+    "ownershipInventoryTests": 66,
+    "ownershipAudit": "549 tracked production files classified",
+    "browserMatrices": [
+      "direct-cursor-final",
+      "direct-range-final",
+      "reduced-cursor-final",
+      "reduced-range-final"
+    ],
+    "installedJupyter": [
+      "jupyter-single-final",
+      "jupyter-multiloop-final"
+    ],
+    "oneViewSurrounding": [
+      "canonical-oneview",
+      "indexed-oneview",
+      "hierarchy-oneview"
+    ],
+    "cssRegression": true,
+    "wasmAssets": true
+  },
+  "runs": {
+    "baseline-isolation-final.receipt.json": {
+      "exit": 0,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": 324,
+      "archivedReceipt": "receipts/baseline-isolation-final.receipt.json.gz",
+      "receiptSha256": "bc4aa15276c65e37226d4380ff109a6108710e6c796fbeb0a6da6260f54b2aed",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/baseline-isolation-final.log",
+        "bytes": 9907,
+        "sha256": "fa4dea148272c9bec8a91eb7a5682b3f42cc87dcd4f5821e5d53774f48ca348d"
+      }
+    },
+    "baseline-reduced-negative-final.receipt.json": {
+      "exit": 1,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": null,
+      "archivedReceipt": "receipts/baseline-reduced-negative-final.receipt.json.gz",
+      "receiptSha256": "3ebb6169367837f49c1ebae4d2e6d762fa7015bcad0a502b3c0f3423a3e0f688",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/baseline-reduced-negative-final.log",
+        "bytes": 2998,
+        "sha256": "7c29b974b93f92d301e83b9d7fd954e57b3c29c0b2941f139c688516856316cd"
+      }
+    },
+    "baseline-reduced-negative.receipt.json": {
+      "exit": 1,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": null,
+      "archivedReceipt": "receipts/baseline-reduced-negative.receipt.json.gz",
+      "receiptSha256": "041d653b2cb33074e88cf671545344a5c00e92d663a5eac1cc97163c9c002739",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/baseline-reduced-negative.log",
+        "bytes": 2998,
+        "sha256": "7c29b974b93f92d301e83b9d7fd954e57b3c29c0b2941f139c688516856316cd"
+      }
+    },
+    "canonical-oneview.receipt.json": {
+      "exit": 0,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": 324,
+      "archivedReceipt": "receipts/canonical-oneview.receipt.json.gz",
+      "receiptSha256": "ff0d9f2f2037a6f30bf3c1199ec6a327e0c0410aa40fe164025848eff6b1fd5f",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/canonical-oneview.log",
+        "bytes": 1020,
+        "sha256": "e1ed4bf502a8382b5d90056bd5e251e72859a74d44b45a2a7588a39c87f7714b"
+      }
+    },
+    "css-shared-copy-regression.receipt.json": {
+      "exit": 0,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": null,
+      "archivedReceipt": "receipts/css-shared-copy-regression.receipt.json.gz",
+      "receiptSha256": "0ec110f5edf7068b1b69bcaee9955a8114a9af29a7706f936d7ed2b96ae0101d",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/css-shared-copy-regression.log",
+        "bytes": 3576,
+        "sha256": "0af21be5ea2e944e6b81bc7cf3e0b75b3d589d6a58193e7ba975efee5bc7f3f8"
+      }
+    },
+    "direct-cursor-final.receipt.json": {
+      "exit": 0,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": null,
+      "archivedReceipt": "receipts/direct-cursor-final.receipt.json.gz",
+      "receiptSha256": "0065200553ba78cd0e6e1d667cde6eacf93587293708676f2eadfb36175cfb63",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/direct-cursor-final.log",
+        "bytes": 1239,
+        "sha256": "287a1f4bdd6c16dc52e02e47bdfdc0eb6eb22447fdcf4407373237f5072c7a8b"
+      }
+    },
+    "direct-cursor-matrix.receipt.json": {
+      "exit": 0,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": null,
+      "archivedReceipt": "receipts/direct-cursor-matrix.receipt.json.gz",
+      "receiptSha256": "e36d136d4586b97b9823edb63809d3c0770a024046418b97ef97766da419654f",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/direct-cursor-matrix.log",
+        "bytes": 1239,
+        "sha256": "0c5459913ede887dd8f075ed352f893dbe3e582ab12a237733af017d2277ade1"
+      }
+    },
+    "direct-range-final.receipt.json": {
+      "exit": 0,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": null,
+      "archivedReceipt": "receipts/direct-range-final.receipt.json.gz",
+      "receiptSha256": "af42881957111627a8e8b7ca9a9a2cee0e6b04e621b76932c91acdda6b2947b7",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/direct-range-final.log",
+        "bytes": 1239,
+        "sha256": "287a1f4bdd6c16dc52e02e47bdfdc0eb6eb22447fdcf4407373237f5072c7a8b"
+      }
+    },
+    "direct-range-matrix.receipt.json": {
+      "exit": 0,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": null,
+      "archivedReceipt": "receipts/direct-range-matrix.receipt.json.gz",
+      "receiptSha256": "461e4ee9e9073690c55d530d6b1bf0a35769fd4fdbe8cadc172a64012abc7c07",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/direct-range-matrix.log",
+        "bytes": 1239,
+        "sha256": "0c5459913ede887dd8f075ed352f893dbe3e582ab12a237733af017d2277ade1"
+      }
+    },
+    "hierarchy-oneview.receipt.json": {
+      "exit": 0,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": 324,
+      "archivedReceipt": "receipts/hierarchy-oneview.receipt.json.gz",
+      "receiptSha256": "6d8874852c52dd008bad286084bcf16b0bdc35fd3713f10f099b183f1868186e",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/hierarchy-oneview.log",
+        "bytes": 10333,
+        "sha256": "32313c9434214756cb55c468735732f9c2c0816136cd4b7af58dea814b2023cb"
+      }
+    },
+    "indexed-oneview.receipt.json": {
+      "exit": 0,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": 324,
+      "archivedReceipt": "receipts/indexed-oneview.receipt.json.gz",
+      "receiptSha256": "ebf015d0dfca64fd8e6da5008d2477098e5981ebde8c5974ac965a7ec99b5af2",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/indexed-oneview.log",
+        "bytes": 1103,
+        "sha256": "6edfdd43bfa267b44de8b861db942d304e9e3d2e69ea8c0ff594ffc9b7f93f70"
+      }
+    },
+    "jupyter-five-camera-steps.receipt.json": {
+      "exit": 1,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": null,
+      "archivedReceipt": "receipts/jupyter-five-camera-steps.receipt.json.gz",
+      "receiptSha256": "4f2a97293d3474192c1e0f9a145141aa051a88088ee7363a4d562ac7962afe9a",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/jupyter-five-camera-steps.log",
+        "bytes": 10544,
+        "sha256": "cfdcf0b3064dccdafc8baee5716b4928df41e67b78a110e441d05704fbf95c4a"
+      }
+    },
+    "jupyter-five-release-ack.receipt.json": {
+      "exit": 0,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": null,
+      "archivedReceipt": "receipts/jupyter-five-release-ack.receipt.json.gz",
+      "receiptSha256": "8239eff19f8bf4bc6fee0fd59cb66962023338f3d31275cd1511eea161bbdca0",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/jupyter-five-release-ack.log",
+        "bytes": 2113,
+        "sha256": "d8e728b77648c97c4f6b8d6c269b17d77bf79f1fbc27a5569af07df2dea096e6"
+      }
+    },
+    "jupyter-multiloop-final.receipt.json": {
+      "exit": 0,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": 324,
+      "archivedReceipt": "receipts/jupyter-multiloop-final.receipt.json.gz",
+      "receiptSha256": "b08f260ccf9ffaf3f4b2170652b3e939b296cf6143fc269033bc99aa34be38c5",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/jupyter-multiloop-final.log",
+        "bytes": 2113,
+        "sha256": "95d5fc1e50161ac09e102382ef5f7e7d70ef338ab2ce906fbbd73a32ccb83e60"
+      }
+    },
+    "jupyter-multiloop.receipt.json": {
+      "exit": 0,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": null,
+      "archivedReceipt": "receipts/jupyter-multiloop.receipt.json.gz",
+      "receiptSha256": "e5f8d69049c7658bb6e6b4de5881058231e96b89715946b2ae9b002235d81baa",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/jupyter-multiloop.log",
+        "bytes": 2113,
+        "sha256": "e4ac899ea13f8919a64990444bb8063ad40dc52d5380163234afa5e927db770a"
+      }
+    },
+    "jupyter-single-final.receipt.json": {
+      "exit": 0,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": 324,
+      "archivedReceipt": "receipts/jupyter-single-final.receipt.json.gz",
+      "receiptSha256": "9efd56029b5b7d2f8bcea689ca609d1be717e194d5a0ab609bddcf1c5a324c3f",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/jupyter-single-final.log",
+        "bytes": 2113,
+        "sha256": "46a9ddcdbd37a68069ba69def673d8a349ec09eea61eb58233abac1f70c4264e"
+      }
+    },
+    "node-geographic-own-oracles.receipt.json": {
+      "exit": 0,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": null,
+      "archivedReceipt": "receipts/node-geographic-own-oracles.receipt.json.gz",
+      "receiptSha256": "b4cc93247b11ec3e297955b872c22945577242475fd775018e2718ba4f4306b0",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/node-geographic-own-oracles.log",
+        "bytes": 118338,
+        "sha256": "c5acb69704a36cb1adf152c191f34588882400b4c50875316470153564e0a0f8"
+      }
+    },
+    "ownership-audit.receipt.json": {
+      "exit": 0,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": 324,
+      "archivedReceipt": "receipts/ownership-audit.receipt.json.gz",
+      "receiptSha256": "d892fb484474533d663e8180b0bd10d16db2716ca821e5ae397a0506b2a61ebf",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/ownership-audit.log",
+        "bytes": 60,
+        "sha256": "723d8a9f723ff18ddb612e60289cd21750b3d50af346625b4f353419e4dc9261"
+      }
+    },
+    "ownership-inventory-tests.receipt.json": {
+      "exit": 0,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": 324,
+      "archivedReceipt": "receipts/ownership-inventory-tests.receipt.json.gz",
+      "receiptSha256": "b1d35df8c68346d1b3645adeeb60ac3e79dfff47a8bed78d7edb24040a908259",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/ownership-inventory-tests.log",
+        "bytes": 100,
+        "sha256": "6de453d882d1311901b218e1cc5b055b4dc656c4df80f3ae50262f7574b8fc2e"
+      }
+    },
+    "python311-lifecycle.receipt.json": {
+      "exit": 0,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": null,
+      "archivedReceipt": "receipts/python311-lifecycle.receipt.json.gz",
+      "receiptSha256": "8ba0605aeb71fd831124511b5da50c65c0a389ad95b136b1b31ec6bc9bc956d7",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/python311-lifecycle.log",
+        "bytes": 180,
+        "sha256": "c1c1512b3b294414234b596f47d0ae5dac84ae711b8ecced99c7c50382dba68b"
+      }
+    },
+    "python312-lifecycle.receipt.json": {
+      "exit": 0,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": null,
+      "archivedReceipt": "receipts/python312-lifecycle.receipt.json.gz",
+      "receiptSha256": "143dfc533c680eca1e0cd580b1cfbf0e4e3466f634af3bf971442e6211d0e0a6",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/python312-lifecycle.log",
+        "bytes": 180,
+        "sha256": "e40e3865cc8fcef0f677d72fe1f84a0abed710e9a1974968008cabbeae31ead8"
+      }
+    },
+    "reduced-cursor-final.receipt.json": {
+      "exit": 0,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": null,
+      "archivedReceipt": "receipts/reduced-cursor-final.receipt.json.gz",
+      "receiptSha256": "6f5c854625bb777366c1434485a3a750c954775342db954bb7e91a9f595d8d73",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/reduced-cursor-final.log",
+        "bytes": 1248,
+        "sha256": "6ca63bf14af55bc54b2102fa6d97950335510c2e441511ed1b246a0e3aaf05c7"
+      }
+    },
+    "reduced-cursor-matrix.receipt.json": {
+      "exit": 0,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": null,
+      "archivedReceipt": "receipts/reduced-cursor-matrix.receipt.json.gz",
+      "receiptSha256": "2075707a8b31a1079724c76134a5fc6c94f687c6e8530225b38bd9e7647dfdcc",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/reduced-cursor-matrix.log",
+        "bytes": 1248,
+        "sha256": "deab92d8a39c9a60d8b1bdd3b0df4ffec1b91d529311e647c3304e134e26b111"
+      }
+    },
+    "reduced-range-final.receipt.json": {
+      "exit": 0,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": null,
+      "archivedReceipt": "receipts/reduced-range-final.receipt.json.gz",
+      "receiptSha256": "02737da037e35e8002cc9e6cf321bd928178fcd0f67a8a0e3dfbad51dffda4c3",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/reduced-range-final.log",
+        "bytes": 1248,
+        "sha256": "6ca63bf14af55bc54b2102fa6d97950335510c2e441511ed1b246a0e3aaf05c7"
+      }
+    },
+    "reduced-range-matrix.receipt.json": {
+      "exit": 0,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": null,
+      "archivedReceipt": "receipts/reduced-range-matrix.receipt.json.gz",
+      "receiptSha256": "c923acb16046a5eb21de237545a1a84eb180d90b3091636ae087e3ac4fa61b2f",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/reduced-range-matrix.log",
+        "bytes": 1248,
+        "sha256": "deab92d8a39c9a60d8b1bdd3b0df4ffec1b91d529311e647c3304e134e26b111"
+      }
+    },
+    "wasm-assets.receipt.json": {
+      "exit": 0,
+      "sourceChanged": [],
+      "runtimeChanged": [],
+      "compiledInputCount": null,
+      "archivedReceipt": "receipts/wasm-assets.receipt.json.gz",
+      "receiptSha256": "67332091524e8d71e3bd7f99efc9721634129a321345fdfc78725758f3c6e222",
+      "log": {
+        "path": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/target/task-tmp/five-temporal-successor/wasm-assets.log",
+        "bytes": 88,
+        "sha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef"
+      }
+    }
+  },
+  "inherited": {
+    "native405": "1ac386f0d7af618a757fb51cca883f0c409f3991c976f7a9df0562f69524d316",
+    "wasm38": "4cd1e964a16fb8be527b552dae50f94729e80d79ed8bcf936b53601914c8feba",
+    "compiledInputs324": "all unchanged"
+  },
+  "oldReceiptsUnchanged": "spec/performance/geo-five-temporal-2026-11-08",
+  "negativeControls": [
+    "baseline-reduced-negative-final: expected idle fullRGBA failure",
+    "baseline-isolation-final: zero GPU byte changes; four Canvas2D byte changes; frozen-source copy/read controls",
+    "kind4 borrowed executable: six differing bytes vs pinned CABI/WASM/own source build"
+  ],
+  "historicalLimits": [
+    "Early notebook operator failures retain logs and recovered input notebooks; not every early driver source or first screenshot was captured.",
+    "A diagnostic output-directory parameter and notebook formatting were changed after some earlier receipts; each receipt retains its exact source snapshot. Normal matrix logic and renderer artifacts match the qualified final cohort.",
+    "No prior Worker/Jupyter/timer/100k watchdog/AA failure is erased or claimed generally fixed."
+  ],
+  "remainingMilestone": [
+    "Root independent final review and combined integration/hostedCI/queue",
+    "published-wheel and five-view installed VSCode qualification",
+    "massive/1B performance, competitor and multi-chart memory/payload/export matrices",
+    "mixed-tile, broader host/browser/driver, export/accessibility and remaining issue acceptance criteria"
+  ],
+  "remoteMutations": false,
+  "mandatoryGates": {
+    "hooks-commit": {
+      "exit": 0,
+      "log": "receipts/hooks-commit.log.gz",
+      "raw": {
+        "bytes": 240,
+        "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+      },
+      "archive": {
+        "bytes": 72,
+        "sha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+      }
+    },
+    "ruff-commit": {
+      "exit": 0,
+      "log": "receipts/ruff-commit.log.gz",
+      "raw": {
+        "bytes": 19,
+        "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+      },
+      "archive": {
+        "bytes": 39,
+        "sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+      }
+    },
+    "format-commit": {
+      "exit": 0,
+      "log": "receipts/format-commit.log.gz",
+      "raw": {
+        "bytes": 29,
+        "sha256": "910e2e16e3fa6b3e1582a9a5fd4ee684184a268b95128c7ff20f1edcc42c3528"
+      },
+      "archive": {
+        "bytes": 49,
+        "sha256": "b11c914ca01768be0fbae29a5590a64a512c0f6571f5bf12517b18448bb72b60"
+      }
+    }
+  }
+}
