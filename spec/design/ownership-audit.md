@@ -1406,6 +1406,11 @@ These additions use the existing ownership policies without adding a host policy
 | `crates/xyg-engine/src/temporal_scene_dense.rs` | Rust safe engine | rust-engine | keep-rust |
 | `crates/xyg-engine/src/temporal_scene_jobs.rs` | Rust safe engine | rust-engine | keep-rust |
 
+| File | Current owner | Policy | Disposition | Follow-up |
+| --- | --- | --- | --- | --- |
+| `js/src/49_wasm_presentation_lane.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; transport scheduling only | #59 |
+| `js/src/76_temporal_view.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm`; controller notifications and existing painter lifecycle only | #59 |
+
 ## Contributor rule
 
 Run `python3 scripts/verify_ownership.py` after adding, removing, or renaming production source. A new file is intentionally unclassified until this ledger names its owner and boundary in the same change. Moving a file between policies requires updating both this audit and its JSON twin; do not weaken a policy to make a new host algorithm pass.
@@ -1530,6 +1535,13 @@ The partial temporal catalog owns exact membership/ticks/geometry in
 `xyg-engine::temporal_scene`; Python, Node and browser framing modules only
 pack source rows and call that compiler. See temporal-catalog.md for unshipped
 interaction, dense-LOD and packaging requirements.
+`js/src/76_temporal_view.ts` is a browser lifecycle adapter: it
+coalesces complete controller snapshots, serializes the existing Worker scan
+and painter preparation, and mounts the existing ChartView only after paint
+readiness. It retains one pending painter identity across Rust GPU admission;
+it does not choose membership, geometry, styles or residency.
+
+
 ### Frozen retained graph export continuation
 
 `graph_marker_contour.rs`, `temporal_graph_frozen.rs` and

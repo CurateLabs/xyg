@@ -1001,7 +1001,6 @@ def test_shared_glhost_source_contract() -> None:
     # the host, and release rather than lose the shared context on destroy.
     for marker in (
         "const host = acquireGLHost(document, this);",
-        'const present = this.canvas.getContext("2d", { alpha: true });',
         "this._glHost = host;",
         "this._present2d = present;",
         "this._glHost.render(",
@@ -1012,6 +1011,11 @@ def test_shared_glhost_source_contract() -> None:
         "if (!this._renderPick()) return null;",
     ):
         assert marker in chartview, f"ChartView shared-host integration marker missing: {marker}"
+    assert re.search(
+        r'const present = this\.canvas\.getContext\("2d",\s*\{\s*'
+        r"alpha:\s*true,\s*willReadFrequently:\s*false,?\s*\}\);",
+        chartview,
+    ), "shared presentation must retain transparent accelerated-copy context options"
     destroy = chartview.split("  destroy() {", 1)[1]
     assert "host.release(this);" in destroy
     assert "loseExt.loseContext();" in destroy

@@ -1,5 +1,6 @@
 import type { XygWasmDashboardPlan, XygWasmWorker } from "./47_wasm";
 import type { GLHost } from "./42_glhost";
+import { withWasmPresentationPlan } from './49_wasm_presentation_lane';
 
 export interface XygWasmDashboardResource {
   stableId: bigint;
@@ -41,8 +42,9 @@ export function decodeWasmDashboardPlan(buffer: ArrayBuffer, count: number): Xyg
 }
 
 export async function planWasmDashboardResources(worker: XygWasmWorker, resources: readonly XygWasmDashboardResource[], budgetBytes: bigint): Promise<XygWasmDashboardPlan> {
-  const result = await worker.dashboardPlan(encodeWasmDashboardPlan(resources, budgetBytes)).result;
-  return decodeWasmDashboardPlan(result, resources.length);
+  const request=encodeWasmDashboardPlan(resources,budgetBytes),count=resources.length;
+  const result = await withWasmPresentationPlan(worker,()=>worker.dashboardPlan(request).result);
+  return decodeWasmDashboardPlan(result, count);
 }
 
 export async function applyWasmDashboardResourceBudget(

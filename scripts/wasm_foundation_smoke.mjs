@@ -261,6 +261,12 @@ if (!only && !browserPackage) {
 // Actual retained owner -> XYFG -> Scene/XYPB -> offline shipped ChartView.
 // The full source gate includes native/WASM oracles; staged-package scope is unchanged.
 if (!only && !browserPackage) {
+  execFileSync(process.execPath, [join(root, "scripts/temporal_controller_composition_smoke.mjs"), ...(reportPath ? [`${reportPath}.temporal-composition`] : [])], {
+    cwd: root, stdio: "inherit", env: process.env, timeout: 120000,
+  });
+}
+
+if (!only && !browserPackage) {
   execFileSync(process.execPath, [join(root, "scripts/temporal_graph_frozen_smoke.mjs"), ...(reportPath ? [`${reportPath}.frozen-graph`] : [])], {
     cwd: root, stdio: "inherit", env: process.env,
   });

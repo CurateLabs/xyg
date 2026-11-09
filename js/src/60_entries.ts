@@ -461,5 +461,5 @@ export type { XygWasmGraphSession, XygWasmGraphSessionOptions, XygWasmGraphSnaps
 
 export { createWasmFilterSession, filterRequest, decodeFilterReply, FilterTierCError } from "./49_filter_session";
 export { encodeTemporalScene, TemporalComposition } from "./75_temporal_scene";
-export type { TemporalSceneInput } from "./75_temporal_scene";
+export type { TemporalSceneInput, TemporalCompositionControllerBinding } from "./75_temporal_scene";
 export {XygFrozenTemporalGraph} from './67_frozen_graph';

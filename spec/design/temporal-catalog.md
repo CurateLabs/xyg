@@ -276,7 +276,45 @@ Disposal waits for source release; the shared Worker remains caller-owned.
 The synchronous v2 raw compiler remains a compatibility entry, driven by the
 same Rust Job; normal composition methods use the cooperative owner protocol.
 
-Still open: independent final review, brush/controller binding, cursor marks,
+### Live browser controller presentation
+
+`TemporalComposition.attachController(controller, {el, onError?})` claims the
+composition's presentation until binding disposal. Complete Rust controller
+range/cursor snapshots update the existing XYTM header; membership, ticks,
+annotation, geometry and style continue through Rust Scene and the existing
+ChartView. The caller owns the controller and Worker. Manual scene/viewport and
+membership operations are refused while attached, avoiding queries against a
+different state from the accepted picture. Binding disposal releases that
+presentation claim; composition disposal additionally drains its source owner.
+
+Cooperating composed views and dashboard resource plans share one Worker
+presentation lane. Preview, source scan and painter preparation form one
+transaction before the next transaction assigns a Worker sequence. Per-binding
+notifications retain one active attempt and one latest primitive time state;
+superseded queued work validates its revision before copying or submitting a
+packet. This is transport/lifecycle scheduling, not a new tier or geometry rule.
+Pure dashboard plans may overlap each other while excluding Scene transactions;
+a delayed old plan does not block a newer budget intent. Queued Scene work is
+not starved by later planning requests. Raw Worker mutation APIs retain their
+existing supersession contract.
+
+One connected inert painter stage keeps its GLHost identity while awaiting the
+existing Rust GPU admission coordinator. The prior picture and accepted time
+snapshot stay visible until a complete candidate frame succeeds. A budget or
+context refusal settles `whenIdle()` with an error; later real readmission can
+publish the retained stage without recompilation or a new chart identity.
+`refresh()` retries the same stage when present, or compiles the latest state
+after a source/preparation failure. No timeout releases ownership. Disposal
+cancels work, drains admitted operations, unsubscribes and destroys both stage
+and accepted view. Error callbacks cannot break that cleanup.
+
+Use the existing `controller.bindScrubber(element)` for stable trusted keyboard
+focus and Rust-owned stepping/range behavior. The accepted view group provides
+a polite live summary and busy state. This does not qualify a full virtualized
+canonical table, brush/group selection, frozen bound-state exports, installed
+host presentation or comprehensive assistive-technology journeys.
+
+Still open: independent final review of the live binding, brush/group binding, cursor marks,
 coordinated tables, keyboard/reduced-motion/accessibility journeys, streaming,
 richer customization, 100M+ storage/residency, competitor comparisons, five-view
 budgets, and the full installed-host matrix. No FPS, massive-scale victory or

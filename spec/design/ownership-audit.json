@@ -2419,6 +2419,14 @@
       "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation."
     },
     {
+      "path": "js/src/49_wasm_presentation_lane.ts",
+      "current_owner": "Shared TypeScript WASM lifecycle adapter",
+      "policy": "browser-wasm-adapter",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation."
+    },
+    {
       "path": "js/src/49_wasm_density.ts",
       "current_owner": "Shared TypeScript WASM lifecycle adapter",
       "policy": "browser-wasm-adapter",
@@ -2732,6 +2740,14 @@
     },
     {
       "path": "js/src/75_temporal_scene.ts",
+      "current_owner": "Shared TypeScript WASM lifecycle adapter",
+      "policy": "browser-wasm-adapter",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation."
+    },
+    {
+      "path": "js/src/76_temporal_view.ts",
       "current_owner": "Shared TypeScript WASM lifecycle adapter",
       "policy": "browser-wasm-adapter",
       "disposition": "implement-rust-wasm",

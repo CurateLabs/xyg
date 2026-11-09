@@ -1442,3 +1442,15 @@ spec/design/geo-live-hierarchy-host.md text eol=lf
 spec/performance/five-temporal-drain-union-2026-11-09/** text eol=lf
 spec/performance/five-temporal-drain-union-2026-11-09/**/*.gz -text
 spec/performance/five-temporal-drain-union-2026-11-09/**/*.png -text
+
+# Live temporal controller/Scene presentation provenance.
+js/src/49_wasm_dashboard.ts text eol=lf
+js/src/49_wasm_presentation_lane.ts text eol=lf
+js/src/60_entries.ts text eol=lf
+js/src/75_temporal_scene.ts text eol=lf
+js/src/76_temporal_view.ts text eol=lf
+scripts/temporal_controller_composition_smoke.mjs text eol=lf
+spec/design/temporal-catalog.md text eol=lf
+spec/performance/temporal-controller-view-2026-11-09/** text eol=lf
+spec/performance/temporal-controller-view-2026-11-09/**/*.gz -text
+spec/performance/temporal-controller-view-2026-11-09/**/*.png -text

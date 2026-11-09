@@ -1,4 +1,11 @@
 /** XYTM framing only. Rust owns temporal membership, geometry and tick policy. */
+import { attachTemporalControllerView } from './76_temporal_view';
+import type { TemporalCompositionControllerBinding } from './76_temporal_view';
+import type { XygWasmTemporalController } from './49_wasm_temporal';
+import type { XygWasmScenePaint } from './47_wasm';
+import { withWasmPresentationLane } from './49_wasm_presentation_lane';
+export type { TemporalCompositionControllerBinding } from './76_temporal_view';
+
 export interface TemporalSceneInput {
   kind: 'event'|'interval'|'gantt'|'line'|'bar'|'scatter';
   rows: readonly (readonly [bigint|null,bigint|null,number,bigint])[];
@@ -52,10 +59,13 @@ export class TemporalComposition {
   private busy=false;
   private session:{lifetime?:number;disposed?:boolean;disposal?:Promise<void>}={};
   private active:{cancel:()=>void}|null=null;
+  private binding:TemporalCompositionControllerBinding|null=null;
+  private disposal:Promise<void>|null=null;
   constructor(private worker: import('./47_wasm').XygWasmWorker, input: TemporalSceneInput) {
     this.source=encodeTemporalScene({...input,dense:true});
   }
   viewport(domain: readonly [bigint,bigint],size:{width?:number;height?:number}={}) {
+    this.unbound();
     this.live();
     const lo=exact(domain[0]),hi=exact(domain[1]),view=new DataView(this.source!);
     view.setBigInt64(32,lo,true);view.setBigInt64(40,hi,true);
@@ -64,14 +74,38 @@ export class TemporalComposition {
     this.cancel();return this;
   }
   private live(){if(!this.source)throw new Error('temporal composition disposed');}
+  private unbound(){this.live();if(this.binding)throw new Error('temporal composition has an attached controller');}
   cancel(){this.revision++;this.active?.cancel();}
-  dispose(){this.cancel();this.source=null;return this.worker.temporalSceneRelease(this.session);}
+  dispose(){
+    if(this.disposal)return this.disposal;
+    this.cancel();this.source=null;
+    return this.disposal=(async()=>{try{await this.binding?.dispose();}finally{await this.worker.temporalSceneRelease(this.session);}})();
+  }
 
-  private async execute(operation:number,cell=0,offset=0,limit=0,publication?:ArrayBuffer,onProgress?:(reply:ArrayBuffer)=>void):Promise<ArrayBuffer>{
+  /** Mount ordinary Scene paint driven by complete Rust controller snapshots.
+   * The attachment owns presentation; the caller retains controller and Worker. */
+  attachController(controller:XygWasmTemporalController,options:{el:HTMLElement;onError?:(error:unknown)=>unknown}):TemporalCompositionControllerBinding {
+    this.unbound();if(this.busy)throw new Error('temporal operation already in flight');
+    let binding:TemporalCompositionControllerBinding|null=null;
+    binding=attachTemporalControllerView(controller,options,async state=>{
+      this.live();const view=new DataView(this.source!);
+      view.setBigInt64(32,exact(state.rangeStart),true);view.setBigInt64(40,exact(state.rangeEnd),true);view.setBigInt64(48,exact(state.cursor),true);
+      this.cancel();let prepared:XygWasmScenePaint|null=null;
+      await this.execute(0,0,0,0,undefined,undefined,async scene=>{
+        const task=this.worker.prepareScene(scene);this.active=task;prepared=await task.result;
+      });
+      return prepared!;
+    },()=>this.cancel(),()=>{if(binding&&this.binding===binding)this.binding=null;});
+    this.binding=binding;return binding;
+  }
+
+  private async execute(operation:number,cell=0,offset=0,limit=0,publication?:ArrayBuffer,onProgress?:(reply:ArrayBuffer)=>void,consume?:(scene:ArrayBuffer)=>Promise<void>):Promise<ArrayBuffer>{
     this.live();if(this.busy)throw new Error('temporal operation already in flight');
-    this.busy=true;
+    this.busy=true;const revision=this.revision;
     try {
-    const revision=this.revision,header=new DataView(this.source!);
+    return await withWasmPresentationLane(this.worker,async()=>{
+    if(revision!==this.revision||!this.source)throw new Error('stale temporal publication');
+    const header=new DataView(this.source!);
     const preview=this.worker.temporalScenePreview(this.source!.slice(0,128+header.getUint32(56,true)+header.getUint32(60,true)));this.active=preview;await preview.result;
     if(revision!==this.revision||!this.source)throw new Error('stale temporal publication');
     const packet=this.source!.slice(0),view=new DataView(packet);
@@ -84,11 +118,16 @@ export class TemporalComposition {
       new Uint8Array(packet,104,16).set(new Uint8Array(publication,20,16));
     }
     const task=this.worker.temporalSceneCompile(packet,{session:this.session,onProgress});this.active=task;
-    const result=await task.result;if(revision!==this.revision||!this.source)throw new Error('stale temporal publication');if(operation===2)this.publications.set(result,revision);return result;
+    const result=await task.result;if(revision!==this.revision||!this.source)throw new Error('stale temporal publication');if(operation===2)this.publications.set(result,revision);
+    // Painter preparation shares the transaction: its deferred Worker command
+    // cannot be overtaken by the next composition's preview/scan sequence.
+    if(consume){await consume(result);if(revision!==this.revision||!this.source)throw new Error('stale temporal publication');}
+    return result;
+    });
     } finally {this.busy=false;this.active=null;}
   }
-  scene(options:{onProgress?:(reply:ArrayBuffer)=>void}={}){return this.execute(0,0,0,0,undefined,options.onProgress);}
-  metadata(){return this.execute(2);}
-  supports(publication:ArrayBuffer,cell:number,offset=0,limit=256){return this.execute(3,cell,offset,limit,publication);}
-  members(publication:ArrayBuffer,cell:number,offset=0,limit=256){return this.execute(1,cell,offset,limit,publication);}
+  scene(options:{onProgress?:(reply:ArrayBuffer)=>void}={}){this.unbound();return this.execute(0,0,0,0,undefined,options.onProgress);}
+  metadata(){this.unbound();return this.execute(2);}
+  supports(publication:ArrayBuffer,cell:number,offset=0,limit=256){this.unbound();return this.execute(3,cell,offset,limit,publication);}
+  members(publication:ArrayBuffer,cell:number,offset=0,limit=256){this.unbound();return this.execute(1,cell,offset,limit,publication);}
 }
