@@ -40,6 +40,12 @@ fn mul(a: usize, b: usize) -> Result<usize> {
 fn alloc<T: Default + Clone>(n: usize) -> Result<Vec<T>> {
     let mut v = Vec::new();
     v.try_reserve_exact(n).map_err(|_| Error::Allocation)?;
+    // These private buffers contain only u8/u64/f64/[f64; 2] zero defaults.
+    // Browser initialization constructs each element directly, avoiding the
+    // repeated aggregate-clone fill machinery; the checked reservation stays.
+    #[cfg(target_arch = "wasm32")]
+    v.resize_with(n, T::default);
+    #[cfg(not(target_arch = "wasm32"))]
     v.resize(n, T::default());
     Ok(v)
 }

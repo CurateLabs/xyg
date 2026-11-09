@@ -946,6 +946,7 @@ fn update_document_ingress_exact_limit_refusal_and_retry_are_atomic() {
         + (4 * 3 + 3 + 1) * 1024 + 3 * 256 + 8192;
     let limit = s.retained_budget() + 128 * (update.len() - doc.len())
         + 6 * doc.len() + replacement + external + 1024;
+    assert_eq!(limit, 3_526_208);
     // Owned state has no selection, pins or focus, but reserves its fixed item.
     s.max_bytes = limit - 1;
     assert_eq!(s.execute(&update, external, None), Err(InteractionStatus::Budget));

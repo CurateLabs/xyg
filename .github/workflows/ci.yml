@@ -898,8 +898,20 @@ jobs:
       - name: Public API coherence
         run: .venv/bin/python scripts/check_public_api.py
 
+      # Match the main job: the confined system Chromium cannot reliably read
+      # the offline HTML fixtures under /tmp. Keep their existing deadlines.
+      - name: Cache Python-floor Playwright Chromium
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
+      - name: Install pinned Chromium for Python floor
+        timeout-minutes: 10
+        run: npx playwright install chromium
       - name: Python 3.11 tests (native core)
-        run: .venv/bin/python -m pytest -q
+        run: |
+          export XYG_CHROMIUM="$(node -e "console.log(require('playwright').chromium.executablePath())")"
+          .venv/bin/python -m pytest -q
 
   # Cross-library scatter benchmark incl. time-to-first-render (spec/benchmarks/results.md).
   # Each isolated group uses the same deterministic input sizes and runs in

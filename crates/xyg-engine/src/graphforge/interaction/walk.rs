@@ -29,12 +29,13 @@ impl GraphSession {
     pub(super) fn stop_of(&self, render: &RenderOutput, focus: Option<&Focus>) -> Option<Stop> {
         let index = match focus {
             Some(Focus::Entity(GraphEntity::Node(id))) => {
-                self.identity.node_index(id).map(ElementIndex::Node)
+                self.source.identity.node_index(id).map(ElementIndex::Node)
             }
             Some(Focus::Entity(GraphEntity::Edge(id))) => {
-                self.identity.edge_index(id).map(ElementIndex::Edge)
+                self.source.identity.edge_index(id).map(ElementIndex::Edge)
             }
             Some(Focus::Derived(key)) => self
+                .source
                 .identity
                 .resolve_derived_key(key)
                 .map(ElementIndex::Edge),
@@ -67,7 +68,7 @@ impl GraphSession {
             .published()
             .and_then(|render| self.stop_of(render, Some(focus)).map(|stop| (render, stop)));
         let Some((render, stop)) = stop else {
-            self.identity.insert_focus(&mut delta, focus);
+            self.source.identity.insert_focus(&mut delta, focus);
             return Ok(delta);
         };
         let members = match stop {
@@ -82,7 +83,7 @@ impl GraphSession {
                 Stop::Node(_) => ElementIndex::Node(member as usize),
                 Stop::Edge(_) => ElementIndex::Edge(member as usize),
             };
-            self.identity.insert_into(&mut delta, element);
+            self.source.identity.insert_into(&mut delta, element);
         }
         let expanded = members.len() as u64;
         self.work += expanded;
@@ -94,7 +95,7 @@ impl GraphSession {
             Stop::Node(r) => ElementIndex::Node(render.focus_node[r as usize] as usize),
             Stop::Edge(r) => ElementIndex::Edge(render.members_of_edge(r as usize)[0] as usize),
         };
-        self.identity.focus_of(element)
+        self.source.identity.focus_of(element)
     }
 
     fn apply_focus(&mut self, world: &mut World<'_>, focus: Focus) -> OpOutcome {

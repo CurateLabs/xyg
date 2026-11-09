@@ -11,6 +11,7 @@
 //! CRS fails before a column is published. Derived f32 scene buffers are
 //! rebuildable caches (§27) and are not stored here.
 
+use crate::scene::SceneByteWrite;
 use crate::transition::Blake2s8;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
@@ -644,24 +645,24 @@ fn build_canonical_metadata(col: &GeoColumn) -> Vec<u8> {
     let meta = col.extension_metadata().into_bytes();
     let mut out = Vec::with_capacity(160 + name.len() + meta.len());
     out.extend_from_slice(GEO_METADATA_MAGIC);
-    out.extend_from_slice(&GEO_METADATA_VERSION.to_le_bytes());
-    out.extend_from_slice(&(col.geometry as u32).to_le_bytes());
-    out.extend_from_slice(&(col.crs as u32).to_le_bytes());
-    out.extend_from_slice(&(col.validity.len() as u64).to_le_bytes());
-    out.extend_from_slice(&((col.xy.len() / 2) as u64).to_le_bytes());
-    out.extend_from_slice(&(col.null_count() as u64).to_le_bytes());
-    out.extend_from_slice(&(col.offsets0.len() as u64).to_le_bytes());
-    out.extend_from_slice(&(col.offsets1.len() as u64).to_le_bytes());
-    out.extend_from_slice(&(col.offsets2.len() as u64).to_le_bytes());
-    out.extend_from_slice(&(col.ring_orientations.len() as u64).to_le_bytes());
+    out.push_word(GEO_METADATA_VERSION);
+    out.push_word(col.geometry as u32);
+    out.push_word(col.crs as u32);
+    out.push_word(col.validity.len() as u64);
+    out.push_word((col.xy.len() / 2) as u64);
+    out.push_word(col.null_count() as u64);
+    out.push_word(col.offsets0.len() as u64);
+    out.push_word(col.offsets1.len() as u64);
+    out.push_word(col.offsets2.len() as u64);
+    out.push_word(col.ring_orientations.len() as u64);
     out.extend_from_slice(&xy.finish());
     out.extend_from_slice(&validity.finish());
     out.extend_from_slice(&ids.finish());
     out.extend_from_slice(&offsets.finish());
     out.extend_from_slice(&orientations.finish());
-    out.extend_from_slice(&(name.len() as u32).to_le_bytes());
+    out.push_word(name.len() as u32);
     out.extend_from_slice(name);
-    out.extend_from_slice(&(meta.len() as u32).to_le_bytes());
+    out.push_word(meta.len() as u32);
     out.extend_from_slice(&meta);
     while !out.len().is_multiple_of(8) {
         out.push(0);

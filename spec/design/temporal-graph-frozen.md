@@ -405,3 +405,14 @@ This finite fixture establishes neither massive aggregate playback nor broad
 accessibility, installed-host or competitor acceptance. Full #45 and milestones
 4–7 remain open. No ABI, renderer, package cap, default, tolerance or deadline
 changes accompany this proof.
+
+### Cross-host regression environment
+
+The frozen Node/Python parity tests use `UV` when explicitly configured and
+otherwise resolve `uv` on `PATH`; they do not embed a developer's home path.
+Their Python calls use the prepared environment without synchronization.
+Python-floor offline fixtures use the same lockfile-pinned, unconfined
+Playwright Chromium as the main CI job. The actual HTML files, no-network
+checks, metadata/body tamper controls, pixel assertions and 30-second browser
+deadline remain unchanged. This environment correction does not qualify a
+new export capability or repair unrelated startup/Worker timing failures.

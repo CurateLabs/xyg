@@ -15,8 +15,8 @@ fn loaded(doc: &[u8], x: &[f64], y: &[f64]) -> GraphSession {
 }
 fn styles(s: &mut GraphSession, classes: &[u8], statuses: &[u8]) {
     let doc = handmade(
-        s.identity.node_uuids(),
-        &(0..s.identity.edge_count())
+        s.source.identity.node_uuids(),
+        &(0..s.source.identity.edge_count())
             .map(|i| E::Persisted(id(11 + i as u32)))
             .collect::<Vec<_>>(),
         &[],
@@ -26,8 +26,9 @@ fn styles(s: &mut GraphSession, classes: &[u8], statuses: &[u8]) {
         b.u8s("edge.status", 0, statuses);
     });
     let d = ComposedDocument::decode(&bytes).unwrap();
-    s.node_style = SourceStyle::read(&d, "node", classes.len()).unwrap();
-    s.edge_style = SourceStyle::read(&d, "edge", statuses.len()).unwrap();
+    Arc::make_mut(&mut s.source).node_style = SourceStyle::read(&d, "node", classes.len()).unwrap();
+    Arc::make_mut(&mut s.source).edge_style =
+        SourceStyle::read(&d, "edge", statuses.len()).unwrap();
 }
 fn extend(doc: &[u8], add: impl FnOnce(&mut Builder)) -> Vec<u8> {
     let c = Container::decode(doc, DOCUMENT_MAGIC).unwrap();
@@ -505,7 +506,7 @@ fn remote_shape_precedes_group_filter_and_failed_event_keeps_watermark() {
     for bad in [
         event(vec![ElementRef::Node(id(2)), ElementRef::Node(id(1))]),
         event(vec![ElementRef::Node(id(1)); 2]),
-        event(vec![s.identity.edge_ref(2)]),
+        event(vec![s.source.identity.edge_ref(2)]),
         GraphCoordinationEvent {
             source_instance: 0,
             ..event(vec![])
@@ -574,7 +575,11 @@ fn remote_cap_exact_identity_generation_and_shared_uuid() {
         Err(InteractionStatus::SelectionTooLarge)
     );
     assert_eq!(s.selection().unwrap().len(), 10_000);
-    let derived = s.identity.to_transport(&s.identity.edge_ref(1)).unwrap();
+    let derived = s
+        .source
+        .identity
+        .to_transport(&s.source.identity.edge_ref(1))
+        .unwrap();
     let cross = GraphCoordinationEvent {
         revision: 2,
         generation: Some(id(100)),
@@ -608,7 +613,7 @@ fn remote_cap_exact_identity_generation_and_shared_uuid() {
 #[test]
 fn update_reorders_reconciles_exact_derived_and_retains_pins_without_positions() {
     let mut s = loaded(&standard_doc(), &[0., 10., 20.], &[0.; 3]);
-    let derived = s.identity.edge_ref(2);
+    let derived = s.source.identity.edge_ref(2);
     s.select_refs(
         header(&s, 1),
         &[
@@ -662,7 +667,7 @@ fn update_reorders_reconciles_exact_derived_and_retains_pins_without_positions()
 fn update_explicit_persistence_generation_and_atomic_invalid_load() {
     let doc = standard_doc();
     let mut s = loaded(&doc, &[0., 10., 20.], &[0.; 3]);
-    let d = s.identity.edge_ref(2);
+    let d = s.source.identity.edge_ref(2);
     s.select_refs(header(&s, 1), &[d], SelectMode::Replace)
         .unwrap();
     s.update(

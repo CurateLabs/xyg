@@ -11,7 +11,14 @@ export function assertProgressiveKeyboard(r, arena = 384*1024*1024){
   let selected=0;
   for(let i=0;i<r.actions.length;i++){
     const a=r.actions[i],v=a.publication,s=v.snapshot;
-    assert.equal(a.event.trusted,true);assert.equal(a.event.key,['ArrowRight','Enter','Enter','Enter','Escape','Escape'][i]);assert.equal(a.event.ctrl,i===2);assert.equal(a.event.operation,[5,7,7,7,4,4][i]);assert.equal(a.event.instanceId,'7201');assert.equal(a.event.commands,a.beforeCommands+1);assert.equal(a.event.prevented,i!==5);assert.ok(Number.isInteger(a.beforeCommands)&&a.beforeCommands>0);assert.ok(Number.isInteger(a.event.commands)&&a.event.commands>0);assert.ok(Number.isInteger(a.event.ordinal));assert.ok(a.event.ordinal<=v.ordinal);
+    assert.equal(a.event.trusted,true);assert.equal(a.event.key,['ArrowRight','Enter','Enter','Enter','Escape','Escape'][i]);assert.equal(a.event.ctrl,i===2);const command=a.command??a.event;assert.equal(command.operation,[5,7,7,7,4,4][i]);assert.equal(command.instanceId,'7201');
+    if(a.command){
+      // An accepted key may wait behind the one outstanding force command.
+      // Bind its eventual opcode to the actual reply/publication, retaining
+      // the dispatch-time observation without relabelling a force request.
+      assert.equal(command.requestId,v.requestId);assert.ok(Number.isInteger(command.ordinal)&&command.ordinal>a.beforeCommands);
+      assert.ok(a.event.commands>=a.beforeCommands&&command.ordinal-a.event.commands>=0&&command.ordinal-a.event.commands<=1);
+    }else assert.equal(a.event.commands,a.beforeCommands+1);assert.equal(a.event.prevented,i!==5);assert.ok(Number.isInteger(a.beforeCommands)&&a.beforeCommands>0);assert.ok(Number.isInteger(a.event.commands)&&a.event.commands>0);assert.ok(Number.isInteger(a.event.ordinal));assert.ok(a.event.ordinal<=v.ordinal);
     assert.deepEqual(primary.publications[v.ordinal],v);assert.equal(v.kind,i===0?'focus':'select');assert.equal(s.outcome.stateChanged,i!==5);assert.equal(s.outcome.selected,[0,1,0,1,0,0][i]);assert.equal(s.clearAction.applicable,i===1||i===3);assert.deepEqual(Object.values(s.selection.indices).map(String),i===1||i===3?['0']:[]);assert.deepEqual(v.state,i===1||i===3?[5,1,2,0]:[0,1,0,0]);
     refs(s.focus,1);selected=[0,1,0,1,0,0][i];refs(s.selection.refs,selected);
     if(i===0||i===1)assert.equal(s.relayout.done,false,'focus and select must be unfinished');

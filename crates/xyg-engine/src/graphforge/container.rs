@@ -86,32 +86,52 @@ struct Pending {
     index: u32,
     dtype: Dtype,
     count: u64,
-    payload: Vec<u8>,
+    offset: usize,
+    length: usize,
 }
 
 /// Section writer.
 pub struct Builder {
     magic: [u8; 4],
     sections: Vec<Pending>,
+    payload: Vec<u8>,
 }
 
 impl Builder {
     pub fn new(magic: &[u8; 4]) -> Self {
+        Self::with_capacity(magic, 0)
+    }
+    pub(crate) fn with_capacity(magic: &[u8; 4], capacity: usize) -> Self {
         Self {
             magic: *magic,
             sections: Vec::new(),
+            payload: Vec::with_capacity(capacity),
         }
     }
 
     #[cfg_attr(target_arch = "wasm32", inline(never))]
-    pub(crate) fn push(&mut self, name: &str, index: usize, dtype: Dtype, count: usize, payload: Vec<u8>) {
+    pub(crate) fn push(
+        &mut self,
+        name: &str,
+        index: usize,
+        dtype: Dtype,
+        count: usize,
+        payload: Vec<u8>,
+    ) {
         debug_assert!(valid_name(name), "section name {name}");
+        let offset = self.payload.len();
+        let length = payload.len();
+        let end = offset.checked_add(length).expect("container size");
+        let aligned = end.checked_add(7).map(|v| v & !7).expect("container size");
+        self.payload.extend_from_slice(&payload);
+        self.payload.resize(aligned, 0);
         self.sections.push(Pending {
             name: name.to_owned(),
             index: index as u32,
             dtype,
             count: count as u64,
-            payload,
+            offset,
+            length,
         });
     }
 
@@ -166,16 +186,47 @@ impl Builder {
     }
 
     pub fn texts<S: AsRef<str>>(&mut self, name: &str, index: usize, values: &[S]) {
-        let mut offsets = Vec::with_capacity(values.len() + 1);
+        #[cfg(target_arch = "wasm32")]
+        {
+            self.texts_erased(name, index, values.len(), &|i| values[i].as_ref());
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let mut offsets = Vec::with_capacity(values.len() + 1);
+            let mut text = Vec::new();
+            offsets.push(0u64);
+            for value in values {
+                text.extend_from_slice(value.as_ref().as_bytes());
+                offsets.push(text.len() as u64);
+            }
+            let mut payload: Vec<u8> = offsets.iter().flat_map(|v| v.to_le_bytes()).collect();
+            payload.extend_from_slice(&text);
+            self.push(name, index, Dtype::TextList, values.len(), payload);
+        }
+    }
+
+    // One text-list encoder for borrowed and owned strings in the browser.
+    // Counts, allocation growth, offsets and payload bytes remain identical.
+    #[cfg(target_arch = "wasm32")]
+    #[inline(never)]
+    fn texts_erased<'a>(
+        &mut self,
+        name: &str,
+        index: usize,
+        count: usize,
+        value: &dyn Fn(usize) -> &'a str,
+    ) {
+        let mut offsets = Vec::with_capacity(count + 1);
         let mut text = Vec::new();
         offsets.push(0u64);
-        for value in values {
-            text.extend_from_slice(value.as_ref().as_bytes());
+        for i in 0..count {
+            let value = value(i);
+            text.extend_from_slice(value.as_bytes());
             offsets.push(text.len() as u64);
         }
         let mut payload: Vec<u8> = offsets.iter().flat_map(|v| v.to_le_bytes()).collect();
         payload.extend_from_slice(&text);
-        self.push(name, index, Dtype::TextList, values.len(), payload);
+        self.push(name, index, Dtype::TextList, count, payload);
     }
 
     /// Copy every section of an existing container (names, indices, and
@@ -195,38 +246,36 @@ impl Builder {
     #[cfg_attr(target_arch = "wasm32", inline(never))]
     pub fn finish(self) -> Vec<u8> {
         let count = self.sections.len();
-        let mut names = Vec::new();
-        let mut name_spans = Vec::with_capacity(count);
-        for section in &self.sections {
-            name_spans.push((names.len(), section.name.len()));
-            names.extend_from_slice(section.name.as_bytes());
-        }
+        let names_len = self.sections.iter().map(|s| s.name.len()).sum::<usize>();
         let names_start = HEADER_BYTES + count * ENTRY_BYTES;
-        let mut cursor = align8(names_start + names.len());
-        let mut offsets = Vec::with_capacity(count);
-        for section in &self.sections {
-            offsets.push(cursor);
-            cursor = align8(cursor + section.payload.len());
-        }
-        let mut out = vec![0u8; cursor];
-        out[0..4].copy_from_slice(&self.magic);
+        let prefix = align8(names_start + names_len);
+        let mut out = self.payload;
+        let payload_len = out.len();
+        let total = prefix.checked_add(payload_len).expect("container size");
+        out.reserve_exact(prefix);
+        out.resize(total, 0);
+        out.copy_within(0..payload_len, prefix);
+        out[..prefix].fill(0);
+        out[..4].copy_from_slice(&self.magic);
         out[4..8].copy_from_slice(&CONTAINER_VERSION.to_le_bytes());
         out[8..12].copy_from_slice(&(count as u32).to_le_bytes());
-        out[12..16].copy_from_slice(&(names.len() as u32).to_le_bytes());
-        out[16..24].copy_from_slice(&(cursor as u64).to_le_bytes());
+        out[12..16].copy_from_slice(&(names_len as u32).to_le_bytes());
+        out[16..24].copy_from_slice(&(total as u64).to_le_bytes());
+        let mut name_offset = 0usize;
         for (i, section) in self.sections.iter().enumerate() {
             let at = HEADER_BYTES + i * ENTRY_BYTES;
-            let (name_offset, name_len) = name_spans[i];
             out[at..at + 4].copy_from_slice(&(name_offset as u32).to_le_bytes());
-            out[at + 4..at + 8].copy_from_slice(&(name_len as u32).to_le_bytes());
+            out[at + 4..at + 8].copy_from_slice(&(section.name.len() as u32).to_le_bytes());
             out[at + 8..at + 12].copy_from_slice(&(section.dtype as u32).to_le_bytes());
             out[at + 12..at + 16].copy_from_slice(&section.index.to_le_bytes());
-            out[at + 16..at + 24].copy_from_slice(&(offsets[i] as u64).to_le_bytes());
+            out[at + 16..at + 24]
+                .copy_from_slice(&((prefix + section.offset) as u64).to_le_bytes());
             out[at + 24..at + 32].copy_from_slice(&section.count.to_le_bytes());
-            out[at + 32..at + 40].copy_from_slice(&(section.payload.len() as u64).to_le_bytes());
-            out[offsets[i]..offsets[i] + section.payload.len()].copy_from_slice(&section.payload);
+            out[at + 32..at + 40].copy_from_slice(&(section.length as u64).to_le_bytes());
+            out[names_start + name_offset..names_start + name_offset + section.name.len()]
+                .copy_from_slice(section.name.as_bytes());
+            name_offset += section.name.len();
         }
-        out[names_start..names_start + names.len()].copy_from_slice(&names);
         out
     }
 }
@@ -377,8 +426,13 @@ impl<'a> Container<'a> {
             return Err(invalid("header is inconsistent"));
         }
         let names_start = HEADER_BYTES + count * ENTRY_BYTES;
-        let names_end = names_start.checked_add(names_len).ok_or_else(|| invalid("names overflow"))?;
-        let payload_start = names_end.checked_add(7).map(|v|v & !7).ok_or_else(|| invalid("names alignment overflow"))?;
+        let names_end = names_start
+            .checked_add(names_len)
+            .ok_or_else(|| invalid("names overflow"))?;
+        let payload_start = names_end
+            .checked_add(7)
+            .map(|v| v & !7)
+            .ok_or_else(|| invalid("names alignment overflow"))?;
         if payload_start > bytes.len() {
             return Err(invalid("names lie outside the buffer"));
         }

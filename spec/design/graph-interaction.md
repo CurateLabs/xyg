@@ -1493,69 +1493,197 @@ competitors. Historical pointer/camera receipts and their limitations remain.
 
 ### Plain retained graph phase admission (default arena)
 
-The unchanged browser default remains 16 MiB; maximum/native default remains
-384 MiB. `wire_memory::Plain` recognizes only index-zero neutral, undirected,
-non-loop persisted graphs with no parent, style, label, result-layer, generation
-or unknown sections. Recognition borrows the canonical document; normal decoding
-still validates every identity and sentinel. Recognition is an accounting fact,
-not a new graph policy. Custom budgets below source cardinality, bound owners,
-foreign derived state and structural/bulk operations retain the general plan.
+The browser default remains **16 MiB** and the maximum/native default remains
+**384 MiB**. A closed, borrowed certificate recognizes neutral undirected,
+non-loop persisted sources. Names, index zero, primitive dtypes, counts,
+identity sentinel planes and successful current composition headers are checked.
+Labels, semantic styles, hierarchy, layers/results, generation and unknown
+sections use the general envelope. Certification changes ownership accounting,
+not the source graph, layout, culling, LOD, pick ordering or opacity policy.
+Direct and Aggregate use the same Rust render kernel; eligibility does not
+branch on N, camera or fixture. Unsupported collapse/bulk/bound operations keep
+the general transaction plan.
 
-OPEN reserves 98,304 + 48D, the existing ingress/cache envelope and external
-ownership. It creates no publication. The 48D source bound is retained unchanged
-and includes retained/speculative identity/source/CoSE ownership. Every later
-supported operation additionally charges the actual capacities of the old
-publication, all actual state, prior outcome, pending text and retry caches.
-Before cloning it reserves the following future work, regardless of camera or
-initial grid size:
+Persistent source ownership is explicit:
 
-- Node row work: `2 sizeof(NodePaint) + 4 sizeof(ResolvedGraphStyle) + 80*8`
-  per source node. This covers growing paint/style vectors, membership/flag/
-  hierarchy/mask/position arrays and layout/query scratch. The 80 scalar slots
-  cover the overlapping numeric vectors, including capacity doubling; fixed
-  CoSE grid minima and codec metadata fit the fixed reserve.
-- Edge row work: `2 sizeof(EdgePiece) + 4(sizeof(ResolvedGraphStyle) +
-  sizeof(SemanticPaintLayers)) + 3(5+EDGE_ENDS_STRIDE)*8 + 48*8` per source edge.
-  This includes doubled paint vectors, styles, the canonical three-slot route
-  scratch even though at most one shaft survives, membership/endpoint work and
-  routing bundle maps. Bundle hash buckets (at most four per source edge),
-  their per-bundle row vectors and sorting fit the 48 scalar slots.
-- Serialized CPU/GPU/membership columns: three times
-  `131,072 + 208n + 336m`. The per-row widths include CPU and GPU style/state,
-  indices and coordinates, offsets/membership and padding. Three copies cover
-  growing section payloads plus the exact final output; numeric encoding
-  scratch belongs to row work. The fixed part covers section names/tables,
-  the capped 200-row companion/ring text and fixed action/summary planes.
-- A future CSR pick grid at the existing maximum of
-  `min((n+m)*4096, 1,048,576)` u32 entries, plus two 4,097-u32 offset/cursor
-  arrays. The old grid remains charged at its actual capacity. Thus later grid
-  growth is reserved on every continuation, not inferred from the first frame.
-- Current state is charged by the existing 1,024/item and 128/text rules both
-  outside and inside the owner lock. Point/focused selection reserves one extra
-  source item. Only clear, hover, focus/ring, step, render/read and point/focused
-  selection use this plan. Bulk/region/highlight/coordination, bind and UPDATE
-  retain the full general reservation, including the complete old and new
-  document envelopes. A default-arena bulk operation may correctly refuse.
+- UUIDs remain complete canonical 128-bit planes. An index-only open-addressed
+  table reuses GraphForge's mixed UUID hash and compares full UUIDs on collision.
+  Slots contain dense indices (four or eight bytes according to representation),
+  not a second UUID copy. Node/edge kind remains qualified. Derived dictionaries
+  use index-only slots over their complete canonical tuples and exact result
+  strings; an all-persisted source owns no all-None
+  derived plane. Missing labels/styles have implicit defaults; source flags and
+  paint still use the canonical style resolver.
+- Identity, labels, topology metadata and static styles share one immutable
+  source Arc. Parent/endpoint Arcs lend their canonical planes to force setup.
+  Preceding publication/CSR has its own immutable Arc. Mutable positions use
+  copy on write. Retained CoSE is
+  Arc owned; a force command copies private integration planes and maps, while
+  immutable edges/components/parents share. CoSE does not allocate the unused
+  FA2 degree plane; a sole component has implicit ID zero. Root parents share
+  the source plane. Neither change alters force arithmetic or convergence.
+- Exact OPEN retries retain a lossless literal/run byte cache with a raw
+  fallback when packing would grow it. Canonical source remains complete and
+  separate. Every byte, including padding and authored negative zero, is
+  reproduced exactly after copy on write. No hash substitutes for byte equality. Native registry and
+  WireSession share this retry record. A layer-free document needs no copied
+  document for sparse selection projection; binding materializes its complete
+  original bytes only under general whole-document admission.
 
-The pick index now builds checked logical primitive/cell counts first, then
-allocates one exactly sized CSR. Clones share its immutable storage. Primitive,
-entry and candidate caps and degradation choices/order remain unchanged; no
-cleared cell capacities survive degradation. Publication/retry installation
-remains failure atomic. No signatures, caps, defaults, LOD or force policy change.
+OPEN uses certified primitive lengths before decoding owned columns. Let
+`I = 16(N+M) + slots(N) + slots(M)`, where `slots` is the checked index capacity
+(the actual four/eight-byte representation and power-of-two load bound).
+Let `P` be the actual authored x/y payload bytes and `Q` the complete request
+length, including all padding and scalar sections. The construction maximum is
+`max(I + 21M + P + 2N, I + 10N + 20M + P + Q)`:
 
-The normal foundation scheduling journey now runs the pointer/camera and reviewed
-real-Tab keyboard oracles on two default-arena 1k attachments. Source identity
-counts remain 1000/1000; GPU counts follow exact native visible membership and
-legitimate culling. The existing EdgeSample tier tag can record viewport edge
-omission even without stride sampling; replay checks the whole visible edge set. The separate explicit-384-MiB 10k journey remains. Evidence
-and limitations: [default1k receipt](../performance/graph-default1k-2026-11-07/README.md).
+| Phase/class | Owned capacity bound |
+| --- | --- |
+| Identity decode | complete UUID planes and index slots `I`; derived/layer/order/path temporary planes `21M` |
+| Typed ingress | authored x/y `P`; collapsed/pinned masks at most `2N` |
+| Retained source | `I`; root parents/validity/collapse `10N`; endpoints/ordinals `20M` |
+| Retry publication | retained source plus positions `P` and one exact lossless cache of capacity at most `Q` |
 
-The complete preceding RenderOutput is immutable Arc-owned as well: speculative
-session clones share its rows and grid until a fresh candidate publication is
-built. The actual preceding publication remains fully charged once; no deep
-clone of its row vectors is hidden in the new-work reserve. Only the admitted
-candidate installs the new Arc after serialization succeeds. The test-only
-revision-exhaustion helper uses Arc::make_mut to construct its synthetic boundary.
+Add fixed 98,304 metadata bytes, 4,096 for the default reducer reserve, OPEN
+acknowledgements and retry-record metadata, and the existing 1,024 per initially
+pinned identity. Foreign staging/owner capacities are added separately. Unknown
+or mismatched schemas retain general admission. No already borrowed typed data
+gets a document multiplier; all Rust-owned copies and the whole retry byte
+cache remain charged. Source result-string slots reserve once from the validated
+layer bound, compare exact strings, and retain the general document envelope.
+
+Later admission sums actual capacities once for retained source, mutable force,
+positions, publication and CSR, packets, encoded replies, and reducer/event
+reserves. `ownership_bytes()` exposes those owners; its sum is
+`retained_budget()`. A fixed 98,304-byte allowance covers small object, Arc,
+container and codec metadata. It does not cover unreported data-sized buffers.
+Before cloning, admission checks the **maximum** of disjoint force/query and
+render-kernel phases, including private candidate owners, borrowed staging and
+foreign output/owner capacities. General/UPDATE keeps the preceding whole-old +
+whole-new envelope and exact 3,526,207 refusal / 3,526,208 success/retry boundary.
+
+The owned render-kernel variant changes allocation ownership only: source edge
+pair storage reserves its source-bounded capacity once. The ordinary kernel
+keeps its pair-vector growth strategy; both wrappers call one implementation.
+UUID, overlap-seeding and Aggregate pair lookup share safe index-only slots,
+checked before allocation, with full keys borrowed from their canonical planes.
+First-occurrence order, equality and overlap jitter remain identical.
+Stable group ranks for routing, layer/radial placement and overlap seeding share
+one source-bounded implementation. It borrows complete keys, counts in source
+order and releases owner/table scratch before painting or force integration.
+Layer membership, ordering, numeric placement and force options are unchanged.
+The original connected-component adjacency/BFS implementation is retained.
+Its construction bound uses actual platform widths: `N * (60 + 9U + V) +
+M * (33 + 6U)`, where `U = sizeof(usize)` and `V = sizeof(Vec<usize>)`.
+That is `156N + 81M` on the native 64-bit host and `108N + 57M` on wasm32.
+It includes force/pick coordinate planes, active/pin/candidate/visibility masks,
+constructor parents, joined parent-edge staging, adjacency headers and neighbor
+capacity growth (including old/new allocation ownership), component labels,
+queue growth and force pairs. Post-construction position copying and render
+scratch use their separate maxima. Active maps, pin snapshots and the force's
+read-only pin plane share Arcs across unchanged continuations; a changed
+visibility/pin world invalidates that retained force as before. Integration
+planes remain private. Warm tick scratch charges `N*(18+3U) + M +
+512²*(24+2U)` in addition to the private candidate. These are buffer-width and
+capacity bounds. Compacted-position/cluster scratch dies
+before edge aggregation, and route/collapse/remapping scratch dies at its last
+phase. Identity topology borrows positions/endpoints; the same kernel still
+computes viewport membership and LOD. Aggregate avoids resolving unused source
+styles. Unused output capacities are released before retaining a publication.
+
+Before paint allocation, a second checked gate charges the already built
+publication/membership buffers, live flags, styles, canonical three-slot route
+scratch and growable paint rows. Group/routing scratch dies before pick CSR
+construction, so their capacities enter a phase maximum. CPU/GPU style columns
+share one exact writer. GPU coordinate columns lower directly into their owned
+packet buffers through the same scalar offset-f32 kernel; no extra f64/f32
+column vectors overlap them.
+Before serialization, another gate charges current publication plus two
+complete packet bounds: one planned packet arena and one lowering column.
+The arena receives each owned column and is prefixed in place with its named
+section table; it does not retain separate pending payloads and then allocate
+a second final packet. A complete native caller output capacity is charged as
+an external owner before uncached execution; cached retry semantics remain
+unchanged. WASM copies its complete host output after the candidate commits,
+when the preceding private owners have been dropped. That phase is a subset
+of the admitted packet/candidate bound. No candidate installs
+until all gates and serialization succeed. Late refusal preserves source,
+state, force, publication, sequence and cached reply.
+
+Persisted reducer storage is charged by the pinned Rust B-tree node layout:
+UUID leaves are 192 bytes and internal nodes 288 bytes on the native host
+(wasm32 is smaller). A nonempty node owns at least one key, so 288 per UUID is
+a safe bound without assuming average occupancy; the fixed reserve covers the
+constant number of empty roots and object headers. Mutation plans reserve four
+state populations plus three incoming populations and two reference vectors.
+Changed/outbound references use actual Vec capacities and `sizeof(ElementRef)`;
+the closed certificate excludes heap-owning derived references. General and
+UPDATE retain the original 1,024/reference/text envelope and exact boundary.
+The allocator ledger exercises split thresholds, nine UUID planes, mutation
+scratch, clears and clones. Canonical B-tree order already equals semantic
+transport order after exact derived-key resolution; projection and coordination
+consume it directly, preserving bytes while removing redundant sort scratch.
+Point/focus input expands at most one source kind, bounded by
+`min(max(N,M), selection_cap)`. Query scratch uses the actual preceding pick
+primitive count, clamped at candidate-cap plus one for its checked refusal.
+The pinned u32 B-tree node bound is 160 bytes and growable Primitive rows cost
+at most32 bytes per candidate on the widest host; the allocator ledger checks
+split thresholds and the cap boundary. It does not reserve global primitive
+and selection caps for a smaller retained index. Cap/order/scan policy itself
+is unchanged; a converged default1k point query remains admitted.
+
+All original primitive/grid/candidate/work caps, fallback scan rules and routed
+edge omissions remain unchanged. Direct/EdgeSample and Aggregate populations
+must be reported honestly; this does not promise all-source edge picking.
+Native requested allocation, WASM linear high water, host/page heap, RSS and GPU
+storage are distinct scopes. Logical ownership bounds do not claim an RSS or
+allocator-free-list bound.
+
+The historical [default1k](../performance/graph-default1k-2026-11-07/README.md)
+and [immutable-source checkpoint](../performance/graph-source-sharing-2026-11-08/README.md)
+receipts remain unchanged. Public100k/1M render/interaction qualification requires
+fresh complete native/WASM replies and actual trusted public paint, progress,
+pointer/Tab, camera, peer, refusal/stale, cancellation and disposal evidence;
+engine-only allocation probes do not establish those rungs. Full M4, remaining
+hosts/accessibility/performance/competitor acceptance and issue closure remain
+separate from this bounded work.
+
+### Cooperative continuation work admission (reply fact v1)
+
+A progressive publication adds optional `relayout.admission.u32 = [1, max_steps]`.
+This is a separately versioned named section; reserved fields and native405 /
+WASM38 signatures/exports are unchanged. Rust computes a safe upper bound from
+source node+edge work, checked for overflow and capped at 64: 1M + 1M admits
+**2**, 100k + 100k admits **20**, and small rungs continue to admit 10. A bound of
+zero means no single step fits. Source cardinality is a safe upper bound even
+when a temporal owner masks rows.
+
+The browser consumes `min(existing configured chunk preference, Rust bound)`.
+The generated preference in this checkout is **8**, preserved unchanged. The
+4,000,000 work ceiling, first-paint steps, force algorithm/options, convergence,
+frame scheduling, immediate reply publication and 30-second watchdog remain
+unchanged. Fewer valid steps per command are cooperative admission, not raised
+work or altered physics. Older supported replies without this optional fact
+keep their previous configured request size; malformed/unknown fact versions
+fail before installation. Native and actual WASM boundary/retry/stale/disposal
+proofs must accompany the public rung evidence.
+
+A force command may be outstanding while one latest user intent waits locally.
+A new intent replaces that pending intent with a typed stale rejection. It is
+framed against the just-published Rust revision only after the current force
+reply paints, before the next existing RAF continuation; no Worker reply is
+held or reordered. Another user command still owns the ordinary single-action
+busy guard. This bounded mailbox prevents slow paint from losing every trusted
+input between force replies. Keyboard cancellation remains synchronous at local
+acceptance; Rust still owns identity, picking and capability decisions. Temporal
+intent, stale/failure and disposal reject queued input without sending it.
+While temporal intent waits behind force, further trusted key/pointer input
+keeps its native default and sends no graph command; it cannot consume the
+force-only input mailbox or turn temporal supersession into a busy failure.
+Scheduling intervals, the configured eight-step preference, force convergence,
+immediate publication and the 30-second wall watchdog are unchanged. Tests must
+retain any contention/watchdog failures independently of passing reruns.
+
 ### Native frozen-publication borrowing
 
 The [native immutable temporal checkpoint](temporal-graph-frozen.md) borrows a
@@ -1565,3 +1693,22 @@ explicit camera and source token before the temporal acquisition gate. Existing
 XYGI/XYGR packet bytes and command behavior are unchanged. Snapshot acquisition
 adds the session's retained memory charge to its own peak admission. This is an
 export input seam, not a second publisher, renderer, layout or identity resolver.
+
+### Current combined large-view evidence boundary
+
+The [current union receipt](../performance/current-large-graph-union-2026-11-09/README.md)
+records the normal-history integration with live temporal/geographic hosts and
+matching source-built native/WASM/client artifacts. The fresh 1M primary plus
+default1k peer performs trusted keyboard/pointer/camera work, later progress,
+cancellation and cleanup. This is not full-force convergence or a latency win.
+The unchanged 4M per-command bound still admits two 1M source steps and refuses
+three without replacing the previous cached result.
+
+The fresh uninstrumented 100k journey reaches trusted input and later progress
+but fails the unchanged 30-second scheduler wall budget. Private timings show
+long document-thread pauses at Direct publication and dominant synchronous
+WebGL-to-Canvas2D waits, including queued rendering. The existing Aggregate 1M
+path paints fewer derived marks, explaining why row count alone does not rank
+presentation cost. A successful instrumented run is diagnostic, not a repair
+or replacement for the failed qualification. Direct/LOD thresholds, peer
+arenas, force limits, deadlines and exact-output assertions remain unchanged.

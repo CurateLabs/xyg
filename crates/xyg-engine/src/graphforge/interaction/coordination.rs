@@ -37,10 +37,12 @@ pub(super) fn compare(a: &ElementRef, b: &ElementRef) -> Ordering {
             a.cmp(b)
         }
         (ElementRef::Derived(a), ElementRef::Derived(b)) => {
-            let exact = |r: &ResultRef| match r {
-                ResultRef::Exact(s) => s.clone(),
-                _ => None,
-            };
+            fn exact(r: &ResultRef) -> Option<&str> {
+                match r {
+                    ResultRef::Exact(s) => s.as_deref(),
+                    _ => None,
+                }
+            }
             (exact(&a.result), a.layer, a.path, a.order).cmp(&(
                 exact(&b.result),
                 b.layer,
@@ -116,18 +118,23 @@ impl GraphSession {
             return;
         }
         self.coordination.sequence += 1; // admitted before state writes
-        let mut refs: Vec<_> = self
+        let refs: Vec<_> = self
+            .source
             .identity
             .refs_of(state.selection())
             .iter()
-            .filter_map(|r| self.identity.to_transport(r))
+            .filter_map(|r| self.source.identity.to_transport(r))
             .collect();
-        crate::shared_sort::by(&mut refs, compare);
+        // refs_of follows kind-qualified B-tree order. Derived resolution
+        // verifies the exact current result ID, so transport preserves it.
+        debug_assert!(refs
+            .windows(2)
+            .all(|p| compare(&p[0], &p[1]) == Ordering::Less));
         self.coordination.pending = Some(GraphCoordinationEvent {
             group_id: self.coordination.group,
             source_instance: self.instance_id,
             revision: self.coordination.sequence,
-            generation: self.generation,
+            generation: self.source.generation,
             refs,
         });
     }
@@ -166,14 +173,14 @@ impl GraphSession {
             let mut unmatched = 0;
             for reference in &event.refs {
                 let resolved = if matches!(reference, ElementRef::Derived(_))
-                    && event.generation != session.generation
+                    && event.generation != session.source.generation
                 {
                     None
                 } else {
-                    session.identity.resolve(reference).ok()
+                    session.source.identity.resolve(reference).ok()
                 };
                 if let Some(index) = resolved {
-                    session.identity.insert_into(&mut delta, index);
+                    session.source.identity.insert_into(&mut delta, index);
                 } else {
                     unmatched += 1;
                 }
@@ -184,7 +191,7 @@ impl GraphSession {
                 .gate
                 .commit(event.source_instance, event.revision);
             Ok(OpOutcome {
-                changed: session.identity.refs_of(&changed),
+                changed: session.source.identity.refs_of(&changed),
                 unmatched,
                 ..session.outcome(world, !changed.is_empty())
             })

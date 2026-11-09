@@ -22,7 +22,7 @@ export async function graphProgressiveKeyboardCase(page, report) {
         const pixels=el.querySelector('canvas').getContext('2d').getImageData(0,0,640,320).data;
         let magenta=0,near=0;
         for(let i=0;i<pixels.length;i+=4)if(pixels[i]>240&&pixels[i+1]<15&&pixels[i+2]>240&&pixels[i+3]>200){magenta++;const x=(i/4)%640,y=Math.floor(i/4/640);if(Math.hypot(x-centers[0],y-centers[1])<16)near++;}
-        p.publications.push({ordinal:p.publications.length,kind,snapshot,state:state.slice(0,4),center:Array.from(centers.slice(0,2)),magenta,near,active:document.activeElement===el.querySelector('[role=application]'),live:el.querySelector('[aria-live=polite]').textContent});
+        p.publications.push({ordinal:p.publications.length,requestId:reply.requestId,kind,snapshot,state:state.slice(0,4),center:Array.from(centers.slice(0,2)),magenta,near,active:document.activeElement===el.querySelector('[role=application]'),live:el.querySelector('[aria-live=polite]').textContent});
         if(kind==='focus'||kind==='select') {p.captures??={};p.captures[`${kind}-${p.publications.length-1}`]=el.querySelector('canvas').toDataURL('image/png');}
         for(const r of s.replies.filter(r=>r.owner===owner))if(!r.digest){
           r.replyBytes=r.bytes.length;
@@ -47,7 +47,7 @@ export async function graphProgressiveKeyboardCase(page, report) {
       const event=await page.evaluate(({mark,eventKey})=>{const p=window.__graphSession.keyboardViews.find(p=>p.id==='7201');return p.keys.slice(mark.keys).find(e=>e.key===eventKey);},{mark,eventKey});
       if(event?.prevented||key==='Escape'&&kind==='empty'){
         await page.waitForFunction(({mark,kind})=>{const p=window.__graphSession.keyboardViews.find(p=>p.id==='7201');return p.publications.slice(mark.pubs).some(x=>x.kind===(kind==='focus'?'focus':'select'));},{mark,kind});
-        return await page.evaluate(({mark,kind,eventKey})=>{const p=window.__graphSession.keyboardViews.find(p=>p.id==='7201'),publication=p.publications.slice(mark.pubs).find(x=>x.kind===(kind==='focus'?'focus':'select'));return {action:kind,beforeCommands:mark.commands,event:p.keys.slice(mark.keys).find(e=>e.key===eventKey),publication};},{mark,kind,eventKey});
+        return await page.evaluate(({mark,kind,eventKey})=>{const p=window.__graphSession.keyboardViews.find(p=>p.id==='7201'),publication=p.publications.slice(mark.pubs).find(x=>x.kind===(kind==='focus'?'focus':'select'));const commands=window.__graphSession.commands.filter(c=>c.owner===p.owner),index=commands.findIndex(c=>c.requestId===publication.requestId),c=commands[index];if(!c)throw Error('publication has no command');return {action:kind,beforeCommands:mark.commands,event:p.keys.slice(mark.keys).find(e=>e.key===eventKey),command:{operation:c.operation,instanceId:String(c.instanceId),ordinal:index+1,requestId:c.requestId},publication};},{mark,kind,eventKey});
       }
     }throw Error('no admitted trusted '+kind);
   };

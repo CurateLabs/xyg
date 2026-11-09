@@ -1927,3 +1927,43 @@ error-copy outlining were not retained. No optional module, second renderer,
 missing export, validator bypass or larger allowance supplies the size fit.
 Matching producer paths and affected browser/native/WASM journeys remain the
 required evidence; package fit alone does not close any milestone or issue.
+
+
+### Checked single-module source factoring continuation
+
+The source-factored active-milestone continuation is recorded in
+[the module-space recovery receipt](../performance/module-space-recovery-2026-11-08/README.md).
+It preserves native O3, the wasm32 O2/inline0 profile, pinned optimizer/order,
+all 68 functions, and the 1,927,168 raw / 786,432 gzip6 caps. Browser-only
+callback erasure shares exact wedge validation, lock/state transactions,
+text-list encoding, dash traversal and axis resolution; match-independent
+lease bookkeeping borrows the existing owners. Existing scalar writers retain
+endian and floating-bit semantics. Numeric filter buffers retain checked
+reservation and unchanged zero values. Native algorithms and all product
+admission, ordering, validation, rendering, output and disposal rules remain
+unchanged except the separately recorded co-owned temporal-job reservation
+correction. Complete output oracles and slower ABBA samples remain required;
+a size fit alone does not qualify final shipping or close milestones 4–7.
+
+### Current live-host and large-graph union qualification
+
+The current [live-host/large-graph union](../performance/current-large-graph-union-2026-11-09/README.md)
+combines the checked module factoring with controller-bound temporal Scenes,
+five issued geographic lanes and the hosted guard repairs. Fresh official
+native and WASM builds reproduce the factoring producer's artifacts. The
+single module is **1,886,348 raw /786,351 Node22 gzip6 bytes**, retains all 68
+functions and zero imports, and has **81 gzip bytes** under the unchanged cap.
+Earlier 47-byte and 27-byte measurements belong to their historical modules.
+The browser client is built from the complete union, not a parent client.
+
+Fresh source foundation and the 1M-primary/default1k-peer journey pass, including
+trusted input, camera, later progress, cancellation and disposal. Complete
+native/WASM/browser replies match for both large traces. The uninstrumented
+100k-primary/default1k-peer journey fails the existing scheduler wall limit;
+that live failure is not cleared by successful replay or an instrumented pass.
+Private timings locate the dominant wait in the host WebGL-to-Canvas2D copy,
+which includes completion of queued GPU work. These measurements do not yet
+separate rendering from readback cost or establish a repair. No Direct/LOD
+threshold, wall deadline, work/memory cap, peer or assertion is relaxed.
+General responsiveness, reliability, shipping and milestone acceptance remain
+unproved beyond the individually recorded bounded checks.

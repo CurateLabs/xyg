@@ -140,6 +140,30 @@ impl SceneWedgeArcs {
         record_count: usize,
         record: impl Fn(usize) -> Result<WedgeRecordView, SceneError>,
     ) -> Result<(), SceneError> {
+        #[cfg(target_arch = "wasm32")]
+        {
+            self.validate_erased(record_count, &record)
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        self.validate_impl(record_count, record)
+    }
+
+    // The exact same wedge validation serves encoded and prepared records.
+    #[cfg(target_arch = "wasm32")]
+    #[inline(never)]
+    fn validate_erased(
+        &self,
+        record_count: usize,
+        record: &dyn Fn(usize) -> Result<WedgeRecordView, SceneError>,
+    ) -> Result<(), SceneError> {
+        self.validate_impl(record_count, record)
+    }
+
+    fn validate_impl(
+        &self,
+        record_count: usize,
+        record: impl Fn(usize) -> Result<WedgeRecordView, SceneError>,
+    ) -> Result<(), SceneError> {
         if !self.cx.is_finite() || !self.cy.is_finite() || self.entries.is_empty() {
             return Err(SceneError::Length);
         }

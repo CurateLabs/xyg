@@ -1403,6 +1403,15 @@ spec/performance/browser-css-color-2026-11-08/** text eol=lf
 spec/performance/browser-css-color-2026-11-08/**/*.gz -text
 spec/performance/browser-css-color-2026-11-08/**/*.png -text
 
+# Combined history and original byte archives.
+spec/performance/active-m4-m7-integration-2026-11-08/** text eol=lf
+spec/performance/active-m4-m7-integration-2026-11-08/**/*.gz -text
+spec/performance/active-m4-m7-integration-2026-11-08/**/*.png -text
+
+# Public graph receipt is part of the combined Windows byte contract.
+spec/performance/graph-public-scale-ownership-2026-11-08/** text eol=lf
+spec/performance/graph-public-scale-ownership-2026-11-08/**/*.gz -text
+spec/performance/graph-public-scale-ownership-2026-11-08/**/*.png -text
 # Co-owned temporal-job graph admission successor evidence.
 crates/xyg-wasm/src/graphforge_session.rs text eol=lf
 scripts/graph_temporal_owner_conformance.mjs text eol=lf
@@ -1463,3 +1472,18 @@ spec/design/xyg-naming.md text eol=lf
 spec/process/contributing.md text eol=lf
 spec/performance/ci-vendor-floor-discovery-2026-11-09/** text eol=lf
 spec/performance/ci-vendor-floor-discovery-2026-11-09/**/*.gz -text
+# Source-factored union and immutable experiment/evidence bytes.
+spec/performance/module-space-recovery-2026-11-08/** text eol=lf
+spec/performance/module-space-recovery-2026-11-08/**/*.gz -text
+spec/performance/module-space-recovery-2026-11-08/**/*.png -text
+
+# Current live temporal/geographic and large-graph package-fit union evidence.
+spec/performance/current-large-graph-union-2026-11-09/** text eol=lf
+spec/performance/current-large-graph-union-2026-11-09/**/*.gz -text
+spec/performance/current-large-graph-union-2026-11-09/**/*.png -text
+# Successor CI portability and specification contracts.
+packages/xy-node/test/temporal-graph-frozen.test.mjs text eol=lf
+tests/test_check_typing.py text eol=lf
+tests/test_framing.py text eol=lf
+spec/benchmarks/methodology.md text eol=lf
+spec/design/temporal-graph-frozen.md text eol=lf

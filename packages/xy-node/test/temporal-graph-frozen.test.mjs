@@ -24,8 +24,8 @@ test('public native freeze history, exact canonical Python bytes, import and lif
       m['selected.node.uuid'].fill(0);assert.deepEqual(f.metadata['selected.node.uuid'],ids([3]));
       assert.throws(()=>{m.time=[0n,0n,0n];},TypeError);
     }
-    const result=spawnSync(process.env.UV??'/home/ubuntu/.local/bin/uv',['run','python','-c',`import base64,json,sys;sys.path.insert(0,'tests');from test_temporal_graph_frozen import graph,publish,freeze,FIXTURE,ids\ng=graph();g.set_selection(nodes=ids([3]),edges=ids([13])).set_focus('node',bytes([3])*16).set_pinned(ids([3]));out=[]\nfor frame in FIXTURE['frames']:\n publish(g,frame)\n with freeze(g,frame['revision']) as f:out.append(base64.b64encode(f.to_bytes()).decode())\ng.close();print(json.dumps(out))`],{cwd:root,encoding:'utf8',env:process.env});
-    assert.equal(result.status,0,result.stderr);const python=JSON.parse(result.stdout);
+    const result=spawnSync(process.env.UV??'uv',['run','--no-sync','python','-c',`import base64,json,sys;sys.path.insert(0,'tests');from test_temporal_graph_frozen import graph,publish,freeze,FIXTURE,ids\ng=graph();g.set_selection(nodes=ids([3]),edges=ids([13])).set_focus('node',bytes([3])*16).set_pinned(ids([3]));out=[]\nfor frame in FIXTURE['frames']:\n publish(g,frame)\n with freeze(g,frame['revision']) as f:out.append(base64.b64encode(f.to_bytes()).decode())\ng.close();print(json.dumps(out))`],{cwd:root,encoding:'utf8',env:process.env});
+    assert.equal(result.status,0,result.error?.message??result.stderr);const python=JSON.parse(result.stdout);
     for(let i=0;i<snapshots.length;i++)assert.deepEqual(snapshots[i][1],new Uint8Array(Buffer.from(python[i],'base64')),'full native canonical bytes across programmatic hosts');
     g.setSelection({nodes:ids([1])}).setFocus(null).setPinned();g.close();
     for(const [f,raw] of snapshots){
@@ -80,10 +80,10 @@ test('existing native bound publication capture preserves positions, styles and 
     assert.deepEqual(frozen.metadata['render.publication'],reply);assert.deepEqual(frozen.metadata['render.document'],doc);assert.deepEqual(frozen.metadata['render.camera'],fixture.camera);
     const raw=frozen.toBytes();assert.equal(native.xyGraphforgeSessionDestroy(session[0]),0);session[0]=0n;abi.temporalGraphDestroy(temporal);temporal=null;
     assert.deepEqual(frozen.toBytes(),raw);const imported=FrozenTemporalGraph.fromBytes(raw);imported.close();
-    const pythonExports=spawnSync(process.env.UV??'/home/ubuntu/.local/bin/uv',['run','python','-c',`import base64,json,sys,xyg
+    const pythonExports=spawnSync(process.env.UV??'uv',['run','--no-sync','python','-c',`import base64,json,sys,xyg
 with xyg.FrozenTemporalGraph.from_bytes(base64.b64decode(sys.stdin.read())) as f:
  print(json.dumps({fmt:base64.b64encode(f.export(fmt,focus_rgba=(170,153,236,255))).decode() for fmt in ('svg','png','html')}))`],{cwd:root,input:Buffer.from(raw).toString('base64'),encoding:'utf8',env:process.env,maxBuffer:8*1024*1024});
-    assert.equal(pythonExports.status,0,pythonExports.stderr);
+    assert.equal(pythonExports.status,0,pythonExports.error?.message??pythonExports.stderr);
     const pythonArtifacts=JSON.parse(pythonExports.stdout);
     for(const format of ['svg','png','html']) {
       const artifact=frozen.export(format,{focusRgba:[170,153,236,255]});
@@ -102,9 +102,9 @@ with xyg.FrozenTemporalGraph.from_bytes(base64.b64decode(sys.stdin.read())) as f
 });
 
 test('native import refuses independently rechecksummed malformed publication planes',()=>{
-  const result=spawnSync(process.env.UV??'/home/ubuntu/.local/bin/uv',['run','python','-c',`import base64,json,sys;sys.path.insert(0,'tests');from test_temporal_graph_frozen import PUBLICATION_MUTATIONS,malformed_retained_publication
+  const result=spawnSync(process.env.UV??'uv',['run','--no-sync','python','-c',`import base64,json,sys;sys.path.insert(0,'tests');from test_temporal_graph_frozen import PUBLICATION_MUTATIONS,malformed_retained_publication
 print(json.dumps([base64.b64encode(malformed_retained_publication(name,values)).decode() for name,values in PUBLICATION_MUTATIONS]))`],{cwd:root,encoding:'utf8',env:process.env,maxBuffer:8*1024*1024});
-  assert.equal(result.status,0,result.stderr);
+  assert.equal(result.status,0,result.error?.message??result.stderr);
   const mutations=JSON.parse(result.stdout);assert.equal(mutations.length,24);
   for(const [index,encoded] of mutations.entries())assert.throws(()=>FrozenTemporalGraph.fromBytes(new Uint8Array(Buffer.from(encoded,'base64'))),`malformed publication #${index}`);
 });

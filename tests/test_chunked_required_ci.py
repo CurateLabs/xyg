@@ -68,3 +68,24 @@ def test_existing_python_job_requires_installed_render_without_skipping_or_dupli
     assert commands[0].split()[2:] == required
     assert commands[1].split()[2:] == ["--ignore=" + name for name in required]
     assert "||" not in run and "continue-on-error" not in run
+
+
+def test_floor_uses_pinned_browser_for_required_offline_fixtures():
+    ci = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
+    floor = ci["jobs"]["python_floor"]
+    install = next(
+        step
+        for step in floor["steps"]
+        if step.get("name") == "Install pinned Chromium for Python floor"
+    )
+    assert install["run"] == "npx playwright install chromium"
+    assert "if" not in install and not install.get("continue-on-error")
+    run = next(
+        step["run"]
+        for step in floor["steps"]
+        if step.get("name") == "Python 3.11 tests (native core)"
+    )
+    assert "export XYG_CHROMIUM=" in run
+    assert "require('playwright').chromium.executablePath()" in run
+    assert run.splitlines()[-1] == ".venv/bin/python -m pytest -q"
+    assert "||" not in run and "continue-on-error" not in run

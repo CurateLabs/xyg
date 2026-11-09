@@ -12,7 +12,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 CURRENT_BINDINGS = Path(
-    "spec/performance/ci-vendor-floor-discovery-2026-11-09/current-bindings.json"
+    "spec/performance/current-large-graph-union-2026-11-09/current-bindings.json"
 )
 
 
@@ -237,9 +237,9 @@ def test_rc7_artifact_provenance_and_every_generated_ipc_are_bound() -> None:
 
 
 def test_dense_navigation_successor_preserves_qualified_source_parents():
-    import gzip
-
-    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    current = json.loads(
+        (ROOT / "spec/performance/browser-css-color-2026-11-08/current-bindings.json").read_text()
+    )
     expected = {
         "spec/performance/temporal-dense-continuation-2026-11-08/current-bindings.json",
         "spec/performance/wasm-frozen-feature-ci-2026-11-08/current-bindings.json",
@@ -248,15 +248,31 @@ def test_dense_navigation_successor_preserves_qualified_source_parents():
         "spec/performance/geo-hierarchy-temporal-remount-2026-11-08/current-bindings.json",
         "spec/performance/geo-hierarchy-application-remount-2026-11-08/current-bindings.json",
         "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/current-bindings.json",
-        "spec/performance/browser-css-color-2026-11-08/current-bindings.json",
-        "spec/performance/graph-temporal-owner-charge-2026-11-08/current-bindings.json",
-        "spec/performance/temporal-slice-clippy-2026-11-09/current-bindings.json",
-        "spec/performance/geo-five-temporal-successor-2026-11-08/current-bindings.json",
-        "spec/performance/five-temporal-drain-union-2026-11-09/current-bindings.json",
-        "spec/performance/temporal-controller-view-2026-11-09/current-bindings.json",
     }
+    assert len(current["parents"]) == 7
     assert {parent["path"] for parent in current["parents"]} == expected
-    for parent in current["parents"]:
+    _assert_complete_parent_sources(current)
+
+
+def test_combined_successor_preserves_both_complete_parent_bindings():
+    current = json.loads(
+        (
+            ROOT / "spec/performance/active-m4-m7-integration-2026-11-08/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 2
+    assert {p["path"] for p in current["parents"]} == {
+        "spec/performance/browser-css-color-2026-11-08/current-bindings.json",
+        "spec/performance/graph-public-scale-ownership-2026-11-08/current-bindings.json",
+    }
+    _assert_complete_parent_sources(current)
+
+
+def _assert_complete_parent_sources(binding):
+    import gzip
+
+    successor = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    for parent in binding["parents"]:
         raw = (ROOT / parent["path"]).read_bytes()
         assert hashlib.sha256(raw).hexdigest() == parent["sha256"]
         historical = json.loads(raw)
@@ -266,14 +282,98 @@ def test_dense_navigation_successor_preserves_qualified_source_parents():
                 path: record["sha256"] for path, record in historical["sources"].items()
             }
         for source, digest in source_hashes.items():
-            now = hashlib.sha256((ROOT / source).read_bytes()).hexdigest()
-            if now != digest:
-                archived = current["predecessorSources"][parent["path"]][source]
+            if hashlib.sha256((ROOT / source).read_bytes()).hexdigest() != digest:
+                archive = successor["predecessorSources"][parent["path"]][source]
                 assert (
-                    hashlib.sha256(gzip.decompress((ROOT / archived).read_bytes())).hexdigest()
+                    hashlib.sha256(gzip.decompress((ROOT / archive).read_bytes())).hexdigest()
                     == digest
-                )
+                ), (parent["path"], source, digest)
         for source, digest in historical["historicalBindings"].items():
             if isinstance(digest, dict):
                 digest = digest["sha256"]
-            assert current["historicalBindings"][source] == digest
+            assert successor["historicalBindings"][source] == digest
+
+
+def test_root_job_budget_eight_parents():
+    current = json.loads(
+        (
+            ROOT / "spec/performance/graph-temporal-owner-charge-2026-11-08/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 8
+    assert {p["path"] for p in current["parents"]} == {
+        "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/current-bindings.json",
+        "spec/performance/browser-css-color-2026-11-08/current-bindings.json",
+        "spec/performance/temporal-dense-continuation-2026-11-08/current-bindings.json",
+        "spec/performance/wasm-frozen-feature-ci-2026-11-08/current-bindings.json",
+        "spec/performance/dense-native-navigation-union-2026-11-08/current-bindings.json",
+        "spec/performance/geo-hierarchy-application-remount-2026-11-08/current-bindings.json",
+        "spec/performance/dense-union-module-status-2026-11-08/current-bindings.json",
+        "spec/performance/geo-hierarchy-temporal-remount-2026-11-08/current-bindings.json",
+    }
+    _assert_complete_parent_sources(current)
+
+
+def test_final_fit_two_parents():
+    current = json.loads(
+        (
+            ROOT / "spec/performance/module-space-recovery-2026-11-08/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 2
+    assert {p["path"] for p in current["parents"]} == {
+        "spec/performance/active-m4-m7-integration-2026-11-08/current-bindings.json",
+        "spec/performance/graph-temporal-owner-charge-2026-11-08/current-bindings.json",
+    }
+    _assert_complete_parent_sources(current)
+
+
+def test_current_union_preserves_all_qualified_root_and_fit_parents():
+    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    expected = {
+        "spec/performance/active-m4-m7-integration-2026-11-08/current-bindings.json",
+        "spec/performance/browser-css-color-2026-11-08/current-bindings.json",
+        "spec/performance/ci-vendor-floor-discovery-2026-11-09/current-bindings.json",
+        "spec/performance/dense-native-navigation-union-2026-11-08/current-bindings.json",
+        "spec/performance/dense-union-module-status-2026-11-08/current-bindings.json",
+        "spec/performance/five-temporal-drain-union-2026-11-09/current-bindings.json",
+        "spec/performance/geo-five-temporal-successor-2026-11-08/current-bindings.json",
+        "spec/performance/geo-hierarchy-application-remount-2026-11-08/current-bindings.json",
+        "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/current-bindings.json",
+        "spec/performance/geo-hierarchy-temporal-remount-2026-11-08/current-bindings.json",
+        "spec/performance/graph-temporal-owner-charge-2026-11-08/current-bindings.json",
+        "spec/performance/module-space-recovery-2026-11-08/current-bindings.json",
+        "spec/performance/temporal-controller-view-2026-11-09/current-bindings.json",
+        "spec/performance/temporal-dense-continuation-2026-11-08/current-bindings.json",
+        "spec/performance/temporal-slice-clippy-2026-11-09/current-bindings.json",
+        "spec/performance/wasm-frozen-feature-ci-2026-11-08/current-bindings.json",
+    }
+    assert len(current["parents"]) == 16
+    assert {parent["path"] for parent in current["parents"]} == expected
+    _assert_complete_parent_sources(current)
+
+
+def test_root_ci_thirteen_parent_contract_remains_complete():
+    current = json.loads(
+        (
+            ROOT / "spec/performance/ci-vendor-floor-discovery-2026-11-09/current-bindings.json"
+        ).read_text()
+    )
+    expected = {
+        "spec/performance/browser-css-color-2026-11-08/current-bindings.json",
+        "spec/performance/dense-native-navigation-union-2026-11-08/current-bindings.json",
+        "spec/performance/dense-union-module-status-2026-11-08/current-bindings.json",
+        "spec/performance/five-temporal-drain-union-2026-11-09/current-bindings.json",
+        "spec/performance/geo-five-temporal-successor-2026-11-08/current-bindings.json",
+        "spec/performance/geo-hierarchy-application-remount-2026-11-08/current-bindings.json",
+        "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/current-bindings.json",
+        "spec/performance/geo-hierarchy-temporal-remount-2026-11-08/current-bindings.json",
+        "spec/performance/graph-temporal-owner-charge-2026-11-08/current-bindings.json",
+        "spec/performance/temporal-controller-view-2026-11-09/current-bindings.json",
+        "spec/performance/temporal-dense-continuation-2026-11-08/current-bindings.json",
+        "spec/performance/temporal-slice-clippy-2026-11-09/current-bindings.json",
+        "spec/performance/wasm-frozen-feature-ci-2026-11-08/current-bindings.json",
+    }
+    assert len(current["parents"]) == 13
+    assert {parent["path"] for parent in current["parents"]} == expected
+    _assert_complete_parent_sources(current)

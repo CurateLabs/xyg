@@ -1,0 +1,104 @@
+{
+  "currentWasmLinearObservations": [
+    {
+      "command": "final-graph-100k",
+      "commands": 13,
+      "comparison": "full XYGR SHA256: browser/native/WASM",
+      "id": "9101",
+      "linearPeak": 229572608
+    },
+    {
+      "command": "final-graph-100k",
+      "commands": 30,
+      "comparison": "full XYGR SHA256: browser/native/WASM",
+      "id": "9102",
+      "linearPeak": 12976128
+    },
+    {
+      "command": "final-graph-1m",
+      "commands": 12,
+      "comparison": "full XYGR SHA256: browser/native/WASM",
+      "id": "9101",
+      "linearPeak": 430505984
+    },
+    {
+      "command": "final-graph-1m",
+      "commands": 58,
+      "comparison": "full XYGR SHA256: browser/native/WASM",
+      "id": "9102",
+      "linearPeak": 12976128
+    },
+    {
+      "command": "final-fresh-replay-100k",
+      "commands": 13,
+      "comparison": "full XYGR SHA256: browser/native/WASM",
+      "id": "9101",
+      "linearPeak": 229572608
+    },
+    {
+      "command": "final-fresh-replay-100k",
+      "commands": 32,
+      "comparison": "full XYGR SHA256: browser/native/WASM",
+      "id": "9102",
+      "linearPeak": 12976128
+    },
+    {
+      "command": "final-fresh-replay-1m",
+      "commands": 13,
+      "comparison": "full XYGR SHA256: browser/native/WASM",
+      "id": "9101",
+      "linearPeak": 430374912
+    },
+    {
+      "command": "final-fresh-replay-1m",
+      "commands": 60,
+      "comparison": "full XYGR SHA256: browser/native/WASM",
+      "id": "9102",
+      "linearPeak": 12976128
+    },
+    {
+      "command": "wheel-native-100k",
+      "commands": 13,
+      "comparison": "full XYGR SHA256: browser/native/WASM",
+      "id": "9101",
+      "linearPeak": 229572608
+    },
+    {
+      "command": "wheel-native-100k",
+      "commands": 32,
+      "comparison": "full XYGR SHA256: browser/native/WASM",
+      "id": "9102",
+      "linearPeak": 12976128
+    },
+    {
+      "command": "wheel-native-1m",
+      "commands": 13,
+      "comparison": "full XYGR SHA256: browser/native/WASM",
+      "id": "9101",
+      "linearPeak": 430374912
+    },
+    {
+      "command": "wheel-native-1m",
+      "commands": 60,
+      "comparison": "full XYGR SHA256: browser/native/WASM",
+      "id": "9102",
+      "linearPeak": 12976128
+    }
+  ],
+  "historicalWasmLinearHighWater": 430309376,
+  "qualification": "logical arena / native requested allocation / WASM linear / RSS / global / GPU are distinct; no 384MiB linear or global claim",
+  "requestedAllocation": {
+    "commands": [
+      "final-ledger-build",
+      "final-memory-1m",
+      "final-memory-100k"
+    ],
+    "defaultPeer": 8761546,
+    "excludes": "caller input fixture baseline; allocator metadata; RSS; WASM; GPU",
+    "includes": "uncached caller output",
+    "oneHundredThousand": 192593698,
+    "oneMillion": 397232796,
+    "oneMillionCap": 402653184,
+    "remaining": 0
+  }
+}

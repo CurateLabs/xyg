@@ -42,9 +42,9 @@ pub mod arrow_geom;
 pub mod arrow_ipc;
 pub mod autorange;
 pub use autorange::{auto_domain, figure_autorange, rect_zero_baseline_flags};
+pub mod canonical_drill;
 #[cfg(not(target_family = "wasm"))]
 pub mod chunked_columns;
-pub mod canonical_drill;
 pub mod colormap;
 pub mod compat_layout;
 pub mod css;
@@ -54,53 +54,52 @@ pub mod density_grid_materialize;
 pub mod edge_route;
 pub mod geo;
 pub mod geo_fill;
+pub mod geo_indexed_query_session;
 pub mod geo_interaction;
+pub mod geo_layers;
+pub mod geo_layers_protocol;
+pub mod geo_linked_state;
+pub mod geo_lod;
+pub mod geo_lod_hit;
+pub mod geo_lod_scene;
+pub mod geo_membership_session;
+pub mod geo_mixed_frame;
+pub mod geo_mixed_protocol;
+pub mod geo_retained_painter;
+pub mod geo_rows_session;
+pub mod geo_scale_protocol;
+#[cfg(test)]
+mod geo_scale_protocol_tests;
+pub mod geo_scene;
+pub mod geo_simplify;
+pub mod geo_snapshot;
+pub mod geo_snapshot_protocol;
+#[cfg(test)]
+mod geo_snapshot_recovery_tests;
 pub mod geo_source;
-pub mod geo_spatial_index;
+mod geo_source_membership_driver;
+pub mod geo_source_session;
+pub mod geo_spatial_build_session;
 pub mod geo_spatial_hierarchy;
 pub mod geo_spatial_hierarchy_build;
 pub mod geo_spatial_hierarchy_query;
 #[cfg(test)]
 mod geo_spatial_hierarchy_tests;
-pub mod geo_spatial_build_session;
-pub mod geo_indexed_query_session;
-pub mod geo_source_session;
-pub mod geo_membership_session;
-mod geo_source_membership_driver;
-pub mod geo_rows_session;
-pub mod geo_snapshot;
-pub mod geo_scale_protocol;
-#[cfg(test)]
-mod geo_scale_protocol_tests;
-pub mod geo_linked_state;
-pub mod geo_lod;
+pub mod geo_spatial_index;
 pub mod geo_temporal_overview;
 pub mod geo_temporal_overview_build;
 pub mod geo_temporal_overview_membership;
+#[cfg(test)]
+mod geo_temporal_overview_protocol_tests;
 pub mod geo_temporal_overview_scene;
 #[cfg(test)]
 mod geo_temporal_overview_tests;
-#[cfg(test)]
-mod geo_temporal_overview_protocol_tests;
-pub mod geo_lod_scene;
-pub mod geo_mixed_frame;
-pub mod geo_mixed_protocol;
-pub mod geo_lod_hit;
 pub mod geo_tile_cache;
-pub mod geo_tile_scene;
 pub mod geo_tile_protocol;
-pub mod geo_transport;
-pub mod geo_retained_painter;
-pub mod geo_snapshot_protocol;
-#[cfg(test)]
-mod geo_snapshot_recovery_tests;
+pub mod geo_tile_scene;
 #[cfg(test)]
 mod geo_tile_scene_tests;
-pub mod geo_simplify;
-mod marker_geometry;
-pub mod geo_layers;
-pub mod geo_layers_protocol;
-pub mod geo_scene;
+pub mod geo_transport;
 pub mod geo_viewport;
 pub mod geo_viewport_protocol;
 pub mod geom;
@@ -118,8 +117,9 @@ pub mod layout_rooms;
 pub mod legend_fit;
 pub mod legend_layout;
 pub mod lod_plan;
-pub mod payload_emit;
+mod marker_geometry;
 pub mod packed_ticks;
+pub mod payload_emit;
 #[cfg(feature = "raster")]
 pub mod pdf;
 #[cfg(feature = "raster")]
@@ -270,11 +270,11 @@ pub use scene_static::{
 pub mod static_document;
 #[cfg(feature = "raster")]
 pub use static_document::{static_document_export, StaticDocument, StaticDocumentError};
-pub mod static_document_labels;
 pub mod static_annotation_style;
 pub mod static_chrome_style;
 #[cfg(test)]
 mod static_chrome_style_tests;
+pub mod static_document_labels;
 pub mod static_document_layout;
 pub mod static_document_legend;
 pub mod static_legend_fit;
@@ -283,10 +283,10 @@ pub mod stats;
 pub mod stream;
 pub mod svg;
 pub mod temporal;
-pub mod temporal_scene;
 pub mod temporal_controller;
 pub mod temporal_graph;
 pub mod temporal_graph_frozen;
+pub mod temporal_scene;
 pub mod textblock;
 pub mod tick_layout;
 pub mod tile_paint_control;
@@ -302,9 +302,10 @@ pub mod temporal_graph_export;
 
 mod graph_marker_contour;
 
-#[cfg(any(feature="raster",feature="frozen-raster"))]
+#[cfg(any(feature = "raster", feature = "frozen-raster"))]
 mod retained_png;
 
 mod shared_sort;
 
 mod calendar;
+mod index_slots;

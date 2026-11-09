@@ -13995,6 +13995,22 @@ impl SceneDocument {
     }
 
     fn resolved_axis_ticks(&self, slot: impl Into<AxisSlot>) -> Result<AxisTicks, SceneError> {
+        #[cfg(target_arch = "wasm32")]
+        {
+            return self.resolved_axis_ticks_shared(slot.into());
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        self.resolved_axis_ticks_impl(slot)
+    }
+
+    // Bool compatibility and explicit X/Y/Y2 slots use one browser resolver.
+    #[cfg(target_arch = "wasm32")]
+    #[inline(never)]
+    fn resolved_axis_ticks_shared(&self, slot: AxisSlot) -> Result<AxisTicks, SceneError> {
+        self.resolved_axis_ticks_impl(slot)
+    }
+
+    fn resolved_axis_ticks_impl(&self, slot: impl Into<AxisSlot>) -> Result<AxisTicks, SceneError> {
         let slot = slot.into();
         if slot != AxisSlot::Y2 {
             if let Some(polar) = &self.polar {

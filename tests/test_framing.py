@@ -299,7 +299,10 @@ def test_widget_entry_no_longer_slices_binary_views() -> None:
     # 54_kernel.ts uses it too); the entry consumes it for first paint.
     header = (ROOT / "js" / "src" / "00_header.ts").read_text(encoding="utf-8")
     built = CLIENT.read_text(encoding="utf-8")
-    assert 'payloadBuffers(spec, model.get("buffers"))' in source
+    assert 'const spec = model._xygChunkedPacket?.spec || model.get("spec");' in source
+    assert (
+        'payloadBuffers(spec, model._xygChunkedPacket?.buffers || model.get("buffers"))' in source
+    )
     assert "raw.map(bytesToSpan)" in header
     for text in (source, header):
         assert ".buffer.slice(b.byteOffset" not in text
