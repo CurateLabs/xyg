@@ -11,7 +11,9 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-CURRENT_BINDINGS = Path("spec/performance/temporal-slice-clippy-2026-11-09/current-bindings.json")
+CURRENT_BINDINGS = Path(
+    "spec/performance/five-temporal-drain-union-2026-11-09/current-bindings.json"
+)
 
 
 def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> None:
@@ -248,13 +250,20 @@ def test_dense_navigation_successor_preserves_qualified_source_parents():
         "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/current-bindings.json",
         "spec/performance/browser-css-color-2026-11-08/current-bindings.json",
         "spec/performance/graph-temporal-owner-charge-2026-11-08/current-bindings.json",
+        "spec/performance/temporal-slice-clippy-2026-11-09/current-bindings.json",
+        "spec/performance/geo-five-temporal-successor-2026-11-08/current-bindings.json",
     }
     assert {parent["path"] for parent in current["parents"]} == expected
     for parent in current["parents"]:
         raw = (ROOT / parent["path"]).read_bytes()
         assert hashlib.sha256(raw).hexdigest() == parent["sha256"]
         historical = json.loads(raw)
-        for source, digest in historical["sourceSha256"].items():
+        source_hashes = historical.get("sourceSha256")
+        if source_hashes is None:
+            source_hashes = {
+                path: record["sha256"] for path, record in historical["sources"].items()
+            }
+        for source, digest in source_hashes.items():
             now = hashlib.sha256((ROOT / source).read_bytes()).hexdigest()
             if now != digest:
                 archived = current["predecessorSources"][parent["path"]][source]
@@ -263,4 +272,6 @@ def test_dense_navigation_successor_preserves_qualified_source_parents():
                     == digest
                 )
         for source, digest in historical["historicalBindings"].items():
+            if isinstance(digest, dict):
+                digest = digest["sha256"]
             assert current["historicalBindings"][source] == digest

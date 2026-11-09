@@ -4024,7 +4024,12 @@ export class ChartView {
       this._sharedGlAttempted = true;
       const host = acquireGLHost(document, this);
       if (host) {
-        const present = this.canvas.getContext("2d", { alpha: true });
+        // An explicit accelerated-copy hint prevents browser adaptive readback
+        // migration from changing Canvas2D color conversion by one LSB after
+        // getImageData/export. GPU pixels and the copy operation stay unchanged.
+        const present = this.canvas.getContext("2d", {
+          alpha: true, willReadFrequently: false,
+        });
         if (present) {
           this._glHost = host;
           this._present2d = present;

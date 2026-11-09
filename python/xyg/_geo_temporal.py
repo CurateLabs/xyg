@@ -13,6 +13,28 @@ from weakref import WeakKeyDictionary
 from ._geoscale import _settle
 
 _BINDINGS = WeakKeyDictionary()
+_CLAIMS_LOCK = Lock()
+
+
+def _claim(binding, key):
+    with _CLAIMS_LOCK:
+        for other in _BINDINGS.values():
+            if other._source is binding._source and (
+                key is binding._source
+                or other._claim_key is binding._source
+                or other._claim_key is key
+            ):
+                raise RuntimeError("source already has a temporal binding")
+        binding._claim_key = key
+        _BINDINGS[key] = binding
+
+
+def _unclaim(binding):
+    with _CLAIMS_LOCK:
+        if _BINDINGS.get(binding._claim_key) is binding:
+            del _BINDINGS[binding._claim_key]
+
+
 _MAX = (1 << 64) - 1
 
 
@@ -105,8 +127,6 @@ class GeoTemporalBinding:
         query, sequence, _ = chart._retained_inputs(layer)
         if controller.state["disposed"]:
             raise RuntimeError("controller disposed")
-        if layer.source in _BINDINGS:
-            raise RuntimeError("source already has a temporal binding")
         self._template = _copy_chart(chart)
         self._source, self._layer = layer.source, self._template.layers[0]
         # The typed request is a heterogeneous mapping; Rust validates each
@@ -125,7 +145,7 @@ class GeoTemporalBinding:
         self._lock = asyncio.Lock()
         self.error = None
         self._time = None
-        _BINDINGS[self._source] = self
+        _claim(self, self._source)
         self._unsubscribe = lambda: None
         try:
             self._unsubscribe = controller.subscribe_state(self._accept)
@@ -134,8 +154,7 @@ class GeoTemporalBinding:
             self._notifications.close()
             self._closed = True
             self._unsubscribe()
-            if _BINDINGS.get(self._source) is self:
-                del _BINDINGS[self._source]
+            _unclaim(self)
             raise
 
     def _accept(self, state):
@@ -248,8 +267,7 @@ class GeoTemporalBinding:
                     self.error = RuntimeError("geographic source read cancelled")
                     if self._source._disposal is not None:
                         self._detach()
-                        if _BINDINGS.get(self._source) is self:
-                            del _BINDINGS[self._source]
+                        _unclaim(self)
                 except Exception as error:
                     self.error = error.with_traceback(None)
             if generation == self._generation:
@@ -327,8 +345,7 @@ class GeoTemporalBinding:
                             raise
                         interrupted = True
                     setattr(self, name, None)
-            if _BINDINGS.get(self._source) is self:
-                del _BINDINGS[self._source]
+            _unclaim(self)
         finally:
             self._lock.release()
         if interrupted:
@@ -352,8 +369,6 @@ class MountedGeoTemporalBinding:
             )
         if widget._close_requested or controller.state["disposed"]:
             raise RuntimeError("widget or controller disposed")
-        if self._source in _BINDINGS:
-            raise RuntimeError("source already has a temporal binding")
         self._widget, self._mode = widget, mode
         self._closed = self._scheduled = self._blocked = False
         self._notifications = _TemporalNotificationInbox(self._loop)
@@ -363,7 +378,22 @@ class MountedGeoTemporalBinding:
         self._closing = None
         self.error = None
         self._unsubscribe = lambda: None
-        _BINDINGS[self._source] = self
+        from ._geo_hierarchy import hierarchy_lane_authority
+
+        adapter = widget._adapter
+        lane = adapter._hierarchy_lane
+        if lane is not None:
+            authority = hierarchy_lane_authority(lane)
+            if (
+                authority is None
+                or authority != adapter._hierarchy_authority
+                or authority[0] is not self._source
+                or authority[1] is not self._source._bridge
+                or not authority[3]
+            ):
+                raise ValueError("hierarchy lane authority changed")
+            lane._check()
+        _claim(self, lane if lane is not None else self._source)
         try:
             widget._enable_geo_executor(self._loop)
             self._unsubscribe = controller.subscribe_state(self._accept)
@@ -372,7 +402,7 @@ class MountedGeoTemporalBinding:
             self._notifications.close()
             self._closed = True
             self._unsubscribe()
-            del _BINDINGS[self._source]
+            _unclaim(self)
             raise
 
     def _accept(self, state):
@@ -465,6 +495,10 @@ class MountedGeoTemporalBinding:
                 or self._time is None
             ):
                 return
+            from ._geo_live_host import _ADMISSION
+
+            if not _ADMISSION.request(self):
+                return
             self._widget._geo_update_serial += 1
             self._active = dict(
                 mount=self._widget._geo_mount,
@@ -492,6 +526,13 @@ class MountedGeoTemporalBinding:
             self._blocked = True
             self.error = RuntimeError(message.get("error", "geographic drain unconfirmed"))
         else:
+            from ._geo_live_host import _ADMISSION
+
+            if not _ADMISSION.release(self):
+                self._blocked = True
+                self.error = RuntimeError("native candidate drain unconfirmed")
+                self._changed.set()
+                return
             self._active = None
             self._blocked = False
             self.error = (
@@ -503,6 +544,12 @@ class MountedGeoTemporalBinding:
         self._changed.set()
 
     def _released(self, mount):
+        from ._geo_live_host import _ADMISSION
+
+        if self._active is not None and self._active["mount"] != mount:
+            return
+        if not _ADMISSION.release(self):
+            return
         if self._active is not None and self._active["mount"] == mount:
             self._active = None
             self._blocked = False
@@ -532,6 +579,9 @@ class MountedGeoTemporalBinding:
         self._notifications.close()
         self._closed = True
         self._unsubscribe()
+        from ._geo_live_host import _ADMISSION
+
+        _ADMISSION.cancel(self)
         self._schedule()
 
     def _close_from_host(self):
@@ -557,8 +607,7 @@ class MountedGeoTemporalBinding:
         await self.when_idle()
         if self._blocked:
             raise RuntimeError(str(self.error))
-        if _BINDINGS.get(self._source) is self:
-            del _BINDINGS[self._source]
+        _unclaim(self)
 
     async def aclose(self):
         """Drain actual browser ownership before releasing the source claim."""

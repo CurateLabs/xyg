@@ -1,0 +1,36 @@
+{
+  "parent": "b007e2d7cafac6d107d6bb409eac89f8a79ee4c9",
+  "parentTree": "a104695d9f5049fda49b33c176355859d0832e6d",
+  "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+  "machine": "x86_64",
+  "node": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin/node",
+  "nodeVersion": "v22.23.4",
+  "chrome": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+  "chromeVersion": "Google Chrome for Testing 156.0.8078.4",
+  "python": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/.venv/bin/python",
+  "pythonVersion": "Python 3.12.15",
+  "TMPDIR": "/var/tmp",
+  "PYTHONPATH": "python:tests",
+  "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/release/libxyg_core.so",
+  "runtime": {
+    "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/release/libxyg_core.so": {
+      "bytes": 6374200,
+      "sha256": "1ac386f0d7af618a757fb51cca883f0c409f3991c976f7a9df0562f69524d316"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1895719,
+      "sha256": "4cd1e964a16fb8be527b552dae50f94729e80d79ed8bcf936b53601914c8feba"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 856281,
+      "sha256": "2afad9d735004bff948215b0d598efc00bbe4e50a05686c2e88bb6168b1d245a"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 856296,
+      "sha256": "260604ced79fc5c8b1995f548eb59ffa9cc1bfd456867e2dedcea7610e8be1d1"
+    }
+  },
+  "freshRuntimeBuild": false,
+  "clientOrigin": "immutable b007 CSS gzip artifacts, SHA256 verified",
+  "remoteMutations": false
+}

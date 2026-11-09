@@ -2,8 +2,8 @@ import {mountedFixture} from './geo-mounted-temporal-fixture.mjs';
 import {GeoHierarchy,isHierarchyFrame} from '../src/geo-hierarchy.js';
 import {geoChart,geoLayer} from '../src/charts.js';
 import {release as releaseCanonical} from './geo-live-host-fixture.mjs';
-export async function mountedHierarchyFixture(){
- const base=await mountedFixture({selected:true});await base.adapter.anchorReady;
+export async function mountedHierarchyFixture(options={}){
+ const base=await mountedFixture({...options,selected:true});await base.adapter.anchorReady;
  const {source,scope}=base,{query,style}=base.chart.layers[0].properties,pages=new Map();let reads=0;
  source.hierarchyReadPage=async ticket=>{reads++;return pages.get(`${ticket.namespace}:${ticket.page}`);};
  let lane,frame,state;

@@ -6,6 +6,14 @@ import {attachRetainedFrame} from './geo-retained.js';
 import {GeoSpatialIndex,GeoSpatialFullScanRequired} from './geo-spatial.js';
 import {sceneBrowserPainter} from './scene.js';
 let staged;
+// One FIFO entry per automatic binding; reservation survives uncertain delivery.
+export const automaticAdmission={
+ owner:undefined,queue:new Set(),waking:undefined,
+ wake(){if(this.owner||staged||this.waking)return;const binding=this.queue.values().next().value;if(!binding)return;this.waking=binding;queueMicrotask(()=>{if(this.waking===binding)this.waking=undefined;if(!this.queue.has(binding)){this.wake();return;}binding.schedule();});},
+ request(binding){if(this.owner===binding)return true;this.queue.add(binding);if(!this.owner&&!staged&&this.queue.values().next().value===binding){this.queue.delete(binding);this.owner=binding;return true;}this.wake();return false;},
+ release(binding){if(this.owner===binding){if(staged===binding.host.adapter.liveCandidate)return false;this.owner=undefined;}this.queue.delete(binding);this.wake();return true;},
+ cancel(binding){this.queue.delete(binding);if(!binding.active&&this.owner===binding)this.owner=undefined;this.wake();}
+};
 const same=(a,b)=>a.length===b.length&&a.every((n,i)=>n===b[i]);
 export class GeoLiveCandidate {
  #ownerData;#wirePacket;#closeOwner;#overview;#processorBytes;#overviewBudget;
@@ -13,7 +21,7 @@ export class GeoLiveCandidate {
  replayPrepare(raw){if(this.cleanupFrame||this.cleanupCanonical||this.cleanupOperation||this.cleanupState||this.cleanupAllocation)return same(new Uint8Array(raw),new Uint8Array(this.cleanupRequest));return !!this.frame&&!this.committed&&!!this.prepareRequest&&same(new Uint8Array(raw),new Uint8Array(this.prepareRequest));}
  async rejectPrepared(frame){this.cleanupFrame=frame;await this.#closeOwner(frame);this.cleanupFrame=undefined;throw new DOMException("Geographic preparation cancelled","AbortError");}
  beginMount(){if(this.frame||this.retired||this.cleanupFrame||this.cleanupCanonical||this.cleanupOperation||this.cleanupState||this.cleanupAllocation)throw Error("Outstanding geographic candidate");this.nonce=0n;this.receipts.clear();}
- releaseSlot(){if(staged===this)staged=undefined;}
+ releaseSlot(){if(staged===this){staged=undefined;automaticAdmission.wake();}}
  async allocateState(scope,query,selection,budget){
   const ids=new BigUint64Array(selection.idCount);for(let i=0;i<ids.length;i++)ids[i]=selection.id(i);
   this.cleanupAllocation=scope.beginState({revision:query.stateRevision,ids,fill:selection.fill,budget});
@@ -58,7 +66,7 @@ export class GeoLiveCandidate {
   this.cameraFloor=cameraRevision>this.cameraFloor?cameraRevision:this.cameraFloor;this.timeFloor=timeRevision>this.timeFloor?timeRevision:this.timeFloor;
   const cameraRequest=raw.slice(96,224),c=new DataView(cameraRequest),cb=new Uint8Array(cameraRequest),op=c.getUint32(8,true),baseline=new Uint8Array(encodeGeoViewportRequest(this.#ownerData(a.frame).identity.camera,op));
   if(op>9||!same(cb.subarray(0,8),baseline.subarray(0,8))||!same(cb.subarray(12,80),baseline.subarray(12,80))||cb.subarray(120).some(x=>x))throw Error('camera delta does not name accepted camera');
-  if(staged)throw Error('another geographic replacement awaits retirement ACK');staged=this;this.cleanupRequest=raw.slice(0);let frame;
+  if(staged||(automaticAdmission.owner&&automaticAdmission.owner.host.adapter!==this.adapter))throw Error('another geographic replacement awaits retirement ACK');staged=this;this.cleanupRequest=raw.slice(0);let frame;
   try{const camera=decodeGeoViewportResponse(geoViewportExecute(cameraRequest,1<<20)).camera,time={kind,...kind===1?{instant:start}:kind===2?{start,end}:{}};
    if(!same(new Uint8Array(encodeGeoViewportRequest(camera)),new Uint8Array(encodeGeoViewportRequest(this.#ownerData(a.frame).identity.camera)))&&cameraRevision===a.query.cameraRevision)throw Error('camera change requires new revision');
    const q={...a.query,camera,time,cameraRevision,timeRevision,stateRevision};
