@@ -1,0 +1,263 @@
+{
+  "schema": "xyg.filter-tier-c-checkpoint/v1",
+  "wholeIssueComplete": false,
+  "independentReview": "pending parent review before PR",
+  "sourceBase": "2cb7f0a13ec0af3a00b9dcfd2b104a2c579b7ac9",
+  "acceptedMainAtStart": "084b3c1b7c393e135476aab9610bf8334767b2ac",
+  "observedMainAtFinalFetch": "ae104cf35316e10e56e345c225acef2604e487a1",
+  "checks": [
+    {
+      "name": "native-build",
+      "command": "CARGO_BUILD_JOBS=2 cargo build --release",
+      "exitCode": 0,
+      "passCount": null,
+      "scope": "final native source",
+      "log": "native-build.log.gz",
+      "logSha256": "ae8995ba6221a6585e7260980f08e911c8f22262bdfc0d82b7b82403c135217e"
+    },
+    {
+      "name": "wasm-build",
+      "command": "CARGO_BUILD_JOBS=2 cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
+      "exitCode": 0,
+      "passCount": null,
+      "scope": "final raw bytes identical after native-only gate repair",
+      "log": "wasm-build.log.gz",
+      "logSha256": "813d4c3f93a3952607bb35e8b8f45107ebae48c0ef3262ea89da59bb83da17ef"
+    },
+    {
+      "name": "client-build",
+      "command": "node js/build.mjs",
+      "exitCode": 0,
+      "passCount": null,
+      "scope": "client final source; subsequent builds preserve the same exercised API",
+      "log": "client-build.log.gz",
+      "logSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c"
+    },
+    {
+      "name": "wasm-package",
+      "command": "node js/package-wasm.mjs",
+      "exitCode": 0,
+      "passCount": null,
+      "scope": "unchanged 1882/768 KiB caps",
+      "log": "wasm-package.log.gz",
+      "logSha256": "21f6e2988952947cd7c7a9b39cc092eeb42747bab1357440882ad00bd334f727"
+    },
+    {
+      "name": "rust-workspace",
+      "command": "CARGO_BUILD_JOBS=2 cargo test --workspace",
+      "exitCode": 0,
+      "passCount": 2000,
+      "scope": "broad proof before native-only gate repair; affected gate is rechecked below",
+      "log": "workspace-final.log.gz",
+      "logSha256": "af5d93a31e19c2e7145fa94867eb7b3ccda562fc3ab6558179bd248811fd5bf3"
+    },
+    {
+      "name": "rust-filter",
+      "command": "CARGO_BUILD_JOBS=2 cargo test -p xyg-engine filter_tier_c",
+      "exitCode": 0,
+      "passCount": 4,
+      "scope": "final gate and shared protocol",
+      "log": "engine-final.log.gz",
+      "logSha256": "14ff486ed5fce8610c644b49ccfc1f000f022baf58d6463be0fcee326996a09f"
+    },
+    {
+      "name": "clippy",
+      "command": "CARGO_BUILD_JOBS=2 cargo clippy -p xyg-engine -p xyg-core -p xyg-wasm --all-targets -- -D warnings",
+      "exitCode": 0,
+      "passCount": null,
+      "scope": "final source",
+      "log": "clippy-final.log.gz",
+      "logSha256": "c3604cc08561193d25690e5e300420435851702ab00dfa80a49159a050ad6fb7"
+    },
+    {
+      "name": "python-selected",
+      "command": "uv run pytest -q tests/test_filter_tier_c.py tests/test_cross_host_abi_transition.py tests/test_graph_notebook_report.py tests/test_graphforge_contract_corpus.py tests/test_verify_ci_workflow.py",
+      "exitCode": 0,
+      "passCount": 776,
+      "scope": "includes all 669 CI guard cases; before additive metadata-oracle test",
+      "log": "python-selected-final.log.gz",
+      "logSha256": "3c575c21980aebcc6eb3adb8de1fd88c4b5d306f8ed06b5fc5a518529eb57f27"
+    },
+    {
+      "name": "python-final-focused",
+      "command": "uv run pytest -q tests/test_filter_tier_c.py tests/test_cross_host_abi_transition.py tests/test_graph_notebook_report.py tests/test_graphforge_contract_corpus.py",
+      "exitCode": 0,
+      "passCount": 108,
+      "scope": "final source including added metadata-oracle test and real Git CRLF checkout",
+      "log": "python-metadata-final.log.gz",
+      "logSha256": "29c637777bc6039ee0c9a47806f3a62a720a7550518e9dedc48ceeb04d6e0bcf"
+    },
+    {
+      "name": "metadata-oracle",
+      "command": "uv run python scripts/gen_filter_tier_c_fixture.py --check",
+      "exitCode": 0,
+      "passCount": 47,
+      "scope": "independent scan/hash/source/revision/index/resident-byte oracles; complete packets",
+      "log": "metadata-oracle.log.gz",
+      "logSha256": "34dc4c93035b6e45b25e1da7d7cae2a0aeffee3ba92110d008a994c3ec48f4db"
+    },
+    {
+      "name": "node-affected",
+      "command": "node --test packages/xy-node/test/filter-tier-c.test.mjs packages/xy-node/test/payload-cross-host.test.mjs packages/xy-node/test/density-emit-cross-host.test.mjs packages/xy-node/test/force-emit-cross-host.test.mjs packages/xy-node/test/series-palette-cross-host.test.mjs packages/xy-node/test/tooltip-columns-cross-host.test.mjs packages/xy-node/test/geo-cross-host.test.mjs",
+      "exitCode": 0,
+      "passCount": 124,
+      "scope": "all passed without skips",
+      "log": "node-final.log.gz",
+      "logSha256": "dddcc327779888facf1c8e48a87b93d814383a17046a0f878f9811b6f3085515"
+    },
+    {
+      "name": "node-checkpoint",
+      "command": "node --test packages/xy-node/test/filter-tier-c.test.mjs",
+      "exitCode": 0,
+      "passCount": 7,
+      "scope": "final source; native and actual packaged wasm32",
+      "log": "node-checkpoint-final.log.gz",
+      "logSha256": "f5ac2cba3b9fe49f4c5cf2749af2630c92198c3477c9410a2dbd7ba8d70d4e99"
+    },
+    {
+      "name": "wasm-regression",
+      "command": "node --test packages/xy-node/test/graphforge-wasm-parity.test.mjs packages/xy-node/test/cose-wasm-parity.test.mjs packages/xy-node/test/painter-admission-wasm-parity.test.mjs packages/xy-node/test/geo-wasm-parity.test.mjs packages/xy-node/test/geo-scale-wasm-parity.test.mjs",
+      "exitCode": 0,
+      "passCount": 65,
+      "scope": "byte-identical final WASM artifact reused",
+      "log": "wasm-regression.log.gz",
+      "logSha256": "75a6efbc4dc8dff2842b5a2199dce3d19691c565b7b5b5e6b3e14df7fae0b46a"
+    },
+    {
+      "name": "browser",
+      "command": "node scripts/filter_tier_c_conformance.mjs --chromium $XYG_CHROMIUM",
+      "exitCode": 0,
+      "passCount": 44,
+      "scope": "five programmatic passive views; rendered=false",
+      "log": "browser-final.log.gz",
+      "logSha256": "bec25a0019549bdfd96d57412a40a8bfc95d8d7fb838dbec394d630afb2524a3"
+    },
+    {
+      "name": "abi",
+      "command": "python3 scripts/abi_smoke.py",
+      "exitCode": 0,
+      "passCount": 673,
+      "scope": "544 ABI402 symbols",
+      "log": "abi-smoke.log.gz",
+      "logSha256": "135de4fa46245b623c5d8acfa3e621c9374a4c0229b173222340fff45c526965"
+    },
+    {
+      "name": "abi-parity",
+      "command": "python3 scripts/check_abi_parity.py",
+      "exitCode": 0,
+      "passCount": null,
+      "scope": "both hosts generated",
+      "log": "abi-parity.log.gz",
+      "logSha256": "9ad578099ff563b89edebe1a9060b41ba0425be02a75823d5e52be66ef1eb692"
+    },
+    {
+      "name": "abi-generated",
+      "command": "python3 scripts/gen_abi_manifest.py --check",
+      "exitCode": 0,
+      "passCount": null,
+      "scope": "current",
+      "log": "abi-generated.log.gz",
+      "logSha256": "690871738f57552561385ec3d682ff3b5461b0981c2286296626950c736f9243"
+    },
+    {
+      "name": "wasm-abi-generated",
+      "command": "python3 scripts/gen_wasm_abi.py --check",
+      "exitCode": 0,
+      "passCount": null,
+      "scope": "current",
+      "log": "wasm-abi-generated.log.gz",
+      "logSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    {
+      "name": "render",
+      "command": "python3 scripts/render_smoke_nonumpy.py $XYG_CHROMIUM",
+      "exitCode": 0,
+      "passCount": null,
+      "scope": "existing renderer; no numpy",
+      "log": "render-smoke.log.gz",
+      "logSha256": "e86d5855e5a476bcce1d748f6a7a764f18a66ba69084968e77a1b7b5026f30b7"
+    },
+    {
+      "name": "append",
+      "command": "python3 scripts/append_stream_smoke.py $XYG_CHROMIUM",
+      "exitCode": 0,
+      "passCount": null,
+      "scope": "existing streaming renderer",
+      "log": "append-smoke.log.gz",
+      "logSha256": "fd0cd87c74cb396f642d4077bb59a12cc38e9f75b26f24a69a7239440fe07bbe"
+    },
+    {
+      "name": "types",
+      "command": "uv run ty check",
+      "exitCode": 0,
+      "passCount": null,
+      "scope": "passed",
+      "log": "types.log.gz",
+      "logSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    {
+      "name": "ownership",
+      "command": "python3 scripts/verify_ownership.py",
+      "exitCode": 0,
+      "passCount": 522,
+      "scope": "all tracked production source classified",
+      "log": "ownership-final.log.gz",
+      "logSha256": "43785287c631d656b7ed88c6c1da0f438acddc6e132d942a9a9f712d715d9b64"
+    },
+    {
+      "name": "ci",
+      "command": "python3 scripts/verify_ci_workflow.py",
+      "exitCode": 0,
+      "passCount": null,
+      "scope": "existing Release surfaces and merge queue contract",
+      "log": "ci-final.log.gz",
+      "logSha256": "e863c28d04ddba9f5d4b95616ac4dff5cd588f4d575af16131276c020bb346c5"
+    },
+    {
+      "name": "public-api",
+      "command": "uv run python scripts/check_public_api.py",
+      "exitCode": 0,
+      "passCount": null,
+      "scope": "passed",
+      "log": "public-api-final.log.gz",
+      "logSha256": "617f28135be2b92ec5d073b596c6b03adcf984c29117dad59e996fa869e37caa"
+    },
+    {
+      "name": "hooks",
+      "command": "uv run --with pre-commit pre-commit run --all-files",
+      "exitCode": 0,
+      "passCount": null,
+      "scope": "mandatory full-worktree commit gate",
+      "log": "commit-hooks.log.gz",
+      "logSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    {
+      "name": "ruff",
+      "command": "uv run ruff check .",
+      "exitCode": 0,
+      "passCount": null,
+      "scope": "mandatory full-worktree commit gate",
+      "log": "commit-ruff.log.gz",
+      "logSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    {
+      "name": "format",
+      "command": "uv run ruff format --check .",
+      "exitCode": 0,
+      "passCount": null,
+      "scope": "mandatory full-worktree commit gate",
+      "log": "commit-format.log.gz",
+      "logSha256": "8a11cce923847d2466836ee61ac3626c7bcee604cd4ce92fbaaf8a9f10d96853"
+    }
+  ],
+  "retainedFailures": [
+    "workspace-stale-fixture-failure.log.gz",
+    "python-ci-fixture-before.log.gz",
+    "browser-transport-before.log.gz",
+    "wasm-size-before.log.gz",
+    "malformed-watermark-before.log.gz",
+    "profile-environment-before.log.gz",
+    "public-api-environment-before.log.gz",
+    "withdrawn-draft-handoff.json.gz"
+  ]
+}

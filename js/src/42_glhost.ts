@@ -95,7 +95,7 @@ const HOSTS = sharedHostRegistry();
 // Rust piece-to-edge index texture on unit 2. Reset textures and samplers on all
 // three before every client pass so a neighboring sampler cannot override the
 // integer texture's NEAREST filtering.
-const XY_TEXTURE_UNITS = 3;
+const XY_TEXTURE_UNITS = 5;
 const XY_UNIFORM_BUFFER_BINDINGS = 4;
 const RECOVERY_INITIAL_DELAY_MS = 250;
 const RECOVERY_MAX_DELAY_MS = 4000;

@@ -26,6 +26,8 @@
 //! The axis is right-only: the chrome record's side is High and its tick and
 //! label sides are confined to the right edge.
 
+use crate::scene::SceneByteWrite;
+
 use crate::scene::{
     decode_tick_labels, encode_tick_labels, read_axis_chrome_style, write_axis_chrome_style,
     AxisScale, AxisSide, ScaleKind, SceneAxisChromeStyle, SceneChromeStyle, SceneError,
@@ -144,10 +146,10 @@ impl SceneY2Wire<'_> {
                 + self.format.len(),
         );
         out.extend_from_slice(SCENE_Y2_MAGIC);
-        out.extend_from_slice(&self.kind.to_le_bytes());
-        out.extend_from_slice(&self.lo.to_le_bytes());
-        out.extend_from_slice(&self.hi.to_le_bytes());
-        out.extend_from_slice(&self.constant.to_le_bytes());
+        out.push_word(self.kind);
+        out.push_word(self.lo);
+        out.push_word(self.hi);
+        out.push_word(self.constant);
         out.push(u8::from(self.mask));
         out.extend_from_slice(&[0; 3]);
         out.extend_from_slice(self.chrome);
@@ -160,9 +162,9 @@ impl SceneY2Wire<'_> {
             padding: 0.0,
         });
         for value in [metrics.tick_size, metrics.title_size, metrics.padding] {
-            out.extend_from_slice(&value.to_le_bytes());
+            out.push_word(value);
         }
-        out.extend_from_slice(&self.text_flags.to_le_bytes());
+        out.push_word(self.text_flags);
         out.extend_from_slice(&self.tick_rgba.unwrap_or([0; 4]));
         out.extend_from_slice(&self.title_rgba.unwrap_or([0; 4]));
         out.push(present);
@@ -171,21 +173,21 @@ impl SceneY2Wire<'_> {
         out.push(self.tick_anchor);
         out.push(u8::from(self.tick_anchor_authored));
         out.push(u8::from(self.tick_category));
-        out.extend_from_slice(&self.tick_min_gap.to_le_bytes());
-        out.extend_from_slice(&self.tick_angle.unwrap_or(f64::NAN).to_le_bytes());
+        out.push_word(self.tick_min_gap);
+        out.push_word(self.tick_angle.unwrap_or(f64::NAN));
         let major_count = if self.major_ticks.is_none() {
             AUTO_COUNT
         } else {
             majors.len() as u32
         };
-        out.extend_from_slice(&major_count.to_le_bytes());
-        out.extend_from_slice(&(self.minor_ticks.len() as u32).to_le_bytes());
-        out.extend_from_slice(&(self.labels.len() as u32).to_le_bytes());
-        out.extend_from_slice(&(self.title.len() as u32).to_le_bytes());
-        out.extend_from_slice(&(self.format.len() as u32).to_le_bytes());
+        out.push_word(major_count);
+        out.push_word(self.minor_ticks.len() as u32);
+        out.push_word(self.labels.len() as u32);
+        out.push_word(self.title.len() as u32);
+        out.push_word(self.format.len() as u32);
         debug_assert_eq!(out.len(), SCENE_Y2_FIXED_BYTES);
         for value in majors.iter().chain(self.minor_ticks) {
-            out.extend_from_slice(&value.to_le_bytes());
+            out.push_word(value);
         }
         out.extend_from_slice(self.labels);
         out.extend_from_slice(self.title.as_bytes());

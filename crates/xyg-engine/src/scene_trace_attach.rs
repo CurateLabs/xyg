@@ -17,6 +17,8 @@
 //! (`FLAG_SCATTER_PAINT`) onto Scatter `style_ref`s. Encoded Scene v31 is
 //! unchanged.
 
+use crate::scene::SceneByteWrite;
+
 use crate::kernels::BinColorSource;
 use crate::scene::{
     XYHP_PAINT_MESH, XYHP_PAINT_RIBBON, XYHP_PAINT_SCATTER, XYHP_PLANE_HEADER_BYTES,
@@ -331,7 +333,7 @@ fn parse_attach<'a>(
 }
 
 fn put_prefixed(out: &mut Vec<u8>, payload: &[u8]) {
-    out.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+    out.push_word(payload.len() as u32);
     out.extend_from_slice(payload);
 }
 
@@ -576,10 +578,10 @@ fn attach_paint_triples(
         let src = cell * 4;
         plane.extend_from_slice(&input.rgba[src..src + 4]);
         plane.extend_from_slice(&input.mean_rgba[src..src + 4]);
-        plane.extend_from_slice(&(widths[cell] as f32).to_le_bytes());
+        plane.push_word(widths[cell] as f32);
         if let Some(diameters) = &diameters {
             let diameter = diameters.get(cell).copied().unwrap_or(NAN);
-            plane.extend_from_slice(&diameter.to_le_bytes());
+            plane.push_word(diameter);
         }
     }
     or_fact(&mut compiled.prefix, FACT_HEATMAP_PAINT);
@@ -983,9 +985,9 @@ pub fn pack_trace_attach_with_columns(
     }
     let mut out = Vec::new();
     out.extend_from_slice(XYTT_MAGIC);
-    out.extend_from_slice(&XYTT_VERSION.to_le_bytes());
-    out.extend_from_slice(&(n_traces as u32).to_le_bytes());
-    out.extend_from_slice(&0u32.to_le_bytes());
+    out.push_word(XYTT_VERSION);
+    out.push_word(n_traces as u32);
+    out.push_word(0u32);
     for (compiled, (heatmap, density, grid_rows, grid_cols, rewrite)) in
         traces.iter().zip(attached.into_iter())
     {

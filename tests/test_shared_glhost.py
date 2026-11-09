@@ -309,25 +309,27 @@ _FIFTY_VIEW_PROBE = r"""
 """
 
 
-def _sixty_view_shader_cache_probe() -> str:
-    figures = [
-        xyg.chart(xyg.line(x=[0, 1, 2], y=[0, 1, 0]), width=62, height=82).figure(),
-        xyg.chart(xyg.scatter(x=[0, 1, 2], y=[0, 1, 0]), width=62, height=82).figure(),
-        xyg.chart(xyg.hist([0, 1, 1, 2], bins=3), width=62, height=82).figure(),
-        xyg.chart(
-            xyg.bar(
-                ["a", "b"],
-                [[1, 2], [2, 1]],
-                mode="grouped",
-                series=["A", "B"],
-            ),
-            width=62,
-            height=82,
-        ).figure(),
-        xyg.chart(xyg.heatmap([[0, 1], [2, 3]], colormap="turbo"), width=62, height=82).figure(),
+def _mixed_chart_payloads(
+    width: int = 62, height: int = 82, *, keyboard: bool = False
+) -> list[dict]:
+    marks = [
+        xyg.line(x=[0, 1, 2], y=[0, 1, 0], color="#ff0000" if keyboard else None),
+        xyg.scatter(x=[0, 1, 2], y=[0, 1, 0], color="#0000ff" if keyboard else None),
+        xyg.hist([0, 1, 1, 2], bins=3),
+        xyg.bar(
+            ["a", "b"],
+            [[1, 2], [2, 1]],
+            mode="grouped",
+            series=["A", "B"],
+        ),
+        xyg.heatmap([[0, 1], [2, 3]], colormap="turbo"),
     ]
     payloads = []
-    for figure in figures:
+    for mark in marks:
+        children = [mark]
+        if keyboard:
+            children.append(xyg.interaction_config(hover=True, click=True))
+        figure = xyg.chart(*children, width=width, height=height).figure()
         spec, blob = figure.build_payload()
         payloads.append(
             {
@@ -336,6 +338,11 @@ def _sixty_view_shader_cache_probe() -> str:
             }
         )
 
+    return payloads
+
+
+def _sixty_view_shader_cache_probe() -> str:
+    payloads = _mixed_chart_payloads()
     probe = r"""
   (() => {
     const payloads = __XY_MIXED_PAYLOADS__;
@@ -994,7 +1001,6 @@ def test_shared_glhost_source_contract() -> None:
     # the host, and release rather than lose the shared context on destroy.
     for marker in (
         "const host = acquireGLHost(document, this);",
-        'const present = this.canvas.getContext("2d", { alpha: true });',
         "this._glHost = host;",
         "this._present2d = present;",
         "this._glHost.render(",
@@ -1005,6 +1011,11 @@ def test_shared_glhost_source_contract() -> None:
         "if (!this._renderPick()) return null;",
     ):
         assert marker in chartview, f"ChartView shared-host integration marker missing: {marker}"
+    assert re.search(
+        r'const present = this\.canvas\.getContext\("2d",\s*\{\s*'
+        r"alpha:\s*true,\s*willReadFrequently:\s*false,?\s*\}\);",
+        chartview,
+    ), "shared presentation must retain transparent accelerated-copy context options"
     destroy = chartview.split("  destroy() {", 1)[1]
     assert "host.release(this);" in destroy
     assert "loseExt.loseContext();" in destroy
@@ -1045,7 +1056,7 @@ def test_shared_glhost_texture_unit_reset_contract() -> None:
     samplers must reset alongside texture bindings.
     """
     host = (ROOT / "js/src/42_glhost.ts").read_text(encoding="utf-8")
-    assert "const XY_TEXTURE_UNITS = 3;" in host, "shared-host texture-unit constant missing"
+    assert "const XY_TEXTURE_UNITS = 5;" in host, "shared-host texture-unit constant missing"
     used: set[int] = set()
     for path in sorted((ROOT / "js/src").glob("*.ts")):
         if path.name == "42_glhost.ts":
@@ -1058,15 +1069,17 @@ def test_shared_glhost_texture_unit_reset_contract() -> None:
     graph = (ROOT / "js/src/63_graph_gpu.ts").read_text(encoding="utf-8")
     graph_units = {
         int(match.group(1))
-        for match in re.finditer(r'texture\(bytes\("[^"]+"\),\s*(\d+),\s*(?:true|false)\)', graph)
+        for match in re.finditer(
+            r'texture\(bytes\("[^"]+"(?:,\s*\d+)?\),\s*(\d+),\s*(?:true|false)\)', graph
+        )
     }
-    assert graph_units == {0, 1, 2}, "graph style/state/reference unit contract changed"
+    assert graph_units == {0, 1, 2, 3, 4}, "graph raw-plane texture unit contract changed"
     used.update(graph_units)
-    assert "for (let unit = 0; unit < 3; unit++)" in graph
+    assert "for (let unit = 0; unit < 5; unit++)" in graph
     assert "gl.bindSampler(unit, null);" in host, "texture reset must also isolate samplers"
-    assert used == {0, 1, 2}, (
+    assert used == {0, 1, 2, 3, 4}, (
         f"renderer modules activate texture units {sorted(used)} but the shared "
-        "GLHost resets XY_TEXTURE_UNITS = 3 between clients; change both together"
+        "GLHost resets XY_TEXTURE_UNITS = 5 between clients; change both together"
     )
 
 
@@ -1844,3 +1857,5 @@ def test_dashboard_gpu_allocation_oracle_and_lifecycle(tmp_path: Path) -> None:
     )
     report = json.loads((tmp_path / "dashboard-gpu" / "report.json").read_text())
     assert report["result"], report
+    assert report["mixed"]["charts"] == 32, report
+    assert report["mixed"]["remainingAllocations"] == 0, report

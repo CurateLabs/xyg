@@ -1,0 +1,9 @@
+{
+  "path": "wasm-o3-inline50.raw.wasm",
+  "sha256": "4aa85dc27961e246a2f5336486e70e93a12a88088df347f54bb20fbf49e90f78",
+  "bytes": 2125227,
+  "nativeAbi": 403,
+  "wasmAbi": 37,
+  "profile": "O3 LLVM inline50; failed normal package gzip788701 >786432",
+  "sourceConfig": "# Keep the safe engine at O3. Bound inlining for the direct-browser artifact;\n# same-source correctness/ABBA evidence: spec/benchmarks/wasm-geographic-profile-local.json\n# and spec/performance/filter-tier-c-programmatic-2026-11-07/.\n# Same-source correctness/ABBA and unchanged-cap qualification:\n# spec/temporal/evidence/46-inline50/README.md.\n# This target-specific setting never affects the native cdylib.\n[target.wasm32-unknown-unknown]\nrustflags = [\"-C\", \"llvm-args=--inline-threshold=50\"]\n"
+}

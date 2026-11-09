@@ -156,6 +156,13 @@ emergency termination grace, allowing the scheduler's 1-second emergency grace.
 A wedged native call/Worker can require forced termination; no force-destructor
 claim is made for emergency termination. Actual worker exits still precede
 terminal settlement. No silent fallback to caller-thread force is provided.
+The scheduler also latches cancellation in a constant-size shared atomic flag,
+checked before force allocation and at chunk boundaries. This covers startup
+module evaluation before the cancellation listener exists. Reentrant AbortSignal
+registration and structured-clone cancellation cannot publish an untracked Worker
+or settle before its actual exit. No native call, deadline or cleanup grace is
+changed; an already wedged native call still has only the documented emergency
+termination guarantee.
 
 ## Evidence and remaining boundary
 
@@ -353,12 +360,27 @@ camera and empty selection, and both lifetimes drain and remove their surfaces.
 No controller defect preventing this bounded path was reproduced; product
 scheduling, Rust kernels, wire format and resource policy remain unchanged.
 
-Both successful 1k views explicitly request 384 MiB each. The 1k default 16 MiB
-and attempted 10k explicit 384 MiB requests refuse with
-`GF_INTERACTION_BUDGET`. There is no rendered 10k result. Recorded startup,
+Both successful 1k views explicitly request 384 MiB each. In that historical
+receipt the 1k default 16 MiB and attempted 10k explicit 384 MiB requests
+refuse with `GF_INTERACTION_BUDGET`; that receipt contains no rendered 10k result. Recorded startup,
 presentation, payload, page heap, heartbeat, input and cleanup observations are
 VM evidence, with observer overhead, rather than latency or memory qualification.
 Page heap metrics exclude Worker/WASM/GPU memory. Keyboard focus was not proved
 at 1k; the earlier refusal is not reclassified as fixed. The rendered
 10k/100k/1M ladder, Python notebook acceptance and broader #35/#36/#1015 and
 milestones remain open. No competitor performance claim follows.
+
+### Public 10k memory admission candidate (2026-11-07)
+
+The [separate admission receipt](../performance/graph-public10k-admission-2026-11-07/README.md)
+records Rust-only document-ingress accounting, a bounded normal-CI native/WASM
+10k render/continuation regression, and a new standalone public browser proof.
+The qualified browser scenario uses a 10k primary and 1k peer, each explicitly
+requesting the unchanged 384 MiB arena. It preserves trusted unfinished pick,
+host-button camera continuity, independent identities and disposal. It does not
+qualify default-16-MiB 1k admission. A two-10k capture completed once, but repeated
+attempts hit the unchanged wall timeout near convergence; reliable concurrent
+two-10k completion remains unqualified. Historical refusals and timeout trials
+are retained. No default, selection/pick/geometry/LOD, wall-time or package gate
+changes. This is memory correctness/admission evidence, not a competitor win,
+notebook acceptance, full size ladder, issue closure or M4 completion.

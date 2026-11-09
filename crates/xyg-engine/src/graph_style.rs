@@ -225,7 +225,6 @@ pub fn resolve_semantic_styles(
     }
     let colors = palette(theme)?;
     let domain = metric_domain(metric);
-    let mut resolved = Vec::with_capacity(n);
     for i in 0..n {
         let state = resolve_visual_state(flags[i]);
         let unit = metric_unit(metric[i], domain);
@@ -268,7 +267,7 @@ pub fn resolve_semantic_styles(
             opacity = 0.28;
             fill = colors[0];
         }
-        resolved.push(ResolvedGraphStyle {
+        out[i] = ResolvedGraphStyle {
             fill,
             stroke,
             halo,
@@ -295,9 +294,8 @@ pub fn resolve_semantic_styles(
             },
             arrow: u8::from(edge && statuses[i] != 0),
             state,
-        });
+        };
     }
-    out.copy_from_slice(&resolved);
     Some(domain)
 }
 
@@ -553,7 +551,7 @@ pub fn graph_label_plan(
         };
     }
     let mut order: Vec<usize> = (0..n).filter(|&i| accepted[i] != 0).collect();
-    order.sort_by(|&a, &b| {
+    crate::shared_sort::by(&mut order, |&a, &b| {
         input.states[b]
             .cmp(&input.states[a])
             .then_with(|| priorities[b].total_cmp(&priorities[a]))
@@ -998,7 +996,9 @@ fn encode_semantic_graph_scene_internal(
         ];
     }
     let mut hierarchy_order: Vec<usize> = (0..n).collect();
-    hierarchy_order.sort_by_key(|&index| (std::cmp::Reverse(hierarchy.depth[index]), index));
+    crate::shared_sort::by_key(&mut hierarchy_order, |&index| {
+        (std::cmp::Reverse(hierarchy.depth[index]), index)
+    });
     for index in hierarchy_order {
         let Some(parent) = hierarchy.direct_parent[index] else {
             continue;
@@ -1258,7 +1258,9 @@ fn encode_semantic_graph_scene_internal(
             });
         }
     }
-    candidates.sort_by_key(|candidate| (std::cmp::Reverse(candidate.state), candidate.stable_id));
+    crate::shared_sort::by_key(&mut candidates, |candidate| {
+        (std::cmp::Reverse(candidate.state), candidate.stable_id)
+    });
     let mut occupied: Vec<(f64, f64, f64, f64)> = Vec::new();
     let mut labels = Vec::new();
     for candidate in candidates {
@@ -1532,7 +1534,7 @@ fn encode_semantic_graph_scene_internal(
             descriptors.push(descriptor);
         }
     }
-    descriptors.sort_by_key(|item| (item.field, item.value));
+    crate::shared_sort::by_key(&mut descriptors, |item| (item.field, item.value));
     let mut legend_entries = Vec::with_capacity(descriptors.len());
     if let Some(custom) = legend_override {
         descriptors.clear();
@@ -1666,7 +1668,9 @@ pub fn label_accept(priorities: &[f64], budget: u64, floor: f64, out: &mut [u8])
         .enumerate()
         .filter(|(_, p)| p.is_finite() && (!floor.is_finite() || *p >= floor))
         .collect();
-    ranked.sort_by(|a, b| b.1.total_cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+    crate::shared_sort::by(&mut ranked, |a, b| {
+        b.1.total_cmp(&a.1).then_with(|| a.0.cmp(&b.0))
+    });
     let take = usize::try_from(budget)
         .unwrap_or(usize::MAX)
         .min(ranked.len());
@@ -1754,7 +1758,7 @@ fn compound_hierarchy(
         }
     }
     let mut order: Vec<usize> = (0..n).collect();
-    order.sort_by_key(|&index| (depth[index], index));
+    crate::shared_sort::by_key(&mut order, |&index| (depth[index], index));
     let mut representative: Vec<usize> = (0..n).collect();
     let mut visible = vec![true; n];
     for &index in &order {
@@ -1913,7 +1917,9 @@ fn compound_frame_pads(hierarchy: &CompoundHierarchy, radius_px: &[f64]) -> Vec<
         })
         .collect();
     let mut order: Vec<usize> = (0..n).collect();
-    order.sort_by_key(|&index| (std::cmp::Reverse(hierarchy.depth[index]), index));
+    crate::shared_sort::by_key(&mut order, |&index| {
+        (std::cmp::Reverse(hierarchy.depth[index]), index)
+    });
     for index in order {
         if let Some(parent) = hierarchy.direct_parent[index] {
             reach[parent] = reach[parent].max(reach[index]);
@@ -1971,7 +1977,9 @@ pub fn compound_frames(
         hierarchy.bounds[index] = [x[index], x[index], y[index], y[index]];
     }
     let mut order: Vec<usize> = (0..n).collect();
-    order.sort_by_key(|&index| (std::cmp::Reverse(hierarchy.depth[index]), index));
+    crate::shared_sort::by_key(&mut order, |&index| {
+        (std::cmp::Reverse(hierarchy.depth[index]), index)
+    });
     for index in order {
         let Some(parent) = hierarchy.direct_parent[index] else {
             continue;
@@ -2090,7 +2098,9 @@ pub fn compound_bounds(
         is_compound[i] = u8::from(hierarchy.is_compound[i]);
     }
     let mut order: Vec<usize> = (0..n).collect();
-    order.sort_by_key(|&index| (std::cmp::Reverse(hierarchy.depth[index]), index));
+    crate::shared_sort::by_key(&mut order, |&index| {
+        (std::cmp::Reverse(hierarchy.depth[index]), index)
+    });
     for index in order {
         let Some(parent) = hierarchy.direct_parent[index] else {
             continue;

@@ -921,6 +921,52 @@ fn review_open_charge_has_a_tight_atomic_boundary() {
 }
 
 #[test]
+fn update_document_ingress_exact_limit_refusal_and_retry_are_atomic() {
+    let mut s = opened();
+    let prior = s
+        .execute(&request(2, 0, wire::RENDER, |_| {}), 0, None)
+        .unwrap()
+        .to_vec();
+    let revision = s.session().render_revision();
+    let publication = s.session().published().unwrap().clone();
+    let work = s.session().work();
+    // Three different nodes, no edges/layers/labels: the normative envelope
+    // has no variable UTF-8 or projection-plane charges.
+    let doc = handmade(&[id(4), id(5), id(6)], &[], &[]);
+    let update = request(3, revision, wire::UPDATE, |b| {
+        b.bytes("document.bytes", 0, &doc);
+        b.f64s("load.x.f64", 0, &[100., 130., 160.]);
+        b.f64s("load.y.f64", 0, &[10., 10., 10.]);
+    });
+    let external = 4096;
+    // Specification table, calculated independently of WireSession::admit:
+    // fixed + GPU + decoded bytes + rows + grid + possible state + projection.
+    let replacement = 98_304 + 16_384 + 3 * 2048 + 48 * doc.len()
+        + 3 * 8192 + (2 * 3 * 4096) * 16
+        + (4 * 3 + 3 + 1) * 1024 + 3 * 256 + 8192;
+    let limit = s.retained_budget() + 128 * (update.len() - doc.len())
+        + 6 * doc.len() + replacement + external + 1024;
+    assert_eq!(limit, 3_526_208);
+    // Owned state has no selection, pins or focus, but reserves its fixed item.
+    s.max_bytes = limit - 1;
+    assert_eq!(s.execute(&update, external, None), Err(InteractionStatus::Budget));
+    assert_eq!(s.reply(), prior);
+    assert_eq!(s.session().render_revision(), revision);
+    assert_eq!(s.session().published().unwrap(), &publication);
+    assert_eq!(s.session().work(), work);
+    assert!(s.session().pending_outbound().is_none());
+    // Refusal must leave sequence 3 available for exactly the same request.
+    s.max_bytes = limit;
+    let accepted = s.execute(&update, external, None).unwrap().to_vec();
+    assert_eq!(header_of(&accepted)[0], revision + 1);
+    assert_eq!(s.session().published().unwrap().node_x, [100., 130., 160.]);
+    assert_eq!(s.session().published().unwrap().node_y, [10., 10., 10.]);
+    assert_ne!(accepted, prior);
+    assert_eq!(s.execute(&update, usize::MAX, None).unwrap(), accepted);
+    println!("UPDATE exact admitted bytes={limit}; one-under preserves reply/revision/publication/work; exact retry commits");
+}
+
+#[test]
 fn review_uuid_text_preserves_all_32_lowercase_hex_bytes_including_zeros() {
     // This pins the byte contract before either authorized size experiment.
     let node = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 255];

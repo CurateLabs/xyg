@@ -1,0 +1,217 @@
+{
+  "parents": [
+    "53a1b4dfefc9c20cde610536722384d72f5d198e",
+    "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+  ],
+  "completeDefinitionUnion": true,
+  "definitions": {
+    "chartWith": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "2e0c4c87cd71653545c9f426a9c17f4b0594efb334afa85de3ee893dc7fc2edb"
+    },
+    "scatterChart": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "0abec193812c6377e709ca2138b36a4ca0f87dc5e661267a3a76871bd995e523"
+    },
+    "lineChart": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "56844a2facdfd0b20715e74f26b7853687c2258157b56b74750a8ada9f1d6001"
+    },
+    "histogramChart": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "21559cf2b8116a401f08f7be3db945b33e345eb16aa563af975cd8c5cfd5df83"
+    },
+    "areaChart": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "e0768defdbfec7c789070135d00ffdc6398c20a155628100a259a9cd2af4d07a"
+    },
+    "barChart": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "f3453a366043f4143a132faa5bff4595fd5cee7184aa34149d36ad4778d00041"
+    },
+    "columnChart": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "6a052f33c9d11353a101bc72cda3dd324e8c1b33c8fd67fc9ba4382fc6d61f91"
+    },
+    "boxChart": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "3ca6e5042eb6e9be4c57a6efa0422f87598a4a11ede7339659a4efabc0df3306"
+    },
+    "ecdfChart": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "dfd8978603cc1e6b79d984bd06344a04d3d5bdd79cd977911710f85b5ab658c1"
+    },
+    "segmentsChart": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "67ddc941d4e0e830bad363e7a60a15be67064b963ab2c8ef3bd9d98cf3dab0ea"
+    },
+    "heatmapChart": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "41adca4115ea180ae154a52c9bdd01e072ba99f8e6fee6b1351d60c2029c5bb8"
+    },
+    "hexbinChart": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "f26d3476bf1716f9fc0af35273b3470df323d878a245486a31b3e0cc867b0589"
+    },
+    "violinChart": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "0bffbb89d0f27214259ad5f1e3d6d4e288242ee828c132bfe27d526bd8b689d7"
+    },
+    "contourChart": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "e5a80fd0d2ad9d471e38b509c548e2e01783b190a3e1f1a3027163d67ab3185a"
+    },
+    "errorbarChart": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "c2b23a87954d3b593ac700a705eee4a75f6655afad67ee10152140d2151092d5"
+    },
+    "errorBandChart": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "07af663c08aa0b7d8443c4ecd1247ba8a76149b874b9f735ea631b407a37f07f"
+    },
+    "stemChart": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "0146df482e70161d68e10996366e1e63add488688728c0e8ae177044226d6eaf"
+    },
+    "stepChart": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "82af77ffcd969220905f887fbb26a3b4565a72fde4644cdf250b54cb471947ea"
+    },
+    "stairsChart": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "590bb373d0968ae709fa2a974a264e0c58f32b8fcdeb3d517c72ed2f0a5f2b69"
+    },
+    "triangleMeshChart": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "cb4d7e974a1eeabd0a0467efc489a4820b98e04779fca07b4bb6d4eec3ba172c"
+    },
+    "radarChart": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "dd139c5c3d9c3bc15e9337f6d0d884a50c8cb45edc835250e61b68cf38f10ea6"
+    },
+    "graphChart": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "ff965607abac8e85b644820d7942b4940990fcd5d6e0f7188b79add88f3d95c0"
+    },
+    "sankeyChart": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "017cfc9cf30c56a10aa889d108b0b61c9e582c6b5fef01db14e716ceb3bde01d"
+    },
+    "GeoLayer": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "79a0cd91a11737fb557a33ae5fd92938e2db0bfa58fc9380d0f43a7b515fe651"
+    },
+    "geoLayer": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "f541100778719b5825469a1701fe7fa62ba1eb83f1ca3aec7bbce34c71be563c"
+    },
+    "exactKeys": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "f122aba8393a50f063238c28acd1e8660599ea6edc8a1e58a6f347ffe284db6f"
+    },
+    "geoCameraBytes": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "7eb7a7e86eb5dd9fc979f0d94ef63cdfb8d6b09dc87011c7d4aa0c5fbb8c4835"
+    },
+    "GeoChart": {
+      "matchesParents": [
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "bb60937d7edea3ba86245390b7d9ff9622a82c3d470d91df36edd0bdca821906"
+    },
+    "geoChart": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e",
+        "43c35f67b95ae4e78e3e96f200a0e6be8642199c"
+      ],
+      "sourceSha256": "8003f985a5245c6eba526dcbbb8351b47226cc2751e5a3209389949191fbd5f4"
+    },
+    "temporalChart": {
+      "matchesParents": [
+        "53a1b4dfefc9c20cde610536722384d72f5d198e"
+      ],
+      "sourceSha256": "2abc1f53b5fa2e2a6d8056e255d34cc98faed7712d5afadc6f1140bdf61f0e2e"
+    }
+  }
+}

@@ -5,7 +5,7 @@
 //! holding the previous publication is rejected as stale and repaints. A failed
 //! operation changes nothing: inputs are validated before the first write.
 
-use std::collections::HashMap;
+use std::sync::Arc;
 
 use super::render::{Resolved, Visible};
 use super::{GraphSession, InteractionStatus, OpHeader, OpOutcome};
@@ -91,15 +91,37 @@ pub(super) struct MoveOrigin {
 #[derive(Clone)]
 pub(super) struct Relayout {
     force: ForceState,
-    active: Vec<usize>,
-    pins: Vec<u8>,
+    active: Arc<Vec<usize>>,
+    pins: Arc<Vec<u8>>,
     completed_steps: u64,
 }
 
 impl Relayout {
+    pub(super) fn retained_bytes(&self, parent: &Arc<Vec<u64>>) -> Option<usize> {
+        let force = self.force.retained_bytes()?.checked_sub(
+            if Arc::ptr_eq(parent, &self.force.parents) {
+                self.force.parents.capacity().checked_mul(8)?
+            } else {
+                0
+            },
+        )?;
+        force
+            .checked_add(
+                self.active
+                    .capacity()
+                    .checked_mul(std::mem::size_of::<usize>())?,
+            )?
+            .checked_add(self.pins.capacity())
+    }
+    pub(super) fn private_clone_bytes(&self) -> Option<usize> {
+        self.force.private_clone_bytes()
+    }
     pub(super) fn report(&self) -> RelayoutReport {
-        RelayoutReport { alpha: self.force.alpha, done: self.active.is_empty() || self.force.alpha < RELAYOUT_SETTLED_ALPHA,
-            completed_steps: self.completed_steps }
+        RelayoutReport {
+            alpha: self.force.alpha,
+            done: self.active.is_empty() || self.force.alpha < RELAYOUT_SETTLED_ALPHA,
+            completed_steps: self.completed_steps,
+        }
     }
 }
 
@@ -109,16 +131,45 @@ impl Relayout {
 /// nearest surviving ancestor.
 struct Problem {
     active: Vec<usize>,
-    sources: Vec<u64>,
-    targets: Vec<u64>,
-    parents: Vec<u64>,
+    sources: Arc<Vec<u64>>,
+    targets: Arc<Vec<u64>>,
+    parents: Arc<Vec<u64>>,
+}
+
+fn admitted_work_steps(nodes: u64, edges: u64) -> u64 {
+    match nodes.checked_add(edges) {
+        None => 0,
+        Some(0) => u64::MAX,
+        Some(work) => MAX_GRAPH_INTERACTION_WORK / work,
+    }
+}
+pub(super) fn continuation_work_limit(nodes: u64, edges: u64) -> u32 {
+    admitted_work_steps(nodes, edges).min(u64::from(MAX_RELAYOUT_STEPS)) as u32
 }
 
 impl GraphSession {
+    /// Version-1 cooperative work admission. The transport keeps its max10
+    /// preference, consuming this bound without reproducing work arithmetic.
+    pub fn continuation_step_limit(&self) -> u32 {
+        continuation_work_limit(
+            self.source.identity.node_count() as u64,
+            self.source.identity.edge_count() as u64,
+        )
+    }
+
     fn layout_problem(&mut self, vis: &Visible) -> Problem {
-        let n = self.identity.node_count();
+        let n = self.source.identity.node_count();
+        if vis.node.iter().chain(&vis.edge).all(|&v| v == 1) {
+            self.work += (n + self.source.edge_source.len()) as u64;
+            return Problem {
+                active: (0..n).collect(),
+                sources: Arc::clone(&self.source.edge_source),
+                targets: Arc::clone(&self.source.edge_target),
+                parents: Arc::clone(&self.source.parent),
+            };
+        }
         let mut dense = vec![COSE_NO_PARENT; n];
-        let mut active = Vec::new();
+        let mut active = Vec::with_capacity(n);
         for (node, &visible) in vis.node.iter().enumerate() {
             if visible == 1 {
                 dense[node] = active.len() as u64;
@@ -135,19 +186,22 @@ impl GraphSession {
             .collect();
         let work = hierarchy.work;
         drop(hierarchy);
-        let (mut sources, mut targets) = (Vec::new(), Vec::new());
-        for edge in 0..self.edge_source.len() {
+        let (mut sources, mut targets) = (
+            Vec::with_capacity(self.source.edge_source.len()),
+            Vec::with_capacity(self.source.edge_target.len()),
+        );
+        for edge in 0..self.source.edge_source.len() {
             if vis.edge[edge] == 1 {
-                sources.push(dense[self.edge_source[edge] as usize]);
-                targets.push(dense[self.edge_target[edge] as usize]);
+                sources.push(dense[self.source.edge_source[edge] as usize]);
+                targets.push(dense[self.source.edge_target[edge] as usize]);
             }
         }
-        self.work += work + (n + self.edge_source.len()) as u64;
+        self.work += work + (n + self.source.edge_source.len()) as u64;
         Problem {
             active,
-            sources,
-            targets,
-            parents,
+            sources: Arc::new(sources),
+            targets: Arc::new(targets),
+            parents: Arc::new(parents),
         }
     }
 
@@ -155,37 +209,65 @@ impl GraphSession {
     /// load authored no positions: CoSE over the *visible* subgraph and its
     /// surviving hierarchy. A node invisible at that moment is parked at the
     /// visible layout's centroid until a relayout moves it.
-    pub(super) fn ensure_positions(&mut self, vis: &Visible, state: &crate::graph_interaction_state::GraphInteractionState) -> Result<(), InteractionStatus> {
-        if self.positions.is_some() { return Ok(()); }
+    pub(super) fn ensure_positions(
+        &mut self,
+        vis: &Visible,
+        state: &crate::graph_interaction_state::GraphInteractionState,
+    ) -> Result<(), InteractionStatus> {
+        if self.positions.is_some() {
+            return Ok(());
+        }
         if !self.progressive {
-            self.positions = Some(self.initial_positions(vis)?);
+            self.positions = Some({
+                let (x, y) = self.initial_positions(vis)?;
+                (Arc::new(x), Arc::new(y))
+            });
             return Ok(());
         }
         let (problem, mut force) = self.seed_layout(vis, 1)?;
         let positions = self.source_positions(&problem, &force);
-        let mut pins = vec![0; self.identity.node_count()];
+        let mut pins = vec![0; self.source.identity.node_count()];
         for id in state.pinned_nodes() {
-            if let Some(i) = self.identity.node_index(id) { pins[i] = 1; }
+            if let Some(i) = self.source.identity.node_index(id) {
+                pins[i] = 1;
+            }
         }
         // As with legacy ingress, pins without authored positions are accepted:
         // seed first, then anchor the seeded coordinates for continuation.
+        let force_pins = Arc::make_mut(&mut force.pinned);
         for (k, &node) in problem.active.iter().enumerate() {
-            force.pinned[k] = pins[node] == 1;
+            force_pins[k] = pins[node] == 1;
         }
-        self.positions = Some(positions);
+        self.positions = Some((Arc::new(positions.0), Arc::new(positions.1)));
         let completed_steps = u64::from(!force.x.is_empty());
-        self.relayout = Some(Relayout { force, active: problem.active, pins, completed_steps });
+        self.relayout = Some(Arc::new(Relayout {
+            force,
+            active: Arc::new(problem.active),
+            pins: Arc::new(pins),
+            completed_steps,
+        }));
         Ok(())
     }
 
     /// Keep freshly seeded positions local until an operation is admitted.
-    fn initial_positions(&mut self, vis: &Visible) -> Result<(Vec<f64>, Vec<f64>), InteractionStatus> {
-        let steps = if self.progressive { 1 } else { INITIAL_LAYOUT_STEPS };
+    fn initial_positions(
+        &mut self,
+        vis: &Visible,
+    ) -> Result<(Vec<f64>, Vec<f64>), InteractionStatus> {
+        let steps = if self.progressive {
+            1
+        } else {
+            INITIAL_LAYOUT_STEPS
+        };
         let (problem, layout) = self.seed_layout(vis, steps)?;
         Ok(self.source_positions(&problem, &layout))
     }
 
-    fn seed_layout(&mut self, vis: &Visible, steps: u32) -> Result<(Problem, ForceState), InteractionStatus> {
+    fn seed_layout(
+        &mut self,
+        vis: &Visible,
+        steps: u32,
+    ) -> Result<(Problem, ForceState), InteractionStatus> {
         if self.progressive {
             let live = vis.node.iter().filter(|&&v| v == 1).count()
                 + vis.edge.iter().filter(|&&v| v == 1).count();
@@ -196,9 +278,19 @@ impl GraphSession {
         let problem = self.layout_problem(vis);
         let m = problem.active.len();
         let mut layout = ForceState::new_configured(
-            m as u64, &problem.sources, &problem.targets, None, None, self.seed,
-            LAYOUT_COSE, self.cose, &[], &problem.parents,
-        ).ok_or(InteractionStatus::Invalid)?;
+            m as u64,
+            &problem.sources,
+            &problem.targets,
+            None,
+            None,
+            self.seed,
+            LAYOUT_COSE,
+            self.cose,
+            &[],
+            &problem.parents,
+        )
+        .ok_or(InteractionStatus::Invalid)?;
+        layout.parents = Arc::clone(&problem.parents);
         layout.tick(steps);
         self.work += u64::from(steps) * (m + problem.sources.len()) as u64;
         if !layout.alpha.is_finite() || layout.x.iter().chain(&layout.y).any(|v| !v.is_finite()) {
@@ -208,12 +300,19 @@ impl GraphSession {
     }
 
     fn source_positions(&self, problem: &Problem, layout: &ForceState) -> (Vec<f64>, Vec<f64>) {
-        let n = self.identity.node_count();
+        let n = self.source.identity.node_count();
         let centroid = |plane: &[f64]| {
-            if plane.is_empty() { 0.0 } else { plane.iter().sum::<f64>() / plane.len() as f64 }
+            if plane.is_empty() {
+                0.0
+            } else {
+                plane.iter().sum::<f64>() / plane.len() as f64
+            }
         };
         let (mut x, mut y) = (vec![centroid(&layout.x); n], vec![centroid(&layout.y); n]);
-        for (k, &node) in problem.active.iter().enumerate() { x[node] = layout.x[k]; y[node] = layout.y[k]; }
+        for (k, &node) in problem.active.iter().enumerate() {
+            x[node] = layout.x[k];
+            y[node] = layout.y[k];
+        }
         (x, y)
     }
 
@@ -231,7 +330,7 @@ impl GraphSession {
             .as_ref()
             .map_or((f64::NAN, f64::NAN), |(x, y)| (x[node], y[node]));
         NodePosition {
-            node: self.identity.node_ref(node),
+            node: self.source.identity.node_ref(node),
             x,
             y,
             pinned,
@@ -254,7 +353,7 @@ impl GraphSession {
     ) -> Result<OpOutcome, InteractionStatus> {
         self.operate(header, |session, world| {
             let node = session.node_target(target)?;
-            let id = session.identity.node_uuids()[node];
+            let id = session.source.identity.node_uuids()[node];
             let changed = world.state.pinned_nodes().contains(&id) != on;
             if changed {
                 session.reserve_revision()?;
@@ -310,7 +409,10 @@ impl GraphSession {
             };
             let seeded = if session.positions.is_none() {
                 let vis = session.visible(world.visibility)?;
-                Some(session.initial_positions(&vis)?)
+                Some({
+                    let (x, y) = session.initial_positions(&vis)?;
+                    (Arc::new(x), Arc::new(y))
+                })
             } else {
                 None
             };
@@ -342,14 +444,14 @@ impl GraphSession {
             if let Some(positions) = seeded {
                 session.positions = Some(positions);
             }
-            let id = session.identity.node_uuids()[node];
+            let id = session.source.identity.node_uuids()[node];
             let pin = commit == MoveCommit::Commit;
             if pin {
                 world.state.set_pin(id, true);
             }
             if let Some((px, py)) = session.positions.as_mut() {
-                px[node] = next.0;
-                py[node] = next.1;
+                Arc::make_mut(px)[node] = next.0;
+                Arc::make_mut(py)[node] = next.1;
             }
             session.move_origin = if commit == MoveCommit::Preview {
                 origin
@@ -385,28 +487,34 @@ impl GraphSession {
             let live_edges = vis.edge.iter().filter(|&&v| v == 1).count();
             let force_steps = u64::from(steps)
                 + if session.positions.is_none() {
-                    u64::from(if session.progressive { 1 } else { INITIAL_LAYOUT_STEPS })
+                    u64::from(if session.progressive {
+                        1
+                    } else {
+                        INITIAL_LAYOUT_STEPS
+                    })
                 } else {
                     0
                 };
-            if force_steps * (active + live_edges) as u64 > MAX_GRAPH_INTERACTION_WORK {
+            // Division compares against the same exact work ceiling without
+            // constructing a potentially overflowing steps×population product.
+            if force_steps > admitted_work_steps(active as u64, live_edges as u64) {
                 return Err(InteractionStatus::Budget);
             }
             session.reserve_revision()?;
             session.ensure_positions(&vis, world.state)?;
-            let n = session.identity.node_count();
+            let n = session.source.identity.node_count();
             let mut pins = vec![0u8; n];
             for id in world.state.pinned_nodes() {
-                if let Some(i) = session.identity.node_index(id) {
+                if let Some(i) = session.source.identity.node_index(id) {
                     pins[i] = 1;
                 }
             }
             session.work += (n + world.state.pinned_nodes().len()) as u64;
             let problem = session.layout_problem(&vis);
-            let fresh = session
-                .relayout
-                .as_ref()
-                .is_some_and(|r| r.active == problem.active && r.pins == pins);
+            let fresh = session.relayout.as_ref().is_some_and(|r| {
+                r.active.as_slice() == problem.active.as_slice()
+                    && r.pins.as_slice() == pins.as_slice()
+            });
             if !fresh {
                 let (x, y) = session
                     .positions
@@ -416,7 +524,7 @@ impl GraphSession {
                     problem.active.iter().map(|&i| plane[i]).collect()
                 };
                 let mask: Vec<u8> = problem.active.iter().map(|&i| pins[i]).collect();
-                let force = ForceState::new_configured(
+                let mut force = ForceState::new_configured(
                     problem.active.len() as u64,
                     &problem.sources,
                     &problem.targets,
@@ -429,20 +537,29 @@ impl GraphSession {
                     &problem.parents,
                 )
                 .ok_or(InteractionStatus::Invalid)?;
-                session.relayout = Some(Relayout {
+                force.parents = Arc::clone(&problem.parents);
+                session.relayout = Some(Arc::new(Relayout {
                     force,
-                    active: problem.active.clone(),
-                    pins,
+                    active: Arc::new(problem.active),
+                    pins: Arc::new(pins),
                     completed_steps: 0,
-                });
+                }));
             }
-            let retained = session
-                .relayout
-                .as_mut()
+            let retained = Arc::make_mut(
+                session
+                    .relayout
+                    .as_mut()
+                    .ok_or(InteractionStatus::Invalid)?,
+            );
+            let completed_steps = retained
+                .completed_steps
+                .checked_add(u64::from(steps))
                 .ok_or(InteractionStatus::Invalid)?;
-            let completed_steps = retained.completed_steps.checked_add(u64::from(steps)).ok_or(InteractionStatus::Invalid)?;
             let mut completed = 0;
-            while completed < steps && !retained.force.x.is_empty() && retained.force.alpha >= RELAYOUT_SETTLED_ALPHA {
+            while completed < steps
+                && !retained.force.x.is_empty()
+                && retained.force.alpha >= RELAYOUT_SETTLED_ALPHA
+            {
                 retained.force.tick(1);
                 completed += 1;
             }
@@ -455,6 +572,8 @@ impl GraphSession {
                 return Err(InteractionStatus::Invalid);
             }
             if let Some((px, py)) = session.positions.as_mut() {
+                let px = Arc::make_mut(px);
+                let py = Arc::make_mut(py);
                 for (k, &node) in retained.active.iter().enumerate() {
                     px[node] = force.x[k];
                     py[node] = force.y[k];
@@ -478,7 +597,7 @@ impl GraphSession {
         action: DisclosureAction,
     ) -> Result<OpOutcome, InteractionStatus> {
         self.operate(header, |session, world| {
-            let n = session.identity.node_count();
+            let n = session.source.identity.node_count();
             if n > MAX_COMPOUND_TRANSITION_NODES {
                 return Err(InteractionStatus::CompoundTooLarge);
             }
@@ -493,8 +612,8 @@ impl GraphSession {
             let mut next = vec![0u8; n];
             let changed = compound_collapse_transition(
                 &ids,
-                &session.parent,
-                &session.parent_valid,
+                &session.source.parent,
+                &session.source.parent_valid,
                 &session.collapsed,
                 node as u64,
                 action,
@@ -510,7 +629,7 @@ impl GraphSession {
             }
             let mut outcome = session.outcome(world, changed);
             outcome.disclosure = Some(DisclosureReport {
-                node: session.identity.node_ref(node),
+                node: session.source.identity.node_ref(node),
                 collapsed: session.collapsed[node] == 1,
             });
             Ok(outcome)
@@ -537,7 +656,7 @@ impl GraphSession {
             }
             let changed = world.state.highlight(plane, mode, &delta)?;
             let mut outcome = session.outcome(world, !changed.is_empty());
-            outcome.changed = session.identity.refs_of(&changed);
+            outcome.changed = session.source.identity.refs_of(&changed);
             Ok(outcome)
         })
     }
@@ -551,26 +670,40 @@ impl GraphSession {
         for element in refs {
             nodes.push(self.node_target(element)? as u64);
         }
-        let mut found: HashMap<(u64, u64), Option<usize>> = nodes
-            .windows(2)
-            .flat_map(|pair| [(pair[0], pair[1]), (pair[1], pair[0])])
-            .map(|key| (key, None))
-            .collect();
-        for edge in 0..self.edge_source.len() {
-            if let Some(slot) = found.get_mut(&(self.edge_source[edge], self.edge_target[edge])) {
-                slot.get_or_insert(edge);
+        // One unordered canonical pair owner suffices: the reducer chooses
+        // the lowest source edge across both directions, exactly as before.
+        let pairs = nodes.len().saturating_sub(1);
+        let key = |i: usize| [nodes[i].min(nodes[i + 1]), nodes[i].max(nodes[i + 1])];
+        let mut index =
+            crate::index_slots::IndexSlots::new(pairs).ok_or(InteractionStatus::Budget)?;
+        let mut found = vec![usize::MAX; pairs];
+        for i in 0..pairs {
+            let (slot, prior) = index.find(key(i), &key).ok_or(InteractionStatus::Budget)?;
+            if prior.is_none() {
+                index.set(slot, i);
             }
         }
-        self.work += (self.edge_source.len() + nodes.len()) as u64;
-        for pair in nodes.windows(2) {
-            let forward = found[&(pair[0], pair[1])];
-            let backward = found[&(pair[1], pair[0])];
-            let edge = match (forward, backward) {
-                (Some(a), Some(b)) => a.min(b),
-                (Some(a), None) | (None, Some(a)) => a,
-                (None, None) => return Err(InteractionStatus::Invalid),
-            };
-            self.identity.insert_into(delta, ElementIndex::Edge(edge));
+        for edge in 0..self.source.edge_source.len() {
+            let (a, b) = (self.source.edge_source[edge], self.source.edge_target[edge]);
+            if let Some((_, Some(owner))) = index.find([a.min(b), a.max(b)], &key) {
+                if found[owner] == usize::MAX {
+                    found[owner] = edge;
+                }
+            }
+        }
+        self.work += (self.source.edge_source.len() + nodes.len()) as u64;
+        for i in 0..pairs {
+            let owner = index
+                .find(key(i), &key)
+                .and_then(|(_, owner)| owner)
+                .ok_or(InteractionStatus::Invalid)?;
+            let edge = found[owner];
+            if edge == usize::MAX {
+                return Err(InteractionStatus::Invalid);
+            }
+            self.source
+                .identity
+                .insert_into(delta, ElementIndex::Edge(edge));
         }
         Ok(())
     }
@@ -579,17 +712,21 @@ impl GraphSession {
         let members: Vec<usize> = delta
             .nodes
             .iter()
-            .filter_map(|id| self.identity.node_index(id))
+            .filter_map(|id| self.source.identity.node_index(id))
             .collect();
-        let mut inside = vec![false; self.identity.node_count()];
+        let mut inside = vec![false; self.source.identity.node_count()];
         for &node in &members {
             inside[node] = true;
         }
-        for edge in 0..self.edge_source.len() {
-            if inside[self.edge_source[edge] as usize] && inside[self.edge_target[edge] as usize] {
-                self.identity.insert_into(delta, ElementIndex::Edge(edge));
+        for edge in 0..self.source.edge_source.len() {
+            if inside[self.source.edge_source[edge] as usize]
+                && inside[self.source.edge_target[edge] as usize]
+            {
+                self.source
+                    .identity
+                    .insert_into(delta, ElementIndex::Edge(edge));
             }
         }
-        self.work += (self.edge_source.len() + members.len()) as u64;
+        self.work += (self.source.edge_source.len() + members.len()) as u64;
     }
 }

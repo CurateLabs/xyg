@@ -497,7 +497,7 @@ including additional metadata/output memory and cooperative cancellation. Python
 no network lookup is attempted. This is the ordered/time-series half of Tier 3 and
 does **not** complete this paragraph: remote HTTP range sources, direct-browser WASM
 staging, unordered spatial artifacts, and automatic gesture-driven chart refinement
-remain tracked by #110. Native Python and Node now expose `ChunkedColumns.chart`: no range composes the precomputed overview; an explicit range composes an exact snapshot through bounded Rust-selected pages after complete canonical-byte admission. This programmatic navigation slice retains source row IDs and I/O provenance and uses the existing composition renderer. It does not establish larger-than-RAM first paint or a live viewport callback bridge.
+remain tracked by #110. Native Python and Node now expose `ChunkedColumns.chart`: no range composes the precomputed overview; an explicit range composes an exact snapshot through bounded Rust-selected pages after complete canonical-byte admission. This programmatic navigation slice retains source row IDs and I/O provenance and uses the existing composition renderer. The [native viewport continuation](design/chunked-native-viewport.md) adds Python widget and Node live-host refinement through that renderer, qualified by actual installed Jupyter/kernel and binary HTTP browser journeys. Its manual 72 GB/4.5-billion-row native HTTP proof exceeds the qualified machine's physical RAM and verifies overview/zoom/pan/revisit data and pixels against a complete source scan. Global budgets, ordinary overview-tile navigation, remaining hosts and full #110 acceptance remain open.
 
 *"Chunks intersecting the viewport" requires an index — arbitrary row groups don't
 know what they intersect.* Two cases: **(a) ordered/1-D data** (time series — the
@@ -1144,8 +1144,9 @@ same Rust planner. Activation reports prior unmanaged allocations separately;
 logical requested storage is not physical VRAM. See
 `spec/design/dashboard-compositor.md` for the transient-peak and rebuild contract.
 
-Pass isolation resets texture bindings and sampler bindings on units 0–2,
-including the retained graph painter's integer reference texture on unit 2.
+Pass isolation resets texture bindings and sampler bindings on units 0–4,
+including the retained graph painter's integer reference texture on unit 2
+and its procedural node coordinate textures on units 3 and 4.
 A sampler left by a neighboring client must not silently alter an integer
 texture's completeness or graph pixels; the same reset applies after restoration.
 
@@ -1420,6 +1421,23 @@ Rules that make the mode targets in §2 real:
    history owns successful mappings. Append invalidates that history and reads
    fresh column zone maps on the next query. Existing tile-store ownership and
    finalizers remain unchanged.
+
+The retained plain-graph phase specialization is specified in
+[graph interaction admission](design/graph-interaction.md#plain-retained-graph-phase-admission-default-arena).
+It retains canonical identities and the existing culling/LOD policy, separates
+OPEN from later publication work, and charges immutable CSR pick capacities.
+Transaction candidates also share immutable document identities, labels, topology
+and source styles; mutable positions, force and reducer state remain private.
+The closed source certificate now admits checked phase/class ownership instead
+of a document multiplier. General/UPDATE retains whole-old + whole-new
+admission. Cooperative continuation consumes a separately versioned Rust work
+bound; all caps, force, LOD, pick and continuation intervals remain unchanged.
+One bounded latest user intent can wait behind an outstanding force command;
+it frames after that reply publishes and is rejected on supersession/disposal.
+Engine allocation probes alone do not qualify public render/interaction rungs.
+The 16 MiB default and 384 MiB maximum remain unchanged; this bounded graph
+qualification does not establish full process/GPU memory or M4 completion.
+
 
 ## 28. LOD / Tiling Contract — exact rules per trace kind
 
@@ -2529,6 +2547,16 @@ means uniform in the axis's scale coordinates, not in raw data. Concretely:
 
 ## 29. Transport Matrix — copies, format, and fallback per environment
 
+Shared WebGL presentation creates its existing Canvas2D copy surface with an
+explicit `willReadFrequently: false` preference. On the qualified Chromium
+backend, an omitted preference changed four RGBA bytes by one LSB on repeated
+reads of the identical copied GPU plane; explicit false preserves the existing
+accelerated copy and stable RGBA. This changes no shader, dithering, antialiasing,
+color table, copy count, data tier or comparison tolerance. GPU and presentation
+plane isolation and before/final controls are retained in
+[the five-view temporal successor](performance/geo-five-temporal-successor-2026-11-08/README.md).
+Other browser/driver and historical AA failures remain separately qualified.
+
 The unit being counted: **physical copies of the data payload after it leaves the
 user's data structure**, and whether any step re-encodes.
 
@@ -3038,6 +3066,20 @@ exclude hidden rows, and each masked reply carries the `filter` state it was
 computed under (§37's `filter_hash`, in literal form). Contract:
 `spec/api/interaction.md` §10.
 
+### §34 linked density checkpoint (2026-11-07, #112 remains open)
+
+[Filter Tier C session/protocol](design/filter-tier-c.md) specifies the shipped
+programmatic subset: count-only active-cell × passive-bin cumulative slabs,
+exact resolvable inclusive ranges, explicit exact boundary scans, bounded
+membership pages, and stable source/intent lifecycle in native and WASM hosts.
+The linked extension adds 2D passive grids with exact selected-count planes,
+range/mask composition, the ordinary density painter and real five-view
+pointer/keyboard edit/commit/cancel/clear. It does not complete §34/35: source
+spill/reopen, persistent materialized result masks, Worker chunk cancellation,
+automatic native widget transport, full paint/predicate compatibility and the
+five-view 100M ≥50 FPS/CodSpeed/competitor qualification remain open. No prefix
+row-mask slab or second renderer is used.
+
 ## 35. Milestone amendments (round 3)
 
 - **Phase 0** adds the **wheel matrix + anywidget skeleton** (F1) — distribution is a
@@ -3115,9 +3157,19 @@ tokens are consumed directly by the stylesheet (`XY_CHROME_CSS`, zero-specificit
 `:where()` rules) rather than through the renderer. One implementation reality (audit
 round 4): `getComputedStyle` returns a custom property's *raw token stream*, not a
 resolved color — so color tokens are resolved via a hidden **probe element** (assign
-`color: var(--chart-bg)`, read back the browser-computed rgb), which handles every CSS
-color format (`oklch()`, `color-mix()`, named colors) without shipping a CSS color
-parser. Crucially, **because
+`color: var(--chart-bg)`, read the browser-computed color). Computed values can
+remain `oklch()` or `color(...)`; assuming they always serialize as rgb silently
+lost valid colors. The browser converts those remaining formats through one
+private1×1 Canvas2D pixel per document into sRGB RGBA8, used by the existing
+mark uniforms and ancestor-backdrop reader. Legacy computed rgb/rgba retains
+its existing float alpha precision. This is a browser CSS conversion bridge,
+not a CSS color parser or a second chart renderer; it does not add headless CSS
+resolution, HDR/wide-gamut output or global memory-budget qualification.
+Disconnected roots keep their existing temporary theme fallback and re-resolve
+on connection without reporting valid colors as malformed. Invalid literal
+assignments warn and retain the supplied fallback; nonfinite computed channels
+cannot reach uniforms. See the [bounded color evidence](performance/browser-css-color-2026-11-08/README.md).
+Crucially, **because
 tokens flow through CSS variables, the cascade, inheritance, and media queries all
 work** — the *variables* cascade even though the pixels don't, so per-container
 theming, brand overrides, and `@media (prefers-color-scheme)` behave exactly as a CSS
@@ -3178,9 +3230,11 @@ author expects.
 - **Live re-resolution.** The client watches `matchMedia('(prefers-color-scheme: dark)')`
   and a `MutationObserver` on the container's `class`/`data-theme`/`style`, re-resolving
   tokens on any change. Because of the retained scene graph (§7), **a theme change is
-  uniform + LUT updates, never a data re-upload** — theme/dark-mode switching stays at
-  60 fps even on a 100M-point figure, and a dashboard theme flip repaints every linked
-  view in one frame.
+  uniform + LUT updates, never a data re-upload**. The acceptance target remains
+  60 fps even on a100M-point figure, with a dashboard theme flip repainting every
+  linked view in one frame. The bounded CSS-color checks establish no source
+  geometry uploads for their fixture; they do not qualify that massive-scale
+  frame-rate target or global Canvas2D/driver memory.
 - **Programmatic parity.** Everything a token sets is also settable from Python
   (`fig.theme(...)`) so notebook users who never touch CSS get the same control; the
   CSS bridge is the web-author's path to the same renderer state, not a separate system.
@@ -3792,3 +3846,35 @@ bets. But two genuine gaps (**distribution**, **filtering**) are missing workstr
 tweaks, and the rendering model needs to trade its idealized "one draw call, count-based
 tiers" for the real GPU ceilings (**F3**). Fix those three and the plan is buildable; the
 rest are correctness and honesty polish.
+
+### Frozen temporal graph rendered continuation (#45)
+
+The [versioned frozen contract](design/temporal-graph-frozen.md) owns exact
+accepted PaintGeometry → canonical Scene lowering, phase-aware dash splitting,
+shared marker-SDF inset/focus contours, immutable frame-time versus publication
+state, XYFGv2 computed CSS capture and whole-artifact provenance consistency.
+Native ABI404 and WASM36 use one XYFX Rust operation path. HTML embeds Scene,
+XYPB, XYFG and the shipped ChartView client for offline paint; hosts only frame
+binary ingress and capture DOM presentation. Scene identity scales retain f64
+coordinates bitwise instead of dividing/multiplying them again.
+
+The unchanged single-module raw/gzip caps govern the target-only O2/inline50
+profile; native flags and the pinned optimizer stay unchanged. Same-source
+bytes/runtime and full preservation evidence are in the
+[continuation receipt](performance/temporal-worker-export-2026-11-07/README.md).
+The [shared PNG continuation](performance/temporal-shared-png-2026-11-07/README.md)
+adds real retained PNG through the same raster/encoder within those unchanged
+single-module caps. Earlier over-cap/unavailable receipts remain historical.
+Full #45 and milestone acceptance stay OPEN; future combined-source module fit
+and global process budgets (#111) are not certified by this standalone candidate.
+
+### Dense temporal composition candidate (#46)
+
+Opt-in XYTM v2 shares the ordinary Scene painter and leaves v1 unchanged.
+XYTJ v1 sessions provide bounded Rust scan steps, cancellation and atomic accepted
+state; XYTL v3 line metadata separates half-open observations from exact clipped
+support provenance. Retained sources remain sized by N under explicit admission.
+The exact time-cell, lane-occupancy, line/bar envelope, paged membership and
+resource refusal contracts are in [temporal-catalog.md](design/temporal-catalog.md#dense-opt-in-composition-xytm-v2-and-xytj-v1).
+This candidate has bounded derived output; full admitted source retention is
+still data-sized. It is not 100M/out-of-core evidence or #46 completion.

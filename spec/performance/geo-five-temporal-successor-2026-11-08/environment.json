@@ -1,0 +1,307 @@
+{
+  "parent": "4e2496892fe258f09f2911249005292be43bd5ad",
+  "parentTree": "74ec0b3dbd6bf763a61edb9380b88d275b6522e0",
+  "rootBase": "b007e2d7cafac6d107d6bb409eac89f8a79ee4c9",
+  "nativeInputs324Unchanged": true,
+  "nativeCoreFreshBuild": false,
+  "wasmFreshBuild": false,
+  "conformanceFreshBuild": true,
+  "clientFreshOfficialBuild": true,
+  "nativeFunctions": 551,
+  "wasm": {
+    "functionExports": 68,
+    "raw": 1895719,
+    "gzip6": 786385
+  },
+  "node": {
+    "path": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin/node",
+    "bytes": 124902584,
+    "sha256": "94efd062ed066c1a0b332e18249859c905e920eeada5df55d24c99b919629a90"
+  },
+  "chrome": {
+    "path": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "bytes": 301186376,
+    "sha256": "377a9fc07b495c3b8d0ab8ec1fdfd153641759f9756fea34d8dfce4de82f5025"
+  },
+  "python": {
+    "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/.venv/bin/python": {
+      "version": "3.12.15 (main, Oct  1 2026, 20:59:04) [Clang 22.1.3 ]",
+      "executable": "/home/ubuntu/.t3/worktrees/xyg/t3-43070007/.venv/bin/python",
+      "packages": {
+        "anywidget": "0.11.0",
+        "starlette": "1.3.1",
+        "ipywidgets": "8.1.8",
+        "iniconfig": "2.3.0",
+        "asttokens": "3.0.2",
+        "packaging": "26.3",
+        "prompt_toolkit": "3.0.53",
+        "pexpect": "4.9.0",
+        "rich": "15.0.0",
+        "jupyterlab_widgets": "3.0.16",
+        "pyarrow": "26.0.0",
+        "ipython_pygments_lexers": "1.1.1",
+        "xyg": "0.0.1.dev3121+a0a5087ef",
+        "executing": "2.2.1",
+        "pillow": "12.3.0",
+        "pure_eval": "0.2.3",
+        "markdown-it-py": "4.2.0",
+        "jedi": "0.20.0",
+        "pluggy": "1.6.0",
+        "h11": "0.16.0",
+        "PyYAML": "6.0.3",
+        "ty": "0.0.66",
+        "comm": "0.2.3",
+        "stack-data": "0.6.3",
+        "ipython": "9.16.1",
+        "Pygments": "2.20.0",
+        "playwright": "1.61.0",
+        "parso": "0.8.7",
+        "anyio": "4.14.2",
+        "numpy": "2.5.1",
+        "ruff": "0.15.8",
+        "pytest": "9.1.1",
+        "ptyprocess": "0.7.0",
+        "pyee": "13.0.1",
+        "widgetsnbextension": "4.0.15",
+        "uvicorn": "0.52.1",
+        "wcwidth": "0.8.2",
+        "traitlets": "5.16.1",
+        "psygnal": "0.15.1",
+        "matplotlib-inline": "0.2.2",
+        "hypothesis": "6.165.0",
+        "idna": "3.18",
+        "pytest-codspeed": "5.0.3",
+        "click": "8.4.2",
+        "psutil": "7.2.2",
+        "mdurl": "0.1.2",
+        "typing_extensions": "4.16.0",
+        "greenlet": "3.5.6",
+        "sortedcontainers": "2.4.0"
+      },
+      "binary": {
+        "bytes": 30976392,
+        "sha256": "9b6fd06e487935c92477cb47cabbda8d814cda44823a5159eddf791178afe7d0"
+      }
+    },
+    "/home/ubuntu/.t3/worktrees/xyg/t3-1319e871/.venv/bin/python": {
+      "version": "3.11.17 (main, Oct  1 2026, 20:58:47) [Clang 22.1.3 ]",
+      "executable": "/home/ubuntu/.t3/worktrees/xyg/t3-1319e871/.venv/bin/python",
+      "packages": {
+        "jupyter-lsp": "2.3.1",
+        "mistune": "3.4.0",
+        "anywidget": "0.11.0",
+        "starlette": "1.3.1",
+        "ipywidgets": "8.1.8",
+        "iniconfig": "2.3.0",
+        "jupyter_server_terminals": "0.5.4",
+        "notebook_shim": "0.2.4",
+        "cffi": "2.1.1",
+        "asttokens": "3.0.2",
+        "packaging": "26.3",
+        "prompt_toolkit": "3.0.53",
+        "beautifulsoup4": "4.15.0",
+        "soupsieve": "4.0.1",
+        "pexpect": "4.9.0",
+        "websocket-client": "1.9.2",
+        "pandocfilters": "1.5.1",
+        "bleach": "6.4.0",
+        "babel": "2.18.0",
+        "nbconvert": "7.17.2",
+        "debugpy": "1.8.22",
+        "referencing": "0.37.0",
+        "jupyterlab_widgets": "3.0.16",
+        "pyarrow": "26.0.0",
+        "pycparser": "3.12",
+        "ipython_pygments_lexers": "1.1.1",
+        "httpx": "0.28.1",
+        "executing": "2.2.1",
+        "Send2Trash": "2.1.0",
+        "jsonschema": "4.26.0",
+        "tzdata": "2026.6",
+        "pillow": "12.3.0",
+        "rfc3986-validator": "0.1.1",
+        "pure_eval": "0.2.3",
+        "webencodings": "0.6.1",
+        "rfc3339-validator": "0.1.4",
+        "jedi": "0.20.0",
+        "isoduration": "20.11.0",
+        "uri-template": "1.3.0",
+        "pluggy": "1.6.0",
+        "six": "1.17.0",
+        "h11": "0.16.0",
+        "certifi": "2026.10.23",
+        "jupyterlab_server": "2.28.1",
+        "PyYAML": "6.0.3",
+        "ty": "0.0.66",
+        "comm": "0.2.3",
+        "stack-data": "0.6.3",
+        "MarkupSafe": "3.0.4",
+        "ipython": "9.16.1",
+        "fastjsonschema": "2.22.3",
+        "numpy": "2.4.6",
+        "overrides": "7.7.0",
+        "terminado": "0.18.1",
+        "Pygments": "2.20.0",
+        "nest-asyncio2": "1.7.4",
+        "defusedxml": "0.7.1",
+        "pyzmq": "27.3.0",
+        "jupyter_builder": "1.2.4",
+        "jupyter_core": "5.9.1",
+        "python-dateutil": "4.0.0",
+        "rfc3987-syntax": "1.1.0",
+        "playwright": "1.61.0",
+        "parso": "0.8.7",
+        "anyio": "4.14.2",
+        "jupyter_server": "2.21.1",
+        "urllib3": "2.8.0",
+        "argon2-cffi-bindings": "26.1.0",
+        "prometheus_client": "0.26.0",
+        "jupyter_client": "8.10.0",
+        "ruff": "0.15.8",
+        "charset-normalizer": "3.5.2",
+        "pytest": "9.1.1",
+        "tornado": "6.6",
+        "ptyprocess": "0.7.0",
+        "jsonpointer": "3.10",
+        "jupyter-events": "0.12.1",
+        "requests": "2.34.2",
+        "pyee": "13.0.1",
+        "jupyterlab_pygments": "0.3.0",
+        "async-lru": "2.4.0",
+        "Jinja2": "3.1.6",
+        "tinycss2": "1.5.1",
+        "lark": "1.3.1",
+        "widgetsnbextension": "4.0.15",
+        "nbformat": "5.11.1",
+        "uvicorn": "0.52.1",
+        "wcwidth": "0.8.2",
+        "traitlets": "5.16.1",
+        "nbclient": "0.11.0",
+        "attrs": "26.1.0",
+        "arrow": "1.4.0",
+        "argon2-cffi": "25.1.0",
+        "psygnal": "0.15.1",
+        "jsonschema-specifications": "2025.9.1",
+        "matplotlib-inline": "0.2.2",
+        "hypothesis": "6.165.0",
+        "json5": "0.17.3",
+        "idna": "3.18",
+        "click": "8.4.2",
+        "xyg": "0.0.0",
+        "psutil": "7.2.2",
+        "jupyterlab": "4.6.5",
+        "ipykernel": "7.4.0",
+        "typing_extensions": "4.16.0",
+        "greenlet": "3.5.6",
+        "platformdirs": "4.14.5",
+        "fqdn": "1.6.0",
+        "httpcore": "1.0.9",
+        "webcolors": "25.10.0",
+        "rpds-py": "2026.9.1",
+        "sortedcontainers": "2.4.0",
+        "python-json-logger": "4.2.0"
+      },
+      "binary": {
+        "bytes": 21750104,
+        "sha256": "2727341bc9512c124e1741a69b995657320a74a0e4a03f6dc67d83e9332e123a"
+      }
+    }
+  },
+  "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)\nbinary: rustc\ncommit-hash: ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96\ncommit-date: 2026-05-25\nhost: x86_64-unknown-linux-gnu\nrelease: 1.96.0\nLLVM version: 22.1.2\n",
+  "nativeAndClient": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6374200,
+      "sha256": "1ac386f0d7af618a757fb51cca883f0c409f3991c976f7a9df0562f69524d316"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1895719,
+      "sha256": "4cd1e964a16fb8be527b552dae50f94729e80d79ed8bcf936b53601914c8feba"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 856303,
+      "sha256": "df62465df5eb7b7421498754ec7bad4ff9f5ce7ff99cafb7b4020f1982d936d9"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 856318,
+      "sha256": "0d8c4f59d4732c43f3cf3f00aef40c083cddc60e049ba35c093e0e8cf7d917b2"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 856303,
+      "sha256": "df62465df5eb7b7421498754ec7bad4ff9f5ce7ff99cafb7b4020f1982d936d9"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 856318,
+      "sha256": "0d8c4f59d4732c43f3cf3f00aef40c083cddc60e049ba35c093e0e8cf7d917b2"
+    }
+  },
+  "oracles": {
+    "target/debug/geo_layers_conformance": {
+      "bytes": 64641208,
+      "sha256": "5d7f35c24ec2c8824c9f3ae11cfa9c04b90ed6c88a7a1f4a6bbb634db6e2a51d"
+    },
+    "target/debug/geo_scale_conformance": {
+      "bytes": 64990624,
+      "sha256": "81a8629e6f276e6cb4731a32562dea868c91c80ab87453c0a550890588f09617"
+    },
+    "target/debug/geo_scene_conformance": {
+      "bytes": 62905144,
+      "sha256": "058defda116c5d5dc92eed1946475532a404bbdf373855ec3dd633d28ef32217"
+    },
+    "target/debug/xyts_conformance": {
+      "bytes": 66359104,
+      "sha256": "8cd465b1db802e8da9ab27c6f2cd26da2a9e084098d22f55fe75c473eb864f3e"
+    },
+    "target/debug/geo_viewport_conformance": {
+      "bytes": 62233520,
+      "sha256": "61789320e4e0808c605f6d653ac8c09d460fb8782c83657c0090fce5ddf3e6a5"
+    }
+  },
+  "borrowedOracleSource": "unknown; unqualified. Exact bytes and reproducible output mismatch archived.",
+  "buildCommands": [
+    [
+      "/home/ubuntu/.cargo/bin/cargo",
+      "build",
+      "--offline",
+      "-p",
+      "xyg-wasm",
+      "--bin",
+      "geo_layers_conformance"
+    ],
+    [
+      "/home/ubuntu/.cargo/bin/cargo",
+      "build",
+      "--offline",
+      "-p",
+      "xyg-wasm",
+      "--bins"
+    ],
+    [
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin/node",
+      "js/build.mjs"
+    ]
+  ],
+  "remoteMutations": false,
+  "qualificationSpanUtc": "2026-11-08 through 2026-11-09; wall times are receipts, not performance evidence",
+  "toolPackages": {
+    "vite": {
+      "version": "8.1.5",
+      "bytes": 5084,
+      "sha256": "2f482c846a1c5b9e5883b458b3e54a171a320c2e8d9b924c7383c4baef607b09"
+    },
+    "rolldown": {
+      "version": "1.1.5",
+      "bytes": 5741,
+      "sha256": "01de4c2d7ebcc0f36c92f41e4ecab383ae7f5dd2e26f8f4b640fc58ca9c8f8e7"
+    },
+    "typescript": {
+      "version": "7.0.2",
+      "bytes": 3087,
+      "sha256": "3722b30210616a13a3213ded11575ba6b2dbab10c32a5ef67afca8513e27017e"
+    },
+    "playwright": {
+      "version": "1.61.1",
+      "bytes": 1559,
+      "sha256": "6b840268612656f0639fb7d68782e8353bdf11518589d30ddf66f283c2670ed5"
+    }
+  }
+}

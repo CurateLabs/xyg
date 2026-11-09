@@ -1,0 +1,104 @@
+{
+  "sourceLogSha256": "d0761a15cbcaec93c9c0826a74afa2099fe63f36750cbfc8cf1f94e5067ad5d2",
+  "report": {
+    "schema": "xyg.filter-tier-c-browser/v1",
+    "packets": 44,
+    "densityPackets": 56,
+    "passiveViews": 5,
+    "selected": 2,
+    "rowsRead": 5,
+    "rendered": true,
+    "paintedViews": 5,
+    "pointerPreview": true,
+    "pointerCancel": true,
+    "keyboardOtherDimension": true,
+    "publicationFailureAtomic": true,
+    "pointer": {
+      "hash": "12177216755608555613",
+      "tier": "3",
+      "rowsRead": "0",
+      "fallback": "0",
+      "prefixCellsRead": "162",
+      "pixels": [
+        {
+          "colored": 33216,
+          "hash": 2831175429
+        },
+        {
+          "colored": 29088,
+          "hash": 3108547909
+        },
+        {
+          "colored": 33216,
+          "hash": 130828805
+        },
+        {
+          "colored": 33216,
+          "hash": 4138807653
+        },
+        {
+          "colored": 33264,
+          "hash": 1501828901
+        }
+      ],
+      "selected": "4"
+    },
+    "keyboard": {
+      "hash": "12177216755608555613",
+      "tier": "3",
+      "rowsRead": "0",
+      "fallback": "0",
+      "prefixCellsRead": "162",
+      "pixels": [
+        {
+          "colored": 33216,
+          "hash": 2831175429
+        },
+        {
+          "colored": 29088,
+          "hash": 3108547909
+        },
+        {
+          "colored": 33216,
+          "hash": 130828805
+        },
+        {
+          "colored": 33216,
+          "hash": 4138807653
+        },
+        {
+          "colored": 33264,
+          "hash": 1501828901
+        }
+      ],
+      "selected": "4"
+    },
+    "lifecycle": {
+      "checks": 102,
+      "texturePixels": 400,
+      "canvasProbes": 19,
+      "diagnostics": {
+        "sourceId": "112",
+        "epoch": "7",
+        "sourceRevision": "2",
+        "filterHash": "9882665962842817719",
+        "tier": "2",
+        "indexBytes": "4600",
+        "residentBytes": "6616",
+        "peakBytes": "9976",
+        "rowsRead": "14",
+        "prefixCellsRead": "0",
+        "fallback": "1",
+        "revision": "125"
+      },
+      "environment": {
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+        "dpr": 1,
+        "renderer": "WebKit WebGL"
+      },
+      "selected": "6",
+      "revision": "125",
+      "aria": true
+    }
+  }
+}

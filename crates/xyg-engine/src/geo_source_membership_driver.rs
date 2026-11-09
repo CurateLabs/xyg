@@ -170,21 +170,39 @@ impl<M: SourceMatcher> SourceMembershipDriver<M> {
         self.pending.is_some() || !self.retired.is_empty()
     }
     pub(crate) fn live_bytes(&self) -> usize {
-        self.retained_bytes
-            + self.metadata_lease.bytes()
-            + self.page_lease.as_ref().map_or(0, |l| l.bytes())
-            + self.published.as_ref().map_or(0, |p| p.lease.bytes())
-            + self.pending.as_ref().map_or(0, |r| r.lease.bytes())
-            + self.retired.iter().map(|r| r.lease.bytes()).sum::<usize>()
+        #[cfg(target_arch = "wasm32")]
+        {
+            return live_read_bytes(
+                self.retained_bytes, &self.metadata_lease,
+                self.page_lease.as_ref(), self.published.as_ref().map(|p| &p.lease),
+                self.pending.as_ref(), &self.retired,
+            );
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            self.retained_bytes
+                + self.metadata_lease.bytes()
+                + self.page_lease.as_ref().map_or(0, |l| l.bytes())
+                + self.published.as_ref().map_or(0, |p| p.lease.bytes())
+                + self.pending.as_ref().map_or(0, |r| r.lease.bytes())
+                + self.retired.iter().map(|r| r.lease.bytes()).sum::<usize>()
+        }
     }
     fn retire(&mut self) -> Result<()> {
-        if self.pending.is_some() && self.retired.len() == RETIRED_LIMIT {
-            return Err(SourceError::ResourceLimit);
+        #[cfg(target_arch = "wasm32")]
+        {
+            return retire_read(&mut self.pending, &mut self.retired);
         }
-        if let Some(read) = self.pending.take() {
-            self.retired.push(read);
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            if self.pending.is_some() && self.retired.len() == RETIRED_LIMIT {
+                return Err(SourceError::ResourceLimit);
+            }
+            if let Some(read) = self.pending.take() {
+                self.retired.push(read);
+            }
+            Ok(())
         }
-        Ok(())
     }
     fn stop(&mut self) {
         self.draft = None;
@@ -417,4 +435,26 @@ impl<M: SourceMatcher> SourceMembershipDriver<M> {
         self.cursor.row = 0;
         Ok(())
     }
+}
+
+// Read ownership does not depend on the matcher's record type. Browser
+// specializations borrow the same leases and pending/retired collections.
+#[cfg(target_arch = "wasm32")]
+#[inline(never)]
+fn live_read_bytes(retained: usize, metadata: &GeoProcessorLease,
+    page: Option<&GeoProcessorLease>, published: Option<&GeoProcessorLease>,
+    pending: Option<&Read>, retired: &[Read]) -> usize {
+    retained + metadata.bytes() + page.map_or(0, |l| l.bytes())
+        + published.map_or(0, |l| l.bytes())
+        + pending.map_or(0, |r| r.lease.bytes())
+        + retired.iter().map(|r| r.lease.bytes()).sum::<usize>()
+}
+#[cfg(target_arch = "wasm32")]
+#[inline(never)]
+fn retire_read(pending: &mut Option<Read>, retired: &mut Vec<Read>) -> Result<()> {
+    if pending.is_some() && retired.len() == RETIRED_LIMIT {
+        return Err(SourceError::ResourceLimit);
+    }
+    if let Some(read) = pending.take() { retired.push(read); }
+    Ok(())
 }

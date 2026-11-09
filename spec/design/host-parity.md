@@ -2157,3 +2157,46 @@ unit proofs for loops/parallel edges/layered provenance from actual small
 JupyterLab node-callback/UUID-selection delivery. Prior receipts remain historical.
 Full notebook frontend, exact geometric UUID sets, export and rendered size
 ladder acceptance for #1015/#36/#35 remains open.
+
+## Ordinary linked filtering checkpoint (#112)
+
+Native ABI 405 and WASM ABI 38 share XYFC/XYFR v1 through the Rust
+`FilterTierCSession`; Python `Chart.filter_session`, Node chart `filterSession`,
+and browser `createWasmFilterSession` frame that same protocol. Full packets,
+exact counts, refusal paths, and canonical u64 membership pages are compared
+across hosts, including passive 2D exact count planes, base range/mask
+composition and edit transactions. `attachFilterDashboard` reuses existing
+composed browser views and the ordinary density painter; bounded Chromium
+five-view pointer/keyboard parity and context/append/rebuild/publication failures
+are exercised. Automatic notebook/native-host transport, assistive hardware,
+nonlinear/large-offset compatibility and massive performance remain open. The [normative subset and remaining work](filter-tier-c.md)
+include synchronous Worker cancellation limits and logical memory accounting.
+## Temporal catalog candidate (#46)
+
+[Temporal catalog](temporal-catalog.md) specifies XYTM v1/v2, XYTL v2/v3 and
+XYTJ v1. Public Python/Node and browser compositions use one Rust compiler,
+ordinary Scene painter, exact paged observation/support IDs, clipped incident
+line envelopes and bounded cooperative scan steps. Native async waiters and
+actual Worker cancellation share the Rust ownership/progress/publication rules.
+Direct-line and six-family historical fixtures remain unchanged. Source/host
+reservations have explicit boundaries; retained canonical data remains sized by N.
+Continuation evidence and two immutable parents live in
+`spec/performance/temporal-dense-continuation-2026-11-08/`. Full installed-host,
+scale and accessible controller journeys remain release blockers; #46 remains open.
+
+### Immutable temporal graph snapshots and retained exports
+
+Python/Node and the actual browser Worker use Rust-owned XYFG snapshots and
+retained paint-to-canonical-Scene lowering. Hosts marshal typed scalars, capture
+computed CSS presentation and frame HTML with the shipped client; Rust owns
+validation, membership, styles, geometry, dash phase, stable-ID mapping,
+provenance and full-artifact consistency. Native SVG/PNG/HTML and browser
+Scene/XYPB/SVG/HTML/PNG share these paths under the unchanged single-module
+package caps. PNG is byte-identical through the shared Rust raster/encoder. See [the versioned frozen contract](temporal-graph-frozen.md).
+Historical ABI402/403 acquisition/native receipts remain immutable.
+
+Native local chunked charts now refine committed viewport gestures through the
+existing renderer, with exact accepted-frame source identity and cancellation.
+The installed Jupyter/anywidget and public Node binary HTTP journeys, lifecycle
+contract, required CI discovery and remaining issue-wide acceptance are specified
+in [the local native viewport contract](chunked-native-viewport.md).

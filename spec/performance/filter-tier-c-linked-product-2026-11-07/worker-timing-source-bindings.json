@@ -1,0 +1,17 @@
+{
+  "packages/xy-node/src/force_scheduler.js": {
+    "reviewedB91Sha256": "27d32cf47c236ddabb780667c0aa0c63f8eef3aedd2c39dc832a8a923697755c",
+    "candidateSha256": "27d32cf47c236ddabb780667c0aa0c63f8eef3aedd2c39dc832a8a923697755c",
+    "unchanged": true
+  },
+  "packages/xy-node/test/force-worker-lifecycle.test.mjs": {
+    "reviewedB91Sha256": "b9897c0def45b28affd1d9c8c1089f7ddc7975bd104af5c13fad64bbf60eb17d",
+    "candidateSha256": "b9897c0def45b28affd1d9c8c1089f7ddc7975bd104af5c13fad64bbf60eb17d",
+    "unchanged": true
+  },
+  "packages/xy-node/test/graphforge-layout.test.mjs": {
+    "reviewedB91Sha256": "094c85015cdabd8616cf5a197fc5f95205a255c220080c25d4fb0672dc39ede7",
+    "candidateSha256": "094c85015cdabd8616cf5a197fc5f95205a255c220080c25d4fb0672dc39ede7",
+    "unchanged": true
+  }
+}

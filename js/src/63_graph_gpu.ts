@@ -79,40 +79,47 @@ export function decodeGraphGpu(sections: ReadonlyMap<string, RawSection>): Graph
   return Object.freeze({ sections, counts, transforms: Object.freeze(transforms) });
 }
 
-// Raw style records are 15 RGBA8UI texels. GLSL reads their original little-
-// endian float bits; neither per-piece style expansion nor f64 narrowing occurs.
-const VERTEX = `#version 300 es
-precision highp float; precision highp int;
-layout(location=0) in float a0; layout(location=1) in float a1;
-layout(location=2) in float a2; layout(location=3) in float a3;
-layout(location=4) in float a4; layout(location=5) in float a5;
-layout(location=6) in float b0; layout(location=7) in float b1;
-layout(location=8) in float b2; layout(location=9) in float b3;
-layout(location=10) in uint a_ref; layout(location=11) in uint a_flags;
-uniform highp usampler2D u_style; uniform highp usampler2D u_state; uniform highp usampler2D u_refs;
+// Both draw bindings feed the same geometry and fragment program. All inputs
+// remain Rust's raw GPU-v1 records, with no per-piece expansion or narrowing.
+const VERTEX_DECLARATIONS = `
 uniform vec2 u_view; uniform vec2 u_x; uniform vec2 u_y; uniform vec2 u_dash;
-uniform int u_kind; uniform int u_focus; uniform vec4 u_focusColor;
+uniform int u_focus; uniform vec4 u_focusColor;
 flat out vec4 v_fill; flat out vec4 v_stroke; flat out vec4 v_halo; flat out vec4 v_body;
 flat out vec4 v_sizes; flat out vec4 v_dash; flat out int v_shape; flat out int v_kind;
-out vec2 v_local; flat out vec2 v_extent;
+out vec2 v_local; flat out vec2 v_extent;`;
+
+const VERTEX_TEXTURES = `
+uniform highp usampler2D u_style; uniform highp usampler2D u_state; uniform highp usampler2D u_refs;
 uvec4 raw(highp usampler2D tex, uint i) { uint w=uint(textureSize(tex,0).x); return texelFetch(tex,ivec2(int(i%w),int(i/w)),0); }
 uvec4 style(uint i,uint field) { return raw(u_style,i*15u+field); }
 float scalar(uint i,uint field) { uvec4 v=style(i,field); return uintBitsToFloat(v.x|(v.y<<8u)|(v.z<<16u)|(v.w<<24u)); }
-vec4 color(uint i,uint field) { return vec4(style(i,field))/255.0; }
+vec4 color(uint i,uint field) { return vec4(style(i,field))/255.0; }`;
+
+const VERTEX_STYLE_ARGUMENTS = `uint row, out uvec4 state, out int shape,
+  out float size, out float width, out float opacity, out float halo, out float body,
+  out vec4 fill, out vec4 stroke, out vec4 haloColor, out vec4 bodyColor`;
+
+const VERTEX_FETCH_STYLE = `void fetchStyle(${VERTEX_STYLE_ARGUMENTS}) {
+  state=raw(u_state,row); shape=int(style(row,6u).x);
+  size=scalar(row,3u); width=scalar(row,4u); opacity=scalar(row,5u);
+  fill=color(row,8u); stroke=color(row,9u); haloColor=color(row,7u); bodyColor=color(row,8u);
+  halo=scalar(row,10u); body=scalar(row,11u);
+}`;
+
+const VERTEX_GEOMETRY = `
 vec2 xy(float x,float y) { return vec2(x*u_x.y+u_x.x,y*u_y.y+u_y.x); }
 void main() {
-  uint row=uint(gl_InstanceID);
+  uint row=GRAPH_ROW;
+  uint corner=GRAPH_CORNER;
   if(u_kind==0) row=a_ref;
   if(u_kind==1) row=raw(u_refs,uint(gl_InstanceID)).r;
   if(u_kind==2) row=raw(u_refs,a_ref).r;
-  uvec4 state=raw(u_state,row);
-  v_kind=u_kind; v_shape=int(style(row,6u).x);
-  float size=scalar(row,3u), width=scalar(row,4u), opacity=scalar(row,5u);
-  v_fill=color(row,8u); v_stroke=color(row,9u); v_halo=color(row,7u); v_body=color(row,8u);
-  float halo=scalar(row,10u), body=scalar(row,11u);
+  uvec4 state; float size,width,opacity,halo,body;
+  fetchStyle(row,state,v_shape,size,width,opacity,halo,body,v_fill,v_stroke,v_halo,v_body);
+  v_kind=u_kind;
   v_sizes=vec4(size,width,halo,body);
   v_dash=vec4(b1,b2,b3*u_dash.y+u_dash.x,float(a_flags));
-  vec2 q=vec2(float(gl_VertexID&1),float((gl_VertexID>>1)&1));
+  vec2 q=vec2(float(corner&1u),float((corner>>1u)&1u));
   vec2 screen;
   if(u_kind==3) {
     float radius=max(size,v_halo.a>0.0?halo:0.0)*0.5+1.0;
@@ -140,6 +147,45 @@ void main() {
   }
   gl_Position=vec4(screen.x/u_view.x*2.0-1.0,1.0-screen.y/u_view.y*2.0,0.0,1.0);
 }`;
+
+const VERTEX = `#version 300 es
+precision highp float; precision highp int;
+#define GRAPH_ROW uint(gl_InstanceID)
+#define GRAPH_CORNER uint(gl_VertexID)
+layout(location=0) in float a0; layout(location=1) in float a1;
+layout(location=2) in float a2; layout(location=3) in float a3;
+layout(location=4) in float a4; layout(location=5) in float a5;
+layout(location=6) in float b0; layout(location=7) in float b1;
+layout(location=8) in float b2; layout(location=9) in float b3;
+layout(location=10) in uint a_ref; layout(location=11) in uint a_flags;
+uniform int u_kind;
+${VERTEX_DECLARATIONS}
+${VERTEX_TEXTURES}
+${VERTEX_FETCH_STYLE}
+${VERTEX_GEOMETRY}`;
+
+const NODE_VERTEX = `#version 300 es
+precision highp float; precision highp int;
+#define GRAPH_ROW (uint(gl_VertexID)/6u)
+#define GRAPH_CORNER nodeCorner(uint(gl_VertexID))
+uniform highp usampler2D u_coordX; uniform highp usampler2D u_coordY;
+#define a0 coordinate(u_coordX,row)
+#define a1 coordinate(u_coordY,row)
+// Reference-only branches are dead in this node input binding.
+#define u_kind 3
+const float a2=0.0,a3=0.0,a4=0.0,a5=0.0,b0=0.0,b1=0.0,b2=0.0,b3=0.0;
+const uint a_ref=0u,a_flags=0u;
+${VERTEX_DECLARATIONS}
+${VERTEX_TEXTURES}
+uint nodeCorner(uint vertex) {
+  uint k=vertex%6u;
+  return k<3u?k:(k==3u?2u:(k==4u?1u:3u));
+}
+float coordinate(highp usampler2D tex,uint row) {
+  uvec4 v=raw(tex,row); return uintBitsToFloat(v.x|(v.y<<8u)|(v.z<<16u)|(v.w<<24u));
+}
+${VERTEX_FETCH_STYLE}
+${VERTEX_GEOMETRY}`;
 
 const FRAGMENT = `#version 300 es
 precision highp float; precision highp int;
@@ -182,19 +228,20 @@ export function createGraphGpuPainter(surface: HTMLElement) {
   canvas.dataset.xyGraphGpu = "v1";
   const present = canvas.getContext("2d"), staging = stage.getContext("2d");
   if (!present || !staging) throw new Error("xy: graph presentation canvas unavailable");
-  let disposed = false, program: WebGLProgram | null = null;
+  let disposed = false, program: WebGLProgram | null = null, nodeProgram: WebGLProgram | null = null;
   let buffers: WebGLBuffer[] = [], textures: WebGLTexture[] = [], vaos: WebGLVertexArrayObject[] = [];
   let visible = true;
-  let accepted: { gpu: GraphGpuSnapshot; camera: readonly number[] } | null = null;
+  let accepted: { gpu: GraphGpuSnapshot; camera: readonly number[]; focus: Float32Array } | null = null;
   const client: GLHostClient = {
     _dashboardResourceState() { return { derivedBytes: host.clientResourceBytes(client), visible, interacting: false }; },
     _applyDashboardResidency(retained) {
-      if (!retained) { host.releaseClientStorage(client); program = null; buffers = []; textures = []; vaos = []; }
-      else if (!program && accepted) queueMicrotask(() => { if (!disposed && accepted) {
+      if (!retained) { host.releaseClientStorage(client); program = null; nodeProgram = null; buffers = []; textures = []; vaos = []; }
+      // An empty publication owns storage without needing a shader program.
+      else if (!program && !nodeProgram && textures.length === 0 && accepted) queueMicrotask(() => { if (!disposed && accepted) {
         try { paint(accepted.gpu, accepted.camera); } catch (error) { if (!(error instanceof GPUAdmissionPending)) throw error; }
       } });
     },
-    _onGlHostContextLost() { program = null; buffers = []; textures = []; vaos = []; },
+    _onGlHostContextLost() { program = null; nodeProgram = null; buffers = []; textures = []; vaos = []; },
     _onGlHostContextRestored() { if (!disposed && accepted) paint(accepted.gpu, accepted.camera); },
   };
   let host = acquireGLHost(doc, client);
@@ -223,19 +270,16 @@ export function createGraphGpuPainter(surface: HTMLElement) {
     host.markDashboardResourceUsed(client);
     const width = Math.max(1, Math.round(camera[4]! * camera[6]!)), height = Math.max(1, Math.round(camera[5]! * camera[6]!));
     stage.width = width; stage.height = height;
+    const focusToken = doc.defaultView?.getComputedStyle(surface).getPropertyValue("--chart-focus").trim();
+    const focus = Float32Array.from(parseColor(surface, focusToken || "#aa99ec", [170 / 255, 153 / 255, 236 / 255, 1]));
     const completed = host.render(client, staging, width, height, () => {
       const gl = host.clientContext(client);
       releaseObjects();
-      if (!program) program = makeProgram(gl, VERTEX, FRAGMENT, (kind, source) => host.getOrCreateShader(kind, source));
-      gl.useProgram(program);
-      const uniform = (name: string) => uniformOf(gl, program, name);
-      gl.uniform2f(uniform("u_view"), camera[4]!, camera[5]!);
-      const focusToken = doc.defaultView?.getComputedStyle(surface).getPropertyValue("--chart-focus").trim();
-      gl.uniform4fv(uniform("u_focusColor"), parseColor(surface, focusToken || "#aa99ec", [170 / 255, 153 / 255, 236 / 255, 1]));
-      for (const [name, i] of [["u_x", 0], ["u_y", 1], ["u_dash", 2]] as const) {
-        const t = gpu.transforms[i]!; gl.uniform2f(uniform(name), t[0], 1 / t[1]);
-      }
       const bytes = (name: string, index = 0) => gpu.sections.get(`${name}#${index}`)!.bytes;
+      const [n, , p, h, f] = gpu.counts;
+      // Two equivalent triangles avoid per-node instancing. Keep the existing
+      // reference binding for frames and counts beyond one GLsizei draw.
+      const nodeTriangles = f === 0 && n <= Math.floor(0x7fff_ffff / 6);
       const max = gl.getParameter(gl.MAX_TEXTURE_SIZE) as number;
       function texture(data: Uint8Array, unit: number, integer: boolean) {
         const tex = gl.createTexture(); if (!tex) throw new Error("xy: graph texture allocation failed");
@@ -254,10 +298,20 @@ export function createGraphGpuPainter(surface: HTMLElement) {
       const styles = [texture(bytes("gpu.node.style.bytes"), 0, false), texture(bytes("gpu.edge.style.bytes"), 0, false)];
       const states = [texture(bytes("gpu.node.state.u8"), 1, false), texture(bytes("gpu.edge.state.u8"), 1, false)];
       const refs = texture(bytes("gpu.shaft.edge.u32"), 2, true);
-      gl.uniform1i(uniform("u_style"), 0); gl.uniform1i(uniform("u_state"), 1); gl.uniform1i(uniform("u_refs"), 2);
-      const [n, , p, h, f] = gpu.counts;
-      for (const focus of [0, 1]) for (const [kind, count, column] of [[0, f, "frame"], [1, p, "shaft"], [2, h, "head"], [3, n, "node"]] as const) {
-        if (!count || (focus && kind === 2)) continue;
+      const nodeCoords = nodeTriangles && n ? [texture(bytes("gpu.node.coord.bytes", 0), 3, false), texture(bytes("gpu.node.coord.bytes", 1), 4, false)] : null;
+      for (const focusPass of [0, 1]) for (const [kind, count, column] of [[0, f, "frame"], [1, p, "shaft"], [2, h, "head"], [3, n, "node"]] as const) {
+        if (!count || (focusPass && kind === 2)) continue;
+        const proceduralNode = nodeTriangles && kind === 3;
+        const selected = proceduralNode
+          ? (nodeProgram ??= makeProgram(gl, NODE_VERTEX, FRAGMENT, (kind, source) => host.getOrCreateShader(kind, source)))
+          : (program ??= makeProgram(gl, VERTEX, FRAGMENT, (kind, source) => host.getOrCreateShader(kind, source)));
+        gl.useProgram(selected);
+        const uniform = (name: string) => uniformOf(gl, selected, name);
+        gl.uniform2f(uniform("u_view"), camera[4]!, camera[5]!);
+        gl.uniform4fv(uniform("u_focusColor"), focus);
+        for (const [name, i] of [["u_x", 0], ["u_y", 1], ["u_dash", 2]] as const) {
+          const t = gpu.transforms[i]!; gl.uniform2f(uniform(name), t[0], 1 / t[1]);
+        }
         const vao = gl.createVertexArray(); if (!vao) throw new Error("xy: graph VAO allocation failed");
         vaos.push(vao); gl.bindVertexArray(vao);
         gl.vertexAttribI4ui(10, 0, 0, 0, 0); gl.vertexAttribI4ui(11, 0, 0, 0, 0);
@@ -268,18 +322,27 @@ export function createGraphGpuPainter(surface: HTMLElement) {
           if (type === gl.FLOAT) gl.vertexAttribPointer(slot, 1, type, false, 0, 0);
           else gl.vertexAttribIPointer(slot, 1, type, 0, 0);
         }
-        for (let i = 0; i < (kind === 3 ? 2 : kind === 2 ? 6 : 4); i++) attribute(i, bytes(`gpu.${column}.coord.bytes`, i));
+        if (!proceduralNode) for (let i = 0; i < (kind === 3 ? 2 : kind === 2 ? 6 : 4); i++) attribute(i, bytes(`gpu.${column}.coord.bytes`, i));
         if (kind === 0) { attribute(6, bytes("gpu.frame.width.bytes")); attribute(10, bytes("gpu.frame.node.u32"), gl.UNSIGNED_INT); }
         if (kind === 1) { for (let i = 0; i < 4; i++) attribute(6 + i, bytes("gpu.shaft.attr.bytes", i)); attribute(11, bytes("gpu.shaft.flags.u8"), gl.UNSIGNED_BYTE); }
         if (kind === 2) attribute(10, bytes("gpu.head.piece.u32"), gl.UNSIGNED_INT);
         for (const [unit, tex] of [[0, styles[kind === 0 || kind === 3 ? 0 : 1]], [1, states[kind === 0 || kind === 3 ? 0 : 1]], [2, refs]] as const) {
           gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, tex);
         }
-        gl.uniform1i(uniform("u_kind"), kind); gl.uniform1i(uniform("u_focus"), focus);
-        gl.drawArraysInstanced(kind === 2 ? gl.TRIANGLES : gl.TRIANGLE_STRIP, 0, kind === 2 ? 3 : 4, count);
+        gl.uniform1i(uniform("u_style"), 0); gl.uniform1i(uniform("u_state"), 1); gl.uniform1i(uniform("u_refs"), 2);
+        if (proceduralNode) {
+          if (!nodeCoords) throw new Error("xy: graph node coordinates unavailable");
+          for (let i = 0; i < 2; i++) {
+            gl.activeTexture(gl.TEXTURE3 + i); gl.bindTexture(gl.TEXTURE_2D, nodeCoords[i]!);
+          }
+          gl.uniform1i(uniform("u_coordX"), 3); gl.uniform1i(uniform("u_coordY"), 4);
+        }
+        gl.uniform1i(uniform("u_kind"), kind); gl.uniform1i(uniform("u_focus"), focusPass);
+        if (proceduralNode) gl.drawArrays(gl.TRIANGLES, 0, count * 6);
+        else gl.drawArraysInstanced(kind === 2 ? gl.TRIANGLES : gl.TRIANGLE_STRIP, 0, kind === 2 ? 3 : 4, count);
       }
       gl.bindVertexArray(null);
-      for (let unit = 0; unit < 3; unit++) { gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, null); }
+      for (let unit = 0; unit < 5; unit++) { gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, null); }
       gl.activeTexture(gl.TEXTURE0);
       const error = gl.getError(); if (error !== gl.NO_ERROR) throw new Error(`xy: graph GPU paint failed (${error})`);
     });
@@ -288,16 +351,17 @@ export function createGraphGpuPainter(surface: HTMLElement) {
     canvas.width = width; canvas.height = height;
     canvas.style.width = `${camera[4]}px`; canvas.style.height = `${camera[5]}px`;
     present.drawImage(stage, 0, 0);
-    accepted = { gpu, camera: camera.slice() };
+    accepted = { gpu, camera: camera.slice(), focus };
   }
   return {
     canvas, paint,
+    focusRgba() { if (!accepted) throw new Error("xy: no accepted graph paint"); return accepted.focus.slice(); },
     dispose() {
       if (disposed) return;
       disposed = true; accepted = null; visibility?.disconnect();
       releaseObjects();
-      if (program && !host.gl.isContextLost()) host.clientContext(client).deleteProgram(program);
-      program = null; host.release(client); canvas.remove();
+      if (!host.gl.isContextLost()) for (const value of [program, nodeProgram]) if (value) host.clientContext(client).deleteProgram(value);
+      program = null; nodeProgram = null; host.release(client); canvas.remove();
     },
   };
 }

@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // Unmasked production Worker/WASM graph session keyboard/paint/ownership journey.
 import assert from "node:assert/strict";
+import {graphCaptureCase} from "./graph_capture_case.mjs";
+import {graphProgressiveKeyboardCase} from "./graph_progressive_keyboard_case.mjs";
 import {assertProgressiveCameraPan} from "./verify_graph_progressive_camera.mjs";
 import { gunzipSync } from "node:zlib";
 import { createServer } from "node:http";
@@ -9,13 +11,13 @@ import { extname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 const root = fileURLToPath(new URL("..", import.meta.url));
-const allowed = p => p === "/old-same-abi.wasm" || p === "/tests/fixtures/temporal/assertion-history.json" || p === "/packages/xy-node/src/graphforge-container.js" || p === "/tests/browser/graph_session_controller_page.mjs" || p === "/tests/fixtures/graphforge/session_companion_nodes.arrow" || /^\/tests\/fixtures\/graphforge\/results\/[a-z_-]+\.arrow$/.test(p) || ["/packages/xy-client/dist/index.js", "/packages/xy-client/dist/wasm-worker.js", "/packages/xy-client/dist/xyg-wasm.wasm"].includes(p);
+const allowed = p => p === "/historical-abi35.wasm" || p === "/tests/fixtures/temporal/assertion-history.json" || p === "/packages/xy-node/src/graphforge-container.js" || p === "/tests/browser/graph_session_controller_page.mjs" || p === "/tests/fixtures/graphforge/session_companion_nodes.arrow" || /^\/tests\/fixtures\/graphforge\/results\/[a-z_-]+\.arrow$/.test(p) || ["/packages/xy-client/dist/index.js", "/packages/xy-client/dist/wasm-worker.js", "/packages/xy-client/dist/xyg-wasm.wasm"].includes(p);
 const csp = "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; style-src 'unsafe-inline'; object-src 'none'; base-uri 'none'";
 const requests = [], violations = [], errors = [];
 const server = createServer(async (req, res) => {
   const p = new URL(req.url, "http://localhost").pathname; requests.push(p); res.setHeader("Content-Security-Policy", csp);
   if (p === "/") { res.setHeader("Content-Type", "text/html"); res.end('<!doctype html><meta charset="utf-8"><script type="module" src="/tests/browser/graph_session_controller_page.mjs"></script>'); return; }
-  if (p === "/old-same-abi.wasm") {
+  if (p === "/historical-abi35.wasm") {
     res.setHeader("Content-Type", "application/wasm");
     res.end(gunzipSync(await readFile(resolve(root, "spec/performance/graph-s5b-attachment-2026-11-04/shipping-module.wasm.gz")))); return;
   }
@@ -45,6 +47,60 @@ try {
       return { ok: true, point, after, delivery: "Playwright mouse.click" };
     });
   }
+  const progressiveFaultCase = async()=>{
+      const delay=ms=>new Promise(r=>setTimeout(r,ms));
+      const result=[];
+      // Bound the intent mailbox under an actually outstanding Rust force
+      // command. Production replies are never held; this is a fault seam.
+      for (const mode of ['latest-camera','trusted-key','dispose-queued','stale-queued']) {
+        await page.evaluate(async mode=>{const s=window.__graphSession;await s.progressiveFixture(1000,4002n);s.hold=true;if(mode==='stale-queued')s.inject='malformed-admission-version';},mode);
+        await page.waitForFunction(()=>window.__graphSession.held.length>0);
+        const mark=await page.evaluate(()=>window.__graphSession.commands.length);
+        if(mode==='trusted-key') {
+          await page.evaluate(()=>window.__graphSession.progressives.at(-1).el.querySelector('[role=application]').focus());
+          await page.keyboard.press('ArrowRight');
+        } else await page.evaluate(mode=>{
+          const p=window.__graphSession.progressives.at(-1), camera=[...p.handle.snapshot().camera];camera[2]+=12;
+          p.first=p.handle.refreshRender(camera).then(()=>({accepted:true}),e=>({code:e.code}));
+          if(mode==='latest-camera'){camera[2]+=12;p.latest=p.handle.refreshRender(camera);}
+        },mode);
+        assert.equal(await page.evaluate(()=>window.__graphSession.commands.length),mark,'queued intent does not stamp or send early');
+        const out=await page.evaluate(async mode=>{
+          const s=window.__graphSession,p=s.progressives.at(-1);
+          if(mode==='dispose-queued')p.disposal=p.handle.dispose();
+          s.release();
+          let result={mode};
+          if(mode==='latest-camera'){result.first=await p.first;result.camera=(await p.latest).camera;}
+          else if(mode==='trusted-key'){await p.handle.whenIdle();result.focus=p.handle.snapshot().focus;result.keys=p.trusted;}
+          else {result.first=await p.first;if(p.disposal)await p.disposal;}
+          result.errors=p.errors;clearInterval(p.timer);await p.handle.dispose();await p.worker.dispose();p.el.remove();return result;
+        },mode);
+        if(mode==='latest-camera'){assert.equal(out.first.code,'GF_INTERACTION_STALE');assert.equal(out.camera[2],344);assert.deepEqual(out.errors,[]);}
+        if(mode==='trusted-key'){assert.equal(out.focus.length,1);assert.ok(out.keys.some(k=>k.key==='ArrowRight'&&k.prevented));assert.deepEqual(out.errors,[]);}
+        if(mode==='dispose-queued')assert.equal(out.first.code,'XYG_WASM_DISPOSED');
+        if(mode==='stale-queued')assert.equal(out.first.code,'GF_INTERACTION_INVALID');
+        result.push(out);
+      }
+      for(const fault of ['stale','malformed-admission-version','malformed-admission-bound','wrong-lifetime','dispose-held']) {
+        await page.evaluate(async fault=>{const s=window.__graphSession;await s.progressiveFixture(1000,4001n);s.inject=fault==='dispose-held'?null:fault;s.hold=fault==='dispose-held';},fault);
+        if(fault==='dispose-held') {
+          await page.waitForFunction(()=>window.__graphSession.held.length>0);
+          const mark=await page.evaluate(()=>{const s=window.__graphSession,p=s.progressives.at(-1);return s.commands.filter(c=>c.owner===p.worker.worker.__graphOwner).length;});
+          await delay(100);
+          assert.equal(await page.evaluate(()=>{const s=window.__graphSession,p=s.progressives.at(-1);return s.commands.filter(c=>c.owner===p.worker.worker.__graphOwner).length;}),mark,'animation demand coalesces while continuation is held');
+          await page.evaluate(()=>{const s=window.__graphSession,p=s.progressives.at(-1);p.disposal=p.handle.dispose();p.frameCount=p.frames.length;s.release();});
+          await page.evaluate(async()=>{const p=window.__graphSession.progressives.at(-1);await p.disposal;if(p.frames.length!==p.frameCount||p.handle.snapshot()!==null)throw Error('late disposed publication');});
+        } else {
+          await page.waitForFunction(()=>window.__graphSession.progressives.at(-1).errors.length>0);
+          const before=await page.evaluate(()=>window.__graphSession.progressives.at(-1).frames.length);
+          await delay(80);
+          assert.equal(await page.evaluate(()=>window.__graphSession.progressives.at(-1).frames.length),before);
+        }
+        result.push(await page.evaluate(async()=>{const p=window.__graphSession.progressives.at(-1),out={errors:p.errors,frames:p.frames.length};clearInterval(p.timer);await p.handle.dispose();await p.worker.dispose();p.el.remove();return out;}));
+      }
+      return result;
+
+  };
   if (process.env.XYG_GRAPH_TEMPORAL_ONLY) {
     await page.evaluate(()=>window.__graphSession.temporalFixture());
     const snap=()=>page.evaluate(()=>window.__graphSession.retainedTime.handle.snapshot());
@@ -130,8 +186,14 @@ try {
     await run('retained-temporal-progressive-checkpoint-supersession-and-drain',async()=>{
       await page.evaluate(async()=>{const s=window.__graphSession;await s.temporalFixture(true);s.hold=true;});
       await page.waitForFunction(()=>window.__graphSession.held.length>0);
-      await page.evaluate(async()=>{const s=window.__graphSession,p=s.retainedTime;p.mark=p.publications.length;await p.controller.setCursor(20n);p.idle=p.handle.whenIdle();s.release();await p.idle;});
+      await page.evaluate(async()=>{const s=window.__graphSession,p=s.retainedTime;p.mark=p.publications.length;p.queued=p.handle.refreshRender().then(()=>({accepted:true}),e=>({code:e.code}));await p.controller.setCursor(20n);p.inputMark=s.commands.length;p.pendingKeys=[];p.el.addEventListener('keydown',e=>p.pendingKeys.push({trusted:e.isTrusted,prevented:e.defaultPrevented}));p.el.querySelector('[role=application]').focus();});
+      await page.keyboard.press('ArrowRight');
+      const box=await page.locator('[data-temporal-fixture] canvas').last().boundingBox();await page.mouse.click(box.x+100,box.y+160);
+      const pendingInput=await page.evaluate(async()=>{const s=window.__graphSession,p=s.retainedTime;return {keys:p.pendingKeys,commands:s.commands.length-p.inputMark,queued:await p.queued,failures:p.failures};});
+      assert.deepEqual(pendingInput.keys,[{trusted:true,prevented:false}]);assert.equal(pendingInput.commands,0);assert.equal(pendingInput.queued.code,'GF_INTERACTION_STALE');assert.deepEqual(pendingInput.failures,[]);
+      await page.evaluate(async()=>{const s=window.__graphSession,p=s.retainedTime;p.idle=p.handle.whenIdle();s.release();await p.idle;});
       const result=await page.evaluate(async()=>{const s=window.__graphSession,p=s.retainedTime,r={snapshot:p.handle.snapshot(),tail:p.publications.slice(p.mark).map(x=>x.temporal.cursor),operations:s.commands.filter(c=>c.owner===p.worker.worker.__graphOwner).map(c=>c.operation),failures:p.failures};await p.controller.dispose();await p.handle.dispose();await p.clockWorker.dispose();await p.worker.dispose();return r;});
+      result.pendingInput=pendingInput;
       assert.equal(result.snapshot.temporal.cursor,20n);assert.deepEqual(Array.from(result.snapshot.temporal.nodeVisibility),[1,0,1]);assert.ok(result.tail.length>0&&result.tail.every(x=>x===20n));assert.ok(result.operations.includes(15));assert.deepEqual(result.failures,[]);return result;
     });
     for (const pending of [false,true]) for (const fault of ['error','messageerror']) {
@@ -283,6 +345,7 @@ try {
     }
     console.log('PASS public retained temporal presentation');
   } else if (process.env.XYG_GRAPH_SCHEDULING_ONLY) {
+    await run('capture-waits-for-recorded-request-reply',()=>graphCaptureCase(page));
     await run('public-resource-refusals-unchanged-arenas',async()=>{
       const result=await page.evaluate(async()=>{
         const s=window.__graphSession,out=[];
@@ -293,7 +356,7 @@ try {
         }return out;
       });
       evidence.refusals=result;
-      assert.equal(result[0].status,'refused');assert.equal(result[0].code,'GF_INTERACTION_BUDGET');
+      assert.equal(result[0].status,'opened');
       return result;
     });
     await run('public-1k-unheld-pick-camera-isolation-cleanup', async () => {
@@ -343,9 +406,12 @@ try {
       const result=await page.evaluate(async()=>{
         const s=window.__graphSession,out=[];
         for(const p of [7101n,7102n].map(id=>s.progressives.find(p=>p.id===id))) {
-          const at=performance.now(),frames=p.frames.length,finalSnapshot=p.handle.snapshot();const owner=p.worker.worker.__graphOwner;const commands=s.commands.filter(c=>c.owner===owner);const replies=s.replies.filter(c=>c.owner===owner);
+          await s.waitForCapture(p);
+          const at=performance.now(),frames=p.frames.length,finalSnapshot=p.handle.snapshot();const owner=p.worker.worker.__graphOwner;
+          const b64=b=>{let t='';for(let i=0;i<b.length;i+=16384)t+=String.fromCharCode(...b.subarray(i,i+16384));return btoa(t);};
+          const replay=await Promise.all(s.commands.filter(c=>c.owner===owner&&c.bytes).map(async c=>{const r=s.replies.find(r=>r.owner===owner&&r.requestId===c.requestId);if(!r)throw Error('capture missing XYGR '+s.json({command:{...c,bytes:c.bytes.length},transport:s.transportReplies.filter(r=>r.owner===owner&&r.requestId===c.requestId),errors:p.errors,progress:p.handle.snapshot()?.relayout}));const h=await crypto.subtle.digest('SHA-256',r.bytes);return {operation:c.operation,request:b64(c.bytes),replyBytes:r.bytes.length,replySha256:Array.from(new Uint8Array(h),b=>b.toString(16).padStart(2,'0')).join('')};}));const commands=s.commands.filter(c=>c.owner===owner);const replies=s.replies.filter(c=>c.owner===owner);
           clearInterval(p.timer);await p.handle.dispose();await p.worker.dispose();
-          out.push({id:p.id,finalSnapshot,started:p.started,workerReady:p.workerReady,captures:p.captures,arena:384*1024*1024,painted:p.painted,clicks:p.clicks,payloadBytes:{requests:commands.reduce((n,c)=>n+c.bytes.length,0),replies:replies.reduce((n,c)=>n+c.bytes.length,0)},frames:p.frames,errors:p.errors,heartbeats:p.heartbeats,selections:p.selections,pans:p.pans,keys:p.keys,
+          out.push({id:p.id,replay,finalSnapshot,started:p.started,workerReady:p.workerReady,captures:p.captures,arena:p.arena,actualArena:p.worker.worker.__actualArena,defaultArena:p.defaultArena,requestedArena:p.worker.__requestedArena??null,sourceNodes:1000,sourceEdges:1000,painted:p.painted,clicks:p.clicks,payloadBytes:{requests:commands.reduce((n,c)=>n+c.bytes.length,0),replies:replies.reduce((n,c)=>n+c.bytes.length,0)},frames:p.frames,errors:p.errors,heartbeats:p.heartbeats,selections:p.selections,pans:p.pans,keys:p.keys,
             commands:s.commands.filter(c=>c.owner===p.worker.worker.__graphOwner).map(({bytes,...c})=>c),held:s.held.length,
             cleanupMs:performance.now()-at,attachmentChildren:p.el.querySelectorAll('[data-xy-graph-session],table,canvas').length,disposed:p.handle.snapshot()===null,framesAtDispose:frames});p.el.remove();
         }await new Promise(r=>setTimeout(r,25));return out;
@@ -356,7 +422,7 @@ try {
       }
       evidence.views=result;evidence.heapAfter=await cdp.send('Performance.getMetrics');
       if(process.env.XYG_GRAPH_SESSION_REPORT)await writeFile(process.env.XYG_GRAPH_SESSION_REPORT,JSON.stringify(evidence,(_,v)=>typeof v==='bigint'?v.toString():v,2)+'\n');
-      for(const p of result){assert.deepEqual(p.errors,[]);assert.equal(p.held,0);assert.equal(p.disposed,true);assert.equal(p.attachmentChildren,0);assert.equal(p.frames.length,p.framesAtDispose);assert.ok(p.commands.filter(c=>c.operation).every(c=>String(c.instanceId)===String(p.id)));assert.ok(new Set(p.painted.filter(f=>!f.progress.done&&f.pixels>0).map(f=>f.progress.steps)).size>3);assert.ok(new Set(p.painted.map(f=>f.hash)).size>3);assert.ok(p.frames.filter(f=>!f.progress.done&&f.pixels>0).length>3);assert.ok(p.frames.at(-1).progress.done);}
+      for(const p of result){assert.equal(p.actualArena,16*1024*1024);assert.equal(p.arena,16*1024*1024);assert.equal(p.defaultArena,true);assert.equal(p.requestedArena,null);assert.deepEqual(p.errors,[]);assert.equal(p.held,0);assert.equal(p.disposed,true);assert.equal(p.attachmentChildren,0);assert.equal(p.frames.length,p.framesAtDispose);assert.ok(p.commands.filter(c=>c.operation).every(c=>String(c.instanceId)===String(p.id)));assert.ok(new Set(p.painted.filter(f=>!f.progress.done&&f.pixels>0).map(f=>f.progress.steps)).size>3);assert.ok(new Set(p.painted.map(f=>f.hash)).size>3);assert.ok(p.frames.filter(f=>!f.progress.done&&f.pixels>0).length>3);assert.ok(p.frames.at(-1).progress.done);}
       const primary=result.find(p=>p.id===7101n),secondary=result.find(p=>p.id===7102n);
       assert.ok(primary&&secondary);
       assert.ok(primary.selections.some(e=>e.snapshot.outcome.selected>0&&!e.snapshot.relayout?.done),'trusted unfinished pick');
@@ -365,6 +431,9 @@ try {
       assert.equal(secondary.selections.length,0);assert.equal(secondary.finalSnapshot.selection.refs.length,0);assert.equal(secondary.finalSnapshot.camera[2],320);assert.deepEqual(violations,[]);assert.deepEqual(errors,[]);
       return result;
     });
+    await run("public-1k-trusted-keyboard-focus-retention",()=>graphProgressiveKeyboardCase(page,process.env.XYG_GRAPH_SESSION_REPORT));
+    await run('default1k-coalescing-stale-terminal-disposal',progressiveFaultCase);
+    if(process.env.XYG_GRAPH_SESSION_REPORT)await writeFile(process.env.XYG_GRAPH_SESSION_REPORT,JSON.stringify(evidence,(_,v)=>typeof v==='bigint'?String(v):v,2)+'\n');
   } else if (process.env.XYG_GRAPH_PROGRESSIVE_ONLY) {
     const delay = ms => new Promise(r=>setTimeout(r,ms));
     for (const count of [0,4,1000]) {
@@ -466,9 +535,9 @@ try {
       assert.ok(result.operations.includes(11));
       return result;
     });
-    await run('1k-default-arena-still-refuses-without-fallback',async()=>{
-      const code=await page.evaluate(async()=>{try{await window.__graphSession.progressiveFixture(1000,3099n,{},16*1024*1024);return 'unexpected success';}catch(e){return e.code;}});
-      assert.equal(code,'GF_INTERACTION_BUDGET');return {code,arenaBytes:16*1024*1024};
+    await run('1k-default-arena-opens-without-override',async()=>{
+      const code=await page.evaluate(async()=>{try{await window.__graphSession.progressiveFixture(1000,3099n);const p=window.__graphSession.progressives.at(-1);clearInterval(p.timer);await p.handle.dispose();await p.worker.dispose();p.el.remove();return 'opened';}catch(e){return e.code;}});
+      assert.equal(code,'opened');return {code,arenaBytes:16*1024*1024};
     });
     await run('authored-pinned-progressive-and-explicit-false-legacy',async()=>{
       const results=[];
@@ -489,24 +558,7 @@ try {
       await page.waitForFunction(()=>window.__graphSession.progressives.slice(-2).every(p=>p.handle.snapshot()?.relayout?.done),null,{timeout:40000});
       return page.evaluate(async()=>{const ps=window.__graphSession.progressives.slice(-2),result=ps.map(p=>({id:p.id,frames:p.frames.length,errors:p.errors}));for(const p of ps){clearInterval(p.timer);await p.handle.dispose();await p.worker.dispose();p.el.remove();}return result;});
     });
-    await run('progressive-stale-terminal-dispose-late-reply-cleanup',async()=>{
-      const result=[];
-      for(const fault of ['stale','wrong-lifetime','dispose-held']) {
-        await page.evaluate(async fault=>{const s=window.__graphSession;await s.progressiveFixture(4,4001n);s.inject=fault==='dispose-held'?null:fault;s.hold=fault==='dispose-held';},fault);
-        if(fault==='dispose-held') {
-          await page.waitForFunction(()=>window.__graphSession.held.length>0);
-          await page.evaluate(()=>{const s=window.__graphSession,p=s.progressives.at(-1);p.disposal=p.handle.dispose();p.frameCount=p.frames.length;s.release();});
-          await page.evaluate(async()=>{const p=window.__graphSession.progressives.at(-1);await p.disposal;if(p.frames.length!==p.frameCount||p.handle.snapshot()!==null)throw Error('late disposed publication');});
-        } else {
-          await page.waitForFunction(()=>window.__graphSession.progressives.at(-1).errors.length>0);
-          const before=await page.evaluate(()=>window.__graphSession.progressives.at(-1).frames.length);
-          await delay(80);
-          assert.equal(await page.evaluate(()=>window.__graphSession.progressives.at(-1).frames.length),before);
-        }
-        result.push(await page.evaluate(async()=>{const p=window.__graphSession.progressives.at(-1),out={errors:p.errors,frames:p.frames.length};clearInterval(p.timer);await p.handle.dispose();await p.worker.dispose();p.el.remove();return out;}));
-      }
-      return result;
-    });
+    await run('progressive-stale-terminal-dispose-late-reply-cleanup',progressiveFaultCase);
     assert.deepEqual(violations,[]); assert.deepEqual(errors,[]);
     if(process.env.XYG_GRAPH_SESSION_REPORT) await writeFile(process.env.XYG_GRAPH_SESSION_REPORT,JSON.stringify(evidence,(_,v)=>typeof v==='bigint'?v.toString():v,2)+'\n');
     console.log('PASS public progressive attachment');
@@ -598,7 +650,7 @@ try {
     await s.handle.refreshRender(); return { ok: code === "XYG_WASM_MESSAGE_ERROR" && previous.outcome.selected === 0 && s.snapshot().outcome.selected === 0, code };
   }));
   await run("dirty-shared-sampler-unit2-preserves-exact-shipped-graph-pixels", () => check(async () => {
-    const s = window.__graphSession, host = globalThis[Symbol.for("reflex-dev.xy.shared-webgl-host.v1")].get(document), gl = host.gl;
+    const s = window.__graphSession, host = globalThis[Symbol.for("reflex-dev.xy.shared-webgl-host.v2")].get(document), gl = host.gl;
     await s.handle.refreshRender(); const before = s.pixel(s.el);
     const sampler = gl.createSampler(); gl.samplerParameteri(sampler, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.samplerParameteri(sampler, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.bindSampler(2, sampler); await s.handle.refreshRender(); const dirty = s.pixel(s.el);
@@ -998,12 +1050,12 @@ try {
     }
 
   }
-  await run("old-same-ABI-module-missing-clear-fact-fails-closed", () => check(async () => {
-    const s = window.__graphSession, worker = s.makeWorker("/old-same-abi.wasm"); await worker.ready; const el = s.container();
-    const handle = s.attach({ el, worker, instanceId: 80n, document: s.document, load: s.load, camera: s.camera });
-    let code; try { await handle.ready; } catch(e) { code = e.code; } await handle.dispose();
-    const composed = await s.compose(worker, s.input).result; await worker.dispose();
-    return { ok: code === "GF_INTERACTION_INVALID" && handle.snapshot() === null && el.children.length === 0 && composed.nodeUuid.length > 0, code };
+  await run("historical-ABI35-module-is-explicitly-incompatible-with-current-client", () => check(async () => {
+    // This immutable historical receipt is ABI35, not a same-ABI runtime.
+    // Same-ABI absent/malformed clear facts are tested above on current output.
+    const s = window.__graphSession, worker = s.makeWorker("/historical-abi35.wasm");
+    let code;try {await worker.ready;}catch(e){code=e.code;}await worker.dispose();
+    return {ok:code==="XYG_WASM_ABI_MISMATCH",code};
   }));
   await run("ambiguous-lost-reply-watchdog-is-terminal-no-replay-or-lateevents", async () => {
     await page.clock.install();

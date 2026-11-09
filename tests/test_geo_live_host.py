@@ -250,14 +250,15 @@ def test_explicit_selected_frame_preserves_full_intent_through_live_update():
     request(adapter, 1)
     try:
         assert adapter._frame.data.selection["ids"].tolist() == [U64]
-        message, buffers = prepare(adapter, sequence=3)
-        assert "error" not in message
-        old, seq, tag = adapter._frame.handle, adapter._sequence, buffers[0]
-        assert "error" not in live(adapter, 7, ack(7, old, seq, tag))[0]
-        assert adapter._frame.data.selection["ids"].tolist() == [U64]
-        assert bytes(adapter._frame.data.selection["fill"]) == bytes([0, 255, 0, 255])
-        buffers = None
-        assert "error" not in live(adapter, 8, ack(8, old, seq, tag))[0]
+        for sequence in range(3, 28):
+            message, buffers = prepare(adapter, nonce=sequence, sequence=sequence)
+            assert "error" not in message
+            old, seq, tag = adapter._frame.handle, adapter._sequence, buffers[0]
+            assert "error" not in live(adapter, 7, ack(7, old, seq, tag))[0]
+            assert adapter._frame.data.selection["ids"].tolist() == [U64]
+            assert bytes(adapter._frame.data.selection["fill"]) == bytes([0, 255, 0, 255])
+            buffers = None
+            assert "error" not in live(adapter, 8, ack(8, old, seq, tag))[0]
     finally:
         close(source, adapter)
         scope.close()

@@ -1,0 +1,54 @@
+{
+  "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+  "commands": [
+    {
+      "argv": [
+        "rustc",
+        "--version",
+        "--verbose"
+      ],
+      "stdout": "rustc 1.96.0 (ac68faa20 2026-05-25)\nbinary: rustc\ncommit-hash: ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96\ncommit-date: 2026-05-25\nhost: x86_64-unknown-linux-gnu\nrelease: 1.96.0\nLLVM version: 22.1.2\n"
+    },
+    {
+      "argv": [
+        "cargo",
+        "--version"
+      ],
+      "stdout": "cargo 1.96.0 (30a34c682 2026-05-25)\n"
+    },
+    {
+      "argv": [
+        "node",
+        "--version"
+      ],
+      "stdout": "v22.23.4\n"
+    },
+    {
+      "argv": [
+        "node",
+        "node_modules/binaryen/bin/wasm-opt",
+        "--version"
+      ],
+      "stdout": "wasm-opt version 132 (version_132)\n"
+    },
+    {
+      "argv": [
+        "uname",
+        "-a"
+      ],
+      "stdout": "Linux OVHC-HQS 7.0.0-31-generic #31-Ubuntu SMP PREEMPT_DYNAMIC Sat Aug  1 04:26:38 UTC 2026 x86_64 GNU/Linux\n"
+    }
+  ],
+  "sharedVm": "Other project workers may be active; local output/runtime comparison is not a speed-win claim.",
+  "profileInputSha256": {
+    "100/pagerank.arrow": "d5bf26a91d55f32d2b39c96b298e9263457d9c727d5fccde2aef314f323c3a79",
+    "100/base-edges.arrow": "d3e61ea6b23bd8e0a4f079cb3810f3e1239e206562c69174824fb8c2454f0e71",
+    "100/base-nodes.arrow": "4e42a632dd36e1bbaea44c0e6d55008a689e240feaf5d163c37db8902b790372",
+    "100000/pagerank.arrow": "10ba8cdcf66c493204fd2a562e29bbf98e54ea4607eef06a8c7eee5ebbd3feb7",
+    "100000/base-edges.arrow": "e57026f59ed1a1e4e36f749c2f698586869cf840a0fb876afc954602c1aa1f7a",
+    "100000/base-nodes.arrow": "deeb14f26f9ce09d2d3011bd9a124431398765653996b5c2c99744f502d60402",
+    "10000/pagerank.arrow": "8528adb56fee554d38e684ee18d06ccf9a11e3a3897f0bf1b70245bf595f50c7",
+    "10000/base-edges.arrow": "e0af9a8950b7b5398ebee17c3826dccd1304c924576e48bddcba203fe8c6ba6b",
+    "10000/base-nodes.arrow": "c4697e5dd4681243a5779c96a6bee5e3dc4803b0db2d7220af98bdb0c8c00bcb"
+  }
+}

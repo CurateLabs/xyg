@@ -695,6 +695,31 @@ test("captured primary-click OPEN/Render/SelectAt requests replay full native/WA
   }
 });
 
+test("10k document ingress reserves retry ownership separately from event text", async () => {
+  const { instance } = await WebAssembly.instantiate(fs.readFileSync(WASM), {});
+  const x = instance.exports, n = 10000;
+  const ids = offset => { const b=new Uint8Array(n*16), v=new DataView(b.buffer); for(let i=0;i<n;i++)v.setUint32(i*16,i+offset,true);return b; };
+  const document=encodeContainer('XYGF',[
+    field('status','u32',[0]),field('kind','utf8','graph'),field('composition.version','u32',[2]),
+    field('node.uuid','uuid',ids(1)),field('edge.uuid','uuid',ids(10001)),
+    field('edge.derived','u8',Array(n).fill(0)),field('edge.layer','u32',Array(n).fill(0xffffffff)),
+    field('edge.order','i64',Array(n).fill(-1n)),field('edge.path','u64',Array(n).fill(0xffffffffffffffffn)),
+    field('edge.source','u64',Array.from({length:n},(_,i)=>BigInt(i))),
+    field('edge.target','u64',Array.from({length:n},(_,i)=>BigInt((i+1)%n))),field('graph.directed','u8',[0])]);
+  const data={document,load:[field('document.bytes','bytes',document),field('load.progressive.u8','u8',[1])]};
+  const pair=openPair(x,data,71010n,0n,384*1024*1024);
+  try {
+    const initial=pair.run(21,[field('camera.f64','f64',[.01,.01,320,160,640,320,1])]);
+    assert.equal(value(initial,'gpu.header.u32')[2],n);
+    assert.deepEqual([...value(initial,"relayout.admission.u32")],[1,64],"Rust continues admitting the supported ten-step request");
+    const next=pair.run(15,[],{7:10});
+    assert.notDeepEqual(value(next,'paint.node.center.f64'),value(initial,'paint.node.center.f64'));
+    // Linear memory cannot shrink: this observes all preceding intra-call growth.
+    assert.ok(x.memory.buffer.byteLength<384*1024*1024);
+    console.log(JSON.stringify({document:document.length,open:pair.open.length,linearPeak:x.memory.buffer.byteLength,initial:initial.length,next:next.length}));
+  } finally { pair.close(); }
+});
+
 
 test("shared assertion-history retained renders preserve exact native/WASM bytes and UUID state", async () => {
   const history=JSON.parse(fs.readFileSync(path.join(ROOT,"tests/fixtures/temporal/assertion-history.json")));

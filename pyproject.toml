@@ -41,6 +41,7 @@ dev = [
     # Parses .binder/environment.yml in tests/test_binder_config.py so the
     # Binder contract is asserted on structure, not string transcription.
     "pyyaml>=6",
+    "playwright==1.61.0",
 ]
 # Application frameworks and their transitive packages stay isolated from the
 # core/reference environment. The required consumer gate installs this group
@@ -129,6 +130,9 @@ include = [
     # The framework-free Python package is the only published namespace.
     "/python/xyg/**",
     "/crates/**",
+    # The existing PNG encoder is vendored with a shared capability specialization.
+    "/vendor/png/**",
+    "/vendor/crc32fast/**",
     # Engine `[[bench]]` sources live under crates/xyg-engine/benches/; they
     # ride this glob so `cargo clippy --all-targets` and `cargo bench` from an
     # unpacked sdist still see the bench targets.

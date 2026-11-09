@@ -1,0 +1,70 @@
+{
+  "parent": "8275fc9f87ed55071e66472a703fe3671dd53e8a",
+  "scope": "test/spec only; production and historical receipts unchanged",
+  "sourceSha256": {
+    "crates/xyg-engine/src/graphforge/interaction/tests/wire.rs": "d973cec7fe58ee6d4faa1be2d91ee8a2534b4ca0a4c97092ee63da7861df4e95",
+    "crates/xyg-engine/src/graphforge/interaction/wire.rs": "930e0b46451e094ee902b23baf4977608beef4a49c3bfa4ac0258d1f025a552f",
+    "spec/design/graph-interaction.md": "ee1f18028e14118fcd5599ddd5ad2c26506885fee90bb90c5de10c5535e80453",
+    "Cargo.lock": "b521317a3cee01d9e04f40fd97e2c7638d648f57052a42078dcb7c8593a4433a",
+    "rust-toolchain.toml": "e59c5da37d1f9f4e0f815bc188cb6056fc7410c9cdaa9673c2d44da557c75d12"
+  },
+  "readmeSha256": "58ba55edc651d70205e11a4b60034de46aa52f54812cea7260421e21c355a022",
+  "logs": {
+    "core.log.gz": {
+      "archiveSha256": "b41cb0186e4a31da31656f6c060470449ba5893d92470f706e32f9cda1b99098",
+      "rawSha256": "1eb9001d5ffbdb09f83a00898d4e21ee699a826e7b47476421f36a5c02a55c8c",
+      "rawBytes": 100,
+      "exit": 0
+    },
+    "format.log.gz": {
+      "archiveSha256": "2c6ab4aea7deb473cb03120e197b035f027d28e416affb553cf4b8dc275d80b7",
+      "rawSha256": "71828415ae7956717bbef7f9bd1683393e137b6b7b3f2ae381407f4327456e23",
+      "rawBytes": 29,
+      "exit": 0
+    },
+    "hooks.log.gz": {
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "rawBytes": 240,
+      "exit": 0
+    },
+    "interaction.log.gz": {
+      "archiveSha256": "0331b362335e8339dd2b0d4210feedf6c5f7966c19764533c2b5bc8a61e2f5b0",
+      "rawSha256": "d868b55d4222d2cb0a13bccbd03f7b2f3c4b623400f92f9c20b02a5256349e14",
+      "rawBytes": 18759,
+      "exit": 0
+    },
+    "no-discount.log.gz": {
+      "archiveSha256": "b069aa3c26063a3d79adfb0be0d6afb15c28ff751c8e0562e84a138ec9a16d89",
+      "rawSha256": "9ded43057d7e0d0716be789fad945c6f4185be071d68a1a75aa160f2ae953e48",
+      "rawBytes": 1532,
+      "exit": 101
+    },
+    "no-replacement.log.gz": {
+      "archiveSha256": "9dc0f53f5875c3ddaf0ff1b3e464136d55798ac2a3cab106d7b94c9c2004b154",
+      "rawSha256": "50994f8ecceb048e9500baf12fafd9326e9e6baed8b9e053191d26328cd272b2",
+      "rawBytes": 23817,
+      "exit": 101
+    },
+    "ruff.log.gz": {
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "rawBytes": 19,
+      "exit": 0
+    }
+  },
+  "commands": [
+    "cargo test -p xyg-engine --lib graphforge::interaction -- --nocapture",
+    "temporary admit mutation: remove document discount; cargo test -p xyg-engine --lib update_document_ingress_exact_limit_refusal_and_retry_are_atomic -- --nocapture (expected failure)",
+    "temporary admit mutation: omit replacement charge; same test (expected failure)",
+    "uv run pytest tests/test_graphforge_contract_corpus.py tests/test_release_inventory.py -q",
+    "uv run --with pre-commit pre-commit run --all-files",
+    "uv run ruff check .",
+    "uv run ruff format --check ."
+  ],
+  "environment": {
+    "systemPython": "3.14.4",
+    "rust": "rustc 1.96.0 (ac68faa20 2026-05-25)"
+  },
+  "sourceByteContract": "Canonical LF Git bytes; these append-only hashes are not claims about arbitrary unfiltered working-tree newline conversions."
+}

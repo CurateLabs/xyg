@@ -4,6 +4,84 @@
 //! coerce author input and resolve paint channels, but marker geometry,
 //! stroke-inclusive sizing, validation, bounds, and SVG construction live here.
 
+// Shared scalar serialization keeps checked append and exact endian/bit semantics.
+pub(crate) trait SceneWord: Copy {
+    #[cfg(target_arch="wasm32")] const WIDTH: usize;
+    #[cfg(target_arch="wasm32")] fn bits(self) -> u64;
+    fn native(self, out: &mut Vec<u8>);
+}
+macro_rules! scene_word {($($t:ty),*)=>{$(impl SceneWord for $t {
+ #[cfg(target_arch="wasm32")] const WIDTH:usize=std::mem::size_of::<Self>();
+ #[inline(always)] #[cfg(target_arch="wasm32")] fn bits(self)->u64{self as u64}
+ #[inline(always)] fn native(self,out:&mut Vec<u8>){out.extend_from_slice(&self.to_le_bytes());}
+})*};}
+scene_word!(u8, u16, u32, u64, usize, i16, i32, i64, isize);
+impl SceneWord for f64 {
+    #[cfg(target_arch="wasm32")] const WIDTH: usize = 8;
+    #[inline(always)]
+    #[cfg(target_arch="wasm32")] fn bits(self) -> u64 {
+        self.to_bits()
+    }
+    #[inline(always)]
+    fn native(self, out: &mut Vec<u8>) {
+        out.extend_from_slice(&self.to_le_bytes());
+    }
+}
+impl SceneWord for f32 {
+    #[cfg(target_arch="wasm32")] const WIDTH: usize = 4;
+    #[inline(always)]
+    #[cfg(target_arch="wasm32")] fn bits(self) -> u64 {
+        self.to_bits() as u64
+    }
+    #[inline(always)]
+    fn native(self, out: &mut Vec<u8>) {
+        out.extend_from_slice(&self.to_le_bytes());
+    }
+}
+impl<T: SceneWord> SceneWord for &T {
+    #[cfg(target_arch="wasm32")] const WIDTH: usize = T::WIDTH;
+    #[inline(always)]
+    #[cfg(target_arch="wasm32")] fn bits(self) -> u64 {
+        (*self).bits()
+    }
+    #[inline(always)]
+    fn native(self, out: &mut Vec<u8>) {
+        (*self).native(out)
+    }
+}
+pub(crate) trait SceneByteWrite {
+    fn push_word<T: SceneWord>(&mut self, value: T);
+}
+impl SceneByteWrite for Vec<u8> {
+    #[inline(always)]
+    fn push_word<T: SceneWord>(&mut self, value: T) {
+        #[cfg(target_arch = "wasm32")]
+        match T::WIDTH {
+            8 => word64(self, value.bits()),
+            4 => word32(self, value.bits() as u32),
+            2 => word16(self, value.bits() as u16),
+            _ => value.native(self),
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        value.native(self);
+    }
+}
+#[cfg(target_arch = "wasm32")]
+#[inline(never)]
+fn word64(out: &mut Vec<u8>, value: u64) {
+    out.extend_from_slice(&value.to_le_bytes());
+}
+#[cfg(target_arch = "wasm32")]
+#[inline(never)]
+fn word32(out: &mut Vec<u8>, value: u32) {
+    out.extend_from_slice(&value.to_le_bytes());
+}
+#[cfg(target_arch = "wasm32")]
+#[inline(never)]
+fn word16(out: &mut Vec<u8>, value: u16) {
+    out.extend_from_slice(&value.to_le_bytes());
+}
+
 use crate::colormap;
 use crate::compat_layout;
 use crate::css;
@@ -12,11 +90,11 @@ use crate::kernels::{
     colormap_color, density_mean_color_rgba_into, density_rgba_into, normalize_one_f32,
 };
 use crate::polar::{self, POLAR_METRICS_LEN, XYPL_MAGIC, XYPL_V1_BYTES};
-use crate::scene_y2::{SceneY2Axis, SceneY2Domain};
 use crate::scene_arrow::{
     arrow_paint, arrow_run_ends, arrow_run_head_length, default_arrow_paint, ArrowEnd, ArrowPaint,
     ArrowShape,
 };
+use crate::scene_y2::{SceneY2Axis, SceneY2Domain};
 use crate::svg::push_num;
 use crate::textblock;
 use crate::tick_layout;
@@ -322,9 +400,9 @@ fn encode_scene_labels(
     let mut out =
         Vec::with_capacity(SCENE_LABEL_HEADER_BYTES + labels.len() * record_bytes + text_bytes);
     out.extend_from_slice(b"XYLB");
-    out.extend_from_slice(&(version as u32).to_le_bytes());
-    out.extend_from_slice(&(labels.len() as u32).to_le_bytes());
-    out.extend_from_slice(&(text_bytes as u32).to_le_bytes());
+    out.push_word(version as u32);
+    out.push_word(labels.len() as u32);
+    out.push_word(text_bytes as u32);
     for (label, background) in labels.iter().zip(backgrounds) {
         if label.text.is_empty()
             || label.text.contains('\0')
@@ -352,32 +430,32 @@ fn encode_scene_labels(
         {
             return Err(SceneError::NonFinite);
         }
-        out.extend_from_slice(&label.stable_id.to_le_bytes());
-        out.extend_from_slice(&label.x.to_le_bytes());
-        out.extend_from_slice(&label.y.to_le_bytes());
-        out.extend_from_slice(&label.font_size.to_le_bytes());
+        out.push_word(label.stable_id);
+        out.push_word(label.x);
+        out.push_word(label.y);
+        out.push_word(label.font_size);
         out.extend_from_slice(&label.rgba);
         if version >= 2 {
             out.push(label.anchor);
             out.extend_from_slice(&[0; 3]);
         }
-        out.extend_from_slice(&(label.text.len() as u32).to_le_bytes());
+        out.push_word(label.text.len() as u32);
         if version >= 3 {
             let background = background.as_ref();
             out.push(u8::from(background.is_some()));
             out.extend_from_slice(&[0; 3]);
             if let Some(background) = background {
-                out.extend_from_slice(&background.x.to_le_bytes());
-                out.extend_from_slice(&background.y.to_le_bytes());
-                out.extend_from_slice(&background.width.to_le_bytes());
-                out.extend_from_slice(&background.height.to_le_bytes());
+                out.push_word(background.x);
+                out.push_word(background.y);
+                out.push_word(background.width);
+                out.push_word(background.height);
                 out.extend_from_slice(&background.rgba);
                 if version >= 4 {
                     if let Some(border) = &background.border {
                         out.push(1);
                         out.extend_from_slice(&[0; 3]);
                         out.extend_from_slice(&border.rgba);
-                        out.extend_from_slice(&border.width.to_le_bytes());
+                        out.push_word(border.width);
                     } else {
                         out.extend_from_slice(&[0; 16]);
                     }
@@ -397,14 +475,14 @@ fn encode_scene_labels(
             {
                 return Err(SceneError::Limit);
             }
-            out.extend_from_slice(&(lines as u32).to_le_bytes());
+            out.push_word(lines as u32);
         }
         if version >= 6 {
-            out.extend_from_slice(&label.rotation.to_le_bytes());
+            out.push_word(label.rotation);
         }
         if version >= 7 {
             // Flags word (bit 0) and its zero reserved word as one u64.
-            out.extend_from_slice(&u64::from(label.annotation).to_le_bytes());
+            out.push_word(u64::from(label.annotation));
         }
     }
     for label in labels {
@@ -1013,7 +1091,7 @@ impl SceneColorbar {
                 + self.title.len(),
         );
         out.extend_from_slice(b"XYCB");
-        out.extend_from_slice(&2u32.to_le_bytes());
+        out.push_word(2u32);
         let ticks = self.ticks.as_deref().unwrap_or_default();
         out.push(
             u8::from(self.horizontal)
@@ -1022,20 +1100,20 @@ impl SceneColorbar {
                 | (u8::from(!ticks.is_empty()) << 3),
         );
         out.extend_from_slice(&[0; 3]);
-        out.extend_from_slice(&(self.stops.len() as u32).to_le_bytes());
-        out.extend_from_slice(&(ticks.len() as u32).to_le_bytes());
-        out.extend_from_slice(&(self.title.len() as u32).to_le_bytes());
+        out.push_word(self.stops.len() as u32);
+        out.push_word(ticks.len() as u32);
+        out.push_word(self.title.len() as u32);
         for value in self.domain {
-            out.extend_from_slice(&value.to_le_bytes());
+            out.push_word(value);
         }
         out.extend_from_slice(&self.text_rgba);
         out.extend_from_slice(&[0; 12]);
         for (value, rgba) in &self.stops {
-            out.extend_from_slice(&value.to_le_bytes());
+            out.push_word(value);
             out.extend_from_slice(rgba);
         }
         for value in ticks {
-            out.extend_from_slice(&value.to_le_bytes());
+            out.push_word(value);
         }
         out.extend_from_slice(self.title.as_bytes());
         // Reuse the strict decoder as the single validation authority.
@@ -1496,7 +1574,10 @@ impl SceneChromeText {
     }
 }
 
-pub(crate) fn read_axis_chrome_style(bytes: &[u8], offset: usize) -> Result<SceneAxisChromeStyle, SceneError> {
+pub(crate) fn read_axis_chrome_style(
+    bytes: &[u8],
+    offset: usize,
+) -> Result<SceneAxisChromeStyle, SceneError> {
     let axis = bytes.get(offset..offset + 88).ok_or(SceneError::Length)?;
     if axis[5..8] != [0; 3] {
         return Err(SceneError::Length);
@@ -1548,7 +1629,7 @@ fn push_raster_f32(out: &mut Vec<u8>, value: f64, scale: f64) -> Result<(), Scen
     if !narrowed.is_finite() {
         return Err(SceneError::NonFinite);
     }
-    out.extend_from_slice(&narrowed.to_le_bytes());
+    out.push_word(narrowed);
     Ok(())
 }
 
@@ -1571,7 +1652,7 @@ fn push_raster_stroke(
 }
 
 fn push_raster_dash(out: &mut Vec<u8>, dash: &[f32], scale: f64) -> Result<(), SceneError> {
-    out.extend_from_slice(&(dash.len() as u32).to_le_bytes());
+    out.push_word(dash.len() as u32);
     for value in dash {
         push_raster_f32(out, f64::from(*value), scale)?;
     }
@@ -1588,7 +1669,7 @@ fn push_raster_stroke_dash(
     linecap: u8,
 ) -> Result<(), SceneError> {
     out.push(3);
-    out.extend_from_slice(&2u32.to_le_bytes());
+    out.push_word(2u32);
     for (x, y) in points {
         push_raster_f32(out, x, scale)?;
         push_raster_f32(out, y, scale)?;
@@ -1626,7 +1707,7 @@ fn push_raster_polyline_dash(
     }
     let count = points.len() + usize::from(closed);
     out.push(3);
-    out.extend_from_slice(&(count as u32).to_le_bytes());
+    out.push_word(count as u32);
     for &(x, y) in points {
         push_raster_f32(out, x, scale)?;
         push_raster_f32(out, y, scale)?;
@@ -1762,7 +1843,8 @@ impl AxisScale {
         (self.kind, lo, hi, self.constant, self.mask_nonpositive)
     }
 
-    #[inline(always)]
+    #[cfg_attr(target_arch = "wasm32", inline(never))]
+    #[cfg_attr(not(target_arch = "wasm32"), inline(always))]
     pub fn coord(self, value: f64) -> f64 {
         if value.is_nan() {
             return f64::NAN;
@@ -1802,8 +1884,14 @@ impl AxisScale {
         }
     }
 
-    #[inline(always)]
+    #[cfg_attr(target_arch = "wasm32", inline(never))]
+    #[cfg_attr(not(target_arch = "wasm32"), inline(always))]
     pub fn pixel(self, value: f64) -> f64 {
+        // Retained CSS geometry uses identity scales. Avoid a divide/multiply
+        // round trip that would alter exact retained head and trim coordinates.
+        if self.is_linear() && self.px0 == self.coord_lo && self.px_delta == self.coord_span {
+            return value;
+        }
         self.px0 + (self.coord(value) - self.coord_lo) / self.coord_span * self.px_delta
     }
 
@@ -1985,7 +2073,7 @@ pub fn symlog_ticks(
             return Err(SceneError::Limit);
         }
         ticks.push(0.0);
-        ticks.sort_by(|a, b| {
+        crate::shared_sort::by(&mut ticks, |a, b| {
             if lo > hi {
                 b.total_cmp(a)
             } else {
@@ -2152,35 +2240,14 @@ const MONTH_STEPS: &[i32] = &[1, 2, 3, 6, 12, 24, 60, 120];
 
 /// UTC civil date from milliseconds since Unix epoch → (year, month0) with month0 in 0..=11.
 fn utc_year_month0_from_ms(ms: f64) -> (i32, i32) {
-    // Howard Hinnant civil_from_days.
-    let z = (ms / MS_D).floor() as i64 + 719_468;
-    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
-    let doe = (z - era * 146_097) as u64;
-    let yoe = (doe - doe / 1_460 + doe / 36_524 - doe / 146_096) / 365;
-    let mut y = yoe as i64 + era * 400;
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-    let mp = (5 * doy + 2) / 153;
-    let month = if mp < 10 { mp + 3 } else { mp - 9 }; // 1..=12
-    if month <= 2 {
-        y += 1;
-    }
-    (y as i32, month as i32 - 1)
+    let z=(ms/MS_D).floor() as i64+719468;
+    let (year,month,_)=crate::calendar::civil_from_shifted_days(z);
+    (year as i32,month as i32-1)
 }
 
 /// First-of-month UTC milliseconds for year and month0 (0..=11).
-fn utc_ms_from_year_month0(year: i32, month0: i32) -> f64 {
-    // Howard Hinnant days_from_civil for day = 1.
-    let mut y = i64::from(year);
-    let m = i64::from(month0) + 1; // 1..=12
-    if m <= 2 {
-        y -= 1;
-    }
-    let era = if y >= 0 { y } else { y - 399 } / 400;
-    let yoe = (y - era * 400) as u64;
-    let doy = (153 * if m > 2 { m - 3 } else { m + 9 } + 2) as u64 / 5;
-    let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
-    let days = era * 146_097 + doe as i64 - 719_468;
-    days as f64 * MS_D
+fn utc_ms_from_year_month0(year:i32,month0:i32)->f64{
+    crate::calendar::month_days(i64::from(year),i64::from(month0)+1) as f64*MS_D
 }
 
 fn calendar_ticks(lo: f64, hi: f64, rough: f64) -> AxisTicks {
@@ -2317,7 +2384,8 @@ impl MarkerGeometry {
     /// Canonical built-in marker geometry shared by Scene v1 SVG and v3
     /// clipping. `diameter` is the authored outer size. Line-only symbols get
     /// the historical implicit 1px stroke when the authored stroke is zero.
-    #[inline(always)]
+    #[cfg_attr(target_arch = "wasm32", inline(never))]
+    #[cfg_attr(not(target_arch = "wasm32"), inline(always))]
     pub(crate) fn new(symbol: ScatterSymbol, diameter: f64, authored_stroke: f64) -> Self {
         let stroke_width = if symbol.is_line() && authored_stroke <= 0.0 {
             1.0
@@ -2598,10 +2666,10 @@ pub fn decode_tick_labels(bytes: &[u8]) -> Result<Option<Vec<String>>, SceneErro
 pub(crate) fn tick_label_table<'a>(labels: impl ExactSizeIterator<Item = &'a str>) -> Vec<u8> {
     let mut out = Vec::with_capacity(12 + labels.len() * 4);
     out.extend_from_slice(b"XYTL");
-    out.extend_from_slice(&1u32.to_le_bytes());
-    out.extend_from_slice(&(labels.len() as u32).to_le_bytes());
+    out.push_word(1u32);
+    out.push_word(labels.len() as u32);
     for label in labels {
-        out.extend_from_slice(&(label.len() as u32).to_le_bytes());
+        out.push_word(label.len() as u32);
         out.extend_from_slice(label.as_bytes());
     }
     out
@@ -3300,7 +3368,9 @@ fn read_chrome_trailer(bytes: &[u8], body_end: usize) -> Result<SceneChromeTrail
     } else {
         None
     };
-    let y2_block_len = y2_range.as_ref().map_or(0, |range| range.end - range.start + 4);
+    let y2_block_len = y2_range
+        .as_ref()
+        .map_or(0, |range| range.end - range.start + 4);
     let x_tick_strategy = trailer[12];
     let y_tick_strategy = trailer[13];
     let x_tick_anchor = trailer[14] & 0x0f;
@@ -3660,12 +3730,17 @@ impl SceneY2Axis {
 /// Materialize the y2 numeric-format grammar into explicit ticks and labels,
 /// exactly as the primary y axis does at encode, so Scene consumers never
 /// re-interpret a format string.
-pub fn resolve_y2_tick_format(
-    layout: PlotLayout,
-    y2: &mut SceneY2Axis,
-) -> Result<(), SceneError> {
+pub fn resolve_y2_tick_format(layout: PlotLayout, y2: &mut SceneY2Axis) -> Result<(), SceneError> {
     // Only the y slot carries a format here; the x scale is never consulted.
-    let x_scale = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, layout.left, layout.right, 1.0, false)?;
+    let x_scale = AxisScale::new(
+        ScaleKind::Linear,
+        0.0,
+        1.0,
+        layout.left,
+        layout.right,
+        1.0,
+        false,
+    )?;
     let mut slot = SceneChromeStyle {
         y_major_ticks: y2.major_ticks.take(),
         y_minor_ticks: std::mem::take(&mut y2.minor_ticks),
@@ -3764,7 +3839,7 @@ pub(crate) fn write_axis_chrome_style(out: &mut Vec<u8>, axis: &SceneAxisChromeS
         axis.minor_tick_width,
         axis.minor_tick_length,
     ] {
-        out.extend_from_slice(&value.to_le_bytes());
+        out.push_word(value);
     }
 }
 
@@ -3773,7 +3848,7 @@ fn write_chrome_style_input(out: &mut Vec<u8>, chrome: &SceneChromeStyle) {
     out.extend_from_slice(&chrome.plot_background_rgba);
     out.extend_from_slice(&chrome.label_rgba);
     out.extend_from_slice(&chrome_collision_header(chrome));
-    out.extend_from_slice(&chrome.label_font_size.to_le_bytes());
+    out.push_word(chrome.label_font_size);
     write_axis_chrome_style(out, &chrome.x_axis);
     write_axis_chrome_style(out, &chrome.y_axis);
 }
@@ -3792,9 +3867,9 @@ fn write_chrome_trailer(
     if y2.is_some() {
         out[trailer_at + 15] |= SCENE_TRAILER_HAS_Y2;
     }
-    out.extend_from_slice(&(text.title.len() as u32).to_le_bytes());
-    out.extend_from_slice(&(text.x_label.len() as u32).to_le_bytes());
-    out.extend_from_slice(&(text.y_label.len() as u32).to_le_bytes());
+    out.push_word(text.title.len() as u32);
+    out.push_word(text.x_label.len() as u32);
+    out.push_word(text.y_label.len() as u32);
     for (values, automatic) in [
         (
             chrome.x_major_ticks.as_deref().unwrap_or(&[]),
@@ -3807,14 +3882,11 @@ fn write_chrome_trailer(
         ),
         (&chrome.y_minor_ticks, false),
     ] {
-        out.extend_from_slice(
-            &(if automatic {
-                u32::MAX
-            } else {
-                values.len() as u32
-            })
-            .to_le_bytes(),
-        );
+        out.push_word(if automatic {
+            u32::MAX
+        } else {
+            values.len() as u32
+        });
     }
     let legend_bytes = legend.map(SceneLegend::encode).unwrap_or_default();
     let colorbar_bytes = colorbar
@@ -3826,11 +3898,11 @@ fn write_chrome_trailer(
         encode_tick_labels(chrome.x_tick_labels.as_deref()).expect("validated tick labels");
     let y_tick_label_bytes =
         encode_tick_labels(chrome.y_tick_labels.as_deref()).expect("validated tick labels");
-    out.extend_from_slice(&(legend_bytes.len() as u32).to_le_bytes());
-    out.extend_from_slice(&(label_bytes.len() as u32).to_le_bytes());
-    out.extend_from_slice(&(colorbar_bytes.len() as u32).to_le_bytes());
-    out.extend_from_slice(&(x_tick_label_bytes.len() as u32).to_le_bytes());
-    out.extend_from_slice(&(y_tick_label_bytes.len() as u32).to_le_bytes());
+    out.push_word(legend_bytes.len() as u32);
+    out.push_word(label_bytes.len() as u32);
+    out.push_word(colorbar_bytes.len() as u32);
+    out.push_word(x_tick_label_bytes.len() as u32);
+    out.push_word(y_tick_label_bytes.len() as u32);
     if chrome_collision_has_extras(chrome) {
         for value in [
             chrome.x_tick_min_gap,
@@ -3838,12 +3910,12 @@ fn write_chrome_trailer(
             chrome.x_tick_angle.unwrap_or(f64::NAN),
             chrome.y_tick_angle.unwrap_or(f64::NAN),
         ] {
-            out.extend_from_slice(&value.to_le_bytes());
+            out.push_word(value);
         }
     }
     if let Some(y2) = y2 {
         let payload = y2.encode(SceneY2Domain::Coordinates);
-        out.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+        out.push_word(payload.len() as u32);
         out.extend_from_slice(&payload);
     }
     out.extend_from_slice(text.title.as_bytes());
@@ -3858,7 +3930,7 @@ fn write_chrome_trailer(
         &chrome.y_minor_ticks,
     ] {
         for value in values {
-            out.extend_from_slice(&value.to_le_bytes());
+            out.push_word(value);
         }
     }
     out.extend_from_slice(&legend_bytes);
@@ -4108,7 +4180,7 @@ struct ResolvedColorbarTicks {
 /// Position of `value` in `[lo, hi]`. When the span overflows (for example
 /// `[-MAX, MAX]`), halving every term keeps the fraction finite.
 #[inline(never)]
-fn linear_fraction(value: f64, lo: f64, hi: f64) -> f64 {
+pub(crate) fn linear_fraction(value: f64, lo: f64, hi: f64) -> f64 {
     if (hi - lo).is_finite() {
         (value - lo) / (hi - lo)
     } else {
@@ -4321,10 +4393,13 @@ fn resolved_colorbar_extensions(
                 (x + width / 2.0, by + if maximum { -9.0 } else { 9.0 }),
             ]
         };
-        let authored = colorbar
-            .static_discrete
-            .as_ref()
-            .and_then(|discrete| if maximum { discrete.over } else { discrete.under });
+        let authored = colorbar.static_discrete.as_ref().and_then(|discrete| {
+            if maximum {
+                discrete.over
+            } else {
+                discrete.under
+            }
+        });
         let rgba = authored.unwrap_or(if maximum {
             colorbar.stops.last().unwrap().1
         } else {
@@ -4341,7 +4416,10 @@ const STATIC_PYPLOT_COLORBAR_BANDS: usize = 64;
 /// colorbar: each literal band is one equal share of the bar and values map
 /// piecewise-linearly inside their band. `None` outside that convention.
 fn uniform_discrete_fraction(colorbar: &SceneColorbar, value: f64) -> Option<f64> {
-    colorbar.static_discrete.as_ref().filter(|discrete| discrete.uniform)?;
+    colorbar
+        .static_discrete
+        .as_ref()
+        .filter(|discrete| discrete.uniform)?;
     let stops = &colorbar.stops;
     let upper = stops
         .partition_point(|(edge, _)| *edge <= value)
@@ -5582,7 +5660,9 @@ fn mesh_face_paints(
 /// One scatter point's fill, stroke, stroke width, and optional diameter.
 type ScatterPointPaint = ([u8; 4], [u8; 4], f64, Option<f64>);
 
-fn scatter_point_paints(plane: HeatmapPaintPlane<'_>) -> Result<Vec<ScatterPointPaint>, SceneError> {
+fn scatter_point_paints(
+    plane: HeatmapPaintPlane<'_>,
+) -> Result<Vec<ScatterPointPaint>, SceneError> {
     if plane.kind != XYHP_PAINT_SCATTER || plane.rows != 1 {
         return Err(SceneError::Length);
     }
@@ -5984,9 +6064,9 @@ fn encode_xyim(images: &[SceneImage]) -> Result<Vec<u8>, SceneError> {
     }
     let mut out = Vec::new();
     out.extend_from_slice(XYIM_MAGIC);
-    out.extend_from_slice(&XYIM_VERSION.to_le_bytes());
-    out.extend_from_slice(&(images.len() as u32).to_le_bytes());
-    out.extend_from_slice(&0u32.to_le_bytes());
+    out.push_word(XYIM_VERSION);
+    out.push_word(images.len() as u32);
+    out.push_word(0u32);
     for image in images {
         let pixels = (image.width as usize)
             .checked_mul(image.height as usize)
@@ -5995,11 +6075,11 @@ fn encode_xyim(images: &[SceneImage]) -> Result<Vec<u8>, SceneError> {
         if image.rgba.len() != pixels || pixels == 0 || pixels / 4 > MAX_SCENE_IMAGE_PIXELS {
             return Err(SceneError::Length);
         }
-        out.extend_from_slice(&image.stable_id.to_le_bytes());
-        out.extend_from_slice(&image.width.to_le_bytes());
-        out.extend_from_slice(&image.height.to_le_bytes());
-        out.extend_from_slice(&XYIM_FORMAT_RGBA8.to_le_bytes());
-        out.extend_from_slice(&(pixels as u32).to_le_bytes());
+        out.push_word(image.stable_id);
+        out.push_word(image.width);
+        out.push_word(image.height);
+        out.push_word(XYIM_FORMAT_RGBA8);
+        out.push_word(pixels as u32);
         out.extend_from_slice(&image.rgba);
     }
     Ok(out)
@@ -6093,9 +6173,9 @@ fn encode_xyds(entries: &[StyleDash]) -> Result<Vec<u8>, SceneError> {
     let mut seen = std::collections::BTreeSet::new();
     let mut out = Vec::new();
     out.extend_from_slice(XYDS_MAGIC);
-    out.extend_from_slice(&XYDS_VERSION.to_le_bytes());
-    out.extend_from_slice(&(entries.len() as u32).to_le_bytes());
-    out.extend_from_slice(&0u32.to_le_bytes());
+    out.push_word(XYDS_VERSION);
+    out.push_word(entries.len() as u32);
+    out.push_word(0u32);
     for entry in entries {
         if entry.count < 2
             || entry.count as usize > XYDS_MAX_VALUES
@@ -6103,14 +6183,14 @@ fn encode_xyds(entries: &[StyleDash]) -> Result<Vec<u8>, SceneError> {
         {
             return Err(SceneError::Length);
         }
-        out.extend_from_slice(&entry.style_ref.to_le_bytes());
-        out.extend_from_slice(&(u32::from(entry.count)).to_le_bytes());
+        out.push_word(entry.style_ref);
+        out.push_word(u32::from(entry.count));
         for index in 0..entry.count as usize {
             let value = entry.values[index];
             if !value.is_finite() || value <= 0.0 {
                 return Err(SceneError::NonFinite);
             }
-            out.extend_from_slice(&value.to_le_bytes());
+            out.push_word(value);
         }
     }
     Ok(out)
@@ -6206,16 +6286,16 @@ fn encode_xylc(entries: &[StyleCap]) -> Result<Vec<u8>, SceneError> {
     let mut seen = std::collections::BTreeSet::new();
     let mut out = Vec::new();
     out.extend_from_slice(XYLC_MAGIC);
-    out.extend_from_slice(&XYLC_VERSION.to_le_bytes());
-    out.extend_from_slice(&(entries.len() as u32).to_le_bytes());
-    out.extend_from_slice(&0u32.to_le_bytes());
+    out.push_word(XYLC_VERSION);
+    out.push_word(entries.len() as u32);
+    out.push_word(0u32);
     for entry in entries {
         if (entry.cap != LINECAP_BUTT && entry.cap != LINECAP_SQUARE)
             || !seen.insert(entry.style_ref)
         {
             return Err(SceneError::Length);
         }
-        out.extend_from_slice(&entry.style_ref.to_le_bytes());
+        out.push_word(entry.style_ref);
         out.push(entry.cap);
         out.extend_from_slice(&[0u8, 0, 0]);
     }
@@ -6379,9 +6459,9 @@ fn encode_xymp(entries: &[StyleMarkerPath]) -> Result<Vec<u8>, SceneError> {
     let mut seen = std::collections::BTreeSet::new();
     let mut out = Vec::new();
     out.extend_from_slice(XYMP_MAGIC);
-    out.extend_from_slice(&XYMP_VERSION.to_le_bytes());
-    out.extend_from_slice(&(entries.len() as u32).to_le_bytes());
-    out.extend_from_slice(&0u32.to_le_bytes());
+    out.push_word(XYMP_VERSION);
+    out.push_word(entries.len() as u32);
+    out.push_word(0u32);
     for entry in entries {
         let n_vertices: usize = entry.path.contours.iter().map(Vec::len).sum();
         if entry.path.contours.is_empty()
@@ -6392,16 +6472,16 @@ fn encode_xymp(entries: &[StyleMarkerPath]) -> Result<Vec<u8>, SceneError> {
         {
             return Err(SceneError::Length);
         }
-        out.extend_from_slice(&entry.style_ref.to_le_bytes());
-        out.extend_from_slice(&(u32::from(entry.path.filled)).to_le_bytes());
-        out.extend_from_slice(&(entry.path.contours.len() as u32).to_le_bytes());
-        out.extend_from_slice(&(n_vertices as u32).to_le_bytes());
+        out.push_word(entry.style_ref);
+        out.push_word(u32::from(entry.path.filled));
+        out.push_word(entry.path.contours.len() as u32);
+        out.push_word(n_vertices as u32);
         for contour in &entry.path.contours {
             if contour.len() < 2 || (entry.path.filled && contour.len() < 3) {
                 return Err(SceneError::Length);
             }
-            out.extend_from_slice(&(contour.len() as u32).to_le_bytes());
-            out.extend_from_slice(&0u32.to_le_bytes());
+            out.push_word(contour.len() as u32);
+            out.push_word(0u32);
             for &(x, y) in contour {
                 if !x.is_finite()
                     || !y.is_finite()
@@ -6410,8 +6490,8 @@ fn encode_xymp(entries: &[StyleMarkerPath]) -> Result<Vec<u8>, SceneError> {
                 {
                     return Err(SceneError::NonFinite);
                 }
-                out.extend_from_slice(&x.to_le_bytes());
-                out.extend_from_slice(&y.to_le_bytes());
+                out.push_word(x);
+                out.push_word(y);
             }
         }
     }
@@ -6529,9 +6609,9 @@ fn encode_xygr(entries: &[StyleGradient]) -> Result<Vec<u8>, SceneError> {
     let mut seen = std::collections::BTreeSet::new();
     let mut out = Vec::new();
     out.extend_from_slice(XYGR_MAGIC);
-    out.extend_from_slice(&XYGR_VERSION.to_le_bytes());
-    out.extend_from_slice(&(entries.len() as u32).to_le_bytes());
-    out.extend_from_slice(&0u32.to_le_bytes());
+    out.push_word(XYGR_VERSION);
+    out.push_word(entries.len() as u32);
+    out.push_word(0u32);
     for entry in entries {
         if entry.gradient.stops.len() < 2
             || entry.gradient.stops.len() > XYGR_MAX_STOPS
@@ -6544,16 +6624,16 @@ fn encode_xygr(entries: &[StyleGradient]) -> Result<Vec<u8>, SceneError> {
         if entry.gradient.plot_space {
             flags |= XYGR_FLAG_PLOT_SPACE;
         }
-        out.extend_from_slice(&entry.style_ref.to_le_bytes());
-        out.extend_from_slice(&flags.to_le_bytes());
-        out.extend_from_slice(&(entry.gradient.stops.len() as u32).to_le_bytes());
-        out.extend_from_slice(&0u32.to_le_bytes());
+        out.push_word(entry.style_ref);
+        out.push_word(flags);
+        out.push_word(entry.gradient.stops.len() as u32);
+        out.push_word(0u32);
         let mut prev_t = f32::NEG_INFINITY;
         for &(t, rgba) in &entry.gradient.stops {
             if !t.is_finite() || !(0.0..=1.0).contains(&t) || t < prev_t {
                 return Err(SceneError::NonFinite);
             }
-            out.extend_from_slice(&t.to_le_bytes());
+            out.push_word(t);
             out.extend_from_slice(&rgba);
             prev_t = t;
         }
@@ -6668,17 +6748,17 @@ fn encode_xymg(entries: &[StyleMarkerGlyph]) -> Result<Vec<u8>, SceneError> {
     let mut seen = std::collections::BTreeSet::new();
     let mut out = Vec::new();
     out.extend_from_slice(XYMG_MAGIC);
-    out.extend_from_slice(&XYMG_VERSION.to_le_bytes());
-    out.extend_from_slice(&(entries.len() as u32).to_le_bytes());
-    out.extend_from_slice(&0u32.to_le_bytes());
+    out.push_word(XYMG_VERSION);
+    out.push_word(entries.len() as u32);
+    out.push_word(0u32);
     for entry in entries {
         let bytes = entry.glyph.as_bytes();
         if marker_glyph_text(bytes).is_none() || !seen.insert(entry.style_ref) {
             return Err(SceneError::Length);
         }
         let padded = xymg_padded_len(bytes.len()).ok_or(SceneError::Limit)?;
-        out.extend_from_slice(&entry.style_ref.to_le_bytes());
-        out.extend_from_slice(&(bytes.len() as u32).to_le_bytes());
+        out.push_word(entry.style_ref);
+        out.push_word(bytes.len() as u32);
         out.extend_from_slice(bytes);
         out.resize(out.len() + (padded - bytes.len()), 0);
     }
@@ -9932,21 +10012,17 @@ impl<'a> SceneBatch<'a> {
                     * 8,
         );
         out.extend_from_slice(b"XYGS");
-        out.extend_from_slice(&SCENE_VERSION.to_le_bytes());
-        out.extend_from_slice(&(SCENE_BATCH_HEADER_BYTES as u32).to_le_bytes());
-        out.extend_from_slice(&(SCENE_BATCH_RECORD_BYTES as u32).to_le_bytes());
-        out.extend_from_slice(
-            &((marks.len()
+        out.push_word(SCENE_VERSION);
+        out.push_word(SCENE_BATCH_HEADER_BYTES as u32);
+        out.push_word(SCENE_BATCH_RECORD_BYTES as u32);
+        out.push_word(
+            (marks.len()
                 + straight_arrow_record_count(&self.arrows)
-                + self.callouts.len() * CALLOUT_SCENE_RECORDS) as u64)
-                .to_le_bytes(),
+                + self.callouts.len() * CALLOUT_SCENE_RECORDS) as u64,
         );
-        out.extend_from_slice(
-            &((self.stroke_width.len()
-                + self.arrows.len()
-                + self.callouts.len()
-                + head_styles.len()) as u64)
-                .to_le_bytes(),
+        out.push_word(
+            (self.stroke_width.len() + self.arrows.len() + self.callouts.len() + head_styles.len())
+                as u64,
         );
         for value in [
             self.layout.viewport_width,
@@ -9956,10 +10032,10 @@ impl<'a> SceneBatch<'a> {
             self.layout.right,
             self.layout.bottom,
         ] {
-            out.extend_from_slice(&value.to_le_bytes());
+            out.push_word(value);
         }
-        out.extend_from_slice(&self.x_axis_id.to_le_bytes());
-        out.extend_from_slice(&self.y_axis_id.to_le_bytes());
+        out.push_word(self.x_axis_id);
+        out.push_word(self.y_axis_id);
         // AxisScene records: kind/mask, transformed domain, and symlog constant.
         out.push(self.x_scale.kind as u8);
         out.push(u8::from(self.x_scale.mask_nonpositive));
@@ -9967,12 +10043,12 @@ impl<'a> SceneBatch<'a> {
         out.push(self.y_scale.kind as u8);
         out.push(u8::from(self.y_scale.mask_nonpositive));
         out.extend_from_slice(&[0; 6]);
-        out.extend_from_slice(&self.x_scale.coord_lo.to_le_bytes());
-        out.extend_from_slice(&(self.x_scale.coord_lo + self.x_scale.coord_span).to_le_bytes());
-        out.extend_from_slice(&self.y_scale.coord_lo.to_le_bytes());
-        out.extend_from_slice(&(self.y_scale.coord_lo + self.y_scale.coord_span).to_le_bytes());
-        out.extend_from_slice(&self.x_scale.constant.to_le_bytes());
-        out.extend_from_slice(&self.y_scale.constant.to_le_bytes());
+        out.push_word(self.x_scale.coord_lo);
+        out.push_word(self.x_scale.coord_lo + self.x_scale.coord_span);
+        out.push_word(self.y_scale.coord_lo);
+        out.push_word(self.y_scale.coord_lo + self.y_scale.coord_span);
+        out.push_word(self.x_scale.constant);
+        out.push_word(self.y_scale.constant);
         debug_assert_eq!(out.len(), SCENE_BATCH_HEADER_BYTES);
 
         for index in 0..self.stroke_width.len() {
@@ -9994,18 +10070,18 @@ impl<'a> SceneBatch<'a> {
             };
             out.extend_from_slice(fill);
             out.extend_from_slice(stroke);
-            out.extend_from_slice(&stroke_width.to_le_bytes());
+            out.push_word(stroke_width);
         }
         for arrow in &self.arrows {
             let rgba = straight_arrow_alpha(arrow.rgba, arrow.opacity).expect("validated arrow");
             out.extend_from_slice(&rgba);
             out.extend_from_slice(&rgba);
-            out.extend_from_slice(&arrow.width.to_le_bytes());
+            out.push_word(arrow.width);
         }
         for callout in &self.callouts {
             out.extend_from_slice(&callout.rgba);
             out.extend_from_slice(&callout.rgba);
-            out.extend_from_slice(&callout.width.to_le_bytes());
+            out.push_word(callout.width);
         }
         // Graph edge arrowheads (#33): solid fill in the edge's stroke color.
         for style_ref in &head_styles {
@@ -10013,7 +10089,7 @@ impl<'a> SceneBatch<'a> {
             let stroke = &self.stroke_rgba[index * 4..index * 4 + 4];
             out.extend_from_slice(stroke);
             out.extend_from_slice(stroke);
-            out.extend_from_slice(&0.0f64.to_le_bytes());
+            out.push_word(0.0f64);
         }
 
         for mark in &marks {
@@ -10021,12 +10097,12 @@ impl<'a> SceneBatch<'a> {
             out.push(u8::from(mark.visible));
             out.push(mark.symbol);
             out.push(mark.annotation_tag | if mark.y2 { SCENE_RECORD_Y2_BIT } else { 0 });
-            out.extend_from_slice(&mark.style_ref.to_le_bytes());
-            out.extend_from_slice(&mark.stable_id.to_le_bytes());
+            out.push_word(mark.style_ref);
+            out.push_word(mark.stable_id);
             for value in mark.coordinates {
-                out.extend_from_slice(&value.to_le_bytes());
+                out.push_word(value);
             }
-            out.extend_from_slice(&mark.diameter.to_le_bytes());
+            out.push_word(mark.diameter);
         }
         for (arrow_index, arrow) in self.arrows.iter().enumerate() {
             // Intake already admitted every arrow, so projection cannot fail here.
@@ -10039,13 +10115,13 @@ impl<'a> SceneBatch<'a> {
                 out.push(1);
                 out.push(0);
                 out.push(SCENE_ANNOTATION_TAG_STRAIGHT_ARROW);
-                out.extend_from_slice(&style_ref.to_le_bytes());
-                out.extend_from_slice(&arrow.stable_id.to_le_bytes());
-                out.extend_from_slice(&point[0].to_le_bytes());
-                out.extend_from_slice(&point[1].to_le_bytes());
-                out.extend_from_slice(&0.0f64.to_le_bytes());
-                out.extend_from_slice(&0.0f64.to_le_bytes());
-                out.extend_from_slice(&0.0f64.to_le_bytes());
+                out.push_word(style_ref);
+                out.push_word(arrow.stable_id);
+                out.push_word(point[0]);
+                out.push_word(point[1]);
+                out.push_word(0.0f64);
+                out.push_word(0.0f64);
+                out.push_word(0.0f64);
             };
             for (fill, point) in paint.records() {
                 let kind = if fill {
@@ -10070,13 +10146,13 @@ impl<'a> SceneBatch<'a> {
                 out.push(1);
                 out.push(0);
                 out.push(SCENE_ANNOTATION_TAG_CARTESIAN_CALLOUT);
-                out.extend_from_slice(&style_ref.to_le_bytes());
-                out.extend_from_slice(&callout.stable_id.to_le_bytes());
-                out.extend_from_slice(&point[0].to_le_bytes());
-                out.extend_from_slice(&point[1].to_le_bytes());
-                out.extend_from_slice(&0.0f64.to_le_bytes());
-                out.extend_from_slice(&0.0f64.to_le_bytes());
-                out.extend_from_slice(&0.0f64.to_le_bytes());
+                out.push_word(style_ref);
+                out.push_word(callout.stable_id);
+                out.push_word(point[0]);
+                out.push_word(point[1]);
+                out.push_word(0.0f64);
+                out.push_word(0.0f64);
+                out.push_word(0.0f64);
             };
             write(&mut out, SceneRecordKind::Polyline, callout.tip);
             write(&mut out, SceneRecordKind::Polyline, base);
@@ -10446,8 +10522,7 @@ fn straight_arrow_paint(
 ) -> Result<ArrowPaint, SceneError> {
     let start = [x_scale.pixel(arrow.x0), y_scale.pixel(arrow.y0)];
     let tip = [x_scale.pixel(arrow.x1), y_scale.pixel(arrow.y1)];
-    if !(start[0].is_finite() && start[1].is_finite() && tip[0].is_finite() && tip[1].is_finite())
-    {
+    if !(start[0].is_finite() && start[1].is_finite() && tip[0].is_finite() && tip[1].is_finite()) {
         return Err(SceneError::NonFinite);
     }
     default_arrow_paint(start, tip, &arrow.shape)
@@ -10833,7 +10908,9 @@ fn valid_straight_arrow_run(records: &[EncodedRecord]) -> bool {
         && expected
             .records()
             .zip(line.iter().chain(fill))
-            .all(|((_, want), got)| scene_edge_eq(got[0], want[0]) && scene_edge_eq(got[1], want[1]))
+            .all(|((_, want), got)| {
+                scene_edge_eq(got[0], want[0]) && scene_edge_eq(got[1], want[1])
+            })
 }
 
 // Scene v12 tag 0x80 marks literal per-row identity, so it is intentionally
@@ -10847,7 +10924,7 @@ fn push_raster_solid_poly(
     scale: f64,
 ) -> Result<(), SceneError> {
     out.push(1); // OP_FILL_POLY
-    out.extend_from_slice(&(points.len() as u32).to_le_bytes());
+    out.push_word(points.len() as u32);
     for &(x, y) in points {
         push_raster_f32(out, x, scale)?;
         push_raster_f32(out, y, scale)?;
@@ -10901,13 +10978,18 @@ fn append_raster_fill_run(
     start: usize,
     scale: f64,
     gradient: &dyn Fn(usize) -> bool,
-    fill: &mut dyn FnMut(&mut Vec<u8>, &[(f64, f64)], EncodedStyle, usize) -> Result<(), SceneError>,
+    fill: &mut dyn FnMut(
+        &mut Vec<u8>,
+        &[(f64, f64)],
+        EncodedStyle,
+        usize,
+    ) -> Result<(), SceneError>,
 ) -> Result<usize, SceneError> {
     let record = records[start];
     let style = styles[record.style_ref];
     let push_outline = |out: &mut Vec<u8>, run: &[EncodedRecord]| -> Result<(), SceneError> {
         out.push(3); // OP_STROKE
-        out.extend_from_slice(&(run.len() as u32).to_le_bytes());
+        out.push_word(run.len() as u32);
         for point in run {
             push_raster_f32(out, point.coordinates[0], scale)?;
             push_raster_f32(out, point.coordinates[1], scale)?;
@@ -10915,7 +10997,7 @@ fn append_raster_fill_run(
         push_raster_f32(out, style.stroke_width, scale)?;
         out.extend_from_slice(&style.stroke);
         out.push(1); // closed
-        out.extend_from_slice(&0u32.to_le_bytes());
+        out.push_word(0u32);
         out.push(1);
         Ok(())
     };
@@ -10923,7 +11005,7 @@ fn append_raster_fill_run(
         let end = triangle_fill_run_end(records, styles, start, gradient);
         if style.stroke_width == 0.0 && !gradient(record.style_ref) {
             out.push(19); // OP_UNION_TRIANGLES: blend the complete source fill once.
-            out.extend_from_slice(&(((end - start) / 3) as u32).to_le_bytes());
+            out.push_word(((end - start) / 3) as u32);
             out.extend_from_slice(&style.fill);
             for point in &records[start..end] {
                 push_raster_f32(out, point.coordinates[0], scale)?;
@@ -11723,7 +11805,10 @@ fn push_svg_text_flags(out: &mut String, flags: u8) {
 }
 
 fn x_label_baseline(document: &SceneDocument) -> f64 {
-    let size = document.chrome.x_axis.label_size(document.chrome.label_font_size);
+    let size = document
+        .chrome
+        .x_axis
+        .label_size(document.chrome.label_font_size);
     let descent = textblock::measure(&document.text.x_label, size, textblock::LINE_HEIGHT, None)
         .map_or(0.0, |block| block.descent);
     document.layout.viewport_height - 6.0_f64.max(4.0 + descent)
@@ -12307,7 +12392,11 @@ impl SceneDocument {
     /// annotation style that carries a gradient also fails closed, since the
     /// split cannot move gradients.
     pub(crate) fn into_graph_parts(self) -> Result<SceneGraphParts, SceneError> {
-        if self.polar.is_some() || self.y2.is_some() || self.colorbar.is_some() || !self.images.is_empty() {
+        if self.polar.is_some()
+            || self.y2.is_some()
+            || self.colorbar.is_some()
+            || !self.images.is_empty()
+        {
             return Err(SceneError::Length);
         }
         let mut annotations = SceneAnnotationParts {
@@ -12601,9 +12690,9 @@ impl SceneDocument {
                 })
                 .fold(0.0f64, f64::max);
             let (_, major_out) = tick_span(y2.axis.major_direction, y2.axis.tick_length);
-            let offset = y2
-                .axis
-                .tick_label_offset(false, 1, major_out, self.chrome.label_font_size);
+            let offset =
+                y2.axis
+                    .tick_label_offset(false, 1, major_out, self.chrome.label_font_size);
             self.layout.right + offset + extent
         });
         let gap = 0.4 * label_size;
@@ -12676,8 +12765,20 @@ impl SceneDocument {
         let paint = |index: usize| (bits & (1 << (10 + index)) != 0).then_some(colors[index]);
         self.static_title_flags = flags(0);
         for (axis, title, tick, tick_paint, title_paint) in [
-            (&mut self.chrome.x_axis, flags(1), flags(3), paint(0), paint(2)),
-            (&mut self.chrome.y_axis, flags(2), flags(4), paint(1), paint(3)),
+            (
+                &mut self.chrome.x_axis,
+                flags(1),
+                flags(3),
+                paint(0),
+                paint(2),
+            ),
+            (
+                &mut self.chrome.y_axis,
+                flags(2),
+                flags(4),
+                paint(1),
+                paint(3),
+            ),
         ] {
             axis.static_text = StaticAxisText {
                 tick_label_rgba: tick_paint,
@@ -12932,13 +13033,9 @@ impl SceneDocument {
                 if align > 3 {
                     return Err(SceneError::Length);
                 }
-                let block = textblock::measure(
-                    &label.text,
-                    label.font_size,
-                    textblock::LINE_HEIGHT,
-                    None,
-                )
-                .ok_or(SceneError::Length)?;
+                let block =
+                    textblock::measure(&label.text, label.font_size, textblock::LINE_HEIGHT, None)
+                        .ok_or(SceneError::Length)?;
                 let trailing = (block.line_count().saturating_sub(1)) as f64 * block.line_step;
                 let shift = match align {
                     0 => 0.0,
@@ -12975,7 +13072,6 @@ impl SceneDocument {
         self.static_title_style = Some((size, rgba));
         Ok(())
     }
-
 
     /// Apply one bounded pyplot straight-arrow metric set to every arrow in a
     /// panel. The canonical Scene owns projected endpoints; XYST supplies the
@@ -13028,7 +13124,8 @@ impl SceneDocument {
             let (line, fill) = points[..index - start].split_at(lines);
             let (p0, p1, head, tail) = arrow_run_ends(line, fill).ok_or(SceneError::Length)?;
             let paint = arrow_paint(p0, p1, head, tail, head_size)?;
-            for (record, (_, vertex)) in self.records[start..index].iter_mut().zip(paint.records()) {
+            for (record, (_, vertex)) in self.records[start..index].iter_mut().zip(paint.records())
+            {
                 record.coordinates = [vertex[0], vertex[1], 0.0, 0.0];
             }
             let style = self
@@ -13192,7 +13289,8 @@ impl SceneDocument {
                 } else {
                     SceneRecordKind::Polyline
                 };
-                self.records.push(record(kind, [point[0], point[1], 0.0, 0.0]));
+                self.records
+                    .push(record(kind, [point[0], point[1], 0.0, 0.0]));
             }
         }
         Ok(self)
@@ -13232,24 +13330,24 @@ impl SceneDocument {
         let mut out = colorbar.encode()?;
         let (x, y, width, height) = resolved_colorbar_bounds(self.layout, colorbar)?;
         out.extend_from_slice(b"XYRG");
-        out.extend_from_slice(&1u32.to_le_bytes());
+        out.push_word(1u32);
         for value in [x, y, width, height] {
-            out.extend_from_slice(&checked_f32(value)?.to_le_bytes());
+            out.push_word(checked_f32(value)?);
         }
         let ticks = resolved_colorbar_ticks(colorbar, (x, y, width, height))?;
         out.extend_from_slice(b"XYCT");
-        out.extend_from_slice(&1u32.to_le_bytes());
-        out.extend_from_slice(&(ticks.majors.len() as u32).to_le_bytes());
-        out.extend_from_slice(&(ticks.minors.len() as u32).to_le_bytes());
+        out.push_word(1u32);
+        out.push_word(ticks.majors.len() as u32);
+        out.push_word(ticks.minors.len() as u32);
         for (value, position, label) in &ticks.majors {
-            out.extend_from_slice(&value.to_le_bytes());
-            out.extend_from_slice(&checked_f32(*position)?.to_le_bytes());
-            out.extend_from_slice(&(label.len() as u32).to_le_bytes());
+            out.push_word(value);
+            out.push_word(checked_f32(*position)?);
+            out.push_word(label.len() as u32);
         }
         for (value, position) in &ticks.minors {
-            out.extend_from_slice(&value.to_le_bytes());
-            out.extend_from_slice(&checked_f32(*position)?.to_le_bytes());
-            out.extend_from_slice(&0u32.to_le_bytes());
+            out.push_word(value);
+            out.push_word(checked_f32(*position)?);
+            out.push_word(0u32);
         }
         for (_, _, label) in &ticks.majors {
             out.extend_from_slice(label.as_bytes());
@@ -13263,9 +13361,9 @@ impl SceneDocument {
         let mut out = legend.encode();
         let (x, y, width, height) = self.legend_bounds(legend)?;
         out.extend_from_slice(b"XYRG");
-        out.extend_from_slice(&1u32.to_le_bytes());
+        out.push_word(1u32);
         for value in [x, y, width, height] {
-            out.extend_from_slice(&checked_f32(value)?.to_le_bytes());
+            out.push_word(checked_f32(value)?);
         }
         let mut row_y = y + 8.0;
         let title_baseline = if legend.title.is_empty() {
@@ -13276,8 +13374,8 @@ impl SceneDocument {
             row_y += 6.0;
             value
         };
-        out.extend_from_slice(&checked_f32(x + 8.0)?.to_le_bytes());
-        out.extend_from_slice(&checked_f32(title_baseline)?.to_le_bytes());
+        out.push_word(checked_f32(x + 8.0)?);
+        out.push_word(checked_f32(title_baseline)?);
         let mut paths = Vec::new();
         for entry in &legend.entries {
             row_y += legend.font_size;
@@ -13306,11 +13404,11 @@ impl SceneDocument {
                 _ => (1u32, false, x + 10.0, swatch_y - 4.0, 16.0, 8.0),
             };
             for value in [x + 34.0, row_y, x0, y0, x1, y1] {
-                out.extend_from_slice(&checked_f32(value)?.to_le_bytes());
+                out.push_word(checked_f32(value)?);
             }
-            out.extend_from_slice(&primitive.to_le_bytes());
-            out.extend_from_slice(&u32::from(fill_none).to_le_bytes());
-            out.extend_from_slice(&checked_f32(style.stroke_width.max(1.0))?.to_le_bytes());
+            out.push_word(primitive);
+            out.push_word(u32::from(fill_none));
+            out.push_word(checked_f32(style.stroke_width.max(1.0))?);
             let path = if entry.kind == SceneRecordKind::Scatter {
                 let mut element = String::new();
                 push_symbol(
@@ -13336,7 +13434,7 @@ impl SceneDocument {
             if path.len() > MAX_BROWSER_LEGEND_PATH_BYTES {
                 return Err(SceneError::Limit);
             }
-            out.extend_from_slice(&(path.len() as u32).to_le_bytes());
+            out.push_word(path.len() as u32);
             paths.push(path);
             row_y += 6.0;
         }
@@ -13751,7 +13849,10 @@ impl SceneDocument {
                         return Err(SceneError::Length);
                     }
                 }
-                5 | 6 if (2..=STRAIGHT_ARROW_MAX_RECORDS).contains(&(run_end - annotation_cursor)) => {
+                5 | 6
+                    if (2..=STRAIGHT_ARROW_MAX_RECORDS)
+                        .contains(&(run_end - annotation_cursor)) =>
+                {
                     if !valid_straight_arrow_run(&records[annotation_cursor..run_end]) {
                         return Err(SceneError::Length);
                     }
@@ -13894,6 +13995,22 @@ impl SceneDocument {
     }
 
     fn resolved_axis_ticks(&self, slot: impl Into<AxisSlot>) -> Result<AxisTicks, SceneError> {
+        #[cfg(target_arch = "wasm32")]
+        {
+            return self.resolved_axis_ticks_shared(slot.into());
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        self.resolved_axis_ticks_impl(slot)
+    }
+
+    // Bool compatibility and explicit X/Y/Y2 slots use one browser resolver.
+    #[cfg(target_arch = "wasm32")]
+    #[inline(never)]
+    fn resolved_axis_ticks_shared(&self, slot: AxisSlot) -> Result<AxisTicks, SceneError> {
+        self.resolved_axis_ticks_impl(slot)
+    }
+
+    fn resolved_axis_ticks_impl(&self, slot: impl Into<AxisSlot>) -> Result<AxisTicks, SceneError> {
         let slot = slot.into();
         if slot != AxisSlot::Y2 {
             if let Some(polar) = &self.polar {
@@ -14096,7 +14213,11 @@ impl SceneDocument {
                 angle,
             );
             let normalized = angle.rem_euclid(360.0);
-            let normalized = if normalized > 180.0 { normalized - 360.0 } else { normalized };
+            let normalized = if normalized > 180.0 {
+                normalized - 360.0
+            } else {
+                normalized
+            };
             ((normalized * 100.0).round() as i16, anchor)
         };
         let mut angles = [0_i16; 2];
@@ -14131,7 +14252,13 @@ impl SceneDocument {
             .collect::<Result<Vec<_>, SceneError>>()?;
         Ok((
             ticks,
-            [mode as u8 | (anchors[0] << 3) | (anchors[1] << 5), a0, a1, b0, b1],
+            [
+                mode as u8 | (anchors[0] << 3) | (anchors[1] << 5),
+                a0,
+                a1,
+                b0,
+                b1,
+            ],
         ))
     }
 
@@ -14212,7 +14339,11 @@ impl SceneDocument {
             .enumerate()
             .map(|(index, value)| self.axis_tick_label(slot, index, *value, ticks))
             .collect();
-        let positions: Vec<f64> = ticks.labeled.iter().map(|value| scale.pixel(*value)).collect();
+        let positions: Vec<f64> = ticks
+            .labeled
+            .iter()
+            .map(|value| scale.pixel(*value))
+            .collect();
         let labels: Vec<&str> = texts.iter().map(String::as_str).collect();
         let (kept, mode) = tick_layout::tick_label_layout_resolved(
             &positions,
@@ -14515,7 +14646,11 @@ impl SceneDocument {
         for (index, (label, background)) in
             self.labels.iter().zip(&self.label_backgrounds).enumerate()
         {
-            let text_flags = self.static_label_text_flags.get(index).copied().unwrap_or(0);
+            let text_flags = self
+                .static_label_text_flags
+                .get(index)
+                .copied()
+                .unwrap_or(0);
             if let Some(background) = background {
                 out.push_str(
                     "<rect data-xy-slot=\"annotation_label_box\" aria-hidden=\"true\" x=\"",
@@ -14593,9 +14728,9 @@ impl SceneDocument {
         out.push_str("</g>");
     }
 
-    fn append_svg_plot_clip(&self, out: &mut String) {
+    fn append_svg_plot_clip_policy<const RETAINED: bool>(&self, out: &mut String) {
         out.push_str("<defs><clipPath id=\"xy-scene-plot\"");
-        if let Some(polar) = &self.polar {
+        if let Some(polar) = self.polar.as_ref().filter(|_| !RETAINED) {
             let cx = polar.cx();
             let cy = polar.cy();
             let radius = polar.radius();
@@ -14631,7 +14766,9 @@ impl SceneDocument {
             out.push_str("\"/>");
         }
         out.push_str("</clipPath>");
-        self.append_svg_gradients(out);
+        if !RETAINED {
+            self.append_svg_gradients(out);
+        }
         out.push_str("</defs>");
     }
 
@@ -14687,7 +14824,7 @@ impl SceneDocument {
         }
     }
 
-    fn push_raster_poly_fill(
+    fn push_raster_poly_fill<const RETAINED: bool>(
         &self,
         out: &mut Vec<u8>,
         points: &[(f64, f64)],
@@ -14698,12 +14835,12 @@ impl SceneDocument {
         if points.len() < 3 {
             return Ok(());
         }
-        if let Some(gradient) = self.style_gradient(style_ref) {
+        if let Some(gradient) = self.style_gradient(style_ref).filter(|_| !RETAINED) {
             let bbox = points_bbox(points);
             let (g0x, g0y, g1x, g1y) = gradient_raster_line(gradient, bbox, self.layout);
             let stops = rewrite_transparent_stops(&gradient.stops);
             out.push(2); // OP_FILL_POLY_GRAD
-            out.extend_from_slice(&(points.len() as u32).to_le_bytes());
+            out.push_word(points.len() as u32);
             for &(x, y) in points {
                 push_raster_f32(out, x, scale)?;
                 push_raster_f32(out, y, scale)?;
@@ -14712,9 +14849,9 @@ impl SceneDocument {
             push_raster_f32(out, g0y, scale)?;
             push_raster_f32(out, g1x, scale)?;
             push_raster_f32(out, g1y, scale)?;
-            out.extend_from_slice(&(stops.len() as u32).to_le_bytes());
+            out.push_word(stops.len() as u32);
             for (t, rgba) in stops {
-                out.extend_from_slice(&t.to_le_bytes());
+                out.push_word(t);
                 out.extend_from_slice(&rgba);
             }
             return Ok(());
@@ -15053,16 +15190,24 @@ impl SceneDocument {
     }
 
     pub fn to_svg(&self) -> String {
+        self.to_svg_policy::<false>()
+    }
+    /// Frozen retained geometry is already admitted and must not be aggregated.
+    pub(crate) fn to_svg_retained(&self) -> String {
+        self.to_svg_policy::<true>()
+    }
+    fn to_svg_policy<const RETAINED: bool>(&self) -> String {
         // #1006: SVG/PDF write meshes as vector faces up to
         // `MAX_PUBLIC_TRIANGLE_MESH_FACES` faces aggregate; above it each mesh
         // trace is one raster image (`push_svg_dense_mesh`).
-        let dense_mesh = self
-            .records
-            .iter()
-            .filter(|record| record.kind == SceneRecordKind::Triangle)
-            .count()
-            / 3
-            > MAX_PUBLIC_TRIANGLE_MESH_FACES;
+        let dense_mesh = !RETAINED
+            && self
+                .records
+                .iter()
+                .filter(|record| record.kind == SceneRecordKind::Triangle)
+                .count()
+                / 3
+                > MAX_PUBLIC_TRIANGLE_MESH_FACES;
         let mut out = String::with_capacity(self.records.len().saturating_mul(96));
         out.push_str("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"");
         push_num(&mut out, self.layout.viewport_width);
@@ -15073,7 +15218,7 @@ impl SceneDocument {
         out.push(' ');
         push_num(&mut out, self.layout.viewport_height);
         out.push_str("\">");
-        self.append_svg_plot_clip(&mut out);
+        self.append_svg_plot_clip_policy::<RETAINED>(&mut out);
         for (kind, x, y, width, height, paint) in [
             (
                 "chart-background",
@@ -15106,24 +15251,42 @@ impl SceneDocument {
             out.push_str(&rgba_css(paint));
             out.push_str("\"/>");
         }
-        let x_ticks = self.resolved_axis_ticks(true).unwrap_or(AxisTicks {
-            ticks: Vec::new(),
-            labeled: Vec::new(),
-            step: 1.0,
-        });
-        let y_ticks = self.resolved_axis_ticks(false).unwrap_or(AxisTicks {
-            ticks: Vec::new(),
-            labeled: Vec::new(),
-            step: 1.0,
-        });
-        let y2_ticks = self.y2.as_ref().map(|_| {
+        let x_ticks = if RETAINED {
+            AxisTicks {
+                ticks: vec![],
+                labeled: vec![],
+                step: 1.,
+            }
+        } else {
+            self.resolved_axis_ticks(true).unwrap_or(AxisTicks {
+                ticks: Vec::new(),
+                labeled: Vec::new(),
+                step: 1.0,
+            })
+        };
+        let y_ticks = if RETAINED {
+            AxisTicks {
+                ticks: vec![],
+                labeled: vec![],
+                step: 1.,
+            }
+        } else {
+            self.resolved_axis_ticks(false).unwrap_or(AxisTicks {
+                ticks: Vec::new(),
+                labeled: Vec::new(),
+                step: 1.0,
+            })
+        };
+        let y2_ticks = self.y2.as_ref().filter(|_| !RETAINED).map(|_| {
             self.resolved_axis_ticks(AxisSlot::Y2).unwrap_or(AxisTicks {
                 ticks: Vec::new(),
                 labeled: Vec::new(),
                 step: 1.0,
             })
         });
-        if self.chrome.x_axis.has_visible_grid() || self.chrome.y_axis.has_visible_grid() {
+        if !RETAINED
+            && (self.chrome.x_axis.has_visible_grid() || self.chrome.y_axis.has_visible_grid())
+        {
             out.push_str("<g data-xy-chrome=\"grid\">");
             self.append_svg_grid(&mut out, &x_ticks, &y_ticks);
             out.push_str("</g>");
@@ -15139,9 +15302,17 @@ impl SceneDocument {
             let style = self.styles[record.style_ref];
             match record.kind {
                 SceneRecordKind::Scatter => {
-                    let symbol = ScatterSymbol::from_code(record.symbol);
+                    let symbol = if RETAINED {
+                        match record.symbol {
+                            0 => ScatterSymbol::Circle,
+                            1 => ScatterSymbol::Square,
+                            _ => unreachable!("retained noncircular markers are flattened"),
+                        }
+                    } else {
+                        ScatterSymbol::from_code(record.symbol)
+                    };
                     let geometry = MarkerGeometry::new(symbol, record.diameter, style.stroke_width);
-                    if let Some(glyph) = self.style_glyph(record.style_ref) {
+                    if let Some(glyph) = self.style_glyph(record.style_ref).filter(|_| !RETAINED) {
                         push_marker_glyph_svg(
                             &mut out,
                             record.coordinates[0],
@@ -15185,7 +15356,11 @@ impl SceneDocument {
                     out.push_str("\" height=\"");
                     push_num(&mut out, record.coordinates[3] - record.coordinates[1]);
                     out.push('"');
-                    self.push_svg_fill(&mut out, style, record.style_ref);
+                    if RETAINED {
+                        push_paint(&mut out, "fill", style.fill, None);
+                    } else {
+                        self.push_svg_fill(&mut out, style, record.style_ref);
+                    }
                     if style.stroke_width > 0.0 {
                         push_paint(&mut out, "stroke", style.stroke, None);
                         out.push_str(" stroke-width=\"");
@@ -15196,6 +15371,9 @@ impl SceneDocument {
                     index += 1;
                 }
                 SceneRecordKind::Image => {
+                    if RETAINED {
+                        unreachable!("retained Scene primitive invariant");
+                    }
                     #[cfg(feature = "raster")]
                     if let Some(image) = scene_image_by_id(&self.images, record.stable_id) {
                         if let Ok(png) = crate::png_encode::encode_png(
@@ -15232,6 +15410,9 @@ impl SceneDocument {
                     index += 1;
                 }
                 SceneRecordKind::Band => {
+                    if RETAINED {
+                        unreachable!("retained Scene primitive invariant");
+                    }
                     let style_ref = record.style_ref;
                     let start = index;
                     while index < self.records.len() {
@@ -15264,7 +15445,11 @@ impl SceneDocument {
                             push_num(&mut out, point.coordinates[3]);
                         }
                         out.push_str(" Z\"");
-                        self.push_svg_fill(&mut out, style, record.style_ref);
+                        if RETAINED {
+                            push_paint(&mut out, "fill", style.fill, None);
+                        } else {
+                            self.push_svg_fill(&mut out, style, record.style_ref);
+                        }
                         if record.symbol == BandOutline::Perimeter as u8 {
                             push_paint(&mut out, "stroke", style.stroke, None);
                             out.push_str(" stroke-width=\"");
@@ -15325,7 +15510,11 @@ impl SceneDocument {
                         out.push_str(" Z ");
                     }
                     out.push('"');
-                    self.push_svg_fill(&mut out, style, record.style_ref);
+                    if RETAINED {
+                        push_paint(&mut out, "fill", style.fill, None);
+                    } else {
+                        self.push_svg_fill(&mut out, style, record.style_ref);
+                    }
                     if style.stroke_width > 0.0 {
                         push_paint(&mut out, "stroke", style.stroke, None);
                         out.push_str(" stroke-width=\"");
@@ -15338,6 +15527,9 @@ impl SceneDocument {
                     index = end;
                 }
                 SceneRecordKind::PolyFill => {
+                    if RETAINED {
+                        unreachable!("retained Scene primitive invariant");
+                    }
                     let style_ref = record.style_ref;
                     let start = index;
                     while index < self.records.len() {
@@ -15375,7 +15567,11 @@ impl SceneDocument {
                             }
                             out.push_str(" Z\"");
                         }
-                        self.push_svg_fill(&mut out, style, record.style_ref);
+                        if RETAINED {
+                            push_paint(&mut out, "fill", style.fill, None);
+                        } else {
+                            self.push_svg_fill(&mut out, style, record.style_ref);
+                        }
                         if style.stroke_width > 0.0 {
                             push_paint(&mut out, "stroke", style.stroke, None);
                             out.push_str(" stroke-width=\"");
@@ -15421,15 +15617,23 @@ impl SceneDocument {
             }
         }
         out.push_str("</g>");
+        if RETAINED {
+            out.push_str("</svg>");
+            return out;
+        }
         if self.polar.is_some() {
             self.append_svg_polar_frame(&mut out, &x_ticks);
             self.append_svg_polar_tick_labels(&mut out, &x_ticks, &y_ticks);
         } else if self.chrome.x_axis.has_visible_axis()
             || self.chrome.y_axis.has_visible_axis()
-            || self.y2.as_ref().is_some_and(|y2| y2.axis.has_visible_axis())
+            || self
+                .y2
+                .as_ref()
+                .is_some_and(|y2| y2.axis.has_visible_axis())
         {
             out.push_str("<g data-xy-chrome=\"axes\">");
-            for (slot, ticks, scale, style) in self.axis_slots(&x_ticks, &y_ticks, y2_ticks.as_ref())
+            for (slot, ticks, scale, style) in
+                self.axis_slots(&x_ticks, &y_ticks, y2_ticks.as_ref())
             {
                 let is_x = slot == AxisSlot::X;
                 let (major_in, major_out) = tick_span(style.major_direction, style.tick_length);
@@ -15471,7 +15675,9 @@ impl SceneDocument {
                             );
                         }
                     }
-                    if style.tick_label_sides & (1 << side_code) != 0 && style.tick_label_paint()[3] != 0 {
+                    if style.tick_label_sides & (1 << side_code) != 0
+                        && style.tick_label_paint()[3] != 0
+                    {
                         for item in self.axis_tick_collision_items(slot, ticks, scale, side_code) {
                             let p = scale.pixel(item.value);
                             let font_size = style.tick_label_size(self.chrome.label_font_size);
@@ -15740,7 +15946,7 @@ impl SceneDocument {
                 out.push(anchor);
                 push_raster_f32(out, size, scale)?;
                 out.extend_from_slice(&t_style.label_rgba);
-                out.extend_from_slice(&(text.len() as u32).to_le_bytes());
+                out.push_word(text.len() as u32);
                 out.extend_from_slice(text.as_bytes());
             }
         }
@@ -15771,7 +15977,7 @@ impl SceneDocument {
                 out.push(0);
                 push_raster_f32(out, size, scale)?;
                 out.extend_from_slice(&r_style.label_rgba);
-                out.extend_from_slice(&(text.len() as u32).to_le_bytes());
+                out.push_word(text.len() as u32);
                 out.extend_from_slice(text.as_bytes());
             }
         }
@@ -16006,7 +16212,9 @@ impl SceneDocument {
                 }
             }
             for side_code in 0..2 {
-                if style.tick_label_sides & (1 << side_code) == 0 || style.tick_label_paint()[3] == 0 {
+                if style.tick_label_sides & (1 << side_code) == 0
+                    || style.tick_label_paint()[3] == 0
+                {
                     continue;
                 }
                 for item in self.axis_tick_collision_items(slot, ticks, axis_scale, side_code) {
@@ -16056,11 +16264,11 @@ impl SceneDocument {
                         if !angle.is_finite() {
                             return Err(SceneError::NonFinite);
                         }
-                        out.extend_from_slice(&angle.to_le_bytes());
+                        out.push_word(angle);
                         out.push(style.static_text.tick_label_flags);
-                        out.extend_from_slice(&0u32.to_le_bytes());
+                        out.push_word(0u32);
                         out.extend_from_slice(&style.tick_label_paint());
-                        out.extend_from_slice(&(item.text.len() as u32).to_le_bytes());
+                        out.push_word(item.text.len() as u32);
                         out.extend_from_slice(item.text.as_bytes());
                     } else {
                         out.push(6);
@@ -16069,7 +16277,7 @@ impl SceneDocument {
                         out.push(y_aligned);
                         push_raster_f32(out, font_size, scale)?;
                         out.extend_from_slice(&style.tick_label_paint());
-                        out.extend_from_slice(&(item.text.len() as u32).to_le_bytes());
+                        out.push_word(item.text.len() as u32);
                         out.extend_from_slice(item.text.as_bytes());
                     }
                 }
@@ -16102,11 +16310,11 @@ impl SceneDocument {
                 push_raster_f32(out, y, scale)?;
                 out.push(anchor & 3);
                 push_raster_f32(out, size, scale)?;
-                out.extend_from_slice(&angle.to_le_bytes());
+                out.push_word(angle);
                 out.push(flags);
-                out.extend_from_slice(&0u32.to_le_bytes());
+                out.push_word(0u32);
                 out.extend_from_slice(&rgba);
-                out.extend_from_slice(&(label.len() as u32).to_le_bytes());
+                out.push_word(label.len() as u32);
                 out.extend_from_slice(label.as_bytes());
                 return Ok(());
             }
@@ -16116,7 +16324,7 @@ impl SceneDocument {
             out.push(anchor);
             push_raster_f32(out, size, scale)?;
             out.extend_from_slice(&rgba);
-            out.extend_from_slice(&(label.len() as u32).to_le_bytes());
+            out.push_word(label.len() as u32);
             out.extend_from_slice(label.as_bytes());
             Ok(())
         };
@@ -16169,11 +16377,11 @@ impl SceneDocument {
             push_raster_f32(out, 0.5 * (self.layout.top + self.layout.bottom), scale)?;
             out.push(1);
             push_raster_f32(out, y2.axis.label_size(self.chrome.label_font_size), scale)?;
-            out.extend_from_slice(&(-90.0f32).to_le_bytes());
+            out.push_word(-90.0f32);
             out.push(y2.axis.static_text.title_flags);
-            out.extend_from_slice(&0u32.to_le_bytes());
+            out.push_word(0u32);
             out.extend_from_slice(&y2.axis.title_paint());
-            out.extend_from_slice(&(y2.title.len() as u32).to_le_bytes());
+            out.push_word(y2.title.len() as u32);
             out.extend_from_slice(y2.title.as_bytes());
         }
         Ok(())
@@ -16206,7 +16414,12 @@ impl SceneDocument {
             .saturating_add(Self::minor_ticks(x_ticks).count())
             .saturating_add(Self::minor_ticks(y_ticks).count())
             .saturating_add(2);
-        let (y2_strokes, y2_labels, y2_title) = match (&self.y2, self.y2.as_ref().and_then(|_| self.resolved_axis_ticks(AxisSlot::Y2).ok())) {
+        let (y2_strokes, y2_labels, y2_title) = match (
+            &self.y2,
+            self.y2
+                .as_ref()
+                .and_then(|_| self.resolved_axis_ticks(AxisSlot::Y2).ok()),
+        ) {
             (Some(y2), Some(ticks)) => (
                 ticks
                     .ticks
@@ -16292,7 +16505,12 @@ impl SceneDocument {
             // Polar rings and the outer frame are 64-vertex closed polylines
             // (~560 bytes), not the 35-byte two-point strokes cartesian grid
             // capacity assumes. Spokes stay inside the existing stroke budget.
-            y_ticks.labeled.len().saturating_add(1).saturating_mul(560).saturating_add(25)
+            y_ticks
+                .labeled
+                .len()
+                .saturating_add(1)
+                .saturating_mul(560)
+                .saturating_add(25)
         } else {
             0
         };
@@ -16308,10 +16526,14 @@ impl SceneDocument {
         for (index, (label, background)) in
             self.labels.iter().zip(&self.label_backgrounds).enumerate()
         {
-            let text_flags = self.static_label_text_flags.get(index).copied().unwrap_or(0);
+            let text_flags = self
+                .static_label_text_flags
+                .get(index)
+                .copied()
+                .unwrap_or(0);
             if let Some(background) = background {
                 out.push(1);
-                out.extend_from_slice(&4u32.to_le_bytes());
+                out.push_word(4u32);
                 for (x, y) in [
                     (background.x, background.y),
                     (background.x + background.width, background.y),
@@ -16329,7 +16551,7 @@ impl SceneDocument {
                     // Repeat the rectangle as a Rust-owned closed polyline for
                     // the native command consumer; no host derives geometry.
                     out.push(3); // OP_STROKE
-                    out.extend_from_slice(&5u32.to_le_bytes());
+                    out.push_word(5u32);
                     for (x, y) in [
                         (background.x, background.y),
                         (background.x + background.width, background.y),
@@ -16346,7 +16568,7 @@ impl SceneDocument {
                     push_raster_f32(out, border.width, scale)?;
                     out.extend_from_slice(&border.rgba);
                     out.push(1); // closed
-                    out.extend_from_slice(&0u32.to_le_bytes()); // no dash
+                    out.push_word(0u32); // no dash
                     out.push(1); // round cap
                 }
             }
@@ -16368,11 +16590,11 @@ impl SceneDocument {
                     if !angle.is_finite() {
                         return Err(SceneError::NonFinite);
                     }
-                    out.extend_from_slice(&angle.to_le_bytes());
+                    out.push_word(angle);
                     out.push(text_flags);
-                    out.extend_from_slice(&0u32.to_le_bytes());
+                    out.push_word(0u32);
                     out.extend_from_slice(&label.rgba);
-                    out.extend_from_slice(&(line.len() as u32).to_le_bytes());
+                    out.push_word(line.len() as u32);
                     out.extend_from_slice(line.as_bytes());
                 } else {
                     out.push(6);
@@ -16381,7 +16603,7 @@ impl SceneDocument {
                     out.push(label.anchor);
                     push_raster_f32(out, label.font_size, scale)?;
                     out.extend_from_slice(&label.rgba);
-                    out.extend_from_slice(&(line.len() as u32).to_le_bytes());
+                    out.push_word(line.len() as u32);
                     out.extend_from_slice(line.as_bytes());
                 }
             }
@@ -16401,7 +16623,7 @@ impl SceneDocument {
             (x, y + height),
         ];
         out.push(1);
-        out.extend_from_slice(&4u32.to_le_bytes());
+        out.push_word(4u32);
         for (px, py) in points {
             push_raster_f32(out, px, scale)?;
             push_raster_f32(out, py, scale)?;
@@ -16447,7 +16669,7 @@ impl SceneDocument {
                 out.push(0);
                 push_raster_f32(out, size, scale)?;
                 out.extend_from_slice(&legend.text_rgba);
-                out.extend_from_slice(&(label.len() as u32).to_le_bytes());
+                out.push_word(label.len() as u32);
                 out.extend_from_slice(label.as_bytes());
                 Ok(())
             };
@@ -16484,7 +16706,7 @@ impl SceneDocument {
                         out.push(1);
                         push_raster_f32(out, font_size, scale)?;
                         out.extend_from_slice(&legend_swatch_rgba(style.fill));
-                        out.extend_from_slice(&(glyph.len() as u32).to_le_bytes());
+                        out.push_word(glyph.len() as u32);
                         out.extend_from_slice(glyph.as_bytes());
                     } else {
                         out.push(4);
@@ -16499,7 +16721,7 @@ impl SceneDocument {
                 }
                 _ => {
                     out.push(1);
-                    out.extend_from_slice(&4u32.to_le_bytes());
+                    out.push_word(4u32);
                     for (px, py) in [
                         (x + 10.0, swatch_y - 4.0),
                         (x + 26.0, swatch_y - 4.0),
@@ -16518,7 +16740,7 @@ impl SceneDocument {
             out.push(0);
             push_raster_f32(out, legend.font_size, scale)?;
             out.extend_from_slice(&legend.text_rgba);
-            out.extend_from_slice(&(entry.label.len() as u32).to_le_bytes());
+            out.push_word(entry.label.len() as u32);
             out.extend_from_slice(entry.label.as_bytes());
             row_y += 6.0;
         }
@@ -16537,7 +16759,7 @@ impl SceneDocument {
                 (x, y + height * (1.0 - b), width, height * (b - a))
             };
             out.push(1);
-            out.extend_from_slice(&4u32.to_le_bytes());
+            out.push_word(4u32);
             for (px, py) in [(rx, ry), (rx + rw, ry), (rx + rw, ry + rh), (rx, ry + rh)] {
                 push_raster_f32(out, px, scale)?;
                 push_raster_f32(out, py, scale)?;
@@ -16547,7 +16769,7 @@ impl SceneDocument {
         let ticks = resolved_colorbar_ticks(colorbar, (x, y, width, height))?;
         for (_, points, rgba) in resolved_colorbar_extensions(colorbar, (x, y, width, height)) {
             out.push(1);
-            out.extend_from_slice(&3u32.to_le_bytes());
+            out.push_word(3u32);
             for (px, py) in points {
                 push_raster_f32(out, px, scale)?;
                 push_raster_f32(out, py, scale)?;
@@ -16585,7 +16807,7 @@ impl SceneDocument {
             out.push(anchor);
             push_raster_f32(out, 11.0, scale)?;
             out.extend_from_slice(&colorbar.text_rgba);
-            out.extend_from_slice(&(label.len() as u32).to_le_bytes());
+            out.push_word(label.len() as u32);
             out.extend_from_slice(label.as_bytes());
         }
         if !colorbar.title.is_empty() {
@@ -16596,14 +16818,18 @@ impl SceneDocument {
             out.push(anchor);
             push_raster_f32(out, size, scale)?;
             out.extend_from_slice(&colorbar.text_rgba);
-            out.extend_from_slice(&(colorbar.title.len() as u32).to_le_bytes());
+            out.push_word(colorbar.title.len() as u32);
             out.extend_from_slice(colorbar.title.as_bytes());
         }
         Ok(())
     }
 
     #[inline(never)]
-    fn append_raster_marks(&self, out: &mut Vec<u8>, scale: f64) -> Result<(), SceneError> {
+    fn append_raster_marks<const RETAINED: bool>(
+        &self,
+        out: &mut Vec<u8>,
+        scale: f64,
+    ) -> Result<(), SceneError> {
         let mut index = 0;
         while index < self.records.len() {
             let record = self.records[index];
@@ -16612,6 +16838,17 @@ impl SceneDocument {
                 continue;
             }
             let style = self.styles[record.style_ref];
+            if RETAINED
+                && !matches!(
+                    record.kind,
+                    SceneRecordKind::Scatter
+                        | SceneRecordKind::Rect
+                        | SceneRecordKind::Triangle
+                        | SceneRecordKind::Segment
+                )
+            {
+                return Err(SceneError::Length);
+            }
             match record.kind {
                 SceneRecordKind::Scatter => {
                     let geometry = MarkerGeometry::new(
@@ -16619,7 +16856,7 @@ impl SceneDocument {
                         record.diameter,
                         style.stroke_width,
                     );
-                    if let Some(glyph) = self.style_glyph(record.style_ref) {
+                    if let Some(glyph) = self.style_glyph(record.style_ref).filter(|_| !RETAINED) {
                         let font_size = geometry.radius * 2.0;
                         out.push(6);
                         push_raster_f32(out, record.coordinates[0], scale)?;
@@ -16627,7 +16864,7 @@ impl SceneDocument {
                         out.push(1);
                         push_raster_f32(out, font_size, scale)?;
                         out.extend_from_slice(&style.fill);
-                        out.extend_from_slice(&(glyph.len() as u32).to_le_bytes());
+                        out.push_word(glyph.len() as u32);
                         out.extend_from_slice(glyph.as_bytes());
                     } else {
                         out.push(4);
@@ -16648,10 +16885,16 @@ impl SceneDocument {
                         (record.coordinates[2], record.coordinates[3]),
                         (record.coordinates[0], record.coordinates[3]),
                     ];
-                    self.push_raster_poly_fill(out, &points, style, record.style_ref, scale)?;
+                    self.push_raster_poly_fill::<RETAINED>(
+                        out,
+                        &points,
+                        style,
+                        record.style_ref,
+                        scale,
+                    )?;
                     if style.stroke_width > 0.0 {
                         out.push(3);
-                        out.extend_from_slice(&4u32.to_le_bytes());
+                        out.push_word(4u32);
                         for (x, y) in points {
                             push_raster_f32(out, x, scale)?;
                             push_raster_f32(out, y, scale)?;
@@ -16659,26 +16902,32 @@ impl SceneDocument {
                         push_raster_f32(out, style.stroke_width, scale)?;
                         out.extend_from_slice(&style.stroke);
                         out.push(1);
-                        out.extend_from_slice(&0u32.to_le_bytes());
+                        out.push_word(0u32);
                         out.push(1);
                     }
                     index += 1;
                 }
                 SceneRecordKind::Image => {
+                    if RETAINED {
+                        return Err(SceneError::Length);
+                    }
                     if let Some(image) = scene_image_by_id(&self.images, record.stable_id) {
                         out.push(5); // OP_IMAGE
                         push_raster_f32(out, record.coordinates[0], scale)?;
                         push_raster_f32(out, record.coordinates[1], scale)?;
                         push_raster_f32(out, record.coordinates[2] - record.coordinates[0], scale)?;
                         push_raster_f32(out, record.coordinates[3] - record.coordinates[1], scale)?;
-                        out.extend_from_slice(&image.width.to_le_bytes());
-                        out.extend_from_slice(&image.height.to_le_bytes());
+                        out.push_word(image.width);
+                        out.push_word(image.height);
                         out.push(1); // nearest / pixelated
                         out.extend_from_slice(&image.rgba);
                     }
                     index += 1;
                 }
                 SceneRecordKind::Band => {
+                    if RETAINED {
+                        return Err(SceneError::Length);
+                    }
                     let start = index;
                     let style_ref = record.style_ref;
                     while index < self.records.len() {
@@ -16702,12 +16951,14 @@ impl SceneDocument {
                         for point in run.iter().rev() {
                             points.push((point.coordinates[2], point.coordinates[3]));
                         }
-                        self.push_raster_poly_fill(out, &points, style, style_ref, scale)?;
+                        self.push_raster_poly_fill::<RETAINED>(
+                            out, &points, style, style_ref, scale,
+                        )?;
                         if record.symbol != BandOutline::None as u8 {
                             let perimeter = record.symbol == BandOutline::Perimeter as u8;
                             let stroke_count = if perimeter { count } else { run.len() as u32 };
                             out.push(3); // OP_STROKE
-                            out.extend_from_slice(&stroke_count.to_le_bytes());
+                            out.push_word(stroke_count);
                             for point in run {
                                 push_raster_f32(out, point.coordinates[0], scale)?;
                                 push_raster_f32(out, point.coordinates[1], scale)?;
@@ -16721,7 +16972,7 @@ impl SceneDocument {
                             push_raster_f32(out, style.stroke_width, scale)?;
                             out.extend_from_slice(&style.stroke);
                             out.push(u8::from(perimeter)); // closed only for perimeter
-                            out.extend_from_slice(&0u32.to_le_bytes());
+                            out.push_word(0u32);
                             out.push(1);
                         }
                     }
@@ -16735,7 +16986,9 @@ impl SceneDocument {
                         scale,
                         &|style_ref| self.style_gradient(style_ref).is_some(),
                         &mut |out, points, style, style_ref| {
-                            self.push_raster_poly_fill(out, points, style, style_ref, scale)
+                            self.push_raster_poly_fill::<RETAINED>(
+                                out, points, style, style_ref, scale,
+                            )
                         },
                     )?;
                 }
@@ -16757,7 +17010,7 @@ impl SceneDocument {
                     let count = index - start;
                     if count >= 2 && style.stroke_width > 0.0 {
                         out.push(3);
-                        out.extend_from_slice(&(count as u32).to_le_bytes());
+                        out.push_word(count as u32);
                         for point in &self.records[start..index] {
                             push_raster_f32(out, point.coordinates[0], scale)?;
                             push_raster_f32(out, point.coordinates[1], scale)?;
@@ -16775,21 +17028,89 @@ impl SceneDocument {
     }
 
     pub fn to_raster_commands(&self, scale: f64) -> Result<Vec<u8>, SceneError> {
+        self.to_raster_commands_policy::<false>(scale)
+    }
+    /// The retained adapter admits only the literal, chromeless Scene vocabulary.
+    /// Refuse unexpected decorations before allocating commands; never silently
+    /// omit an authored text/glyph/gradient/image from a full Scene.
+    pub(crate) fn to_raster_commands_retained(&self, scale: f64) -> Result<Vec<u8>, SceneError> {
+        if self.y2.is_some()
+            || self.polar.is_some()
+            || self.legend.is_some()
+            || self.colorbar.is_some()
+            || !self.labels.is_empty()
+            || !self.images.is_empty()
+            || self.text != SceneChromeText::default()
+            || self.gradients.iter().any(Option::is_some)
+            || self.marker_glyphs.iter().any(Option::is_some)
+            || [&self.chrome.x_axis, &self.chrome.y_axis]
+                .iter()
+                .any(|a| a.tick_sides != 0 || a.tick_label_sides != 0 || a.axis_rgba[3] != 0)
+            || self.chrome.x_major_ticks.as_deref() != Some(&[])
+            || self.chrome.y_major_ticks.as_deref() != Some(&[])
+            || !self.chrome.x_minor_ticks.is_empty()
+            || !self.chrome.y_minor_ticks.is_empty()
+            || self.records.iter().any(|r| {
+                !matches!(
+                    r.kind,
+                    SceneRecordKind::Scatter
+                        | SceneRecordKind::Rect
+                        | SceneRecordKind::Triangle
+                        | SceneRecordKind::Segment
+                ) || (r.kind == SceneRecordKind::Scatter && r.symbol > 1)
+                    || (matches!(r.kind, SceneRecordKind::Rect | SceneRecordKind::Triangle)
+                        && self.styles[r.style_ref].stroke_width != 0.0)
+                    || (r.kind == SceneRecordKind::Segment
+                        && (self.styles[r.style_ref].dash_count != 0
+                            || self.styles[r.style_ref].linecap != 0))
+            })
+        {
+            return Err(SceneError::Length);
+        }
+        self.to_raster_commands_policy::<true>(scale)
+    }
+    fn to_raster_commands_policy<const RETAINED: bool>(
+        &self,
+        scale: f64,
+    ) -> Result<Vec<u8>, SceneError> {
         if !scale.is_finite() || scale <= 0.0 {
             return Err(SceneError::NonFinite);
         }
         self.check_mesh_budgets(true)?;
-        let x_ticks = self.resolved_axis_ticks(true)?;
-        let y_ticks = self.resolved_axis_ticks(false)?;
+        let x_ticks = if RETAINED {
+            AxisTicks {
+                ticks: vec![],
+                labeled: vec![],
+                step: 1.,
+            }
+        } else {
+            self.resolved_axis_ticks(true)?
+        };
+        let y_ticks = if RETAINED {
+            AxisTicks {
+                ticks: vec![],
+                labeled: vec![],
+                step: 1.,
+            }
+        } else {
+            self.resolved_axis_ticks(false)?
+        };
         let y2_ticks = self
             .y2
             .as_ref()
+            .filter(|_| !RETAINED)
             .map(|_| self.resolved_axis_ticks(AxisSlot::Y2))
             .transpose()?;
         // Grid strokes are 35 bytes each. Labeled ticks add another stroke
         // plus a bounded text command; reserve their space up front so adding
         // constant-size chrome never copies the full mark command buffer.
-        let reserved_capacity = self.raster_command_capacity(&x_ticks, &y_ticks);
+        let reserved_capacity = if RETAINED {
+            self.raster_mark_capacity
+                .checked_add(256)
+                .ok_or(SceneError::Limit)?
+        } else {
+            self.raster_command_capacity(&x_ticks, &y_ticks)
+        };
         let mut out = Vec::with_capacity(reserved_capacity);
         let f32_push = |out: &mut Vec<u8>, value: f64| -> Result<(), SceneError> {
             let scaled = value * scale;
@@ -16800,7 +17121,7 @@ impl SceneDocument {
             if !narrowed.is_finite() {
                 return Err(SceneError::NonFinite);
             }
-            out.extend_from_slice(&narrowed.to_le_bytes());
+            out.push_word(narrowed);
             Ok(())
         };
         let push_background = |out: &mut Vec<u8>,
@@ -16811,7 +17132,7 @@ impl SceneDocument {
                                rgba: [u8; 4]|
          -> Result<(), SceneError> {
             out.push(1);
-            out.extend_from_slice(&4u32.to_le_bytes());
+            out.push_word(4u32);
             for (px, py) in [(x, y), (x + w, y), (x + w, y + h), (x, y + h)] {
                 push_raster_f32(out, px, scale)?;
                 push_raster_f32(out, py, scale)?;
@@ -16840,21 +17161,32 @@ impl SceneDocument {
         f32_push(&mut out, self.layout.top)?;
         f32_push(&mut out, self.layout.right - self.layout.left)?;
         f32_push(&mut out, self.layout.bottom - self.layout.top)?;
-        self.append_raster_grid(&mut out, scale, &x_ticks, &y_ticks)?;
-        if let Some(polar) = &self.polar {
+        if !RETAINED {
+            self.append_raster_grid(&mut out, scale, &x_ticks, &y_ticks)?;
+        }
+        if let Some(polar) = self.polar.as_ref().filter(|_| !RETAINED) {
             // Existing analytic annular-sector opcode; coordinates/radii scale,
             // while angles remain radians. Axes reset the clip before chrome.
             out.push(18);
             for value in [polar.cx(), polar.cy(), polar.inner_radius(), polar.radius()] {
                 push_raster_f32(&mut out, value, scale)?;
             }
-            let sweep = if polar.full_sector() { std::f64::consts::TAU }
-                else { polar.sector_a1() - polar.sector_a0() };
+            let sweep = if polar.full_sector() {
+                std::f64::consts::TAU
+            } else {
+                polar.sector_a1() - polar.sector_a0()
+            };
             for angle in [polar.sector_a0(), sweep] {
-                out.extend_from_slice(&(angle as f32).to_le_bytes());
+                out.push_word(angle as f32);
             }
         }
-        self.append_raster_marks(&mut out, scale)?;
+        self.append_raster_marks::<RETAINED>(&mut out, scale)?;
+        if RETAINED {
+            if out.len() > reserved_capacity {
+                return Err(SceneError::Limit);
+            }
+            return Ok(out);
+        }
         // Reset the plot clip before chrome, then draw the canonical bottom
         // and left axes through the same display-list primitive as line marks.
         self.append_raster_axes(&mut out, scale, &x_ticks, &y_ticks, y2_ticks.as_ref())?;
@@ -17119,8 +17451,12 @@ impl SceneDocument {
         let label_bytes = encode_scene_labels(&paint_labels, &paint_backgrounds)?;
         // Fail closed rather than publish a label version the client rejects.
         if label_bytes.len() >= 8
-            && u32::from_le_bytes([label_bytes[4], label_bytes[5], label_bytes[6], label_bytes[7]])
-                > BROWSER_PAINTER_XYLB_MAX_VERSION
+            && u32::from_le_bytes([
+                label_bytes[4],
+                label_bytes[5],
+                label_bytes[6],
+                label_bytes[7],
+            ]) > BROWSER_PAINTER_XYLB_MAX_VERSION
         {
             return Err(SceneError::Length);
         }
@@ -17211,16 +17547,11 @@ impl SceneDocument {
                     .copy_from_slice(&(column_offset as u32).to_le_bytes());
                 if triangle || segment {
                     for primitive in self.records[group.start..group.end].chunks_exact(stride) {
-                        out.extend_from_slice(
-                            &f32_value(primitive[column / 2].coordinates[column % 2])?
-                                .to_le_bytes(),
-                        );
+                        out.push_word(f32_value(primitive[column / 2].coordinates[column % 2])?);
                     }
                 } else {
                     for record in &self.records[group.start..group.end] {
-                        out.extend_from_slice(
-                            &f32_value(record.coordinates[column])?.to_le_bytes(),
-                        );
+                        out.push_word(f32_value(record.coordinates[column])?);
                     }
                 }
             }
@@ -17229,7 +17560,7 @@ impl SceneDocument {
                 out[descriptor + 16..descriptor + 20]
                     .copy_from_slice(&(offset as u32).to_le_bytes());
                 for record in &self.records[group.start..group.end] {
-                    out.extend_from_slice(&(record.style_ref as u32).to_le_bytes());
+                    out.push_word(record.style_ref as u32);
                 }
             }
             for (column, high) in [false, true].into_iter().enumerate() {
@@ -17242,7 +17573,7 @@ impl SceneDocument {
                     } else {
                         record.stable_id as u32
                     };
-                    out.extend_from_slice(&word.to_le_bytes());
+                    out.push_word(word);
                 }
             }
             if scatter_batch || segment {
@@ -17251,7 +17582,7 @@ impl SceneDocument {
                     out[descriptor + 48..descriptor + 52]
                         .copy_from_slice(&(offset as u32).to_le_bytes());
                     for record in &self.records[group.start..group.end] {
-                        out.extend_from_slice(&f32_value(record.diameter)?.to_le_bytes());
+                        out.push_word(f32_value(record.diameter)?);
                     }
                 }
                 let rgba_slot = if scatter_batch { 52 } else { 48 };
@@ -17298,7 +17629,7 @@ impl SceneDocument {
                             -1.0
                         },
                     ] {
-                        out.extend_from_slice(&f32_value(value)?.to_le_bytes());
+                        out.push_word(f32_value(value)?);
                     }
                 }
                 if segment {
@@ -17306,7 +17637,7 @@ impl SceneDocument {
                     out[descriptor + 56..descriptor + 60]
                         .copy_from_slice(&(offset as u32).to_le_bytes());
                     for record in self.records[group.start..group.end].iter().step_by(2) {
-                        out.extend_from_slice(&(record.style_ref as u32).to_le_bytes());
+                        out.push_word(record.style_ref as u32);
                     }
                 }
                 continue; // Every per-instance paint field is Rust-resolved above.
@@ -18368,7 +18699,9 @@ pub(crate) mod tests {
         assert!(validate_scene_batch(&scene).is_ok());
         assert_eq!(document.to_svg().matches(" Z ").count(), 12);
         let mut commands = Vec::new();
-        document.append_raster_marks(&mut commands, 1.0).unwrap();
+        document
+            .append_raster_marks::<false>(&mut commands, 1.0)
+            .unwrap();
         let mut cursor = 0;
         let mut primitives = 0;
         let mut groups = 0;
@@ -19225,13 +19558,13 @@ pub(crate) mod tests {
         let mut out = Vec::new();
         out.extend_from_slice(b"XYHP");
         for word in [1u32, 1, 0] {
-            out.extend_from_slice(&word.to_le_bytes());
+            out.push_word(word);
         }
-        out.extend_from_slice(&7u64.to_le_bytes());
-        out.extend_from_slice(&1u32.to_le_bytes());
-        out.extend_from_slice(&cols.to_le_bytes());
-        out.extend_from_slice(&XYHP_PAINT_SCATTER.to_le_bytes());
-        out.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+        out.push_word(7u64);
+        out.push_word(1u32);
+        out.push_word(cols);
+        out.push_word(XYHP_PAINT_SCATTER);
+        out.push_word(payload.len() as u32);
         out.extend_from_slice(payload);
         out
     }
@@ -19256,14 +19589,14 @@ pub(crate) mod tests {
     fn xyhp_rgba(stable_id: u64, rows: u32, cols: u32, rgba: &[u8]) -> Vec<u8> {
         let mut out = Vec::new();
         out.extend_from_slice(b"XYHP");
-        out.extend_from_slice(&1u32.to_le_bytes());
-        out.extend_from_slice(&1u32.to_le_bytes());
-        out.extend_from_slice(&0u32.to_le_bytes());
-        out.extend_from_slice(&stable_id.to_le_bytes());
-        out.extend_from_slice(&rows.to_le_bytes());
-        out.extend_from_slice(&cols.to_le_bytes());
-        out.extend_from_slice(&XYHP_PAINT_RGBA.to_le_bytes());
-        out.extend_from_slice(&(rgba.len() as u32).to_le_bytes());
+        out.push_word(1u32);
+        out.push_word(1u32);
+        out.push_word(0u32);
+        out.push_word(stable_id);
+        out.push_word(rows);
+        out.push_word(cols);
+        out.push_word(XYHP_PAINT_RGBA);
+        out.push_word(rgba.len() as u32);
         out.extend_from_slice(rgba);
         out
     }
@@ -19278,26 +19611,26 @@ pub(crate) mod tests {
         stops: &[[u8; 3]],
     ) -> Vec<u8> {
         let mut payload = Vec::new();
-        payload.extend_from_slice(&lo.to_le_bytes());
-        payload.extend_from_slice(&hi.to_le_bytes());
-        payload.extend_from_slice(&(stops.len() as u32).to_le_bytes());
-        payload.extend_from_slice(&0u32.to_le_bytes());
+        payload.push_word(lo);
+        payload.push_word(hi);
+        payload.push_word(stops.len() as u32);
+        payload.push_word(0u32);
         for value in values {
-            payload.extend_from_slice(&value.to_le_bytes());
+            payload.push_word(value);
         }
         for stop in stops {
             payload.extend_from_slice(stop);
         }
         let mut out = Vec::new();
         out.extend_from_slice(b"XYHP");
-        out.extend_from_slice(&1u32.to_le_bytes());
-        out.extend_from_slice(&1u32.to_le_bytes());
-        out.extend_from_slice(&0u32.to_le_bytes());
-        out.extend_from_slice(&stable_id.to_le_bytes());
-        out.extend_from_slice(&rows.to_le_bytes());
-        out.extend_from_slice(&cols.to_le_bytes());
-        out.extend_from_slice(&XYHP_PAINT_COLORMAP.to_le_bytes());
-        out.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+        out.push_word(1u32);
+        out.push_word(1u32);
+        out.push_word(0u32);
+        out.push_word(stable_id);
+        out.push_word(rows);
+        out.push_word(cols);
+        out.push_word(XYHP_PAINT_COLORMAP);
+        out.push_word(payload.len() as u32);
         out.extend_from_slice(&payload);
         out
     }
@@ -19313,24 +19646,24 @@ pub(crate) mod tests {
     ) -> Vec<u8> {
         let name_bytes = name.as_bytes();
         let mut payload = Vec::new();
-        payload.extend_from_slice(&lo.to_le_bytes());
-        payload.extend_from_slice(&hi.to_le_bytes());
-        payload.extend_from_slice(&(name_bytes.len() as u32).to_le_bytes());
-        payload.extend_from_slice(&0u32.to_le_bytes());
+        payload.push_word(lo);
+        payload.push_word(hi);
+        payload.push_word(name_bytes.len() as u32);
+        payload.push_word(0u32);
         for value in values {
-            payload.extend_from_slice(&value.to_le_bytes());
+            payload.push_word(value);
         }
         payload.extend_from_slice(name_bytes);
         let mut out = Vec::new();
         out.extend_from_slice(b"XYHP");
-        out.extend_from_slice(&1u32.to_le_bytes());
-        out.extend_from_slice(&1u32.to_le_bytes());
-        out.extend_from_slice(&0u32.to_le_bytes());
-        out.extend_from_slice(&stable_id.to_le_bytes());
-        out.extend_from_slice(&rows.to_le_bytes());
-        out.extend_from_slice(&cols.to_le_bytes());
-        out.extend_from_slice(&XYHP_PAINT_NAMED.to_le_bytes());
-        out.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+        out.push_word(1u32);
+        out.push_word(1u32);
+        out.push_word(0u32);
+        out.push_word(stable_id);
+        out.push_word(rows);
+        out.push_word(cols);
+        out.push_word(XYHP_PAINT_NAMED);
+        out.push_word(payload.len() as u32);
         out.extend_from_slice(&payload);
         out
     }
@@ -19346,22 +19679,22 @@ pub(crate) mod tests {
     ) -> Vec<u8> {
         let name_bytes = name.as_bytes();
         let mut payload = Vec::new();
-        payload.extend_from_slice(&maximum.to_le_bytes());
-        payload.extend_from_slice(&opacity.to_le_bytes());
-        payload.extend_from_slice(&(name_bytes.len() as u32).to_le_bytes());
-        payload.extend_from_slice(&0u32.to_le_bytes());
+        payload.push_word(maximum);
+        payload.push_word(opacity);
+        payload.push_word(name_bytes.len() as u32);
+        payload.push_word(0u32);
         payload.extend_from_slice(encoded);
         payload.extend_from_slice(name_bytes);
         let mut out = Vec::new();
         out.extend_from_slice(b"XYHP");
-        out.extend_from_slice(&1u32.to_le_bytes());
-        out.extend_from_slice(&1u32.to_le_bytes());
-        out.extend_from_slice(&0u32.to_le_bytes());
-        out.extend_from_slice(&stable_id.to_le_bytes());
-        out.extend_from_slice(&rows.to_le_bytes());
-        out.extend_from_slice(&cols.to_le_bytes());
-        out.extend_from_slice(&XYHP_PAINT_DENSITY.to_le_bytes());
-        out.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+        out.push_word(1u32);
+        out.push_word(1u32);
+        out.push_word(0u32);
+        out.push_word(stable_id);
+        out.push_word(rows);
+        out.push_word(cols);
+        out.push_word(XYHP_PAINT_DENSITY);
+        out.push_word(payload.len() as u32);
         out.extend_from_slice(&payload);
         out
     }
@@ -19376,22 +19709,22 @@ pub(crate) mod tests {
         mean_rgba: &[u8],
     ) -> Vec<u8> {
         let mut payload = Vec::new();
-        payload.extend_from_slice(&maximum.to_le_bytes());
-        payload.extend_from_slice(&opacity.to_le_bytes());
-        payload.extend_from_slice(&0u32.to_le_bytes());
-        payload.extend_from_slice(&0u32.to_le_bytes());
+        payload.push_word(maximum);
+        payload.push_word(opacity);
+        payload.push_word(0u32);
+        payload.push_word(0u32);
         payload.extend_from_slice(encoded);
         payload.extend_from_slice(mean_rgba);
         let mut out = Vec::new();
         out.extend_from_slice(b"XYHP");
-        out.extend_from_slice(&1u32.to_le_bytes());
-        out.extend_from_slice(&1u32.to_le_bytes());
-        out.extend_from_slice(&0u32.to_le_bytes());
-        out.extend_from_slice(&stable_id.to_le_bytes());
-        out.extend_from_slice(&rows.to_le_bytes());
-        out.extend_from_slice(&cols.to_le_bytes());
-        out.extend_from_slice(&XYHP_PAINT_MEAN_COLOR.to_le_bytes());
-        out.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+        out.push_word(1u32);
+        out.push_word(1u32);
+        out.push_word(0u32);
+        out.push_word(stable_id);
+        out.push_word(rows);
+        out.push_word(cols);
+        out.push_word(XYHP_PAINT_MEAN_COLOR);
+        out.push_word(payload.len() as u32);
         out.extend_from_slice(&payload);
         out
     }
@@ -19760,9 +20093,9 @@ pub(crate) mod tests {
         assert!(dash.is_empty());
         let mut extras = Vec::new();
         extras.extend_from_slice(b"XYEX");
-        extras.extend_from_slice(&1u32.to_le_bytes());
-        extras.extend_from_slice(&0u32.to_le_bytes());
-        extras.extend_from_slice(&(xyhp.len() as u32).to_le_bytes());
+        extras.push_word(1u32);
+        extras.push_word(0u32);
+        extras.push_word(xyhp.len() as u32);
         extras.extend_from_slice(&xyhp);
         let (polar, paint, dash) = split_scene_extras(&extras).unwrap();
         assert!(polar.is_empty());
@@ -19779,10 +20112,10 @@ pub(crate) mod tests {
         assert_eq!(dash, xyds.as_slice());
         let mut extras_v2 = Vec::new();
         extras_v2.extend_from_slice(b"XYEX");
-        extras_v2.extend_from_slice(&2u32.to_le_bytes());
-        extras_v2.extend_from_slice(&0u32.to_le_bytes());
-        extras_v2.extend_from_slice(&0u32.to_le_bytes());
-        extras_v2.extend_from_slice(&(xyds.len() as u32).to_le_bytes());
+        extras_v2.push_word(2u32);
+        extras_v2.push_word(0u32);
+        extras_v2.push_word(0u32);
+        extras_v2.push_word(xyds.len() as u32);
         extras_v2.extend_from_slice(&xyds);
         let (polar, paint, dash) = split_scene_extras(&extras_v2).unwrap();
         assert!(polar.is_empty() && paint.is_empty());
@@ -19802,10 +20135,10 @@ pub(crate) mod tests {
         assert_eq!(dash, combined.as_slice());
         let mut extras_v2_caps = Vec::new();
         extras_v2_caps.extend_from_slice(b"XYEX");
-        extras_v2_caps.extend_from_slice(&2u32.to_le_bytes());
-        extras_v2_caps.extend_from_slice(&0u32.to_le_bytes());
-        extras_v2_caps.extend_from_slice(&0u32.to_le_bytes());
-        extras_v2_caps.extend_from_slice(&(combined.len() as u32).to_le_bytes());
+        extras_v2_caps.push_word(2u32);
+        extras_v2_caps.push_word(0u32);
+        extras_v2_caps.push_word(0u32);
+        extras_v2_caps.push_word(combined.len() as u32);
         extras_v2_caps.extend_from_slice(&combined);
         let (polar, paint, dash) = split_scene_extras(&extras_v2_caps).unwrap();
         assert!(polar.is_empty() && paint.is_empty());
@@ -20683,6 +21016,7 @@ pub(crate) mod tests {
                     dashes.checked_mul(4)?.checked_add(1)?
                 }
                 4 => 25,
+                19 => read_u32(&mut offset)?.checked_mul(24)?.checked_add(4)?,
                 6 => {
                     offset = offset.checked_add(17)?;
                     texts += 1;
@@ -21111,19 +21445,19 @@ pub(crate) mod tests {
         let row = |version: u32, head: u8, tail: u8, gap: f64| {
             let mut out = Vec::new();
             out.extend_from_slice(b"XYAR");
-            out.extend_from_slice(&version.to_le_bytes());
-            out.extend_from_slice(&1u32.to_le_bytes());
-            out.extend_from_slice(&0x5859_0500_0000_0001u64.to_le_bytes());
+            out.push_word(version);
+            out.push_word(1u32);
+            out.push_word(0x5859_0500_0000_0001u64);
             for value in [0.1f64, 0.1, 0.9, 0.9] {
-                out.extend_from_slice(&value.to_le_bytes());
+                out.push_word(value);
             }
             out.extend_from_slice(&[10, 20, 30, 255]);
-            out.extend_from_slice(&1.0f64.to_le_bytes());
-            out.extend_from_slice(&2.0f64.to_le_bytes());
+            out.push_word(1.0f64);
+            out.push_word(2.0f64);
             if version == 2 {
                 out.extend_from_slice(&[head, tail, 0, 0, 0, 0, 0, 0]);
                 for value in [1.0f64, 2.0, gap, 4.0, 5.0, 6.0, 7.0, 8.0] {
-                    out.extend_from_slice(&value.to_le_bytes());
+                    out.push_word(value);
                 }
             }
             out
@@ -21140,16 +21474,25 @@ pub(crate) mod tests {
                 label_clear: [5.0, 6.0, 7.0, 8.0],
             }
         );
-        assert_eq!(decode_xyar(&row(1, 0, 0, 0.0)).unwrap()[0].shape, ArrowShape::DEFAULT);
+        assert_eq!(
+            decode_xyar(&row(1, 0, 0, 0.0)).unwrap()[0].shape,
+            ArrowShape::DEFAULT
+        );
         assert_eq!(decode_xyar(&row(3, 0, 0, 0.0)), Err(SceneError::Version));
         assert!(decode_xyar(&row(2, 3, 0, 0.0)).is_err(), "unknown end code");
         assert!(decode_xyar(&row(2, 1, 1, 0.0)).is_err(), "triangle tail");
         assert!(decode_xyar(&row(2, 1, 0, -1.0)).is_err(), "negative gap");
-        assert!(decode_xyar(&row(2, 1, 0, f64::NAN)).is_err(), "non-finite gap");
+        assert!(
+            decode_xyar(&row(2, 1, 0, f64::NAN)).is_err(),
+            "non-finite gap"
+        );
         let mut padded = row(2, 1, 0, 0.0);
         padded[12 + 62] = 1;
         assert!(decode_xyar(&padded).is_err(), "nonzero padding");
-        assert!(decode_xyar(&row(2, 1, 0, 0.0)[..100]).is_err(), "truncated row");
+        assert!(
+            decode_xyar(&row(2, 1, 0, 0.0)[..100]).is_err(),
+            "truncated row"
+        );
     }
 
     #[test]
@@ -21180,25 +21523,25 @@ pub(crate) mod tests {
         .encode();
         let mut xyac = Vec::new();
         xyac.extend_from_slice(b"XYAC");
-        xyac.extend_from_slice(&1u32.to_le_bytes());
-        xyac.extend_from_slice(&1u32.to_le_bytes());
+        xyac.push_word(1u32);
+        xyac.push_word(1u32);
         for value in [0.5f64, 0.5, 36.0, -30.0] {
-            xyac.extend_from_slice(&value.to_le_bytes());
+            xyac.push_word(value);
         }
         xyac.extend_from_slice(&[10, 20, 30, 200]);
-        xyac.extend_from_slice(&0.5f64.to_le_bytes());
-        xyac.extend_from_slice(&2.0f64.to_le_bytes());
+        xyac.push_word(0.5f64);
+        xyac.push_word(2.0f64);
         xyac.push(2);
         xyac.extend_from_slice(&[0; 3]);
-        xyac.extend_from_slice(&4u32.to_le_bytes());
+        xyac.push_word(4u32);
         xyac.extend_from_slice(b"note");
         let mut envelope = Vec::new();
         envelope.extend_from_slice(b"XYAD");
-        envelope.extend_from_slice(&2u32.to_le_bytes());
-        envelope.extend_from_slice(&0u32.to_le_bytes());
-        envelope.extend_from_slice(&0u32.to_le_bytes());
-        envelope.extend_from_slice(&0u32.to_le_bytes());
-        envelope.extend_from_slice(&(xyac.len() as u32).to_le_bytes());
+        envelope.push_word(2u32);
+        envelope.push_word(0u32);
+        envelope.push_word(0u32);
+        envelope.push_word(0u32);
+        envelope.push_word(xyac.len() as u32);
         envelope.extend_from_slice(&xyac);
         let document = SceneDocument::decode(&scene)
             .unwrap()
@@ -21285,26 +21628,26 @@ pub(crate) mod tests {
         .encode();
         let mut xyac = Vec::new();
         xyac.extend_from_slice(b"XYAC");
-        xyac.extend_from_slice(&2u32.to_le_bytes());
-        xyac.extend_from_slice(&1u32.to_le_bytes());
+        xyac.push_word(2u32);
+        xyac.push_word(1u32);
         for value in [0.5f64, 0.5, 36.0, -30.0] {
-            xyac.extend_from_slice(&value.to_le_bytes());
+            xyac.push_word(value);
         }
         xyac.extend_from_slice(&[10, 20, 30, 200]);
-        xyac.extend_from_slice(&0.5f64.to_le_bytes());
-        xyac.extend_from_slice(&2.0f64.to_le_bytes());
+        xyac.push_word(0.5f64);
+        xyac.push_word(2.0f64);
         xyac.push(2);
         xyac.extend_from_slice(&[0; 3]);
-        xyac.extend_from_slice(&4u32.to_le_bytes());
+        xyac.push_word(4u32);
         xyac.extend_from_slice(&[4, 5, 6, 128]);
         xyac.extend_from_slice(b"note");
         let mut envelope = Vec::new();
         envelope.extend_from_slice(b"XYAD");
-        envelope.extend_from_slice(&2u32.to_le_bytes());
-        envelope.extend_from_slice(&0u32.to_le_bytes());
-        envelope.extend_from_slice(&0u32.to_le_bytes());
-        envelope.extend_from_slice(&0u32.to_le_bytes());
-        envelope.extend_from_slice(&(xyac.len() as u32).to_le_bytes());
+        envelope.push_word(2u32);
+        envelope.push_word(0u32);
+        envelope.push_word(0u32);
+        envelope.push_word(0u32);
+        envelope.push_word(xyac.len() as u32);
         envelope.extend_from_slice(&xyac);
         let document = SceneDocument::decode(&scene)
             .unwrap()
@@ -21941,7 +22284,10 @@ pub(crate) mod tests {
         document.records[0].stable_id = 0x5859_0400_0000_0001;
         document.marker_glyphs = vec![Some("A".into())];
         let painter = document.to_browser_painter(1 << 20).unwrap();
-        let at = painter.windows(4).position(|window| window == b"XYLB").unwrap();
+        let at = painter
+            .windows(4)
+            .position(|window| window == b"XYLB")
+            .unwrap();
         let version = u32::from_le_bytes(painter[at + 4..at + 8].try_into().unwrap());
         // The TS decoder reads versions 1..=5; this unrotated glyph table must
         // stay in that range (and in particular never reach v7).
@@ -24149,20 +24495,20 @@ pub(crate) mod tests {
         .unwrap();
         let mut xyat = Vec::new();
         xyat.extend_from_slice(b"XYAT");
-        xyat.extend_from_slice(&2u32.to_le_bytes());
-        xyat.extend_from_slice(&1u32.to_le_bytes());
-        xyat.extend_from_slice(&0.5f64.to_le_bytes());
-        xyat.extend_from_slice(&0.5f64.to_le_bytes());
+        xyat.push_word(2u32);
+        xyat.push_word(1u32);
+        xyat.push_word(0.5f64);
+        xyat.push_word(0.5f64);
         xyat.extend_from_slice(&[1, 2, 3, 255]);
         xyat.extend_from_slice(&[255, 255, 255, 255]);
-        xyat.extend_from_slice(&4u32.to_le_bytes());
+        xyat.push_word(4u32);
         xyat.extend_from_slice(b"note");
         let mut envelope = Vec::new();
         envelope.extend_from_slice(b"XYAD");
-        envelope.extend_from_slice(&1u32.to_le_bytes());
-        envelope.extend_from_slice(&(xyat.len() as u32).to_le_bytes());
-        envelope.extend_from_slice(&0u32.to_le_bytes());
-        envelope.extend_from_slice(&0u32.to_le_bytes());
+        envelope.push_word(1u32);
+        envelope.push_word(xyat.len() as u32);
+        envelope.push_word(0u32);
+        envelope.push_word(0u32);
         envelope.extend_from_slice(&xyat);
 
         let decorated = batch.with_authored_annotations(&envelope).unwrap().encode();
@@ -24183,10 +24529,26 @@ pub(crate) mod tests {
     /// "alpha", an unboxed "beta", and a boxed "gamma".
     pub(crate) fn per_label_style_scene_bytes() -> Vec<u8> {
         let layout = PlotLayout::new(200.0, 120.0, 30.0, 20.0, 20.0, 25.0).unwrap();
-        let x = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, layout.left, layout.right, 1.0, false)
-            .unwrap();
-        let y = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, layout.bottom, layout.top, 1.0, false)
-            .unwrap();
+        let x = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.left,
+            layout.right,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let y = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.bottom,
+            layout.top,
+            1.0,
+            false,
+        )
+        .unwrap();
         let batch = SceneBatch::new_with_chrome(
             layout,
             1,
@@ -24211,25 +24573,25 @@ pub(crate) mod tests {
         .unwrap();
         let mut xyat = Vec::new();
         xyat.extend_from_slice(b"XYAT");
-        xyat.extend_from_slice(&2u32.to_le_bytes());
-        xyat.extend_from_slice(&3u32.to_le_bytes());
+        xyat.push_word(2u32);
+        xyat.push_word(3u32);
         for (y, fill, text) in [
             (0.8f64, [255u8, 255, 255, 255], "alpha"),
             (0.5, [0, 0, 0, 0], "beta"),
             (0.2, [250, 240, 230, 255], "gamma"),
         ] {
-            xyat.extend_from_slice(&0.3f64.to_le_bytes());
-            xyat.extend_from_slice(&y.to_le_bytes());
+            xyat.push_word(0.3f64);
+            xyat.push_word(y);
             xyat.extend_from_slice(&[1, 2, 3, 255]);
             xyat.extend_from_slice(&fill);
-            xyat.extend_from_slice(&(text.len() as u32).to_le_bytes());
+            xyat.push_word(text.len() as u32);
             xyat.extend_from_slice(text.as_bytes());
         }
         let mut envelope = b"XYAD".to_vec();
-        envelope.extend_from_slice(&1u32.to_le_bytes());
-        envelope.extend_from_slice(&(xyat.len() as u32).to_le_bytes());
-        envelope.extend_from_slice(&0u32.to_le_bytes());
-        envelope.extend_from_slice(&0u32.to_le_bytes());
+        envelope.push_word(1u32);
+        envelope.push_word(xyat.len() as u32);
+        envelope.push_word(0u32);
+        envelope.push_word(0u32);
         envelope.extend_from_slice(&xyat);
         batch.with_authored_annotations(&envelope).unwrap().encode()
     }
@@ -24260,7 +24622,11 @@ pub(crate) mod tests {
                 },
             ]))
             .unwrap();
-        let sizes: Vec<_> = document.labels.iter().map(|label| label.font_size).collect();
+        let sizes: Vec<_> = document
+            .labels
+            .iter()
+            .map(|label| label.font_size)
+            .collect();
         assert_eq!(sizes, [13.0, 9.0, 12.0]);
         assert_eq!(document.static_label_text_flags, [3, 1, 0]);
         // alpha: re-resolved at 13px, then a (6, 2) box inset instead of 3.
@@ -24330,10 +24696,26 @@ pub(crate) mod tests {
     #[test]
     fn static_annotation_labels_use_wire_provenance_not_reserved_ids() {
         let layout = PlotLayout::new(200.0, 120.0, 30.0, 20.0, 20.0, 25.0).unwrap();
-        let x = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, layout.left, layout.right, 1.0, false)
-            .unwrap();
-        let y = AxisScale::new(ScaleKind::Linear, 0.0, 1.0, layout.bottom, layout.top, 1.0, false)
-            .unwrap();
+        let x = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.left,
+            layout.right,
+            1.0,
+            false,
+        )
+        .unwrap();
+        let y = AxisScale::new(
+            ScaleKind::Linear,
+            0.0,
+            1.0,
+            layout.bottom,
+            layout.top,
+            1.0,
+            false,
+        )
+        .unwrap();
         let ordinary = |stable_id, text: &str| SceneLabel {
             stable_id,
             x: 60.0,
@@ -24378,19 +24760,19 @@ pub(crate) mod tests {
         )
         .unwrap();
         let mut xyat = b"XYAT".to_vec();
-        xyat.extend_from_slice(&2u32.to_le_bytes());
-        xyat.extend_from_slice(&1u32.to_le_bytes());
-        xyat.extend_from_slice(&0.3f64.to_le_bytes());
-        xyat.extend_from_slice(&0.8f64.to_le_bytes());
+        xyat.push_word(2u32);
+        xyat.push_word(1u32);
+        xyat.push_word(0.3f64);
+        xyat.push_word(0.8f64);
         xyat.extend_from_slice(&[1, 2, 3, 255]);
         xyat.extend_from_slice(&[255, 255, 255, 255]);
-        xyat.extend_from_slice(&5u32.to_le_bytes());
+        xyat.push_word(5u32);
         xyat.extend_from_slice(b"alpha");
         let mut envelope = b"XYAD".to_vec();
-        envelope.extend_from_slice(&1u32.to_le_bytes());
-        envelope.extend_from_slice(&(xyat.len() as u32).to_le_bytes());
-        envelope.extend_from_slice(&0u32.to_le_bytes());
-        envelope.extend_from_slice(&0u32.to_le_bytes());
+        envelope.push_word(1u32);
+        envelope.push_word(xyat.len() as u32);
+        envelope.push_word(0u32);
+        envelope.push_word(0u32);
         envelope.extend_from_slice(&xyat);
         // The composed route (#922): decode the base Scene with its ordinary
         // labels, then append authored annotations to the document.
@@ -24401,7 +24783,11 @@ pub(crate) mod tests {
             base.with_authored_annotations(&envelope).unwrap()
         };
         let mut document = compose();
-        let ids: Vec<_> = document.labels.iter().map(|l| (l.stable_id, l.annotation)).collect();
+        let ids: Vec<_> = document
+            .labels
+            .iter()
+            .map(|l| (l.stable_id, l.annotation))
+            .collect();
         assert_eq!(
             ids,
             [
@@ -24419,7 +24805,9 @@ pub(crate) mod tests {
         assert!(compose()
             .apply_static_annotation_labels(Some(&[style, style]))
             .is_err());
-        document.apply_static_annotation_labels(Some(&[style])).unwrap();
+        document
+            .apply_static_annotation_labels(Some(&[style]))
+            .unwrap();
         let sizes: Vec<_> = document.labels.iter().map(|l| l.font_size).collect();
         assert_eq!(sizes, [11.0, 11.0, 17.0]);
         assert_eq!(document.static_label_text_flags, [0, 0, 1]);
@@ -24481,17 +24869,25 @@ pub(crate) mod tests {
             .windows(4)
             .position(|window| window == b"XYLB")
             .expect("painter carries the label block");
-        let u32_at = |offset: usize| u32::from_le_bytes(painter[offset..offset + 4].try_into().unwrap());
+        let u32_at =
+            |offset: usize| u32::from_le_bytes(painter[offset..offset + 4].try_into().unwrap());
         assert_eq!(u32_at(at + 4), 6);
         let count = u32_at(at + 8) as usize;
         let text_bytes = u32_at(at + 12) as usize;
         assert_eq!(count, 3);
         // header(16) + count * 112 + text fills the rest of the block.
         let table_end = at + 16 + count * 112;
-        assert_eq!(&painter[table_end..table_end + text_bytes], b"alphabetagamma");
+        assert_eq!(
+            &painter[table_end..table_end + text_bytes],
+            b"alphabetagamma"
+        );
         let record = |index: usize| at + 16 + index * 112;
         let rotation = |index: usize| {
-            f64::from_le_bytes(painter[record(index) + 104..record(index) + 112].try_into().unwrap())
+            f64::from_le_bytes(
+                painter[record(index) + 104..record(index) + 112]
+                    .try_into()
+                    .unwrap(),
+            )
         };
         assert_eq!([rotation(0), rotation(1), rotation(2)], [30.0, 0.0, 0.0]);
         // The block decodes back to the same rotation.
@@ -24553,7 +24949,9 @@ pub(crate) mod tests {
         // Graph labels before, and one interleaved between, the annotation labels.
         document.labels.insert(0, graph_label(7, "node a"));
         document.label_backgrounds.insert(0, None);
-        document.labels.insert(3, graph_label(0x4000_0000_0000_0001, "node b"));
+        document
+            .labels
+            .insert(3, graph_label(0x4000_0000_0000_0001, "node b"));
         document.label_backgrounds.insert(3, None);
         let styles = [
             StaticLabelStyle {
@@ -24958,6 +25356,35 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn retained_raster_rejects_unexpected_full_scene_decoration() {
+        let raw = include_bytes!("../../../spec/performance/temporal-native-render-2026-11-07/artifacts/retained-later.xyfg");
+        let encoded = crate::temporal_graph_export::canonical_scene(
+            raw,
+            [77, 110, 159, 191],
+            384 * 1024 * 1024,
+        )
+        .unwrap();
+        let mut document = SceneDocument::decode(&encoded).unwrap();
+        assert!(document.to_raster_commands_retained(1.0).is_ok());
+        document.text.title = "Native text must remain visible".into();
+        assert!(document.to_raster_commands_retained(1.0).is_err());
+        let full = document.to_raster_commands(1.0).unwrap();
+        assert!(raster_text_count(&full).unwrap() > 0);
+        document.text.title.clear();
+        document.marker_glyphs = vec![Some("A".into()); document.styles.len()];
+        assert!(document.to_raster_commands_retained(1.0).is_err());
+        assert!(raster_text_count(&document.to_raster_commands(1.0).unwrap()).unwrap() > 0);
+    }
+
+    #[test]
+    fn identity_axis_keeps_retained_css_bits() {
+        let axis = AxisScale::new(ScaleKind::Linear, 0., 180., 0., 180., 1., false).unwrap();
+        for value in [56.04_f64, -0.0, 64.03999999999999, 0.0000000000001] {
+            assert_eq!(axis.pixel(value).to_bits(), value.to_bits());
+        }
+    }
+
+    #[test]
     fn canonical_axis_scales_map_and_invert_all_numeric_kinds() {
         let linear = AxisScale::new(ScaleKind::Linear, 0.0, 10.0, 20.0, 120.0, 1.0, false).unwrap();
         assert_eq!(linear.pixel(5.0), 70.0);
@@ -25073,7 +25500,13 @@ pub(crate) mod tests {
                     (0.0, 0.0, 300.0, 14.0),
                 ] {
                     let bytes = crate::scene_colorbar::pack_named_colorbar(
-                        flags, lo, hi, [32; 4], b"", "viridis", &[],
+                        flags,
+                        lo,
+                        hi,
+                        [32; 4],
+                        b"",
+                        "viridis",
+                        &[],
                     )
                     .unwrap();
                     let colorbar = SceneColorbar::from_input(&bytes).unwrap().unwrap();
@@ -25084,7 +25517,10 @@ pub(crate) mod tests {
                         assert!(value.is_finite() && pixel.is_finite() && label.len() <= 32);
                         assert!(*value >= lo && *value <= hi);
                     }
-                    assert!(ticks.minors.iter().all(|(v, p)| v.is_finite() && p.is_finite()));
+                    assert!(ticks
+                        .minors
+                        .iter()
+                        .all(|(v, p)| v.is_finite() && p.is_finite()));
                 }
             }
         }
@@ -25567,7 +26003,10 @@ pub(crate) mod tests {
         }
         // Without authored labels Rust keeps its own authored-tick labels.
         assert_eq!(
-            ticks.into_iter().map(|(_, label)| label).collect::<Vec<_>>(),
+            ticks
+                .into_iter()
+                .map(|(_, label)| label)
+                .collect::<Vec<_>>(),
             ["0", "1", "2", "10"]
         );
     }
@@ -25597,7 +26036,9 @@ pub(crate) mod tests {
         assert_eq!(caps, [(true, over), (false, under)]);
         // A paint for an end that is not extended is a malformed fact.
         let mut one_sided = discrete_colorbar_scene([0.0, 1.0, 2.0, 3.0]);
-        one_sided.apply_static_colorbar_style(false, 1, true).unwrap();
+        one_sided
+            .apply_static_colorbar_style(false, 1, true)
+            .unwrap();
         assert!(one_sided
             .apply_static_colorbar_discrete(true, Some(under), Some(over), Vec::new())
             .is_err());
@@ -25628,7 +26069,9 @@ pub(crate) mod tests {
             .is_err());
         let mut log = discrete_colorbar_scene([1.0, 2.0, 3.0, 4.0]);
         log.apply_static_colorbar_style(true, 0, true).unwrap();
-        assert!(log.apply_static_colorbar_discrete(true, None, None, labels(4)).is_err());
+        assert!(log
+            .apply_static_colorbar_discrete(true, None, None, labels(4))
+            .is_err());
     }
 
     #[test]
@@ -25700,12 +26143,12 @@ pub(crate) mod tests {
         let text = b"one two";
         let mut frame = b"XYAW\x01\0\0\0\x01\0\0\0".to_vec();
         for value in [0.5f64, 0.5, 0.0, 0.0, 24.0] {
-            frame.extend_from_slice(&value.to_le_bytes());
+            frame.push_word(value);
         }
         frame.extend_from_slice(&[1, 2, 3, 255, 255, 255, 255, 255, 0, 0, 0, 0]);
-        frame.extend_from_slice(&0.0f64.to_le_bytes());
+        frame.push_word(0.0f64);
         frame.extend_from_slice(&[0, 0, 0, 0]);
-        frame.extend_from_slice(&(text.len() as u32).to_le_bytes());
+        frame.push_word(text.len() as u32);
         frame.extend_from_slice(text);
         let (labels, boxes, callouts) = decode_xyaw(&frame, x, y, layout).unwrap();
         assert_eq!(labels[0].text, "one\ntwo");
@@ -25719,13 +26162,13 @@ pub(crate) mod tests {
         let text = b"cell";
         let mut frame = b"XYAW\x03\0\0\0\x01\0\0\0".to_vec();
         for value in [x, y, 0.0, 0.0, 0.0] {
-            frame.extend_from_slice(&value.to_le_bytes());
+            frame.push_word(value);
         }
         frame.extend_from_slice(&[102, 112, 133, 255, 0, 0, 0, 0, 0, 0, 0, 0]);
-        frame.extend_from_slice(&0.0f64.to_le_bytes());
+        frame.push_word(0.0f64);
         frame.extend_from_slice(&[kind, 1, space, 0]);
-        frame.extend_from_slice(&0.0f64.to_le_bytes());
-        frame.extend_from_slice(&(text.len() as u32).to_le_bytes());
+        frame.push_word(0.0f64);
+        frame.push_word(text.len() as u32);
         frame.extend_from_slice(text);
         frame
     }
@@ -25742,7 +26185,10 @@ pub(crate) mod tests {
             (labels[0].x, labels[0].y)
         };
         let close = |a: (f64, f64), b: (f64, f64)| {
-            assert!((a.0 - b.0).abs() < 1e-9 && (a.1 - b.1).abs() < 1e-9, "{a:?} != {b:?}");
+            assert!(
+                (a.0 - b.0).abs() < 1e-9 && (a.1 - b.1).abs() < 1e-9,
+                "{a:?} != {b:?}"
+            );
         };
         // Data space stays the default projection.
         close(at(0, 10.0, 1.0), (x.pixel(10.0), y.pixel(1.0)));
@@ -25783,13 +26229,13 @@ pub(crate) mod tests {
         let text = b"rotated";
         let mut frame = b"XYAW\x02\0\0\0\x01\0\0\0".to_vec();
         for value in [0.5f64, 0.5, 0.0, 0.0, 0.0] {
-            frame.extend_from_slice(&value.to_le_bytes());
+            frame.push_word(value);
         }
         frame.extend_from_slice(&[102, 112, 133, 255, 0, 0, 0, 0, 0, 0, 0, 0]);
-        frame.extend_from_slice(&0.0f64.to_le_bytes());
+        frame.push_word(0.0f64);
         frame.extend_from_slice(&[0, 0, 0, 0]);
-        frame.extend_from_slice(&30.0f64.to_le_bytes());
-        frame.extend_from_slice(&(text.len() as u32).to_le_bytes());
+        frame.push_word(30.0f64);
+        frame.push_word(text.len() as u32);
         frame.extend_from_slice(text);
         let (labels, boxes, callouts) = decode_xyaw(&frame, x, y, layout).unwrap();
         assert_eq!(labels[0].text, "rotated");
@@ -25867,11 +26313,31 @@ pub(crate) mod tests {
             self.batch_with_widths(layout, &MESH_STROKE_WIDTH)
         }
 
-        fn batch_with_widths<'b>(&'b self, layout: PlotLayout, widths: &'b [f64]) -> SceneBatch<'b> {
-            let x = AxisScale::new(ScaleKind::Linear, 0.0, 10.0, layout.left, layout.right, 1.0, false)
-                .unwrap();
-            let y = AxisScale::new(ScaleKind::Linear, 0.0, 10.0, layout.bottom, layout.top, 1.0, false)
-                .unwrap();
+        fn batch_with_widths<'b>(
+            &'b self,
+            layout: PlotLayout,
+            widths: &'b [f64],
+        ) -> SceneBatch<'b> {
+            let x = AxisScale::new(
+                ScaleKind::Linear,
+                0.0,
+                10.0,
+                layout.left,
+                layout.right,
+                1.0,
+                false,
+            )
+            .unwrap();
+            let y = AxisScale::new(
+                ScaleKind::Linear,
+                0.0,
+                10.0,
+                layout.bottom,
+                layout.top,
+                1.0,
+                false,
+            )
+            .unwrap();
             SceneBatch::new(
                 layout,
                 1,

@@ -109,6 +109,16 @@ string quotes or Markdown backticks. Other punctuation, including `+`, `@`, `~`,
 `%`, `=`, `#`, `:`, `?` and brackets, does not delimit an allowed path. This is
 a literal text-token rule; it adds no glob, URI or path normalization policy.
 
+The same complete-token delimiters permit the upstream entrypoints
+`vendor/png/src/lib.rs`, `vendor/crc32fast/src/lib.rs`, and the archived
+`EXTERNAL-PROBE/png/src/lib.rs` diagnostic path. These are not the root ABI.
+The two vendors' exact `Cargo.toml` library-path fields and
+`upstream-source-sha256.json` digest-key lines may use their crate-relative
+entrypoint. The exact re-export sentence in `vendor/png/XYG-PATCH.md` also
+retains that relative spelling. Each allowance applies only to that occurrence;
+other ABI references on the same line or in the same file still fail. No
+vendor directory is excluded, and filename/child-path lookalikes remain barred.
+
 ## 3. Migration order (no mixed intermediate artifact)
 
 The rule: **no published artifact may combine an old host wrapper with a
@@ -273,7 +283,9 @@ Two chunk-read evidence files retain complete historical GitHub dependency
 responses, including retired names quoted in old issue bodies. The frozen
 chunk-reuse Rust test transcript also names the crate-relative `src/lib.rs`
 unit-test entry, which is valid in that original Cargo context. The naming
-scanner treats only these three exact paths and SHA-256-bound canonical
+shared-PNG `final-data.json` diagnostic also retains incidental retired-brand
+bytes extracted from a compiled module by `strings`; those are not product
+wording. The scanner treats only these four exact paths and SHA-256-bound canonical
 UTF-8/LF contents as frozen evidence. Any content edit or copied/renamed file receives every
 ordinary identity check. This preserves the original audit bytes without
 excluding a directory, current product surface, or future evidence. Platform

@@ -104,3 +104,11 @@ generation rejects a candidate after callback/publication settlement. Node
 cancellation waits for the issued operation and exact storage ACK cleanup. This slice does not add selection-edit gestures, automatic linked
 joins, playback UI, massive selected latency, mixed
 hierarchy routing or a complete OS/GPU memory ledger. #50/#39 remain open.
+
+
+Automatic mounted bindings may now use these distinct issued selected lanes with
+one shared controller or independent controllers. Source-wide canonical/snapshot
+exclusion and same-lane exclusion remain in force. Automatic admission is FIFO
+through the existing single staging owner; it does not expand native budgets or
+change temporal/spatial policy. See [mounted temporal hosts](geo-mounted-temporal-hosts.md)
+for exact uncertainty and cleanup rules and current qualification limits.

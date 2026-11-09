@@ -931,6 +931,22 @@ class GeoSelectedOperation:
         if reply["handle"] == self.handle and reply["sequence"] == self.sequence:
             self._replaced = True
 
+    def _retire_mutation(self):
+        mutation = getattr(self, "_mutation", None)
+        if mutation is not None and not mutation._attempt._released:
+            if mutation._attempt.probe_retirement(mutation._validate) is not None:
+                raise RuntimeError("selected mutation retirement pending")
+            mutation._attempt.release()
+
+    async def _retire_mutation_async(self):
+        if self._bridge is None:
+            return self._retire_mutation()
+        mutation = getattr(self, "_mutation", None)
+        if mutation is not None and not mutation._attempt._released:
+            if await mutation._attempt.probe_retirement_async(mutation._validate) is not None:
+                raise RuntimeError("selected mutation retirement pending")
+            await mutation._attempt.release_async()
+
     def drive(self):
         if self._publication_pending:
             raise RuntimeError("selected19 publication remains uncertain; guard retained")
@@ -994,6 +1010,12 @@ class GeoSelectedOperation:
             frame = RetainedGeoSource._prepare(self._context, 11, self.handle, self.sequence, style)
         _attach_frame(self.source, frame, self.sequence, self.request, style, _bridge=self._bridge)
         self._publication_pending = False
+        if self.indexed:
+            try:
+                self._retire_mutation()
+            except BaseException:
+                self._publication_pending = True
+                raise
         return frame
 
     def cancel(self):
@@ -1088,6 +1110,12 @@ class GeoSelectedOperation:
             lease._data = None
         _attach_frame(self.source, frame, self.sequence, self.request, style, _bridge=self._bridge)
         self._publication_pending = False
+        if self.indexed:
+            try:
+                await self._retire_mutation_async()
+            except BaseException:
+                self._publication_pending = True
+                raise
         return frame
 
     async def cancel_async(self):
@@ -1120,6 +1148,8 @@ class GeoSelectedOperation:
             await self._publication.aclose()
             self._publication_pending = False
             self._replaced = not self._publication.attempt.rejected
+            if self._replaced:
+                await self._retire_mutation_async()
             return
         if self._bridge is None:
             return self.close()
@@ -1140,6 +1170,8 @@ class GeoSelectedOperation:
                 await mutation._attempt.release_async()
             if interrupted:
                 raise asyncio.CancelledError
+        else:
+            await self._retire_mutation_async()
 
     def close(self):
         if self._publication_pending:
@@ -1148,6 +1180,8 @@ class GeoSelectedOperation:
             self._publication.close()
             self._publication_pending = False
             self._replaced = not self._publication.attempt.rejected
+            if self._replaced:
+                self._retire_mutation()
             return
         if not self.indexed:
             raise RuntimeError("canonical SourceSession remains caller-owned")
@@ -1160,6 +1194,8 @@ class GeoSelectedOperation:
                 and mutation._attempt.probe_retirement(mutation._validate) is None
             ):
                 mutation._attempt.release()
+        else:
+            self._retire_mutation()
 
 
 def claim_selected_state(state, bridge):

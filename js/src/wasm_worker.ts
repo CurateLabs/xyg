@@ -1,4 +1,5 @@
 /// <reference lib="webworker" />
+import {executeFrozenGraph} from "./wasm_frozen_graph";
 
 import {
   bindXygWasmExports,
@@ -81,6 +82,7 @@ function statusCode(status: number): string {
 }
 
 function disposeRust() {
+  if(activeTemporal)clearTimeout(activeTemporal.timer);activeTemporal=null;temporalSources.clear();
   try {
     if (exports && handle) exports.xyg_wasm_instance_dispose(handle);
   } catch {
@@ -911,7 +913,7 @@ function queueTicks(message: any) {
   startNextTick();
 }
 
-function runTemporalCommand(message: any) {
+function runTemporalCommand(message: any, filter = false) {
   if (!exports || !handle || lifecycle !== "initialized") {
     error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized");
     return;
@@ -936,7 +938,7 @@ function runTemporalCommand(message: any) {
       error(activeAggregate.requestId, "XYG_WASM_CANCELLED", "aggregate was superseded by temporal work", XYG_WASM_STATUS.CANCELLED);
       activeAggregate = null;
     }
-    if (!(message.command instanceof ArrayBuffer) || message.command.byteLength < 16
+    if (!(message.command instanceof ArrayBuffer) || message.command.byteLength < (filter ? 1 : 16)
         || message.command.byteLength > operationBudgetBytes) {
       error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "temporal command is malformed");
       return;
@@ -951,7 +953,7 @@ function runTemporalCommand(message: any) {
     if (!ptr || end > exports.memory.buffer.byteLength) throw new Error("invalid temporal staging range");
     new Uint8Array(exports.memory.buffer, ptr, message.command.byteLength)
       .set(new Uint8Array(message.command));
-    status = exports.xyg_wasm_temporal_execute(handle, 0, message.command.byteLength);
+    status = filter ? exports.xyg_wasm_filter_execute(handle, 0, message.command.byteLength, operationBudgetBytes) : exports.xyg_wasm_temporal_execute(handle, 0, message.command.byteLength);
     if (status !== XYG_WASM_STATUS.OK) {
       const detail = readXygWasmError(exports, handle);
       exports.xyg_wasm_arena_resize(handle, 0);
@@ -961,12 +963,12 @@ function runTemporalCommand(message: any) {
     const outputPtr = exports.xyg_wasm_output_ptr(handle) >>> 0;
     const outputLen = exports.xyg_wasm_output_len(handle) >>> 0;
     const outputEnd = outputPtr + outputLen;
-    if (!outputPtr || outputLen < 176 || outputLen > operationBudgetBytes
+    if (!outputPtr || outputLen < (filter ? 192 : 176) || outputLen > operationBudgetBytes
         || outputEnd > exports.memory.buffer.byteLength) {
       throw new Error("Rust temporal response returned an invalid range");
     }
-    const selectionCount = new DataView(exports.memory.buffer, outputPtr, 16).getUint32(12, true);
-    if (outputLen !== 176 + selectionCount * 8) {
+    const selectionCount = filter ? 0 : new DataView(exports.memory.buffer, outputPtr, 16).getUint32(12, true);
+    if (!filter && outputLen !== 176 + selectionCount * 8) {
       throw new Error("Rust temporal response returned an invalid selection range");
     }
     const response = new Uint8Array(exports.memory.buffer, outputPtr, outputLen).slice().buffer;
@@ -986,6 +988,13 @@ function runTemporalCommand(message: any) {
 function runTemporalGraphCommand(message: any) {
   if (!exports || !handle || lifecycle !== "initialized") { error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return; }
   try {
+    if(message.type==='frozen_graph.command'&&(activeCompile||activeGraph||activeAggregate||activeAggregateStream||activeTick||tickQueue.length)){error(message.requestId,'XYG_WASM_BUSY','Frozen export requires a drained Worker');return;}
+    if (message.type === 'frozen_graph.command') {
+      const result = executeFrozenGraph(exports, handle, message.command, operationBudgetBytes);
+      if (result.status !== XYG_WASM_STATUS.OK) rustError(message.requestId, statusCode(result.status), result.detail!, result.status);
+      else reply(message.requestId, result.response!, [result.response!]);
+      return;
+    }
     if (activeCompile) terminateActiveCompile("a temporal graph frame");
     if (activeGraph) {
       clearTimeout(activeGraph.timer); exports.xyg_wasm_cancel(handle, activeGraph.sequence);
@@ -1132,16 +1141,13 @@ function admitOperationSequence(message: any, deferred = false): boolean {
   if (deferred ? sequence !== operationSequenceWatermark : sequence <= operationSequenceWatermark) {
     error(message.requestId, "XYG_WASM_STALE_SEQUENCE", "request sequence is stale", XYG_WASM_STATUS.STALE_SEQUENCE); return false;
   }
+  if(!deferred&&activeTemporal&&sequence>activeTemporal.message.sequence)abortTemporal('superseded by newer intent');
   if (!deferred) operationSequenceWatermark = sequence;
   return true;
 }
 
-function runGeoIngest(message: any, owned = false) {
-  queued.delete(message.requestId);
-  if (!owned && !admitOperationSequence(message, true)) return;
-  if (!exports || !handle || lifecycle !== "initialized") { error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return; }
-  try {
-    if (!(message.request instanceof ArrayBuffer) || message.request.byteLength < (message.type.startsWith("geo.scale.") || message.type.startsWith("geo.snapshot.") ? 256 : message.type.startsWith("geo.tile.") ? 128 : message.type === "geo.scene" ? 192 : (message.type === "geo.viewport" || message.type === "geo.catalog") ? 128 : 64) || message.request.byteLength > operationBudgetBytes) { error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "geographic descriptor is malformed"); return; }
+function interruptTemporalPeers(){
+    if(!exports||!handle)return;
     if (activeCompile) terminateActiveCompile("a geographic ingestion");
     if (activeGraph) {
       const previous = activeGraph; clearTimeout(previous.timer); queued.delete(previous.requestId);
@@ -1163,6 +1169,65 @@ function runGeoIngest(message: any, owned = false) {
       streamObservation("cancelled", previous);
       error(previous.requestId, "XYG_WASM_CANCELLED", "aggregate stream was superseded by geographic ingestion", XYG_WASM_STATUS.CANCELLED);
     }
+}
+// Temporal scan transport: Rust alone chooses work units, progress and publication.
+let activeTemporal:any=null;
+const temporalSources=new Map<number,bigint>();
+function temporalCall(op:number,owner:bigint,sequence:number,source?:ArrayBuffer):ArrayBuffer{
+  if(!exports||!handle)throw new Error('temporal Worker disposed');
+  const packet=new ArrayBuffer(64+(source?.byteLength??0)),v=new DataView(packet);
+  new Uint8Array(packet).set([88,89,84,74]);v.setUint32(4,1,true);v.setUint32(8,op,true);v.setBigUint64(16,owner,true);v.setBigUint64(24,owner?BigInt(sequence):0n,true);
+  if(source)new Uint8Array(packet,64).set(new Uint8Array(source));
+  let status=exports.xyg_wasm_arena_resize(handle,packet.byteLength);
+  if(status===0){new Uint8Array(exports.memory.buffer,exports.xyg_wasm_arena_ptr(handle),packet.byteLength).set(new Uint8Array(packet));status=exports.xyg_wasm_temporal_scene_compile(handle,sequence,0,packet.byteLength);}
+  if(status!==0)throw {status,message:readXygWasmError(exports,handle)};
+  return new Uint8Array(exports.memory.buffer,exports.xyg_wasm_output_ptr(handle),exports.xyg_wasm_output_len(handle)).slice().buffer;
+}
+function cleanupTemporal(job:any,cancel:boolean){
+  clearTimeout(job.timer);if(activeTemporal===job)activeTemporal=null;
+  try{if(cancel)temporalCall(4,job.owner,job.message.sequence);if(!job.message.lifetime)temporalCall(5,job.owner,job.message.sequence);}catch{}
+}
+function abortTemporal(reason:string){const job=activeTemporal;if(!job)return;cleanupTemporal(job,true);error(job.message.requestId,'XYG_WASM_CANCELLED',reason,6);}
+function stepTemporal(job:any){
+  if(activeTemporal!==job)return;
+  try{
+    const ack=temporalCall(2,job.owner,job.message.sequence);
+    job.done=new DataView(ack).getUint32(8,true)===1;
+    scope.postMessage({requestId:job.message.requestId,ok:true,progress:true,value:ack},[ack]);
+    // Read status before transfer detaches the acknowledgement.
+    job.timer=setTimeout(()=>continueTemporal(job),0);
+  }catch(cause){cleanupTemporal(job,true);const e=cause as any;error(job.message.requestId,statusCode(e.status??1),e.message??String(e),e.status);}
+}
+function continueTemporal(job:any){
+  if(activeTemporal!==job)return;
+  try{
+    // A step acknowledgement is cached as a scalar transport flag, never policy.
+    if(job.done){const output=temporalCall(3,job.owner,job.message.sequence);cleanupTemporal(job,false);reply(job.message.requestId,output,[output]);}
+    else stepTemporal(job);
+  }catch(cause){cleanupTemporal(job,true);const e=cause as any;error(job.message.requestId,statusCode(e.status??1),e.message??String(e),e.status);}
+}
+function beginTemporal(message:any){
+  if(!exports||!handle){error(message.requestId,'XYG_WASM_NOT_READY','Worker is not initialized');return;}
+  abortTemporal('superseded by a newer temporal request');
+  let job:any=null;
+  try{
+    if(message.request.byteLength>operationBudgetBytes)throw new Error('temporal request exceeds operation budget');
+    interruptTemporalPeers();
+    let owner=temporalSources.get(message.lifetime);
+    if(!owner){owner=new DataView(temporalCall(0,0n,message.sequence)).getBigUint64(16,true);if(message.lifetime)temporalSources.set(message.lifetime,owner);}
+    job={message,owner,timer:0,done:false};activeTemporal=job;
+    temporalCall(1,owner,message.sequence,message.request);message.request=null;
+    job.timer=setTimeout(()=>stepTemporal(job),0);
+  }catch(cause){if(job)cleanupTemporal(job,true);const e=cause as any;error(message.requestId,statusCode(e.status??1),e.message??String(e),e.status);}
+}
+
+function runGeoIngest(message: any, owned = false) {
+  queued.delete(message.requestId);
+  if (!owned && !admitOperationSequence(message, true)) return;
+  if (!exports || !handle || lifecycle !== "initialized") { error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return; }
+  try {
+    if (!(message.request instanceof ArrayBuffer) || message.request.byteLength < (message.type.startsWith("geo.scale.") || message.type.startsWith("geo.snapshot.") ? 256 : message.type.startsWith("geo.tile.") ? 128 : message.type === "geo.scene" ? 192 : (message.type === "temporal.scene") ? 64 : (message.type === "geo.viewport" || message.type === "geo.catalog") ? 128 : 64) || message.request.byteLength > operationBudgetBytes) { error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "geographic descriptor is malformed"); return; }
+    interruptTemporalPeers();
     let status = exports.xyg_wasm_arena_resize(handle, message.request.byteLength);
     if (status !== XYG_WASM_STATUS.OK) { rustError(message.requestId, statusCode(status), readXygWasmError(exports, handle), status); return; }
     const ptr = exports.xyg_wasm_arena_ptr(handle) >>> 0;
@@ -1184,6 +1249,8 @@ function runGeoIngest(message: any, owned = false) {
       ? exports.xyg_wasm_geo_catalog_compile(handle, message.sequence, 0, message.request.byteLength)
       : message.type === "geo.viewport"
       ? exports.xyg_wasm_geo_viewport_execute(handle, message.sequence, 0, message.request.byteLength)
+      : message.type === "temporal.scene"
+      ? exports.xyg_wasm_temporal_scene_compile(handle, message.sequence, 0, message.request.byteLength)
       : message.type === "geo.scene"
       ? exports.xyg_wasm_geo_scene_compile(handle, message.sequence, 0, message.request.byteLength)
       : exports.xyg_wasm_geo_column_ingest(handle, message.sequence, 0, message.request.byteLength);
@@ -1205,13 +1272,13 @@ function runGraphSession(message: any) {
   const operation = message.type.slice("graph.session.".length);
   if (!Number.isSafeInteger(message.lifetime) || message.lifetime <= 0 || retainedGeoMode
       || (graphSessionLifetime !== null && graphSessionLifetime !== message.lifetime)
-      || !["open", "update", "render", "interact", "close", "temporal-create", "temporal-frame"].includes(operation)
+      || !["open", "update", "render", "interact", "close", "temporal-create", "temporal-frame", "freeze"].includes(operation)
       || (graphSessionLifetime === null && operation !== "open")) {
     error(message.requestId, "GF_INTERACTION_INVALID", "Invalid retained graph ownership", -3); return;
   }
   if (!admitOperationSequence(message)) return;
   try {
-    const temporal = operation === "temporal-create" || operation === "temporal-frame";
+    const temporal = operation === "temporal-create" || operation === "temporal-frame" || operation === "freeze";
     let status: number;
     if (operation === "close") status = exports.xyg_wasm_graphforge_session_close(handle);
     else {
@@ -1221,7 +1288,7 @@ function runGraphSession(message: any) {
       if (operation === "open" && (queued.size || activeCompile || activeGraph || activeAggregate || activeAggregateStream || activeTick || tickQueue.length)) {
         error(message.requestId, "GF_INTERACTION_INVALID", "Graph attachment requires a drained Worker", -3); return;
       }
-      if (temporal) {
+      if (temporal && operation!=="freeze") {
         const v = new DataView(message.request);
         if (v.getUint32(0, true) !== 0x47545958 || v.getUint32(12, true) !== (operation === "temporal-create" ? 1 : 2)) {
           error(message.requestId, "GF_INTERACTION_INVALID", "Invalid named temporal operation", -3); return;
@@ -1234,7 +1301,7 @@ function runGraphSession(message: any) {
       const ptr = exports.xyg_wasm_arena_ptr(handle) >>> 0;
       if (!ptr || ptr + message.request.byteLength > exports.memory.buffer.byteLength) throw new Error("Invalid graph staging range");
       new Uint8Array(exports.memory.buffer, ptr, message.request.byteLength).set(new Uint8Array(message.request));
-      const execute = temporal ? exports.xyg_wasm_temporal_graph_execute
+      const execute = operation==="freeze" ? exports.xyg_wasm_frozen_graph_execute : temporal ? exports.xyg_wasm_temporal_graph_execute
         : operation === "open" ? exports.xyg_wasm_graphforge_session_open
         : operation === "update" ? exports.xyg_wasm_graphforge_session_update
         : operation === "render" ? exports.xyg_wasm_graphforge_session_render
@@ -1324,11 +1391,13 @@ scope.onmessage = (event: MessageEvent<any>) => {
     || message?.type === "series.compile_paint" || message?.type === "aggregate.bin2d"
     || message?.type === "graph.cose" || message?.type === "dashboard.plan"
     || message?.type === "compound.transition"
-    || message?.type === "graphforge.compose" || message?.type === "geo.ingest" || message?.type === "geo.scene" || message?.type === "geo.viewport" || message?.type === "geo.catalog" || message?.type === "geo.scale.execute" || message?.type === "geo.scale.read" || ["geo.tile.execute","geo.tile.read","geo.snapshot.execute","geo.snapshot.read"].includes(message?.type);
+    || message?.type === "graphforge.compose" || message?.type === "geo.ingest" || message?.type === "temporal.scene" || message?.type === "geo.scene" || message?.type === "geo.viewport" || message?.type === "geo.catalog" || message?.type === "geo.scale.execute" || message?.type === "geo.scale.read" || ["geo.tile.execute","geo.tile.read","geo.snapshot.execute","geo.snapshot.read"].includes(message?.type);
   if (sequenced && !admitOperationSequence(message)) return;
   // Ownership mutations and immutable reads cannot be discarded by a later
   // request. Execute at receipt; the main-thread ownership FIFO sequences them.
   // Session cancellation remains the explicit Rust command9.
+  if(message?.type==='temporal.scene'&&message.request instanceof ArrayBuffer&&message.request.byteLength>=128&&new DataView(message.request).getUint32(4,true)===2){beginTemporal(message);return;}
+  if(message?.type==='temporal.scene'&&message.request instanceof ArrayBuffer&&message.request.byteLength>=64&&new DataView(message.request).getUint32(0,true)===0x4a545958){runGeoIngest(message,true);return;}
   if(["geo.scale.execute","geo.scale.read","geo.tile.execute","geo.tile.read","geo.snapshot.execute","geo.snapshot.read"].includes(message?.type)) {runGeoIngest(message,true);return;}
   if (message?.type === "aggregate.stream_begin") { beginAggregateStream(message); return; }
   if (
@@ -1352,14 +1421,15 @@ scope.onmessage = (event: MessageEvent<any>) => {
     queued.set(message.requestId, timer as unknown as number);
     return;
   }
+  if (message?.type === "filter.command") { runTemporalCommand(message, true); return; }
   if (message?.type === "temporal.command") {
     runTemporalCommand(message);
     return;
   }
-  if (message?.type === "temporal_graph.command") { runTemporalGraphCommand(message); return; }
+  if (message?.type === "temporal_graph.command" || message?.type === "frozen_graph.command") { runTemporalGraphCommand(message); return; }
   if (message?.type === "dashboard.plan") { runDashboardPlan(message); return; }
   if (message?.type === "compound.transition") { runCompoundTransition(message); return; }
-  if (message?.type === "geo.ingest" || message?.type === "geo.scene" || message?.type === "geo.viewport" || message?.type === "geo.catalog" || message?.type === "geo.scale.execute" || message?.type === "geo.scale.read") {
+  if (message?.type === "geo.ingest" || message?.type === "temporal.scene" || message?.type === "geo.scene" || message?.type === "geo.viewport" || message?.type === "geo.catalog" || message?.type === "geo.scale.execute" || message?.type === "geo.scale.read") {
     const timer = setTimeout(() => runGeoIngest(message), 0);
     queued.set(message.requestId, timer as unknown as number);
     return;
@@ -1372,7 +1442,13 @@ scope.onmessage = (event: MessageEvent<any>) => {
     return;
   }
   if (message?.type === "graph.cose") { const timer = setTimeout(() => runGraph(message), 0); queued.set(message.requestId, timer as unknown as number); return; }
+  if(message?.type==='temporal.release'){
+    if(activeAggregate||activeAggregateStream||activeGraph||activeCompile){setTimeout(()=>scope.onmessage?.({data:message} as any),0);return;}
+    if(activeTemporal?.message.lifetime===message.lifetime)abortTemporal('temporal composition disposed');
+    const owner=temporalSources.get(message.lifetime);if(owner){try{temporalCall(5,owner,operationSequenceWatermark||1);}catch{}temporalSources.delete(message.lifetime);}reply(message.requestId,undefined);return;
+  }
   if (message?.type === "cancel") {
+    if(activeTemporal?.message.requestId===message.requestId){abortTemporal("temporal scan cancelled");return;}
     const timer = queued.get(message.requestId);
     if (timer !== undefined) {
       clearTimeout(timer);

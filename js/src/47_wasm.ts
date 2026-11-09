@@ -75,6 +75,8 @@ export interface XygWasmSceneValidation extends XygWasmDiagnostics {
 export interface XygWasmScenePaint extends XygWasmSceneValidation {
   /** Rust-authored, checked-f32 painter columns and trace descriptors. */
   painter: ArrayBuffer;
+  /** Frozen backing resolution, independent of the current browser display. */
+  pixelRatio?: number;
 }
 
 export interface XygWasmDashboardPlan {
@@ -139,6 +141,8 @@ export class XygWasmError extends Error {
 }
 
 type Pending = {
+  temporal?:boolean;
+  temporalFailure?:XygWasmError;
   resolve(value: any): void;
   reject(reason: XygWasmError): void;
   progress?(value: any): void;
@@ -267,6 +271,7 @@ function geographicOrigin(owner: XygWasmWorker): GeographicWorkerOrigin {
 export class XygWasmWorker {
   private worker: Worker;
   private pending = new Map<number, Pending>();
+  private temporalPending:number|null=null;
   private nextRequestId = 1;
   private nextSequence = 1;
   private ownedGeoChain: Promise<void> = Promise.resolve();
@@ -783,6 +788,55 @@ export class XygWasmWorker {
     } };
   }
 
+  temporalSceneCompile(request:ArrayBuffer,options:{sequence?:number;onProgress?:(reply:ArrayBuffer)=>void;session?:{lifetime?:number;disposed?:boolean}}={}):XygWasmTask<ArrayBuffer>{
+    if(!(request instanceof ArrayBuffer)||request.byteLength<128||new DataView(request).getUint32(4,true)!==2)return this.temporalSceneCommand(request,options);
+    this.assertLive();if(this.temporalPending!==null)throw new Error("temporal operation already in flight");if(request.byteLength>this.maxArenaBytes)throw new RangeError('temporal request exceeds arena');
+    if(options.session?.disposed)throw new Error('temporal composition disposed');
+    const sequence=options.sequence??this.nextSequence++;
+    if(!Number.isInteger(sequence)||sequence<=0||sequence>0xffffffff)throw new RangeError('sequence must be a nonzero u32');
+    this.nextSequence=Math.max(this.nextSequence,sequence+1);
+    const requestId=this.allocateRequest(),result=this.promiseFor<ArrayBuffer>(requestId);
+    this.temporalPending=requestId;let cancelled=false;
+    result.then(()=>{if(this.temporalPending===requestId)this.temporalPending=null;},()=>{if(this.temporalPending===requestId)this.temporalPending=null;});
+    const pending=this.pending.get(requestId)!;const resolve=pending.resolve;
+    pending.resolve=value=>{if(cancelled)pending.reject(new XygWasmError('XYG_WASM_CANCELLED','temporal scan cancelled',6));else resolve(value);};pending.sequence=sequence;pending.progress=options.onProgress;pending.temporal=true;
+    if(options.session&&!options.session.lifetime)options.session.lifetime=this.allocateRequest();
+    try{this.worker.postMessage({type:'temporal.scene',requestId,sequence,request,lifetime:options.session?.lifetime??0},[request]);}
+    catch(cause){this.pending.delete(requestId);this.temporalPending=null;throw cause;}
+    return {requestId,sequence,result,cancel:()=>{cancelled=true;if(!this.disposed&&this.pending.has(requestId))this.worker.postMessage({type:'cancel',requestId,sequence});}};
+  }
+  temporalScenePreview(source:ArrayBuffer):XygWasmTask<ArrayBuffer>{
+    const b=new ArrayBuffer(64+source.byteLength),v=new DataView(b);new Uint8Array(b).set([88,89,84,74]);v.setUint32(4,1,true);v.setUint32(8,6,true);new Uint8Array(b,64).set(new Uint8Array(source));return this.temporalSceneCommand(b);
+  }
+  temporalSceneRelease(session:{lifetime?:number;disposed?:boolean;disposal?:Promise<void>}):Promise<void>{
+    if(session.disposal)return session.disposal;session.disposed=true;
+    if(this.disposed||!session.lifetime)return session.disposal=Promise.resolve();
+    const requestId=this.allocateRequest(),result=this.promiseFor<void>(requestId);session.disposal=result;
+    result.catch(()=>{});
+    try{this.worker.postMessage({type:'temporal.release',requestId,lifetime:session.lifetime});}catch(cause){const pending=this.pending.get(requestId);this.pending.delete(requestId);pending?.reject(cause);}
+    return result;
+  }
+
+  temporalSceneCommand(request: ArrayBuffer, options: { sequence?: number } = {}): XygWasmTask<ArrayBuffer> {
+    this.assertLive();
+    if (!(request instanceof ArrayBuffer) || request.byteLength < (request.byteLength>=64&&new DataView(request).getUint32(0,true)===0x4a545958?64:128) || request.byteLength > this.maxArenaBytes) throw new TypeError("temporal Scene request must be a bounded ArrayBuffer");
+    const sequence = options.sequence ?? this.nextSequence++;
+    if (!Number.isInteger(sequence) || sequence <= 0 || sequence > 0xffffffff) throw new RangeError("sequence must be a nonzero u32");
+    this.nextSequence = Math.max(this.nextSequence, sequence + 1);
+    const requestId = this.allocateRequest(), result = this.promiseFor<ArrayBuffer>(requestId);
+    try {
+    this.worker.postMessage({ type: "temporal.scene", requestId, sequence, request }, [request]);
+    } catch (cause) {
+      this.pending.delete(requestId);
+      throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT", cause instanceof Error ? cause.message : "could not transfer temporal request");
+    }
+    return { requestId, sequence, result, cancel: () => {
+      const pending = this.pending.get(requestId); if (!pending) return;
+      this.pending.delete(requestId); pending.reject(new XygWasmError("XYG_WASM_CANCELLED", "temporal Scene compilation was cancelled", 6));
+      if (!this.disposed) this.worker.postMessage({ type: "cancel", requestId, sequence });
+    } };
+  }
+
   /** Execute one sequenced Rust-owned geographic camera command. */
   geoViewportExecute(request: ArrayBuffer, options: {sequence?:number} = {}): XygWasmTask<ArrayBuffer> {
     this.assertLive();
@@ -866,6 +920,27 @@ export class XygWasmWorker {
     },length,cleanup);
   }
 
+  /** Submit one packed filter command to the shared Rust state machine. */
+  filterCommand(command: ArrayBuffer): Promise<ArrayBuffer> {
+    this.assertLive();
+    if (!(command instanceof ArrayBuffer) || command.byteLength < 1
+        || command.byteLength > this.maxArenaBytes) {
+      throw new TypeError("filter command must be a bounded ArrayBuffer");
+    }
+    const requestId = this.allocateRequest();
+    const result = this.promiseFor<ArrayBuffer>(requestId);
+    try {
+      this.worker.postMessage({ type: "filter.command", requestId, command }, [command]);
+    } catch (cause) {
+      this.pending.delete(requestId);
+      throw new XygWasmError(
+        "XYG_WASM_INVALID_ARGUMENT",
+        cause instanceof Error ? cause.message : "could not post filter command",
+      );
+    }
+    return result;
+  }
+
   /** Submit one packed temporal command to the shared Rust state machine. */
   temporalCommand(command: ArrayBuffer): Promise<ArrayBuffer> {
     this.assertLive();
@@ -903,6 +978,16 @@ export class XygWasmWorker {
       throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT", cause instanceof Error ? cause.message : "could not post temporal graph command");
     }
     return result;
+  }
+
+  /** Export/import immutable frozen graphs through the shared Rust protocol. */
+  frozenGraphCommand(command:ArrayBuffer):Promise<ArrayBuffer> {
+    this.assertLive();
+    if(this.pending.size)throw new XygWasmError('XYG_WASM_BUSY','Frozen export requires a drained Worker');
+    if(!(command instanceof ArrayBuffer)||command.byteLength<64||command.byteLength>this.maxArenaBytes)throw new RangeError('bounded XYFX required');
+    const requestId=this.allocateRequest(),result=this.promiseFor<ArrayBuffer>(requestId);
+    try{this.worker.postMessage({type:'frozen_graph.command',requestId,command},[command]);}
+    catch(cause){this.pending.delete(requestId);throw cause;}return result;
   }
 
   /** Run one Rust CoSE job progressively inside this dedicated Worker. */
@@ -1072,6 +1157,10 @@ export class XygWasmWorker {
       try {
         pending.progress?.(message.value);
       } catch (cause) {
+        if(pending.temporal){
+          pending.progress=undefined;pending.temporalFailure=new XygWasmError('XYG_WASM_PROGRESS_CALLBACK_FAILED',cause instanceof Error?cause.message:'worker progress callback failed');
+          if(!this.disposed)this.worker.postMessage({type:'cancel',requestId:message.requestId,sequence:pending.sequence});return;
+        }
         this.pending.delete(message.requestId);
         pending.reject(new XygWasmError(
           "XYG_WASM_PROGRESS_CALLBACK_FAILED",
@@ -1089,6 +1178,7 @@ export class XygWasmWorker {
     }
     this.pending.delete(message.requestId);
     geographicWorkerOrigins.get(this)?.mutations.delete(message.requestId);
+    if(pending.temporalFailure){pending.reject(pending.temporalFailure);return;}
     if (message.ok) {
       pending.resolve(message.value);
     } else {
@@ -1174,11 +1264,12 @@ export function createXygWasmWorker(options: XygWasmWorkerOptions | XygInlineWas
  * graph controller. Not exported through 60_entries.ts. Request bytes survive
  * the transfer until resolution; op_seq belongs to Rust, not this transport. */
 type GraphSessionExport = "open" | "update" | "render" | "interact";
-type GraphTemporalExport = "temporal-create" | "temporal-frame";
+type GraphTemporalExport = "temporal-create" | "temporal-frame" | "freeze";
 interface GraphWorkerAttachment {
   fail(error: XygWasmError): void;
   temporalCreate(request: Uint8Array): Promise<ArrayBuffer>;
   temporalFrame(request: Uint8Array): Promise<ArrayBuffer>;
+  freeze(request:Uint8Array):Promise<ArrayBuffer>;
   execute(operation: GraphSessionExport, request: Uint8Array): Promise<ArrayBuffer>;
   close(): Promise<void>;
 }
@@ -1256,6 +1347,7 @@ export function claimGraphWorker(worker: XygWasmWorker, onFailure: (error: XygWa
     execute: enqueue,
     temporalCreate: (request: Uint8Array) => enqueue("temporal-create", request),
     temporalFrame: (request: Uint8Array) => enqueue("temporal-frame", request),
+    freeze: (request:Uint8Array)=>enqueue("freeze",request),
     close() {
       if (closePromise) return closePromise;
       closing = true;

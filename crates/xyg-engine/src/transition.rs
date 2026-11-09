@@ -59,11 +59,15 @@ pub(crate) struct Blake2s8 {
 
 impl Blake2s8 {
     pub(crate) fn new() -> Self {
+        Self::domain(*b"xykeyv1\0")
+    }
+
+    pub(crate) fn domain(personalization: [u8; 8]) -> Self {
         let mut parameter = [0u8; 32];
         parameter[0] = 8; // digest length
         parameter[2] = 1; // fanout
         parameter[3] = 1; // depth
-        parameter[24..31].copy_from_slice(b"xykeyv1");
+        parameter[24..32].copy_from_slice(&personalization);
         let mut state = BLAKE2S_IV;
         for (word, bytes) in state.iter_mut().zip(parameter.as_chunks::<4>().0) {
             *word ^= u32::from_le_bytes(*bytes);

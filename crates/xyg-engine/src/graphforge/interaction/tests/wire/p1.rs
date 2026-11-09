@@ -289,7 +289,7 @@ fn progressive_first_paint_and_chunks_share_configured_force_checkpoint_with_pin
             .unwrap();
             if !authored {
                 expected.tick(1);
-                expected.pinned[1] = pinned;
+                std::sync::Arc::make_mut(&mut expected.pinned)[1] = pinned;
             }
             let first = s
                 .execute(&request(2, 0, wire::RENDER, |_| {}), 0, None)
@@ -791,11 +791,7 @@ fn foreign_derived_owner_selection_projects_locally_on_render_bind_and_rebind() 
         [ElementRef::Node(id(3))]
     );
     let a_revision = a.session().render_revision();
-    let a_render = execute_retry(
-        &mut a,
-        &request(4, a_revision, wire::RENDER, |_| {}),
-        None,
-    );
+    let a_render = execute_retry(&mut a, &request(4, a_revision, wire::RENDER, |_| {}), None);
     assert_eq!(
         selected(&Container::decode(&a_render, wire::RESULT_MAGIC).unwrap()),
         [ElementRef::Node(id(3)), a_derived]

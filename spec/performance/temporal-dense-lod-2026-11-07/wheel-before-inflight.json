@@ -1,0 +1,32 @@
+{
+  "path": "dist/xyg-0.0.1.dev3117+c4f16778-py3-none-linux_x86_64.whl",
+  "sha256": "68527db2b7d28f9ba4cbb78fa1b7b71c66d320dae125c95a10ce5140d4e378f1",
+  "bytes": 6339427,
+  "archive": "spec/performance/temporal-dense-lod-2026-11-07/artifacts/xyg-0.0.1.dev3117+c4f16778-py3-none-linux_x86_64.whl.gz",
+  "embedded": {
+    "xyg/_native_lib/libxyg_core.so": {
+      "bytes": 6362680,
+      "sha256": "7b76ac792f30b1119eeaa48bb1d0c528bd2c56c9f01b4c75e2800156b2d96399"
+    },
+    "xyg/static/xyg-wasm.wasm": {
+      "bytes": 1899996,
+      "sha256": "27b05ebec8f9595579777fb16be7955bdb39d4fa9c665b980b26f0b5567d9b31"
+    },
+    "xyg/static/index.js": {
+      "bytes": 847704,
+      "sha256": "dd17e08bc4e5fb0a20f8e730f007432f9505e2d1f9e5183554e5a7e78c23b857"
+    },
+    "xyg/static/standalone.js": {
+      "bytes": 847724,
+      "sha256": "3362c8ad1dbbae0621a1ce30c3affd868003783949858fad1349e4e1901d0437"
+    },
+    "xyg/components.py": {
+      "bytes": 319253,
+      "sha256": "56d73c275ec21f7e85230e3299aab64e1367338b9c9266e7a31fc91daadd39af"
+    },
+    "xyg/_temporal_scene.py": {
+      "bytes": 4789,
+      "sha256": "18f40515b4f9ab81876404c7da48ffb467585633352fa6202be1fd3c9be30928"
+    }
+  }
+}

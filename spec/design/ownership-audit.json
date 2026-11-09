@@ -331,6 +331,22 @@
   },
   "files": [
     {
+      "path": "crates/xyg-core/src/filter_session_ffi.rs",
+      "current_owner": "Rust C ABI shell",
+      "policy": "rust-c-abi",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "One versioned cdylib serves ctypes, Koffi, and future browser-facing adapters."
+    },
+    {
+      "path": "crates/xyg-core/src/graphforge_session_ffi.rs",
+      "current_owner": "Rust C ABI shell",
+      "policy": "rust-c-abi",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "One versioned cdylib serves ctypes, Koffi, and future browser-facing adapters."
+    },
+    {
       "path": "crates/xyg-core/src/lib.rs",
       "current_owner": "Rust C ABI shell",
       "policy": "rust-c-abi",
@@ -371,6 +387,14 @@
       "rationale": "One versioned cdylib serves ctypes, Koffi, and future browser-facing adapters."
     },
     {
+      "path": "crates/xyg-core/src/temporal_graph_frozen_ffi.rs",
+      "current_owner": "Rust C ABI shell",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "policy": "rust-c-abi",
+      "rationale": "One versioned cdylib serves ctypes, Koffi, and future browser-facing adapters."
+    },
+    {
       "path": "crates/xyg-engine/src/arrow_geom.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",
@@ -404,6 +428,14 @@
     },
     {
       "path": "crates/xyg-engine/src/bin/geo_scale_bench.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/calendar.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",
       "disposition": "keep-rust",
@@ -484,6 +516,22 @@
     },
     {
       "path": "crates/xyg-engine/src/edge_route.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/filter_tier_c.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/filter_tier_c_linked.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",
       "disposition": "keep-rust",
@@ -1051,6 +1099,14 @@
       "rationale": "The safe engine is the single implementation of parity-affecting behavior."
     },
     {
+      "path": "crates/xyg-engine/src/graph_marker_contour.rs",
+      "current_owner": "Rust safe engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "policy": "rust-engine",
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
       "path": "crates/xyg-engine/src/graph_scale.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",
@@ -1219,6 +1275,14 @@
       "rationale": "The safe engine is the single implementation of parity-affecting behavior."
     },
     {
+      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
       "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/gpu.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",
@@ -1235,6 +1299,46 @@
       "rationale": "The safe engine is the single implementation of parity-affecting behavior."
     },
     {
+      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_probe.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
       "path": "crates/xyg-engine/src/graphforge/interaction/update.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",
@@ -1244,6 +1348,38 @@
     },
     {
       "path": "crates/xyg-engine/src/graphforge/interaction/walk.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/graphforge/interaction/wire.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/graphforge/interaction/wire_packet.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/graphforge/interaction/wire_paint.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",
       "disposition": "keep-rust",
@@ -1300,6 +1436,14 @@
     },
     {
       "path": "crates/xyg-engine/src/hexbin.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/index_slots.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",
       "disposition": "keep-rust",
@@ -1448,6 +1592,14 @@
       "policy": "rust-engine",
       "disposition": "keep-rust",
       "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/retained_png.rs",
+      "current_owner": "Rust safe engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "policy": "rust-engine",
       "rationale": "The safe engine is the single implementation of parity-affecting behavior."
     },
     {
@@ -1739,6 +1891,14 @@
       "rationale": "The safe engine is the single implementation of parity-affecting behavior."
     },
     {
+      "path": "crates/xyg-engine/src/shared_sort.rs",
+      "current_owner": "Rust safe engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "policy": "rust-engine",
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
       "path": "crates/xyg-engine/src/simd.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",
@@ -1868,6 +2028,46 @@
     },
     {
       "path": "crates/xyg-engine/src/temporal_graph.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/temporal_graph_export.rs",
+      "current_owner": "Rust safe engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "policy": "rust-engine",
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/temporal_graph_frozen.rs",
+      "current_owner": "Rust safe engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "policy": "rust-engine",
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/temporal_scene.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/temporal_scene_dense.rs",
+      "current_owner": "Rust safe engine",
+      "policy": "rust-engine",
+      "disposition": "keep-rust",
+      "follow_up_issue": null,
+      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
+    },
+    {
+      "path": "crates/xyg-engine/src/temporal_scene_jobs.rs",
       "current_owner": "Rust safe engine",
       "policy": "rust-engine",
       "disposition": "keep-rust",
@@ -2035,6 +2235,14 @@
       "rationale": "Issue #59 needs a minimal target-specific lifecycle shell over the same safe Rust engine."
     },
     {
+      "path": "crates/xyg-wasm/src/graphforge_session.rs",
+      "current_owner": "Rust WASM lifecycle adapter",
+      "policy": "rust-wasm-abi",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 needs a minimal target-specific lifecycle shell over the same safe Rust engine."
+    },
+    {
       "path": "crates/xyg-wasm/src/lib.rs",
       "current_owner": "Rust WASM lifecycle adapter",
       "policy": "rust-wasm-abi",
@@ -2056,6 +2264,14 @@
       "policy": "rust-wasm-abi",
       "disposition": "implement-rust-wasm",
       "follow_up_issue": 59,
+      "rationale": "Issue #59 needs a minimal target-specific lifecycle shell over the same safe Rust engine."
+    },
+    {
+      "path": "crates/xyg-wasm/src/temporal_graph_frozen.rs",
+      "current_owner": "Rust WASM lifecycle adapter",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "policy": "rust-wasm-abi",
       "rationale": "Issue #59 needs a minimal target-specific lifecycle shell over the same safe Rust engine."
     },
     {
@@ -2163,6 +2379,22 @@
       "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation."
     },
     {
+      "path": "js/src/49_filter_dashboard.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    {
+      "path": "js/src/49_filter_session.ts",
+      "current_owner": "Shared TypeScript WASM lifecycle adapter",
+      "policy": "browser-wasm-adapter",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation."
+    },
+    {
       "path": "js/src/49_wasm_aggregate.ts",
       "current_owner": "Shared TypeScript WASM lifecycle adapter",
       "policy": "browser-wasm-adapter",
@@ -2196,6 +2428,14 @@
     },
     {
       "path": "js/src/49_wasm_dashboard.ts",
+      "current_owner": "Shared TypeScript WASM lifecycle adapter",
+      "policy": "browser-wasm-adapter",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation."
+    },
+    {
+      "path": "js/src/49_wasm_presentation_lane.ts",
       "current_owner": "Shared TypeScript WASM lifecycle adapter",
       "policy": "browser-wasm-adapter",
       "disposition": "implement-rust-wasm",
@@ -2395,14 +2635,6 @@
       "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
     },
     {
-      "path": "js/src/66_graph_host.ts",
-      "current_owner": "Shared TypeScript browser client",
-      "policy": "browser-client",
-      "disposition": "keep-shared-client",
-      "follow_up_issue": null,
-      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
-    },
-    {
       "path": "js/src/63_graph_gpu.ts",
       "current_owner": "Shared TypeScript browser client",
       "policy": "browser-client",
@@ -2441,6 +2673,22 @@
       "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation.",
       "path": "js/src/66_geo_mixed.ts",
       "policy": "browser-wasm-adapter"
+    },
+    {
+      "path": "js/src/66_graph_host.ts",
+      "current_owner": "Shared TypeScript browser client",
+      "policy": "browser-client",
+      "disposition": "keep-shared-client",
+      "follow_up_issue": null,
+      "rationale": "Browser presentation and interaction genuinely belong in the shared TypeScript client."
+    },
+    {
+      "path": "js/src/67_frozen_graph.ts",
+      "policy": "browser-wasm-adapter",
+      "current_owner": "Shared TypeScript WASM lifecycle adapter",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation."
     },
     {
       "current_owner": "Shared TypeScript WASM lifecycle adapter",
@@ -2507,12 +2755,36 @@
       "policy": "browser-wasm-adapter"
     },
     {
+      "path": "js/src/75_temporal_scene.ts",
+      "current_owner": "Shared TypeScript WASM lifecycle adapter",
+      "policy": "browser-wasm-adapter",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation."
+    },
+    {
+      "path": "js/src/76_temporal_view.ts",
+      "current_owner": "Shared TypeScript WASM lifecycle adapter",
+      "policy": "browser-wasm-adapter",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation."
+    },
+    {
       "path": "js/src/wasm_abi_generated.ts",
       "current_owner": "Generated cross-host WASM contract binding",
       "policy": "browser-wasm-generated",
       "disposition": "generate",
       "follow_up_issue": 59,
       "rationale": "The raw WebAssembly boundary must not drift independently across Rust, TypeScript, and the checked-in manifest."
+    },
+    {
+      "path": "js/src/wasm_frozen_graph.ts",
+      "current_owner": "Shared TypeScript WASM lifecycle adapter",
+      "policy": "browser-wasm-adapter",
+      "disposition": "implement-rust-wasm",
+      "follow_up_issue": 59,
+      "rationale": "Issue #59 keeps browser lifecycle thin while the same Rust engine owns computation."
     },
     {
       "path": "js/src/wasm_inline_worker.ts",
@@ -2563,6 +2835,14 @@
       "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
+      "path": "packages/xy-node/src/chunked-live.js",
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
       "path": "packages/xy-node/src/color.js",
       "current_owner": "Node host",
       "policy": "node-host",
@@ -2596,6 +2876,22 @@
     },
     {
       "path": "packages/xy-node/src/figure.js",
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
+      "path": "packages/xy-node/src/filter-protocol.js",
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
+      "path": "packages/xy-node/src/filter-session.js",
       "current_owner": "Node host",
       "policy": "node-host",
       "disposition": "keep-host",
@@ -2787,6 +3083,14 @@
       "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
+      "path": "packages/xy-node/src/geo-temporal.js",
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
       "path": "packages/xy-node/src/geo-tiles.d.ts",
       "current_owner": "Node host",
       "policy": "node-host",
@@ -2876,6 +3180,22 @@
     },
     {
       "path": "packages/xy-node/src/graphforge.js",
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
+      "path": "packages/xy-node/src/graphforge_layout.js",
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
+      "path": "packages/xy-node/src/graphforge_layout_worker.js",
       "current_owner": "Node host",
       "policy": "node-host",
       "disposition": "keep-host",
@@ -3131,7 +3451,31 @@
       "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     },
     {
+      "path": "packages/xy-node/src/temporal-graph-frozen.js",
+      "current_owner": "Node host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "policy": "node-host",
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
       "path": "packages/xy-node/src/temporal-graph.js",
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
+      "path": "packages/xy-node/src/temporal-scene-framing.js",
+      "current_owner": "Node host",
+      "policy": "node-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
+    },
+    {
+      "path": "packages/xy-node/src/temporal-scene.js",
       "current_owner": "Node host",
       "policy": "node-host",
       "disposition": "keep-host",
@@ -3268,6 +3612,14 @@
     },
     {
       "path": "python/xyg/_chromium.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_chunked_live.py",
       "current_owner": "Python host",
       "policy": "python-host",
       "disposition": "keep-host",
@@ -3499,6 +3851,14 @@
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
+      "path": "python/xyg/_geo_temporal.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
       "path": "python/xyg/_geo_tiles.py",
       "current_owner": "Python host",
       "policy": "python-host",
@@ -3556,6 +3916,22 @@
     },
     {
       "path": "python/xyg/_graph_static.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_graph_widget.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_graph_widget_identity.py",
       "current_owner": "Python host",
       "policy": "python-host",
       "disposition": "keep-host",
@@ -4003,6 +4379,22 @@
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
     },
     {
+      "path": "python/xyg/_temporal_graph_frozen.py",
+      "current_owner": "Python host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "policy": "python-host",
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/_temporal_scene.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
       "path": "python/xyg/_textblock.py",
       "current_owner": "Python host",
       "policy": "python-host",
@@ -4116,6 +4508,14 @@
     },
     {
       "path": "python/xyg/facets.py",
+      "current_owner": "Python host",
+      "policy": "python-host",
+      "disposition": "keep-host",
+      "follow_up_issue": null,
+      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
+    },
+    {
+      "path": "python/xyg/filter_session.py",
       "current_owner": "Python host",
       "policy": "python-host",
       "disposition": "keep-host",
@@ -4353,134 +4753,6 @@
       "disposition": "keep-host",
       "follow_up_issue": null,
       "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_graph_widget.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "python/xyg/_graph_widget_identity.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "crates/xyg-core/src/graphforge_session_ffi.rs",
-      "current_owner": "Rust C ABI shell",
-      "policy": "rust-c-abi",
-      "disposition": "keep-rust",
-      "follow_up_issue": null,
-      "rationale": "One versioned cdylib serves ctypes, Koffi, and future browser-facing adapters."
-    },
-    {
-      "path": "crates/xyg-engine/src/graphforge/interaction/wire.rs",
-      "current_owner": "Rust safe engine",
-      "policy": "rust-engine",
-      "disposition": "keep-rust",
-      "follow_up_issue": null,
-      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
-    },
-    {
-      "path": "crates/xyg-engine/src/graphforge/interaction/wire_paint.rs",
-      "current_owner": "Rust safe engine",
-      "policy": "rust-engine",
-      "disposition": "keep-rust",
-      "follow_up_issue": null,
-      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
-    },
-    {
-      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire.rs",
-      "current_owner": "Rust safe engine",
-      "policy": "rust-engine",
-      "disposition": "keep-rust",
-      "follow_up_issue": null,
-      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
-    },
-    {
-      "path": "crates/xyg-wasm/src/graphforge_session.rs",
-      "current_owner": "Rust WASM lifecycle adapter",
-      "policy": "rust-wasm-abi",
-      "disposition": "implement-rust-wasm",
-      "follow_up_issue": 59,
-      "rationale": "Issue #59 needs a minimal target-specific lifecycle shell over the same safe Rust engine."
-    },
-    {
-      "path": "packages/xy-node/src/graphforge_layout.js",
-      "current_owner": "Node host",
-      "policy": "node-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
-    },
-    {
-      "path": "packages/xy-node/src/graphforge_layout_worker.js",
-      "current_owner": "Node host",
-      "policy": "node-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
-    },
-    {
-      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/picked.rs",
-      "current_owner": "Rust safe engine",
-      "policy": "rust-engine",
-      "disposition": "keep-rust",
-      "follow_up_issue": null,
-      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
-    },
-    {
-      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/picked_checkpoint.rs",
-      "current_owner": "Rust safe engine",
-      "policy": "rust-engine",
-      "disposition": "keep-rust",
-      "follow_up_issue": null,
-      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
-    },
-    {
-      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_probe.rs",
-      "current_owner": "Rust safe engine",
-      "policy": "rust-engine",
-      "disposition": "keep-rust",
-      "follow_up_issue": null,
-      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
-    },
-    {
-      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/projection_reuse.rs",
-      "current_owner": "Rust safe engine",
-      "policy": "rust-engine",
-      "disposition": "keep-rust",
-      "follow_up_issue": null,
-      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
-    },
-    {
-      "path": "crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs",
-      "current_owner": "Rust safe engine",
-      "policy": "rust-engine",
-      "disposition": "keep-rust",
-      "follow_up_issue": null,
-      "rationale": "The safe engine is the single implementation of parity-affecting behavior."
-    },
-    {
-      "path": "python/xyg/_geo_temporal.py",
-      "current_owner": "Python host",
-      "policy": "python-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file provides Python-specific ergonomics without making Rust-owned product decisions."
-    },
-    {
-      "path": "packages/xy-node/src/geo-temporal.js",
-      "current_owner": "Node host",
-      "policy": "node-host",
-      "disposition": "keep-host",
-      "follow_up_issue": null,
-      "rationale": "This file is a Node-specific shell around shared engine and paint-client contracts."
     }
   ]
 }

@@ -17,13 +17,14 @@ mod graphforge;
 mod graphforge_session;
 mod temporal;
 mod temporal_graph;
+mod temporal_graph_frozen;
 pub mod ticks;
 mod typed_series_abi_generated;
 
 use std::sync::{Mutex, MutexGuard};
 use xyg_engine::scene::{self, PainterRejection, SceneError};
 
-pub const WASM_ABI_VERSION: u32 = 35;
+pub const WASM_ABI_VERSION: u32 = 38;
 pub const STATUS_OK: i32 = 0;
 pub const STATUS_INVALID_HANDLE: i32 = 1;
 pub const STATUS_INVALID_ARGUMENT: i32 = 2;
@@ -304,11 +305,13 @@ struct Instance {
     aggregate_job: Option<aggregate::AggregateJob>,
     stream_aggregate_job: Option<aggregate::StreamAggregateJob>,
     aggregate_sequence: u32,
+    filter: xyg_engine::filter_tier_c::FilterTierCSession,
     temporal: Option<xyg_engine::temporal_controller::TemporalController>,
     temporal_graph: Option<temporal_graph::WasmTemporalGraph>,
     graph_session: Option<xyg_engine::graphforge::interaction::wire::WireSession>,
     graph_job: Option<graph::GraphJob>,
     compile_job: Option<CompileJob>,
+    temporal_jobs: Vec<u64>,
     geo_transport: Option<xyg_engine::geo_transport::GeoTransportLease>,
 }
 
@@ -480,11 +483,13 @@ impl Registry {
                 aggregate_job: None,
                 stream_aggregate_job: None,
                 aggregate_sequence: 0,
+                filter: xyg_engine::filter_tier_c::FilterTierCSession::with_limit(max_arena_bytes),
                 temporal: None,
                 temporal_graph: None,
                 graph_session: None,
                 graph_job: None,
                 compile_job: None,
+                temporal_jobs: Vec::new(),
                 geo_transport: None,
             }),
         };
@@ -528,6 +533,22 @@ fn with_ordinary_instance_mut(
 }
 
 fn with_instance_mut<T>(handle: u32, operation: impl FnOnce(&mut Instance) -> T) -> Result<T, i32> {
+    #[cfg(target_arch = "wasm32")]
+    {
+        let mut operation = Some(operation);
+        with_instance_mut_erased(handle, &mut |i| operation.take().expect("one instance operation")(i))
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    with_instance_mut_impl(handle, operation)
+}
+
+#[cfg(target_arch = "wasm32")]
+#[inline(never)]
+fn with_instance_mut_erased<T>(handle: u32, operation: &mut dyn FnMut(&mut Instance) -> T) -> Result<T, i32> {
+    with_instance_mut_impl(handle, operation)
+}
+
+fn with_instance_mut_impl<T>(handle: u32, operation: impl FnOnce(&mut Instance) -> T) -> Result<T, i32> {
     let mut registry = registry();
     let instance = registry
         .slot_mut(handle)
@@ -626,6 +647,10 @@ pub extern "C" fn xyg_wasm_density_first_paint_plan(
         } else {
             0
         }
+}
+
+impl Drop for Instance {
+    fn drop(&mut self){for handle in self.temporal_jobs.drain(..){xyg_engine::temporal_scene::jobs::close(handle);}}
 }
 
 #[no_mangle]
@@ -759,6 +784,15 @@ pub extern "C" fn xyg_wasm_graphforge_composition_version() -> u32 {
     xyg_engine::graphforge::compose::COMPOSITION_VERSION
 }
 
+// Shared reservation for co-owned graph authorities, including temporal jobs.
+fn graph_residency(instance: &Instance) -> usize {
+    instance.graph_session.as_ref().map_or(0, |session| {
+        session.retained_budget().saturating_add(
+            instance.temporal_graph.as_ref().map_or(0, |graph| graph.retained_bytes()),
+        )
+    })
+}
+
 #[no_mangle]
 pub extern "C" fn xyg_wasm_arena_resize(handle: u32, length: usize) -> i32 {
     with_instance_mut(handle, |instance| {
@@ -769,11 +803,8 @@ pub extern "C" fn xyg_wasm_arena_resize(handle: u32, length: usize) -> i32 {
         // S4 co-owned sessions account for both retained authorities. Standalone
         // XYTG keeps its existing staging/work/output contract; charging its
         // conservative session-only reserve here would strand accepted owners.
-        let retained = instance.graph_session.as_ref().map_or(0, |session| {
-            session.retained_budget().saturating_add(
-                instance.temporal_graph.as_ref().map_or(0, |graph| graph.retained_bytes()),
-            )
-        });
+        let retained = graph_residency(instance);
+        let retained=retained.saturating_add(xyg_engine::temporal_scene::jobs::retained(&instance.temporal_jobs));
         if length.saturating_add(retained) > instance.max_arena_bytes {
             return fail(
                 instance,
@@ -1859,6 +1890,75 @@ pub extern "C" fn xyg_wasm_last_scene_records(handle: u32) -> usize {
 #[no_mangle]
 pub extern "C" fn xyg_wasm_last_scene_styles(handle: u32) -> usize {
     with_instance_mut(handle, |instance| instance.last_scene_styles).unwrap_or(0)
+}
+
+/// Execute the same XYFC v1 session protocol as the native adapter.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_filter_execute(
+    handle: u32,
+    offset: usize,
+    length: usize,
+    capacity: usize,
+) -> i32 {
+    with_ordinary_instance_mut(handle, |instance| {
+        instance.output = Vec::new();
+        let arena = std::mem::take(&mut instance.arena);
+        let Some(input) = offset
+            .checked_add(length)
+            .and_then(|end| arena.get(offset..end))
+        else {
+            return fail(
+                instance,
+                STATUS_INVALID_ARGUMENT,
+                "invalid filter packet range",
+            );
+        };
+        match instance
+            .filter
+            .execute(input, capacity.min(instance.max_arena_bytes), || false)
+        {
+            Ok(reply) => {
+                instance.output = reply;
+                instance.last_error.clear();
+                STATUS_OK
+            }
+            Err(required) => {
+                instance.output = (required as u64).to_le_bytes().to_vec();
+                fail(
+                    instance,
+                    STATUS_RESOURCE_LIMIT,
+                    "filter reply exceeds output capacity",
+                )
+            }
+        }
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+/// Compile an exact packed temporal composition through the shared Scene engine.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_temporal_scene_compile(
+    handle: u32,
+    sequence: u32,
+    offset: usize,
+    length: usize,
+) -> i32 {
+    with_ordinary_instance_mut(handle, |instance| {
+        geo::execute_temporal_scene(instance, sequence, offset, length)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
+}
+
+/// Shared XYFX frozen graph acquisition, native-equivalent export and recovery.
+#[no_mangle]
+pub extern "C" fn xyg_wasm_frozen_graph_execute(handle: u32, offset: usize, length: usize) -> i32 {
+    with_instance_mut(handle, |i| {
+        if i.geo_transport.is_some() {
+            return STATUS_INVALID_ARGUMENT;
+        }
+        temporal_graph_frozen::execute(i, offset, length)
+    })
+    .unwrap_or(STATUS_INVALID_HANDLE)
 }
 
 #[cfg(test)]
@@ -3456,5 +3556,95 @@ mod tests {
         })
         .unwrap();
         assert_eq!(xyg_wasm_instance_dispose(handle), STATUS_OK);
+    }
+}
+
+#[cfg(test)]
+mod filter_tier_c_tests {
+    #[test]
+    fn filter_tier_c_native_wasm_adapter_shared_packets() {
+        let b = include_bytes!("../../../tests/fixtures/filter_tier_c/session.bin");
+        let h = super::xyg_wasm_instance_new(1 << 20);
+        let mut at = 0;
+        let mut cases = 0;
+        while at < b.len() {
+            let u32_at = |at| u32::from_le_bytes(b[at..at + 4].try_into().unwrap());
+            let n = u32_at(at) as usize;
+            let cap = u32_at(at + 4) as usize;
+            let code = u32_at(at + 8) as i32;
+            let out_n = u32_at(at + 12) as usize;
+            at += 24;
+            let input = &b[at..at + n];
+            at += n;
+            let expected = &b[at..at + out_n];
+            at += out_n;
+            assert_eq!(super::xyg_wasm_arena_resize(h, n), 0);
+            unsafe {
+                std::ptr::copy_nonoverlapping(
+                    input.as_ptr(),
+                    super::xyg_wasm_arena_ptr(h) as *mut u8,
+                    n,
+                );
+            }
+            let status = super::xyg_wasm_filter_execute(h, 0, n, cap);
+            if code == 0 {
+                assert_eq!(status, 0);
+                let output = unsafe {
+                    std::slice::from_raw_parts(
+                        super::xyg_wasm_output_ptr(h) as *const u8,
+                        super::xyg_wasm_output_len(h),
+                    )
+                };
+                assert_eq!(output, expected, "case {cases}");
+            } else {
+                assert_eq!(status, 3);
+            }
+            cases += 1;
+        }
+        assert_eq!(super::xyg_wasm_instance_dispose(h), 0);
+        assert_eq!(cases, 47);
+    }
+    #[test]
+    fn filter_tier_c_linked_density_wasm_shared_packets() {
+        let b = include_bytes!("../../../tests/fixtures/filter_tier_c/density.bin");
+        let h = super::xyg_wasm_instance_new(1 << 20);
+        let mut at = 0;
+        let mut cases = 0;
+        while at < b.len() {
+            let u32_at = |at| u32::from_le_bytes(b[at..at + 4].try_into().unwrap());
+            let n = u32_at(at) as usize;
+            let cap = u32_at(at + 4) as usize;
+            let code = u32_at(at + 8) as i32;
+            let out_n = u32_at(at + 12) as usize;
+            at += 24;
+            let input = &b[at..at + n];
+            at += n;
+            let expected = &b[at..at + out_n];
+            at += out_n;
+            assert_eq!(super::xyg_wasm_arena_resize(h, n), 0);
+            unsafe {
+                std::ptr::copy_nonoverlapping(
+                    input.as_ptr(),
+                    super::xyg_wasm_arena_ptr(h) as *mut u8,
+                    n,
+                );
+            }
+            let status = super::xyg_wasm_filter_execute(h, 0, n, cap);
+            if code == 0 {
+                assert_eq!(status, 0);
+                let output = unsafe {
+                    std::slice::from_raw_parts(
+                        super::xyg_wasm_output_ptr(h) as *const u8,
+                        super::xyg_wasm_output_len(h),
+                    )
+                };
+                assert_eq!(output, expected, "case {cases}");
+            } else {
+                assert_eq!(status, 3);
+            }
+            cases += 1;
+        }
+        assert_eq!(super::xyg_wasm_instance_dispose(h), 0);
+        assert_eq!(cases, 57);
     }
 }

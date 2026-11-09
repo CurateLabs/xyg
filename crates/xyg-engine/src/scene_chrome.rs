@@ -23,6 +23,8 @@
 //! unchanged. Invalid grammar still falls back to the ordinary deterministic
 //! label (ABI 96).
 
+use crate::scene::SceneByteWrite;
+
 use crate::legend_fit::{self, LegendScale};
 use crate::polar;
 use crate::scene::{
@@ -526,7 +528,7 @@ fn rewrite_legend_loc(
     }
     let mut out = Vec::with_capacity(facts.len() - legend_loc_len + loc.len());
     out.extend_from_slice(&facts[..204]);
-    out.extend_from_slice(&(loc.len() as u32).to_le_bytes());
+    out.push_word(loc.len() as u32);
     out.extend_from_slice(&facts[208..loc_at]);
     out.extend_from_slice(loc);
     out.extend_from_slice(&facts[loc_end..]);

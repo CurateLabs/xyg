@@ -1,0 +1,13 @@
+{
+  "path": "python/xyg/_figure.py",
+  "parentsIdentical": true,
+  "parentSha256": "63172e26c9247527563632acc6382dd9eab57d21dd3206910effecbb69ed9837",
+  "currentSha256": "b536d41e3f2367cab9f92993d54ca82e6c8bd1ee8496ebee14366c3d3a6a360d",
+  "removedOnly": [
+    "typing.TYPE_CHECKING import",
+    "type-check-only TemporalChart import",
+    "annotation without default"
+  ],
+  "everyOtherAstNodeIdentical": true,
+  "preservesAbsentFieldBehavior": true
+}

@@ -11,7 +11,7 @@ pub const GRAPHFORGE_MAX_SESSIONS: usize = 256;
 
 struct Entry {
     instance: u64,
-    opening: Vec<u8>,
+    opening: Arc<wire::RetryPacket>,
     session: Mutex<Option<WireSession>>,
 }
 
@@ -44,7 +44,9 @@ struct NativeHost {
 }
 
 impl TemporalHost for NativeHost {
-    fn owner_identity(&self) -> usize { Arc::as_ptr(&self.entry) as usize }
+    fn owner_identity(&self) -> usize {
+        Arc::as_ptr(&self.entry) as usize
+    }
     fn with_graph(&self, handle: TemporalHandle, f: &mut dyn FnMut(&mut TemporalGraph)) -> bool {
         if handle.0 != self.handle || self.entry.disposed.load(Ordering::Acquire) {
             return false;
@@ -150,7 +152,7 @@ pub unsafe extern "C" fn xyg_graphforge_session_create(
                     .map(|(h, e)| (*h, Arc::clone(e)))
             };
             if let Some((handle, existing)) = existing {
-                if existing.opening != bytes {
+                if !existing.opening.matches(bytes) {
                     return Err(InteractionStatus::Invalid);
                 }
                 existing
@@ -174,7 +176,7 @@ pub unsafe extern "C" fn xyg_graphforge_session_create(
             let session = WireSession::open(bytes, wire::DEFAULT_MAX_BYTES, bytes.len())?;
             let candidate = Arc::new(Entry {
                 instance: instance_id,
-                opening: bytes.to_vec(),
+                opening: session.opening_record(),
                 session: Mutex::new(Some(session)),
             });
             // Another creator may have won while the document was validated.
@@ -185,7 +187,7 @@ pub unsafe extern "C" fn xyg_graphforge_session_create(
                 .iter()
                 .find(|(_, e)| e.instance == instance_id)
             {
-                return if existing.opening == bytes {
+                return if existing.opening.matches(bytes) {
                     Ok(*handle)
                 } else {
                     Err(InteractionStatus::Invalid)
@@ -235,7 +237,7 @@ unsafe fn command(
             let entry = entry(handle).ok_or(InteractionStatus::Unbound)?;
             let mut slot = entry.session.lock().expect("graph session poisoned");
             let session = slot.as_mut().ok_or(InteractionStatus::Unbound)?;
-            let external = entry.opening.len();
+            let external = cap; // Opening shares its record; the caller lends this output capacity.
             if poll {
                 let required = session.poll(bytes, cap, external)?;
                 *out_len = required;
@@ -394,6 +396,38 @@ pub unsafe extern "C" fn xyg_graphforge_session_destroy(handle: u64) -> i32 {
         entry.session.lock().expect("graph session poisoned").take();
         0
     })
+}
+
+/// Borrow a retained publication while holding the same session lock as commands.
+pub(crate) fn with_frozen_publication<T>(
+    handle: u64,
+    owner: usize,
+    temporal: u64,
+    frame_revision: u64,
+    render_revision: u32,
+    f: impl FnOnce(
+        xyg_engine::temporal_graph_frozen::Publication<'_>,
+    ) -> Result<T, xyg_engine::temporal::TemporalError>,
+) -> Result<T, xyg_engine::temporal::TemporalError> {
+    use xyg_engine::temporal::TemporalError as E;
+    let entry = entry(handle).ok_or(E::StaleHandle)?;
+    let slot = entry.session.lock().expect("graph session poisoned");
+    let session = slot.as_ref().ok_or(E::Disposed)?;
+    let publication = session
+        .frozen_publication(
+            owner,
+            TemporalHandle(temporal),
+            frame_revision,
+            render_revision,
+        )
+        .map_err(|e| {
+            if e == InteractionStatus::Stale {
+                E::StaleRevision
+            } else {
+                E::InvalidArgument
+            }
+        })?;
+    f(publication)
 }
 
 #[cfg(test)]

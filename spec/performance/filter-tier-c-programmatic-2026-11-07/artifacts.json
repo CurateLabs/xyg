@@ -1,0 +1,45 @@
+{
+  "nativeAbi": 402,
+  "wasmAbi": 36,
+  "files": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6172584,
+      "sha256": "d014bcc3f9b2f21af1627e1ddc03b245a4a309f0f31ca7257a2bf2079884b83e"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 2080544,
+      "sha256": "6a96fa29786bfc7e2e3a20de313e4c681ec7c7dc011e658c6a2b8f3f3c6b0b2e"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1886400,
+      "sha256": "c5ae5257c90a4a6a7a633bf0b85b868c81468715e53480d55bc7b3ca33f117ad"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 809631,
+      "sha256": "924920a99b3f7f004d2399cb96ad84e56e2fb8ceeda6bd85152624cb2e776589"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 809654,
+      "sha256": "280afc955d9ad41d1429e3469b72d2ea93258dff902bd06c29186348f49e6a94"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 56359,
+      "sha256": "0c1a61fc64481d404565d2fd8b18645eee8abcf761e673a6074b48eb2042c2f5"
+    },
+    "spec/abi/xyg-abi.json": {
+      "bytes": 2245365,
+      "sha256": "df4a91fcc569769c6991dda495100377b92f89e9c657d8e79f17336ac19efaa2"
+    },
+    "spec/wasm/abi.json": {
+      "bytes": 16755,
+      "sha256": "ac47091ad8f83305ea410350f473d9ae83b7fe3e24fdaa83c2a4cac98d5e764b"
+    }
+  },
+  "wasmCaps": {
+    "rawCap": 1927168,
+    "gzipCap": 786432,
+    "gzipDefaultBytes": 772256,
+    "rawHeadroom": 40768,
+    "gzipHeadroom": 14176
+  }
+}

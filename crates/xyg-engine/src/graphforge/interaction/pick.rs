@@ -33,8 +33,16 @@ pub struct PickIndex {
     pub node_scan: bool,
     bounds: [f64; 4],
     primitives: Vec<Primitive>,
-    grid: Vec<Vec<u32>>,
+    grid: Arc<Grid>,
     entries: usize,
+}
+
+// Immutable CSR storage: clones share the preceding publication's grid.
+// Logical admission remains identical; capacities cannot retain failed builds.
+#[derive(Debug, Default, PartialEq)]
+struct Grid {
+    offsets: Vec<u32>,
+    indices: Vec<u32>,
 }
 
 #[derive(Default)]
@@ -121,16 +129,14 @@ impl PickIndex {
         );
         let mut out = Self {
             bounds: domain,
-            grid: vec![vec![]; GRID * GRID],
+
             ..Default::default()
         };
         if all().all(|p| out.admit(p, paint)) {
+            out.finish_grid(paint);
             return out;
         }
         out.primitives.clear();
-        for cell in &mut out.grid {
-            cell.clear();
-        }
         out.entries = 0;
         out.degraded = true;
         // Nodes are exact even if their index cannot fit. No source-sized
@@ -143,9 +149,6 @@ impl PickIndex {
         }
         if out.node_scan {
             out.primitives.clear();
-            for cell in &mut out.grid {
-                cell.clear();
-            }
             out.entries = 0;
         }
         for i in 0..paint.frames.len() {
@@ -155,9 +158,6 @@ impl PickIndex {
         }
         if out.node_scan {
             out.primitives.clear();
-            for cell in &mut out.grid {
-                cell.clear();
-            }
             out.entries = 0;
         }
         for i in 0..paint.pieces.len() {
@@ -169,6 +169,7 @@ impl PickIndex {
                 out.admit(Primitive::Piece(i), paint);
             }
         }
+        out.finish_grid(paint);
         out
     }
     fn cells(&self, b: [f64; 4]) -> [usize; 4] {
@@ -193,15 +194,44 @@ impl PickIndex {
         {
             return false;
         }
-        let index = self.primitives.len() as u32;
         self.primitives.push(p);
-        for y in c[1]..=c[3] {
-            for x in c[0]..=c[2] {
-                self.grid[y * GRID + x].push(index);
-            }
-        }
         self.entries += copies;
         true
+    }
+    fn finish_grid(&mut self, paint: &PaintGeometry) {
+        // admit() checked entries and primitive count before either allocation.
+        let mut offsets = vec![0u32; GRID * GRID + 1];
+        for &p in &self.primitives {
+            let c = self.cells(bounds(p, paint));
+            for y in c[1]..=c[3] {
+                for x in c[0]..=c[2] {
+                    offsets[y * GRID + x + 1] += 1;
+                }
+            }
+        }
+        for i in 1..offsets.len() {
+            offsets[i] += offsets[i - 1];
+        }
+        let mut cursor = offsets[..GRID * GRID].to_vec();
+        let mut indices = vec![0; self.entries];
+        for (i, &p) in self.primitives.iter().enumerate() {
+            let c = self.cells(bounds(p, paint));
+            for y in c[1]..=c[3] {
+                for x in c[0]..=c[2] {
+                    let at = &mut cursor[y * GRID + x];
+                    indices[*at as usize] = i as u32;
+                    *at += 1;
+                }
+            }
+        }
+        self.grid = Arc::new(Grid { offsets, indices });
+    }
+    pub(super) fn retained_bytes(&self) -> usize {
+        self.primitives.capacity() * std::mem::size_of::<Primitive>()
+            + self.grid.offsets.capacity() * 4
+            + self.grid.indices.capacity() * 4
+            + std::mem::size_of::<Grid>()
+            + 2 * std::mem::size_of::<usize>()
     }
     fn candidates(
         &self,
@@ -212,7 +242,10 @@ impl PickIndex {
         let mut seen = BTreeSet::new();
         for y in c[1]..=c[3] {
             for x in c[0]..=c[2] {
-                for &p in &self.grid[y * GRID + x] {
+                let cell = y * GRID + x;
+                let lo = self.grid.offsets.get(cell).copied().unwrap_or(0) as usize;
+                let hi = self.grid.offsets.get(cell + 1).copied().unwrap_or(0) as usize;
+                for &p in &self.grid.indices[lo..hi] {
                     work.charge(2)?;
                     seen.insert(p);
                     if seen.len() > MAX_GRAPH_PICK_CANDIDATES {
@@ -373,7 +406,9 @@ fn piece_region(
     Ok(false)
 }
 impl RenderOutput {
-    fn point(&self, p: [f64; 2], work: &mut Work) -> Result<Option<PickTarget>, InteractionStatus> { #[cfg(test)] POINT_QUERY_COUNT.with(|n| n.set(n.get() + 1));
+    fn point(&self, p: [f64; 2], work: &mut Work) -> Result<Option<PickTarget>, InteractionStatus> {
+        #[cfg(test)]
+        POINT_QUERY_COUNT.with(|n| n.set(n.get() + 1));
         if !p.iter().all(|v| v.is_finite()) {
             return invalid();
         }
@@ -444,21 +479,40 @@ impl GraphSession {
                 render.members_of_edge(i).len() as u64,
                 ElementIndex::Edge(render.members_of_edge(i)[0] as usize),
             ),
-            None => return Ok(PickReceipt {
-                header, operation, action: 0, target, member_count: 0, source: None,
-            }),
+            None => {
+                return Ok(PickReceipt {
+                    header,
+                    operation,
+                    action: 0,
+                    target,
+                    member_count: 0,
+                    source: None,
+                })
+            }
         };
         let source = if render.tier == crate::graph::LodTier::Aggregate {
             None
         } else {
             let reference = match source {
-                ElementIndex::Node(i) => self.identity.node_ref(i),
-                ElementIndex::Edge(i) => self.identity.edge_ref(i),
+                ElementIndex::Node(i) => self.source.identity.node_ref(i),
+                ElementIndex::Edge(i) => self.source.identity.edge_ref(i),
             };
-            Some((source, self.identity.to_transport(&reference)
-                .ok_or(InteractionStatus::Invalid)?))
+            Some((
+                source,
+                self.source
+                    .identity
+                    .to_transport(&reference)
+                    .ok_or(InteractionStatus::Invalid)?,
+            ))
         };
-        Ok(PickReceipt { header, operation, action: 0, target, member_count, source })
+        Ok(PickReceipt {
+            header,
+            operation,
+            action: 0,
+            target,
+            member_count,
+            source,
+        })
     }
 
     fn picked_set(
@@ -475,7 +529,7 @@ impl GraphSession {
             };
             work.charge(members.len())?;
             for &member in members {
-                self.identity.insert_into(
+                self.source.identity.insert_into(
                     &mut set,
                     if node {
                         ElementIndex::Node(member as usize)
@@ -551,7 +605,12 @@ impl GraphSession {
             s.hover = Hover::default();
             let mut out = s.outcome(w, changed);
             out.pick = Some(PickReceipt {
-                header, operation: 0, action: 1, target: None, member_count: 0, source: None,
+                header,
+                operation: 0,
+                action: 1,
+                target: None,
+                member_count: 0,
+                source: None,
             });
             Ok(out)
         })
@@ -708,7 +767,7 @@ mod admission_tests {
         };
         let mut index = PickIndex {
             bounds: [-1., -1., 1., 1.],
-            grid: vec![vec![]; GRID * GRID],
+
             ..Default::default()
         };
         // Every node duplicates into all 4096 cells. Exactly the grid bound
@@ -721,7 +780,7 @@ mod admission_tests {
         assert_eq!(before, index);
         let mut index = PickIndex {
             bounds: [-1e9, -1e9, 1e9, 1e9],
-            grid: vec![vec![]; GRID * GRID],
+
             ..Default::default()
         };
         // Synthetic zero-sized node lies in one cell, so primitive cap is the
@@ -735,7 +794,12 @@ mod admission_tests {
         assert!(!index.admit(Primitive::Node(0), &paint));
         let cell = index.cells([0.; 4]);
         let key = cell[1] * GRID + cell[0];
-        index.grid[key].truncate(MAX_GRAPH_PICK_CANDIDATES);
+        index.finish_grid(&paint);
+        let grid = Arc::get_mut(&mut index.grid).unwrap();
+        grid.indices.truncate(MAX_GRAPH_PICK_CANDIDATES);
+        for offset in &mut grid.offsets[key + 1..] {
+            *offset = MAX_GRAPH_PICK_CANDIDATES as u32;
+        }
         assert_eq!(
             index
                 .candidates([0.; 4], &mut Work::default())
@@ -743,7 +807,11 @@ mod admission_tests {
                 .len(),
             MAX_GRAPH_PICK_CANDIDATES
         );
-        index.grid[key].push(MAX_GRAPH_PICK_CANDIDATES as u32);
+        let grid = Arc::get_mut(&mut index.grid).unwrap();
+        grid.indices.push(MAX_GRAPH_PICK_CANDIDATES as u32);
+        for offset in &mut grid.offsets[key + 1..] {
+            *offset += 1;
+        }
         assert_eq!(
             index.candidates([0.; 4], &mut Work::default()),
             Err(InteractionStatus::Budget)
@@ -820,4 +888,6 @@ mod admission_tests {
 #[cfg(test)]
 thread_local! { static POINT_QUERY_COUNT: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }
 #[cfg(test)]
-pub(super) fn point_query_count() -> u64 { POINT_QUERY_COUNT.with(|n| n.get()) }
+pub(super) fn point_query_count() -> u64 {
+    POINT_QUERY_COUNT.with(|n| n.get())
+}

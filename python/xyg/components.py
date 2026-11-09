@@ -85,6 +85,7 @@ __all__ = [
     "Mark",
     "Modebar",
     "Spring",
+    "TemporalChart",
     "Theme",
     "Tooltip",
     "animation",
@@ -149,6 +150,7 @@ __all__ = [
     "stem_chart",
     "step",
     "step_chart",
+    "temporal_chart",
     "text",
     "theme",
     "theta_axis",
@@ -3773,6 +3775,35 @@ class Chart(Component):
     """Composes marks + axis/legend children into a `Figure`. Renders in
     notebooks and exports to HTML via the underlying engine."""
 
+    def filter_session(
+        self,
+        columns,
+        *,
+        source_id: int,
+        epoch: int = 1,
+        first_row: int = 0,
+        budget_bytes: int = 64 << 20,
+    ):
+        """Create a programmatic Rust filter session for shared canonical columns.
+
+        Counts, density planes and edit transactions share the browser protocol.
+        Explicit source identity is shared by all views; see attachFilterDashboard
+        for the opt-in existing browser-view binding.
+        """
+        from .filter_session import FilterTierCSession
+
+        return FilterTierCSession(
+            columns,
+            source_id=source_id,
+            epoch=epoch,
+            first_row=first_row,
+            budget_bytes=budget_bytes,
+        )
+
+    _chunked_live: tuple[str, dict[str, int]]
+    source_row_ids: Any
+    source_provenance: dict[str, Any]
+
     def __init__(
         self,
         kind: str,
@@ -4270,6 +4301,12 @@ class Chart(Component):
         fig._validate_interaction()
         if self._composition_legend is not None:
             fig.legend_options = {**fig.legend_options, **self._composition_legend}
+        source = getattr(self, "_chunked_live", None)
+        if source is not None:
+            fig._chunked_row_ids = self.source_row_ids
+            fig._chunked_provenance = self.source_provenance
+            fig._chunked_generation = str(source[1]["generation"])
+            fig._chunked_live = source
         self._figure = fig
         return fig
 
@@ -4302,6 +4339,10 @@ class Chart(Component):
         the chart are wired onto it. ``wasm_ticks`` is an explicit
         ``worker_url`` / ``wasm`` pair for hosted Rust/WASM ticks.
         """
+        if self._widget is not None and getattr(
+            getattr(self._widget, "_chunked_binding", None), "closed", False
+        ):
+            self._widget = None
         if self._widget is None:
             from .widget import FigureWidget
 
@@ -7895,3 +7936,192 @@ def geo_chart(
     return GeoChart(
         tuple(layers), camera, legend, budget, tile_session, tile_vector_styles, tile_image_id
     )
+
+
+class TemporalChart(Chart):
+    """Exact UTC temporal composition using the shared Rust Scene compiler.
+
+    Rows are (start_us, end_us, value_or_lane, stable_u64_id). Null endpoints
+    are unbounded for intervals; null instants are omitted by Rust.
+    """
+
+    def __init__(
+        self,
+        kind,
+        rows,
+        *,
+        domain,
+        timezone,
+        precision=2,
+        controller=None,
+        dense=False,
+        color=(31, 119, 180, 255),
+        stroke=(31, 119, 180, 255),
+        stroke_width=1.0,
+        budget=64 * 1024 * 1024,
+        **props,
+    ):
+        super().__init__("temporal", (), **props)
+        from ._temporal_scene import snapshot_rows
+
+        self.temporal_kind = kind
+        self.rows = snapshot_rows(rows, timezone, self.title)
+        self.domain = tuple(domain)
+        self.timezone = timezone
+        self.precision = precision
+        self.controller = controller
+        self.dense = dense
+        self._temporal_disposed = False
+        self.temporal_color = color
+        self.temporal_stroke = stroke
+        self.temporal_width = stroke_width
+        self.temporal_budget = budget
+        self._temporal_session = None
+        self._dense_source = None
+        if dense:
+            from ._temporal_scene import request
+
+            self._dense_source = request(
+                kind,
+                self.rows,
+                domain=self.domain,
+                timezone=timezone,
+                precision=precision,
+                title=self.title,
+                width=self.width,
+                height=self.height,
+                cursor=self.domain[0],
+                color=color,
+                stroke=stroke,
+                stroke_width=stroke_width,
+                dense=True,
+            )
+            self.rows = ()
+
+    def figure(self):
+        figure = super().figure()
+        figure._temporal_composition = self
+        return figure
+
+    def temporal_viewport(self, domain, *, width=None, height=None):
+        """Set the exact next compile viewport; source identity remains immutable."""
+        if self._temporal_disposed:
+            raise ValueError("temporal composition disposed")
+        self.temporal_cancel()
+        self.domain = tuple(domain)
+        if width is not None:
+            self.width = width
+        if height is not None:
+            self.height = height
+        return self
+
+    def temporal_cancel(self):
+        """Cancel the current Rust claim, preserving the last accepted result."""
+        if self._temporal_session is not None:
+            self._temporal_session.cancel()
+
+    def temporal_dispose(self):
+        """Release the retained source and prohibit subsequent queries/compilation."""
+        self._temporal_disposed = True
+        self.rows = ()
+        self._dense_source = None
+        if self._temporal_session is not None:
+            self._temporal_session.close()
+
+    def temporal_begin(self):
+        """Start a cooperatively stepped native Scene operation."""
+        if not self.dense:
+            raise ValueError("incremental temporal operations require dense=True")
+        return self._compile_temporal(defer=True)
+
+    def temporal_supports(self, metadata, cell, *, offset=0, limit=256):
+        """Exact authored support vertices, excluding this cell's observations."""
+        return self._compile_temporal(
+            operation=3, cell=cell, offset=offset, limit=limit, metadata=metadata
+        )
+
+    def temporal_metadata(self):
+        """Return binary XYTL tier/count/provenance/resource metadata."""
+        return self._compile_temporal(operation=2)
+
+    def temporal_members(self, metadata, cell, *, offset=0, limit=256):
+        """Return a bounded XYTL page of literal canonical source IDs."""
+        return self._compile_temporal(
+            operation=1, cell=cell, offset=offset, limit=limit, metadata=metadata
+        )
+
+    def _compile_temporal(
+        self,
+        width=None,
+        height=None,
+        *,
+        operation=0,
+        cell=0,
+        offset=0,
+        limit=0,
+        metadata=None,
+        defer=False,
+    ):
+        from . import _temporal_scene
+
+        if self._temporal_disposed:
+            raise ValueError("temporal composition disposed")
+        if operation and not self.dense:
+            raise ValueError("membership requires dense=True")
+        state = self.controller.state if self.controller is not None else None
+        domain = (state["range_start"], state["range_end"]) if state else self.domain
+        packet = _temporal_scene.request(
+            self.temporal_kind,
+            self.rows,
+            domain=domain,
+            timezone=self.timezone,
+            precision=self.precision,
+            title=self.title,
+            width=width or self.width,
+            height=height or self.height,
+            cursor=state["cursor"] if state else domain[0],
+            color=self.temporal_color,
+            stroke=self.temporal_stroke,
+            stroke_width=self.temporal_width,
+            dense=self.dense,
+            operation=operation,
+            cell=cell,
+            offset=offset,
+            limit=limit,
+        )
+        if self.dense:
+            import struct
+
+            source = self._dense_source
+            if source is None:
+                raise ValueError("temporal source disposed")
+            start = 128 + sum(struct.unpack_from("<2I", source, 56))
+            framed = bytearray(packet)
+            framed[12:16] = source[12:16]
+            if self._temporal_session is None:
+                self._temporal_session = _temporal_scene.TemporalSession(self.temporal_budget)
+            self._temporal_session.preview(framed)
+            framed.extend(memoryview(source)[start:])
+            packet = bytes(framed)
+            del framed
+        if operation in (1, 3):
+            if not isinstance(metadata, bytes) or metadata[:4] != b"XYTL" or len(metadata) < 64:
+                raise ValueError("membership requires XYTL publication metadata")
+            packet = bytearray(packet)
+            packet[104:120] = metadata[20:36]
+            packet = bytes(packet)
+        if self.dense:
+            if self._temporal_session is None:
+                self._temporal_session = _temporal_scene.TemporalSession(self.temporal_budget)
+            job = self._temporal_session.begin(packet)
+            return job if defer else job.result()
+        return _temporal_scene.compile_request(packet, self.temporal_budget)
+
+
+def temporal_chart(kind, rows, *, domain, timezone, **props):
+    """Declare event/interval/Gantt/line/bar/scatter with exact i64 UTC times."""
+    from ._temporal_scene import KINDS
+
+    if kind not in KINDS:
+        raise ValueError("unknown temporal composition kind")
+    return TemporalChart(kind, rows, domain=domain, timezone=timezone, **props)

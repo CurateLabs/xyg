@@ -241,3 +241,13 @@ Configured CoSE accepts `idealEdgeLength`, `repulsionStrength`,
 `bounds`. `pinned` is a node-length u8/bool mask and requires `x` plus `y`;
 `parents` is a node-length `BigUint64Array` using `2n ** 64n - 1n` for roots. Invalid
 input fails instead of selecting another layout.
+
+Local chunked snapshots can attach a native viewport owner with
+`const host = source.chart().liveHost(send)`. Deliver `host.payload()` through
+the existing browser model's `spec`/`buffers`, forward its outgoing control
+messages to `host.message(message)`, and carry `send(message, buffers)` back to
+its `msg:custom` listeners. Keep binary attachments binary in applications.
+`await host.close()` cancels and drains before releasing its independent handle.
+This candidate uses the standard `render({model, el})` paint client; static HTML
+remains a snapshot. The precise lifecycle and remaining #110 acceptance are in
+[`chunked-native-viewport.md`](../../spec/design/chunked-native-viewport.md).

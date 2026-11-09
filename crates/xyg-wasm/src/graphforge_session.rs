@@ -18,6 +18,9 @@ fn external(instance: &Instance, staging: usize) -> Option<usize> {
     }
     staging
         .checked_add(instance.output.capacity())?
+        .checked_add(xyg_engine::temporal_scene::jobs::retained(
+            &instance.temporal_jobs,
+        ))?
         .checked_add(
             instance
                 .temporal_graph
@@ -160,6 +163,130 @@ mod tests {
         }
         b
     }
+    fn temporal_job(op: u32, owner: u64, source: &[u8]) -> Vec<u8> {
+        let mut b = vec![0; 64 + source.len()];
+        b[..4].copy_from_slice(b"XYTJ");
+        b[4..8].copy_from_slice(&1u32.to_le_bytes());
+        b[8..12].copy_from_slice(&op.to_le_bytes());
+        b[16..24].copy_from_slice(&owner.to_le_bytes());
+        b[24..32].copy_from_slice(&(if op == 0 { 0u64 } else { 1 }).to_le_bytes());
+        b[64..].copy_from_slice(source);
+        b
+    }
+    fn call_temporal(handle: u32, bytes: &[u8]) -> i32 {
+        assert_eq!(xyg_wasm_arena_resize(handle, bytes.len()), STATUS_OK);
+        let sequence = with_instance_mut(handle, |i| {
+            i.arena.copy_from_slice(bytes);
+            i.latest_sequence + 1
+        })
+        .unwrap();
+        xyg_wasm_temporal_scene_compile(handle, sequence, 0, bytes.len())
+    }
+    fn parked_temporal_jobs(handle: u32) -> Vec<u64> {
+        let n = 15_000usize;
+        let mut source = vec![0; 131 + n * 40];
+        source[..4].copy_from_slice(b"XYTM");
+        for (at, value) in [(4, 2), (8, 3), (12, n as u32), (56, 3), (64, 2)] {
+            source[at..at + 4].copy_from_slice(&value.to_le_bytes());
+        }
+        for (at, value) in [(16, 900f64), (24, 420.), (80, 1.)] {
+            source[at..at + 8].copy_from_slice(&value.to_le_bytes());
+        }
+        source[40..48].copy_from_slice(&(n as i64 + 1).to_le_bytes());
+        source[128..131].copy_from_slice(b"UTC");
+        for row in 0..n {
+            let at = 131 + row * 40;
+            source[at..at + 8].copy_from_slice(&(row as i64).to_le_bytes());
+            source[at + 16..at + 24].copy_from_slice(&(row as f64).to_le_bytes());
+            source[at + 24..at + 32].copy_from_slice(&(row as u64 + 1).to_le_bytes());
+            source[at + 32] = 1;
+        }
+        let mut owners = Vec::new();
+        for _ in 0..12 {
+            let b = temporal_job(0, 0, &[]);
+            assert_eq!(call_temporal(handle, &b), 0);
+            let owner = u64::from_le_bytes(output(handle)[16..24].try_into().unwrap());
+            let b = temporal_job(1, owner, &source);
+            assert_eq!(call_temporal(handle, &b), 0);
+            owners.push(owner);
+        }
+        owners
+    }
+    #[test]
+    fn temporal_job_owners_are_charged_before_graph_open_and_transactions() {
+        let maximum = 64 * 1024 * 1024;
+        let h = xyg_wasm_instance_new(maximum);
+        let owners = parked_temporal_jobs(h);
+        let b = open();
+        let retained = with_instance_mut(h, |i| {
+            let bytes = xyg_engine::temporal_scene::jobs::retained(&i.temporal_jobs);
+            assert!(bytes > 4 * 1024 * 1024);
+            i.max_arena_bytes = bytes + b.len();
+            bytes
+        })
+        .unwrap();
+        assert_eq!(call(h, &b, xyg_wasm_graphforge_session_open), -4);
+        with_instance_mut(h, |i| {
+            assert!(i.graph_session.is_none());
+            assert_eq!(i.temporal_jobs, owners);
+            assert_eq!(
+                xyg_engine::temporal_scene::jobs::retained(&owners),
+                retained
+            );
+        })
+        .unwrap();
+        assert_eq!(xyg_wasm_arena_resize(h, 0), STATUS_OK);
+        assert_eq!(xyg_wasm_instance_dispose(h), STATUS_OK);
+
+        let h = xyg_wasm_instance_new(maximum);
+        let owners = parked_temporal_jobs(h);
+        assert_eq!(call(h, &open(), xyg_wasm_graphforge_session_open), 0);
+        assert_eq!(
+            call(
+                h,
+                &request(2, 0, 21, |_| {}),
+                xyg_wasm_graphforge_session_render
+            ),
+            0
+        );
+        let snapshot = with_instance_mut(h, |i| {
+            let s = i.graph_session.as_ref().unwrap();
+            (
+                s.session().render_revision(),
+                s.session().positions().unwrap().0.to_vec(),
+                s.reply().to_vec(),
+            )
+        })
+        .unwrap();
+        let mut builder = Builder::new(wire::REQUEST_MAGIC);
+        builder.u64s("header.u64", 0, &[7, 9, 3]);
+        builder.u32s("header.u32", 0, &[snapshot.0, 15, 0, 0, 0, 0, 0, 1, 0]);
+        let force = builder.finish();
+        with_instance_mut(h, |i| {
+            i.max_arena_bytes = i.graph_session.as_ref().unwrap().retained_budget()
+                + xyg_engine::temporal_scene::jobs::retained(&owners)
+                + force.len();
+        })
+        .unwrap();
+        assert_eq!(call(h, &force, xyg_wasm_graphforge_session_interact), -4);
+        with_instance_mut(h, |i| {
+            let s = i.graph_session.as_ref().unwrap();
+            assert_eq!(s.session().render_revision(), snapshot.0);
+            assert_eq!(s.session().positions().unwrap().0, snapshot.1);
+            assert_eq!(s.reply(), snapshot.2);
+            assert_eq!(i.temporal_jobs, owners);
+        })
+        .unwrap();
+        assert_eq!(xyg_wasm_arena_resize(h, 0), STATUS_OK);
+        with_instance_mut(h, |i| i.max_arena_bytes = maximum).unwrap();
+        assert_eq!(call(h, &force, xyg_wasm_graphforge_session_interact), 0);
+        assert_eq!(xyg_wasm_graphforge_session_close(h), 0);
+        for owner in owners {
+            let b = temporal_job(5, owner, &[]);
+            assert_eq!(call_temporal(h, &b), 0);
+        }
+        assert_eq!(xyg_wasm_instance_dispose(h), STATUS_OK);
+    }
     #[test]
     fn wasm_open_retry_memory_refusal_close_and_transport_conflicts() {
         let h = xyg_wasm_instance_new(64 * 1024 * 1024);
@@ -220,7 +347,7 @@ mod tests {
         );
         assert_eq!(xyg_wasm_instance_dispose(h), STATUS_OK);
         assert_eq!(xyg_wasm_graphforge_session_close(h), -10);
-        let tiny = xyg_wasm_instance_new(1024 * 1024);
+        let tiny = xyg_wasm_instance_new(64 * 1024);
         assert_eq!(call(tiny, &open(), xyg_wasm_graphforge_session_open), -4);
         with_instance_mut(tiny, |i| assert!(i.graph_session.is_none())).unwrap();
         xyg_wasm_instance_dispose(tiny);

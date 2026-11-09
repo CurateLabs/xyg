@@ -1,0 +1,19 @@
+{
+  "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+  "python": "3.14.4",
+  "rust": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "node": "v22.23.4",
+  "tmpdir": "/var/tmp",
+  "chromium": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+  "binaryen": "132.0.0",
+  "parentCommit": "c4f16778fd2551c439a6883daf0e9891f9b2fc11",
+  "buildContract": {
+    ".cargo/config.toml": "e50ec2d906b6e60e1fec42e3c6b7f001fb6f6febadab38073c0c7eef8cf84e2d",
+    "Cargo.lock": "0e355cab02e158403344f570812abe05b78c817aa2697d540a40c4aebc86028c",
+    "rust-toolchain.toml": "e59c5da37d1f9f4e0f815bc188cb6056fc7410c9cdaa9673c2d44da557c75d12",
+    "js/optimize-wasm.mjs": "85c8b74c0913d9f6db003fa5b3cc6d0af6eb3402e1dc71bcf48bd92c4e873dd1",
+    "js/package-wasm.mjs": "e27f7a26c57d857b2897df83a08619f0d5ab9e534bc2b214f159a101a3a14d17",
+    "spec/abi/xyg-abi.json": "ad446e8449e60e772e373aa00767c93cbd7e4a4abf70eff877de04912c1bf7df",
+    "spec/wasm/abi.json": "b891c79507e098b7d8a6dede82d456e81f5f0067885a29f5ae62ee488da0940e"
+  }
+}

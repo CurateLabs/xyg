@@ -1,0 +1,114 @@
+[
+  {
+    "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/378a069c4f802bb97e6273333766a4afee99a626d4fc409f776f31d21968a4df.gz",
+    "bytes": 6379784,
+    "path": "target/release/libxyg_core.so",
+    "sha256": "378a069c4f802bb97e6273333766a4afee99a626d4fc409f776f31d21968a4df",
+    "snapshot": "target/task-tmp/module-fit/shipping/0-libxyg_core.so"
+  },
+  {
+    "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/8eebf2a5621798d266fd9030caf04c20d0f89e2e17fb8137195ac2ddcaf4b6d2.gz",
+    "bytes": 4076094,
+    "path": "target/wasm32-unknown-unknown/release/xyg_wasm.wasm",
+    "sha256": "8eebf2a5621798d266fd9030caf04c20d0f89e2e17fb8137195ac2ddcaf4b6d2",
+    "snapshot": "target/task-tmp/module-fit/shipping/1-xyg_wasm.wasm"
+  },
+  {
+    "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026.gz",
+    "bytes": 226,
+    "path": "packages/xy-client/dist/xyg-wasm.manifest.json",
+    "sha256": "9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026",
+    "snapshot": "target/task-tmp/module-fit/shipping/2-xyg-wasm.manifest.json"
+  },
+  {
+    "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+    "bytes": 61650,
+    "path": "packages/xy-client/dist/wasm-worker.js",
+    "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7",
+    "snapshot": "target/task-tmp/module-fit/shipping/3-wasm-worker.js"
+  },
+  {
+    "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/3f572418ba167ba46b79fce0eddf30946ff005efb290970e9175300f34d27cff.gz",
+    "bytes": 857209,
+    "path": "packages/xy-client/dist/index.js",
+    "sha256": "3f572418ba167ba46b79fce0eddf30946ff005efb290970e9175300f34d27cff",
+    "snapshot": "target/task-tmp/module-fit/shipping/4-index.js"
+  },
+  {
+    "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8.gz",
+    "bytes": 2536254,
+    "path": "packages/xy-client/dist/xyg-wasm-inline.js",
+    "sha256": "fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8",
+    "snapshot": "target/task-tmp/module-fit/shipping/5-xyg-wasm-inline.js"
+  },
+  {
+    "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz",
+    "bytes": 20933,
+    "path": "packages/xy-client/dist/wasm-inline-worker.js",
+    "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7",
+    "snapshot": "target/task-tmp/module-fit/shipping/6-wasm-inline-worker.js"
+  },
+  {
+    "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372.gz",
+    "bytes": 1886348,
+    "path": "packages/xy-client/dist/xyg-wasm.wasm",
+    "sha256": "1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372",
+    "snapshot": "target/task-tmp/module-fit/shipping/7-xyg-wasm.wasm"
+  },
+  {
+    "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/26dca639f59cca363c8655c1a484725c029755bb994a5895add64bd5960f00bf.gz",
+    "bytes": 857222,
+    "path": "packages/xy-client/dist/standalone.js",
+    "sha256": "26dca639f59cca363c8655c1a484725c029755bb994a5895add64bd5960f00bf",
+    "snapshot": "target/task-tmp/module-fit/shipping/8-standalone.js"
+  },
+  {
+    "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026.gz",
+    "bytes": 226,
+    "path": "python/xyg/static/xyg-wasm.manifest.json",
+    "sha256": "9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026",
+    "snapshot": "target/task-tmp/module-fit/shipping/9-xyg-wasm.manifest.json"
+  },
+  {
+    "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+    "bytes": 61650,
+    "path": "python/xyg/static/wasm-worker.js",
+    "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7",
+    "snapshot": "target/task-tmp/module-fit/shipping/10-wasm-worker.js"
+  },
+  {
+    "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/3f572418ba167ba46b79fce0eddf30946ff005efb290970e9175300f34d27cff.gz",
+    "bytes": 857209,
+    "path": "python/xyg/static/index.js",
+    "sha256": "3f572418ba167ba46b79fce0eddf30946ff005efb290970e9175300f34d27cff",
+    "snapshot": "target/task-tmp/module-fit/shipping/11-index.js"
+  },
+  {
+    "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8.gz",
+    "bytes": 2536254,
+    "path": "python/xyg/static/xyg-wasm-inline.js",
+    "sha256": "fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8",
+    "snapshot": "target/task-tmp/module-fit/shipping/12-xyg-wasm-inline.js"
+  },
+  {
+    "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372.gz",
+    "bytes": 1886348,
+    "path": "python/xyg/static/xyg-wasm.wasm",
+    "sha256": "1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372",
+    "snapshot": "target/task-tmp/module-fit/shipping/13-xyg-wasm.wasm"
+  },
+  {
+    "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/26dca639f59cca363c8655c1a484725c029755bb994a5895add64bd5960f00bf.gz",
+    "bytes": 857222,
+    "path": "python/xyg/static/standalone.js",
+    "sha256": "26dca639f59cca363c8655c1a484725c029755bb994a5895add64bd5960f00bf",
+    "snapshot": "target/task-tmp/module-fit/shipping/14-standalone.js"
+  },
+  {
+    "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/8271e90e303579ea7e3e3d50529b7a99ab53f09f13fc775fe0d177521b575323.gz",
+    "bytes": 6359424,
+    "path": "target/task-tmp/module-fit/official-dist/xyg-0.0.1.dev3137+78cf455a2-py3-none-linux_x86_64.whl",
+    "sha256": "8271e90e303579ea7e3e3d50529b7a99ab53f09f13fc775fe0d177521b575323",
+    "snapshot": "target/task-tmp/module-fit/shipping/15-xyg-0.0.1.dev3137+78cf455a2-py3-none-linux_x86_64.whl"
+  }
+]

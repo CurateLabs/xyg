@@ -21,6 +21,18 @@ Geographic composition uses a separate literal-RGBA catalog contract:
 [geographic capabilities and evidence](../design/geographic-capabilities.md).
 Its seven layer families reuse the same Rust Scene renderers; the CSS
 property table below does not imply geographic CSS input support.
+Mounted native canonical and explicitly framed spatial-index views can follow
+a temporal controller through the existing painter; see the [bounded host contract](../design/geo-mounted-temporal-hosts.md).
+Indexed snapshot binding, other source-family automation, massive-scale and
+competitor qualification remain open. This does not close M6.
+
+The bounded [temporal composition catalog](../design/temporal-catalog.md)
+adds UTC event, interval, Gantt, line, bar and scatter compositions through
+the existing Rust Scene primitives and painter. Uniform RGBA/stroke inputs,
+native static exports and packaged Worker rendering have focused evidence.
+This is an explicit direct tier, not dense LOD or full temporal styling:
+live controls, streaming, timezones, accessibility, hosts, massive-scale
+and competitor qualification remain open. It does not close #46.
 
 Experimental retained GraphForge interaction has a separate
 [bounded primary-click/keyboard capability contract](../design/graph-interaction.md#bounded-explicit-s5b-attachment)
@@ -42,6 +54,12 @@ also uses the existing painter/pick/layout and preserves UUID state in bounded
 browser tests. Aggregate, export, accessibility, scale and comparative
 performance acceptance remain open; this does not close #45.
 
+Native Python/Node `TemporalGraph.freeze` now acquires an immutable [canonical snapshot](../design/temporal-graph-frozen.md)
+with exact frame UUID state and optional retained publication/camera bytes. This is
+a retained export path: native SVG/PNG/HTML and actual Worker Scene/XYPB/SVG/HTML/PNG,
+with computed CSS capture, shared Rust PNG and offline ChartView paint. Full #45
+scale/aggregate/accessibility acceptance remain open.
+
 Python notebooks expose a bounded [typed graph identity/UUID highlight slice](../design/graph-session-python-transport.md#notebook-typed-identity-slice-2026-11-06).
 Its focused Rust provenance and small JupyterLab journey evidence does not
 qualify all frontends, exact geometric UUID sets, exports or scale budgets.
@@ -57,6 +75,12 @@ domains; adjacent domains with too few representable stops fail closed.
 - **48** stable chrome slots, CSS- and Tailwind-addressable in the browser; **10** of them reach the native writers — nine through `styles={slot: ...}` itself, and `root` through the chart-level `style=` token bag.
 - **1** shipped extension point.
 - **1** known default divergence between renderers, listed below rather than left to be discovered.
+
+Browser CSS tokens and constant mark colors resolve modern color functions
+through the browser into the existing sRGB RGBA8 painter. This does not add
+native/headless CSS-cascade support or HDR output; legacy RGB alpha remains
+unchanged. Exact color planes, opaque paint, detached recovery and limits:
+[bounded CSS color evidence](../performance/browser-css-color-2026-11-08/README.md).
 
 ## Mark style properties
 
@@ -90,6 +114,18 @@ one honors.
 - **`border-radius`** — Rect kinds only. `corner_radius=(tip, base)` rounds the two ends separately.
 - **`wedge-gap`** — Gap between neighbouring polar wedges, in px. Rect kinds under `coords="polar"` only; ignored elsewhere. Deliberately a LENGTH rather than an angle: an angular pad's seam is `r * dtheta` wide, so it tapers to nothing at the hole and reads as uneven spacing. The angular inset therefore grows as the radius shrinks, which is the same construction as d3's padAngle/padRadius pair. An XYG vocabulary name: CSS has no gap between two arcs.
 - **`marker-shape`** — 17 shapes, drawn as analytic signed-distance fields in all three renderers, with the same orientation (`triangle` points up): the WebGL client takes "up" from window y rather than trusting `gl_PointCoord`, which some implementations run bottom-up. An XYG vocabulary name: CSS has no shape keyword for a non-DOM point mark, and the CSS spelling and `symbol=` compile to the same value.
+
+## Ordinary linked filtering (#112 checkpoint)
+
+| capability | Python / Node / actual WASM | renderer and input |
+|---|---|---|
+| Exact resolvable one-dimension cumulative counts, five passive views | shared binary session; full packet/oracle parity | bounded five-view ordinary painter |
+| Arbitrary finite inclusive boundary | explicit recorded exact scan or refusal | same pointer/keyboard protocol, no snapping |
+| Canonical u64 membership pages; append, cancellation, eviction/rebuild | bounded exact pages, retained range/mask composition | exact 2D selected-count density; result masks/spill pending |
+| Pointer/keyboard edit, commit, cancel, clear | same revisioned Rust session | five painted different-dimensional views in Chromium |
+| Five rendered views at 100M / ≥50 FPS, CodSpeed and competitors | qualification open | pending under #112 |
+
+See [normative filtering subset](../design/filter-tier-c.md). No competitor or performance win is claimed.
 
 ## Chrome slots
 

@@ -1,0 +1,32 @@
+{
+  "parent": "c4f16778fd2551c439a6883daf0e9891f9b2fc11",
+  "fresh": {
+    "python_temporal_and_geo_integration": "39 passed; 100k six-family oracles, bounded 1M refusal, exact edge cases, capacity and lifecycle",
+    "node_normal_temporal_tests": "15 passed, no skips",
+    "rust_temporal_unit_tests": "3 passed",
+    "raw_wasm_native_parity": "8 direct +18 dense byte comparisons passed",
+    "packaged_public_worker_painter": "six actual public compositions painted; Scene, metadata and member-page hashes match native; stale/cancel/dispose/reuse passed; final browser composition enforces one in-flight request through actual Worker drain",
+    "browser_foundation": "full normal script passed including retained temporal graph and single-file PNG recovery",
+    "native_abi_generator": "current: 551 symbols, ABI405",
+    "wasm_exports": "68 function exports plus memory/data globals, WASM ABI38",
+    "precommit": "full-worktree hooks passed; checked again immediately before candidate commit",
+    "ruff": "full-worktree check and format passed; checked again immediately before candidate commit",
+    "ty": "full worktree: all checks passed",
+    "wheel": "normal wheel with XYG_REQUIRE_WASM=1 and XYG_REQUIRE_CARGO=1 passed; embedded native/WASM/client/Python source matched",
+    "browser_final_capture": "foundation-final.json and final-browser-captures.tar.gz bind the final client, including in-flight backpressure"
+  },
+  "inherited": [
+    "six direct-family fixture bytes and hashes are unchanged",
+    "Core corpus manifests and original producer identity are unchanged",
+    "release/CI/multi-host qualification from the parent is not re-claimed as fresh"
+  ],
+  "remaining": [
+    "integration of root-owned reviewed crossing-segment line clipping repair",
+    "independent final review and current-main integration",
+    "cooperative interruption of Rust scans and chunked retained Rust source",
+    "constructor/caller object-memory qualification beyond packed compile reservation",
+    "brush/controller/table/accessibility/streaming/customization",
+    "100M+/out-of-core/five-view/competitor/installed-host evidence",
+    "full repository test suite and hosted PR/CI/queue work"
+  ]
+}

@@ -19,6 +19,8 @@ const allowed = new Set([
   "/tests/browser/wasm_foundation_page.mjs",
   "/spec/wasm/abi.json",
   "/tests/fixtures/temporal/assertion-history.json",
+  "/tests/fixtures/temporal/catalog-six-families.json",
+  "/tests/fixtures/temporal/line-window-edges.json",
   "/tests/fixtures/figure_scene_v3.json",
   "/tests/fixtures/authored_scene_v20.json",
   "/tests/fixtures/xyts_cross_host.json",
@@ -133,7 +135,7 @@ try {
   const page = await browser.newPage();
   const external = [];
   const pageErrors = [];
-  page.on("pageerror", (error) => pageErrors.push(error.message));
+  page.on("pageerror", (error) => pageErrors.push(error.stack ?? error.message));
   page.on("request", (request) => {
     const url = new URL(request.url());
     if (url.hostname !== "127.0.0.1") external.push(request.url());
@@ -161,12 +163,25 @@ try {
   } finally {
     clearTimeout(timeout);
   }
-  if (pageErrors.length) throw new Error(`browser page errors: ${pageErrors.join(" | ")}`);
+  if (pageErrors.length) throw new Error(`browser page errors: ${pageErrors.join(" | ")}; foundation: ${result?.error ?? "completed"}`);
   if (!result?.ok) throw new Error(result?.error ?? "browser foundation smoke failed");
   if (!only && (!Array.isArray(result.densityPolicy) || result.densityPolicy.length !== 2)) {
     throw new Error("browser foundation smoke omitted massive density policy evidence");
   }
+  if (!only && result.filterDensityProof?.indexedRowsRead !== "0") {
+    throw new Error("browser foundation smoke omitted indexed linked density evidence");
+  }
+  if (!only && (!Array.isArray(result.temporalCatalogProof)
+      || result.temporalCatalogProof.length !== 6
+      || ["event", "interval", "gantt", "line", "bar", "scatter"].some(
+        (kind) => !result.temporalCatalogProof.some((entry) => entry.kind === kind)))) {
+    throw new Error("browser foundation smoke omitted a temporal catalog family");
+  }
+  if (!only && result.temporalLineWindowProof?.length !== 8) {
+    throw new Error("browser foundation smoke omitted temporal line-window coverage");
+  }
   if (!only) console.log(`direct-browser density policy ${JSON.stringify(result.densityPolicy)}`);
+  if (!only) console.log(`direct-browser linked density ${JSON.stringify(result.filterDensityProof)}`);
   await page.addScriptTag({ url: `http://127.0.0.1:${address.port}/packages/xy-client/dist/standalone.js` });
   if (!await page.evaluate(() => typeof globalThis.xy?.renderStandalone === "function" && typeof globalThis.xy?.decodeFrame === "function" && typeof globalThis.xy?.attachWasmTicks === "function")) throw new Error("published standalone IIFE did not expose window.xy");
   const iifeNoRefinement = await page.evaluate(async () => globalThis.__xygDensityNoRefinementIife());
@@ -207,6 +222,11 @@ try {
       package: browserPackage ? JSON.parse(await readFile(join(browserPackage, "package.json"), "utf8")).version : null,
       csp, externalRequests: external, densityNoRefinement: cases,
       temporalControllerProof: result.temporalControllerProof,
+      filterDensityProof: result.filterDensityProof,
+      temporalCatalogProof: result.temporalCatalogProof,
+      temporalDenseProof: result.temporalDenseProof,
+      temporalExtremeProof: result.temporalExtremeProof,
+      temporalLineWindowProof: result.temporalLineWindowProof,
       limitations: [
         "Three bounded generated-file cases through each packaged ESM/IIFE entry: absent inline bootstrap, malformed inline bootstrap rejected before Worker allocation, and absent retained source.",
         "Rust produces the overview through the packaged XYAG/XYAO Worker; fixture framing supplies the painter envelope.",
@@ -218,7 +238,7 @@ try {
   }
   // Bounded public graph attachment regression shares this existing CI gate.
   // Staged-package and focused density receipts retain their declared scope.
-  if (!browserPackage && !only) execFileSync(process.execPath, ["--test", join(root, "js/test/graph-progressive-camera.test.mjs")], {cwd:root, stdio:"inherit"});
+  if (!browserPackage && !only) execFileSync(process.execPath, ["--test", join(root, "js/test/graph-progressive-camera.test.mjs"), join(root, "js/test/graph-progressive-keyboard.test.mjs")], {cwd:root, stdio:"inherit"});
   if (!browserPackage && !only) execFileSync(process.execPath, [join(root, "scripts/graph_session_controller_wasm_smoke.mjs")], {
     cwd: root, env: { ...process.env, XYG_GRAPH_SCHEDULING_ONLY: "1", XYG_GRAPH_SESSION_REPORT: process.env.XYG_GRAPH_SCHEDULING_REPORT || "" }, stdio: "inherit", timeout: 120000,
   });
@@ -232,8 +252,49 @@ try {
 // Keep the bounded retained temporal presentation journey in the existing
 // source-dist foundation CI command. Staged-package runs keep their own scope.
 if (!only && !browserPackage) {
+  execFileSync(process.execPath, [join(root, "scripts/graph_session_gpu_paint_smoke.mjs")], {
+    cwd: root, stdio: "inherit", env: process.env,
+  });
   execFileSync(process.execPath, [join(root, "scripts/graph_session_controller_wasm_smoke.mjs")], {
     cwd: root, stdio: "inherit",
     env: { ...process.env, XYG_GRAPH_TEMPORAL_ONLY: "1", ...(reportPath ? { XYG_GRAPH_SESSION_REPORT: `${reportPath}.retained-temporal.json` } : {}) },
+  });
+}
+
+// Actual retained owner -> XYFG -> Scene/XYPB -> offline shipped ChartView.
+// The full source gate includes native/WASM oracles; staged-package scope is unchanged.
+if (!only && !browserPackage) {
+  execFileSync(process.execPath, [join(root, "scripts/temporal_controller_composition_smoke.mjs"), ...(reportPath ? [`${reportPath}.temporal-composition`] : [])], {
+    cwd: root, stdio: "inherit", env: process.env, timeout: 120000,
+  });
+}
+
+if (!only && !browserPackage) {
+  execFileSync(process.execPath, [join(root, "scripts/temporal_graph_frozen_smoke.mjs"), ...(reportPath ? [`${reportPath}.frozen-graph`] : [])], {
+    cwd: root, stdio: "inherit", env: process.env,
+  });
+}
+
+// Exact aggregate/direct temporal membership and frozen rendered artifacts.
+if (!only && !browserPackage) {
+  execFileSync(process.execPath, [join(root, "scripts/temporal_graph_aggregate_smoke.mjs"), ...(reportPath ? [`${reportPath}.aggregate-graph`] : [])], {
+    cwd: root, stdio: "inherit", env: process.env,
+  });
+}
+
+// Browser-only CSS colors share the existing renderer and full source CI gate.
+// Staged package / focused density runs keep their explicitly bounded scope.
+if (!only && !browserPackage) {
+  execFileSync(process.execPath, [join(root, "scripts/css_color_bridge_smoke.mjs")], {
+    cwd: root, stdio: "inherit", timeout: 120000,
+    env: { ...process.env, XYG_COLOR_CLIENT: join(browserDist, "index.js"),
+      ...(reportPath ? { XYG_COLOR_REPORT: `${reportPath}.css-color.json` } : {}) },
+  });
+}
+
+// Ordinary raw-WASM owners share the same logical graph admission ceiling.
+if (!only && !browserPackage) {
+  execFileSync(process.execPath, [join(root, "scripts/graph_temporal_owner_conformance.mjs"), join(browserDist, "xyg-wasm.wasm")], {
+    cwd: root, stdio: "inherit", timeout: 120000, env: process.env,
   });
 }

@@ -647,9 +647,12 @@ including heatmap after #261.
 The glob collects seven modules — `test_codspeed_animation.py`,
 `test_codspeed_graph_render.py`, `test_codspeed_kernels.py`, `test_codspeed_polar.py`,
 `test_codspeed_pyplot.py`, `test_codspeed_selection.py`, and
-`test_codspeed_transport.py` — for **131 rows** total, counting parametrized
+`test_codspeed_transport.py` — for **135 rows** total, counting parametrized
 expansion. These are trend-tracked in CodSpeed, not gated: none of them feed
 `scripts/check_regressions.py`, whose three inputs are §7's.
+The per-module counts are respectively 3, 9, 88, 6, 14, 8 and 7. This corrects
+the stale aggregate count; no benchmark row is deleted or renamed, and no
+dashboard archive operation or hosted benchmark run is implied.
 
 That count is a hard gate, not prose:
 `tests/test_benchmark_environment.py::test_codspeed_row_count_matches_the_methodology_spec`

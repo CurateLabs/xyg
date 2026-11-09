@@ -6,6 +6,8 @@
 //! and Node cannot drift. Encoded Scene v31 is unchanged. Hosts pass `XYAS` to
 //! ABI 160 assembled encode; chrome/legend still read original-trace `XYSD`.
 
+use crate::scene::SceneByteWrite;
+
 use crate::scene::{MAX_SCENE_MARKS, MAX_SCENE_STYLES, SCENE_STYLE_RECORD_BYTES};
 use crate::scene_annotations::{XYAO_MAGIC, XYAO_STYLE_BYTES, XYAO_V1_HEADER_BYTES, XYAO_VERSION};
 use crate::scene_pack::PACKED_SCENE_ROW_BYTES;
@@ -186,11 +188,11 @@ fn encode_xyas(
         return Err(AnnotationSpliceError::new(AnnotationSpliceCode::Limit, 0));
     }
     let mut out = Vec::from(*XYAS_MAGIC);
-    out.extend_from_slice(&XYAS_VERSION.to_le_bytes());
-    out.extend_from_slice(&(styles.len() as u32).to_le_bytes());
-    out.extend_from_slice(&(n_rows as u32).to_le_bytes());
-    out.extend_from_slice(&(xyad.len() as u32).to_le_bytes());
-    out.extend_from_slice(&0u32.to_le_bytes());
+    out.push_word(XYAS_VERSION);
+    out.push_word(styles.len() as u32);
+    out.push_word(n_rows as u32);
+    out.push_word(xyad.len() as u32);
+    out.push_word(0u32);
     for style in styles {
         out.extend_from_slice(style);
     }

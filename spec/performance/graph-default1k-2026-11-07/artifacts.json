@@ -1,0 +1,343 @@
+{
+  "base": "c90fcd3047e4cac69c307ffe1f27c37c4d69c0f8",
+  "orderedParents": [
+    "c90fcd3047e4cac69c307ffe1f27c37c4d69c0f8",
+    "f307b05fdb17b445a807e33f150e1c7dcdfb77b1"
+  ],
+  "nativeABI": 402,
+  "wasmABI": 36,
+  "runtimeDefaultBytes": 16777216,
+  "maxArenaBytes": 402653184,
+  "packageCaps": {
+    "raw": 1927168,
+    "node22Gzip6": 786432
+  },
+  "artifacts": {
+    "/var/tmp/xyg-default1k-target/release/libxyg_core.so": {
+      "bytes": 6210808,
+      "sha256": "8678cd4ee107637aaaae4924d62ebe6ad43fa78aafb00e74e036da47d445481e"
+    },
+    "/home/ubuntu/.t3/worktrees/xyg/t3-cc3b03dc/packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1912332,
+      "sha256": "9fbde15add6c26dca84db4aefc2d7ba529cc8700610ec44eb135138b1a36e6dc"
+    },
+    "/home/ubuntu/.t3/worktrees/xyg/t3-cc3b03dc/packages/xy-client/dist/index.js": {
+      "bytes": 826318,
+      "sha256": "68b2f176b2aed11e0b68303289583aa422c38186a4469ddb0c99d470a0f112f0"
+    },
+    "/home/ubuntu/.t3/worktrees/xyg/t3-cc3b03dc/packages/xy-client/dist/standalone.js": {
+      "bytes": 826340,
+      "sha256": "0348855a007ab1e4b45fca0cd003f1868df85ad5282abdae42aec3684372d271"
+    },
+    "/home/ubuntu/.t3/worktrees/xyg/t3-cc3b03dc/packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 56942,
+      "sha256": "98f47be50de12a26a6132fad7c956bc8ec2d052e1e4b8664f37ea4a5975dae87"
+    },
+    "/home/ubuntu/.t3/worktrees/xyg/t3-cc3b03dc/packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "f6e6bb7fc60ca5c181131564b8fcd01e1922361320f9490d7deab8c27b9a0714"
+    }
+  },
+  "environment": {
+    "node": "v22.23.4",
+    "rust": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "chrome": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "TMPDIR": "/var/tmp",
+    "CARGO_TARGET_DIR": "/var/tmp/xyg-default1k-target",
+    "XYG_NATIVE_LIB": "/var/tmp/xyg-default1k-target/release/libxyg_core.so",
+    "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-cc3b03dc/python"
+  },
+  "nativeRequestedPeakBytes": 6121996,
+  "authoredFullShaftRequestedPeakBytes": 2501728,
+  "defaultReplayWasmLinearPeakBytes": 11403264,
+  "directProbeWasmLinearPeakBytes": 10420224,
+  "sourceBindings": "current-bindings.json",
+  "scope": "candidate; parent independent review/current-main integration/PR/CI/queue pending",
+  "finalQualification": "shared-foundation/shared-default/shared-10k with complete immutable publication Arc sharing",
+  "clientBuildProvenance": "Fresh initial Node22 build reused: no product js/src differences against c90; original build log and artifact bindings retained",
+  "clientSourceDiffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "packageActual": {
+    "raw": 1912332,
+    "node22Gzip6": 782746,
+    "node22Gzip6Sha256": "aa06ac0b7ddf6ea00623e80039fefa1cddb79672efca02f657e9f82395e3bdd5"
+  },
+  "wasmExports": [
+    {
+      "name": "memory",
+      "kind": "memory"
+    },
+    {
+      "name": "xyg_wasm_abi_version",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_aggregate_bin2d",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_aggregate_step",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_aggregate_stream_begin",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_aggregate_stream_finish",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_aggregate_stream_push",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_arena_high_water",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_arena_len",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_arena_ptr",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_arena_resize",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_cancel",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_compound_transition",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_copy_bytes_hi",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_copy_bytes_lo",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_copy_count",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_dashboard_plan",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_default_palette_rgba8",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_default_palette_rows",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_default_palette_version",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_density_first_paint_plan",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_filter_execute",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_geo_catalog_compile",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_geo_column_ingest",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_geo_frame_prepare",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_geo_scale_execute",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_geo_scale_read",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_geo_scene_compile",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_geo_snapshot_execute",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_geo_snapshot_read",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_geo_tile_execute",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_geo_tile_frame_prepare",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_geo_tile_read",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_geo_transport_acquire",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_geo_viewport_execute",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_graph_begin",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_graph_step",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_graphforge_compose",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_graphforge_composition_version",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_graphforge_session_close",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_graphforge_session_interact",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_graphforge_session_open",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_graphforge_session_render",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_graphforge_session_update",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_instance_dispose",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_instance_new",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_last_error_len",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_last_error_ptr",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_last_scene_records",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_last_scene_styles",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_max_arena_bytes",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_output_len",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_output_ptr",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_scene_compile",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_scene_compile_begin",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_scene_compile_phase",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_scene_compile_prepare",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_scene_compile_records_processed",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_scene_compile_step",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_scene_prepare",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_scene_prepare_annotations",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_scene_validate",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_scene_version",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_temporal_execute",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_temporal_graph_execute",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_ticks_resolve",
+      "kind": "function"
+    },
+    {
+      "name": "xyg_wasm_geo_metadata_version",
+      "kind": "function"
+    },
+    {
+      "name": "__data_end",
+      "kind": "global"
+    },
+    {
+      "name": "__heap_base",
+      "kind": "global"
+    }
+  ]
+}

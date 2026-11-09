@@ -186,10 +186,10 @@ fn verify(
     let refs = wire::decode_refs(c.get("pick.ref.bytes", 0).unwrap().payload).unwrap();
     if let Some(src) = source {
         let reference = match src {
-            ElementIndex::Node(i) => s.identity.node_ref(i),
-            ElementIndex::Edge(i) => s.identity.edge_ref(i),
+            ElementIndex::Node(i) => s.source.identity.node_ref(i),
+            ElementIndex::Edge(i) => s.source.identity.edge_ref(i),
         };
-        assert_eq!(refs, [s.identity.to_transport(&reference).unwrap()]);
+        assert_eq!(refs, [s.source.identity.to_transport(&reference).unwrap()]);
         if collapsed && count > 1 {
             assert_eq!(refs, [ElementRef::Node(id(3))]);
             assert_eq!(source_index, 2);
@@ -299,7 +299,11 @@ fn run_case(
     );
     let rev = header_of(&out)[0];
     assert_eq!(s.session().published().unwrap().tier, tier);
-    let focus = s.session().identity.node_ref(if collapsed { 2 } else { 0 });
+    let focus = s
+        .session()
+        .source
+        .identity
+        .node_ref(if collapsed { 2 } else { 0 });
     capture(
         &mut s,
         &mut replay,

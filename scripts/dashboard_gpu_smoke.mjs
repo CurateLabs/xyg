@@ -7,7 +7,7 @@ import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 const output = resolve(process.env.XYG_GPU_REPORT_DIR || 'target/task-tmp/gpu-admission');
 await mkdir(output, { recursive: true });
-const fixture = spawnSync('uv', ['run', 'python', '-c', `import sys; sys.path.insert(0,'tests'); from test_shared_glhost import _chart_html; print(_chart_html('globalThis.gpuFixture={spec,buf};'))`], { encoding: 'utf8' });
+const fixture = spawnSync('uv', ['run', '--no-sync', 'python', '-c', `import sys,json; sys.path.insert(0,'tests'); from test_shared_glhost import _chart_html,_mixed_chart_payloads; print(_chart_html('globalThis.gpuFixture={spec,buf};globalThis.mixedPayloads='+json.dumps(_mixed_chart_payloads(180,160,keyboard=True))+';'))`], { encoding: 'utf8' });
 if (fixture.status) throw new Error(fixture.stderr);
 const server = createServer(async (req, res) => {
   try {
@@ -22,7 +22,15 @@ await new Promise(r => server.listen(0,'127.0.0.1',r));
 const browser = await chromium.launch({ executablePath: process.env.XYG_CHROMIUM, headless: true, args:['--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader'] });
 const page = await browser.newPage({viewport:{width:1400,height:1000}});
 await page.exposeFunction('gpuCapture', async label => page.screenshot({path:`${output}/${label}.png`,fullPage:true}));
-const logs=[]; page.on('console',m=>logs.push(m.type()+': '+m.text())); page.on('pageerror',e=>logs.push('pageerror: '+e.stack));
+await page.exposeFunction('gpuKey', async key => page.keyboard.press(key));
+await page.exposeFunction('gpuTabTo', async id => {
+  for (let attempt=0; attempt<100; attempt++) {
+    await page.keyboard.press('Tab');
+    if (await page.evaluate(id=>document.activeElement?.dataset.mixedChart===id,id)) return;
+  }
+  throw new Error('real Tab navigation did not reach mixed chart '+id);
+});
+const logs=[],pageErrors=[]; page.on('console',m=>logs.push(m.type()+': '+m.text())); page.on('pageerror',e=>{logs.push('pageerror: '+e.stack);pageErrors.push(String(e));});
 try {
   await page.goto(`http://127.0.0.1:${server.address().port}/`);
   await page.waitForFunction(()=>globalThis.gpuFixture);
@@ -39,8 +47,14 @@ try {
     clearTimeout(deadline);
   }
   await page.screenshot({path:`${output}/dashboard.png`,fullPage:true});
+  // A fresh document keeps the driver-facing oracle and context-loss hooks
+  // independent from the preserved scatter allocation journey above.
+  await page.goto(`http://127.0.0.1:${server.address().port}/`);
+  await page.waitForFunction(()=>globalThis.mixedPayloads);
+  const mixed=await page.evaluate(await readFile('tests/browser/dashboard_mixed_page.mjs','utf8'));
+  if(pageErrors.length)throw new Error('dashboard page errors: '+pageErrors.join('\n'));
   const hashes={};
-  for (const path of ['packages/xy-client/dist/index.js','packages/xy-client/dist/xyg-wasm.wasm',`${output}/pressure.png`,`${output}/restored.png`]) hashes[path]=createHash('sha256').update(await readFile(path)).digest('hex');
-  await writeFile(`${output}/report.json`,JSON.stringify({result,hashes,node:process.version,browser:browser.version(),platform:process.platform},null,2)+'\n');
+  for (const path of ['packages/xy-client/dist/index.js','packages/xy-client/dist/xyg-wasm.wasm',`${output}/pressure.png`,`${output}/restored.png`,`${output}/mixed-restored.png`]) hashes[path]=createHash('sha256').update(await readFile(path)).digest('hex');
+  await writeFile(`${output}/report.json`,JSON.stringify({result,mixed,hashes,node:process.version,browser:browser.version(),platform:process.platform},null,2)+'\n');
   console.log(JSON.stringify(result));
 } finally { await writeFile(`${output}/browser.log`,logs.join('\n')); await browser.close(); await new Promise(r=>server.close(r)); }

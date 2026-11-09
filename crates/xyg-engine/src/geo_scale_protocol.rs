@@ -174,9 +174,11 @@ fn u32at(b: &[u8], at: usize) -> u32 {
 fn u64at(b: &[u8], at: usize) -> u64 {
     u64::from_le_bytes(b[at..at + 8].try_into().unwrap())
 }
+#[cfg_attr(target_arch = "wasm32", inline(never))]
 fn put32(b: &mut [u8], at: usize, value: u32) {
     b[at..at + 4].copy_from_slice(&value.to_le_bytes());
 }
+#[cfg_attr(target_arch = "wasm32", inline(never))]
 fn put64(b: &mut [u8], at: usize, value: u64) {
     b[at..at + 8].copy_from_slice(&value.to_le_bytes());
 }

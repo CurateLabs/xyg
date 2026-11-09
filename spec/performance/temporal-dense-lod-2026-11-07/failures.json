@@ -1,0 +1,50 @@
+{
+  "scope": "Exploratory failures are not passing qualification evidence",
+  "attempts": [
+    {
+      "stage": "initial Rust compile",
+      "failure": "closure needed an explicit f64 type; Scene kinds require u8, not u32",
+      "disposition": "corrected before successful builds"
+    },
+    {
+      "stage": "initial Python run",
+      "failure": "25 passed, six member queries failed against the build started before token support",
+      "disposition": "fresh matching native build passed all six queries"
+    },
+    {
+      "stage": "initial package",
+      "failure": "787685 gzip bytes exceeds unchanged 786432 cap",
+      "disposition": "shared validation and borrowed v1 rows replaced duplicated validation and source copies; no producer/cap change"
+    },
+    {
+      "stage": "ad-hoc Python hash capture",
+      "failure": "reused venv editable installation selected reviewed-root Python; dense argument was rejected",
+      "disposition": "set explicit local PYTHONPATH; no old library or root artifact used"
+    },
+    {
+      "stage": "initial browser pixels",
+      "failure": "strict opaque color check found no constant line ink; partial-coverage check confirmed actual bottom-axis occlusion",
+      "disposition": "constant envelope footprint moved two pixels inside plot; requires fresh final package/browser qualification"
+    },
+    {
+      "stage": "footprint replacement attempt",
+      "failure": "script replacement did not match one-line Rust; unchanged module and repeated line pixel failure",
+      "disposition": "explicit patch and source inspection; only fresh footprint build may qualify"
+    },
+    {
+      "stage": "Node viewport oracle",
+      "failure": "six expected first-bin counts assumed 900px while generic Node Figure defaults to 640px",
+      "disposition": "public metadata now follows actual Figure viewport; independent test explicitly authors 900px across hosts"
+    },
+    {
+      "stage": "full ty check",
+      "failure": "optional packed source needed explicit None narrowing",
+      "disposition": "added disposed-source guard; full ty check passed"
+    },
+    {
+      "stage": "Core LF/CRLF receipt test",
+      "failure": "two newly captured binary .scene files were treated as text",
+      "disposition": "all raw Scene captures now preserved as gzip binary archives with exact raw hashes; explicit binary pin added"
+    }
+  ]
+}

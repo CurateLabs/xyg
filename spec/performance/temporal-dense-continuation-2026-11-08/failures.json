@@ -1,0 +1,116 @@
+{
+  "failedPackageExperiments": [
+    {
+      "fixedCap": 786432,
+      "gzip6": 788961,
+      "log": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-append.log.gz"
+    },
+    {
+      "fixedCap": 786432,
+      "gzip6": 786721,
+      "log": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-calendar-core.log.gz"
+    },
+    {
+      "fixedCap": 786432,
+      "gzip6": 786724,
+      "log": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-calendar-noinline.log.gz"
+    },
+    {
+      "fixedCap": 786432,
+      "gzip6": 787302,
+      "log": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-calendarshare.log.gz"
+    },
+    {
+      "fixedCap": 786432,
+      "gzip6": 788636,
+      "log": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-math.log.gz"
+    },
+    {
+      "fixedCap": 786432,
+      "gzip6": 786870,
+      "log": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-oneword.log.gz"
+    },
+    {
+      "fixedCap": 786432,
+      "gzip6": 786440,
+      "log": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-readshare.log.gz"
+    },
+    {
+      "fixedCap": 786432,
+      "gzip6": 790529,
+      "log": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-share.log.gz"
+    },
+    {
+      "fixedCap": 786432,
+      "gzip6": 788644,
+      "log": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-sharedwords.log.gz"
+    },
+    {
+      "fixedCap": 786432,
+      "gzip6": 788275,
+      "log": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-sortshare.log.gz"
+    },
+    {
+      "fixedCap": 786432,
+      "gzip6": 786744,
+      "log": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-staticwords.log.gz"
+    },
+    {
+      "fixedCap": 786432,
+      "gzip6": 786724,
+      "log": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-supportpack.log.gz"
+    },
+    {
+      "fixedCap": 786432,
+      "gzip6": 788802,
+      "log": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-words-complete.log.gz"
+    },
+    {
+      "fixedCap": 786432,
+      "gzip6": 788961,
+      "log": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package-words.log.gz"
+    },
+    {
+      "fixedCap": 786432,
+      "gzip6": 792093,
+      "log": "spec/performance/temporal-dense-continuation-2026-11-08/logs/dense-cont-package1.log.gz"
+    }
+  ],
+  "implementationFailures": [
+    "Initial Python/TypeScript/source experiments and stale-build package attempts are retained as unsuccessful experiments, not qualification.",
+    "Workspace native build exposed wasm-only cfg gates on retained accounting, corrected without export changes.",
+    "Workspace tests exposed a missing temporal_jobs field in a controller test initializer, corrected.",
+    "Core precheck intentionally found stale continuation bindings during implementation; successor regenerated and final eight tests pass.",
+    "Initial Ruff import/format errors corrected; final full-worktree checks required before commit."
+  ],
+  "inheritedSkips": [
+    "parsed identity failure drops packet storage before Data disposal",
+    "heatmap fill_opacity shared Scene gap #889"
+  ],
+  "remaining": [
+    "independent root review/current-main/PR/CI/queue",
+    "global API classification and broader #46/#38/milestones 4\u20137 AC as listed in README"
+  ],
+  "validationFailures": [
+    {
+      "log": "dense-cont-node-normal.log",
+      "result": "one force-worker unresponsive timer-order assertion failed; 1142 passed, two inherited skips"
+    },
+    {
+      "log": "dense-cont-force-recheck.log",
+      "result": "same unchanged timer-order assertion failed under concurrent builds"
+    },
+    {
+      "log": "dense-cont-browser-final.log",
+      "result": "one unhandled worker-was-disposed rejection without original stack; diagnostic harness added; two later complete final harness runs passed"
+    },
+    {
+      "log": "dense-cont-inventory-check.log",
+      "result": "strict global classification gate refuses 1064 unclassified project entries; remains open"
+    },
+    {
+      "log": "dense-cont-inventory-before.log",
+      "result": "preparation API snapshot drift; refreshed through official producer, semantic check now passes"
+    }
+  ]
+}

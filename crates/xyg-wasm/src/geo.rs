@@ -350,7 +350,11 @@ fn execute_with(
     length: usize,
     processor: GeoProcessor,
 ) -> i32 {
-    let rejected = rejected_sequence(instance, sequence);
+    execute_with_mode(instance,sequence,offset,length,0,processor)
+}
+fn execute_with_mode(instance:&mut Instance,sequence:u32,offset:usize,length:usize,mode:u8,processor:GeoProcessor)->i32{
+    let rejected = if sequence!=0&&(mode==2||mode==1&&sequence==instance.latest_sequence&&sequence>instance.cancelled_through){None}else{rejected_sequence(instance,sequence)};
+
     if let Some((status, message)) = rejected {
         if instance.aggregate_job.is_none()
             && instance.stream_aggregate_job.is_none()
@@ -367,7 +371,7 @@ fn execute_with(
     instance.graph_job = None;
     instance.compile_job = None;
     let arena = std::mem::take(&mut instance.arena);
-    instance.latest_sequence = sequence;
+    instance.latest_sequence = instance.latest_sequence.max(sequence);
     let Some(request) = offset
         .checked_add(length)
         .and_then(|end| arena.get(offset..end))
@@ -401,6 +405,33 @@ fn execute_with(
             code,
         ),
     }
+}
+
+pub(super) fn execute_temporal_scene(instance:&mut Instance,sequence:u32,offset:usize,length:usize)->i32 {
+    let command=instance.arena.get(offset..offset.saturating_add(length));
+    let mut op=None;
+    if let Some(b)=command.filter(|b|b.len()>=64&&&b[..4]==b"XYTJ"){
+        let action=u32::from_le_bytes(b[8..12].try_into().unwrap());
+        let owner=u64::from_le_bytes(b[16..24].try_into().unwrap());
+        if action!=0&&action!=6&&!instance.temporal_jobs.contains(&owner){return fail(instance,STATUS_INVALID_ARGUMENT,"XYG_TEMPORAL_SOURCE_OWNER");}
+        op=Some((action,owner));
+    }
+    let mode=op.map_or(0,|(action,_)|if action==4||action==5{2}else{1});
+    let owner=op.map_or(0,|(_,owner)|owner);
+    let others:Vec<_>=instance.temporal_jobs.iter().copied().filter(|&h|h!=owner).collect();
+    let maximum=instance.max_arena_bytes;
+    instance.max_arena_bytes=maximum.saturating_sub(xyg_engine::temporal_scene::jobs::retained(&others)).saturating_sub(crate::graph_residency(instance));
+    let status=execute_with_mode(instance,sequence,offset,length,mode,|request,budget|{
+        xyg_engine::temporal_scene::compile(request,budget.min(xyg_engine::temporal_scene::MAX_BYTES))
+        .map_err(|error|("XYG_TEMPORAL_SCENE_REJECTED",error==xyg_engine::temporal::TemporalError::BudgetExceeded))
+    });
+    instance.max_arena_bytes=maximum;
+    if status==STATUS_OK {
+        if let Some((action,owner))=op {
+            if action==0 {instance.temporal_jobs.push(u64::from_le_bytes(instance.output[16..24].try_into().unwrap()));}
+            if action==5 {instance.temporal_jobs.retain(|&h|h!=owner);}
+        }
+    }status
 }
 
 #[cfg(test)]

@@ -1,0 +1,1901 @@
+{
+  "artifacts": [
+    {
+      "bytes": 6353912,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/release/libxyg_core.so",
+      "sha256": "64e26c2bae9532cf7217787dd2033b56a535b6b35bd7acc84e1bf20b451c563e"
+    },
+    {
+      "bytes": 4073632,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/wasm32-unknown-unknown/release/xyg_wasm.wasm",
+      "sha256": "bfd455c9df1c21561f97a4d99e726c1f7eb4eccfbd1a8a77e05313283d831ef4"
+    },
+    {
+      "bytes": 845883,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/packages/xy-client/dist/index.js",
+      "sha256": "e6ccf05c1ca0a8fa9f7cccd5546053ab6eac051d43508d65011336e0b9fc4d67"
+    },
+    {
+      "bytes": 845904,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/packages/xy-client/dist/standalone.js",
+      "sha256": "7deaf0acc25810c48c0a3afeece04bbea7d472bce0513d9c8bc4c814e789cfb8"
+    },
+    {
+      "bytes": 1896715,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/packages/xy-client/dist/xyg-wasm.wasm",
+      "sha256": "664c5cc0091dd639123a8408970ffddbd837fb6be5b5205e2bf972d91d3a5801"
+    },
+    {
+      "bytes": 2550078,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/packages/xy-client/dist/xyg-wasm-inline.js",
+      "sha256": "eecd86f98f2aaa266ae4570a346fa6120dd5c1d685cf498f8f1a6d6d325d86b4"
+    },
+    {
+      "bytes": 226,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/packages/xy-client/dist/xyg-wasm.manifest.json",
+      "sha256": "0fbf21d87f14b482d6e1f9bfcd9c764a658de0f12613228255d27778938304a9"
+    }
+  ],
+  "base": "6ad7cb76d1a02f3df759cffc4218baf26ab1378e",
+  "bindingProducer": {
+    "bytes": 5375,
+    "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/bind.py",
+    "sha256": "60a0d4c916d36bfb72a3c2f108e30ca0a38b63cb8e443712cf53116ae33fb42c"
+  },
+  "budgets": {
+    "default": 16777216,
+    "max": 402653184
+  },
+  "captures": [
+    {
+      "bytes": 5375,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/bind.py",
+      "sha256": "60a0d4c916d36bfb72a3c2f108e30ca0a38b63cb8e443712cf53116ae33fb42c"
+    },
+    {
+      "bytes": 29681,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation.json",
+      "sha256": "3b11b8a7fc3d9a3a37b5e74d722282e0891631023e634bd6b02980314301e6ee"
+    },
+    {
+      "bytes": 11369,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation.json.esm-malformed-inline-artifact.png",
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    {
+      "bytes": 11369,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation.json.esm-missing-inline-artifact.png",
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    {
+      "bytes": 11315,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation.json.esm-missing-retained-source.png",
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+    },
+    {
+      "bytes": 11369,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation.json.iife-malformed-inline-artifact.png",
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    {
+      "bytes": 11369,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation.json.iife-missing-inline-artifact.png",
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    {
+      "bytes": 11315,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation.json.iife-missing-retained-source.png",
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+    },
+    {
+      "bytes": 103395,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation.json.retained-temporal.json",
+      "sha256": "9ec13739c57a1031625ea7b228720658f4e0e7865fc0bddd6c362b57519f2ab1"
+    },
+    {
+      "bytes": 44546,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation.json.retained-temporal.json.boundary.png",
+      "sha256": "e47464cd85a30210f9cbe6ec12af0aee391c3aa8ec4c01afdc2b814b823a7d6d"
+    },
+    {
+      "bytes": 44231,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation.json.retained-temporal.json.initial.png",
+      "sha256": "a03d81a62746e81bbc035d278d5ebc73be03be673f7fee0a4e3a9ca31fa0eceb"
+    },
+    {
+      "bytes": 3567548,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation.json.retained-temporal.json.wire.json",
+      "sha256": "d8f9e0eed0f638c38bff1ffb62ca4e892a87e1c1c20b11b4f698237f3e95c2a7"
+    },
+    {
+      "bytes": 29687,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json",
+      "sha256": "7884e336ea225b3395c8ad4206bb5195293926af4a5ce30fdbb8dc7ef0a3699b"
+    },
+    {
+      "bytes": 165934,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/captures.json",
+      "sha256": "94783c427aeb5b95f0a407443199f7462c8706f409107e86bf851d674822ec4c"
+    },
+    {
+      "bytes": 3718836,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-0.html",
+      "sha256": "2dd2f54c4b32778ab1657b8d2a7b460038e7a699554be13a92fdf9e0be65a073"
+    },
+    {
+      "bytes": 2423,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-0.offline.png",
+      "sha256": "cdae125f09dffbb580484834f16a5e1de5641fad4515fc041b67df19fb1980b9"
+    },
+    {
+      "bytes": 116644,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-0.painter",
+      "sha256": "5268eff5a73b52085224948804ee7689467cd84812467fb10d3d1825baa1ce9c"
+    },
+    {
+      "bytes": 24160,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-0.png",
+      "sha256": "a95fafc8c4cad9a26cad0c3a20f3e7bc2390191d66dafd7726cd32d72809c59a"
+    },
+    {
+      "bytes": 540984,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-0.scene",
+      "sha256": "d04633e2c2e0e0bbddf18f706a73122974f64922bfdd6c68b29523871406c4bf"
+    },
+    {
+      "bytes": 167512,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-0.svg",
+      "sha256": "f609e4c8c251b65539682b3ab7bac6e04b2890a66e99c980f16afcb42fe51375"
+    },
+    {
+      "bytes": 10568,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-0.xyfg",
+      "sha256": "e8693a06e2b7062de2397691dcc3bfcee049ca27b8906919ebb59e5ddc280080"
+    },
+    {
+      "bytes": 3456168,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-1.html",
+      "sha256": "b1442bc5250fa335c39d609c68a26490cf5fbd70534e790691e3eba690ae172c"
+    },
+    {
+      "bytes": 2405,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-1.offline.png",
+      "sha256": "aea817bb06f937d7ef0797e465b2fda598ebb601fde7d53b40cbc48285f95aaa"
+    },
+    {
+      "bytes": 82148,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-1.painter",
+      "sha256": "998126d40ad27bd6aa6b193fda5475d88696dbba3914a47c5550147daba8d0c1"
+    },
+    {
+      "bytes": 26312,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-1.png",
+      "sha256": "c320ac9774715d9eea152b2d7be782191901354beb41eb8bf3c59ce9297540fd"
+    },
+    {
+      "bytes": 377808,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-1.scene",
+      "sha256": "cb7d6ddf27a0079a306fde11063e4a3e7a7274edc2d78cdfe809f73dce03bca2"
+    },
+    {
+      "bytes": 128427,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-1.svg",
+      "sha256": "ea9e1632aac417be003708d571afd8ac8124045670571ec27af71be57b0d4690"
+    },
+    {
+      "bytes": 11016,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-1.xyfg",
+      "sha256": "c335fd81a6996bd07558ed1cc00316f83b0d7ba45502b8651cb8327891ab9a96"
+    },
+    {
+      "bytes": 3723860,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-2.html",
+      "sha256": "73d48c524e00e637dea165cc5811ebb70ad6c75b9ea306abb9f57b13706b9874"
+    },
+    {
+      "bytes": 2600,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-2.offline.png",
+      "sha256": "699cd80ff2cb323a5dffc575cc4b686f2edd3c9ca56bb8ffe17e847f4c25e167"
+    },
+    {
+      "bytes": 117620,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-2.painter",
+      "sha256": "fb7537a77ce69e95e18ca91ad4c17feb1db93a2d7ab5bbc4f1793876bb9cb754"
+    },
+    {
+      "bytes": 26380,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-2.png",
+      "sha256": "fca2e73bf7a7350b9293a6a3d284329facf9439d1a8dc7f2500ffafa4c6dd8c0"
+    },
+    {
+      "bytes": 543176,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-2.scene",
+      "sha256": "2d7cef57a609889f2733d0f4a5241a92c351d397c5f7e4a10c982d1a1245b9e7"
+    },
+    {
+      "bytes": 170911,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-2.svg",
+      "sha256": "e1bab96a3a0d3d9b6c9d5d17419f34bf4fa78621d5dddac6284ee95af7e7c840"
+    },
+    {
+      "bytes": 10968,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-2.xyfg",
+      "sha256": "e8713944e7f0981d45d94cec71c78b5dc45aac93efd4baf8235c6c91ccd3e6fa"
+    },
+    {
+      "bytes": 3718740,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-3.html",
+      "sha256": "6c9591a094f300b32538160692e1e228b59c51362c0c9ead97d4c45528c94110"
+    },
+    {
+      "bytes": 2423,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-3.offline.png",
+      "sha256": "cdae125f09dffbb580484834f16a5e1de5641fad4515fc041b67df19fb1980b9"
+    },
+    {
+      "bytes": 116644,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-3.painter",
+      "sha256": "5268eff5a73b52085224948804ee7689467cd84812467fb10d3d1825baa1ce9c"
+    },
+    {
+      "bytes": 24064,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-3.png",
+      "sha256": "81ddab6146dda61213221e00393ec8da423d8f478ea775330da0539dbcad59dc"
+    },
+    {
+      "bytes": 540984,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-3.scene",
+      "sha256": "d04633e2c2e0e0bbddf18f706a73122974f64922bfdd6c68b29523871406c4bf"
+    },
+    {
+      "bytes": 167416,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-3.svg",
+      "sha256": "38f9c215f1f049f39d01f537eb479a6d8a4f628527bb6aec5e8fdb678e74823b"
+    },
+    {
+      "bytes": 10520,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-3.xyfg",
+      "sha256": "f64f3e91b8d4aec25a55bd76b04e3f1927ed2e1c525ad439797086e9e782fbf6"
+    },
+    {
+      "bytes": 3134264,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-4.html",
+      "sha256": "ceba785505edb2a76cee4c18314cca2e88a59e13c67f8434ecb64b4d08fe7b04"
+    },
+    {
+      "bytes": 2233,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-4.offline.png",
+      "sha256": "a100e4b42b509f9ed9135fd0dcf4f1329d0a2cf4a6e460ba9f36150f4fa5b8a2"
+    },
+    {
+      "bytes": 39236,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-4.painter",
+      "sha256": "85d0e198a8d119c79a02d0a58bd589f0a6e84047e452caf576636d566d575604"
+    },
+    {
+      "bytes": 22209,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-4.png",
+      "sha256": "a7f96ab19df84fce54741c9c393df5e5714ef8fe38797939ec687af76a0ba741"
+    },
+    {
+      "bytes": 180648,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-4.scene",
+      "sha256": "9f4d95d013a7bb85630b49fff7111f8bb305f85e994d5994b08e44fefccea86c"
+    },
+    {
+      "bytes": 67189,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-4.svg",
+      "sha256": "16fd961928b2dfe5b4229eafd93b86435ea49a05a5311a29dbe6f69bbb58556a"
+    },
+    {
+      "bytes": 10112,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-4.xyfg",
+      "sha256": "c2d4a851b9a209fdbb4b0152141b89581ff94b6077ab6f30d5c5890810ae8545"
+    },
+    {
+      "bytes": 3456168,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-5.html",
+      "sha256": "684bc1f10479e4de5dda777a3f851491a04bde6d65a57ebccf2567001a8b14b1"
+    },
+    {
+      "bytes": 2405,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-5.offline.png",
+      "sha256": "aea817bb06f937d7ef0797e465b2fda598ebb601fde7d53b40cbc48285f95aaa"
+    },
+    {
+      "bytes": 82148,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-5.painter",
+      "sha256": "998126d40ad27bd6aa6b193fda5475d88696dbba3914a47c5550147daba8d0c1"
+    },
+    {
+      "bytes": 26312,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-5.png",
+      "sha256": "ed94a25710ba2f939e8784e0cc32a35e32f120e439243ef48ce88ee98b56bdfd"
+    },
+    {
+      "bytes": 377808,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-5.scene",
+      "sha256": "cb7d6ddf27a0079a306fde11063e4a3e7a7274edc2d78cdfe809f73dce03bca2"
+    },
+    {
+      "bytes": 128427,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-5.svg",
+      "sha256": "3594d22424d19ec1d7a77b646f63ec0ea93e1a893cd63936929c266a7615d9b0"
+    },
+    {
+      "bytes": 11016,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/frame-5.xyfg",
+      "sha256": "cfc158212a4c39d94be153b811800eaa58cf1309fb2f967c9ad8b83ec429733e"
+    },
+    {
+      "bytes": 2310,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/live-0.png",
+      "sha256": "9f2178f8f5545d604b2f21ac5da4fd6172c35bebc9d31e12fa2fe854b81ecbd1"
+    },
+    {
+      "bytes": 2382,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/live-1.png",
+      "sha256": "ca6b1ced92e0b66b4987bd48392ea80bae7b63474533a9ab7632db1a63261a0b"
+    },
+    {
+      "bytes": 2506,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/live-2.png",
+      "sha256": "9b3e7c71687d2c54edcde60f2f79e0f68a8998f3fb8900ecb0e5f58edadfe38d"
+    },
+    {
+      "bytes": 2310,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/live-3.png",
+      "sha256": "9f2178f8f5545d604b2f21ac5da4fd6172c35bebc9d31e12fa2fe854b81ecbd1"
+    },
+    {
+      "bytes": 1392,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/live-4.png",
+      "sha256": "f457903ade13efd7348d739a6f46a06fc5499d6bfe8fc6a8a7c009723f0f0d42"
+    },
+    {
+      "bytes": 2382,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/live-5.png",
+      "sha256": "ca6b1ced92e0b66b4987bd48392ea80bae7b63474533a9ab7632db1a63261a0b"
+    },
+    {
+      "bytes": 33,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/report.json",
+      "sha256": "d7c063f58c442c3d15f105bbbab2408639ab28093dc54086e0562843a7c37486"
+    },
+    {
+      "bytes": 419066,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/wire.json",
+      "sha256": "e555717ea476e90a279279978498d4227ca3fa61b9e5b0f7d7d73fdc0f4c20bd"
+    },
+    {
+      "bytes": 33823653,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.aggregate-graph/worker.json",
+      "sha256": "5ee2b9ed73092aa95b7ceecdcb8e1b4f06847235faa340b237522343a975227b"
+    },
+    {
+      "bytes": 11369,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.esm-malformed-inline-artifact.png",
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    {
+      "bytes": 11369,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.esm-missing-inline-artifact.png",
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    {
+      "bytes": 11315,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.esm-missing-retained-source.png",
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+    },
+    {
+      "bytes": 3503699,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/inline-worker-png.html",
+      "sha256": "cbf257d0a6992d31b7d5e522825fb3961da2f83fcc55564edafcbec5f535dd6c"
+    },
+    {
+      "bytes": 1050,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/report.json",
+      "sha256": "d89bb74361e69f92bfecc8aa8fe0eeda2da2e77112e30590c10f092dcad0e36d"
+    },
+    {
+      "bytes": 4021292,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-0.html",
+      "sha256": "f2af185cfb174bbb82962d012b4709648a5e8f4c657dce29078c7c014a577292"
+    },
+    {
+      "bytes": 5440,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-0.offline.png",
+      "sha256": "73c2bb400eb58aa2529414e81c883ebac0d38eff7b507546ca477181629bcd0d"
+    },
+    {
+      "bytes": 157260,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-0.painter",
+      "sha256": "6708e63edaaf57c53b448567133bca28a2e9924ec2cca7987eac7c8ac9a1ee08"
+    },
+    {
+      "bytes": 39129,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-0.png",
+      "sha256": "b67bfd6ea4426ebef754c8003fbd3cc632a763777baf2f7f9c85f41abce1fdc5"
+    },
+    {
+      "bytes": 4021292,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-0.scale2.html",
+      "sha256": "73e116ad43eda90b42f241246fbfc8503e47bb7c2ba1bc99e48af29b5f2ce3f2"
+    },
+    {
+      "bytes": 9246,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-0.scale2.offline.png",
+      "sha256": "1476fc3ddd5181a37489bdf7aaf604cbea6b8508248335810bded6ed261da0d9"
+    },
+    {
+      "bytes": 60346,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-0.scale2.png",
+      "sha256": "c729946f31c20d3ddd67ed5037cea8b833a102f5d144c867eb39727572fff81c"
+    },
+    {
+      "bytes": 725400,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-0.scene",
+      "sha256": "a9c38d638994ed878589264f5d624a95589dc199f0fee0153a22f557658fceaf"
+    },
+    {
+      "bytes": 221391,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-0.svg",
+      "sha256": "9273505826e53b5721c9b1a7247a75cd66f7852d127bd7f6869f1767fb9cb34b"
+    },
+    {
+      "bytes": 11776,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-0.xyfg",
+      "sha256": "b4c11af9ab5323170a01cc97ae5bc30422c5597c532d971a201a623e2714d142"
+    },
+    {
+      "bytes": 3198744,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-1.html",
+      "sha256": "cec3ee8c76c1485425a3a38cec9b709c900db3c2f0d06e833b62d41a66720555"
+    },
+    {
+      "bytes": 4555,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-1.offline.png",
+      "sha256": "29745f349e29c9071fa9eee966709b8dd6de4bcc19bd1f38b61c10406bba5c34"
+    },
+    {
+      "bytes": 48396,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-1.painter",
+      "sha256": "e13dd7515a42bb0b5c1c77b5a82a3bfeed988291e2e002fc68833102bc589b8f"
+    },
+    {
+      "bytes": 38002,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-1.png",
+      "sha256": "d186b71b93393ada67ac812f51c228c21795988f97baf7e7944a7ab605762d92"
+    },
+    {
+      "bytes": 3198744,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-1.scale2.html",
+      "sha256": "6d81db9e54a53a1147365b3261c059e84553a8aca702f4e8c144f2e14cc04119"
+    },
+    {
+      "bytes": 7340,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-1.scale2.offline.png",
+      "sha256": "ee6d49aa7e6d0e84111358bd58beac6663a37d987af1d86239cb4286a8881d91"
+    },
+    {
+      "bytes": 55097,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-1.scale2.png",
+      "sha256": "311b2566b392f0a59c6362f9918c077bcaca4fd25ec8e45fa5fad95c99136d95"
+    },
+    {
+      "bytes": 217352,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-1.scene",
+      "sha256": "4a56d93214ec747ad9eccbba82577d3f6c5e84f91e8f4867f135c4fe1760f868"
+    },
+    {
+      "bytes": 85689,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-1.svg",
+      "sha256": "2018c16850ab6f20c9589ffa2e8776a99d994149aff503e0ae2758a17415f5ff"
+    },
+    {
+      "bytes": 11776,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-1.xyfg",
+      "sha256": "a9c14ae37279f8d5cd6b17cdd750b8ccaca14b70eb9eb093cbba0f895d00afbd"
+    },
+    {
+      "bytes": 3216632,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-2.html",
+      "sha256": "1882833fcd4b63481274368f0eaf1543f9e87b2a27845292cf2bf70dba131ae1"
+    },
+    {
+      "bytes": 4983,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-2.offline.png",
+      "sha256": "35daa48445de6c4f41329b92064d60af98ea443d785ac93fe4c933a36f27964b"
+    },
+    {
+      "bytes": 50556,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-2.painter",
+      "sha256": "c92c5718833e933b683f16353b3041a9e7e524cc57975e520b62eb4a60ffd5fd"
+    },
+    {
+      "bytes": 39207,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-2.png",
+      "sha256": "379b4dac23080c2e178700d3644f98d89bcfa59f85133dc1861a8b11ce0e50e8"
+    },
+    {
+      "bytes": 3216632,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-2.scale2.html",
+      "sha256": "51de07412803df56fed0a5768867e0a313b4d4a27e6c67ca3a3b5a344124fa80"
+    },
+    {
+      "bytes": 8215,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-2.scale2.offline.png",
+      "sha256": "2cdf6eac8be3143ea2a72141ca6f3509a9cc81837d0b6d45ecf95d94142060b8"
+    },
+    {
+      "bytes": 59901,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-2.scale2.png",
+      "sha256": "40999463b6d14b0306c598ea3f50a6f3ee445a05122c63f2ea6a95c8eb4c4459"
+    },
+    {
+      "bytes": 228608,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-2.scene",
+      "sha256": "19c425b85267e5f5d5308503947928fcd8fb2456c0be0a19fbbe304e54cc8d5f"
+    },
+    {
+      "bytes": 87468,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-2.svg",
+      "sha256": "e78330a33e69b77cb86c16cd34970155330265cef67f405d93dce59b74220482"
+    },
+    {
+      "bytes": 11776,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-2.xyfg",
+      "sha256": "e3251c38c89b3738fd9d624b1808a5878f389012965885b62b3cc6ef90e14a43"
+    },
+    {
+      "bytes": 3206488,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-3.html",
+      "sha256": "85beb7baa3424f1c3361cc8d94f51db3fc3d48dc7558523b9e3f0a7899f35cd9"
+    },
+    {
+      "bytes": 5086,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-3.offline.png",
+      "sha256": "7f8a10366e0af63f0ae542f733305444dcbe4064246386a4a2a71d9e1b245a00"
+    },
+    {
+      "bytes": 49332,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-3.painter",
+      "sha256": "43a727ba17d01ce85f4366ff7d52302e1e0b33dfe958e2dc0ae548144dbd010c"
+    },
+    {
+      "bytes": 38994,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-3.png",
+      "sha256": "0272bc26370eee3a35679d01b373d21c49f5cf3a0466490b97c8c68c1c7cdf0f"
+    },
+    {
+      "bytes": 3206488,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-3.scale2.html",
+      "sha256": "0e0985efaad427996b132f67aa6f0e193c032a4c421750e15d838d9672fa3c68"
+    },
+    {
+      "bytes": 8474,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-3.scale2.offline.png",
+      "sha256": "f54bd830f98d1012799bd1dd4d6817b185663e93f980c7dd5624a29e32302b91"
+    },
+    {
+      "bytes": 58510,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-3.scale2.png",
+      "sha256": "37d1ec1d4e86b36fd2081b9ed5171dc25be425b4c2abbfe1e35f2fc20188e0f9"
+    },
+    {
+      "bytes": 222224,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-3.scene",
+      "sha256": "f1cb4edecb943da69a3ad2bad3e65fb578c73e6e7145ecff35d81d04fe01ce99"
+    },
+    {
+      "bytes": 86672,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-3.svg",
+      "sha256": "447ee495b80b862e9e25026037eba5176e42fb9081903395581c025ee5d9e187"
+    },
+    {
+      "bytes": 11776,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-3.xyfg",
+      "sha256": "847f2c92619c051318531cddde49d0dcceb781ab11e6107ab18c2c8a8f442ed7"
+    },
+    {
+      "bytes": 3202700,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-4.html",
+      "sha256": "c30fe1b2cbf72a20a74fc92cbef7061b4ebbf1f856772fc1a9cc68786d88db14"
+    },
+    {
+      "bytes": 5046,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-4.offline.png",
+      "sha256": "469dab77316ca8cc544910eca3e88690bc6b4c8870e69f1214ec58ef3d11657e"
+    },
+    {
+      "bytes": 48828,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-4.painter",
+      "sha256": "f7334fc326de07bfa8aeec957274cd81a881299a06ea3eb796397ad07b29ecfe"
+    },
+    {
+      "bytes": 38405,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-4.png",
+      "sha256": "d8c59094e5dedf1d6ba9dda518881b6aa408782892aa68f95527c7cae490a1e0"
+    },
+    {
+      "bytes": 3202700,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-4.scale2.html",
+      "sha256": "69222f2a2610abaf752cfd5e900be34e501b49fd865e406e360e81aaab0ecbe9"
+    },
+    {
+      "bytes": 8125,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-4.scale2.offline.png",
+      "sha256": "fadf4294cf55ddc21687f29ccff995650b6a19bea1f4b95401fe460f61b729da"
+    },
+    {
+      "bytes": 57404,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-4.scale2.png",
+      "sha256": "9c00fdaadaeb52f6c1d4fbbea2568e46b2300589f497a55853ad791092a1283b"
+    },
+    {
+      "bytes": 219888,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-4.scene",
+      "sha256": "4b75b363d3abfe8633de8e4a372dcb06ed26a8317483f9a630b20ad0aab4303f"
+    },
+    {
+      "bytes": 86457,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-4.svg",
+      "sha256": "fb7a53aa65f6d3e3b1304e62c1f0b9a5d93346bbda90d65eeddd2b8852155bc1"
+    },
+    {
+      "bytes": 11776,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-4.xyfg",
+      "sha256": "7b1b26c8b032a940ab6c1bd93c46e94c098c1c7e4fac6e57da9a4433de4ba084"
+    },
+    {
+      "bytes": 3218372,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-5-parent.html",
+      "sha256": "785f32afd6af76ad56a27cf6c51f3802ad77b22a6dae5927e3ac3a67767fd841"
+    },
+    {
+      "bytes": 5273,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-5-parent.offline.png",
+      "sha256": "c8d28893649e32c1c892a98edd5fd520d2b0a81d05d722615fe0bcd11ace17de"
+    },
+    {
+      "bytes": 51068,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-5-parent.painter",
+      "sha256": "12d70a96c1d14db02e3c8e822a27348c0952e9e53f0e4b9e4d4425b993f2c682"
+    },
+    {
+      "bytes": 42961,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-5-parent.png",
+      "sha256": "329003c487a484c6dd1a6ab70139847ca1cab87fdee1c32aed62a0c5facd3fbb"
+    },
+    {
+      "bytes": 3218372,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-5-parent.scale2.html",
+      "sha256": "5fcf05282274f41d173d27e7a4c0f2a3adc1bb572b4c15982825acd38f3505dd"
+    },
+    {
+      "bytes": 9175,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-5-parent.scale2.offline.png",
+      "sha256": "edefe2a9bcc24edaebfa626b6e0249334975969a91d59488c51813a6b2609cc1"
+    },
+    {
+      "bytes": 67944,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-5-parent.scale2.png",
+      "sha256": "e857ac26fad4bba7bc113ff9065d1973911e579038887781014d839265ede569"
+    },
+    {
+      "bytes": 229520,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-5-parent.scene",
+      "sha256": "e45efa91f78d3471c5dba207002668eb2cb2d9e2173fa488d58000f0704a5f60"
+    },
+    {
+      "bytes": 87092,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-5-parent.svg",
+      "sha256": "c4643889bc98973b84460e63a64b5d112ebab9505f96b90970e4405c94182e65"
+    },
+    {
+      "bytes": 11696,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-5-parent.xyfg",
+      "sha256": "011ddcf0661e7cd809096d6244d71320ef0b7aeee754e488c9aa6bbf62a3d2f0"
+    },
+    {
+      "bytes": 3217932,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-5.html",
+      "sha256": "5fb8e9fd8d56dc8a2853ec4d3d9a2351c1167ef7a7d310a05ce618e53c866157"
+    },
+    {
+      "bytes": 5197,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-5.offline.png",
+      "sha256": "3d79b707c17cebd10d708c9493ecb6346c4710b5b55bb419f19ab12fafe4f841"
+    },
+    {
+      "bytes": 50844,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-5.painter",
+      "sha256": "61cb63d79bbd157d0e35f6c5d98ff802e2b5120474e3655e62ce7900e02aca12"
+    },
+    {
+      "bytes": 38760,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-5.png",
+      "sha256": "f02d3429d83cd3166bdc9115f437b63cb68fc88a8a6b937dafe747652d5079be"
+    },
+    {
+      "bytes": 3217932,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-5.scale2.html",
+      "sha256": "3ca189717a211f909c9bb0064f69169d18c58dc8de18e6c4b44fabda224081f6"
+    },
+    {
+      "bytes": 8720,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-5.scale2.offline.png",
+      "sha256": "21d20ddeca24a66bedf4897485c8004c103692f4ab152b7e44361d01ce32ada3"
+    },
+    {
+      "bytes": 59214,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-5.scale2.png",
+      "sha256": "31ed8579a8d863bad4116a35fba90ca23a4ef1312b7d393695e9cfec1147bf91"
+    },
+    {
+      "bytes": 229296,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-5.scene",
+      "sha256": "986b036c7ac0f009f07b74defd82cba2db13e7a5ee379522cb78b23f61c7f028"
+    },
+    {
+      "bytes": 88503,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-5.svg",
+      "sha256": "b6c9bde64eaf0b1eb673bdc8b37431a8e24ac9fe77f5fb854929694d76ec39ea"
+    },
+    {
+      "bytes": 11776,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.frozen-graph/shape-5.xyfg",
+      "sha256": "0fb41ff8b658a4fb6ea6df11af8c02b64c61b83857289f1f40e8fc2e43a27106"
+    },
+    {
+      "bytes": 11369,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.iife-malformed-inline-artifact.png",
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    {
+      "bytes": 11369,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.iife-missing-inline-artifact.png",
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    {
+      "bytes": 11315,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.iife-missing-retained-source.png",
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+    },
+    {
+      "bytes": 103395,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.retained-temporal.json",
+      "sha256": "cefe5573d02cc1611890aa8202c3418ce032ef9ccc460f54433b743aaacd8a56"
+    },
+    {
+      "bytes": 44546,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.retained-temporal.json.boundary.png",
+      "sha256": "e47464cd85a30210f9cbe6ec12af0aee391c3aa8ec4c01afdc2b814b823a7d6d"
+    },
+    {
+      "bytes": 44231,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.retained-temporal.json.initial.png",
+      "sha256": "a03d81a62746e81bbc035d278d5ebc73be03be673f7fee0a4e3a9ca31fa0eceb"
+    },
+    {
+      "bytes": 3705852,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation2.json.retained-temporal.json.wire.json",
+      "sha256": "b48117ffe4baf25685843b0591db06709cf739cf324d1dedb7e1b523d7e96c38"
+    },
+    {
+      "bytes": 29687,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json",
+      "sha256": "9e1c7b96167244d9573e94edba91699ce4fae42963bd6f61e0b9f1e9af808e37"
+    },
+    {
+      "bytes": 165933,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/captures.json",
+      "sha256": "67b7d6530106654cf79e18bb9c0f70ef397d92b08a677a15ab40f4c09852e3cd"
+    },
+    {
+      "bytes": 3718836,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-0.html",
+      "sha256": "2dd2f54c4b32778ab1657b8d2a7b460038e7a699554be13a92fdf9e0be65a073"
+    },
+    {
+      "bytes": 2423,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-0.offline.png",
+      "sha256": "cdae125f09dffbb580484834f16a5e1de5641fad4515fc041b67df19fb1980b9"
+    },
+    {
+      "bytes": 116644,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-0.painter",
+      "sha256": "5268eff5a73b52085224948804ee7689467cd84812467fb10d3d1825baa1ce9c"
+    },
+    {
+      "bytes": 24160,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-0.png",
+      "sha256": "a95fafc8c4cad9a26cad0c3a20f3e7bc2390191d66dafd7726cd32d72809c59a"
+    },
+    {
+      "bytes": 540984,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-0.scene",
+      "sha256": "d04633e2c2e0e0bbddf18f706a73122974f64922bfdd6c68b29523871406c4bf"
+    },
+    {
+      "bytes": 167512,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-0.svg",
+      "sha256": "f609e4c8c251b65539682b3ab7bac6e04b2890a66e99c980f16afcb42fe51375"
+    },
+    {
+      "bytes": 10568,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-0.xyfg",
+      "sha256": "e8693a06e2b7062de2397691dcc3bfcee049ca27b8906919ebb59e5ddc280080"
+    },
+    {
+      "bytes": 3456168,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-1.html",
+      "sha256": "b1442bc5250fa335c39d609c68a26490cf5fbd70534e790691e3eba690ae172c"
+    },
+    {
+      "bytes": 2405,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-1.offline.png",
+      "sha256": "aea817bb06f937d7ef0797e465b2fda598ebb601fde7d53b40cbc48285f95aaa"
+    },
+    {
+      "bytes": 82148,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-1.painter",
+      "sha256": "998126d40ad27bd6aa6b193fda5475d88696dbba3914a47c5550147daba8d0c1"
+    },
+    {
+      "bytes": 26312,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-1.png",
+      "sha256": "c320ac9774715d9eea152b2d7be782191901354beb41eb8bf3c59ce9297540fd"
+    },
+    {
+      "bytes": 377808,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-1.scene",
+      "sha256": "cb7d6ddf27a0079a306fde11063e4a3e7a7274edc2d78cdfe809f73dce03bca2"
+    },
+    {
+      "bytes": 128427,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-1.svg",
+      "sha256": "ea9e1632aac417be003708d571afd8ac8124045670571ec27af71be57b0d4690"
+    },
+    {
+      "bytes": 11016,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-1.xyfg",
+      "sha256": "c335fd81a6996bd07558ed1cc00316f83b0d7ba45502b8651cb8327891ab9a96"
+    },
+    {
+      "bytes": 3723860,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-2.html",
+      "sha256": "73d48c524e00e637dea165cc5811ebb70ad6c75b9ea306abb9f57b13706b9874"
+    },
+    {
+      "bytes": 2600,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-2.offline.png",
+      "sha256": "699cd80ff2cb323a5dffc575cc4b686f2edd3c9ca56bb8ffe17e847f4c25e167"
+    },
+    {
+      "bytes": 117620,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-2.painter",
+      "sha256": "fb7537a77ce69e95e18ca91ad4c17feb1db93a2d7ab5bbc4f1793876bb9cb754"
+    },
+    {
+      "bytes": 26380,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-2.png",
+      "sha256": "fca2e73bf7a7350b9293a6a3d284329facf9439d1a8dc7f2500ffafa4c6dd8c0"
+    },
+    {
+      "bytes": 543176,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-2.scene",
+      "sha256": "2d7cef57a609889f2733d0f4a5241a92c351d397c5f7e4a10c982d1a1245b9e7"
+    },
+    {
+      "bytes": 170911,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-2.svg",
+      "sha256": "e1bab96a3a0d3d9b6c9d5d17419f34bf4fa78621d5dddac6284ee95af7e7c840"
+    },
+    {
+      "bytes": 10968,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-2.xyfg",
+      "sha256": "e8713944e7f0981d45d94cec71c78b5dc45aac93efd4baf8235c6c91ccd3e6fa"
+    },
+    {
+      "bytes": 3718740,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-3.html",
+      "sha256": "6c9591a094f300b32538160692e1e228b59c51362c0c9ead97d4c45528c94110"
+    },
+    {
+      "bytes": 2423,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-3.offline.png",
+      "sha256": "cdae125f09dffbb580484834f16a5e1de5641fad4515fc041b67df19fb1980b9"
+    },
+    {
+      "bytes": 116644,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-3.painter",
+      "sha256": "5268eff5a73b52085224948804ee7689467cd84812467fb10d3d1825baa1ce9c"
+    },
+    {
+      "bytes": 24064,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-3.png",
+      "sha256": "81ddab6146dda61213221e00393ec8da423d8f478ea775330da0539dbcad59dc"
+    },
+    {
+      "bytes": 540984,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-3.scene",
+      "sha256": "d04633e2c2e0e0bbddf18f706a73122974f64922bfdd6c68b29523871406c4bf"
+    },
+    {
+      "bytes": 167416,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-3.svg",
+      "sha256": "38f9c215f1f049f39d01f537eb479a6d8a4f628527bb6aec5e8fdb678e74823b"
+    },
+    {
+      "bytes": 10520,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-3.xyfg",
+      "sha256": "f64f3e91b8d4aec25a55bd76b04e3f1927ed2e1c525ad439797086e9e782fbf6"
+    },
+    {
+      "bytes": 3134264,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-4.html",
+      "sha256": "ceba785505edb2a76cee4c18314cca2e88a59e13c67f8434ecb64b4d08fe7b04"
+    },
+    {
+      "bytes": 2233,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-4.offline.png",
+      "sha256": "a100e4b42b509f9ed9135fd0dcf4f1329d0a2cf4a6e460ba9f36150f4fa5b8a2"
+    },
+    {
+      "bytes": 39236,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-4.painter",
+      "sha256": "85d0e198a8d119c79a02d0a58bd589f0a6e84047e452caf576636d566d575604"
+    },
+    {
+      "bytes": 22209,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-4.png",
+      "sha256": "a7f96ab19df84fce54741c9c393df5e5714ef8fe38797939ec687af76a0ba741"
+    },
+    {
+      "bytes": 180648,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-4.scene",
+      "sha256": "9f4d95d013a7bb85630b49fff7111f8bb305f85e994d5994b08e44fefccea86c"
+    },
+    {
+      "bytes": 67189,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-4.svg",
+      "sha256": "16fd961928b2dfe5b4229eafd93b86435ea49a05a5311a29dbe6f69bbb58556a"
+    },
+    {
+      "bytes": 10112,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-4.xyfg",
+      "sha256": "c2d4a851b9a209fdbb4b0152141b89581ff94b6077ab6f30d5c5890810ae8545"
+    },
+    {
+      "bytes": 3456168,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-5.html",
+      "sha256": "41d333a3dc086f62633c3e6131f438a2867aa70926b9967a40fa1e2f13e9e34e"
+    },
+    {
+      "bytes": 2405,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-5.offline.png",
+      "sha256": "aea817bb06f937d7ef0797e465b2fda598ebb601fde7d53b40cbc48285f95aaa"
+    },
+    {
+      "bytes": 82148,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-5.painter",
+      "sha256": "998126d40ad27bd6aa6b193fda5475d88696dbba3914a47c5550147daba8d0c1"
+    },
+    {
+      "bytes": 26312,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-5.png",
+      "sha256": "4db51acad8ffc9e4950ba7147997da1c8b8a358b4fe1f579adf49f5b4f77872c"
+    },
+    {
+      "bytes": 377808,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-5.scene",
+      "sha256": "cb7d6ddf27a0079a306fde11063e4a3e7a7274edc2d78cdfe809f73dce03bca2"
+    },
+    {
+      "bytes": 128427,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-5.svg",
+      "sha256": "03b6983946631dca020580f80b62e883692b3017848b3cabc74323c96f19f292"
+    },
+    {
+      "bytes": 11016,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/frame-5.xyfg",
+      "sha256": "786b2caee97999a867f01ecd3026da04d11090c9422014f2c5391810b71ba81d"
+    },
+    {
+      "bytes": 2310,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/live-0.png",
+      "sha256": "9f2178f8f5545d604b2f21ac5da4fd6172c35bebc9d31e12fa2fe854b81ecbd1"
+    },
+    {
+      "bytes": 2382,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/live-1.png",
+      "sha256": "ca6b1ced92e0b66b4987bd48392ea80bae7b63474533a9ab7632db1a63261a0b"
+    },
+    {
+      "bytes": 2506,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/live-2.png",
+      "sha256": "9b3e7c71687d2c54edcde60f2f79e0f68a8998f3fb8900ecb0e5f58edadfe38d"
+    },
+    {
+      "bytes": 2310,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/live-3.png",
+      "sha256": "9f2178f8f5545d604b2f21ac5da4fd6172c35bebc9d31e12fa2fe854b81ecbd1"
+    },
+    {
+      "bytes": 1392,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/live-4.png",
+      "sha256": "f457903ade13efd7348d739a6f46a06fc5499d6bfe8fc6a8a7c009723f0f0d42"
+    },
+    {
+      "bytes": 2382,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/live-5.png",
+      "sha256": "ca6b1ced92e0b66b4987bd48392ea80bae7b63474533a9ab7632db1a63261a0b"
+    },
+    {
+      "bytes": 33,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/report.json",
+      "sha256": "d7c063f58c442c3d15f105bbbab2408639ab28093dc54086e0562843a7c37486"
+    },
+    {
+      "bytes": 439649,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/wire.json",
+      "sha256": "a8c352d5d7eb8051e55108a2015a6d2199c66ceaadcd0f74952094660529c4e7"
+    },
+    {
+      "bytes": 33823653,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.aggregate-graph/worker.json",
+      "sha256": "cbe076fa8f2ac1437c9d88a7f4a363eb9497b1afeb0af456c740b56b1a8fc5e5"
+    },
+    {
+      "bytes": 11369,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.esm-malformed-inline-artifact.png",
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    {
+      "bytes": 11369,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.esm-missing-inline-artifact.png",
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    {
+      "bytes": 11315,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.esm-missing-retained-source.png",
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+    },
+    {
+      "bytes": 3503699,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/inline-worker-png.html",
+      "sha256": "ccb0b02049c21341de157f0574526b0f42df759ef80a174b4b7f061c4c424c89"
+    },
+    {
+      "bytes": 1050,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/report.json",
+      "sha256": "d89bb74361e69f92bfecc8aa8fe0eeda2da2e77112e30590c10f092dcad0e36d"
+    },
+    {
+      "bytes": 4021292,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-0.html",
+      "sha256": "f2af185cfb174bbb82962d012b4709648a5e8f4c657dce29078c7c014a577292"
+    },
+    {
+      "bytes": 5440,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-0.offline.png",
+      "sha256": "73c2bb400eb58aa2529414e81c883ebac0d38eff7b507546ca477181629bcd0d"
+    },
+    {
+      "bytes": 157260,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-0.painter",
+      "sha256": "6708e63edaaf57c53b448567133bca28a2e9924ec2cca7987eac7c8ac9a1ee08"
+    },
+    {
+      "bytes": 39129,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-0.png",
+      "sha256": "b67bfd6ea4426ebef754c8003fbd3cc632a763777baf2f7f9c85f41abce1fdc5"
+    },
+    {
+      "bytes": 4021292,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-0.scale2.html",
+      "sha256": "73e116ad43eda90b42f241246fbfc8503e47bb7c2ba1bc99e48af29b5f2ce3f2"
+    },
+    {
+      "bytes": 9246,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-0.scale2.offline.png",
+      "sha256": "1476fc3ddd5181a37489bdf7aaf604cbea6b8508248335810bded6ed261da0d9"
+    },
+    {
+      "bytes": 60346,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-0.scale2.png",
+      "sha256": "c729946f31c20d3ddd67ed5037cea8b833a102f5d144c867eb39727572fff81c"
+    },
+    {
+      "bytes": 725400,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-0.scene",
+      "sha256": "a9c38d638994ed878589264f5d624a95589dc199f0fee0153a22f557658fceaf"
+    },
+    {
+      "bytes": 221391,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-0.svg",
+      "sha256": "9273505826e53b5721c9b1a7247a75cd66f7852d127bd7f6869f1767fb9cb34b"
+    },
+    {
+      "bytes": 11776,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-0.xyfg",
+      "sha256": "b4c11af9ab5323170a01cc97ae5bc30422c5597c532d971a201a623e2714d142"
+    },
+    {
+      "bytes": 3198744,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-1.html",
+      "sha256": "cec3ee8c76c1485425a3a38cec9b709c900db3c2f0d06e833b62d41a66720555"
+    },
+    {
+      "bytes": 4555,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-1.offline.png",
+      "sha256": "29745f349e29c9071fa9eee966709b8dd6de4bcc19bd1f38b61c10406bba5c34"
+    },
+    {
+      "bytes": 48396,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-1.painter",
+      "sha256": "e13dd7515a42bb0b5c1c77b5a82a3bfeed988291e2e002fc68833102bc589b8f"
+    },
+    {
+      "bytes": 38002,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-1.png",
+      "sha256": "d186b71b93393ada67ac812f51c228c21795988f97baf7e7944a7ab605762d92"
+    },
+    {
+      "bytes": 3198744,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-1.scale2.html",
+      "sha256": "6d81db9e54a53a1147365b3261c059e84553a8aca702f4e8c144f2e14cc04119"
+    },
+    {
+      "bytes": 7340,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-1.scale2.offline.png",
+      "sha256": "ee6d49aa7e6d0e84111358bd58beac6663a37d987af1d86239cb4286a8881d91"
+    },
+    {
+      "bytes": 55097,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-1.scale2.png",
+      "sha256": "311b2566b392f0a59c6362f9918c077bcaca4fd25ec8e45fa5fad95c99136d95"
+    },
+    {
+      "bytes": 217352,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-1.scene",
+      "sha256": "4a56d93214ec747ad9eccbba82577d3f6c5e84f91e8f4867f135c4fe1760f868"
+    },
+    {
+      "bytes": 85689,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-1.svg",
+      "sha256": "2018c16850ab6f20c9589ffa2e8776a99d994149aff503e0ae2758a17415f5ff"
+    },
+    {
+      "bytes": 11776,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-1.xyfg",
+      "sha256": "a9c14ae37279f8d5cd6b17cdd750b8ccaca14b70eb9eb093cbba0f895d00afbd"
+    },
+    {
+      "bytes": 3216632,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-2.html",
+      "sha256": "1882833fcd4b63481274368f0eaf1543f9e87b2a27845292cf2bf70dba131ae1"
+    },
+    {
+      "bytes": 4983,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-2.offline.png",
+      "sha256": "35daa48445de6c4f41329b92064d60af98ea443d785ac93fe4c933a36f27964b"
+    },
+    {
+      "bytes": 50556,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-2.painter",
+      "sha256": "c92c5718833e933b683f16353b3041a9e7e524cc57975e520b62eb4a60ffd5fd"
+    },
+    {
+      "bytes": 39207,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-2.png",
+      "sha256": "379b4dac23080c2e178700d3644f98d89bcfa59f85133dc1861a8b11ce0e50e8"
+    },
+    {
+      "bytes": 3216632,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-2.scale2.html",
+      "sha256": "51de07412803df56fed0a5768867e0a313b4d4a27e6c67ca3a3b5a344124fa80"
+    },
+    {
+      "bytes": 8215,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-2.scale2.offline.png",
+      "sha256": "2cdf6eac8be3143ea2a72141ca6f3509a9cc81837d0b6d45ecf95d94142060b8"
+    },
+    {
+      "bytes": 59901,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-2.scale2.png",
+      "sha256": "40999463b6d14b0306c598ea3f50a6f3ee445a05122c63f2ea6a95c8eb4c4459"
+    },
+    {
+      "bytes": 228608,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-2.scene",
+      "sha256": "19c425b85267e5f5d5308503947928fcd8fb2456c0be0a19fbbe304e54cc8d5f"
+    },
+    {
+      "bytes": 87468,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-2.svg",
+      "sha256": "e78330a33e69b77cb86c16cd34970155330265cef67f405d93dce59b74220482"
+    },
+    {
+      "bytes": 11776,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-2.xyfg",
+      "sha256": "e3251c38c89b3738fd9d624b1808a5878f389012965885b62b3cc6ef90e14a43"
+    },
+    {
+      "bytes": 3206488,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-3.html",
+      "sha256": "85beb7baa3424f1c3361cc8d94f51db3fc3d48dc7558523b9e3f0a7899f35cd9"
+    },
+    {
+      "bytes": 5086,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-3.offline.png",
+      "sha256": "7f8a10366e0af63f0ae542f733305444dcbe4064246386a4a2a71d9e1b245a00"
+    },
+    {
+      "bytes": 49332,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-3.painter",
+      "sha256": "43a727ba17d01ce85f4366ff7d52302e1e0b33dfe958e2dc0ae548144dbd010c"
+    },
+    {
+      "bytes": 38994,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-3.png",
+      "sha256": "0272bc26370eee3a35679d01b373d21c49f5cf3a0466490b97c8c68c1c7cdf0f"
+    },
+    {
+      "bytes": 3206488,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-3.scale2.html",
+      "sha256": "0e0985efaad427996b132f67aa6f0e193c032a4c421750e15d838d9672fa3c68"
+    },
+    {
+      "bytes": 8474,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-3.scale2.offline.png",
+      "sha256": "f54bd830f98d1012799bd1dd4d6817b185663e93f980c7dd5624a29e32302b91"
+    },
+    {
+      "bytes": 58510,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-3.scale2.png",
+      "sha256": "37d1ec1d4e86b36fd2081b9ed5171dc25be425b4c2abbfe1e35f2fc20188e0f9"
+    },
+    {
+      "bytes": 222224,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-3.scene",
+      "sha256": "f1cb4edecb943da69a3ad2bad3e65fb578c73e6e7145ecff35d81d04fe01ce99"
+    },
+    {
+      "bytes": 86672,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-3.svg",
+      "sha256": "447ee495b80b862e9e25026037eba5176e42fb9081903395581c025ee5d9e187"
+    },
+    {
+      "bytes": 11776,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-3.xyfg",
+      "sha256": "847f2c92619c051318531cddde49d0dcceb781ab11e6107ab18c2c8a8f442ed7"
+    },
+    {
+      "bytes": 3202700,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-4.html",
+      "sha256": "c30fe1b2cbf72a20a74fc92cbef7061b4ebbf1f856772fc1a9cc68786d88db14"
+    },
+    {
+      "bytes": 5046,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-4.offline.png",
+      "sha256": "469dab77316ca8cc544910eca3e88690bc6b4c8870e69f1214ec58ef3d11657e"
+    },
+    {
+      "bytes": 48828,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-4.painter",
+      "sha256": "f7334fc326de07bfa8aeec957274cd81a881299a06ea3eb796397ad07b29ecfe"
+    },
+    {
+      "bytes": 38405,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-4.png",
+      "sha256": "d8c59094e5dedf1d6ba9dda518881b6aa408782892aa68f95527c7cae490a1e0"
+    },
+    {
+      "bytes": 3202700,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-4.scale2.html",
+      "sha256": "69222f2a2610abaf752cfd5e900be34e501b49fd865e406e360e81aaab0ecbe9"
+    },
+    {
+      "bytes": 8125,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-4.scale2.offline.png",
+      "sha256": "fadf4294cf55ddc21687f29ccff995650b6a19bea1f4b95401fe460f61b729da"
+    },
+    {
+      "bytes": 57404,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-4.scale2.png",
+      "sha256": "9c00fdaadaeb52f6c1d4fbbea2568e46b2300589f497a55853ad791092a1283b"
+    },
+    {
+      "bytes": 219888,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-4.scene",
+      "sha256": "4b75b363d3abfe8633de8e4a372dcb06ed26a8317483f9a630b20ad0aab4303f"
+    },
+    {
+      "bytes": 86457,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-4.svg",
+      "sha256": "fb7a53aa65f6d3e3b1304e62c1f0b9a5d93346bbda90d65eeddd2b8852155bc1"
+    },
+    {
+      "bytes": 11776,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-4.xyfg",
+      "sha256": "7b1b26c8b032a940ab6c1bd93c46e94c098c1c7e4fac6e57da9a4433de4ba084"
+    },
+    {
+      "bytes": 3218372,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-5-parent.html",
+      "sha256": "785f32afd6af76ad56a27cf6c51f3802ad77b22a6dae5927e3ac3a67767fd841"
+    },
+    {
+      "bytes": 5273,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-5-parent.offline.png",
+      "sha256": "c8d28893649e32c1c892a98edd5fd520d2b0a81d05d722615fe0bcd11ace17de"
+    },
+    {
+      "bytes": 51068,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-5-parent.painter",
+      "sha256": "12d70a96c1d14db02e3c8e822a27348c0952e9e53f0e4b9e4d4425b993f2c682"
+    },
+    {
+      "bytes": 42961,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-5-parent.png",
+      "sha256": "329003c487a484c6dd1a6ab70139847ca1cab87fdee1c32aed62a0c5facd3fbb"
+    },
+    {
+      "bytes": 3218372,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-5-parent.scale2.html",
+      "sha256": "5fcf05282274f41d173d27e7a4c0f2a3adc1bb572b4c15982825acd38f3505dd"
+    },
+    {
+      "bytes": 9175,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-5-parent.scale2.offline.png",
+      "sha256": "edefe2a9bcc24edaebfa626b6e0249334975969a91d59488c51813a6b2609cc1"
+    },
+    {
+      "bytes": 67944,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-5-parent.scale2.png",
+      "sha256": "e857ac26fad4bba7bc113ff9065d1973911e579038887781014d839265ede569"
+    },
+    {
+      "bytes": 229520,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-5-parent.scene",
+      "sha256": "e45efa91f78d3471c5dba207002668eb2cb2d9e2173fa488d58000f0704a5f60"
+    },
+    {
+      "bytes": 87092,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-5-parent.svg",
+      "sha256": "c4643889bc98973b84460e63a64b5d112ebab9505f96b90970e4405c94182e65"
+    },
+    {
+      "bytes": 11696,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-5-parent.xyfg",
+      "sha256": "011ddcf0661e7cd809096d6244d71320ef0b7aeee754e488c9aa6bbf62a3d2f0"
+    },
+    {
+      "bytes": 3217932,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-5.html",
+      "sha256": "5fb8e9fd8d56dc8a2853ec4d3d9a2351c1167ef7a7d310a05ce618e53c866157"
+    },
+    {
+      "bytes": 5197,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-5.offline.png",
+      "sha256": "3d79b707c17cebd10d708c9493ecb6346c4710b5b55bb419f19ab12fafe4f841"
+    },
+    {
+      "bytes": 50844,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-5.painter",
+      "sha256": "61cb63d79bbd157d0e35f6c5d98ff802e2b5120474e3655e62ce7900e02aca12"
+    },
+    {
+      "bytes": 38760,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-5.png",
+      "sha256": "f02d3429d83cd3166bdc9115f437b63cb68fc88a8a6b937dafe747652d5079be"
+    },
+    {
+      "bytes": 3217932,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-5.scale2.html",
+      "sha256": "3ca189717a211f909c9bb0064f69169d18c58dc8de18e6c4b44fabda224081f6"
+    },
+    {
+      "bytes": 8720,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-5.scale2.offline.png",
+      "sha256": "21d20ddeca24a66bedf4897485c8004c103692f4ab152b7e44361d01ce32ada3"
+    },
+    {
+      "bytes": 59214,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-5.scale2.png",
+      "sha256": "31ed8579a8d863bad4116a35fba90ca23a4ef1312b7d393695e9cfec1147bf91"
+    },
+    {
+      "bytes": 229296,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-5.scene",
+      "sha256": "986b036c7ac0f009f07b74defd82cba2db13e7a5ee379522cb78b23f61c7f028"
+    },
+    {
+      "bytes": 88503,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-5.svg",
+      "sha256": "b6c9bde64eaf0b1eb673bdc8b37431a8e24ac9fe77f5fb854929694d76ec39ea"
+    },
+    {
+      "bytes": 11776,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.frozen-graph/shape-5.xyfg",
+      "sha256": "0fb41ff8b658a4fb6ea6df11af8c02b64c61b83857289f1f40e8fc2e43a27106"
+    },
+    {
+      "bytes": 11369,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.iife-malformed-inline-artifact.png",
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    {
+      "bytes": 11369,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.iife-missing-inline-artifact.png",
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf"
+    },
+    {
+      "bytes": 11315,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.iife-missing-retained-source.png",
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66"
+    },
+    {
+      "bytes": 103395,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.retained-temporal.json",
+      "sha256": "9ec13739c57a1031625ea7b228720658f4e0e7865fc0bddd6c362b57519f2ab1"
+    },
+    {
+      "bytes": 44546,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.retained-temporal.json.boundary.png",
+      "sha256": "e47464cd85a30210f9cbe6ec12af0aee391c3aa8ec4c01afdc2b814b823a7d6d"
+    },
+    {
+      "bytes": 44231,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.retained-temporal.json.initial.png",
+      "sha256": "a03d81a62746e81bbc035d278d5ebc73be03be673f7fee0a4e3a9ca31fa0eceb"
+    },
+    {
+      "bytes": 3567548,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/foundation3.json.retained-temporal.json.wire.json",
+      "sha256": "d8f9e0eed0f638c38bff1ffb62ca4e892a87e1c1c20b11b4f698237f3e95c2a7"
+    },
+    {
+      "bytes": 4252795,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/scheduling.json",
+      "sha256": "91968aaca5b5460dd1365f37e5cb18dad364d17285d3360fe08304361cc532db"
+    },
+    {
+      "bytes": 9218,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/scheduling.json.7101.final.png",
+      "sha256": "ab52f8b21edf99ed47d8d8e117e859f52e75bcd9e776b944bab01bb73e811225"
+    },
+    {
+      "bytes": 16340,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/scheduling.json.7101.initial.png",
+      "sha256": "d378702d8644f2616909d71978479b0b684f4477871e68316d5c9280d88a52e9"
+    },
+    {
+      "bytes": 9720,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/scheduling.json.7101.intermediate.png",
+      "sha256": "92bd17cb68576bb1d9f3e9a52b2d3881992ce731034891e38156d27287b29c90"
+    },
+    {
+      "bytes": 8695,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/scheduling.json.7102.final.png",
+      "sha256": "4453d9610a62a79b6a900bf2a3d67145ea2e95cf799286690cff9365a63ff06b"
+    },
+    {
+      "bytes": 16340,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/scheduling.json.7102.initial.png",
+      "sha256": "d378702d8644f2616909d71978479b0b684f4477871e68316d5c9280d88a52e9"
+    },
+    {
+      "bytes": 9175,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/scheduling.json.7102.intermediate.png",
+      "sha256": "86b4b1cb20b0aa65ade77479d6b17599e09123b660ceb57eae6bbd0054f4f5db"
+    },
+    {
+      "bytes": 10585,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/scheduling.json.7201.focus-11.png",
+      "sha256": "534dc98a98508b04799e72b1112d1ef131b5b93ac7bdb8b26b0f61c7dbc17312"
+    },
+    {
+      "bytes": 9878,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/scheduling.json.7201.select-16.png",
+      "sha256": "331fdbd7445a257b7d3481cb5cf67b9dca4aa4ca190f0c06e4bfabd09f8629f4"
+    },
+    {
+      "bytes": 9547,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/scheduling.json.7201.select-61.png",
+      "sha256": "523a9da5d5b92f14634ec7a2bb8ac4caabfcb44990f816ad211b3f8c5dd77db5"
+    },
+    {
+      "bytes": 9547,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/scheduling.json.7201.select-62.png",
+      "sha256": "523a9da5d5b92f14634ec7a2bb8ac4caabfcb44990f816ad211b3f8c5dd77db5"
+    },
+    {
+      "bytes": 9547,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/scheduling.json.7201.select-63.png",
+      "sha256": "523a9da5d5b92f14634ec7a2bb8ac4caabfcb44990f816ad211b3f8c5dd77db5"
+    },
+    {
+      "bytes": 9547,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/scheduling.json.7201.select-64.png",
+      "sha256": "523a9da5d5b92f14634ec7a2bb8ac4caabfcb44990f816ad211b3f8c5dd77db5"
+    },
+    {
+      "bytes": 2755033,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/scheduling.json.keyboard.json",
+      "sha256": "55f32a5f6f6db59a9084b1f534bdb2bcf576bd9c8b0616ab280031c8456179ff"
+    },
+    {
+      "bytes": 5492200,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/wire-memory",
+      "sha256": "ed30157afc77d6bcb3b2686263c9e3e0e581d1473e47babb3d257ee09ed92a12"
+    },
+    {
+      "bytes": 3998,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-source-sharing/wire-memory.rs",
+      "sha256": "77bcc06115182000243e3df063171ce73c80bab250f46fc1b3292d501d71689c"
+    }
+  ],
+  "changedProductAndSpecPaths": [
+    "crates/xyg-engine/src/graphforge/interaction.rs",
+    "crates/xyg-engine/src/graphforge/interaction/tests.rs",
+    "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs",
+    "crates/xyg-engine/src/graphforge/interaction/tests/wire.rs",
+    "crates/xyg-engine/src/graphforge/interaction/update.rs",
+    "crates/xyg-engine/src/graphforge/interaction/wire.rs",
+    "crates/xyg-engine/tests/graph_session_memory.rs",
+    "spec/design-dossier.md",
+    "spec/design/graph-interaction.md"
+  ],
+  "children": false,
+  "environment": {
+    "borrowedPythonEnvironment": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/.venv; --no-sync; offline caches",
+    "chromium": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "node": "22.23.4",
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "python": "3.14.4",
+    "rust": "1.96.0",
+    "tmpdir": "/var/tmp"
+  },
+  "failures": [
+    "initial compile test assignments needed Arc wrappers (fixed)",
+    "first workspace /tmp quota failure (raw retained); /var/tmp rerun passes",
+    "first all-file hook nested uv sync interrupted; second hooks detected concurrent source edits; third pass",
+    "broad controller fixture registry failure (unfixed)",
+    "public10k watchdog failure under concurrency (unfixed; no reliability claim)"
+  ],
+  "fresh": {
+    "abiParity": "551/v405 pass",
+    "controllerBroad": "FAIL after ten cases: undefined legacy shared-WebGL registry",
+    "default1k": "production WASM trusted pointer/camera/isolation, real Tab keyboard, coalescing/stale/disposal pass",
+    "foundation": "See final graph-foundation3.log.gz on sealed artifact; earlier graph-foundation2.log.gz PASS normal foundation and companion scheduling, temporal, frozen PNG/offline and aggregate replay; first attempt missing Node koffi dependency, installed offline before second attempt",
+    "interaction": "157 pass",
+    "nativeABISmoke": "673 pass",
+    "public100k": "OPEN succeeds, firstRender Budget; 757098696 estimate, 44458626 requestedheap peak through OPEN",
+    "public10k": "FAIL under concurrent test load: both continuation watchdogs; 44/42 frames; 345/321 steps",
+    "public1M": "OPEN Budget; 1088 requestedheap peak during admission",
+    "updateBoundary": "3526207 refusal / 3526208 success; retry test passes",
+    "wasmAssets": "pass",
+    "workspace": "68 core + 1875 engine + allocator ledger + 76 wasm tests; all pass with TMPDIR=/var/tmp"
+  },
+  "inheritedOnly": [
+    "Other required hosts and original remaining milestone/issue AC",
+    "Historical temporal, frozen PNG, filter, GPU, offline, performance and competitor evidence outside fresh foundation/test coverage"
+  ],
+  "logs": {
+    "graph-abi-parity.log": {
+      "bytes": 98,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-abi-parity.log.gz",
+      "rawBytes": 80,
+      "rawSha256": "e6d9e86b70b3823851dc8200f4096cfa8f64ec99ce76d87d58b4f619a56140d6",
+      "sha256": "cb742ecb5369b1e84403f01d22b643e0366f41bff7727863124bf5229bb188eb"
+    },
+    "graph-abi-smoke.log": {
+      "bytes": 72,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-abi-smoke.log.gz",
+      "rawBytes": 52,
+      "rawSha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306",
+      "sha256": "135de4fa46245b623c5d8acfa3e621c9374a4c0229b173222340fff45c526965"
+    },
+    "graph-client-build.log": {
+      "bytes": 1056,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-client-build.log.gz",
+      "rawBytes": 5448,
+      "rawSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+      "sha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c"
+    },
+    "graph-controller.log": {
+      "bytes": 740,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-controller.log.gz",
+      "rawBytes": 1470,
+      "rawSha256": "ef38512327dcc97f248d547e45fe804e6d761bff93217e1a901de2776df886f2",
+      "sha256": "559008af45a8165c5718f36a2a695076526554210e3a685fc52650093f33c3b6"
+    },
+    "graph-final-ruff-check.log": {
+      "bytes": 39,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-final-ruff-check.log.gz",
+      "rawBytes": 19,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "graph-final-ruff-format.log": {
+      "bytes": 49,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-final-ruff-format.log.gz",
+      "rawBytes": 29,
+      "rawSha256": "08dfebdaa7de10499ff1706784a9e5b424d19cea060ce506a9bcf36ef0d259aa",
+      "sha256": "8df95d6fb86baec2935325e88057b00c3e86cd59d78719eeea190ac60a877b1e"
+    },
+    "graph-foundation.log": {
+      "bytes": 2529,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-foundation.log.gz",
+      "rawBytes": 9106,
+      "rawSha256": "03e23b4e03aec9b8f278948039a88f8156f897b382f75f46a41db8a032f1aec3",
+      "sha256": "861e0b474a1a67a564c5d040b73e672cdd287d03170e692e9ba38b08fce6b01f"
+    },
+    "graph-foundation2.log": {
+      "bytes": 2206,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-foundation2.log.gz",
+      "rawBytes": 8351,
+      "rawSha256": "d0734a2fa68baf70d10b671fe1372cbf9cbab264e318dfc85da5e281878bc462",
+      "sha256": "d521b37222fef60ef8f7f02feb26401572bdb2165521c5718c34884da34d0d00"
+    },
+    "graph-foundation3.log": {
+      "bytes": 2213,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-foundation3.log.gz",
+      "rawBytes": 8353,
+      "rawSha256": "49cadb00315068c133d4d0325c166353d8b1283ab0555104d1c87adceade44b8",
+      "sha256": "8c838a533b8780b5c165b512880774832f962d5649e273c5d254e152dd86f6bc"
+    },
+    "graph-hooks.log": {
+      "bytes": 318,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-hooks.log.gz",
+      "rawBytes": 631,
+      "rawSha256": "fdcfe7549da6b33fb8abb0cc0ee978b3c82de3a2834da32aa1b97bddff5a097d",
+      "sha256": "7588af3db6f5455a71b8049e559ae450384fc97f2fd1d32fbf8b12826f24ba31"
+    },
+    "graph-hooks2.log": {
+      "bytes": 132,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-hooks2.log.gz",
+      "rawBytes": 318,
+      "rawSha256": "a3627cac66db4353b139370543c3b9af2214b9dcb16e77c46c9f0d1bd877476c",
+      "sha256": "9ee5a9e073557daed41538095fcd0c97647664265b89256e2c62f138cc584fce"
+    },
+    "graph-hooks3.log": {
+      "bytes": 72,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-hooks3.log.gz",
+      "rawBytes": 240,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "sha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "graph-memory-test.log": {
+      "bytes": 1290,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-memory-test.log.gz",
+      "rawBytes": 4712,
+      "rawSha256": "5600afae44a0698f8ad2b1fb3479f261adcfd9ca3e510a5207ecf13c93c5d753",
+      "sha256": "d69f5c65e0a7e0f041c4d31f18f793a5ef6daef06fbf29833fbbf2397a4cdce9"
+    },
+    "graph-native-abi-manifest.log": {
+      "bytes": 66998,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-native-abi-manifest.log.gz",
+      "rawBytes": 2268005,
+      "rawSha256": "ad446e8449e60e772e373aa00767c93cbd7e4a4abf70eff877de04912c1bf7df",
+      "sha256": "d504826d434f65ca87d603481893d8a4d52f8891c4daf93c02cb3cfd9392225e"
+    },
+    "graph-native-build.log": {
+      "bytes": 287,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-native-build.log.gz",
+      "rawBytes": 715,
+      "rawSha256": "e91fe14cbe9eb65762c1447420628b0a616433acb8fb5c5a1b542f956be2c8ef",
+      "sha256": "ba9f0dd0dbae91a4045b1c7f64a0181c97af01011b370ae3d4756ab3fafd3538"
+    },
+    "graph-native-sealed-build.log": {
+      "bytes": 172,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-native-sealed-build.log.gz",
+      "rawBytes": 337,
+      "rawSha256": "b9fb49ceb686783b8701f1aef6f2a6c32a24610b169416ff9b65820d8f86717e",
+      "sha256": "180facd1d8fbb3e7f74ab86ad3178981163af43aa27217e2ee1535c4db126305"
+    },
+    "graph-node-npm.log": {
+      "bytes": 119,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-node-npm.log.gz",
+      "rawBytes": 138,
+      "rawSha256": "18712339e1c9ebf0dfe434beee4febc100db08cf7181a9f022a0fa20922b79fc",
+      "sha256": "44d61511bd35e850c22102b61cc167b781afab53da2834a0ac3952487d8cf406"
+    },
+    "graph-npm.log": {
+      "bytes": 121,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-npm.log.gz",
+      "rawBytes": 141,
+      "rawSha256": "23b2dc7dc257f4b8a9b0120dbdc49adfc8b58c653a5bfd3a1149faf4dc306df2",
+      "sha256": "943c8764e55e2520ed852bb4bc9ad5c3859c3901f3209ab798671f467bcafab1"
+    },
+    "graph-ownership-test.log": {
+      "bytes": 1126,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-ownership-test.log.gz",
+      "rawBytes": 3812,
+      "rawSha256": "83405b8607cec3ac9b54f5cb7cb3013e1a4b38bff72b2ec98efb028ec513447f",
+      "sha256": "08231a149a57bbb4067a38d7734ac6250ab8e6e973979590e2ae1d69d2d8be14"
+    },
+    "graph-ownership-test2.log": {
+      "bytes": 4639,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-ownership-test2.log.gz",
+      "rawBytes": 18640,
+      "rawSha256": "92d542ea65b8ad27f6438ae5c84f0908f9df30222e9110a8d82884bebc92c933",
+      "sha256": "d4ae9f71f7bfacf8cb3442a27b0d3043110e48e0a4bf31375436409feeb267fc"
+    },
+    "graph-public10k.log": {
+      "bytes": 535,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-public10k.log.gz",
+      "rawBytes": 1479,
+      "rawSha256": "b0b77e90d227425542ad221b2747ed69025b5a55dbe5bf79db91c2e065aeb7a7",
+      "sha256": "f2d315aa14f1f13c4abfdb8af4f1ade461594e527e54a627c67650cf1e1f7fd9"
+    },
+    "graph-ruff-check.log": {
+      "bytes": 39,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-ruff-check.log.gz",
+      "rawBytes": 19,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "graph-ruff-format.log": {
+      "bytes": 49,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-ruff-format.log.gz",
+      "rawBytes": 29,
+      "rawSha256": "08dfebdaa7de10499ff1706784a9e5b424d19cea060ce506a9bcf36ef0d259aa",
+      "sha256": "8df95d6fb86baec2935325e88057b00c3e86cd59d78719eeea190ac60a877b1e"
+    },
+    "graph-scheduling.log": {
+      "bytes": 176,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-scheduling.log.gz",
+      "rawBytes": 243,
+      "rawSha256": "a465837e8f35e7f892cac95b2b6d42cad831ad16bdbc6cb958a150a70314b173",
+      "sha256": "683f33ee749e1440ee4ffdfab513827a78783375f75097d736f1a340761c10d4"
+    },
+    "graph-sealed-abi-smoke.log": {
+      "bytes": 72,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-sealed-abi-smoke.log.gz",
+      "rawBytes": 52,
+      "rawSha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306",
+      "sha256": "135de4fa46245b623c5d8acfa3e621c9374a4c0229b173222340fff45c526965"
+    },
+    "graph-sealed-wasm-assets.log": {
+      "bytes": 104,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-sealed-wasm-assets.log.gz",
+      "rawBytes": 88,
+      "rawSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+      "sha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730"
+    },
+    "graph-update-limit.log": {
+      "bytes": 497,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-update-limit.log.gz",
+      "rawBytes": 1188,
+      "rawSha256": "d866510ed0cb922506caf6b4d6f8c9831733ac600927db913cccedf95d182e4a",
+      "sha256": "a4b367800d4e32161f62d3649814fb2fc73fd2cf85645b5f41f5dfd969d821ea"
+    },
+    "graph-wasm-abi-manifest.log": {
+      "bytes": 20,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-wasm-abi-manifest.log.gz",
+      "rawBytes": 0,
+      "rawSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    "graph-wasm-assets.log": {
+      "bytes": 104,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-wasm-assets.log.gz",
+      "rawBytes": 88,
+      "rawSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+      "sha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730"
+    },
+    "graph-wasm-build.log": {
+      "bytes": 1175,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-wasm-build.log.gz",
+      "rawBytes": 4218,
+      "rawSha256": "ac945b094979e370d0bb748384b8395e6553d2f8040210d628330599642ac9f4",
+      "sha256": "7abca92283d3b4f85618e95925ca9e51051d51fefb7535abeff12f879c76acc5"
+    },
+    "graph-wasm-package.log": {
+      "bytes": 200,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-wasm-package.log.gz",
+      "rawBytes": 493,
+      "rawSha256": "02bcb358978b17b9bbb323282d6aab1d44ff2f2e87303e82073f033774857f1f",
+      "sha256": "88627168f92a555783296c6ddc6f967cbd71b90e94a56c683666704075004208"
+    },
+    "graph-wasm-sealed-build.log": {
+      "bytes": 1060,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-wasm-sealed-build.log.gz",
+      "rawBytes": 3840,
+      "rawSha256": "2d98c7fb9a3d3b9d1a46c51906c9858343b83efcbb05a669934c8ccc14f78148",
+      "sha256": "39709e9da9216af8359da9753812dd05eaaabc85ea9e7c977b6223bc240b28df"
+    },
+    "graph-wasm-sealed-package.log": {
+      "bytes": 200,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-wasm-sealed-package.log.gz",
+      "rawBytes": 493,
+      "rawSha256": "02bcb358978b17b9bbb323282d6aab1d44ff2f2e87303e82073f033774857f1f",
+      "sha256": "88627168f92a555783296c6ddc6f967cbd71b90e94a56c683666704075004208"
+    },
+    "graph-wire-probe-build.log": {
+      "bytes": 282,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-wire-probe-build.log.gz",
+      "rawBytes": 467,
+      "rawSha256": "e6d078e6575eddf4962777a10a5d004006d697935d1122f86ccca6fc234b579c",
+      "sha256": "571d8bdee66bcb044d5503ffc43defb53184284b30985d6c32278fe507f8a832"
+    },
+    "graph-wire-probe.log": {
+      "bytes": 377,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-wire-probe.log.gz",
+      "rawBytes": 637,
+      "rawSha256": "25c7198973f88ae90ea843cdb9a896d6280bb2d2cd963664b512c6147c6dd1d2",
+      "sha256": "e7a257d8de1872b73f4e1ba13c5cdf5ef7125dc5f1eef0037ae08b9f99eada8c"
+    },
+    "graph-wire-sealed-probe-build.log": {
+      "bytes": 282,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-wire-sealed-probe-build.log.gz",
+      "rawBytes": 467,
+      "rawSha256": "e6d078e6575eddf4962777a10a5d004006d697935d1122f86ccca6fc234b579c",
+      "sha256": "571d8bdee66bcb044d5503ffc43defb53184284b30985d6c32278fe507f8a832"
+    },
+    "graph-wire-sealed-probe.log": {
+      "bytes": 377,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-wire-sealed-probe.log.gz",
+      "rawBytes": 637,
+      "rawSha256": "25c7198973f88ae90ea843cdb9a896d6280bb2d2cd963664b512c6147c6dd1d2",
+      "sha256": "e7a257d8de1872b73f4e1ba13c5cdf5ef7125dc5f1eef0037ae08b9f99eada8c"
+    },
+    "graph-workspace-test.log": {
+      "bytes": 2273,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-workspace-test.log.gz",
+      "rawBytes": 6394,
+      "rawSha256": "95a46969cdda1f6e3bb2ab1b8120a2d8630c8fc655d92b7d4c0105b2cc8cd76f",
+      "sha256": "96b5661e97229b8b40d7b0a75d9db6d827a57eb11118c4f1dade9bca23c36abf"
+    },
+    "graph-workspace-test2.log": {
+      "bytes": 39827,
+      "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/spec/performance/graph-source-sharing-2026-11-08/graph-workspace-test2.log.gz",
+      "rawBytes": 181249,
+      "rawSha256": "3d6e469d9da20983b12a1a3af67945bd8792b85750b5633cf555c6fd6c7793c8",
+      "sha256": "ac1afa5992b6792a12f6203e7169637594716728da184e18b3bd2f9b1d6c132e"
+    }
+  },
+  "nativeABI": 405,
+  "nativeSymbols": 551,
+  "orderedParents": [
+    "6ad7cb76d1a02f3df759cffc4218baf26ab1378e"
+  ],
+  "remaining": [
+    "Full public100k/1M useful primary paint and isolated peer",
+    "Per-class full phase/capacity proof across source/force/publication/serialization/ingress/external caches",
+    "Full native/actual WASM populations, opacity and LOD diagnostics at both larger rungs",
+    "Trusted pointer and real Tab while unfinished, camera retention, later progress, stale/failure/cancel/dispose at both larger rungs",
+    "Fresh public10k reliability; original required hosts, accessibility, performance/competitor and full M4 acceptance"
+  ],
+  "remoteActions": false,
+  "rootDiagnostic": {
+    "bytes": 2617,
+    "path": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/graph-next-rung/investigation.json",
+    "sha256": "c96542c492a181bd41aa59e7c56fb94c2f2bd4b8cf2e73e3d164be3d1934b1d9"
+  },
+  "sourceSha256": {
+    "crates/xyg-engine/src/graphforge/interaction.rs": "7477eff5c7b35f10d8105016fe6eb6812c326308ed7858434d7a129d7f412bbb",
+    "crates/xyg-engine/src/graphforge/interaction/tests.rs": "a092c21ae7c1d291bc53db2ee4c02bbacd84b26eac58702f7aa66f360a0e08fd",
+    "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs": "aaa97dedbf1b6413f6d26ded836f8be076ba82bc30e74264bbe07d9165f2df3e",
+    "crates/xyg-engine/src/graphforge/interaction/tests/wire.rs": "f874b4ec4ae9e6afc278bf081ced4dde963fd33fc8b88250b2992db9562f7aed",
+    "crates/xyg-engine/src/graphforge/interaction/update.rs": "1cf365370fdfba86621c6d0bec295d851d20552f12683ad13df7e76fcb21e9e1",
+    "crates/xyg-engine/src/graphforge/interaction/wire.rs": "d41a104e226b6b72e22e0389768e92a974dcee0ec57017f3f45fd98fa7857960",
+    "crates/xyg-engine/tests/graph_session_memory.rs": "ca32b95a8b2f4086d9a18e53923f153a5b3241c9d7169c08f1655f1dbd592049",
+    "spec/design-dossier.md": "db41eff0d6ec9262a088897280e8d9caca9df6491131bef6014fa6d87790f784",
+    "spec/design/graph-interaction.md": "4da578bdd98b7a27804ebfc544da9443b0d74925317d3ac4269031409313542a"
+  },
+  "status": "INCOMPLETE \u2014 source ownership repair; neither requested larger rung qualified",
+  "wasmABI": 38,
+  "wasmExports": 68,
+  "wasmPackage": {
+    "gzip6Bytes": 780140,
+    "gzip6Cap": 786432,
+    "profile": "wasm O2, LLVM inline threshold 0, strip none; pinned Binaryen 132 O3/all-features/reorder-functions-by-name/strip-debug",
+    "rawBytes": 1896715,
+    "rawCap": 1927168
+  }
+}

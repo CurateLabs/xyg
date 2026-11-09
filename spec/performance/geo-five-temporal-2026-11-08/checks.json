@@ -1,0 +1,55 @@
+{
+  "fresh": {
+    "python-last.log": {
+      "exit": 0,
+      "passed": 119
+    },
+    "node-last.log": {
+      "exit": 0,
+      "passed": 26
+    },
+    "browser-direct-sha.log": {
+      "exit": 0,
+      "views": 5
+    },
+    "browser-range-sha.log": {
+      "exit": 0,
+      "views": 5
+    },
+    "browser-reduced-sha.log": {
+      "exit": 1,
+      "reason": "idle paint stability exact RGBA mismatch before temporal burst"
+    },
+    "node-final-3.log": {
+      "exit": 1,
+      "passed": 588,
+      "failed": 1,
+      "skipped": 1,
+      "reason": "catalog kind4 native/WASM byte comparison"
+    },
+    "before-python-final.log": {
+      "exit": 0,
+      "finalAssertions": "second genuine lane refused"
+    },
+    "before-node-final.log": {
+      "exit": 0,
+      "finalAssertions": "second genuine lane refused"
+    },
+    "hooks-last.log": {
+      "exit": 0
+    },
+    "ruff-last.log": {
+      "exit": 0
+    },
+    "format-last.log": {
+      "exit": 0
+    }
+  },
+  "evidenceLimits": [
+    "Intermediate diagnostic logs retained as historical receipts; not all intermediate source snapshots were captured.",
+    "Final browser test differs from SHA runs only by removal of one blank-line trailing space.",
+    "Runtime artifacts inherited by verified hash, no fresh build.",
+    "Existing installed one-view application journeys not rerun; five-widget mounted application proof remains open.",
+    "No independent external review in this implementation checkout."
+  ]
+}

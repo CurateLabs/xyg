@@ -59,7 +59,7 @@ pub fn tessellate(rings: &[(&[f64], bool)]) -> Result<Vec<[f64; 6]>, GeoError> {
             }
         }
     }
-    ys.sort_by(f64::total_cmp);
+    crate::shared_sort::by(&mut ys, f64::total_cmp);
     ys.dedup();
     if ys.len().saturating_mul(edges.len()) > MAX_FILL_WORK {
         return Err(GeoError::ResourceLimit);
@@ -77,7 +77,7 @@ pub fn tessellate(rings: &[(&[f64], bool)]) -> Result<Vec<[f64; 6]>, GeoError> {
                 .copied()
                 .filter(|e| mid > e.a.1.min(e.b.1) && mid < e.a.1.max(e.b.1)),
         );
-        active.sort_by(|a, b| a.x(mid).total_cmp(&b.x(mid)).then(a.ring.cmp(&b.ring)));
+        crate::shared_sort::by(&mut active, |a, b| a.x(mid).total_cmp(&b.x(mid)).then(a.ring.cmp(&b.ring)));
         for pair in active.windows(2) {
             for y in [y0, y1] {
                 let (left, right) = (pair[0].x(y), pair[1].x(y));

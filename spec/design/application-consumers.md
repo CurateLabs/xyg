@@ -287,3 +287,25 @@ selecting and closing each port separately can return the same port repeatedly.
 This is not an exclusive lease through packaging and process startup: an external
 process can still race later binding, which remains a failing startup. No browser
 assertion, timeout, host-isolation check or release gate is relaxed.
+
+Native local chunked charts now refine committed viewport gestures through the
+existing renderer, with exact accepted-frame source identity and cancellation.
+The installed Jupyter/anywidget and public Node binary HTTP journeys, lifecycle
+contract, required CI discovery and remaining issue-wide acceptance are specified
+in [the local native viewport contract](chunked-native-viewport.md).
+
+
+## Five automatic selected hierarchy widgets
+
+The [five-view temporal successor](../performance/geo-five-temporal-successor-2026-11-08/README.md)
+qualifies five actual public widgets in installed JupyterLab4.6.5/anywidget with
+Python3.11.17, using this source checkout and independently verified native and
+built client artifacts. One original canonical Source and Scope serve five
+issued selected hierarchy lanes. Every widget completes its own native ready
+handshake. Held native preparation, temporal supersession, five distinct trusted
+keyboard cameras, Output clear/release ACK, redisplay and exact complete canvas
+restoration are exercised. The same application journey runs with two owning
+loops on separate threads; no asyncio primitive crosses loops. Python3.12.15
+lifecycle tests are recorded separately. No wheel or five-view installed VS Code
+qualification is implied. Existing Node attachGeoWebview/browser matrices cover
+the shared live protocol, including linked groups and uncertain drain retry.

@@ -324,6 +324,19 @@ Historical leftover-cluster table:
 
 Every pull request runs the complete Rust/Python/JS suite, direct-browser WASM
 foundation, and Python 3.11 floor. The required aggregate **Release surfaces**
+status depends on successful collection of the workflow guards as well as
+runtime tests. The floor environment explicitly installs PyYAML alongside
+pytest for those test-only guards; it remains a development dependency, not a
+runtime package requirement. Node discovery guards preserve the immutable
+parent test-list union plus each explicitly qualified successor test, including
+the five-view geographic lifecycle suite, with no duplicate paths.
+The floor also selects the lockfile-pinned Playwright Chromium for offline
+fixtures, matching the main job instead of relying on confined system-browser
+wrappers. Cross-host frozen tests locate `uv` through `UV` or `PATH` and use
+the already-installed environment without synchronization; no developer home
+directory is part of the test contract. Existing browser deadlines remain.
+
+The required aggregate **Release surfaces**
 status also runs on every head. For a release-surface change it admits only a
 green wheel matrix, sdist, no-Rust wheel, host-parity suite, four-tier Node /
 Python authored-Scene differential, and required browser evidence; an

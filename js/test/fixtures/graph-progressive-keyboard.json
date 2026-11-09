@@ -1,0 +1,6882 @@
+{
+  "actions": [
+    {
+      "action": "focus",
+      "beforeCommands": 10,
+      "event": {
+        "key": "ArrowRight",
+        "ctrl": false,
+        "trusted": true,
+        "prevented": true,
+        "commands": 11,
+        "operation": 5,
+        "instanceId": "7201",
+        "ordinal": 9
+      },
+      "publication": {
+        "ordinal": 9,
+        "kind": "focus",
+        "snapshot": {
+          "focus": [
+            {
+              "kind": 0,
+              "uuid": "01000000-0000-0000-0000-000000000000"
+            }
+          ],
+          "selection": {
+            "refs": [],
+            "indices": {},
+            "layerOffsets": {
+              "0": "0"
+            },
+            "layers": {},
+            "rows": {},
+            "resultIds": []
+          },
+          "relayout": {
+            "steps": "65",
+            "alpha": 0.3744165026897423,
+            "done": false
+          },
+          "summary": "Node , 2 relationships, not selected, 1 of 1000",
+          "outcome": {
+            "stateChanged": true,
+            "selected": 0,
+            "disclosurePresent": false
+          },
+          "clearAction": {
+            "applicable": false
+          },
+          "revision": 9
+        },
+        "state": [
+          0,
+          1,
+          0,
+          0
+        ],
+        "center": [
+          352.91345030357184,
+          157.8036079192422
+        ],
+        "magenta": 61,
+        "near": 61,
+        "active": true,
+        "live": "Node , 2 relationships, not selected, 1 of 1000"
+      }
+    },
+    {
+      "action": "replace",
+      "beforeCommands": 15,
+      "event": {
+        "key": "Enter",
+        "ctrl": false,
+        "trusted": true,
+        "prevented": true,
+        "commands": 16,
+        "operation": 7,
+        "instanceId": "7201",
+        "ordinal": 14
+      },
+      "publication": {
+        "ordinal": 14,
+        "kind": "select",
+        "snapshot": {
+          "focus": [
+            {
+              "kind": 0,
+              "uuid": "01000000-0000-0000-0000-000000000000"
+            }
+          ],
+          "selection": {
+            "refs": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "indices": {
+              "0": "0"
+            },
+            "layerOffsets": {
+              "0": "0",
+              "1": "0"
+            },
+            "layers": {},
+            "rows": {},
+            "resultIds": []
+          },
+          "relayout": {
+            "steps": "97",
+            "alpha": 0.23084175013502917,
+            "done": false
+          },
+          "summary": "Node , 2 relationships, selected, 1 of 1000",
+          "outcome": {
+            "stateChanged": true,
+            "selected": 1,
+            "disclosurePresent": false
+          },
+          "clearAction": {
+            "applicable": true
+          },
+          "revision": 13
+        },
+        "state": [
+          5,
+          1,
+          2,
+          0
+        ],
+        "center": [
+          347.30832178191133,
+          158.59930429160454
+        ],
+        "magenta": 59,
+        "near": 59,
+        "active": true,
+        "live": "Node , 2 relationships, selected, 1 of 1000"
+      }
+    },
+    {
+      "action": "toggle",
+      "beforeCommands": 62,
+      "event": {
+        "key": "Enter",
+        "ctrl": true,
+        "trusted": true,
+        "prevented": true,
+        "commands": 63,
+        "operation": 7,
+        "instanceId": "7201",
+        "ordinal": 61
+      },
+      "publication": {
+        "ordinal": 61,
+        "kind": "select",
+        "snapshot": {
+          "focus": [
+            {
+              "kind": 0,
+              "uuid": "01000000-0000-0000-0000-000000000000"
+            }
+          ],
+          "selection": {
+            "refs": [],
+            "indices": {},
+            "layerOffsets": {
+              "0": "0"
+            },
+            "layers": {},
+            "rows": {},
+            "resultIds": []
+          },
+          "relayout": {
+            "steps": "458",
+            "alpha": 0.000985810791306981,
+            "done": true
+          },
+          "summary": "Node , 2 relationships, not selected, 1 of 1000",
+          "outcome": {
+            "stateChanged": true,
+            "selected": 0,
+            "disclosurePresent": false
+          },
+          "clearAction": {
+            "applicable": false
+          },
+          "revision": 59
+        },
+        "state": [
+          0,
+          1,
+          0,
+          0
+        ],
+        "center": [
+          344.07226135489475,
+          159.82240370149833
+        ],
+        "magenta": 59,
+        "near": 59,
+        "active": true,
+        "live": "Node , 2 relationships, not selected, 1 of 1000"
+      }
+    },
+    {
+      "action": "replace",
+      "beforeCommands": 63,
+      "event": {
+        "key": "Enter",
+        "ctrl": false,
+        "trusted": true,
+        "prevented": true,
+        "commands": 64,
+        "operation": 7,
+        "instanceId": "7201",
+        "ordinal": 62
+      },
+      "publication": {
+        "ordinal": 62,
+        "kind": "select",
+        "snapshot": {
+          "focus": [
+            {
+              "kind": 0,
+              "uuid": "01000000-0000-0000-0000-000000000000"
+            }
+          ],
+          "selection": {
+            "refs": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "indices": {
+              "0": "0"
+            },
+            "layerOffsets": {
+              "0": "0",
+              "1": "0"
+            },
+            "layers": {},
+            "rows": {},
+            "resultIds": []
+          },
+          "relayout": {
+            "steps": "458",
+            "alpha": 0.000985810791306981,
+            "done": true
+          },
+          "summary": "Node , 2 relationships, selected, 1 of 1000",
+          "outcome": {
+            "stateChanged": true,
+            "selected": 1,
+            "disclosurePresent": false
+          },
+          "clearAction": {
+            "applicable": true
+          },
+          "revision": 59
+        },
+        "state": [
+          5,
+          1,
+          2,
+          0
+        ],
+        "center": [
+          344.07226135489475,
+          159.82240370149833
+        ],
+        "magenta": 59,
+        "near": 59,
+        "active": true,
+        "live": "Node , 2 relationships, selected, 1 of 1000"
+      }
+    },
+    {
+      "action": "clear",
+      "beforeCommands": 64,
+      "event": {
+        "key": "Escape",
+        "ctrl": false,
+        "trusted": true,
+        "prevented": true,
+        "commands": 65,
+        "operation": 4,
+        "instanceId": "7201",
+        "ordinal": 63
+      },
+      "publication": {
+        "ordinal": 63,
+        "kind": "select",
+        "snapshot": {
+          "focus": [
+            {
+              "kind": 0,
+              "uuid": "01000000-0000-0000-0000-000000000000"
+            }
+          ],
+          "selection": {
+            "refs": [],
+            "indices": {},
+            "layerOffsets": {
+              "0": "0"
+            },
+            "layers": {},
+            "rows": {},
+            "resultIds": []
+          },
+          "relayout": {
+            "steps": "458",
+            "alpha": 0.000985810791306981,
+            "done": true
+          },
+          "summary": "Node , 2 relationships, not selected, 1 of 1000",
+          "outcome": {
+            "stateChanged": true,
+            "selected": 0,
+            "disclosurePresent": false
+          },
+          "clearAction": {
+            "applicable": false
+          },
+          "revision": 59
+        },
+        "state": [
+          0,
+          1,
+          0,
+          0
+        ],
+        "center": [
+          344.07226135489475,
+          159.82240370149833
+        ],
+        "magenta": 59,
+        "near": 59,
+        "active": true,
+        "live": "Node , 2 relationships, not selected, 1 of 1000"
+      }
+    },
+    {
+      "action": "empty",
+      "beforeCommands": 65,
+      "event": {
+        "key": "Escape",
+        "ctrl": false,
+        "trusted": true,
+        "prevented": false,
+        "commands": 66,
+        "operation": 4,
+        "instanceId": "7201",
+        "ordinal": 64
+      },
+      "publication": {
+        "ordinal": 64,
+        "kind": "select",
+        "snapshot": {
+          "focus": [
+            {
+              "kind": 0,
+              "uuid": "01000000-0000-0000-0000-000000000000"
+            }
+          ],
+          "selection": {
+            "refs": [],
+            "indices": {},
+            "layerOffsets": {
+              "0": "0"
+            },
+            "layers": {},
+            "rows": {},
+            "resultIds": []
+          },
+          "relayout": {
+            "steps": "458",
+            "alpha": 0.000985810791306981,
+            "done": true
+          },
+          "summary": "Node , 2 relationships, not selected, 1 of 1000",
+          "outcome": {
+            "stateChanged": false,
+            "selected": 0,
+            "disclosurePresent": false
+          },
+          "clearAction": {
+            "applicable": false
+          },
+          "revision": 59
+        },
+        "state": [
+          0,
+          1,
+          0,
+          0
+        ],
+        "center": [
+          344.07226135489475,
+          159.82240370149833
+        ],
+        "magenta": 59,
+        "near": 59,
+        "active": true,
+        "live": "Node , 2 relationships, not selected, 1 of 1000"
+      }
+    }
+  ],
+  "views": [
+    {
+      "id": "7202",
+      "sourceNodes": 1000,
+      "sourceEdges": 1000,
+      "arena": 402653184,
+      "publications": [
+        {
+          "ordinal": 0,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "1",
+              "alpha": 0.985,
+              "done": false
+            },
+            "summary": "Graph, 1000 nodes, 1000 edges, 0 selected",
+            "outcome": {
+              "stateChanged": false,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 1
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            562.094485201343,
+            159.986306312056
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "Graph, 1000 nodes, 1000 edges, 0 selected"
+        },
+        {
+          "ordinal": 1,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "9",
+              "alpha": 0.8728227840194346,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.8728227840194346",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 2
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            502.97257173699893,
+            159.97490895304472
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.8728227840194346"
+        },
+        {
+          "ordinal": 2,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "17",
+              "alpha": 0.773420926196382,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.773420926196382",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 3
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            450.59053572125896,
+            159.89370069473085
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.773420926196382"
+        },
+        {
+          "ordinal": 3,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "25",
+              "alpha": 0.6853394984991023,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.6853394984991023",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 4
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            405.4479142233399,
+            158.49016428643134
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.6853394984991023"
+        },
+        {
+          "ordinal": 4,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "33",
+              "alpha": 0.607289268099969,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.607289268099969",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 5
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            379.70467190508197,
+            158.10699718991935
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.607289268099969"
+        },
+        {
+          "ordinal": 5,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "41",
+              "alpha": 0.538127827094558,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.538127827094558",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 6
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            366.20360405367126,
+            157.88188242035855
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.538127827094558"
+        },
+        {
+          "ordinal": 6,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "49",
+              "alpha": 0.47684287127208225,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.47684287127208225",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 7
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            359.44400887119053,
+            157.87285321428942
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.47684287127208225"
+        },
+        {
+          "ordinal": 7,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "57",
+              "alpha": 0.42253738319139056,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.42253738319139056",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 8
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            355.77584948291064,
+            157.91484693375287
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.42253738319139056"
+        },
+        {
+          "ordinal": 8,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "65",
+              "alpha": 0.3744165026897423,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.3744165026897423",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 9
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            352.91345030357184,
+            157.8036079192422
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.3744165026897423"
+        },
+        {
+          "ordinal": 9,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "73",
+              "alpha": 0.3317758926502345,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.3317758926502345",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 10
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            350.41214030707494,
+            158.09774391616418
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.3317758926502345"
+        },
+        {
+          "ordinal": 10,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "81",
+              "alpha": 0.2939914297396048,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.2939914297396048",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 11
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            348.81720248255,
+            158.28482222925425
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.2939914297396048"
+        },
+        {
+          "ordinal": 11,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "89",
+              "alpha": 0.2605100692214983,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.2605100692214983",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 12
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            347.8679564084184,
+            158.5117651150632
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.2605100692214983"
+        },
+        {
+          "ordinal": 12,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "97",
+              "alpha": 0.23084175013502917,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.23084175013502917",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 13
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            347.30832178191133,
+            158.59930429160454
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.23084175013502917"
+        },
+        {
+          "ordinal": 13,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "105",
+              "alpha": 0.20455222235611656,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.20455222235611656",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 14
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            346.9065164110035,
+            158.66206791124742
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.20455222235611656"
+        },
+        {
+          "ordinal": 14,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "113",
+              "alpha": 0.1812566905525158,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.1812566905525158",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 15
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            346.5294424172674,
+            158.5875594437853
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.1812566905525158"
+        },
+        {
+          "ordinal": 15,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "121",
+              "alpha": 0.16061418200019895,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.16061418200019895",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 16
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            345.6344998032557,
+            158.39771833152457
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.16061418200019895"
+        },
+        {
+          "ordinal": 16,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "129",
+              "alpha": 0.1423225558237744,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.1423225558237744",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 17
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            344.33268329101,
+            159.08512092976898
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.1423225558237744"
+        },
+        {
+          "ordinal": 17,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "137",
+              "alpha": 0.1261140806120489,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.1261140806120489",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 18
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            344.1980228944994,
+            159.34526964309728
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.1261140806120489"
+        },
+        {
+          "ordinal": 18,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "145",
+              "alpha": 0.11175151567904561,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.11175151567904561",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 19
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            344.0425066681718,
+            159.60602265858356
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.11175151567904561"
+        },
+        {
+          "ordinal": 19,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "153",
+              "alpha": 0.09902463861256457,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.09902463861256457",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 20
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            344.22132537228043,
+            159.43074236232712
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.09902463861256457"
+        },
+        {
+          "ordinal": 20,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "161",
+              "alpha": 0.08774716828460608,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.08774716828460608",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 21
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            344.35104393762947,
+            159.5055914320968
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.08774716828460608"
+        },
+        {
+          "ordinal": 21,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "169",
+              "alpha": 0.07775403828628598,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.07775403828628598",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 22
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            344.0187895391137,
+            159.65074852843222
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.07775403828628598"
+        },
+        {
+          "ordinal": 22,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "177",
+              "alpha": 0.06889898087897443,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.06889898087897443",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 23
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.8959059084724,
+            159.77509127557764
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.06889898087897443"
+        },
+        {
+          "ordinal": 23,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "185",
+              "alpha": 0.06105238609836369,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.06105238609836369",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 24
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            344.09152985901596,
+            160.02569994601794
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.06105238609836369"
+        },
+        {
+          "ordinal": 24,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "193",
+              "alpha": 0.054099404675536256,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.054099404675536256",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 25
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.7641426290489,
+            159.83913347854823
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.054099404675536256"
+        },
+        {
+          "ordinal": 25,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "201",
+              "alpha": 0.04793826700781276,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.04793826700781276",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 26
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.7370692618446,
+            159.8155924448355
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.04793826700781276"
+        },
+        {
+          "ordinal": 26,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "209",
+              "alpha": 0.042478793574442786,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.042478793574442786",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 27
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.73926168736193,
+            159.73413652051627
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.042478793574442786"
+        },
+        {
+          "ordinal": 27,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "217",
+              "alpha": 0.03764107499434722,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.03764107499434722",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 28
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.7497061294723,
+            159.75504821746264
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.03764107499434722"
+        },
+        {
+          "ordinal": 28,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "225",
+              "alpha": 0.0333543024061426,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.0333543024061426",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 29
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.8005504388137,
+            159.7373860211512
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.0333543024061426"
+        },
+        {
+          "ordinal": 29,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "233",
+              "alpha": 0.0295557310509193,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.0295557310509193",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 30
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.82619063230044,
+            159.73718533627894
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.0295557310509193"
+        },
+        {
+          "ordinal": 30,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "241",
+              "alpha": 0.026189761887911705,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.026189761887911705",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 31
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.8349510736868,
+            159.74669166963767
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.026189761887911705"
+        },
+        {
+          "ordinal": 31,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "249",
+              "alpha": 0.02320712780082556,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.02320712780082556",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 32
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.8273054149176,
+            159.76350259038009
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.02320712780082556"
+        },
+        {
+          "ordinal": 32,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "257",
+              "alpha": 0.02056417248346333,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.02056417248346333",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 33
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.83237738357803,
+            159.77292220152682
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.02056417248346333"
+        },
+        {
+          "ordinal": 33,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "265",
+              "alpha": 0.01822221144981961,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.01822221144981961",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 34
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.84834120743744,
+            159.77703049689197
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.01822221144981961"
+        },
+        {
+          "ordinal": 34,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "273",
+              "alpha": 0.01614696581586027,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.01614696581586027",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 35
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.8638905877784,
+            159.78071563292352
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.01614696581586027"
+        },
+        {
+          "ordinal": 35,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "281",
+              "alpha": 0.014308060565345991,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.014308060565345991",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 36
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.88214142034815,
+            159.78330523243986
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.014308060565345991"
+        },
+        {
+          "ordinal": 36,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "289",
+              "alpha": 0.012678579955902509,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.012678579955902509",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 37
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.8715392409088,
+            159.94591546005583
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.012678579955902509"
+        },
+        {
+          "ordinal": 37,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "297",
+              "alpha": 0.01123467355789221,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.01123467355789221",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 38
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.89749546595283,
+            159.9369143560093
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.01123467355789221"
+        },
+        {
+          "ordinal": 38,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "305",
+              "alpha": 0.009955207159745181,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.009955207159745181",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 39
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.88202136577036,
+            159.93324234141986
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.009955207159745181"
+        },
+        {
+          "ordinal": 39,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "313",
+              "alpha": 0.008821453430110655,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.008821453430110655",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 40
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.8781548209712,
+            159.92887429809622
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.008821453430110655"
+        },
+        {
+          "ordinal": 40,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "321",
+              "alpha": 0.007816817809103524,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.007816817809103524",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 41
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.8853409247292,
+            159.7993185802838
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.007816817809103524"
+        },
+        {
+          "ordinal": 41,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "329",
+              "alpha": 0.006926595616562877,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.006926595616562877",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 42
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.86979373547064,
+            159.8021182666263
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.006926595616562877"
+        },
+        {
+          "ordinal": 42,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "337",
+              "alpha": 0.006137756822157585,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.006137756822157585",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 43
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.86231836435763,
+            159.80540271284846
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.006137756822157585"
+        },
+        {
+          "ordinal": 43,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "345",
+              "alpha": 0.005438755327055696,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.005438755327055696",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 44
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.8571657350106,
+            159.8085952277501
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.005438755327055696"
+        },
+        {
+          "ordinal": 44,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "353",
+              "alpha": 0.0048193599656459725,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.0048193599656459725",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 45
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.87898128740466,
+            159.81133606227377
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.0048193599656459725"
+        },
+        {
+          "ordinal": 45,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "361",
+              "alpha": 0.004270504753712614,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.004270504753712614",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 46
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.8933112100046,
+            159.81046655546714
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.004270504753712614"
+        },
+        {
+          "ordinal": 46,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "369",
+              "alpha": 0.0037841561911712415,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.0037841561911712415",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 47
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.93084303203847,
+            159.81700510561936
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.0037841561911712415"
+        },
+        {
+          "ordinal": 47,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "377",
+              "alpha": 0.003353195677098946,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.003353195677098946",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 48
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.95032815803205,
+            159.8229371745953
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.003353195677098946"
+        },
+        {
+          "ordinal": 48,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "385",
+              "alpha": 0.0029713153159872433,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.0029713153159872433",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 49
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.96265769441504,
+            159.82560928911397
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.0029713153159872433"
+        },
+        {
+          "ordinal": 49,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "393",
+              "alpha": 0.002632925590151849,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.002632925590151849",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 50
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            343.9846760176476,
+            159.87640929821998
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.002632925590151849"
+        },
+        {
+          "ordinal": 50,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "401",
+              "alpha": 0.002333073546916091,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.002333073546916091",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 51
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            344.0034024591784,
+            159.8773387169179
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.002333073546916091"
+        },
+        {
+          "ordinal": 51,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "409",
+              "alpha": 0.002067370303087715,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.002067370303087715",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 52
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            344.02684603290464,
+            159.84657536507387
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.002067370303087715"
+        },
+        {
+          "ordinal": 52,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "417",
+              "alpha": 0.0018319268056244888,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.0018319268056244888",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 53
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            344.030443762766,
+            159.84782363679582
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.0018319268056244888"
+        },
+        {
+          "ordinal": 53,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "425",
+              "alpha": 0.0016232969082284221,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.0016232969082284221",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 54
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            344.03576482107434,
+            159.8480727578546
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.0016232969082284221"
+        },
+        {
+          "ordinal": 54,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "433",
+              "alpha": 0.0014384269306904282,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.0014384269306904282",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 55
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            344.050341896774,
+            159.8263507166167
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.0014384269306904282"
+        },
+        {
+          "ordinal": 55,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "441",
+              "alpha": 0.001274610962694162,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.001274610962694162",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 56
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            344.053665079355,
+            159.82822620112722
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.001274610962694162"
+        },
+        {
+          "ordinal": 56,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "449",
+              "alpha": 0.0011294512578684367,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.0011294512578684367",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 57
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            344.0651393133734,
+            159.82957715856256
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.0011294512578684367"
+        },
+        {
+          "ordinal": 57,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "457",
+              "alpha": 0.0010008231383827218,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.0010008231383827218",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 58
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            344.06877375987295,
+            159.82950578679836
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout, alpha 0.0010008231383827218"
+        },
+        {
+          "ordinal": 58,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "458",
+              "alpha": 0.000985810791306981,
+              "done": true
+            },
+            "summary": "relayout settled",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 59
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            344.07226135489475,
+            159.82240370149833
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "relayout settled"
+        }
+      ],
+      "keys": [],
+      "errors": [],
+      "disposed": true,
+      "children": 0,
+      "framesAtDispose": 59,
+      "framesAfterDispose": 59
+    },
+    {
+      "id": "7201",
+      "sourceNodes": 1000,
+      "sourceEdges": 1000,
+      "arena": 402653184,
+      "publications": [
+        {
+          "ordinal": 0,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "1",
+              "alpha": 0.985,
+              "done": false
+            },
+            "summary": "Graph, 1000 nodes, 1000 edges, 0 selected",
+            "outcome": {
+              "stateChanged": false,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 1
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            562.094485201343,
+            159.986306312056
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": false,
+          "live": "Graph, 1000 nodes, 1000 edges, 0 selected"
+        },
+        {
+          "ordinal": 1,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "9",
+              "alpha": 0.8728227840194346,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.8728227840194346",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 2
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            502.97257173699893,
+            159.97490895304472
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": true,
+          "live": "relayout, alpha 0.8728227840194346"
+        },
+        {
+          "ordinal": 2,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "17",
+              "alpha": 0.773420926196382,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.773420926196382",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 3
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            450.59053572125896,
+            159.89370069473085
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": true,
+          "live": "relayout, alpha 0.773420926196382"
+        },
+        {
+          "ordinal": 3,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "25",
+              "alpha": 0.6853394984991023,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.6853394984991023",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 4
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            405.4479142233399,
+            158.49016428643134
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": true,
+          "live": "relayout, alpha 0.6853394984991023"
+        },
+        {
+          "ordinal": 4,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "33",
+              "alpha": 0.607289268099969,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.607289268099969",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 5
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            379.70467190508197,
+            158.10699718991935
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": true,
+          "live": "relayout, alpha 0.607289268099969"
+        },
+        {
+          "ordinal": 5,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "41",
+              "alpha": 0.538127827094558,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.538127827094558",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 6
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            366.20360405367126,
+            157.88188242035855
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": true,
+          "live": "relayout, alpha 0.538127827094558"
+        },
+        {
+          "ordinal": 6,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "49",
+              "alpha": 0.47684287127208225,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.47684287127208225",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 7
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            359.44400887119053,
+            157.87285321428942
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": true,
+          "live": "relayout, alpha 0.47684287127208225"
+        },
+        {
+          "ordinal": 7,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "57",
+              "alpha": 0.42253738319139056,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.42253738319139056",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 8
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            355.77584948291064,
+            157.91484693375287
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": true,
+          "live": "relayout, alpha 0.42253738319139056"
+        },
+        {
+          "ordinal": 8,
+          "kind": "render",
+          "snapshot": {
+            "focus": [],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "65",
+              "alpha": 0.3744165026897423,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.3744165026897423",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 9
+          },
+          "state": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "center": [
+            352.91345030357184,
+            157.8036079192422
+          ],
+          "magenta": 0,
+          "near": 0,
+          "active": true,
+          "live": "relayout, alpha 0.3744165026897423"
+        },
+        {
+          "ordinal": 9,
+          "kind": "focus",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "65",
+              "alpha": 0.3744165026897423,
+              "done": false
+            },
+            "summary": "Node , 2 relationships, not selected, 1 of 1000",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 9
+          },
+          "state": [
+            0,
+            1,
+            0,
+            0
+          ],
+          "center": [
+            352.91345030357184,
+            157.8036079192422
+          ],
+          "magenta": 61,
+          "near": 61,
+          "active": true,
+          "live": "Node , 2 relationships, not selected, 1 of 1000"
+        },
+        {
+          "ordinal": 10,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "73",
+              "alpha": 0.3317758926502345,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.3317758926502345",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 10
+          },
+          "state": [
+            0,
+            1,
+            0,
+            0
+          ],
+          "center": [
+            350.41214030707494,
+            158.09774391616418
+          ],
+          "magenta": 59,
+          "near": 59,
+          "active": true,
+          "live": "relayout, alpha 0.3317758926502345"
+        },
+        {
+          "ordinal": 11,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "81",
+              "alpha": 0.2939914297396048,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.2939914297396048",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 11
+          },
+          "state": [
+            0,
+            1,
+            0,
+            0
+          ],
+          "center": [
+            348.81720248255,
+            158.28482222925425
+          ],
+          "magenta": 59,
+          "near": 59,
+          "active": true,
+          "live": "relayout, alpha 0.2939914297396048"
+        },
+        {
+          "ordinal": 12,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "89",
+              "alpha": 0.2605100692214983,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.2605100692214983",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 12
+          },
+          "state": [
+            0,
+            1,
+            0,
+            0
+          ],
+          "center": [
+            347.8679564084184,
+            158.5117651150632
+          ],
+          "magenta": 64,
+          "near": 64,
+          "active": true,
+          "live": "relayout, alpha 0.2605100692214983"
+        },
+        {
+          "ordinal": 13,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "97",
+              "alpha": 0.23084175013502917,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.23084175013502917",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 13
+          },
+          "state": [
+            0,
+            1,
+            0,
+            0
+          ],
+          "center": [
+            347.30832178191133,
+            158.59930429160454
+          ],
+          "magenta": 59,
+          "near": 59,
+          "active": true,
+          "live": "relayout, alpha 0.23084175013502917"
+        },
+        {
+          "ordinal": 14,
+          "kind": "select",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "97",
+              "alpha": 0.23084175013502917,
+              "done": false
+            },
+            "summary": "Node , 2 relationships, selected, 1 of 1000",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 13
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            347.30832178191133,
+            158.59930429160454
+          ],
+          "magenta": 59,
+          "near": 59,
+          "active": true,
+          "live": "Node , 2 relationships, selected, 1 of 1000"
+        },
+        {
+          "ordinal": 15,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "105",
+              "alpha": 0.20455222235611656,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.20455222235611656",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 14
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            346.9065164110035,
+            158.66206791124742
+          ],
+          "magenta": 61,
+          "near": 61,
+          "active": true,
+          "live": "relayout, alpha 0.20455222235611656"
+        },
+        {
+          "ordinal": 16,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "113",
+              "alpha": 0.1812566905525158,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.1812566905525158",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 15
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            346.5294424172674,
+            158.5875594437853
+          ],
+          "magenta": 63,
+          "near": 63,
+          "active": true,
+          "live": "relayout, alpha 0.1812566905525158"
+        },
+        {
+          "ordinal": 17,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "121",
+              "alpha": 0.16061418200019895,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.16061418200019895",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 16
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            345.6344998032557,
+            158.39771833152457
+          ],
+          "magenta": 62,
+          "near": 62,
+          "active": true,
+          "live": "relayout, alpha 0.16061418200019895"
+        },
+        {
+          "ordinal": 18,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "129",
+              "alpha": 0.1423225558237744,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.1423225558237744",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 17
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            344.33268329101,
+            159.08512092976898
+          ],
+          "magenta": 65,
+          "near": 65,
+          "active": true,
+          "live": "relayout, alpha 0.1423225558237744"
+        },
+        {
+          "ordinal": 19,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "137",
+              "alpha": 0.1261140806120489,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.1261140806120489",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 18
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            344.1980228944994,
+            159.34526964309728
+          ],
+          "magenta": 65,
+          "near": 65,
+          "active": true,
+          "live": "relayout, alpha 0.1261140806120489"
+        },
+        {
+          "ordinal": 20,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "145",
+              "alpha": 0.11175151567904561,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.11175151567904561",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 19
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            344.0425066681718,
+            159.60602265858356
+          ],
+          "magenta": 62,
+          "near": 62,
+          "active": true,
+          "live": "relayout, alpha 0.11175151567904561"
+        },
+        {
+          "ordinal": 21,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "153",
+              "alpha": 0.09902463861256457,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.09902463861256457",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 20
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            344.22132537228043,
+            159.43074236232712
+          ],
+          "magenta": 66,
+          "near": 66,
+          "active": true,
+          "live": "relayout, alpha 0.09902463861256457"
+        },
+        {
+          "ordinal": 22,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "161",
+              "alpha": 0.08774716828460608,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.08774716828460608",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 21
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            344.35104393762947,
+            159.5055914320968
+          ],
+          "magenta": 70,
+          "near": 70,
+          "active": true,
+          "live": "relayout, alpha 0.08774716828460608"
+        },
+        {
+          "ordinal": 23,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "169",
+              "alpha": 0.07775403828628598,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.07775403828628598",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 22
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            344.0187895391137,
+            159.65074852843222
+          ],
+          "magenta": 63,
+          "near": 63,
+          "active": true,
+          "live": "relayout, alpha 0.07775403828628598"
+        },
+        {
+          "ordinal": 24,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "177",
+              "alpha": 0.06889898087897443,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.06889898087897443",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 23
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.8959059084724,
+            159.77509127557764
+          ],
+          "magenta": 61,
+          "near": 61,
+          "active": true,
+          "live": "relayout, alpha 0.06889898087897443"
+        },
+        {
+          "ordinal": 25,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "185",
+              "alpha": 0.06105238609836369,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.06105238609836369",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 24
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            344.09152985901596,
+            160.02569994601794
+          ],
+          "magenta": 57,
+          "near": 57,
+          "active": true,
+          "live": "relayout, alpha 0.06105238609836369"
+        },
+        {
+          "ordinal": 26,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "193",
+              "alpha": 0.054099404675536256,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.054099404675536256",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 25
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.7641426290489,
+            159.83913347854823
+          ],
+          "magenta": 64,
+          "near": 64,
+          "active": true,
+          "live": "relayout, alpha 0.054099404675536256"
+        },
+        {
+          "ordinal": 27,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "201",
+              "alpha": 0.04793826700781276,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.04793826700781276",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 26
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.7370692618446,
+            159.8155924448355
+          ],
+          "magenta": 64,
+          "near": 64,
+          "active": true,
+          "live": "relayout, alpha 0.04793826700781276"
+        },
+        {
+          "ordinal": 28,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "209",
+              "alpha": 0.042478793574442786,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.042478793574442786",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 27
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.73926168736193,
+            159.73413652051627
+          ],
+          "magenta": 61,
+          "near": 61,
+          "active": true,
+          "live": "relayout, alpha 0.042478793574442786"
+        },
+        {
+          "ordinal": 29,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "217",
+              "alpha": 0.03764107499434722,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.03764107499434722",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 28
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.7497061294723,
+            159.75504821746264
+          ],
+          "magenta": 61,
+          "near": 61,
+          "active": true,
+          "live": "relayout, alpha 0.03764107499434722"
+        },
+        {
+          "ordinal": 30,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "225",
+              "alpha": 0.0333543024061426,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.0333543024061426",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 29
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.8005504388137,
+            159.7373860211512
+          ],
+          "magenta": 62,
+          "near": 62,
+          "active": true,
+          "live": "relayout, alpha 0.0333543024061426"
+        },
+        {
+          "ordinal": 31,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "233",
+              "alpha": 0.0295557310509193,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.0295557310509193",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 30
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.82619063230044,
+            159.73718533627894
+          ],
+          "magenta": 62,
+          "near": 62,
+          "active": true,
+          "live": "relayout, alpha 0.0295557310509193"
+        },
+        {
+          "ordinal": 32,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "241",
+              "alpha": 0.026189761887911705,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.026189761887911705",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 31
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.8349510736868,
+            159.74669166963767
+          ],
+          "magenta": 62,
+          "near": 62,
+          "active": true,
+          "live": "relayout, alpha 0.026189761887911705"
+        },
+        {
+          "ordinal": 33,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "249",
+              "alpha": 0.02320712780082556,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.02320712780082556",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 32
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.8273054149176,
+            159.76350259038009
+          ],
+          "magenta": 62,
+          "near": 62,
+          "active": true,
+          "live": "relayout, alpha 0.02320712780082556"
+        },
+        {
+          "ordinal": 34,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "257",
+              "alpha": 0.02056417248346333,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.02056417248346333",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 33
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.83237738357803,
+            159.77292220152682
+          ],
+          "magenta": 62,
+          "near": 62,
+          "active": true,
+          "live": "relayout, alpha 0.02056417248346333"
+        },
+        {
+          "ordinal": 35,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "265",
+              "alpha": 0.01822221144981961,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.01822221144981961",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 34
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.84834120743744,
+            159.77703049689197
+          ],
+          "magenta": 61,
+          "near": 61,
+          "active": true,
+          "live": "relayout, alpha 0.01822221144981961"
+        },
+        {
+          "ordinal": 36,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "273",
+              "alpha": 0.01614696581586027,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.01614696581586027",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 35
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.8638905877784,
+            159.78071563292352
+          ],
+          "magenta": 61,
+          "near": 61,
+          "active": true,
+          "live": "relayout, alpha 0.01614696581586027"
+        },
+        {
+          "ordinal": 37,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "281",
+              "alpha": 0.014308060565345991,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.014308060565345991",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 36
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.88214142034815,
+            159.78330523243986
+          ],
+          "magenta": 60,
+          "near": 60,
+          "active": true,
+          "live": "relayout, alpha 0.014308060565345991"
+        },
+        {
+          "ordinal": 38,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "289",
+              "alpha": 0.012678579955902509,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.012678579955902509",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 37
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.8715392409088,
+            159.94591546005583
+          ],
+          "magenta": 61,
+          "near": 61,
+          "active": true,
+          "live": "relayout, alpha 0.012678579955902509"
+        },
+        {
+          "ordinal": 39,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "297",
+              "alpha": 0.01123467355789221,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.01123467355789221",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 38
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.89749546595283,
+            159.9369143560093
+          ],
+          "magenta": 61,
+          "near": 61,
+          "active": true,
+          "live": "relayout, alpha 0.01123467355789221"
+        },
+        {
+          "ordinal": 40,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "305",
+              "alpha": 0.009955207159745181,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.009955207159745181",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 39
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.88202136577036,
+            159.93324234141986
+          ],
+          "magenta": 61,
+          "near": 61,
+          "active": true,
+          "live": "relayout, alpha 0.009955207159745181"
+        },
+        {
+          "ordinal": 41,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "313",
+              "alpha": 0.008821453430110655,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.008821453430110655",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 40
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.8781548209712,
+            159.92887429809622
+          ],
+          "magenta": 61,
+          "near": 61,
+          "active": true,
+          "live": "relayout, alpha 0.008821453430110655"
+        },
+        {
+          "ordinal": 42,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "321",
+              "alpha": 0.007816817809103524,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.007816817809103524",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 41
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.8853409247292,
+            159.7993185802838
+          ],
+          "magenta": 60,
+          "near": 60,
+          "active": true,
+          "live": "relayout, alpha 0.007816817809103524"
+        },
+        {
+          "ordinal": 43,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "329",
+              "alpha": 0.006926595616562877,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.006926595616562877",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 42
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.86979373547064,
+            159.8021182666263
+          ],
+          "magenta": 60,
+          "near": 60,
+          "active": true,
+          "live": "relayout, alpha 0.006926595616562877"
+        },
+        {
+          "ordinal": 44,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "337",
+              "alpha": 0.006137756822157585,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.006137756822157585",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 43
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.86231836435763,
+            159.80540271284846
+          ],
+          "magenta": 60,
+          "near": 60,
+          "active": true,
+          "live": "relayout, alpha 0.006137756822157585"
+        },
+        {
+          "ordinal": 45,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "345",
+              "alpha": 0.005438755327055696,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.005438755327055696",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 44
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.8571657350106,
+            159.8085952277501
+          ],
+          "magenta": 60,
+          "near": 60,
+          "active": true,
+          "live": "relayout, alpha 0.005438755327055696"
+        },
+        {
+          "ordinal": 46,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "353",
+              "alpha": 0.0048193599656459725,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.0048193599656459725",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 45
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.87898128740466,
+            159.81133606227377
+          ],
+          "magenta": 60,
+          "near": 60,
+          "active": true,
+          "live": "relayout, alpha 0.0048193599656459725"
+        },
+        {
+          "ordinal": 47,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "361",
+              "alpha": 0.004270504753712614,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.004270504753712614",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 46
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.8933112100046,
+            159.81046655546714
+          ],
+          "magenta": 60,
+          "near": 60,
+          "active": true,
+          "live": "relayout, alpha 0.004270504753712614"
+        },
+        {
+          "ordinal": 48,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "369",
+              "alpha": 0.0037841561911712415,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.0037841561911712415",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 47
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.93084303203847,
+            159.81700510561936
+          ],
+          "magenta": 61,
+          "near": 61,
+          "active": true,
+          "live": "relayout, alpha 0.0037841561911712415"
+        },
+        {
+          "ordinal": 49,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "377",
+              "alpha": 0.003353195677098946,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.003353195677098946",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 48
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.95032815803205,
+            159.8229371745953
+          ],
+          "magenta": 61,
+          "near": 61,
+          "active": true,
+          "live": "relayout, alpha 0.003353195677098946"
+        },
+        {
+          "ordinal": 50,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "385",
+              "alpha": 0.0029713153159872433,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.0029713153159872433",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 49
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.96265769441504,
+            159.82560928911397
+          ],
+          "magenta": 61,
+          "near": 61,
+          "active": true,
+          "live": "relayout, alpha 0.0029713153159872433"
+        },
+        {
+          "ordinal": 51,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "393",
+              "alpha": 0.002632925590151849,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.002632925590151849",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 50
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            343.9846760176476,
+            159.87640929821998
+          ],
+          "magenta": 58,
+          "near": 58,
+          "active": true,
+          "live": "relayout, alpha 0.002632925590151849"
+        },
+        {
+          "ordinal": 52,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "401",
+              "alpha": 0.002333073546916091,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.002333073546916091",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 51
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            344.0034024591784,
+            159.8773387169179
+          ],
+          "magenta": 58,
+          "near": 58,
+          "active": true,
+          "live": "relayout, alpha 0.002333073546916091"
+        },
+        {
+          "ordinal": 53,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "409",
+              "alpha": 0.002067370303087715,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.002067370303087715",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 52
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            344.02684603290464,
+            159.84657536507387
+          ],
+          "magenta": 58,
+          "near": 58,
+          "active": true,
+          "live": "relayout, alpha 0.002067370303087715"
+        },
+        {
+          "ordinal": 54,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "417",
+              "alpha": 0.0018319268056244888,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.0018319268056244888",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 53
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            344.030443762766,
+            159.84782363679582
+          ],
+          "magenta": 58,
+          "near": 58,
+          "active": true,
+          "live": "relayout, alpha 0.0018319268056244888"
+        },
+        {
+          "ordinal": 55,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "425",
+              "alpha": 0.0016232969082284221,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.0016232969082284221",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 54
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            344.03576482107434,
+            159.8480727578546
+          ],
+          "magenta": 59,
+          "near": 59,
+          "active": true,
+          "live": "relayout, alpha 0.0016232969082284221"
+        },
+        {
+          "ordinal": 56,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "433",
+              "alpha": 0.0014384269306904282,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.0014384269306904282",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 55
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            344.050341896774,
+            159.8263507166167
+          ],
+          "magenta": 59,
+          "near": 59,
+          "active": true,
+          "live": "relayout, alpha 0.0014384269306904282"
+        },
+        {
+          "ordinal": 57,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "441",
+              "alpha": 0.001274610962694162,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.001274610962694162",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 56
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            344.053665079355,
+            159.82822620112722
+          ],
+          "magenta": 59,
+          "near": 59,
+          "active": true,
+          "live": "relayout, alpha 0.001274610962694162"
+        },
+        {
+          "ordinal": 58,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "449",
+              "alpha": 0.0011294512578684367,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.0011294512578684367",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 57
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            344.0651393133734,
+            159.82957715856256
+          ],
+          "magenta": 59,
+          "near": 59,
+          "active": true,
+          "live": "relayout, alpha 0.0011294512578684367"
+        },
+        {
+          "ordinal": 59,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "457",
+              "alpha": 0.0010008231383827218,
+              "done": false
+            },
+            "summary": "relayout, alpha 0.0010008231383827218",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 58
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            344.06877375987295,
+            159.82950578679836
+          ],
+          "magenta": 59,
+          "near": 59,
+          "active": true,
+          "live": "relayout, alpha 0.0010008231383827218"
+        },
+        {
+          "ordinal": 60,
+          "kind": "render",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "458",
+              "alpha": 0.000985810791306981,
+              "done": true
+            },
+            "summary": "relayout settled",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 59
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            344.07226135489475,
+            159.82240370149833
+          ],
+          "magenta": 59,
+          "near": 59,
+          "active": true,
+          "live": "relayout settled"
+        },
+        {
+          "ordinal": 61,
+          "kind": "select",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "458",
+              "alpha": 0.000985810791306981,
+              "done": true
+            },
+            "summary": "Node , 2 relationships, not selected, 1 of 1000",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 59
+          },
+          "state": [
+            0,
+            1,
+            0,
+            0
+          ],
+          "center": [
+            344.07226135489475,
+            159.82240370149833
+          ],
+          "magenta": 59,
+          "near": 59,
+          "active": true,
+          "live": "Node , 2 relationships, not selected, 1 of 1000"
+        },
+        {
+          "ordinal": 62,
+          "kind": "select",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [
+                {
+                  "kind": 0,
+                  "uuid": "01000000-0000-0000-0000-000000000000"
+                }
+              ],
+              "indices": {
+                "0": "0"
+              },
+              "layerOffsets": {
+                "0": "0",
+                "1": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "458",
+              "alpha": 0.000985810791306981,
+              "done": true
+            },
+            "summary": "Node , 2 relationships, selected, 1 of 1000",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 1,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": true
+            },
+            "revision": 59
+          },
+          "state": [
+            5,
+            1,
+            2,
+            0
+          ],
+          "center": [
+            344.07226135489475,
+            159.82240370149833
+          ],
+          "magenta": 59,
+          "near": 59,
+          "active": true,
+          "live": "Node , 2 relationships, selected, 1 of 1000"
+        },
+        {
+          "ordinal": 63,
+          "kind": "select",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "458",
+              "alpha": 0.000985810791306981,
+              "done": true
+            },
+            "summary": "Node , 2 relationships, not selected, 1 of 1000",
+            "outcome": {
+              "stateChanged": true,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 59
+          },
+          "state": [
+            0,
+            1,
+            0,
+            0
+          ],
+          "center": [
+            344.07226135489475,
+            159.82240370149833
+          ],
+          "magenta": 59,
+          "near": 59,
+          "active": true,
+          "live": "Node , 2 relationships, not selected, 1 of 1000"
+        },
+        {
+          "ordinal": 64,
+          "kind": "select",
+          "snapshot": {
+            "focus": [
+              {
+                "kind": 0,
+                "uuid": "01000000-0000-0000-0000-000000000000"
+              }
+            ],
+            "selection": {
+              "refs": [],
+              "indices": {},
+              "layerOffsets": {
+                "0": "0"
+              },
+              "layers": {},
+              "rows": {},
+              "resultIds": []
+            },
+            "relayout": {
+              "steps": "458",
+              "alpha": 0.000985810791306981,
+              "done": true
+            },
+            "summary": "Node , 2 relationships, not selected, 1 of 1000",
+            "outcome": {
+              "stateChanged": false,
+              "selected": 0,
+              "disclosurePresent": false
+            },
+            "clearAction": {
+              "applicable": false
+            },
+            "revision": 59
+          },
+          "state": [
+            0,
+            1,
+            0,
+            0
+          ],
+          "center": [
+            344.07226135489475,
+            159.82240370149833
+          ],
+          "magenta": 59,
+          "near": 59,
+          "active": true,
+          "live": "Node , 2 relationships, not selected, 1 of 1000"
+        }
+      ],
+      "keys": [
+        {
+          "key": "ArrowRight",
+          "ctrl": false,
+          "trusted": true,
+          "prevented": true,
+          "commands": 11,
+          "operation": 5,
+          "instanceId": "7201",
+          "ordinal": 9
+        },
+        {
+          "key": "Enter",
+          "ctrl": false,
+          "trusted": true,
+          "prevented": true,
+          "commands": 16,
+          "operation": 7,
+          "instanceId": "7201",
+          "ordinal": 14
+        },
+        {
+          "key": "Control",
+          "ctrl": true,
+          "trusted": true,
+          "prevented": false,
+          "commands": 62,
+          "operation": 15,
+          "instanceId": "7201",
+          "ordinal": 61
+        },
+        {
+          "key": "Enter",
+          "ctrl": true,
+          "trusted": true,
+          "prevented": true,
+          "commands": 63,
+          "operation": 7,
+          "instanceId": "7201",
+          "ordinal": 61
+        },
+        {
+          "key": "Enter",
+          "ctrl": false,
+          "trusted": true,
+          "prevented": true,
+          "commands": 64,
+          "operation": 7,
+          "instanceId": "7201",
+          "ordinal": 62
+        },
+        {
+          "key": "Escape",
+          "ctrl": false,
+          "trusted": true,
+          "prevented": true,
+          "commands": 65,
+          "operation": 4,
+          "instanceId": "7201",
+          "ordinal": 63
+        },
+        {
+          "key": "Escape",
+          "ctrl": false,
+          "trusted": true,
+          "prevented": false,
+          "commands": 66,
+          "operation": 4,
+          "instanceId": "7201",
+          "ordinal": 64
+        }
+      ],
+      "errors": [],
+      "disposed": true,
+      "children": 0,
+      "framesAtDispose": 59,
+      "framesAfterDispose": 59
+    }
+  ],
+  "held": 0,
+  "focusToken": "#ff00ff",
+  "navigation": "Playwright Tab"
+}

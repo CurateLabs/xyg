@@ -1,0 +1,381 @@
+{
+  "schema": "xyg.filter-tier-c-linked-functional/v1",
+  "wholeIssueComplete": false,
+  "qualification": "bounded functional evidence only; no massive performance or competitor win",
+  "environment": "environment.json",
+  "artifactBindings": "artifacts.json",
+  "sourceBindings": "current-bindings.json",
+  "retainedFiles": "retained-files.json",
+  "commonEnvironment": {
+    "PATH": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.cargo/bin:$PATH",
+    "CARGO_BUILD_JOBS": "2",
+    "TMPDIR": "/var/tmp/xyg-f112",
+    "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-a6fec95d/target/release/libxyg_core.so",
+    "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+  },
+  "checks": [
+    {
+      "name": "native-build",
+      "command": "cargo build --release",
+      "exitCode": 0,
+      "result": "release native core built",
+      "log": "native-packet-final.log.gz",
+      "rawLogSha256": "6d1da1c4e4e5f7efce1de932e142c879ceccc006a618c7d6844cac0c007fd259"
+    },
+    {
+      "name": "engine",
+      "command": "cargo test -p xyg-engine filter_tier_c --lib",
+      "exitCode": 0,
+      "result": "7 passed; 1848 unrelated tests filtered",
+      "log": "engine-packet-final.log.gz",
+      "rawLogSha256": "a8977643075c0c41b165753ed6fb024ae79fbb7aa64845855c7a791e51a7ec07"
+    },
+    {
+      "name": "density-fixture",
+      "command": "uv run python scripts/gen_filter_density_fixture.py --check",
+      "exitCode": 0,
+      "result": "57 complete packets with independent count/membership/paint/hash oracles",
+      "log": "fixture-packet-final.log.gz",
+      "rawLogSha256": "7a566bc96e990298a5078ead5b96d5d098931ca45ad8751770f471716e94a4a8"
+    },
+    {
+      "name": "wasm-build",
+      "command": "npm run build:wasm",
+      "exitCode": 0,
+      "result": "actual wasm32 release build and unchanged cap admission passed",
+      "log": "wasm-packet-final.log.gz",
+      "rawLogSha256": "c47ad4c9c167c3e0d925aee3f1dbb35f291626ba717d0cbf62ed7516364ed755"
+    },
+    {
+      "name": "wasm-tests",
+      "command": "cargo test -p xyg-wasm --lib",
+      "exitCode": 0,
+      "result": "76 passed",
+      "log": "wasm-tests-packet-final.log.gz",
+      "rawLogSha256": "6c03f4bd8e6019c46010d7fdda4fea1da317e1d8196c9ee003f70f31f3e76beb"
+    },
+    {
+      "name": "client-build",
+      "command": "node js/build.mjs",
+      "exitCode": 0,
+      "result": "typecheck/shader/bundle build passed; artifacts match those used by final browser run",
+      "log": "client-delivery-final.log.gz",
+      "rawLogSha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    {
+      "name": "python-and-abi",
+      "command": "uv run pytest -q tests/test_filter_tier_c.py tests/test_filter_tier_c_density.py tests/test_channel.py tests/test_selection_rows.py tests/test_canonical_drill_interaction.py tests/test_capability_registry.py tests/test_public_api.py tests/test_*_abi.py tests/test_abi_parity.py",
+      "exitCode": 0,
+      "result": "484 passed; 2 expected xfailed",
+      "log": "python-packet-final.log.gz",
+      "rawLogSha256": "72f34459b91562b07f08dbda651532c87dd4047211eb5d6fa4922dd57ace060a"
+    },
+    {
+      "name": "benchmark-oracles",
+      "command": "uv run --group codspeed pytest -q benchmarks/test_codspeed_selection.py -k filter_tier_c",
+      "exitCode": 0,
+      "result": "12 passed; 4 deselected; assertions only, no CodSpeed timings",
+      "log": "bench-packet-final.log.gz",
+      "rawLogSha256": "3c5ab58a5e24306bc62d420791b86a4bdad38fdda3849fdcba810ad3289152e7"
+    },
+    {
+      "name": "node-normal",
+      "command": "npm test --prefix packages/xy-node",
+      "exitCode": 0,
+      "result": "1074 passed; 2 existing skipped; 0 failed; includes 300 new linked mutations and 500 predecessor mutations",
+      "log": "node-packet-final.log.gz",
+      "rawLogSha256": "6f3d509b3fee8534c348095e639d7d8a563f3c6b270d99c51a38185f4d7ce323"
+    },
+    {
+      "name": "browser",
+      "command": "node scripts/filter_tier_c_conformance.mjs --chromium \"$XYG_CHROMIUM\" --capture /var/tmp/xyg-f112/delivery-capture.png",
+      "exitCode": 0,
+      "result": "PASS; 44 predecessor and 56 linked Worker packets; five public composed painted views; 102 oracle groups; 400 exact texture texels; 19 exact data-coordinate canvas probes",
+      "log": "browser-capture-final.log.gz",
+      "rawLogSha256": "d0761a15cbcaec93c9c0826a74afa2099fe63f36750cbfc8cf1f94e5067ad5d2"
+    },
+    {
+      "name": "foundation",
+      "command": "node scripts/wasm_foundation_smoke.mjs",
+      "exitCode": 0,
+      "result": "PASS complete existing foundation command; 16 embedded Node tests, linked-density public proof and retained graph/temporal journeys",
+      "log": "foundation-packet-final.log.gz",
+      "rawLogSha256": "544222dc3ce37cfa50b32b609ea60ccbcd53b5e1d6d3e7c8a85cd3a02d7d87b7"
+    },
+    {
+      "name": "provenance-and-ownership",
+      "command": "uv run pytest -q tests/test_graphforge_contract_corpus.py tests/test_cross_host_abi_transition.py tests/test_graph_notebook_report.py tests/test_verify_ownership.py",
+      "exitCode": 0,
+      "result": "109 passed; current source, all historical bindings and actual Git autocrlf/CRLF checkout",
+      "log": "historical-bindings-final.log.gz",
+      "rawLogSha256": "1bc78bd6ed225c39b32e674f1d803ba3e969a3e3884fe7c66cd6cb904ffbcc8f"
+    },
+    {
+      "name": "contract-preflight",
+      "command": "uv run pytest -q tests/test_release_inventory.py tests/test_verify_ownership.py tests/test_verify_ci_workflow.py tests/test_gen_wasm_abi.py tests/test_wasm_density_chartview_contract.py tests/test_wasm_inline_artifact_contract.py tests/test_wasm_tick_host_assets.py",
+      "exitCode": 1,
+      "result": "758 passed; 1 ownership ledger failure, corrected and rechecked below",
+      "log": "contracts-packet-final.log.gz",
+      "rawLogSha256": "3f7b7fa9bee25ebed9ab3ebaefb003ca938926d0f6554f1bf969974cc1af25fe"
+    },
+    {
+      "name": "corrected-ownership",
+      "command": "uv run pytest -q tests/test_verify_ownership.py",
+      "exitCode": 0,
+      "result": "9 passed; repaired the only preflight failure",
+      "log": "metadata-corrected-final.log.gz",
+      "rawLogSha256": "1493fb38a3775e9480851df9569e42eebe3fc0d74d5fa348df95632347be281c"
+    },
+    {
+      "name": "final-current-bindings",
+      "command": "uv run pytest -q tests/test_graphforge_contract_corpus.py",
+      "exitCode": 0,
+      "result": "7 passed after final README/source binding publication; includes actual CRLF checkout",
+      "log": "current-bindings-published.log.gz",
+      "rawLogSha256": "38f9e798f24167fbb2faf04c1e3933586deb1686c27e5211d7e976ac6027ed1b"
+    },
+    {
+      "name": "native-generated",
+      "command": "python3 scripts/gen_abi_manifest.py --check",
+      "exitCode": 0,
+      "result": "PASS",
+      "log": "native-generated-delivery.log.gz",
+      "rawLogSha256": "1e5253747b0eb8297a88a998a59f3a9e19241e6c56be151cc28a65f347c03a79"
+    },
+    {
+      "name": "wasm-generated",
+      "command": "python3 scripts/gen_wasm_abi.py --check",
+      "exitCode": 0,
+      "result": "PASS",
+      "log": "wasm-generated-delivery.log.gz",
+      "rawLogSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "abi-smoke",
+      "command": "python3 scripts/abi_smoke.py",
+      "exitCode": 0,
+      "result": "PASS",
+      "log": "abi-smoke-delivery.log.gz",
+      "rawLogSha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306"
+    },
+    {
+      "name": "capability-generated",
+      "command": "uv run python scripts/gen_capability_matrix.py --check",
+      "exitCode": 0,
+      "result": "PASS",
+      "log": "capability-generated-delivery.log.gz",
+      "rawLogSha256": "42b8d4d87753f9103ac02d0b33f9a3c6f6e68193684dd88198095d247c8e7392"
+    },
+    {
+      "name": "api-inventory",
+      "command": "uv run python scripts/check_release_inventory.py",
+      "exitCode": 0,
+      "result": "PASS",
+      "log": "api-inventory-delivery.log.gz",
+      "rawLogSha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c"
+    },
+    {
+      "name": "ownership",
+      "command": "uv run python scripts/verify_ownership.py",
+      "exitCode": 0,
+      "result": "PASS",
+      "log": "ownership-delivery.log.gz",
+      "rawLogSha256": "ef19077107d77430bffeec8d18ab51fcfed525539b0033d7b9a460ad55c00cc2"
+    },
+    {
+      "name": "workflow",
+      "command": "uv run python scripts/verify_ci_workflow.py",
+      "exitCode": 0,
+      "result": "PASS",
+      "log": "workflow-delivery.log.gz",
+      "rawLogSha256": "2c1d328b9270af0980276af82c66c26ea22f230cd20eb1b2583795e0b1d355ea"
+    },
+    {
+      "name": "public-example",
+      "command": "uv run python examples/filter_tier_c.py",
+      "exitCode": 0,
+      "result": "PASS",
+      "log": "public-example-delivery.log.gz",
+      "rawLogSha256": "773b4f1534c9cbb1d6dda7df4167256317dd5b3a2a66834c6ee260da2fd200b4"
+    },
+    {
+      "name": "hooks",
+      "command": "uv run --with pre-commit pre-commit run --all-files",
+      "exitCode": 0,
+      "result": "all repository hooks passed",
+      "log": "hooks-delivery.log.gz",
+      "rawLogSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    {
+      "name": "ruff-check",
+      "command": "uv run ruff check .",
+      "exitCode": 0,
+      "result": "all checks passed",
+      "log": "ruff-check-delivery.log.gz",
+      "rawLogSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "name": "ruff-format",
+      "command": "uv run ruff format --check .",
+      "exitCode": 0,
+      "result": "1082 files already formatted",
+      "log": "ruff-format-delivery.log.gz",
+      "rawLogSha256": "27435c968d4c651de3c752432107894ffdd8d6d590a7ed8178876d6a78affde9"
+    }
+  ],
+  "browser": {
+    "schema": "xyg.filter-tier-c-browser/v1",
+    "packets": 44,
+    "densityPackets": 56,
+    "passiveViews": 5,
+    "selected": 2,
+    "rowsRead": 5,
+    "rendered": true,
+    "paintedViews": 5,
+    "pointerPreview": true,
+    "pointerCancel": true,
+    "keyboardOtherDimension": true,
+    "publicationFailureAtomic": true,
+    "pointer": {
+      "hash": "12177216755608555613",
+      "tier": "3",
+      "rowsRead": "0",
+      "fallback": "0",
+      "prefixCellsRead": "162",
+      "pixels": [
+        {
+          "colored": 33216,
+          "hash": 2831175429
+        },
+        {
+          "colored": 29088,
+          "hash": 3108547909
+        },
+        {
+          "colored": 33216,
+          "hash": 130828805
+        },
+        {
+          "colored": 33216,
+          "hash": 4138807653
+        },
+        {
+          "colored": 33264,
+          "hash": 1501828901
+        }
+      ],
+      "selected": "4"
+    },
+    "keyboard": {
+      "hash": "12177216755608555613",
+      "tier": "3",
+      "rowsRead": "0",
+      "fallback": "0",
+      "prefixCellsRead": "162",
+      "pixels": [
+        {
+          "colored": 33216,
+          "hash": 2831175429
+        },
+        {
+          "colored": 29088,
+          "hash": 3108547909
+        },
+        {
+          "colored": 33216,
+          "hash": 130828805
+        },
+        {
+          "colored": 33216,
+          "hash": 4138807653
+        },
+        {
+          "colored": 33264,
+          "hash": 1501828901
+        }
+      ],
+      "selected": "4"
+    },
+    "lifecycle": {
+      "checks": 102,
+      "texturePixels": 400,
+      "canvasProbes": 19,
+      "diagnostics": {
+        "sourceId": "112",
+        "epoch": "7",
+        "sourceRevision": "2",
+        "filterHash": "9882665962842817719",
+        "tier": "2",
+        "indexBytes": "4600",
+        "residentBytes": "6616",
+        "peakBytes": "9976",
+        "rowsRead": "14",
+        "prefixCellsRead": "0",
+        "fallback": "1",
+        "revision": "125"
+      },
+      "environment": {
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+        "dpr": 1,
+        "renderer": "WebKit WebGL"
+      },
+      "selected": "6",
+      "revision": "125",
+      "aria": true
+    }
+  },
+  "browserRequests": {
+    "count": 125,
+    "opcodes": {
+      "10": 10,
+      "11": 51,
+      "9": 17,
+      "13": 5,
+      "5": 31,
+      "15": 3,
+      "7": 2,
+      "14": 2,
+      "6": 1,
+      "2": 1,
+      "12": 2
+    },
+    "rawSha256": "a1947057b3116230b2a5aab557cc5de1175e68854ec20d8d08d92d78777dbc82"
+  },
+  "preservedFindings": [
+    {
+      "log": "node-full.log.gz",
+      "result": "1072 passed, 2 failed, 2 existing skipped; native force-worker timeout and graph worker packing failure"
+    },
+    {
+      "log": "node-full-replay.log.gz",
+      "result": "1073 passed, 1 native force-worker timeout, 2 existing skipped"
+    },
+    {
+      "log": "node-worker-isolated.log.gz",
+      "command": "node --test packages/xy-node/test/force-worker-lifecycle.test.mjs packages/xy-node/test/graphforge-layout.test.mjs",
+      "result": "31 passed"
+    },
+    {
+      "log": "node-affinity-2.log.gz",
+      "command": "taskset -c 0,1 npm test --prefix packages/xy-node",
+      "result": "1074 passed, 2 existing skipped; unchanged deadlines and source; diagnostic only"
+    },
+    {
+      "log": "orientation-frozen-before.log.gz",
+      "result": "wrong world-coordinate pixel with served frozen WASM 390f331935e93fbb7242a2788f112a331d4fec9cced48e2a53313dd3e93d5691; fixed bottom-first lowering; later semantic probes pass"
+    },
+    {
+      "log": "contracts-packet-final.log.gz",
+      "result": "ownership rows were outside the required File ledger section; moved into the ledger, nine ownership tests and 109 provenance/ownership tests pass"
+    }
+  ],
+  "remainingAcceptance": [
+    "Committed 100M fixture and provenance; retained/paged canonical source integration under unchanged budgets",
+    "Five actually rendered linked views sustaining >=50 FPS with qualified browser traces, RSS/peak/payload/hardware evidence",
+    "Actual CodSpeed build/query measurements and reproducible Falcon/Mosaic and required cross-library comparisons at all required scales",
+    "Persistent materialized result masks, source spill/reopen, idle prefetch and cooperative mid-call Worker cancellation",
+    "Non-range predicates/active rectangles and full nonlinear/nonprimary/large-offset/per-point-channel compatibility",
+    "Automatic native notebook-widget/application transport binding and real assistive technology/platform journeys"
+  ],
+  "artifactVerification": "All recorded native/WASM/client file hashes were checked again after the last client build; no mismatches. Parent review of this material diff is required before delivery."
+}

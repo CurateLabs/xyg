@@ -5,8 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define XYG_ABI_VERSION 401
-#define XYG_ABI_SIGNATURE_SHA256 "351e51d44ed0a3c4c3525d48a6aee277667a9963685a67fa689559b944c86295"
+#define XYG_ABI_VERSION 405
+#define XYG_ABI_SIGNATURE_SHA256 "b3d5a9475a771e77d3f562798e8334b6f43ccc13aa584b289d0688f77bdb8ebc"
 
 #ifdef __cplusplus
 extern "C" {
@@ -140,6 +140,10 @@ size_t xyg_factorize_unicode1_u8_counts(const uint32_t * data, size_t len, int32
 int32_t xyg_factorize_use_native_fixed(const uint8_t * data, size_t n_rows, uint32_t record_width);
 int32_t xyg_factorize_use_native_probe(uint32_t distinct, uint32_t probe_len, uint32_t record_width);
 int32_t xyg_figure_autorange(const uint8_t * input, size_t len, double * out_lo, double * out_hi);
+int32_t xyg_filter_session_cancel(uint64_t handle, uint64_t revision);
+int32_t xyg_filter_session_execute(uint64_t handle, const uint8_t * request, size_t request_len, uint8_t * out, size_t capacity, size_t * written);
+void xyg_filter_session_free(uint64_t handle);
+uint64_t xyg_filter_session_new(uint64_t max_bytes);
 int32_t xyg_fold_codes_u8(const uint32_t * codes, size_t n, uint32_t n_palette, uint8_t * out);
 int32_t xyg_geo_catalog_compile(const uint8_t * request, size_t request_len, size_t budget, uint8_t * out, size_t cap, size_t * out_length);
 int32_t xyg_geo_column_copy(uint64_t handle, double * out_xy, size_t xy_cap, uint8_t * out_validity, size_t validity_cap, uint64_t * out_ids, size_t ids_cap, uint32_t * out_o0, size_t o0_cap, uint32_t * out_o1, size_t o1_cap, uint32_t * out_o2, size_t o2_cap, uint8_t * out_orient, size_t orient_cap);
@@ -525,6 +529,12 @@ int32_t xyg_temporal_graph_cancel(uint64_t handle);
 int32_t xyg_temporal_graph_create(const void * descriptor, uint64_t * out_handle);
 int32_t xyg_temporal_graph_destroy(uint64_t handle);
 int32_t xyg_temporal_graph_frame(uint64_t handle, uint64_t revision, int64_t cursor_micros, int64_t range_start_micros, int64_t range_end_micros, uint64_t budget);
+int32_t xyg_temporal_graph_freeze(uint64_t handle, uint64_t revision, uint32_t window_kind, int64_t window_start, int64_t window_end, const uint8_t * timezone, uint64_t timezone_len, uint64_t session, uint32_t render_revision, uint64_t budget, uint64_t * out_handle);
+int32_t xyg_temporal_graph_frozen_copy(uint64_t handle, uint8_t * out, uint64_t capacity, uint64_t * out_len);
+int32_t xyg_temporal_graph_frozen_destroy(uint64_t handle);
+int32_t xyg_temporal_graph_frozen_execute(const uint8_t * data, uint64_t len, uint64_t budget, uint8_t * out, uint64_t out_cap, uint64_t * out_len);
+int32_t xyg_temporal_graph_frozen_export(const uint8_t * data, uint64_t len, uint32_t format, double scale, uint32_t focus_rgba, uint64_t budget, uint8_t * out, uint64_t out_cap, uint64_t * out_len);
+int32_t xyg_temporal_graph_frozen_import(const uint8_t * data, uint64_t len, uint64_t budget, uint64_t * out_handle);
 int32_t xyg_temporal_graph_required_budget(uint64_t handle, uint64_t * out_budget);
 int32_t xyg_temporal_graph_set_focus(uint64_t handle, uint32_t kind, const uint8_t * id);
 int32_t xyg_temporal_graph_set_pinned(uint64_t handle, const uint8_t * node_ids, uint64_t node_count);
@@ -535,6 +545,7 @@ int32_t xyg_temporal_interval_index_create(const void * descriptor, uint64_t * o
 int32_t xyg_temporal_interval_index_destroy(uint64_t handle);
 int32_t xyg_temporal_interval_index_len(uint64_t handle, uint64_t * out_len);
 int32_t xyg_temporal_interval_visibility_at(uint64_t handle, int64_t instant_micros, uint8_t * out_visibility, uint64_t capacity, uint64_t budget, const uint32_t * cancel_flag);
+int32_t xyg_temporal_scene_compile(const uint8_t * request, size_t request_len, size_t budget, uint8_t * out, size_t cap, size_t * out_length);
 uint64_t xyg_temporal_selection_limit();
 size_t xyg_text_block_measure(const uint8_t * text, size_t text_len, double font_size, double line_height, double max_width, double * out_metrics, uint32_t * out_line_lens, size_t line_cap, uint8_t * out_lines, size_t lines_cap);
 size_t xyg_text_block_rotated_extent(double width, double height, double angle_degrees, double * out_x, double * out_y);

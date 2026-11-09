@@ -4,6 +4,8 @@
 //! assembly, XYCH axis records, tick-collision header, and
 //! [`scene_xycf_pack`] concat.
 
+use crate::scene::SceneByteWrite;
+
 use crate::css;
 use crate::kernels::{scene_tick_anchor, scene_tick_label_strategy};
 use crate::scene_pack_orchestrate::{scene_xycf_figure_plan, XycfFigurePlan};
@@ -390,13 +392,13 @@ fn pack_chrome_axis(axis: &ChromeAxisInput<'_>) -> Vec<u8> {
         width_flags,
         0,
     ]);
-    out.extend_from_slice(&grid_opacity.to_le_bytes());
-    out.extend_from_slice(&minor_grid_opacity.to_le_bytes());
+    out.push_word(grid_opacity);
+    out.push_word(minor_grid_opacity);
     for width in widths {
-        out.extend_from_slice(&width.to_le_bytes());
+        out.push_word(width);
     }
     for blob in &paint_bytes {
-        out.extend_from_slice(&(blob.len() as u16).to_le_bytes());
+        out.push_word(blob.len() as u16);
     }
     for blob in paint_bytes {
         out.extend_from_slice(blob);
@@ -420,10 +422,10 @@ fn pack_xych(input: &SceneChromePackInput<'_>, y_axis: &ChromeAxisInput<'_>) -> 
     let y_rec = pack_chrome_axis(y_axis);
     let mut out = Vec::with_capacity(16 + chart_b.len() + plot_b.len() + x_rec.len() + y_rec.len());
     out.extend_from_slice(b"XYCH");
-    out.extend_from_slice(&1u32.to_le_bytes());
-    out.extend_from_slice(&flags.to_le_bytes());
-    out.extend_from_slice(&(chart_b.len() as u16).to_le_bytes());
-    out.extend_from_slice(&(plot_b.len() as u16).to_le_bytes());
+    out.push_word(1u32);
+    out.push_word(flags);
+    out.push_word(chart_b.len() as u16);
+    out.push_word(plot_b.len() as u16);
     out.extend_from_slice(chart_b);
     out.extend_from_slice(plot_b);
     out.extend_from_slice(&x_rec);
@@ -494,7 +496,7 @@ fn put_tick_labels(labels: &[&str]) -> Result<Vec<u8>, i32> {
         if encoded.len() > u16::MAX as usize {
             return Err(-1);
         }
-        out.extend_from_slice(&(encoded.len() as u32).to_le_bytes());
+        out.push_word(encoded.len() as u32);
         out.extend_from_slice(encoded);
     }
     Ok(out)
@@ -506,7 +508,7 @@ fn pack_colorbar_stops(stops: &[ChromeColorbarStop]) -> Result<Vec<u8>, i32> {
     }
     let mut out = Vec::with_capacity(stops.len() * 12);
     for stop in stops {
-        out.extend_from_slice(&stop.value.to_le_bytes());
+        out.push_word(stop.value);
         out.extend_from_slice(&stop.rgba);
     }
     Ok(out)

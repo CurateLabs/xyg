@@ -438,6 +438,7 @@ def render(manifest: dict[str, object]) -> str:
         f"export const XYG_WASM_TEMPORAL_GRAPH_VERSION = {int(temporal_graph['version'])} as const;",
         f"export const XYG_WASM_TEMPORAL_GRAPH_CREATE_HEADER_BYTES = {int(temporal_graph['create_header_bytes'])} as const;",
         f"export const XYG_WASM_TEMPORAL_GRAPH_FRAME_HEADER_BYTES = {int(temporal_graph['frame_header_bytes'])} as const;",
+        f"export const XYG_WASM_TEMPORAL_GRAPH_FRAME_CONTEXT = {json.dumps(temporal_graph['frame_context'], separators=(',', ':'))} as const;",
         f"export const XYG_WASM_TEMPORAL_GRAPH_OUTPUT_MAGIC = {json.dumps(temporal_graph['output_magic'])} as const;",
         f"export const XYG_WASM_TEMPORAL_GRAPH_OUTPUT_HEADER_BYTES = {int(temporal_graph['output_header_bytes'])} as const;",
         f"export const XYG_WASM_TEMPORAL_GRAPH_MAX_ENTITIES = {int(temporal_graph['max_entities'])} as const;",

@@ -1,0 +1,37 @@
+{
+  "failures": "See failures.json and all compressed experiment logs; no prior failure is relabeled as passing.",
+  "fresh": {
+    "ABI": "official generators current: ABI405/551 native declarations, WASM38/68 function exports",
+    "CoreBindings": "8 passed, including exact two-parent source/archive union and actual Git CRLF checkout",
+    "directClippingGoldens": "root eight authored cases, generator and native Scene hashes unchanged; original six-family fixtures unchanged",
+    "nativeWasm": "18 six-family dense metadata/Scene/member, sixteen direct Scene, six stepped control/cancel/accepted-state and 1658 clipped observation/support packet comparisons passed",
+    "nodeNormal": "1143 passed, zero failures, two pre-existing explicit skips; earlier timer-order failures retained",
+    "normalWheel": "XYG_REQUIRE_CARGO=1 XYG_REQUIRE_WASM=1 normal wheel succeeded; embedded sources/native/client/WASM compared byte-for-byte",
+    "packagedBrowser": "two complete final normal foundation runs passed: six dense family journeys, eight clipped line pixel/vector/member/support oracles, cooperative cancel/reuse/disposal, all root aggregate/frozen/GPU/filter/default1k/10k controls; no browser skips",
+    "precommit": "full worktree pre-commit hooks passed; final repeated hooks and Ruff required immediately before merge commit",
+    "publicNativeBrowser": "18 actual public composition Scene/metadata/member capture hashes match",
+    "publicPythonNode": "31 exact metadata/member/support/Scene/SVG/PNG capture comparisons passed",
+    "pythonTemporal": "58 passed, including actual concurrent native interval scan cancellation, async waiter cancellation, 100k exact six-family membership and bounded 1M refusal",
+    "releaseInventory": "official preparation snapshot refreshed; semantic inventory comparison passes; strict global classification remains open",
+    "ruff": "full worktree lint and format check passed",
+    "rustWorkspace": "68 core +1876 engine +76 WASM tests and all remaining workspace/doc tests passed",
+    "ty": "all checks passed"
+  },
+  "inherited": [
+    "original six direct-family wire/Scene fixtures",
+    "root eight line-window authored vector/native hash/pixel controls",
+    "all historical Core/ABI/frozen/aggregate evidence chains",
+    "existing two Node skips, explicitly reported in failures.json"
+  ],
+  "parents": [
+    "def2ae0110b85e6f0c75d638373d350cb06a4415",
+    "6ad7cb76d1a02f3df759cffc4218baf26ab1378e"
+  ],
+  "remainingAC": [
+    "independent final root review, current main, PR/CI and queue",
+    "brush/controller/table/AA/reduced motion/keyboard, streaming and richer customization",
+    "100M+/out-of-core and source-language whole-host memory evidence",
+    "competitor/FPS/five-view/installed-host matrix claims",
+    "global release API classification"
+  ]
+}

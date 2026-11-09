@@ -1,0 +1,110 @@
+{
+  "/var/tmp/graph-review-5cc75b0-record.json": {
+    "archive": "spec/performance/active-m4-m7-integration-2026-11-08/review-evidence/f362f64bdd0987e0fbc4e18df3d96c3afeaae6523cd592ccbd0d473d95bd4bc4.gz",
+    "sha256": "f362f64bdd0987e0fbc4e18df3d96c3afeaae6523cd592ccbd0d473d95bd4bc4",
+    "bytes": 19283,
+    "qualification": "independent graph parent only; not combined runtime"
+  },
+  "/var/tmp/graph-review-memory1m.log": {
+    "archive": "spec/performance/active-m4-m7-integration-2026-11-08/review-evidence/a31ce7e69fbba2a160490fbadf780d02e696df2e757f795035287807120e12d5.gz",
+    "sha256": "a31ce7e69fbba2a160490fbadf780d02e696df2e757f795035287807120e12d5",
+    "bytes": 14120,
+    "qualification": "independent graph parent only; not combined runtime"
+  },
+  "/var/tmp/graph-review-100k.json.failure.json": {
+    "archive": "spec/performance/active-m4-m7-integration-2026-11-08/review-evidence/3b4cf6f9d0434bb4733f9b12144fef5be1d263fcdc0162277f4d55f4a4a82b0a.gz",
+    "sha256": "3b4cf6f9d0434bb4733f9b12144fef5be1d263fcdc0162277f4d55f4a4a82b0a",
+    "bytes": 9638088,
+    "qualification": "independent graph parent only; not combined runtime"
+  },
+  "/var/tmp/graph-review-replay1m.log": {
+    "archive": "spec/performance/active-m4-m7-integration-2026-11-08/review-evidence/e565d744b3d2588ad2093cbed2cf9cb924e80afe80e4df1b82a7861497451009.gz",
+    "sha256": "e565d744b3d2588ad2093cbed2cf9cb924e80afe80e4df1b82a7861497451009",
+    "bytes": 14901,
+    "qualification": "independent graph parent only; not combined runtime"
+  },
+  "/var/tmp/graph-review-abi-tmpdir.log": {
+    "archive": "spec/performance/active-m4-m7-integration-2026-11-08/review-evidence/671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306.gz",
+    "sha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306",
+    "bytes": 52,
+    "qualification": "independent graph parent only; not combined runtime"
+  },
+  "/var/tmp/graph-review-progressive.log": {
+    "archive": "spec/performance/active-m4-m7-integration-2026-11-08/review-evidence/df32ed307b6f008f10cb68e0c5e72d05ca3ddec1befba8942ca4429e9c3a266b.gz",
+    "sha256": "df32ed307b6f008f10cb68e0c5e72d05ca3ddec1befba8942ca4429e9c3a266b",
+    "bytes": 480,
+    "qualification": "independent graph parent only; not combined runtime"
+  },
+  "/var/tmp/graph-review-1m.log": {
+    "archive": "spec/performance/active-m4-m7-integration-2026-11-08/review-evidence/7a057e077c080643cd9a91f9ce3f7c80e1981876f7e473d3583b8f30ebb27880.gz",
+    "sha256": "7a057e077c080643cd9a91f9ce3f7c80e1981876f7e473d3583b8f30ebb27880",
+    "bytes": 201,
+    "qualification": "independent graph parent only; not combined runtime"
+  },
+  "/var/tmp/graph-review-abi.log": {
+    "archive": "spec/performance/active-m4-m7-integration-2026-11-08/review-evidence/b2d1468d51ce68c3f53b22721993536df6cb121825c3d2abda52399367bb1e49.gz",
+    "sha256": "b2d1468d51ce68c3f53b22721993536df6cb121825c3d2abda52399367bb1e49",
+    "bytes": 43,
+    "qualification": "independent graph parent only; not combined runtime"
+  },
+  "/var/tmp/graph-review-100k.json": {
+    "archive": "spec/performance/active-m4-m7-integration-2026-11-08/review-evidence/9167ed00b37bbdc253c582077115c2e1f131f6dc43631837f31952bcab52b3d7.gz",
+    "sha256": "9167ed00b37bbdc253c582077115c2e1f131f6dc43631837f31952bcab52b3d7",
+    "bytes": 9501328,
+    "qualification": "independent graph parent only; not combined runtime"
+  },
+  "/var/tmp/graph-review-wire-tests.log": {
+    "archive": "spec/performance/active-m4-m7-integration-2026-11-08/review-evidence/86d87bb10609a7cdcb8621dd2ae916c36625b0a606818bd4758f167b8f30dc50.gz",
+    "sha256": "86d87bb10609a7cdcb8621dd2ae916c36625b0a606818bd4758f167b8f30dc50",
+    "bytes": 2896,
+    "qualification": "independent graph parent only; not combined runtime"
+  },
+  "/var/tmp/graph-review-keyboard.log": {
+    "archive": "spec/performance/active-m4-m7-integration-2026-11-08/review-evidence/8bbfb397214b88f3b637500fb686f4ecc337c00789ba274baa6fd2417ecb1789.gz",
+    "sha256": "8bbfb397214b88f3b637500fb686f4ecc337c00789ba274baa6fd2417ecb1789",
+    "bytes": 3841,
+    "qualification": "independent graph parent only; not combined runtime"
+  },
+  "/var/tmp/graph-review-100k-alone.log": {
+    "archive": "spec/performance/active-m4-m7-integration-2026-11-08/review-evidence/57af563ed09f7071c11ca48c7df7cf20b618c0d865a10fc40748a3570dff6dc0.gz",
+    "sha256": "57af563ed09f7071c11ca48c7df7cf20b618c0d865a10fc40748a3570dff6dc0",
+    "bytes": 766,
+    "qualification": "independent graph parent only; not combined runtime"
+  },
+  "/var/tmp/graph-review-100k-alone.json": {
+    "archive": "spec/performance/active-m4-m7-integration-2026-11-08/review-evidence/b71744ac158d61a7490f4a9912e41753a982aa239d04fa6c0fcc3c352ac53169.gz",
+    "sha256": "b71744ac158d61a7490f4a9912e41753a982aa239d04fa6c0fcc3c352ac53169",
+    "bytes": 9501291,
+    "qualification": "independent graph parent only; not combined runtime"
+  },
+  "/var/tmp/graph-review-100k.log": {
+    "archive": "spec/performance/active-m4-m7-integration-2026-11-08/review-evidence/57af563ed09f7071c11ca48c7df7cf20b618c0d865a10fc40748a3570dff6dc0.gz",
+    "sha256": "57af563ed09f7071c11ca48c7df7cf20b618c0d865a10fc40748a3570dff6dc0",
+    "bytes": 766,
+    "qualification": "independent graph parent only; not combined runtime"
+  },
+  "/var/tmp/graph-review-100k-alone.json.failure.json": {
+    "archive": "spec/performance/active-m4-m7-integration-2026-11-08/review-evidence/41f30b78a59724b9412143a47c3b52f8942af0555e7400197d80bf343bc7bfca.gz",
+    "sha256": "41f30b78a59724b9412143a47c3b52f8942af0555e7400197d80bf343bc7bfca",
+    "bytes": 9637871,
+    "qualification": "independent graph parent only; not combined runtime"
+  },
+  "/var/tmp/graph-review-temporal.log": {
+    "archive": "spec/performance/active-m4-m7-integration-2026-11-08/review-evidence/1862dda8347363365c50ecf2fc757a2451317bab9f3572b0324a230a30e5780e.gz",
+    "sha256": "1862dda8347363365c50ecf2fc757a2451317bab9f3572b0324a230a30e5780e",
+    "bytes": 1035,
+    "qualification": "independent graph parent only; not combined runtime"
+  },
+  "/var/tmp/graph-review-replay100k.log": {
+    "archive": "spec/performance/active-m4-m7-integration-2026-11-08/review-evidence/4c335b4b5c7e933f9efb61c37d3d37733f4d316634e7bfc1559e231887f4ac38.gz",
+    "sha256": "4c335b4b5c7e933f9efb61c37d3d37733f4d316634e7bfc1559e231887f4ac38",
+    "bytes": 9276,
+    "qualification": "independent graph parent only; not combined runtime"
+  },
+  "/var/tmp/xyg-css-review-v2_21h_r/review.json": {
+    "archive": "spec/performance/active-m4-m7-integration-2026-11-08/review-evidence/07c6d9dcd9867c605c09732c9877f1ee7a63db94c5c082798540e756bc9fb933.gz",
+    "sha256": "07c6d9dcd9867c605c09732c9877f1ee7a63db94c5c082798540e756bc9fb933",
+    "bytes": 19290,
+    "qualification": "independent exact209path b007 CSS parent APPROVE/no P1/P2; combined review still Root-owned"
+  }
+}

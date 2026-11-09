@@ -1,0 +1,82 @@
+{
+  "nativeAbi": 402,
+  "wasmAbi": 36,
+  "sourceBindings": [
+    "rust-sources.json",
+    "client-sources.json",
+    "current-bindings.json"
+  ],
+  "files": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6211208,
+      "sha256": "649251d33001490423d1bff9f31572f70f0bff90c0f1da469cce3dafd25dad1d"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 2107874,
+      "sha256": "cd220b2df545330cda723b2e4048014b5a7311225e574af9a46d36af2449ec61"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1911687,
+      "sha256": "8e67955d5909ca6f56952a3d15580eecfa12b39bf3df0b3615aaa8d9d41fcb9e"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "9235e9d035dc35e407d9b4f540570ced96fff5bc3a877a814af11d151f8f4217"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 826318,
+      "sha256": "68b2f176b2aed11e0b68303289583aa422c38186a4469ddb0c99d470a0f112f0"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 826340,
+      "sha256": "0348855a007ab1e4b45fca0cd003f1868df85ad5282abdae42aec3684372d271"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 56942,
+      "sha256": "98f47be50de12a26a6132fad7c956bc8ec2d052e1e4b8664f37ea4a5975dae87"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "bytes": 19171,
+      "sha256": "4280d7c45fb1f1773f43ae14b11642161de80f33a2c304e28918612ea19ff2d2"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2568276,
+      "sha256": "2bc710057a49d1f0b7b9a89c60a678821798fa88c6585db0571e5d71ebc2b671"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1911687,
+      "sha256": "8e67955d5909ca6f56952a3d15580eecfa12b39bf3df0b3615aaa8d9d41fcb9e"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 826318,
+      "sha256": "68b2f176b2aed11e0b68303289583aa422c38186a4469ddb0c99d470a0f112f0"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 826340,
+      "sha256": "0348855a007ab1e4b45fca0cd003f1868df85ad5282abdae42aec3684372d271"
+    },
+    "tests/fixtures/filter_tier_c/session.bin": {
+      "bytes": 70561,
+      "sha256": "0bbd8c9cec08f3b0041c9c558af96d241a5907d277979e638273bf14a8747cb0"
+    },
+    "tests/fixtures/filter_tier_c/density.bin": {
+      "bytes": 69470,
+      "sha256": "c94c47569acd18b9d3a924fc807204eca5ea19d465e471fb4e323ef12be871ee"
+    },
+    "tests/fixtures/filter_tier_c/density.json": {
+      "bytes": 6867,
+      "sha256": "0bbf08587993b925c440f8a9c594b3fb03078316d03b5a42da012ef6b5e24935"
+    }
+  },
+  "wasmCaps": {
+    "raw": 1927168,
+    "gzip": 786432
+  },
+  "wasmMeasured": {
+    "raw": 1911687,
+    "gzip": 781708,
+    "rawHeadroom": 15481,
+    "gzipHeadroom": 4724
+  },
+  "qualification": "bounded functional proof, not massive performance or compiler comparison"
+}

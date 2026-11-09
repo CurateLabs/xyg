@@ -1,5 +1,6 @@
 [workspace]
 resolver = "2"
+exclude = ["vendor/png", "vendor/crc32fast"]
 members = ["crates/xyg-engine", "crates/xyg-core", "crates/xyg-wasm"]
 
 # Whole-program optimization; `strip` keeps .dynsym, which ctypes binds
@@ -10,3 +11,8 @@ members = ["crates/xyg-engine", "crates/xyg-core", "crates/xyg-wasm"]
 lto = "fat"
 codegen-units = 1
 strip = true
+
+# Auditable upstream 0.18.1 with shared compile-time encoder capability.
+[patch.crates-io]
+png = { path = "vendor/png" }
+crc32fast = { path = "vendor/crc32fast" }

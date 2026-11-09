@@ -1,0 +1,52 @@
+{
+  "schema": "xyg.native-frozen-render/v1",
+  "implementationBase": "59b1c38a337925a8bad11333ed8d04aea76a03e0",
+  "firstParent": "bea7eab191e6ff54b1999087edf23b3d98695899",
+  "acceptedMain": "58960c7c6c814ed049209052cf66d77b5bb7ecfd",
+  "native": {
+    "path": "/home/ubuntu/.t3tmp/1111/target/release/libxyg_core.so",
+    "sha256": "d6ad1d4407e918d66a4311327d7b1564dbe75cb914363cfe9b93501fbb91a68c",
+    "rustSourceManifestSha256": "6f1f1d654a4bcfd7bed84dda5661f29796b13de0df95947fdf589b85491ce371",
+    "build": "fresh isolated release build native-qualified-build.log.gz"
+  },
+  "fresh": {
+    "python": "112 passed including two offline Chromium renders at DPR1/2, scale1/2 PNG, capacity sentinel, exact recovery after scrub/disposal; python-qualified.log.gz",
+    "node": "4 passed including all three public artifacts after disposal and exact Python/Node artifact byte parity; node-final.log.gz",
+    "rust": "1 phase oracle passed, 1853 filtered; rust.log.gz",
+    "abi": "673 smoke checks; 545 generated and parity symbols ABI403",
+    "scene": "initial wider run: 117 passed, 33 skipped, 5 deselected, 1 xfailed, 2 failures; both causes corrected, 8 affected checks passed; scene-corpus[-corrected].log.gz",
+    "hooks": "Full-worktree pre-commit, Ruff check and Ruff format --check all passed; *-commit.log.gz",
+    "corpusFinal": "7 passed after final source bindings, including real LF/CRLF Git checkout test"
+  },
+  "inherited": "Acquisition/codec R2 review and previous producer receipts; no fresh WASM/browser capture parity claimed",
+  "environment": {
+    "os": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "python": "3.14.4",
+    "node": "v22.23.4",
+    "rust": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+    "chromium": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "tmpdir": "/home/ubuntu/.t3tmp/1111"
+  },
+  "artifactSha256": {
+    "artifacts/frame-1.xyfg": "de6dd3fc6965d02f8be214b995478ad852ffb61f7d426621036595faded8758b",
+    "artifacts/frame-2.xyfg": "d8ed5bfeabb3a5b8b2e22716e9e24b036c8562c740eedc60ae4403f09693f956",
+    "artifacts/frame-3.xyfg": "a80fd92bd9088dc2c9990992a31d2e2cf192ac4bb54c6c044492c98949bd6214",
+    "artifacts/frame-4.xyfg": "d88d30a2f9e3474ff2a83de17a0ddcf8ba5ae73c36070e23b4152fe68138f4cc",
+    "artifacts/render-dpr1.html": "f1147daab8941b53f1db3ac757d07ed32b14f8e75103fcef55701ef4c430b09b",
+    "artifacts/render-dpr1.png": "b7bde4529cf5ed818f5a7b9f4419d5add6bd1e2af7707d468fa42e99e28095a5",
+    "artifacts/render-dpr1.svg": "72d585ecca821445b20c316239eb6d55f3e902c49f81cd89eeb45c42be44c57e",
+    "artifacts/render-dpr2.html": "9f65e775a0405858cb8bcf3fdc2ca0fc37ad42645e9bafffba06695455abc1a1",
+    "artifacts/render-dpr2.png": "84c2aac9cab7799acb846ef4e229fef0c195302300c8ad02fd4d57bdb50f5337",
+    "artifacts/render-dpr2.svg": "c35e7f11ced228d2b33fd4cfabbd1d58e1d549fc85eb24705616c38400320645",
+    "artifacts/retained-later.xyfg": "73373d6cbe88ad094d984f7d7d3acd331388857532c58e3cd258f78224a38f74",
+    "artifacts/retained.xyfg": "b0fd6ac9d856f887bc54aa2065968c2aa255f1afbc0a294b4029007e79f16158"
+  },
+  "remaining": [
+    "P1 XYPB ChartView HTML framing",
+    "P1 focus SDF symbols beyond circle/square (explicit rejection)",
+    "P1 public WASM/browser freeze and CSS capture",
+    "P1 independent complete style/frame/focus/dash vector matrix and native/WASM rendered parity",
+    "P1 aggregate/massive scale acceptance",
+    "P2 #111 global process accounting"
+  ]
+}

@@ -1,0 +1,1573 @@
+{
+  "schema": "xyg-wasm-profile-abba-v1",
+  "environment": {
+    "node": "v22.23.4",
+    "platform": "linux",
+    "arch": "x64",
+    "cpu": "Intel(R) Xeon(R) CPU E3-1270 v6 @ 3.80GHz"
+  },
+  "artifacts": {
+    "A": {
+      "path": "/home/ubuntu/.t3-owned/1cafa70d/exact-o3.wasm",
+      "sha256": "3e651e7a0d6d7724c9ee13c8a98441c00de4f9103a0910e645b52d05b0261caa",
+      "rawBytes": 1963554,
+      "gzipBytes": 801594
+    },
+    "B": {
+      "path": "/home/ubuntu/.t3-owned/1cafa70d/exact-os.wasm",
+      "sha256": "6debb926724d5ed1b3e842f424614f9f7f2244ea4c4df3bb9ca89b62c9f657bc",
+      "rawBytes": 1854348,
+      "gzipBytes": 766947
+    }
+  },
+  "measurements": [
+    {
+      "name": "graphforge",
+      "count": 100,
+      "admitted": true,
+      "requestBytes": 16384,
+      "outputBytes": 25632,
+      "outputSha256": "e613801b94567a6a9f639c5b93b04e6e9dcce4e6c8cd59e79270525a0a9bd0d7",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.21549931000000014
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.24253828999999996
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.23416596000000026
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.19562026000000002
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.17781287999999962
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.2194261499999999
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.21304813000000025
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.1818284600000004
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.17547775999999998
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.17835601999999995
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.1749497599999995
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.13689067999999907
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.13613029999999982
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.17366222999999992
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.17007539000000066
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.1361964499999999
+        }
+      ],
+      "medianA": 0.1766453199999998,
+      "medianB": 0.1957020750000001,
+      "ratio": 1.107881459865454
+    },
+    {
+      "name": "scene",
+      "count": 100,
+      "admitted": true,
+      "requestBytes": 1896,
+      "outputBytes": 6040,
+      "outputSha256": "6256614f9f55ca59e980e58db46636116871ea139d77cffb373b138e9db70d78",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.12839157999999998
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.09159234999999967
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.09332071000000042
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.06614424999999984
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.06301928999999973
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.08948973000000024
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.0728968000000009
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.05810887999999977
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.05355771000000004
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.06579911000000038
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.06516593999999941
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.05448514000000046
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.05434428000000025
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.06580219000000057
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.0643783899999994
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.05224458000000027
+        }
+      ],
+      "medianA": 0.05629701000000012,
+      "medianB": 0.06934949500000073,
+      "ratio": 1.2318504126595815
+    },
+    {
+      "name": "viewport",
+      "count": 100,
+      "admitted": true,
+      "requestBytes": 1896,
+      "outputBytes": 2656,
+      "outputSha256": "a02f3df90fd7b394a53b5fe8adceac8da2271bbb0195b74049fcace7aae4ab54",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.04479046000000039
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.052603219999999735
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.05102101999999945
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.04376528000000007
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.04460284999999999
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.05134744000000069
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.05141140999999948
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.04676233000000025
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.04498809999999935
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.05157512999999994
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.05053887000000032
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.04259400999999911
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.04285988999999972
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.05099195000000009
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.05072766999999999
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.042725729999999656
+        }
+      ],
+      "medianA": 0.044184065000000036,
+      "medianB": 0.05118423000000007,
+      "ratio": 1.1584318916785956
+    },
+    {
+      "name": "catalog",
+      "count": 100,
+      "admitted": true,
+      "requestBytes": 2280,
+      "outputBytes": 7768,
+      "outputSha256": "0e33f41395d136acf18952f0c3f876f87cf7114e140baba8c70675b50ecc7cf7",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.12092160000000035
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.19919815000000085
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.1901737199999991
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.10013014999999996
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.095161599999999
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.17778052000000003
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.1714947099999995
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.08975671999999918
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.08921746999999983
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.17010125000000018
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.1714429199999995
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.0903641499999992
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.09011013000000048
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.16905197000000044
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.17049645999999938
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.0870078100000012
+        }
+      ],
+      "medianA": 0.09023713999999984,
+      "medianB": 0.1714688149999995,
+      "ratio": 1.9002022338030637
+    },
+    {
+      "name": "interaction",
+      "count": 100,
+      "admitted": true,
+      "requestBytes": 2344,
+      "outputBytes": 7768,
+      "outputSha256": "0e33f41395d136acf18952f0c3f876f87cf7114e140baba8c70675b50ecc7cf7",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.11201819999999998
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.1999646900000016
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.19525315999999976
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.11088512000000036
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.10917386999999962
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.19439980000000104
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.19313151000000062
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.13586468000000196
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.19573601000000054
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.37087874000000054
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.31737131999999973
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.12431724000000031
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.10924260999999888
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.19824206999999888
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 100,
+          "msPerRequest": 0.19676254999999856
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 100,
+          "msPerRequest": 0.10920389000000114
+        }
+      ],
+      "medianA": 0.11145166000000017,
+      "medianB": 0.19750230999999874,
+      "ratio": 1.7720894421850553
+    },
+    {
+      "name": "graphforge",
+      "count": 10000,
+      "admitted": true,
+      "requestBytes": 1370880,
+      "outputBytes": 2210800,
+      "outputSha256": "5e304d19734379f5be43027934c667698e823343c4f01a6fac265abb51aaefe5",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 9.912614799999982
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 11.709685399999989
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 11.540793800000028
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 9.535834800000021
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 9.578184199999987
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 11.41959539999998
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 11.312968999999976
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 10.68870480000005
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 10.72438059999995
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 13.054129999999986
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 12.715868800000043
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 10.146870200000013
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 9.434061800000018
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 12.627748599999995
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 12.580108399999972
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 9.964372999999977
+        }
+      ],
+      "medianA": 9.93849389999998,
+      "medianB": 12.144896899999981,
+      "ratio": 1.222005770914646
+    },
+    {
+      "name": "scene",
+      "count": 10000,
+      "admitted": true,
+      "requestBytes": 170192,
+      "outputBytes": 560440,
+      "outputSha256": "77f606913248a0eb711a6a2c4a88d16bcb3208489ae37e1c074613013bcf1ab5",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.6444745999999215
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 5.504122800000005
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 5.505078200000026
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.990975199999957
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.62179100000003
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 5.508818000000065
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 5.4951580000000835
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 5.165385599999991
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.647366199999942
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 5.563245000000006
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 5.6933130000000345
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.829289400000016
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.794366799999989
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 5.73360819999998
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 5.69829720000007
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.844937799999935
+        }
+      ],
+      "medianA": 4.811828100000003,
+      "medianB": 5.5360315000000355,
+      "ratio": 1.1505048361972932
+    },
+    {
+      "name": "viewport",
+      "count": 10000,
+      "admitted": true,
+      "requestBytes": 170192,
+      "outputBytes": 240256,
+      "outputSha256": "d6d0e9bfba95e911a078233bc37515c600c227ce942bf346e40e389523a6bce6",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.067702999999983
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 4.845890599999985
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 4.756256000000031
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.120797199999925
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.227818399999978
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 4.692213599999922
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 4.691690800000015
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.05504120000005
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.09440880000002
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 4.7138500000000025
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 4.697888599999987
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.0609003999999915
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.063837400000011
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 4.685036200000013
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 4.678780400000051
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 4.06655039999996
+        }
+      ],
+      "medianA": 4.067126699999971,
+      "medianB": 4.695051099999954,
+      "ratio": 1.154390174272168
+    },
+    {
+      "name": "catalog",
+      "count": 10000,
+      "admitted": true,
+      "requestBytes": 170576,
+      "outputBytes": 700760,
+      "outputSha256": "f7a7134ad03fed1ae4ea54bb171da2aec35300fe028d29e6e6a1df95a0c96cc2",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 7.164253199999985
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 13.974574200000006
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 13.992172399999982
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 7.148542799999996
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 7.16818600000006
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 14.020359000000008
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 14.20890419999996
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 7.0749270000000255
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 7.135168599999997
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 13.992968400000063
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 13.9720401999999
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 7.123063000000002
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 7.143184800000017
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 13.975162799999998
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 13.987340600000062
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 7.090977600000042
+        }
+      ],
+      "medianA": 7.139176700000007,
+      "medianB": 13.989756500000022,
+      "ratio": 1.9595756048453048
+    },
+    {
+      "name": "interaction",
+      "count": 10000,
+      "admitted": true,
+      "requestBytes": 170640,
+      "outputBytes": 700816,
+      "outputSha256": "23ad1d906328d7ef67f72849c4d0d70b07cec5b31f4de0a7912a5d5ad3959de9",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 13.456599599999937
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 21.667460799999937
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 21.597663400000055
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 13.507631199999924
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 13.32496280000014
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 21.782954400000015
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 21.5985686
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 13.647649599999932
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 13.379835600000115
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 21.674524999999996
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 21.90469060000014
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 13.6483017999999
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 13.565081400000054
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 21.84784319999999
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 5,
+          "msPerRequest": 21.915771399999905
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 5,
+          "msPerRequest": 13.557890000000043
+        }
+      ],
+      "medianA": 13.532760599999984,
+      "medianB": 21.728739700000006,
+      "ratio": 1.6056398500096154
+    },
+    {
+      "name": "graphforge",
+      "count": 100000,
+      "admitted": true,
+      "requestBytes": 13880880,
+      "outputBytes": 22370800,
+      "outputSha256": "70af08889099241aef48bc2a1efdd456204d5374e2d04d75d7f443e3113594d9",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 101.44625999999971
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 130.10829100000046
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 123.06556050000017
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 111.80606650000027
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 105.85885999999937
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 128.85304799999994
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 123.13358750000043
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 113.9081655
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 101.6442035
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 133.33601800000088
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 133.71512749999965
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 102.37750700000015
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 115.49652500000047
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 121.9677885000001
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 120.45716300000004
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 101.82250899999963
+        }
+      ],
+      "medianA": 104.11818349999976,
+      "medianB": 125.99331775000019,
+      "ratio": 1.210099076978235
+    },
+    {
+      "name": "scene",
+      "count": 100000,
+      "admitted": true,
+      "requestBytes": 1700192,
+      "outputBytes": 5600440,
+      "outputSha256": "3f7773f69b0d2c33d10a1f891faca8f76c8627531b3917cfa04ddaa16266d3fc",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 48.72353099999964
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 57.002050000000054
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 56.95733500000006
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 48.65381200000047
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 48.54827850000038
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 57.097060000000056
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 57.24950699999954
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 48.56299500000023
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 48.50621499999943
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 57.38948150000033
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 57.69026000000031
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 49.0434409999998
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 49.62221649999992
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 59.33135599999969
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 57.62835350000023
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 48.61615299999994
+        }
+      ],
+      "medianA": 48.634982500000206,
+      "medianB": 57.319494249999934,
+      "ratio": 1.178565125421803
+    },
+    {
+      "name": "viewport",
+      "count": 100000,
+      "admitted": true,
+      "requestBytes": 1700192,
+      "outputBytes": 2400256,
+      "outputSha256": "167a58280ea2447be33c52ab8a700974c2df893f77d60e7b42ece3581fa7f83d",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 43.00136250000014
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 48.79624749999948
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 48.55852049999976
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 42.64992050000001
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 42.40584049999961
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 48.724866499998825
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 48.49070849999953
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 42.49087150000014
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 42.44113599999946
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 48.475406999999905
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 48.650353500001074
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 43.342115000001286
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 42.704154999999446
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 48.82859499999904
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 49.31218850000005
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 42.44024449999961
+        }
+      ],
+      "medianA": 42.57039600000007,
+      "medianB": 48.68760999999995,
+      "ratio": 1.1436964316704938
+    },
+    {
+      "name": "catalog",
+      "count": 100000,
+      "admitted": true,
+      "requestBytes": 1700576,
+      "outputBytes": 7000760,
+      "outputSha256": "316ebc292ac98d85da6856b5a3d22ab82c0fbb48c1dc56b7ab93e216cd0fff5d",
+      "byteIdentical": true,
+      "samples": [
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 70.76085950000015
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 137.58469400000104
+        },
+        {
+          "pair": 0,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 137.54597000000103
+        },
+        {
+          "pair": 0,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 70.75900700000057
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 71.39091849999932
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 137.99472249999963
+        },
+        {
+          "pair": 1,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 140.1125135000002
+        },
+        {
+          "pair": 1,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 70.83380899999975
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 70.71559800000068
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 142.10649399999966
+        },
+        {
+          "pair": 2,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 137.90129399999933
+        },
+        {
+          "pair": 2,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 70.65197850000004
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 70.51891299999988
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 139.2484955
+        },
+        {
+          "pair": 3,
+          "label": "B",
+          "repetitions": 2,
+          "msPerRequest": 142.97483699999975
+        },
+        {
+          "pair": 3,
+          "label": "A",
+          "repetitions": 2,
+          "msPerRequest": 70.9036204999993
+        }
+      ],
+      "medianA": 70.75993325000036,
+      "medianB": 138.6216089999998,
+      "ratio": 1.9590409802993858
+    },
+    {
+      "name": "interaction",
+      "count": 100000,
+      "requestBytes": 1700640,
+      "admitted": false,
+      "status": 3,
+      "error": "XYG_GEO_RESOURCE_LIMIT"
+    }
+  ]
+}

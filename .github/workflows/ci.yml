@@ -306,6 +306,9 @@ jobs:
           export XYG_CHROMIUM="$(node -e "console.log(require('playwright').chromium.executablePath())")"
           node tests/browser/geo_live_host_test.mjs
           node tests/browser/geo_live_pointer_test.mjs
+          node tests/browser/geo_mounted_temporal_test.mjs
+          XYG_GEO_SELECTED=0 XYG_GEO_AGGREGATE=1 node tests/browser/geo_mounted_temporal_test.mjs
+          XYG_GEO_HIERARCHY=1 node tests/browser/geo_mounted_temporal_test.mjs
 
       - name: Static PNG export smoke (stdlib + Chromium)
         run: XYG_CHROMIUM="$(node -e "console.log(require('playwright').chromium.executablePath())")" python3 scripts/png_export_smoke.py
@@ -333,6 +336,7 @@ jobs:
         run: |
           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
           npm test --prefix packages/xy-node
+          XYG_CHROMIUM="$(node -e "console.log(require('playwright').chromium.executablePath())")" node scripts/filter_tier_c_conformance.mjs
 
       - name: Graph and chart-scale smoke gates
         run: |
@@ -435,13 +439,16 @@ jobs:
         # Point PNG-export tests at the Playwright Chromium (not on PATH) so the
         # full Figure.to_png path runs here rather than skipping.
         run: |
+          export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
           export XYG_CHROMIUM="$(node -e "console.log(require('playwright').chromium.executablePath())")"
           # Chromium is installed here, so a probe that cannot launch it is a
           # defect: fail rather than skip, so the browser layer cannot pass by
           # absence. (A crash or non-zero exit already fails unconditionally.)
           export XYG_TEST_CHROMIUM="$XYG_CHROMIUM"
           export XY_REQUIRE_BROWSER=1
-          .venv/bin/pytest -q
+          # Required native viewport cases execute once, without optional-browser skips.
+          .venv/bin/pytest -q tests/test_chunked_live.py tests/test_chunked_lifecycle.py tests/test_chunked_installed.py
+          .venv/bin/pytest -q --ignore=tests/test_chunked_live.py --ignore=tests/test_chunked_lifecycle.py --ignore=tests/test_chunked_installed.py
 
       # End-to-end: a real Figure (line decimation + scatter) through to_html's
       # exact payload path, rendered in Chromium, pixels read back. Complements
@@ -556,16 +563,12 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
-      - name: Build raw browser adapter without raster or PNG
+      - name: Build raw browser adapter with shared frozen PNG
         run: |
           set -euo pipefail
           cargo build -p xyg-wasm --release --target wasm32-unknown-unknown
-          cargo tree -p xyg-wasm --target wasm32-unknown-unknown | tee wasm-tree.txt
-          test -s wasm-tree.txt
-          if grep -Eq '(^| )png v' wasm-tree.txt; then
-            echo "::error::direct-browser xyg-wasm unexpectedly enables native PNG"
-            exit 1
-          fi
+          cargo tree -p xyg-wasm --target wasm32-unknown-unknown --edges normal --prefix none --format '{p}|{f}' --color never | tee wasm-tree.txt
+          python3 scripts/check_wasm_features.py wasm-tree.txt
       - name: Build static worker and package WASM artifact
         run: |
           npm ci
@@ -672,6 +675,8 @@ jobs:
           node scripts/geo_overview_painter_snapshot_conformance.mjs
       - name: Strict-CSP local-only lifecycle smoke
         timeout-minutes: 10
+        env:
+          XYG_NATIVE_LIB: ${{ github.workspace }}/target/release/libxyg_core.so
         run: node scripts/wasm_foundation_smoke.mjs
       - name: Strict-CSP GeoColumn ingestion smoke
         timeout-minutes: 10
@@ -889,13 +894,26 @@ jobs:
           # Absolute path: newer uv resolves a bare name as a directory, not
           # the interpreter setup-python put on PATH.
           uv venv .venv --python "$(command -v python)"
-          uv pip install -p .venv/bin/python -e . "pytest>=8,<9"
+          uv pip install -p .venv/bin/python -e . "pytest>=8,<9" "pyyaml>=6"
 
       - name: Public API coherence
         run: .venv/bin/python scripts/check_public_api.py
 
+      # Match the main job: the confined system Chromium cannot reliably read
+      # the offline HTML fixtures under /tmp. Keep their existing deadlines.
+      - name: Cache Python-floor Playwright Chromium
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
+      - name: Install pinned Chromium for Python floor
+        timeout-minutes: 10
+        run: npx playwright install chromium
       - name: Python 3.11 tests (native core)
-        run: .venv/bin/python -m pytest -q
+        run: |
+          export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
+          export XYG_CHROMIUM="$(node -e "console.log(require('playwright').chromium.executablePath())")"
+          .venv/bin/python -m pytest -q
 
   # Cross-library scatter benchmark incl. time-to-first-render (spec/benchmarks/results.md).
   # Each isolated group uses the same deterministic input sizes and runs in

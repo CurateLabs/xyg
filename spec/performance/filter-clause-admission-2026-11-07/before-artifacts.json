@@ -1,0 +1,9 @@
+{
+  "qualification": "Original native digest was verified during build; its optional later copy encountered the already-rebuilt artifact. Original WASM retained only if still exact. No original-native-byte archive claimed.",
+  "retained": {
+    "before-wasm.wasm": {
+      "sha256": "8e67955d5909ca6f56952a3d15580eecfa12b39bf3df0b3615aaa8d9d41fcb9e",
+      "bytes": 1911687
+    }
+  }
+}

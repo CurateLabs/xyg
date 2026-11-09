@@ -127,6 +127,7 @@ export {
 
 export { ChunkedColumns } from "./chunked-columns.js";
 export { NATIVE_ERROR_CODES, XygNativeError } from "./native-path.js";
+export { FrozenTemporalGraph } from "./temporal-graph-frozen.js";
 export { TemporalGraph } from "./temporal-graph.js";
 export {
   GRAPHFORGE_COMPOSITION_VERSION,
@@ -492,3 +493,8 @@ export {RetainedGeoSource} from './geo-retained.js';
 export {GeoTileSource,GeoTileSession} from './geo-tiles.js';
 
 export {GeoOverviewIndex} from './geo-overview-source.js';
+
+export { FilterTierCSession, filterRequest, decodeFilterReply, FilterTierCError } from "./filter-session.js";
+export { encodeTemporalScene, temporalSceneCompile, TemporalSession } from './temporal-scene.js';
+
+export {temporalChart} from "./charts.js";

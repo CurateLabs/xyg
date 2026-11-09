@@ -6,6 +6,8 @@
 //! Node cannot drift. Encoded Scene v31 is unchanged. Hosts splice annotation
 //! styles and mark rows through ABI 159 (`XYAS`) and encode through ABI 160.
 
+use crate::scene::SceneByteWrite;
+
 use crate::scene::{marker_glyph_text, XYDS_MAX_VALUES};
 use crate::scene_annotations::{XYAO_MAGIC, XYAO_STYLE_BYTES, XYAO_V1_HEADER_BYTES, XYAO_VERSION};
 use crate::scene_extras::{
@@ -129,8 +131,8 @@ fn parse_marker(blob: &[u8], record: &mut Record, index: usize) -> Result<(), St
         if at + bytes > blob.len() || n_values % 2 != 0 {
             return Err(StyleSidecarsError::new(StyleSidecarsCode::Payload, index));
         }
-        remainder.extend_from_slice(&(n_values as u32 / 2).to_le_bytes());
-        remainder.extend_from_slice(&0u32.to_le_bytes());
+        remainder.push_word(n_values as u32 / 2);
+        remainder.push_word(0u32);
         remainder.extend_from_slice(&blob[at..at + bytes]);
         at += bytes;
     }
@@ -323,9 +325,9 @@ fn encode_xyss(records: &[Record]) -> Vec<u8> {
         return Vec::new();
     }
     let mut out = Vec::from(*XYSS_MAGIC);
-    out.extend_from_slice(&XYSS_VERSION.to_le_bytes());
-    out.extend_from_slice(&(records.len() as u32).to_le_bytes());
-    out.extend_from_slice(&0u32.to_le_bytes());
+    out.push_word(XYSS_VERSION);
+    out.push_word(records.len() as u32);
+    out.push_word(0u32);
     for record in records {
         let mut prefix = vec![0u8; XYSS_RECORD_PREFIX_BYTES];
         prefix[0..4].copy_from_slice(&record.style_ref.to_le_bytes());

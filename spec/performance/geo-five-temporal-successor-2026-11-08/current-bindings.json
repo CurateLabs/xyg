@@ -1,0 +1,824 @@
+{
+  "parent": "4e2496892fe258f09f2911249005292be43bd5ad",
+  "rootBase": "b007e2d7cafac6d107d6bb409eac89f8a79ee4c9",
+  "sources": {
+    ".gitattributes": {
+      "bytes": 100087,
+      "sha256": "f010e29a2debd70bd7c548e03097a8a40f88401c28a9e45335af22e5bee2695c"
+    },
+    "js/src/50_chartview.ts": {
+      "bytes": 435316,
+      "sha256": "6e6b4f84ee5ecf8677d5c5f0c5f466dc3ab43e40da541f5a2361d3896c0ebe02"
+    },
+    "packages/xy-node/test/geo-kind4-diagnostic.mjs": {
+      "bytes": 2291,
+      "sha256": "45e08c4a1bd203349ff3bbf82895a77f0ec1e7754f4c66d9aad8da611e94d801"
+    },
+    "scripts/geo_notebook_five_temporal_smoke.mjs": {
+      "bytes": 6128,
+      "sha256": "a803f93a65a502c31b82d281f56f5a765e25a05fa67d49aa598339f37ce527c1"
+    },
+    "scripts/qualify_geo_five_temporal.py": {
+      "bytes": 5385,
+      "sha256": "541859ea7861e7f26605d1a4992555a9d74bc3ad23a8501f97642be27785308a"
+    },
+    "spec/design-dossier.md": {
+      "bytes": 302509,
+      "sha256": "13d045943ec0572d590bf61f5e95add28a3c8feb538af961978202e6745de700"
+    },
+    "spec/design/application-consumers.md": {
+      "bytes": 20160,
+      "sha256": "5d1aa2b2365e20512236c7580fd7b663894ee219903faa0841eba7f7b993f3c8"
+    },
+    "spec/design/geo-mounted-temporal-hosts.md": {
+      "bytes": 18880,
+      "sha256": "06081ec7c06b0e38a6368c8692341d3031d7eb6a4dd771771442eb88fae4d45b"
+    },
+    "tests/browser/geo_five_temporal_test.mjs": {
+      "bytes": 15262,
+      "sha256": "7fb3caa210488dea8115987f4273b768c87996b8a57c5d55e92b47f180a07181"
+    },
+    "tests/browser/geo_idle_paint_diagnostic.mjs": {
+      "bytes": 4491,
+      "sha256": "aab458da9231d9be68e060c0087235a902e8757e381e5a63baa92352693606e5"
+    },
+    "tests/geo_five_temporal_fixture.py": {
+      "bytes": 2053,
+      "sha256": "83688d046d43d973acc7804e7c59f3de9ec64ada8092b3998298bd9d063f1ac4"
+    },
+    "tests/notebook_geo_five_temporal.ipynb": {
+      "bytes": 11452,
+      "sha256": "df155d519087e8f48b8ed524a5dcdd8918a2f7f19b010b739a3416a8a421fcda"
+    },
+    "tests/test_geo_five_temporal.py": {
+      "bytes": 6041,
+      "sha256": "3252102613f337ec7d9519bac1c1f12d74d5d8fba05ab7312fd5cf8c3a7bb636"
+    }
+  },
+  "artifacts": {
+    "README.md": {
+      "bytes": 8858,
+      "sha256": "36ffc99f9ce391cd32c359ed1396ced7ca299e469929388af42d254d607366dd"
+    },
+    "browser-producer-inputs.json": {
+      "bytes": 9102,
+      "sha256": "57f2068c34194ad1031f564c6baf65a0f8e9d61c4fea60fece0e21e91fc6fff4"
+    },
+    "checks.json": {
+      "bytes": 18522,
+      "sha256": "6a586717b78b1aa55b0b27b84cb14aece9dbe389b407aec98d4418e3afa180a7"
+    },
+    "compiled-input-equality.json": {
+      "bytes": 37100,
+      "sha256": "c8ee716be372c060085e1faa448b81630ddcfa60f3dc23b1879423eb12c00495"
+    },
+    "early-inputs/jupyter-five-camera-steps.log.ipynb.gz": {
+      "bytes": 2115,
+      "sha256": "ed4f6f87719bcfdf50303f5d75cb26336740997436937af3ce58472636c5a606"
+    },
+    "early-inputs/jupyter-five-first.log.ipynb.gz": {
+      "bytes": 1990,
+      "sha256": "099a9365778eac0273ee20a21c4cd5aad9cc7d59cef7d0daa9744bbe938338c6"
+    },
+    "early-inputs/jupyter-five-second.log.ipynb.gz": {
+      "bytes": 2023,
+      "sha256": "1f1ee3b256dbcbc12c1ad7d4255264dfe85fba2e3a381b24244bb43995444e85"
+    },
+    "environment.json": {
+      "bytes": 10064,
+      "sha256": "69102d65ca421bba71179da91b2d2e7da8d153c93dcf6c83d7779ccb2463b3c7"
+    },
+    "predecessor/.gitattributes.gz": {
+      "bytes": 17878,
+      "sha256": "4d5f86e6d1660a8d286e4f84a7a91e17a88029277380e3d17f129d3b81b0286d"
+    },
+    "predecessor/js/src/50_chartview.ts.gz": {
+      "bytes": 118757,
+      "sha256": "4098e06a10920c8cdbe805d916d86edb7baecb8e99123cefeeb0e612b5152b22"
+    },
+    "predecessor/spec/design/application-consumers.md.gz": {
+      "bytes": 7860,
+      "sha256": "d330813240b9d5318112db01db00953d9a22d1d6b3efe427e228b3350b7abf54"
+    },
+    "predecessor/spec/design/geo-mounted-temporal-hosts.md.gz": {
+      "bytes": 7004,
+      "sha256": "8e984dff08902c775e9254240499e65ab072be5bbbce2e103a3d4605f64ca204"
+    },
+    "predecessor/spec/design-dossier.md.gz": {
+      "bytes": 108729,
+      "sha256": "8e0ab4a6f0c53b2babd81ab947ab7e52098e9bd8956adbce0363f5462708bc13"
+    },
+    "predecessor/tests/browser/geo_five_temporal_test.mjs.gz": {
+      "bytes": 3657,
+      "sha256": "7da3a78fce6be0a2d77b8aeded29eaaf26ec04420824f5a6f0918c4568ca40e9"
+    },
+    "predecessor/tests/test_geo_five_temporal.py.gz": {
+      "bytes": 1447,
+      "sha256": "0a9754bf9a32789f06098b11b76078ce03ca062ea9f55f0b5bd3acd8cb44e14f"
+    },
+    "receipts/api-inventory.log.gz": {
+      "bytes": 160,
+      "sha256": "2c2ed8b7e56f89947c779e844531e52af73a812d573330e449cd7c4c920b51d5"
+    },
+    "receipts/archive.log.gz": {
+      "bytes": 193,
+      "sha256": "65994ca91f1920b156977651f4253dbfcf595414e8bbbf61e08349ba4b50c0d5"
+    },
+    "receipts/archive.log.gz.partial-ac73670af3ab.gz": {
+      "bytes": 20,
+      "sha256": "ac73670af3abed54ac6fb4695131f4099be9fbe39d6076c5d0264a6bbdae9d83"
+    },
+    "receipts/baseline-isolation-final/idle-paint-diagnostic.json.gz": {
+      "bytes": 93073,
+      "sha256": "9de376d79547b6e761ee38e4af3e1db640eaef0074f0a6e99f917952556f2dc3"
+    },
+    "receipts/baseline-isolation-final.log.gz": {
+      "bytes": 436,
+      "sha256": "c2eba621db7a4453246c2ec9502347253c6d91d2e411a9352fcb60caafe1b7d6"
+    },
+    "receipts/baseline-isolation-final.receipt.json.gz": {
+      "bytes": 100295,
+      "sha256": "0d30010b75f2fdef5b643ea10ac8e157b7ad02a9f9fe8691273c778a4decbb43"
+    },
+    "receipts/baseline-reduced-negative/failure-reduced.png": {
+      "bytes": 17628,
+      "sha256": "e54e728bc14c37fe75bac74541331b119e08f992b39968a98e6ac0aac76f2b73"
+    },
+    "receipts/baseline-reduced-negative-final/failure-reduced.png": {
+      "bytes": 17628,
+      "sha256": "e54e728bc14c37fe75bac74541331b119e08f992b39968a98e6ac0aac76f2b73"
+    },
+    "receipts/baseline-reduced-negative-final.log.gz": {
+      "bytes": 527,
+      "sha256": "aff04ea8782ed0a43bfee07511b34fcf8512625254a2560db4b3d3c554b6337f"
+    },
+    "receipts/baseline-reduced-negative-final.receipt.json.gz": {
+      "bytes": 99715,
+      "sha256": "292e220319274d2e70615f1320b19f661aad41416164713afc321b81d998f1d2"
+    },
+    "receipts/baseline-reduced-negative.log.gz": {
+      "bytes": 527,
+      "sha256": "aff04ea8782ed0a43bfee07511b34fcf8512625254a2560db4b3d3c554b6337f"
+    },
+    "receipts/baseline-reduced-negative.receipt.json.gz": {
+      "bytes": 99704,
+      "sha256": "4db1789082df3dfb0e294f4612e2b8fe7114e4fe33c7df01ce0e5c7b5eebcdb8"
+    },
+    "receipts/borrowed-dwarf-lines.txt.gz": {
+      "bytes": 20437992,
+      "sha256": "9dbd77df255c0ceed6969bbfb5e7e17f068270fcc71aeaba78ec09ede2246732"
+    },
+    "receipts/browser-final-driver.log.gz": {
+      "bytes": 203,
+      "sha256": "869030b593b6f545cacf031a30ed3ae3b5ca1c30106778631f4fe840cdc34ce2"
+    },
+    "receipts/browser-matrix-driver.log.gz": {
+      "bytes": 200,
+      "sha256": "05ac89f550e624315fd7a8c9431dd0a093e982109b5fe86ec0e9871c536e0def"
+    },
+    "receipts/build-all-oracles.log.gz": {
+      "bytes": 721,
+      "sha256": "4427b5d0095de5b37a3272f46223120aac001a44a126f0c3746326e898ec4aa8"
+    },
+    "receipts/build-client.log.gz": {
+      "bytes": 1056,
+      "sha256": "0ec158082729c6b01bd0aace89545273e72b5754490fcffd63c6aeb3621acdf3"
+    },
+    "receipts/build-conformance-own.log.gz": {
+      "bytes": 845,
+      "sha256": "57955aca50588359d8d90531f2a06fe34dc2ef5832b7dcf53731f0cf89949bd4"
+    },
+    "receipts/build-conformance.log.gz": {
+      "bytes": 62,
+      "sha256": "6f34d2f5b760eefc209db2d8c920c13c66b0421f59e9a30c7110e5d5b5604e04"
+    },
+    "receipts/canonical-oneview.log.gz": {
+      "bytes": 566,
+      "sha256": "9653103ffc4ff1531840c5a9dd9c479ae1cc4fd485d461c68305aaa15d1597c5"
+    },
+    "receipts/canonical-oneview.receipt.json.gz": {
+      "bytes": 100163,
+      "sha256": "b1a7c6743c797add41c8b6a51016915d23681f45804cbcff553858fcffc114f2"
+    },
+    "receipts/catalog-own.log.gz": {
+      "bytes": 745,
+      "sha256": "6defe55aa6e6d8c47da7f235b51d429780ad15a2146919f2b36a93dffd68ff48"
+    },
+    "receipts/css-color-report.json.gz": {
+      "bytes": 1570,
+      "sha256": "baf339009898a6c170224fa44f5a13cdce642eb268cfa1396362d2a05ceb9bb5"
+    },
+    "receipts/css-color.png": {
+      "bytes": 1491,
+      "sha256": "865766a85a610d03beae351e17a941d953e7972904cf1c0badb873d3453f9299"
+    },
+    "receipts/css-shared-copy-regression.log.gz": {
+      "bytes": 1491,
+      "sha256": "ae73e25aa59d38cb54ea6a3ddb9acf6e4177cb917b99d8b9d0561cb6a451923f"
+    },
+    "receipts/css-shared-copy-regression.receipt.json.gz": {
+      "bytes": 99603,
+      "sha256": "dd3f6e1121355b3a13388836765d18843ffb3af45a560707bce99a3594c057ce"
+    },
+    "receipts/direct-cursor-final/five-direct.png": {
+      "bytes": 16027,
+      "sha256": "1315f6d23171009ab53ffad72c00903777db6195f99127c5206c1a91403af1fa"
+    },
+    "receipts/direct-cursor-final.log.gz": {
+      "bytes": 232,
+      "sha256": "88ce4a895247e7bc6428853ee1f5e858652d742c67d40374603b29472fc23547"
+    },
+    "receipts/direct-cursor-final.receipt.json.gz": {
+      "bytes": 99615,
+      "sha256": "9af8d9fe63d498cc67e21a6e071a025031583e0b9df2d787d2c06b05942ff8b0"
+    },
+    "receipts/direct-cursor-matrix/five-direct.png": {
+      "bytes": 16027,
+      "sha256": "1315f6d23171009ab53ffad72c00903777db6195f99127c5206c1a91403af1fa"
+    },
+    "receipts/direct-cursor-matrix.log.gz": {
+      "bytes": 232,
+      "sha256": "3787c075401784db48b525a746141d4aa5204c7bc361c3eb809114ef09d14afe"
+    },
+    "receipts/direct-cursor-matrix.receipt.json.gz": {
+      "bytes": 99615,
+      "sha256": "64850b67fcbc047c9e2d5141cad9fe6cb0de0e09ac1946fd2d214d5730385a3f"
+    },
+    "receipts/direct-range-final/five-range.png": {
+      "bytes": 16027,
+      "sha256": "1315f6d23171009ab53ffad72c00903777db6195f99127c5206c1a91403af1fa"
+    },
+    "receipts/direct-range-final.log.gz": {
+      "bytes": 232,
+      "sha256": "88ce4a895247e7bc6428853ee1f5e858652d742c67d40374603b29472fc23547"
+    },
+    "receipts/direct-range-final.receipt.json.gz": {
+      "bytes": 99623,
+      "sha256": "e1dfaec06882836696d86d95d8e2d6c34e64ee28a7466e8ce4b7747227e85831"
+    },
+    "receipts/direct-range-matrix/five-range.png": {
+      "bytes": 16027,
+      "sha256": "1315f6d23171009ab53ffad72c00903777db6195f99127c5206c1a91403af1fa"
+    },
+    "receipts/direct-range-matrix.log.gz": {
+      "bytes": 232,
+      "sha256": "3787c075401784db48b525a746141d4aa5204c7bc361c3eb809114ef09d14afe"
+    },
+    "receipts/direct-range-matrix.receipt.json.gz": {
+      "bytes": 99623,
+      "sha256": "ddf33952a0d2f31961ed456b34d048e217e2f3c7d3062d1716d41b078f51cd5f"
+    },
+    "receipts/five-reduced.png": {
+      "bytes": 17640,
+      "sha256": "75797cd7bbf3a46ed1d9e8da9e2ca5ebcedc84a61b88afb25c9838604da189d0"
+    },
+    "receipts/format-commit.log.gz": {
+      "bytes": 49,
+      "sha256": "b11c914ca01768be0fbae29a5590a64a512c0f6571f5bf12517b18448bb72b60"
+    },
+    "receipts/format-first.log.gz": {
+      "bytes": 108,
+      "sha256": "0abf8a9ac51ad9dac5d31ac7c29893f4d870e8728f72ccd52244bbf17441a656"
+    },
+    "receipts/format-source-final.log.gz": {
+      "bytes": 49,
+      "sha256": "ef1dfebbe953d9c523d8bf6a263cb2375629de23b5093ff3cc25b619ad8311ce"
+    },
+    "receipts/hierarchy-oneview.log.gz": {
+      "bytes": 1142,
+      "sha256": "e8b07b545c6b7805f4d74b0c6a5ac268a612e89cbee24c19ea3d05d6f6283b1e"
+    },
+    "receipts/hierarchy-oneview.receipt.json.gz": {
+      "bytes": 100183,
+      "sha256": "fc158b0e3c005fbde8e17ce05547e6a6bb9508f094745e0e7cb4f42b25ab1d93"
+    },
+    "receipts/hooks-commit.log.gz": {
+      "bytes": 72,
+      "sha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "receipts/hooks-unstaged.log.gz": {
+      "bytes": 72,
+      "sha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89"
+    },
+    "receipts/idle-diagnostic-copy.log.gz": {
+      "bytes": 436,
+      "sha256": "c2eba621db7a4453246c2ec9502347253c6d91d2e411a9352fcb60caafe1b7d6"
+    },
+    "receipts/idle-diagnostic.log.gz": {
+      "bytes": 436,
+      "sha256": "c2eba621db7a4453246c2ec9502347253c6d91d2e411a9352fcb60caafe1b7d6"
+    },
+    "receipts/idle-paint-diagnostic-first.json.gz": {
+      "bytes": 92831,
+      "sha256": "83bdde374026bc59ce3bc102bff2837091d796d63a079acc74b47ac3d312706d"
+    },
+    "receipts/idle-paint-diagnostic.json.gz": {
+      "bytes": 93073,
+      "sha256": "9de376d79547b6e761ee38e4af3e1db640eaef0074f0a6e99f917952556f2dc3"
+    },
+    "receipts/indexed-oneview.log.gz": {
+      "bytes": 592,
+      "sha256": "53210196130808c44e132f0c3a046e7fc62522671395cb9804daa5540c895939"
+    },
+    "receipts/indexed-oneview.receipt.json.gz": {
+      "bytes": 100182,
+      "sha256": "8b7d46c1eeebdaccc157e4ee2298b8d09dbe6ec214897143c2b4559b07b3b148"
+    },
+    "receipts/jupyter-five-camera-steps.log.gz": {
+      "bytes": 3428,
+      "sha256": "28df9276209ab71db7c8791a61681a8a099de7bd238676dc4647aa783efc58b3"
+    },
+    "receipts/jupyter-five-camera-steps.receipt.json.gz": {
+      "bytes": 99348,
+      "sha256": "d0e22941ea2d9661cfbe149936784d03248b9d8c779a689871e6b99324e07e6d"
+    },
+    "receipts/jupyter-five-cameras.png": {
+      "bytes": 217728,
+      "sha256": "0d667f5bee6eb868c35b32a637e5cdd7169b0145b11b7b93b5cb589b3f10f34d"
+    },
+    "receipts/jupyter-five-failure.png": {
+      "bytes": 218526,
+      "sha256": "9419c578a13c8828db43b0f7cfea5f2b8cb19f487957326dc6aed5652dc36a28"
+    },
+    "receipts/jupyter-five-first.log.gz": {
+      "bytes": 3529,
+      "sha256": "6b4ee5575cb37c8b70e03efa4e0499d2b5e772154a1f872fd524d3883bf19edb"
+    },
+    "receipts/jupyter-five-release-ack.log.gz": {
+      "bytes": 798,
+      "sha256": "adb828306edd5b2bdeca71d1c83baa47e3c60e3758bfa1e41d98e9d129ed71b5"
+    },
+    "receipts/jupyter-five-release-ack.receipt.json.gz": {
+      "bytes": 99344,
+      "sha256": "133dd22fccc9bd75cf354f71c018ae2ede4a3c872fa2e995d48533c55f837f53"
+    },
+    "receipts/jupyter-five-report.json.gz": {
+      "bytes": 830,
+      "sha256": "f92b696ddc7c39c7adbb0e8d5c6ed726d0db1d06897e2ee12c691b58d120f85f"
+    },
+    "receipts/jupyter-five-second.log.gz": {
+      "bytes": 3235,
+      "sha256": "d5acc525a21d31b03df82a3c9ee3719157a42e36c538bb3ddd99a6cd146fbcc5"
+    },
+    "receipts/jupyter-multiloop/jupyter-five-cameras.png": {
+      "bytes": 217728,
+      "sha256": "0d667f5bee6eb868c35b32a637e5cdd7169b0145b11b7b93b5cb589b3f10f34d"
+    },
+    "receipts/jupyter-multiloop/jupyter-five-report.json.gz": {
+      "bytes": 829,
+      "sha256": "7ae458933ad3adc6bad705f5f2ca62faaa94951e9749e503eae36cb90db7c4b1"
+    },
+    "receipts/jupyter-multiloop/jupyter-server.log.gz": {
+      "bytes": 1191,
+      "sha256": "d61bba6fe30c210210cd0895c7dceaeb6bdd4c2323c09cb509d5c74786515b25"
+    },
+    "receipts/jupyter-multiloop-final/jupyter-five-cameras.png": {
+      "bytes": 178093,
+      "sha256": "f35b90a4ebeaeb227dd1d1108df04eef80bbe3f7aeb2a4e4745b8a0346bd6474"
+    },
+    "receipts/jupyter-multiloop-final/jupyter-five-report.json.gz": {
+      "bytes": 828,
+      "sha256": "b94873313d07f3cf0b246363e042e1857a848e0db909321111cd3e067c45fc96"
+    },
+    "receipts/jupyter-multiloop-final/jupyter-server.log.gz": {
+      "bytes": 1190,
+      "sha256": "243c2b00e4638389276c00c21898970ae68eeb99a906ce2499cf84c7cb448562"
+    },
+    "receipts/jupyter-multiloop-final.log.gz": {
+      "bytes": 796,
+      "sha256": "c6a80a76d103a5ca58c5a8904e1b7a98e736b840b9591fac91d1a2bd914263b7"
+    },
+    "receipts/jupyter-multiloop-final.receipt.json.gz": {
+      "bytes": 100282,
+      "sha256": "0e0e2d42efb17c24947888fb897cda383cd57996b5ebee5458530effb188b47f"
+    },
+    "receipts/jupyter-multiloop.log.gz": {
+      "bytes": 796,
+      "sha256": "ec61d029a31feefa0beb5be9f8e015f1e096df13d33683da6a7ae36bca96a525"
+    },
+    "receipts/jupyter-multiloop.receipt.json.gz": {
+      "bytes": 99645,
+      "sha256": "14eaf61ba5fd0e924cb4ee3b915756b2755e9af03269fa82863ac1e98b6ad629"
+    },
+    "receipts/jupyter-server.log.gz": {
+      "bytes": 1189,
+      "sha256": "8c6602f42a0ff8ead25b18329a0adbc98377b2e367d69f67ea340844ae364e93"
+    },
+    "receipts/jupyter-single-final/jupyter-five-cameras.png": {
+      "bytes": 178112,
+      "sha256": "e9648085055559ee37a35063d01f3ea2b033890c7e899433e0785312ac2cd89c"
+    },
+    "receipts/jupyter-single-final/jupyter-five-report.json.gz": {
+      "bytes": 830,
+      "sha256": "6323469c8b8fcde7f75e347ef4be85c1a7fa2ffa797236a04ff835fa3d390aa8"
+    },
+    "receipts/jupyter-single-final/jupyter-server.log.gz": {
+      "bytes": 1193,
+      "sha256": "8fc711b54309748c2c59c91f94c2729883b6a1275d291ba3d1cc90a938e82569"
+    },
+    "receipts/jupyter-single-final.log.gz": {
+      "bytes": 796,
+      "sha256": "431e270277629c4cdca0debd56e7ce437500403d59af1249ede76dbbb0640af1"
+    },
+    "receipts/jupyter-single-final.receipt.json.gz": {
+      "bytes": 100258,
+      "sha256": "ff9c8426dabafa573d5a75ed594a6b2be26008a509902719549227cc9cf084b5"
+    },
+    "receipts/kind4-borrowed.bin": {
+      "bytes": 1784,
+      "sha256": "35c2f21207ae88d1caeb611fbec20d00b429dd376a21898049f3cba7b7236212"
+    },
+    "receipts/kind4-cabi.bin": {
+      "bytes": 1784,
+      "sha256": "2697e57d62257606cea8c29a72ac73fc6ce098119501a06d2266884b5aec0286"
+    },
+    "receipts/kind4-diagnostic.json.gz": {
+      "bytes": 598,
+      "sha256": "41862bb7c80530f37795020613b543804133e631e1a7c8f5c63987bf35109642"
+    },
+    "receipts/kind4-own.bin": {
+      "bytes": 1784,
+      "sha256": "2697e57d62257606cea8c29a72ac73fc6ce098119501a06d2266884b5aec0286"
+    },
+    "receipts/kind4-request.bin": {
+      "bytes": 656,
+      "sha256": "802f467a38b60e3352770f644a63d71d27e80be02fa088f9c5f213860a9621e5"
+    },
+    "receipts/kind4-wasm.bin": {
+      "bytes": 1784,
+      "sha256": "2697e57d62257606cea8c29a72ac73fc6ce098119501a06d2266884b5aec0286"
+    },
+    "receipts/node-geographic-own-oracles.log.gz": {
+      "bytes": 19169,
+      "sha256": "bf73bc08caee079e17b480e50b18f545011efa1aa4faebecd8e4413c2ed9978a"
+    },
+    "receipts/node-geographic-own-oracles.receipt.json.gz": {
+      "bytes": 99633,
+      "sha256": "b7c788f34255df94a47bd3f0850ef0d7ee87ce7f1bb1b1b21f359362c6acdde3"
+    },
+    "receipts/notebook-ruff-fix.log.gz": {
+      "bytes": 1575,
+      "sha256": "00fbb546f09b3f9621527727707f834895a314661d0c21f46ed8891787c7edd3"
+    },
+    "receipts/oneview-driver.log.gz": {
+      "bytes": 176,
+      "sha256": "76666b6ec4ac86501f1236b1ec4fa79c949916279d0d8d12aef611f5f424cbc1"
+    },
+    "receipts/ownership-audit.log.gz": {
+      "bytes": 78,
+      "sha256": "f8b1221e25ee6543371a0608aef4363f94e7dd065cfe33041831b79432051778"
+    },
+    "receipts/ownership-audit.receipt.json.gz": {
+      "bytes": 99924,
+      "sha256": "f8fdb67dd4b81f82458000f9172208f6e20d7d9637c91b1aecbd9e72031fa667"
+    },
+    "receipts/ownership-inventory-tests.log.gz": {
+      "bytes": 53,
+      "sha256": "d133fcce00cfb8d5b6a2329384212ad5a7cf6c3d7769870389e3391e592eb3c0"
+    },
+    "receipts/ownership-inventory-tests.receipt.json.gz": {
+      "bytes": 100030,
+      "sha256": "4124b5b2f4adc6686e87da551dfcf7293c11c1426de6e61f17dcf85843428ad1"
+    },
+    "receipts/python311-lifecycle.log.gz": {
+      "bytes": 61,
+      "sha256": "f8c20076115194573e79df2ca0fc9860894d744cbb7843f392ef50f38330e2b6"
+    },
+    "receipts/python311-lifecycle.receipt.json.gz": {
+      "bytes": 99418,
+      "sha256": "427ed2f3f30f0904fd4ac90b1fbe3822ec22e50009bf3c11d6b3a623d1657792"
+    },
+    "receipts/python312-lifecycle.log.gz": {
+      "bytes": 61,
+      "sha256": "a7ab4871f424c2f92f7e71372a76e4b56b587bf8b40af0866a22f2978522b8e6"
+    },
+    "receipts/python312-lifecycle.receipt.json.gz": {
+      "bytes": 99403,
+      "sha256": "4ca0cc0870dc7ce5fb3e2dcb530bceb7f1a3b79a88cb09f84598702f322b1841"
+    },
+    "receipts/reduced-cursor-final/five-reduced.png": {
+      "bytes": 17640,
+      "sha256": "75797cd7bbf3a46ed1d9e8da9e2ca5ebcedc84a61b88afb25c9838604da189d0"
+    },
+    "receipts/reduced-cursor-final.log.gz": {
+      "bytes": 232,
+      "sha256": "c3039ba1186a19f628b166e389f1fcdd21e1fce62a460c7e7a91410c17247210"
+    },
+    "receipts/reduced-cursor-final.receipt.json.gz": {
+      "bytes": 99630,
+      "sha256": "e69e8d770c2493348d5b06c335c16364100cbd23cd342dafd3a4e886229c2f66"
+    },
+    "receipts/reduced-cursor-matrix/five-reduced.png": {
+      "bytes": 17640,
+      "sha256": "75797cd7bbf3a46ed1d9e8da9e2ca5ebcedc84a61b88afb25c9838604da189d0"
+    },
+    "receipts/reduced-cursor-matrix.log.gz": {
+      "bytes": 233,
+      "sha256": "7f71c97a3d2427f7088ff98b3f39d736e7b4452fc7cd1cbb229a4ef1fe9ad974"
+    },
+    "receipts/reduced-cursor-matrix.receipt.json.gz": {
+      "bytes": 99631,
+      "sha256": "115d38659edb5f790a7f39013514db57b7cceb2a9fba141c4b1942f27b48cfdf"
+    },
+    "receipts/reduced-fixed-first.log.gz": {
+      "bytes": 232,
+      "sha256": "73011deadd2fc09c584f95ed85a5576871207a9091860e8b82ac83492c1738dd"
+    },
+    "receipts/reduced-matrix-first.log.gz": {
+      "bytes": 233,
+      "sha256": "ec25632e2d406b99bfe77c7e16542b4d9f888ea072e79d2bdb354371f41a35d4"
+    },
+    "receipts/reduced-range-final/five-reduced.png": {
+      "bytes": 17640,
+      "sha256": "75797cd7bbf3a46ed1d9e8da9e2ca5ebcedc84a61b88afb25c9838604da189d0"
+    },
+    "receipts/reduced-range-final.log.gz": {
+      "bytes": 232,
+      "sha256": "c3039ba1186a19f628b166e389f1fcdd21e1fce62a460c7e7a91410c17247210"
+    },
+    "receipts/reduced-range-final.receipt.json.gz": {
+      "bytes": 99636,
+      "sha256": "ffda82f0fb265c507ca7738cab235d3ab32e050f311ef08dd8f1b9c7f90528d9"
+    },
+    "receipts/reduced-range-matrix/five-reduced.png": {
+      "bytes": 17640,
+      "sha256": "75797cd7bbf3a46ed1d9e8da9e2ca5ebcedc84a61b88afb25c9838604da189d0"
+    },
+    "receipts/reduced-range-matrix.log.gz": {
+      "bytes": 233,
+      "sha256": "7f71c97a3d2427f7088ff98b3f39d736e7b4452fc7cd1cbb229a4ef1fe9ad974"
+    },
+    "receipts/reduced-range-matrix.receipt.json.gz": {
+      "bytes": 99637,
+      "sha256": "d00e948aa073dba6e78072ec6525803566464718cbf05b4e9e5714f737ada285"
+    },
+    "receipts/ruff-commit.log.gz": {
+      "bytes": 39,
+      "sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "receipts/ruff-first.log.gz": {
+      "bytes": 2181,
+      "sha256": "c506971411bd6224b6fab20ed7e7667472d491f3bba9140d48105c3b2ff812da"
+    },
+    "receipts/ruff-source-final.log.gz": {
+      "bytes": 39,
+      "sha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd"
+    },
+    "receipts/wasm-assets.log.gz": {
+      "bytes": 104,
+      "sha256": "a9024230f03cfab4b76058c9f343d5ede416ef53be37bda0ca0cf926621cec18"
+    },
+    "receipts/wasm-assets.receipt.json.gz": {
+      "bytes": 99319,
+      "sha256": "803e0ea21ab21a8259c3c06fe157756216ee46940d1487ff74dd701f995e180c"
+    },
+    "reproduction/archive-five-successor.py.gz": {
+      "bytes": 2264,
+      "sha256": "70ff7aed10d4abfc4e8c6f39b4b49adf10871643340bdd2a6c56283b31b63a43"
+    },
+    "reproduction/oneview-five-successor.py.gz": {
+      "bytes": 519,
+      "sha256": "b18b157da14744a9b2439daf511d1050df1ecc5b29dff762bbdbddc2f4a3e752"
+    },
+    "reproduction/qualify-five-matrix-final.py.gz": {
+      "bytes": 642,
+      "sha256": "a003108e100ae3b77bbac2bbd23e8188ae391b06f67ea95d002089a46fd3cf4c"
+    },
+    "reproduction/qualify-five-matrix.py.gz": {
+      "bytes": 643,
+      "sha256": "ee4f8e1f1ae93e2aae6681c0a4cbf1216f55080b84726191bfd828d0a77871c5"
+    },
+    "runtime/260604ced79fc5c8b1995f548eb59ffa9cc1bfd456867e2dedcea7610e8be1d1.js.gz": {
+      "bytes": 245187,
+      "sha256": "4e9b84598e01d2acd9bee26c71d76e04ce6ecefadca5fbd57d49bfc579d256cd"
+    },
+    "runtime/2afad9d735004bff948215b0d598efc00bbe4e50a05686c2e88bb6168b1d245a.js.gz": {
+      "bytes": 245138,
+      "sha256": "cf5a15f724386576bf93de31a9cadf4c5315c0a7aeeef599ec95795dab743ab2"
+    },
+    "runtime/borrowed-unmatched-catalog-oracle.gz": {
+      "bytes": 14715553,
+      "sha256": "818d5e6248e652d164d1b957c89cc492f175a5c051396946918950ab9aa7a0fc"
+    },
+    "runtime/client-esm.gz": {
+      "bytes": 245973,
+      "sha256": "0510811e4fba64acb174ac9d3fcb001b98ff1a542cd1558e23580abf9953b769"
+    },
+    "runtime/client-iife.gz": {
+      "bytes": 246029,
+      "sha256": "53d79f278bbb8fdb4365e2e81d2b349442cda3b41152e163d9c19f47f3423d1b"
+    },
+    "runtime/native-405.gz": {
+      "bytes": 2918733,
+      "sha256": "c6adaeeccb6ebc65da9c33b02906441c3f322ce7deb7342b488dc7c01b8d0649"
+    },
+    "runtime/source-built-catalog-oracle.gz": {
+      "bytes": 14760959,
+      "sha256": "787ededa3f8a4544aaa5706b8fddb13043c5aeb581f38b07f5d8ccc0d05521a9"
+    },
+    "runtime/wasm-38.gz": {
+      "bytes": 782513,
+      "sha256": "a9871d80f96149950df6f816bf68347a0de00b5dbe163db8ffe1697c68325192"
+    },
+    "source.tar.gz": {
+      "bytes": 8329160,
+      "sha256": "9f08f32695706b76441dd3a3d987b8d3965a9e03b5e0848157e6496f97fb3b8f"
+    }
+  },
+  "historicalBindings": {
+    "spec/performance/geo-five-temporal-2026-11-08/README.md": {
+      "bytes": 6048,
+      "sha256": "1069b52383926ec52c7c21d27e1b5b5d6a7e3432778077244d0f3a1e0f64789f"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/before-node-runner.py.gz": {
+      "bytes": 728,
+      "sha256": "c5cb93519b6ab75043dc0f2d01102a0a4281ecb929664fee96e2c4805318bec1"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/before-python.py.gz": {
+      "bytes": 912,
+      "sha256": "16eb21c7f2b1b255ea6b9d27200c522e970a82ea57bc57e3a785c2f36ab23471"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/checks.json": {
+      "bytes": 1476,
+      "sha256": "36900192c75b52e94aa61af5aa7e9e00940671b456a8ce18e65d71d84163f179"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/current-bindings.json": {
+      "bytes": 9018,
+      "sha256": "050cdb3e836122996530d9e1d62c4dca2a3618c3c5e6d44aca4bcf5da7957cfb"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/environment.json": {
+      "bytes": 1557,
+      "sha256": "b1192decefa074dce46e969a5d7ab30efc47f863832246ff5a9a22dd8af32e40"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/failure-reduced.png": {
+      "bytes": 17628,
+      "sha256": "e54e728bc14c37fe75bac74541331b119e08f992b39968a98e6ac0aac76f2b73"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/five-direct.png": {
+      "bytes": 16296,
+      "sha256": "6d49c8ec698d9958327c763cf58f69a5caf9c474c14c929560591dc292e23005"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/five-range.png": {
+      "bytes": 16296,
+      "sha256": "6d49c8ec698d9958327c763cf58f69a5caf9c474c14c929560591dc292e23005"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/five.png": {
+      "bytes": 16296,
+      "sha256": "6d49c8ec698d9958327c763cf58f69a5caf9c474c14c929560591dc292e23005"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/before-node-final.log.gz": {
+      "bytes": 282,
+      "sha256": "3a43660fd9f6994ac15e9d69c532b13bfe4c07fe5a6e918417eb22ebddd1c255"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/before-python-final.log.gz": {
+      "bytes": 193,
+      "sha256": "fcd3f05c998a5000bc881c78371001964d71a5497dfcf4e8dd33632026e88419"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/before-python.log.gz": {
+      "bytes": 683,
+      "sha256": "67e2ecf13b242dfa81879db66ff7b9b42092dbf44e6b757dcb58ff2d78e45223"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/browser-direct-expanded.log.gz": {
+      "bytes": 174,
+      "sha256": "281564d7417c64d617504277b498f1b756459ab14007d572200d020f5867b67c"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/browser-direct-last.log.gz": {
+      "bytes": 174,
+      "sha256": "281564d7417c64d617504277b498f1b756459ab14007d572200d020f5867b67c"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/browser-direct-sha.log.gz": {
+      "bytes": 232,
+      "sha256": "96d77cde523cb8039cb876b270a99a9188f21698ada925fbf52619aa79308b5a"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/browser-final.log.gz": {
+      "bytes": 174,
+      "sha256": "2b1c205838257c2a7b9e0f673486be270bafc950721be64290c21254cd2a7068"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/browser-first.log.gz": {
+      "bytes": 275,
+      "sha256": "8578edf27995a28378a314b47839f0146323f8fbcc27b3819d81d87eb4f548bd"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/browser-range-last.log.gz": {
+      "bytes": 174,
+      "sha256": "281564d7417c64d617504277b498f1b756459ab14007d572200d020f5867b67c"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/browser-range-sha.log.gz": {
+      "bytes": 232,
+      "sha256": "96d77cde523cb8039cb876b270a99a9188f21698ada925fbf52619aa79308b5a"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/browser-reduced-2.log.gz": {
+      "bytes": 407,
+      "sha256": "14d4b52bc5e4bcdb2bd9fbb40e8ccd943a6de5d6b3ea00e15f8e718fc23f371e"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/browser-reduced-3.log.gz": {
+      "bytes": 398,
+      "sha256": "d78756372a4c1a1d58d4b37c9b6b05045f41a62442da42a778c518cb98e04db6"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/browser-reduced-sha.log.gz": {
+      "bytes": 527,
+      "sha256": "dff3aa1a755cde799f0a62e7b6bf7acbd0e7ac03dd376a514294a68735e97906"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/browser-reduced.log.gz": {
+      "bytes": 407,
+      "sha256": "14d4b52bc5e4bcdb2bd9fbb40e8ccd943a6de5d6b3ea00e15f8e718fc23f371e"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/format-last.log.gz": {
+      "bytes": 49,
+      "sha256": "8cd5f225682ffca45687dd8745b22472958f12e1240e6e3d27ec30d05fb216cc"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/format.log.gz": {
+      "bytes": 49,
+      "sha256": "8cd5f225682ffca45687dd8745b22472958f12e1240e6e3d27ec30d05fb216cc"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/hooks-last.log.gz": {
+      "bytes": 72,
+      "sha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/hooks.log.gz": {
+      "bytes": 72,
+      "sha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/node-final-2.log.gz": {
+      "bytes": 21476,
+      "sha256": "b565101aea551451b0dcfca7da1bb5d29e95390eb99f1fc33435db0b17e753c2"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/node-final-3.log.gz": {
+      "bytes": 25729,
+      "sha256": "67250b25050bf651ac5f012883d8c9828739ae704858f0ee53ba96c1eaebd668"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/node-final.log.gz": {
+      "bytes": 22744,
+      "sha256": "fa799253bec66790527ef8952e19bb391cff4d09b80a0ac85db0953728e030f9"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/node-five-final.log.gz": {
+      "bytes": 222,
+      "sha256": "7a05a7ce1ccaf88022b758b37b700692be94d186570f9a09754896277a1918dc"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/node-five.log.gz": {
+      "bytes": 488,
+      "sha256": "d0d97c5809caff80f3140d37ae79d37543328bb6ca054cbe0e3423566ee2a921"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/node-last.log.gz": {
+      "bytes": 1467,
+      "sha256": "564072514fe79042fe5d21b000a721e3780405b6277072846477691bc68cea36"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/node-tests.log.gz": {
+      "bytes": 1415,
+      "sha256": "481ea671c626ed2f3d097eeb39188d929ceb46b016db61c18d6892e8afb4a71a"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/python-final.log.gz": {
+      "bytes": 62,
+      "sha256": "1d3c6e95dc48e941ddaf7e1920acff0e623ef7a136b69e79b731f8a7dbda9e46"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/python-five-final.log.gz": {
+      "bytes": 49,
+      "sha256": "e22f4e90e552369ffd607325651f47fa425ea8a55353c729eac2c8cd1a5ffd9e"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/python-five-last.log.gz": {
+      "bytes": 50,
+      "sha256": "2e39803ff7c1ad10e584e6dd820630b1ef1e99eea01284e986ed7891658d23c5"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/python-five.log.gz": {
+      "bytes": 1867,
+      "sha256": "9772d6b10231b2d1153ada45aa0bba9d463c34b85f304db1621121f586789a44"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/python-last.log.gz": {
+      "bytes": 61,
+      "sha256": "e5f0fce7c292e10cab0865534f8b9b0b6ba96cc2caccfb73adbc0b53d5af02bf"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/python-tests.log.gz": {
+      "bytes": 52,
+      "sha256": "e5778dc61b811c0249d8d54bd00d8bcbf19415072e60cc41ba7e7dcd666a7588"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/ruff-last.log.gz": {
+      "bytes": 39,
+      "sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/logs/ruff.log.gz": {
+      "bytes": 39,
+      "sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/predecessor/packages/xy-node/src/geo-live-host.js.gz": {
+      "bytes": 3282,
+      "sha256": "1e87eacb75de9e7d4611d364a1ebf7bb7857666b0881bbb491d0d0b33576afb7"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/predecessor/packages/xy-node/src/geo-temporal.js.gz": {
+      "bytes": 3032,
+      "sha256": "57ae5fb4e059f69b2d5dfad4ef15ca5c66280f171b4f59b9b4093b4bf6c9ae13"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/predecessor/packages/xy-node/test/geo-mounted-hierarchy-temporal-fixture.mjs.gz": {
+      "bytes": 865,
+      "sha256": "ede2b2e3205f2a880795fc2b41615a65e2594d68a521953faea7ae4f734e7aaa"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/predecessor/python/xyg/_geo_live_host.py.gz": {
+      "bytes": 3551,
+      "sha256": "b439ea7600cd01de7a417e61e366d066a5c7e996359ab8a65c3fbc17089004cd"
+    },
+    "spec/performance/geo-five-temporal-2026-11-08/predecessor/python/xyg/_geo_temporal.py.gz": {
+      "bytes": 4925,
+      "sha256": "0894597c55521c0f3ec1ed761e113edb367f617bee1eec945d1d8070366fcff9"
+    }
+  },
+  "sourceSnapshots": "source.tar.gz contains raw SHA256-named members; receipt source paths map to those hashes",
+  "selfHash": "excluded; final commit/tree/diffs bound by external immutable handoff"
+}

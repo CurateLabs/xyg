@@ -1,0 +1,7 @@
+Diagnostic source: /home/ubuntu/.t3-owned/1cafa70d/minimal-png-probe
+Diagnostic target: /home/ubuntu/.t3-owned/1cafa70d/png-target
+RUSTFLAGS='-C llvm-args=--inline-threshold=50 -C opt-level=2' cargo build --manifest-path "$TMPDIR/minimal-png-probe/Cargo.toml" -p xyg-wasm --release --target wasm32-unknown-unknown --features xyg-engine/frozen-raster
+node --input-type=module: optimizeWasm(raw) from ./js/optimize-wasm.mjs; write diagnostic only; compare raw<=1927168 and gzipSync(default level6)<=786432.
+Actual PNG oracle: minimal-feature-png-parity.log.gz, seven retained XYFG cases, scales1/2, WebAssembly export compared byte-for-byte with public native FrozenTemporalGraph.export('png').
+The initial frozen-raster build failed because symbol_extent was gated by raster; its copied raw file was stale (same bytes as the previous global-raster probe), explicitly named STALE-FAILED-BUILD, excluded from every qualified artifact and size measurement. The corrected feature build is the only minimal-feature module used by the size and PNG oracle logs.
+Product Rust later moves only the cfg(test) module to file end for Clippy. The diagnostic source archive/manifests are authoritative for that measured probe; no final-head PNG packaging claim is made.

@@ -1,0 +1,405 @@
+{
+  "meaning": "Intermediate experiments are not final-source qualification. Intermediate working source/client identities were not all retained. Final checks and rechecks have their own explicit commands/exits.",
+  "attempts": [
+    {
+      "log": "browser-aggregate1.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "browser-aggregate2.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "browser-aggregate3.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "browser-aggregate4.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "browser-baseline-host.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "browser-baseline-pointer.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "browser1.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "browser10.log.gz",
+      "outcome": "failed",
+      "exit": 124
+    },
+    {
+      "log": "browser11.log.gz",
+      "outcome": "failed",
+      "exit": 124
+    },
+    {
+      "log": "browser12.log.gz",
+      "outcome": "failed",
+      "exit": 124
+    },
+    {
+      "log": "browser13.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "browser14.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "browser15.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "browser16.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "browser17.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "browser18.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "browser19.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "browser2.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "browser3.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "browser4.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "browser5.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "browser6.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "browser7.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "browser8.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "browser9.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "client-build.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "client-build2.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "client-build3.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "client-build4.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "client-build5.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "client-build6.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "client-build7.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "foreign-comm-red.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "format-preliminary.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "format-preliminary2.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "inventory-before.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "inventory-write.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "native-confirm.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "node-control.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "node-control2.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "node-install.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "node-regression.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "notebook1.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "notebook2.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "notebook3.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "notebook4.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "notebook5.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "notebook6.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "notebook7.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "notebook8.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "notebook9.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "ownership.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "python-control.log.gz",
+      "outcome": "setup/diagnostic; not qualification",
+      "exit": null
+    },
+    {
+      "log": "python-control2.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "python-control3.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "python-control4.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "python-control5.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "python-control6.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "python-regression.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "python-regression2.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "ruff-fix.log.gz",
+      "outcome": "setup/diagnostic; not qualification",
+      "exit": null
+    },
+    {
+      "log": "ruff-preliminary.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "ruff-preliminary2.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "selected-birth-green.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "selected-birth-red.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "test-first.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "ty.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "ty2.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "vscode-download-probe.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "vscode-download.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "vscode-node22-download.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "vscode-node22-version.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "vscode-version.log.gz",
+      "outcome": "passed",
+      "exit": 0
+    },
+    {
+      "log": "vscode1.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "vscode2.log.gz",
+      "outcome": "failed",
+      "exit": 124
+    },
+    {
+      "log": "vscode3.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "vscode4.log.gz",
+      "outcome": "passed intermediate-source Node24 application probe; not final-source qualification",
+      "exit": 0
+    },
+    {
+      "log": "vscode5-launch.log.gz",
+      "outcome": "failed",
+      "exit": 1
+    },
+    {
+      "log": "vscode6.log.gz",
+      "outcome": "setup/diagnostic; not qualification",
+      "exit": null
+    },
+    {
+      "log": "xvfb.log.gz",
+      "outcome": "setup/diagnostic; not qualification",
+      "exit": null
+    }
+  ]
+}

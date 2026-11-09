@@ -1,0 +1,498 @@
+{
+  "artifacts": {
+    "packages/xy-client/dist/index.js": {
+      "bytes": 850835,
+      "parentManifest": "spec/performance/chunked-beyond-ram-native-2026-11-08/checks.json",
+      "parentManifestSha256": "77b8f69cf2f56fcab42959ebe7cf4440c83923856dcc2dbcec7623e53c7766d9",
+      "parentRecord": "packages/xy-client/dist/index.js",
+      "path": "packages/xy-client/dist/index.js",
+      "sha256": "e10978d62101539a958cedab001b89f31cf3efe97adb0132db31b306e583afd7"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 850856,
+      "parentManifest": "spec/performance/chunked-beyond-ram-native-2026-11-08/checks.json",
+      "parentManifestSha256": "77b8f69cf2f56fcab42959ebe7cf4440c83923856dcc2dbcec7623e53c7766d9",
+      "parentRecord": "packages/xy-client/dist/standalone.js",
+      "path": "packages/xy-client/dist/standalone.js",
+      "sha256": "550f22b038477d855141f096d0e315bf7c34c2f9b146f869a8b3fb5e4ea264ad"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "bytes": 20933,
+      "parentManifest": "spec/performance/chunked-beyond-ram-native-2026-11-08/checks.json",
+      "parentManifestSha256": "77b8f69cf2f56fcab42959ebe7cf4440c83923856dcc2dbcec7623e53c7766d9",
+      "parentRecord": "packages/xy-client/dist/wasm-inline-worker.js",
+      "path": "packages/xy-client/dist/wasm-inline-worker.js",
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 58827,
+      "parentManifest": "spec/performance/chunked-beyond-ram-native-2026-11-08/checks.json",
+      "parentManifestSha256": "77b8f69cf2f56fcab42959ebe7cf4440c83923856dcc2dbcec7623e53c7766d9",
+      "parentRecord": "packages/xy-client/dist/wasm-worker.js",
+      "path": "packages/xy-client/dist/wasm-worker.js",
+      "sha256": "dbc7007bc40ef1ccd4963b2e0c4c9f15bb6808649c5bd609329df889d9056b3e"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2551186,
+      "parentManifest": "spec/performance/chunked-beyond-ram-native-2026-11-08/checks.json",
+      "parentManifestSha256": "77b8f69cf2f56fcab42959ebe7cf4440c83923856dcc2dbcec7623e53c7766d9",
+      "parentRecord": "packages/xy-client/dist/xyg-wasm-inline.js",
+      "path": "packages/xy-client/dist/xyg-wasm-inline.js",
+      "sha256": "b754c189f98a7ad4e32297d630831da4933dc2617bbab2cb82893a3a5d02a53a"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "parentManifest": "spec/performance/chunked-beyond-ram-native-2026-11-08/checks.json",
+      "parentManifestSha256": "77b8f69cf2f56fcab42959ebe7cf4440c83923856dcc2dbcec7623e53c7766d9",
+      "parentRecord": "packages/xy-client/dist/xyg-wasm.manifest.json",
+      "path": "packages/xy-client/dist/xyg-wasm.manifest.json",
+      "sha256": "63fffd1be061f32f98bd6e563789c046f7cd99340fc40a356b0d9b11560dab3f"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1897547,
+      "parentManifest": "spec/performance/chunked-beyond-ram-native-2026-11-08/checks.json",
+      "parentManifestSha256": "77b8f69cf2f56fcab42959ebe7cf4440c83923856dcc2dbcec7623e53c7766d9",
+      "parentRecord": "packages/xy-client/dist/xyg-wasm.wasm",
+      "path": "packages/xy-client/dist/xyg-wasm.wasm",
+      "sha256": "6d25737b14c6eab21241b488169dc8abb25f2a30110b72d8a27e5f9e2c508a7f"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 850835,
+      "parentManifest": "spec/performance/chunked-beyond-ram-native-2026-11-08/checks.json",
+      "parentManifestSha256": "77b8f69cf2f56fcab42959ebe7cf4440c83923856dcc2dbcec7623e53c7766d9",
+      "parentRecord": "python/xyg/static/index.js",
+      "path": "python/xyg/static/index.js",
+      "sha256": "e10978d62101539a958cedab001b89f31cf3efe97adb0132db31b306e583afd7"
+    },
+    "python/xyg/static/standalone.js": {
+      "bytes": 850856,
+      "parentManifest": "spec/performance/chunked-beyond-ram-native-2026-11-08/checks.json",
+      "parentManifestSha256": "77b8f69cf2f56fcab42959ebe7cf4440c83923856dcc2dbcec7623e53c7766d9",
+      "parentRecord": "python/xyg/static/standalone.js",
+      "path": "python/xyg/static/standalone.js",
+      "sha256": "550f22b038477d855141f096d0e315bf7c34c2f9b146f869a8b3fb5e4ea264ad"
+    },
+    "target/milestone-integration-build/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 4074249,
+      "parentManifest": "spec/performance/chunked-beyond-ram-native-2026-11-08/checks.json",
+      "parentManifestSha256": "77b8f69cf2f56fcab42959ebe7cf4440c83923856dcc2dbcec7623e53c7766d9",
+      "parentRecord": "target/milestone-integration-build/wasm32-unknown-unknown/release/xyg_wasm.wasm",
+      "path": "target/milestone-integration-build/wasm32-unknown-unknown/release/xyg_wasm.wasm",
+      "sha256": "9b750476acec31778de520dba750715c3a5e8d121263a11d577232a1f244fb4e"
+    },
+    "target/task-tmp/temporal-line-clip/native405.so": {
+      "bytes": 6357448,
+      "parentManifest": "spec/performance/chunked-beyond-ram-native-2026-11-08/checks.json",
+      "parentManifestSha256": "77b8f69cf2f56fcab42959ebe7cf4440c83923856dcc2dbcec7623e53c7766d9",
+      "parentRecord": "target/task-tmp/temporal-line-clip/native405.so",
+      "path": "target/task-tmp/temporal-line-clip/native405.so",
+      "sha256": "a807abd2ba7bd89e30a2e635ee291e30a67ba645349dca39ccacdd93a653550d"
+    }
+  },
+  "base": "f1c074a974aac13a8d2a35f8a046a7111f2dcfa9",
+  "compiledInputs": {
+    "allIdentical": 298,
+    "path": "spec/performance/temporal-line-window-2026-11-07/compiled-source-inputs.json",
+    "sha256": "f0f9ad82f31de490ec9c1385e4533c00e1833269791a5387c287443bee048a63"
+  },
+  "environment": {
+    "TMPDIR": "/var/tmp",
+    "node": "22.23.4",
+    "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+    "python": "3.12.15",
+    "rust": "1.96.0"
+  },
+  "evidence": {
+    "target/task-tmp/combined-pr/review-f1/hosted-package-failure.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/7e5c6a54e89642899c364d1ab0532f99f39220c37b7e17211bd68aece5dd9a92.gz",
+      "archiveBytes": 13420,
+      "archiveSha256": "95b786908913eeb2f7fcbc7b3438a73590b3eb50d5bba83d3c90993f3648a985",
+      "bytes": 64353,
+      "path": "target/task-tmp/combined-pr/review-f1/hosted-package-failure.log",
+      "sha256": "7e5c6a54e89642899c364d1ab0532f99f39220c37b7e17211bd68aece5dd9a92"
+    },
+    "target/task-tmp/combined-pr/review-f1/initial-check-runs.json": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/88c889e86af7b6d0a818a9fe09b27f9494fa238e1f2982770632da257a469028.gz",
+      "archiveBytes": 718,
+      "archiveSha256": "50acda3e784d54364fe3a8ec097a6ab589b373cf373566b7350edbc533db64a4",
+      "bytes": 3903,
+      "path": "target/task-tmp/combined-pr/review-f1/initial-check-runs.json",
+      "sha256": "88c889e86af7b6d0a818a9fe09b27f9494fa238e1f2982770632da257a469028"
+    },
+    "target/task-tmp/combined-pr/review-f1/review.json": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/6903a92d5d2734320807a0dd601076c5790f9a1d460a7a37cc396e7223ea2a1d.gz",
+      "archiveBytes": 1258,
+      "archiveSha256": "097b3930067152dfd65f74ce1e0069e21678a6ffb00305a31493202528eaafb7",
+      "bytes": 2376,
+      "path": "target/task-tmp/combined-pr/review-f1/review.json",
+      "sha256": "6903a92d5d2734320807a0dd601076c5790f9a1d460a7a37cc396e7223ea2a1d"
+    },
+    "target/task-tmp/combined-pr/review-f1/review.md": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/f2ed8e6c5593404bb903b7ce7f46bc68a0dab1e702c810c75d091d97bd2a781d.gz",
+      "archiveBytes": 3994,
+      "archiveSha256": "fcda475dc5b7f54a473f7421c688573aee95f6e27eb47a9f2ad1aa36f19e999c",
+      "bytes": 8060,
+      "path": "target/task-tmp/combined-pr/review-f1/review.md",
+      "sha256": "f2ed8e6c5593404bb903b7ce7f46bc68a0dab1e702c810c75d091d97bd2a781d"
+    },
+    "target/task-tmp/wasm-feature-ci/colored-tree.txt": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/bbe857b00ae05f5c759336834ba969b3e39ff26cd7c14ea49b174e497a7bf216.gz",
+      "archiveBytes": 314,
+      "archiveSha256": "ccb44836b51b2e9a4b74fa390f7379cc01b1f46f9e59b1765e3864b598fe934a",
+      "bytes": 797,
+      "path": "target/task-tmp/wasm-feature-ci/colored-tree.txt",
+      "sha256": "bbe857b00ae05f5c759336834ba969b3e39ff26cd7c14ea49b174e497a7bf216"
+    },
+    "target/task-tmp/wasm-feature-ci/core-lf-final.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/abd3d4b448755968a438e246328a66002ccd7071ad1a0fc5deaf30a73b32c8b5.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "b9604e490b1d4e2e2024de79bef193a407e047937cdf7e2d4d7e54eae378c1d0",
+      "bytes": 99,
+      "path": "target/task-tmp/wasm-feature-ci/core-lf-final.log",
+      "sha256": "abd3d4b448755968a438e246328a66002ccd7071ad1a0fc5deaf30a73b32c8b5"
+    },
+    "target/task-tmp/wasm-feature-ci/core-lf.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/cd75b4a05f8378678710961f55ac334ae2428efcc6e1602189007fa707c35c86.gz",
+      "archiveBytes": 51,
+      "archiveSha256": "d6c0110ce650300b2e7cabd10ff0245e78462a8bf953f7dfc07631fc4f5f3ecd",
+      "bytes": 98,
+      "path": "target/task-tmp/wasm-feature-ci/core-lf.log",
+      "sha256": "cd75b4a05f8378678710961f55ac334ae2428efcc6e1602189007fa707c35c86"
+    },
+    "target/task-tmp/wasm-feature-ci/current-tree-no-color.txt": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/4d5c2fc7d9c2415a4291bb09d63bc866e180b5dc5f2f1bb6794c1134a036ad91.gz",
+      "archiveBytes": 297,
+      "archiveSha256": "c795d6aa599ea4b24b9c0c9bda48576ecb278db6a005cb4c8cf45c28b7b6e5c5",
+      "bytes": 759,
+      "path": "target/task-tmp/wasm-feature-ci/current-tree-no-color.txt",
+      "sha256": "4d5c2fc7d9c2415a4291bb09d63bc866e180b5dc5f2f1bb6794c1134a036ad91"
+    },
+    "target/task-tmp/wasm-feature-ci/current-tree.txt": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/4d5c2fc7d9c2415a4291bb09d63bc866e180b5dc5f2f1bb6794c1134a036ad91.gz",
+      "archiveBytes": 297,
+      "archiveSha256": "c795d6aa599ea4b24b9c0c9bda48576ecb278db6a005cb4c8cf45c28b7b6e5c5",
+      "bytes": 759,
+      "path": "target/task-tmp/wasm-feature-ci/current-tree.txt",
+      "sha256": "4d5c2fc7d9c2415a4291bb09d63bc866e180b5dc5f2f1bb6794c1134a036ad91"
+    },
+    "target/task-tmp/wasm-feature-ci/evidence-seal-final.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "bytes": 0,
+      "path": "target/task-tmp/wasm-feature-ci/evidence-seal-final.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/wasm-feature-ci/evidence-seal.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/d5a02395fb97fd24a04c12945f75e970b73d04a894b3e47124462fa0af0cd3fc.gz",
+      "archiveBytes": 237,
+      "archiveSha256": "b3a630d84fd2e8c94f1125b512be5a88fd7b60948b8e95efb4ed3ff0723b6d11",
+      "bytes": 335,
+      "path": "target/task-tmp/wasm-feature-ci/evidence-seal.log",
+      "sha256": "d5a02395fb97fd24a04c12945f75e970b73d04a894b3e47124462fa0af0cd3fc"
+    },
+    "target/task-tmp/wasm-feature-ci/feature-tests-final.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/8e64fefa9a3a6621c031ae7f76beda893f55fe41f25df1a2cd170a4851b34f9a.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "fad5c7d880d24c9ea3c35f0995bd19b440356e6199b5c00e5799029d002178ff",
+      "bytes": 99,
+      "path": "target/task-tmp/wasm-feature-ci/feature-tests-final.log",
+      "sha256": "8e64fefa9a3a6621c031ae7f76beda893f55fe41f25df1a2cd170a4851b34f9a"
+    },
+    "target/task-tmp/wasm-feature-ci/feature-tests.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/6dccbe1c84feec49fb1e6121f6f3328a937925821c4778eb39875b55824c12ec.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "2e5b9363a20a86be942e1eec3832d1315a3f47679aaa4e721f00eb38152ef74a",
+      "bytes": 99,
+      "path": "target/task-tmp/wasm-feature-ci/feature-tests.log",
+      "sha256": "6dccbe1c84feec49fb1e6121f6f3328a937925821c4778eb39875b55824c12ec"
+    },
+    "target/task-tmp/wasm-feature-ci/format-final.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/257e2056c07d2caeafd1fe2ade777c2fe7d25f1092cd23bdcf4cf6c416daac14.gz",
+      "archiveBytes": 43,
+      "archiveSha256": "940274383703ef8b7289d0f7dadcae8038252f35cf6da903b6bdd9d9124dc7a2",
+      "bytes": 23,
+      "path": "target/task-tmp/wasm-feature-ci/format-final.log",
+      "sha256": "257e2056c07d2caeafd1fe2ade777c2fe7d25f1092cd23bdcf4cf6c416daac14"
+    },
+    "target/task-tmp/wasm-feature-ci/format.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/292ab567521d30841d69b41a9cc01ed3f5b34d1b4bdb12e6083b8943098c57a4.gz",
+      "archiveBytes": 60,
+      "archiveSha256": "3e84b1b3e0e06185b22dc4fc4802fb3673dad43f443d7642b965fa83c0300e40",
+      "bytes": 43,
+      "path": "target/task-tmp/wasm-feature-ci/format.log",
+      "sha256": "292ab567521d30841d69b41a9cc01ed3f5b34d1b4bdb12e6083b8943098c57a4"
+    },
+    "target/task-tmp/wasm-feature-ci/fresh-compiler.json": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/6152b11166893d01247ac339d530f2bbe0b2fbf30536c9806de4b2df302679eb.gz",
+      "archiveBytes": 178,
+      "archiveSha256": "d74db73d0316872b347b3ea2192a44efd96a6d7a291d9a7f72d92bc99b815e49",
+      "bytes": 277,
+      "path": "target/task-tmp/wasm-feature-ci/fresh-compiler.json",
+      "sha256": "6152b11166893d01247ac339d530f2bbe0b2fbf30536c9806de4b2df302679eb"
+    },
+    "target/task-tmp/wasm-feature-ci/full-raster-negative-tree.txt": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/8a14d8371b0f76da93e0bbbf7a83d902708302a385ff02d85ca1ab4664cd2a43.gz",
+      "archiveBytes": 303,
+      "archiveSha256": "99e1324d02aa94c5642e3f5540cd7e6af0cdc497f26ccdbf2418e995695dc117",
+      "bytes": 826,
+      "path": "target/task-tmp/wasm-feature-ci/full-raster-negative-tree.txt",
+      "sha256": "8a14d8371b0f76da93e0bbbf7a83d902708302a385ff02d85ca1ab4664cd2a43"
+    },
+    "target/task-tmp/wasm-feature-ci/full-raster-negative.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/1b0bde072814eb4e5e8d5217767c27b924294cbafdc3911d1813b308aab5f71c.gz",
+      "archiveBytes": 104,
+      "archiveSha256": "2af7cdd88b9bb7ac5f98e3d205fba8677260c64b934cee7d4c3d66c6f9920d09",
+      "bytes": 111,
+      "path": "target/task-tmp/wasm-feature-ci/full-raster-negative.log",
+      "sha256": "1b0bde072814eb4e5e8d5217767c27b924294cbafdc3911d1813b308aab5f71c"
+    },
+    "target/task-tmp/wasm-feature-ci/hooks.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89",
+      "bytes": 240,
+      "path": "target/task-tmp/wasm-feature-ci/hooks.log",
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/wasm-feature-ci/interrupted-for-color.json": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/17420bad987db49dc8209b0e642dc5be851dac588c0addb9177a3172c1d2ad53.gz",
+      "archiveBytes": 188,
+      "archiveSha256": "70e9989571b53309ddcda3fcec38edb05f9c5d103d6abfe26e9cf4748231d605",
+      "bytes": 210,
+      "path": "target/task-tmp/wasm-feature-ci/interrupted-for-color.json",
+      "sha256": "17420bad987db49dc8209b0e642dc5be851dac588c0addb9177a3172c1d2ad53"
+    },
+    "target/task-tmp/wasm-feature-ci/make-check-ci-before-color-interrupted.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/21e6891f519c27d2bc6749999e9276503a19ca3480c98af0f2545cd6c578ec4d.gz",
+      "archiveBytes": 498,
+      "archiveSha256": "50b6236e8ea2c5debe634e5c17602d3c4bab689703f43c699b15c5559385334c",
+      "bytes": 1559,
+      "path": "target/task-tmp/wasm-feature-ci/make-check-ci-before-color-interrupted.log",
+      "sha256": "21e6891f519c27d2bc6749999e9276503a19ca3480c98af0f2545cd6c578ec4d"
+    },
+    "target/task-tmp/wasm-feature-ci/make-check-ci-final.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/8ff731ea67d29c9352495b3809fec490503ed4807edd0a89b42752fff42bc8ca.gz",
+      "archiveBytes": 428,
+      "archiveSha256": "637d6e27da665edaed43fdf007d1027e9e341ec0ff66d5d32e3a870a49511a88",
+      "bytes": 1899,
+      "path": "target/task-tmp/wasm-feature-ci/make-check-ci-final.log",
+      "sha256": "8ff731ea67d29c9352495b3809fec490503ed4807edd0a89b42752fff42bc8ca"
+    },
+    "target/task-tmp/wasm-feature-ci/no-color-override-check.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/e391be2ddacd10c88a700cabe36c040b8e48615ccb1f6d7736e1ab8c17989e4b.gz",
+      "archiveBytes": 99,
+      "archiveSha256": "c7987d75867d86000f227a4fa74e19ac15f61ae859413fbe72d459591af1b09f",
+      "bytes": 90,
+      "path": "target/task-tmp/wasm-feature-ci/no-color-override-check.log",
+      "sha256": "e391be2ddacd10c88a700cabe36c040b8e48615ccb1f6d7736e1ab8c17989e4b"
+    },
+    "target/task-tmp/wasm-feature-ci/raw-browser-build.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/ef74a51ac325770bcaacd2b96dda6df00ad18c03de5d6ff65332a41bb8c8bd2e.gz",
+      "archiveBytes": 1140,
+      "archiveSha256": "b16a10e9156aed201ef33f617847228e8c72c774e16bbfc50e14c394f6b46434",
+      "bytes": 4164,
+      "path": "target/task-tmp/wasm-feature-ci/raw-browser-build.log",
+      "sha256": "ef74a51ac325770bcaacd2b96dda6df00ad18c03de5d6ff65332a41bb8c8bd2e"
+    },
+    "target/task-tmp/wasm-feature-ci/real-graph-check.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/e391be2ddacd10c88a700cabe36c040b8e48615ccb1f6d7736e1ab8c17989e4b.gz",
+      "archiveBytes": 99,
+      "archiveSha256": "c7987d75867d86000f227a4fa74e19ac15f61ae859413fbe72d459591af1b09f",
+      "bytes": 90,
+      "path": "target/task-tmp/wasm-feature-ci/real-graph-check.log",
+      "sha256": "e391be2ddacd10c88a700cabe36c040b8e48615ccb1f6d7736e1ab8c17989e4b"
+    },
+    "target/task-tmp/wasm-feature-ci/repackage.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/aff88aeb876bcf2359f693a5c7a5f853c0ee56624d0e64f267b4894511b7d550.gz",
+      "archiveBytes": 1166,
+      "archiveSha256": "074b8f5657f909009b9778a1a8368779fa27d8874e7d44b7787754dac9221d77",
+      "bytes": 4205,
+      "path": "target/task-tmp/wasm-feature-ci/repackage.log",
+      "sha256": "aff88aeb876bcf2359f693a5c7a5f853c0ee56624d0e64f267b4894511b7d550"
+    },
+    "target/task-tmp/wasm-feature-ci/ruff-format.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/89fdce7e3e1c7900b3320e19898334c7086b0a38c1eb9ac9ec3fc8f770106253.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "5290b564ed3eb7b4601d0369c2be7185994abb3325f14df47f8f79f0083eba23",
+      "bytes": 29,
+      "path": "target/task-tmp/wasm-feature-ci/ruff-format.log",
+      "sha256": "89fdce7e3e1c7900b3320e19898334c7086b0a38c1eb9ac9ec3fc8f770106253"
+    },
+    "target/task-tmp/wasm-feature-ci/ruff.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd",
+      "bytes": 19,
+      "path": "target/task-tmp/wasm-feature-ci/ruff.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/wasm-feature-ci/runtime-equality-after-package.json": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/1e6a1ac8b2c9517b32f1c53efb5f0e7b2624788a6801dc213d565108f464187c.gz",
+      "archiveBytes": 596,
+      "archiveSha256": "c63301420799e33940e5ff93e5c9240aa7956598e20dd98b1144cc4204954aec",
+      "bytes": 1277,
+      "path": "target/task-tmp/wasm-feature-ci/runtime-equality-after-package.json",
+      "sha256": "1e6a1ac8b2c9517b32f1c53efb5f0e7b2624788a6801dc213d565108f464187c"
+    },
+    "target/task-tmp/wasm-feature-ci/seal-sources.py": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/9a2b7bfb9a9952fc9df6333a757c20d50e6988d6412b2e6974bfee28c3535819.gz",
+      "archiveBytes": 985,
+      "archiveSha256": "b4d9ab247f16e0e2bbca0d5bca8a857f8ae1db8cf928b3451a4916a1f4b36b2a",
+      "bytes": 2005,
+      "path": "target/task-tmp/wasm-feature-ci/seal-sources.py",
+      "sha256": "9a2b7bfb9a9952fc9df6333a757c20d50e6988d6412b2e6974bfee28c3535819"
+    },
+    "target/task-tmp/wasm-feature-ci/source-bindings.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/56ed43ae8f592349329af51f6386b4cf439592972c5fa73c682d6c6709b64542.gz",
+      "archiveBytes": 48,
+      "archiveSha256": "a6a48d561df0923cda89d0f11077e804293af3cb780fc38c93c6e8c9151dd1b0",
+      "bytes": 28,
+      "path": "target/task-tmp/wasm-feature-ci/source-bindings.log",
+      "sha256": "56ed43ae8f592349329af51f6386b4cf439592972c5fa73c682d6c6709b64542"
+    },
+    "target/task-tmp/wasm-feature-ci/typing.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd",
+      "bytes": 19,
+      "path": "target/task-tmp/wasm-feature-ci/typing.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/wasm-feature-ci/workflow-check.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/2fcc44f5438a26267fc9982a5f5eb9fba4386d672379d6bca25e3d2f98574ef0.gz",
+      "archiveBytes": 237,
+      "archiveSha256": "aa5d51ae2397eaddfb2131e1c1270333240e1e627111b3f4ba5a68d4e3041a00",
+      "bytes": 644,
+      "path": "target/task-tmp/wasm-feature-ci/workflow-check.log",
+      "sha256": "2fcc44f5438a26267fc9982a5f5eb9fba4386d672379d6bca25e3d2f98574ef0"
+    },
+    "target/task-tmp/wasm-feature-ci/workflow-negative.py": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/38e5b2f596d9147b0c30f5bbd0a741fa4466ca755f46ecc187b806bf228a9ce2.gz",
+      "archiveBytes": 750,
+      "archiveSha256": "8b600096fe09173241d05bc82d05e0ac6166295a061bbdd32020bfa0a578f04d",
+      "bytes": 1613,
+      "path": "target/task-tmp/wasm-feature-ci/workflow-negative.py",
+      "sha256": "38e5b2f596d9147b0c30f5bbd0a741fa4466ca755f46ecc187b806bf228a9ce2"
+    },
+    "target/task-tmp/wasm-feature-ci/workflow-negatives-final.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/c10492155eb1e39e7868088d4faa2bf06d7b4b5ee35585856701afe23ea3b21a.gz",
+      "archiveBytes": 187,
+      "archiveSha256": "b1ba83c7ace5aef9632b0829dc12597aa028742b0b19ed7705730c91d5a7545f",
+      "bytes": 1227,
+      "path": "target/task-tmp/wasm-feature-ci/workflow-negatives-final.log",
+      "sha256": "c10492155eb1e39e7868088d4faa2bf06d7b4b5ee35585856701afe23ea3b21a"
+    },
+    "target/task-tmp/wasm-feature-ci/workflow-negatives-r2.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/b7fcaea5c0016a3f16308159483e5ed38f4fcd678d906423c544ad3c4cc0496a.gz",
+      "archiveBytes": 175,
+      "archiveSha256": "172128141fd7a416838aecd591413df7e6cf38d3d6a2e6b0379ae76692280867",
+      "bytes": 1045,
+      "path": "target/task-tmp/wasm-feature-ci/workflow-negatives-r2.log",
+      "sha256": "b7fcaea5c0016a3f16308159483e5ed38f4fcd678d906423c544ad3c4cc0496a"
+    },
+    "target/task-tmp/wasm-feature-ci/workflow-negatives.json": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/c10492155eb1e39e7868088d4faa2bf06d7b4b5ee35585856701afe23ea3b21a.gz",
+      "archiveBytes": 187,
+      "archiveSha256": "b1ba83c7ace5aef9632b0829dc12597aa028742b0b19ed7705730c91d5a7545f",
+      "bytes": 1227,
+      "path": "target/task-tmp/wasm-feature-ci/workflow-negatives.json",
+      "sha256": "c10492155eb1e39e7868088d4faa2bf06d7b4b5ee35585856701afe23ea3b21a"
+    },
+    "target/task-tmp/wasm-feature-ci/workflow-negatives.log": {
+      "archive": "spec/performance/wasm-frozen-feature-ci-2026-11-08/evidence/c055c5a7b69be50233237ab0c16b671d1003f8ef4b288478b8a2b1f15d887c7f.gz",
+      "archiveBytes": 483,
+      "archiveSha256": "8cdf5913cc2269462e97bd5200457c4e23beeeee8096f834b6c18e563c542ea9",
+      "bytes": 1301,
+      "path": "target/task-tmp/wasm-feature-ci/workflow-negatives.log",
+      "sha256": "c055c5a7b69be50233237ab0c16b671d1003f8ef4b288478b8a2b1f15d887c7f"
+    }
+  },
+  "failures": [
+    "Hosted old PNG absence guard failed and skipped dependents",
+    "Manual negative helper import path setup failure",
+    "Initial local makecheckCI interrupted for explicit Cargo color hardening; no pass credit"
+  ],
+  "fresh": {
+    "coreRealCrLf": {
+      "log": "target/task-tmp/wasm-feature-ci/core-lf-final.log",
+      "passed": 7
+    },
+    "featureUnitTests": {
+      "log": "target/task-tmp/wasm-feature-ci/feature-tests-final.log",
+      "passed": 15
+    },
+    "fullRasterRealNegative": {
+      "expectedExit": 1,
+      "log": "target/task-tmp/wasm-feature-ci/full-raster-negative.log"
+    },
+    "hooks": {
+      "exit": 0,
+      "log": "target/task-tmp/wasm-feature-ci/hooks.log"
+    },
+    "makeCheckCi": {
+      "exit": 0,
+      "log": "target/task-tmp/wasm-feature-ci/make-check-ci-final.log",
+      "passed": 793
+    },
+    "normalGraph": {
+      "exit": 0,
+      "log": "target/task-tmp/wasm-feature-ci/no-color-override-check.log"
+    },
+    "ordinaryPackage": {
+      "exit": 0,
+      "log": "target/task-tmp/wasm-feature-ci/repackage.log"
+    },
+    "ordinaryWasmBuild": {
+      "exit": 0,
+      "log": "target/task-tmp/wasm-feature-ci/raw-browser-build.log"
+    },
+    "ruff": {
+      "exit": 0,
+      "logs": [
+        "target/task-tmp/wasm-feature-ci/ruff.log",
+        "target/task-tmp/wasm-feature-ci/ruff-format.log"
+      ]
+    },
+    "runtimeEquality": {
+      "log": "target/task-tmp/wasm-feature-ci/runtime-equality-after-package.json",
+      "unchangedRecords": 11
+    },
+    "typing": {
+      "exit": 0,
+      "log": "target/task-tmp/wasm-feature-ci/typing.log"
+    },
+    "workflowMutations": {
+      "log": "target/task-tmp/wasm-feature-ci/workflow-negatives-final.log",
+      "rejected": 14
+    }
+  },
+  "parentPreservation": {
+    "allParentPerformanceEvidenceUnchanged": true,
+    "changedPaths": [
+      ".gitattributes",
+      ".github/workflows/ci.yml",
+      ".github/workflows/publish.yaml",
+      "Makefile",
+      "scripts/verify_ci_workflow.py",
+      "spec/design/browser-wasm.md",
+      "spec/design/build-ci.md",
+      "tests/test_graphforge_contract_corpus.py"
+    ],
+    "noMissingPaths": true,
+    "protectedModeObjects": 20400
+  },
+  "readmeSha256": "06567d9b04f179bd5646621c0b8a2957c1e033d44e562fb0ccad79a114f97417",
+  "recordedAt": "2026-11-08T02:58:00.566974+00:00",
+  "remaining": [
+    "Independent exact correction review",
+    "Fresh hosted CI and mandatory queue",
+    "Whole issues/milestones acceptance as retained in parent"
+  ],
+  "schemaVersion": 1,
+  "scope": "CI/publication resolved frozen-PNG feature guard; no runtime or whole-milestone claim",
+  "sourceBindings": {
+    "path": "spec/performance/wasm-frozen-feature-ci-2026-11-08/current-bindings.json",
+    "sha256": "820fa4f896378cd85391f87114aa59017bee357e42358084e77064d27bfeaab4"
+  }
+}

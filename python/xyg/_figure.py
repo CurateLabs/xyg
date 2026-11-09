@@ -9,7 +9,7 @@ work is forbidden on the client).
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import Any, Optional, TypeAlias, Union
+from typing import TYPE_CHECKING, Any, Optional, TypeAlias, Union
 
 import numpy as np
 
@@ -53,6 +53,9 @@ from ._payload import PayloadMixin
 from ._trace import Trace
 from .columns import ColumnStore, ColumnStoreCheckpoint
 
+if TYPE_CHECKING:
+    from .components import TemporalChart
+
 # Tier/tuning constants live in config.py (shared with interaction/export/
 # _payload); several are re-exported here — this module is their historic
 # import path and tests import them from `xyg._figure` (F401 kept for
@@ -80,6 +83,14 @@ class Selection:
     def __init__(self, figure: "Figure", per_trace: dict[int, np.ndarray]) -> None:
         self._figure = figure
         self.per_trace = per_trace  # {trace_id: np.ndarray[uint32]}
+
+    @property
+    def source_row_ids(self) -> dict[int, np.ndarray]:
+        """Exact u64 artifact identities for chunked-chart selections."""
+        ids = getattr(self._figure, "_chunked_row_ids", None)
+        if ids is None:
+            return {}
+        return {tid: ids[indices] for tid, indices in self.per_trace.items() if tid == 0}
 
     @property
     def index(self) -> np.ndarray:
@@ -112,6 +123,15 @@ class Selection:
 class Figure(AnnotationsMixin, PayloadMixin):
     """Build with `line()` / `scatter()`, display with `show()` (notebook) or
     `to_html()` (standalone file, no kernel round-trips)."""
+
+    # Set only by the public temporal composition adapter; ordinary figures
+    # retain the existing absent-field behavior in Scene/export dispatch.
+    _temporal_composition: TemporalChart
+    # Annotation-only: ordinary figures keep these fields absent.
+    _chunked_row_ids: Any
+    _chunked_provenance: dict[str, Any]
+    _chunked_generation: str
+    _chunked_live: tuple[str, dict[str, int]]
 
     def __init__(
         self,

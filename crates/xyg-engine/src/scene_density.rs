@@ -6,6 +6,8 @@
 //! and Node cannot drift on the density Image lattice. Encoded Scene v31 is
 //! unchanged.
 
+use crate::scene::SceneByteWrite;
+
 use crate::kernels::{self, BinColorSource};
 
 pub const XYDE_MAGIC: &[u8; 4] = b"XYDE";
@@ -104,12 +106,12 @@ pub fn pack_density_grid(
     }
     let mut out = Vec::with_capacity(XYDE_V1_HEADER_BYTES + encoded.len() + mean.len());
     out.extend_from_slice(XYDE_MAGIC);
-    out.extend_from_slice(&XYDE_VERSION.to_le_bytes());
-    out.extend_from_slice(&(SCENE_DENSITY_GRID_COLS as u32).to_le_bytes());
-    out.extend_from_slice(&(SCENE_DENSITY_GRID_ROWS as u32).to_le_bytes());
-    out.extend_from_slice(&flags.to_le_bytes());
-    out.extend_from_slice(&0u32.to_le_bytes());
-    out.extend_from_slice(&gmax.to_le_bytes());
+    out.push_word(XYDE_VERSION);
+    out.push_word(SCENE_DENSITY_GRID_COLS as u32);
+    out.push_word(SCENE_DENSITY_GRID_ROWS as u32);
+    out.push_word(flags);
+    out.push_word(0u32);
+    out.push_word(gmax);
     out.extend_from_slice(&encoded);
     out.extend_from_slice(&mean);
     Ok(out)

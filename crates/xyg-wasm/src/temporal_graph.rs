@@ -25,6 +25,8 @@ const MAX_ENTITIES: usize = 5_000_000;
 #[derive(Debug)]
 pub(super) struct WasmTemporalGraph {
     owner: Arc<TemporalOwner>,
+    frame: Option<TemporalGraphFrame>,
+    frame_context: Option<(i64, u64)>,
     sources: Vec<u64>,
     targets: Vec<u64>,
 }
@@ -71,6 +73,8 @@ impl WasmTemporalGraph {
                 generation: previous + 1,
                 graph: Mutex::new(Some(graph)),
             }),
+            frame: None,
+            frame_context: None,
             sources,
             targets,
         })
@@ -80,6 +84,51 @@ impl WasmTemporalGraph {
         (self.owner.clone(), TemporalHandle(self.owner.generation))
     }
 
+    // Typed acquisition facts mirror the existing XYFX owner/capture ingress.
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn freeze(
+        &self,
+        session: &xyg_engine::graphforge::interaction::wire::WireSession,
+        revision: u64,
+        render: u32,
+        window: Option<(i64, i64)>,
+        timezone: &str,
+        focus: [f32; 4],
+        budget: usize,
+    ) -> Result<Vec<u8>, TemporalError> {
+        use xyg_engine::temporal_graph_frozen::FrozenTemporalGraph;
+        let (owner, handle) = self.owner();
+        let publication = session
+            .frozen_publication(owner.owner_identity(), handle, revision, render)
+            .map_err(|_| TemporalError::StaleRevision)?;
+        let graph = self
+            .owner
+            .graph
+            .lock()
+            .expect("WASM temporal owner poisoned");
+        let graph = graph.as_ref().ok_or(TemporalError::Disposed)?;
+        let frame = self
+            .frame
+            .as_ref()
+            .filter(|f| f.revision() == revision)
+            .ok_or(TemporalError::StaleRevision)?;
+        let frozen = FrozenTemporalGraph::acquire(
+            graph,
+            frame,
+            window,
+            timezone,
+            Some(publication),
+            &CancelFlag::new(),
+            budget,
+        )?;
+        let captured = frozen.with_focus_f32(focus, budget)?;
+        let captured = if let Some((window, revision)) = self.frame_context {
+            captured.with_controller_context(window, revision, budget)?
+        } else {
+            captured
+        };
+        Ok(captured.bytes().to_vec())
+    }
     pub(super) fn dispose(&self) {
         self.owner
             .graph
@@ -315,7 +364,25 @@ fn create(instance: &mut Instance, bytes: &[u8]) -> i32 {
 }
 
 fn frame(instance: &mut Instance, bytes: &[u8]) -> i32 {
-    if bytes.len() != FRAME_HEADER || u32_at(bytes, 8) != Some(FRAME_HEADER as u32) {
+    let context =
+        if u32_at(bytes, 4) == Some(2) && bytes.len() == 72 && u32_at(bytes, 8) == Some(72) {
+            let window = i64_at(bytes, 56).unwrap();
+            if window < 0 {
+                return fail(
+                    instance,
+                    STATUS_INVALID_ARGUMENT,
+                    "invalid controller window context",
+                );
+            }
+            Some((window, u64_at(bytes, 64).unwrap()))
+        } else {
+            None
+        };
+    if context.is_none()
+        && (bytes.len() != FRAME_HEADER
+            || u32_at(bytes, 4) != Some(VERSION)
+            || u32_at(bytes, 8) != Some(FRAME_HEADER as u32))
+    {
         return fail(
             instance,
             STATUS_INVALID_ARGUMENT,
@@ -359,7 +426,9 @@ fn frame(instance: &mut Instance, bytes: &[u8]) -> i32 {
             })
         });
     match result {
-        Ok((_, output)) => {
+        Ok((frame, output)) => {
+            bound.frame = Some(frame);
+            bound.frame_context = context;
             instance.output = output;
             instance.last_error.clear();
             STATUS_OK
@@ -479,7 +548,10 @@ pub(super) fn execute(instance: &mut Instance, offset: usize, length: usize) -> 
             "temporal graph command is outside staging",
         );
     };
-    if bytes.get(0..4) != Some(MAGIC) || u32_at(bytes, 4) != Some(VERSION) {
+    if bytes.get(0..4) != Some(MAGIC)
+        || !(u32_at(bytes, 4) == Some(VERSION)
+            || (u32_at(bytes, 4) == Some(2) && u32_at(bytes, 12) == Some(OP_FRAME)))
+    {
         return fail(
             instance,
             STATUS_INVALID_ARGUMENT,

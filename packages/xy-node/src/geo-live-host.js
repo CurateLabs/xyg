@@ -6,20 +6,28 @@ import {attachRetainedFrame} from './geo-retained.js';
 import {GeoSpatialIndex,GeoSpatialFullScanRequired} from './geo-spatial.js';
 import {sceneBrowserPainter} from './scene.js';
 let staged;
+// One FIFO entry per automatic binding; reservation survives uncertain delivery.
+export const automaticAdmission={
+ owner:undefined,queue:new Set(),waking:undefined,
+ wake(){if(this.owner||staged||this.waking)return;const binding=this.queue.values().next().value;if(!binding)return;this.waking=binding;queueMicrotask(()=>{if(this.waking===binding)this.waking=undefined;if(!this.queue.has(binding)){this.wake();return;}binding.schedule();});},
+ request(binding){if(this.owner===binding)return true;this.queue.add(binding);if(!this.owner&&!staged&&this.queue.values().next().value===binding){this.queue.delete(binding);this.owner=binding;return true;}this.wake();return false;},
+ release(binding){if(this.owner===binding){if(staged===binding.host.adapter.liveCandidate)return false;this.owner=undefined;}this.queue.delete(binding);this.wake();return true;},
+ cancel(binding){this.queue.delete(binding);if(!binding.active&&this.owner===binding)this.owner=undefined;this.wake();}
+};
 const same=(a,b)=>a.length===b.length&&a.every((n,i)=>n===b[i]);
 export class GeoLiveCandidate {
  #ownerData;#wirePacket;#closeOwner;#overview;#processorBytes;#overviewBudget;
- constructor(adapter,{overview=false,processorBytes,overviewBudget,data=frame=>frame.data,packet=frame=>frame.data.packet,close=owner=>owner.dispose()}={}){this.adapter=adapter;this.nonce=0n;this.receipts=new Map();this.#ownerData=data;this.#wirePacket=packet;this.#closeOwner=close;this.#overview=overview;this.#processorBytes=processorBytes;this.#overviewBudget=overviewBudget;}
- replayPrepare(raw){if(this.cleanupFrame||this.cleanupOperation||this.cleanupState||this.cleanupAllocation)return same(new Uint8Array(raw),new Uint8Array(this.cleanupRequest));return !!this.frame&&!this.committed&&!!this.prepareRequest&&same(new Uint8Array(raw),new Uint8Array(this.prepareRequest));}
+ constructor(adapter,{overview=false,processorBytes,overviewBudget,data=frame=>frame.data,packet=frame=>frame.data.packet,close=owner=>owner.dispose()}={}){this.adapter=adapter;this.cameraFloor=adapter.query.cameraRevision;this.timeFloor=adapter.query.timeRevision;this.sequenceFloor=adapter.sequence;this.nonce=0n;this.receipts=new Map();this.#ownerData=data;this.#wirePacket=packet;this.#closeOwner=close;this.#overview=overview;this.#processorBytes=processorBytes;this.#overviewBudget=overviewBudget;}
+ replayPrepare(raw){if(this.cleanupFrame||this.cleanupCanonical||this.cleanupOperation||this.cleanupState||this.cleanupAllocation)return same(new Uint8Array(raw),new Uint8Array(this.cleanupRequest));return !!this.frame&&!this.committed&&!!this.prepareRequest&&same(new Uint8Array(raw),new Uint8Array(this.prepareRequest));}
  async rejectPrepared(frame){this.cleanupFrame=frame;await this.#closeOwner(frame);this.cleanupFrame=undefined;throw new DOMException("Geographic preparation cancelled","AbortError");}
- beginMount(){if(this.frame||this.retired||this.cleanupFrame||this.cleanupOperation||this.cleanupState||this.cleanupAllocation)throw Error("Outstanding geographic candidate");this.nonce=0n;this.receipts.clear();}
- releaseSlot(){if(staged===this)staged=undefined;}
+ beginMount(){if(this.frame||this.retired||this.cleanupFrame||this.cleanupCanonical||this.cleanupOperation||this.cleanupState||this.cleanupAllocation)throw Error("Outstanding geographic candidate");this.nonce=0n;this.receipts.clear();}
+ releaseSlot(){if(staged===this){staged=undefined;automaticAdmission.wake();}}
  async allocateState(scope,query,selection,budget){
   const ids=new BigUint64Array(selection.idCount);for(let i=0;i<ids.length;i++)ids[i]=selection.id(i);
   this.cleanupAllocation=scope.beginState({revision:query.stateRevision,ids,fill:selection.fill,budget});
   const state=await this.cleanupAllocation.recover();this.cleanupState=state;return state;
  }
- async settleOperation(){if(this.cleanupOperation){await this.#closeOwner(this.cleanupOperation);this.cleanupOperation=undefined;}if(this.cleanupAllocation){await this.cleanupAllocation.dispose();this.cleanupAllocation=undefined;}if(this.cleanupState){await this.cleanupState.dispose();this.cleanupState=undefined;}}
+ async settleOperation(){if(this.cleanupCanonical){await this.cleanupCanonical.settleDrive();await this.cleanupCanonical.cancel();this.cleanupCanonical=undefined;}if(this.cleanupOperation){await this.#closeOwner(this.cleanupOperation);this.cleanupOperation=undefined;}if(this.cleanupAllocation){await this.cleanupAllocation.dispose();this.cleanupAllocation=undefined;}if(this.cleanupState){await this.cleanupState.dispose();this.cleanupState=undefined;}}
  async buildHierarchy(query,sequence){
   const a=this.adapter,lane=a.hierarchyLane;
   if(hierarchyLaneAuthority(lane)!==a.hierarchyAuthority||lane.closed||lane.disposing)throw Error('hierarchy lane unavailable or authority changed');
@@ -37,7 +45,7 @@ export class GeoLiveCandidate {
    if(selected){
     if(!a.selectedScope)throw Error('selected live frame requires explicit selected scope');
     const state=await this.allocateState(a.selectedScope,query,selected,s.budget);let operation;
-    try{const accepted=await state.begin({command:indexed?36:35,handle:s.handle,sequence,query,budget:s.budget});if(accepted.fallback)throw new GeoSpatialFullScanRequired(accepted.reason);operation=accepted.operation;if(operation.indexed)this.cleanupOperation=operation;s.sequence=sequence;await operation.drive({readChunk:s.readChunk,readPage:s.readPage,signal});const frame=await operation.prepare(a.style);this.cleanupFrame=frame;if(signal?.aborted||s.closed||s.disposing){await this.rejectPrepared(frame);}attachRetainedFrame(s,frame,sequence,encode({command:indexed?36:35,handle:s.handle,sequence,query,budget:s.budget,payload:new Uint8Array(8)}),a.style);return frame;}
+    try{const accepted=await state.begin({command:indexed?36:35,handle:s.handle,sequence,query,budget:s.budget});if(accepted.fallback)throw new GeoSpatialFullScanRequired(accepted.reason);operation=accepted.operation;if(operation.indexed)this.cleanupOperation=operation;else this.cleanupCanonical=operation;s.sequence=sequence;await operation.drive({readChunk:s.readChunk,readPage:s.readPage,signal});const frame=await operation.prepare(a.style);this.cleanupFrame=frame;if(signal?.aborted||s.closed||s.disposing){await this.rejectPrepared(frame);}attachRetainedFrame(s,frame,sequence,encode({command:indexed?36:35,handle:s.handle,sequence,query,budget:s.budget,payload:new Uint8Array(8)}),a.style);return frame;}
     finally{await this.settleOperation();}
    }
    const request=encode({command:indexed?18:5,handle:s.handle,sequence,query,budget:s.budget});let handle;
@@ -48,20 +56,22 @@ export class GeoLiveCandidate {
   });
  }
  async prepare(raw){
-  if(this.cleanupFrame||this.cleanupOperation||this.cleanupState||this.cleanupAllocation){if(!this.replayPrepare(raw))throw Error("Candidate cleanup requires exact preparation retry");await this.settleOperation();if(this.cleanupFrame){await this.#closeOwner(this.cleanupFrame);this.cleanupFrame=undefined;}this.releaseSlot();throw new DOMException("Geographic preparation cancelled","AbortError");}
+  if(this.cleanupFrame||this.cleanupCanonical||this.cleanupOperation||this.cleanupState||this.cleanupAllocation){if(!this.replayPrepare(raw))throw Error("Candidate cleanup requires exact preparation retry");await this.settleOperation();if(this.cleanupFrame){await this.#closeOwner(this.cleanupFrame);this.cleanupFrame=undefined;}this.releaseSlot();throw new DOMException("Geographic preparation cancelled","AbortError");}
   if(this.replayPrepare(raw))return [this.#wirePacket(this.frame),this.painter];
   const a=this.adapter;if(isHierarchyFrame(a.frame)&&!a.hierarchyLane)throw Error("Hierarchy live updates require an explicit hierarchy route");const v=new DataView(raw),b=new Uint8Array(raw);
   if(raw.byteLength!==256||b.subarray(76,80).some(x=>x)||b.subarray(224).some(x=>x))throw Error('invalid live prepare framing');
   const nonce=v.getBigUint64(32,true),sequence=v.getBigUint64(40,true),cameraRevision=v.getBigUint64(48,true),timeRevision=v.getBigUint64(56,true),stateRevision=v.getBigUint64(64,true),kind=v.getUint32(72,true),start=v.getBigInt64(80,true),end=v.getBigInt64(88,true);
   if(!nonce||nonce<=this.nonce||this.frame||this.retired||sequence<=a.sequence||cameraRevision<a.query.cameraRevision||timeRevision<a.query.timeRevision||stateRevision!==a.query.stateRevision)throw Error('stale or outstanding desired snapshot');
   if(![0,1,2].includes(kind)||(kind===0&&(start||end))||(kind===1&&end))throw Error('invalid signed time framing');
+  this.cameraFloor=cameraRevision>this.cameraFloor?cameraRevision:this.cameraFloor;this.timeFloor=timeRevision>this.timeFloor?timeRevision:this.timeFloor;
   const cameraRequest=raw.slice(96,224),c=new DataView(cameraRequest),cb=new Uint8Array(cameraRequest),op=c.getUint32(8,true),baseline=new Uint8Array(encodeGeoViewportRequest(this.#ownerData(a.frame).identity.camera,op));
   if(op>9||!same(cb.subarray(0,8),baseline.subarray(0,8))||!same(cb.subarray(12,80),baseline.subarray(12,80))||cb.subarray(120).some(x=>x))throw Error('camera delta does not name accepted camera');
-  if(staged)throw Error('another geographic replacement awaits retirement ACK');staged=this;this.cleanupRequest=raw.slice(0);let frame;
+  if(staged||(automaticAdmission.owner&&automaticAdmission.owner.host.adapter!==this.adapter))throw Error('another geographic replacement awaits retirement ACK');staged=this;this.cleanupRequest=raw.slice(0);let frame;
   try{const camera=decodeGeoViewportResponse(geoViewportExecute(cameraRequest,1<<20)).camera,time={kind,...kind===1?{instant:start}:kind===2?{start,end}:{}};
    if(!same(new Uint8Array(encodeGeoViewportRequest(camera)),new Uint8Array(encodeGeoViewportRequest(this.#ownerData(a.frame).identity.camera)))&&cameraRevision===a.query.cameraRevision)throw Error('camera change requires new revision');
    const q={...a.query,camera,time,cameraRevision,timeRevision,stateRevision};
    if(!same(new Uint8Array(encode({...{command:5,sequence,budget:this.#overview?this.#overviewBudget:a.source.budget,query:q}}),200,24),new Uint8Array(encode({command:5,sequence,budget:this.#overview?this.#overviewBudget:a.source.budget,query:{...q,time:a.query.time}}),200,24))&&timeRevision===a.query.timeRevision)throw Error('time change requires new revision');
+   this.sequenceFloor=sequence>this.sequenceFloor?sequence:this.sequenceFloor;
    frame=await this.build(q,sequence);this.cleanupFrame=undefined;const data=this.#ownerData(frame),painter=sceneBrowserPainter(data.scene,a.budget);if((this.#overview?4:2)*data.packet.byteLength+painter.byteLength>(this.#overview?this.#processorBytes:a.source.budget.processorBytes))throw Error('candidate exceeds transfer ceiling');
    this.frame=frame;this.query=q;this.painter=painter;this.nonce=nonce;this.sequence=sequence;this.committed=false;this.prepareRequest=raw.slice(0);this.oldOwner=a.frame.handle;this.oldSequence=a.sequence;return [this.#wirePacket(frame),painter];
   }catch(error){await this.settleOperation();if(frame)this.cleanupFrame=frame;if(this.cleanupFrame){await this.#closeOwner(this.cleanupFrame);this.cleanupFrame=undefined;}this.releaseSlot();throw error;}

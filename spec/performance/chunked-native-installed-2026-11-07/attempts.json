@@ -1,0 +1,1164 @@
+[
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/annotations-format.log.gz",
+    "archiveSha256": "93f47c248fb7dd43a2152860e1e0946bfba49ef7b1e4abbe605eb0d6b198524d",
+    "bytes": 43,
+    "name": "annotations-format.log",
+    "sha256": "a9c322be5811cf4bd7ab6927ecb6751d36851790b8b4de75d87f0c39a56d2c8d"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/bootstrap-format2.log.gz",
+    "archiveSha256": "8d0525b20a8061b8cfed186f3e9acc067824d7316cd6cf3e3fe158909cda1bc3",
+    "bytes": 19,
+    "name": "bootstrap-format2.log",
+    "sha256": "413a709001976657cb743636fd34e48fc41d8d302d665460d3f874b3313da127"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/bootstrap-identity-after.log.gz",
+    "archiveSha256": "26ad0aff2e62112c8da758e00f7bc451cb34aa61fbf8ac24e220a0b8e0db4353",
+    "bytes": 112,
+    "name": "bootstrap-identity-after.log",
+    "sha256": "ecfd32061b3bd37183a82b887141a9a8d7b724afdb7d49553a181081337be674"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/bootstrap-identity-before.log.gz",
+    "archiveSha256": "8fa21d6571fd07eaa5b1546d872cfe9d2cb60c7f7365e0868088ef3414439808",
+    "bytes": 7658,
+    "name": "bootstrap-identity-before.log",
+    "sha256": "a5b9c2bf8790ef08f7db344df45f536724fcb4f58e4ae33407ead4299120367e"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/capacity-final-runner.log.gz",
+    "archiveSha256": "b7bd59c6e5408ce9a605a05886532f59e9edbe6109c4fd2c517ebbb6bd10415d",
+    "bytes": 1142,
+    "name": "capacity-final-runner.log",
+    "sha256": "dee43982ed51eb6aea64ab9e28efa1451b402b5302238d98cf76c4695920450f"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/capacity-format.log.gz",
+    "archiveSha256": "8d0525b20a8061b8cfed186f3e9acc067824d7316cd6cf3e3fe158909cda1bc3",
+    "bytes": 19,
+    "name": "capacity-format.log",
+    "sha256": "413a709001976657cb743636fd34e48fc41d8d302d665460d3f874b3313da127"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/channel-format.log.gz",
+    "archiveSha256": "bdcf56554df5ea2fa19921144e34c15fbd87094e7e44ffbb1f27bd30959f6629",
+    "bytes": 23,
+    "name": "channel-format.log",
+    "sha256": "43affe539ba0ae8b202b306a3294d04f3b7fc062316c1c825399076d966c8f2d"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/client-0-1794097073348436470.log.gz",
+    "archiveSha256": "0ec158082729c6b01bd0aace89545273e72b5754490fcffd63c6aeb3621acdf3",
+    "bytes": 5448,
+    "name": "client-0-1794097073348436470.log",
+    "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/client-0.log.gz",
+    "archiveSha256": "0ec158082729c6b01bd0aace89545273e72b5754490fcffd63c6aeb3621acdf3",
+    "bytes": 5448,
+    "name": "client-0.log",
+    "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/client-1-1794097074926928235.log.gz",
+    "archiveSha256": "8b3fce3fbba1ad4d5abed59198df9434204b9012af51741920ce66ea62ae0377",
+    "bytes": 493,
+    "name": "client-1-1794097074926928235.log",
+    "sha256": "d03db1e286a5c244115429f1f388406e74817f21c5ca7eddbd31deffb3e71160"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/client-1.log.gz",
+    "archiveSha256": "8b3fce3fbba1ad4d5abed59198df9434204b9012af51741920ce66ea62ae0377",
+    "bytes": 493,
+    "name": "client-1.log",
+    "sha256": "d03db1e286a5c244115429f1f388406e74817f21c5ca7eddbd31deffb3e71160"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/client-2-1794097125570910047.log.gz",
+    "archiveSha256": "a9024230f03cfab4b76058c9f343d5ede416ef53be37bda0ca0cf926621cec18",
+    "bytes": 88,
+    "name": "client-2-1794097125570910047.log",
+    "sha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/client-2.log.gz",
+    "archiveSha256": "a9024230f03cfab4b76058c9f343d5ede416ef53be37bda0ca0cf926621cec18",
+    "bytes": 88,
+    "name": "client-2.log",
+    "sha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/client-bootstrap.log.gz",
+    "archiveSha256": "0ec158082729c6b01bd0aace89545273e72b5754490fcffd63c6aeb3621acdf3",
+    "bytes": 5448,
+    "name": "client-bootstrap.log",
+    "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/client-build.log.gz",
+    "archiveSha256": "0ec158082729c6b01bd0aace89545273e72b5754490fcffd63c6aeb3621acdf3",
+    "bytes": 5448,
+    "name": "client-build.log",
+    "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/client-causal.log.gz",
+    "archiveSha256": "0ec158082729c6b01bd0aace89545273e72b5754490fcffd63c6aeb3621acdf3",
+    "bytes": 5448,
+    "name": "client-causal.log",
+    "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/client-epoch.log.gz",
+    "archiveSha256": "0ec158082729c6b01bd0aace89545273e72b5754490fcffd63c6aeb3621acdf3",
+    "bytes": 5448,
+    "name": "client-epoch.log",
+    "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/client-final-flow.log.gz",
+    "archiveSha256": "0ec158082729c6b01bd0aace89545273e72b5754490fcffd63c6aeb3621acdf3",
+    "bytes": 5448,
+    "name": "client-final-flow.log",
+    "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/client-home.log.gz",
+    "archiveSha256": "0ec158082729c6b01bd0aace89545273e72b5754490fcffd63c6aeb3621acdf3",
+    "bytes": 5448,
+    "name": "client-home.log",
+    "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/client-layout.log.gz",
+    "archiveSha256": "0ec158082729c6b01bd0aace89545273e72b5754490fcffd63c6aeb3621acdf3",
+    "bytes": 5448,
+    "name": "client-layout.log",
+    "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/client-pointer.log.gz",
+    "archiveSha256": "0ec158082729c6b01bd0aace89545273e72b5754490fcffd63c6aeb3621acdf3",
+    "bytes": 5448,
+    "name": "client-pointer.log",
+    "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/client-publication.log.gz",
+    "archiveSha256": "0ec158082729c6b01bd0aace89545273e72b5754490fcffd63c6aeb3621acdf3",
+    "bytes": 5448,
+    "name": "client-publication.log",
+    "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/client-remount.log.gz",
+    "archiveSha256": "0ec158082729c6b01bd0aace89545273e72b5754490fcffd63c6aeb3621acdf3",
+    "bytes": 5448,
+    "name": "client-remount.log",
+    "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/client2.log.gz",
+    "archiveSha256": "0ec158082729c6b01bd0aace89545273e72b5754490fcffd63c6aeb3621acdf3",
+    "bytes": 5448,
+    "name": "client2.log",
+    "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/collector-final-format.log.gz",
+    "archiveSha256": "58e5de868f9ca186dd6d60b6b5b65f3e653fc9c4a6cfa27121fca7745efbf2d5",
+    "bytes": 22,
+    "name": "collector-final-format.log",
+    "sha256": "d807f3580f2470a7fe15ad89e1a6c08e4166ffe1e33d94152d605f0c46d21bfa"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/collector-format.log.gz",
+    "archiveSha256": "8d0525b20a8061b8cfed186f3e9acc067824d7316cd6cf3e3fe158909cda1bc3",
+    "bytes": 19,
+    "name": "collector-format.log",
+    "sha256": "413a709001976657cb743636fd34e48fc41d8d302d665460d3f874b3313da127"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/collector-ruff.log.gz",
+    "archiveSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd",
+    "bytes": 19,
+    "name": "collector-ruff.log",
+    "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/commands.jsonl.gz",
+    "archiveSha256": "a920db393a903db0c859f456a8c8db485d6fad4208107d4d1474e1f0993bf18b",
+    "bytes": 12083,
+    "name": "commands.jsonl",
+    "sha256": "90d287bda788e2ba0b9c1fcc8265773727cd488544ed0206d13edc791edd4a8b"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/compiled-input-reuse.json.gz",
+    "archiveSha256": "d44d7ea71d82c212fffdb5fc505e360403ac6a7a672187fced1264bb0edcf898",
+    "bytes": 204,
+    "name": "compiled-input-reuse.json",
+    "sha256": "d0b2751865ab80df695eb5819058307b25a9ff67d87ca927afff60057700e1b3"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/components-format.log.gz",
+    "archiveSha256": "8d0525b20a8061b8cfed186f3e9acc067824d7316cd6cf3e3fe158909cda1bc3",
+    "bytes": 19,
+    "name": "components-format.log",
+    "sha256": "413a709001976657cb743636fd34e48fc41d8d302d665460d3f874b3313da127"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/contracts-0-1794096142863643816.log.gz",
+    "archiveSha256": "07181d7b76de4aab60949e249d87e6e2dab62045d59c236d80a45a0057544ded",
+    "bytes": 2173,
+    "name": "contracts-0-1794096142863643816.log",
+    "sha256": "709f53fc9ec64093e8dba2140c74ec491d77f318216e4c5719e7e125bda1ce99"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/contracts-0.log.gz",
+    "archiveSha256": "9fd19be2ff06db15a889ef6df0dfc983e5014738d7e0cccc05d8b340b33e8e16",
+    "bytes": 1476,
+    "name": "contracts-0.log",
+    "sha256": "e696b6ae9ba06f623c2132e47b99871fa2d0c2d950d48cfd65a0bdfde5c48560"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/contracts-1-1794096545646817424.log.gz",
+    "archiveSha256": "224cdac871d8de3f7ce11b13cdbbcc86000adee20ac5ea48ae5c49821f92a357",
+    "bytes": 200,
+    "name": "contracts-1-1794096545646817424.log",
+    "sha256": "a34a909dd7061f3f64a4aba74d81faabf8edc7a960500162b920a1a90911bd08"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/contracts-2-1794096551290283355.log.gz",
+    "archiveSha256": "15213b9bbbcf38534099e828865d521d547ad81047ad5eb33817f53dd46e99da",
+    "bytes": 29,
+    "name": "contracts-2-1794096551290283355.log",
+    "sha256": "42b8d4d87753f9103ac02d0b33f9a3c6f6e68193684dd88198095d247c8e7392"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/contracts-3-1794096551468052691.log.gz",
+    "archiveSha256": "e988d0801425392a14b98bdf622798564dc7a37e0f00dbe966b44bcf90189afd",
+    "bytes": 27,
+    "name": "contracts-3-1794096551468052691.log",
+    "sha256": "fef7ff8098e56676e13107515645763fbac712dc4baa23afbab2ec25081e1fea"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/contracts-4-1794096551761815918.log.gz",
+    "archiveSha256": "03af76866d9fda82837229662ccf63164271b23f0e8a64e36f4a14b800c25dc1",
+    "bytes": 836,
+    "name": "contracts-4-1794096551761815918.log",
+    "sha256": "78f2b9bce3ca2aa3bb571f0f90f353a71934d0ad67aa3099b6f1f7a52875b0ed"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/contracts-workflow-before.log.gz",
+    "archiveSha256": "9fd19be2ff06db15a889ef6df0dfc983e5014738d7e0cccc05d8b340b33e8e16",
+    "bytes": 1476,
+    "name": "contracts-workflow-before.log",
+    "sha256": "e696b6ae9ba06f623c2132e47b99871fa2d0c2d950d48cfd65a0bdfde5c48560"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/control-accounting-runner.log.gz",
+    "archiveSha256": "dee8b5322518578e5f8d0a5ea23a2636f143a5d68e8d745d9a0aa6285bdc44c5",
+    "bytes": 953,
+    "name": "control-accounting-runner.log",
+    "sha256": "5b4051d46c34b64439f45765f94f3d046da4f90f74da93414c6ee28339c80eb7"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/core-successor-first.log.gz",
+    "archiveSha256": "bdda85d6f1ca4243064b340e96fd702d27a1e6d84f3faac5b4c05a955cd1753c",
+    "bytes": 98,
+    "name": "core-successor-first.log",
+    "sha256": "fc192556ed9481f8b19ba2ae8da2194874c6be0101145a2b8bfa10f6923e26ea"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/current-focused.log.gz",
+    "archiveSha256": "b2e2c4b349824e84b145b6afe5703174258c8e304a6760c935b119aa916b3ab2",
+    "bytes": 110,
+    "name": "current-focused.log",
+    "sha256": "22067d62f1a96c8a9f976f45318b278df003941877f1060b4f165774519048aa"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/final-command-runner.log.gz",
+    "archiveSha256": "523bbd9f1fed0576af610d528e183cc242081f65309cc2ef6327f26117811ec1",
+    "bytes": 1142,
+    "name": "final-command-runner.log",
+    "sha256": "6788d034eb5ab82d88a57fd1e9a6aeb9c8490756e86c7a1a84af97030262530a"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/final-format.log.gz",
+    "archiveSha256": "905f1ddff601fec8d4aaf15965c7e3ac906477581bcbe6760683c44b7b8aea13",
+    "bytes": 43,
+    "name": "final-format.log",
+    "sha256": "44b7183e1f210a4817679f52d6f965f5de6331fb1c9174e863b4b0fc479a3e24"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/final-lint-fix.log.gz",
+    "archiveSha256": "644b25ad543562a05d44113408ee542eae9d0a8a2b10a262d295747d23ece8bd",
+    "bytes": 533,
+    "name": "final-lint-fix.log",
+    "sha256": "c95cff4b7d0a90e97db533a7db53cceb72ab58322b719e5b2bda568e5ece9692"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/final-ownership-abi.log.gz",
+    "archiveSha256": "8d1f262b8f0d5156f84fb2d517917f707bf9224784dce311dcef0ef2b858cf6a",
+    "bytes": 387,
+    "name": "final-ownership-abi.log",
+    "sha256": "fca8db3278c745b29d8929e66739aa4eeec3bf28cc1e1c0c089893ac3abe99e8"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/format2.log.gz",
+    "archiveSha256": "57c2b8d4d655a9d365f0c60bb22dbc3bece5d75257930aaa59ce3f6a02d59ae2",
+    "bytes": 43,
+    "name": "format2.log",
+    "sha256": "1dc6a19feae160e87088a6a505f8844ac8bfdaf9001c9c3cc558beceb0f6c9d9"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/full-node-final.log.gz",
+    "archiveSha256": "7240de254ac852f2f5f78e878c4093d7f49ae5bdc3759b0d6bc9450d177b44ac",
+    "bytes": 237762,
+    "name": "full-node-final.log",
+    "sha256": "99add04f0621741297255e2ba488da06bfff120618a4dbcd9744a19ca3f1c876"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/full-node.log.gz",
+    "archiveSha256": "d02b75462608e75ad509862c66ca0fdff2a317a797ccc162b5c684f4985f2e44",
+    "bytes": 238797,
+    "name": "full-node.log",
+    "sha256": "248df61a7e23db86c5e1be5c6fee06fc5e36197c9cdc9689c2928b84a6b26610"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/generators-0-1794096697040308532.log.gz",
+    "archiveSha256": "bdcf56554df5ea2fa19921144e34c15fbd87094e7e44ffbb1f27bd30959f6629",
+    "bytes": 23,
+    "name": "generators-0-1794096697040308532.log",
+    "sha256": "43affe539ba0ae8b202b306a3294d04f3b7fc062316c1c825399076d966c8f2d"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/generators-0-1794096995332008040.log.gz",
+    "archiveSha256": "bdcf56554df5ea2fa19921144e34c15fbd87094e7e44ffbb1f27bd30959f6629",
+    "bytes": 23,
+    "name": "generators-0-1794096995332008040.log",
+    "sha256": "43affe539ba0ae8b202b306a3294d04f3b7fc062316c1c825399076d966c8f2d"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/generators-0-1794097241836156419.log.gz",
+    "archiveSha256": "bdcf56554df5ea2fa19921144e34c15fbd87094e7e44ffbb1f27bd30959f6629",
+    "bytes": 23,
+    "name": "generators-0-1794097241836156419.log",
+    "sha256": "43affe539ba0ae8b202b306a3294d04f3b7fc062316c1c825399076d966c8f2d"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/generators-0-1794097579607129828.log.gz",
+    "archiveSha256": "bdcf56554df5ea2fa19921144e34c15fbd87094e7e44ffbb1f27bd30959f6629",
+    "bytes": 23,
+    "name": "generators-0-1794097579607129828.log",
+    "sha256": "43affe539ba0ae8b202b306a3294d04f3b7fc062316c1c825399076d966c8f2d"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/generators-0.log.gz",
+    "archiveSha256": "ef1a1ddb2968ef5d76fc2d4135e8ef889732a34dfa3027c83dac32b4e8fead96",
+    "bytes": 20,
+    "name": "generators-0.log",
+    "sha256": "96a977f329ec3c59092d40e041a019b49dcf03ca04055e177aa0ccb8c27234df"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/generators-1-1794096697064731230.log.gz",
+    "archiveSha256": "14c4ce69779ac75c795fd84e65e16bedfc1bed8d19183a4325a15022abe5ca6c",
+    "bytes": 89,
+    "name": "generators-1-1794096697064731230.log",
+    "sha256": "cd975729990937c1b50b0dcb92208fc69c6ee6bdcc541598bd86dfdced8fbdaa"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/generators-1-1794096995376960657.log.gz",
+    "archiveSha256": "14c4ce69779ac75c795fd84e65e16bedfc1bed8d19183a4325a15022abe5ca6c",
+    "bytes": 89,
+    "name": "generators-1-1794096995376960657.log",
+    "sha256": "cd975729990937c1b50b0dcb92208fc69c6ee6bdcc541598bd86dfdced8fbdaa"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/generators-1-1794097241860283332.log.gz",
+    "archiveSha256": "14c4ce69779ac75c795fd84e65e16bedfc1bed8d19183a4325a15022abe5ca6c",
+    "bytes": 89,
+    "name": "generators-1-1794097241860283332.log",
+    "sha256": "cd975729990937c1b50b0dcb92208fc69c6ee6bdcc541598bd86dfdced8fbdaa"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/generators-1-1794097579686303512.log.gz",
+    "archiveSha256": "14c4ce69779ac75c795fd84e65e16bedfc1bed8d19183a4325a15022abe5ca6c",
+    "bytes": 89,
+    "name": "generators-1-1794097579686303512.log",
+    "sha256": "cd975729990937c1b50b0dcb92208fc69c6ee6bdcc541598bd86dfdced8fbdaa"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/generators-1.log.gz",
+    "archiveSha256": "14c4ce69779ac75c795fd84e65e16bedfc1bed8d19183a4325a15022abe5ca6c",
+    "bytes": 89,
+    "name": "generators-1.log",
+    "sha256": "cd975729990937c1b50b0dcb92208fc69c6ee6bdcc541598bd86dfdced8fbdaa"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/generators-2-1794096701733795788.log.gz",
+    "archiveSha256": "c268c7b7a1eb61a1f466388705471454b1257ae22d853e3488950e9dca8d162b",
+    "bytes": 71,
+    "name": "generators-2-1794096701733795788.log",
+    "sha256": "b17e0095fa5976539d4384127f8f3a4f70d4b5a7e46db7b1444c42ed0a1a30dd"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/generators-2-1794097001078756801.log.gz",
+    "archiveSha256": "c268c7b7a1eb61a1f466388705471454b1257ae22d853e3488950e9dca8d162b",
+    "bytes": 71,
+    "name": "generators-2-1794097001078756801.log",
+    "sha256": "b17e0095fa5976539d4384127f8f3a4f70d4b5a7e46db7b1444c42ed0a1a30dd"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/generators-2-1794097246716946862.log.gz",
+    "archiveSha256": "c268c7b7a1eb61a1f466388705471454b1257ae22d853e3488950e9dca8d162b",
+    "bytes": 71,
+    "name": "generators-2-1794097246716946862.log",
+    "sha256": "b17e0095fa5976539d4384127f8f3a4f70d4b5a7e46db7b1444c42ed0a1a30dd"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/generators-2-1794097589651510228.log.gz",
+    "archiveSha256": "c268c7b7a1eb61a1f466388705471454b1257ae22d853e3488950e9dca8d162b",
+    "bytes": 71,
+    "name": "generators-2-1794097589651510228.log",
+    "sha256": "b17e0095fa5976539d4384127f8f3a4f70d4b5a7e46db7b1444c42ed0a1a30dd"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/generators-2.log.gz",
+    "archiveSha256": "c268c7b7a1eb61a1f466388705471454b1257ae22d853e3488950e9dca8d162b",
+    "bytes": 71,
+    "name": "generators-2.log",
+    "sha256": "b17e0095fa5976539d4384127f8f3a4f70d4b5a7e46db7b1444c42ed0a1a30dd"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/hooks-0-1794097349408798300.log.gz",
+    "archiveSha256": "cb5a819419d625d5dc1c1636e9ad29ec40f41dc1e9d6c1aef4a129e20345ae19",
+    "bytes": 503,
+    "name": "hooks-0-1794097349408798300.log",
+    "sha256": "9004e559aa9989b5314c516606334a2698b50cb0eb55b1a0c4469e7f640359a4"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/hooks-0-1794097415504060335.log.gz",
+    "archiveSha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89",
+    "bytes": 240,
+    "name": "hooks-0-1794097415504060335.log",
+    "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/hooks-0-1794097522961774020.log.gz",
+    "archiveSha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89",
+    "bytes": 240,
+    "name": "hooks-0-1794097522961774020.log",
+    "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/hooks-1-1794097416281733095.log.gz",
+    "archiveSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd",
+    "bytes": 19,
+    "name": "hooks-1-1794097416281733095.log",
+    "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/hooks-1-1794097531023223265.log.gz",
+    "archiveSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd",
+    "bytes": 19,
+    "name": "hooks-1-1794097531023223265.log",
+    "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/hooks-2-1794097416328021162.log.gz",
+    "archiveSha256": "6fee15bef5949c6b37c34895235ca4c85eb948412b72956943a78fb924ff4734",
+    "bytes": 29,
+    "name": "hooks-2-1794097416328021162.log",
+    "sha256": "ac9a94f1a0a17e149c58e86b90342b20bd986175f4edbc136585411546dbfad6"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/hooks-2-1794097531119954644.log.gz",
+    "archiveSha256": "6fee15bef5949c6b37c34895235ca4c85eb948412b72956943a78fb924ff4734",
+    "bytes": 29,
+    "name": "hooks-2-1794097531119954644.log",
+    "sha256": "ac9a94f1a0a17e149c58e86b90342b20bd986175f4edbc136585411546dbfad6"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/hooks-final-runner.log.gz",
+    "archiveSha256": "95b62807846e0543c70f8e6acf0f68dc53872c936345ecaf60f32e2defbecc84",
+    "bytes": 212,
+    "name": "hooks-final-runner.log",
+    "sha256": "1b334a287604d7bed97733016231bc9421c3c6b424639561e3ce4164caff3fae"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/hooks-sealed-runner.log.gz",
+    "archiveSha256": "591fde0101053c069d1c995f83f97835380756c8d7025e6b896c3b075813eed1",
+    "bytes": 575,
+    "name": "hooks-sealed-runner.log",
+    "sha256": "3ca92e5b99fe5eabd3ce9a5e0a5d9edf6d5313e096260f5f6aaf1722775896ee"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/hooks-stable-runner.log.gz",
+    "archiveSha256": "9917d5796b348f2cb0b898f729edbc676e7c39f326e1046b01fe992807779bb1",
+    "bytes": 577,
+    "name": "hooks-stable-runner.log",
+    "sha256": "87da1b4f2de3980bfb2e0dde711789b1f2be01c13f357be111ab56ae8d10ddd5"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/http-bootstrap.log.gz",
+    "archiveSha256": "fbfb8992932861aa0d339fdec6ff71a9d76933f6e78dabd454ae3cc4bae1a67c",
+    "bytes": 368,
+    "name": "http-bootstrap.log",
+    "sha256": "e9b3d017bbf5c9eb1a7346e9da143411c89f180d2adf0848905b6c5bf77997fb"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/http-cache-final.log.gz",
+    "archiveSha256": "bbc435d6e00e274359dada424355cdd676a080c88f339b7c8fdadc3f85164734",
+    "bytes": 368,
+    "name": "http-cache-final.log",
+    "sha256": "dcfd5e5e5d2c80adf1874bb6d0b09cc278d60b292ec45218b1f0945a33550eae"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/http-causal.log.gz",
+    "archiveSha256": "81fc4a09165623b7363d98f89ee4e0cc1594cf1d2a1e6884e2d13591a3ea5c63",
+    "bytes": 1172,
+    "name": "http-causal.log",
+    "sha256": "404c331306c0ea9ce095e8d69f95777ee5e0d0df097d19c9f98c294aa4e212c8"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/http-click.log.gz",
+    "archiveSha256": "9b60432624a822c12d246735e8aa334d6c7b4a4dedb4ba023a36f8e08f510a51",
+    "bytes": 1021,
+    "name": "http-click.log",
+    "sha256": "d519e45104836422a30b57b70af39e4469f5bf0568ce32ebb9924aab0c744443"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/http-coalesced.log.gz",
+    "archiveSha256": "dd51d5583b63b3312a0ddd8dc0296cc010c1a9ed6f5241420140a94ad5406b19",
+    "bytes": 367,
+    "name": "http-coalesced.log",
+    "sha256": "0f7eb5d30d7cbf9c09dca3275886d52e68a177a2824ddaf6dd38ef0238995101"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/http-domain.log.gz",
+    "archiveSha256": "1d16162a85cdd0b55631cea071539e49a91a65bd9b2998fde44d2543e5b0681a",
+    "bytes": 1172,
+    "name": "http-domain.log",
+    "sha256": "2bacba934ae763dd97c84779eda9deebdfcbb6fd0970bd22d5f066d7c4f39fab"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/http-epoch.log.gz",
+    "archiveSha256": "bb58362a6046fd1e815359222cf78d183650c7c6a226bde216dd14c0eaad7885",
+    "bytes": 368,
+    "name": "http-epoch.log",
+    "sha256": "ca972f60104482b638e408e7ffb310a0a0208a63498bbdadf1c37aa8b5f320fc"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/http-failure-matrix.log.gz",
+    "archiveSha256": "d9443bdd80f0f232eda9d7b781ad5b6aee1cfa6c6f038ea60759e2a4a9d0ffbb",
+    "bytes": 928,
+    "name": "http-failure-matrix.log",
+    "sha256": "62fd4a1daf9cac5b53872329b7ab7b3cba5d911a7f61e837fb10d3a8f336d787"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/http-first.log.gz",
+    "archiveSha256": "c87f8a468cdb0ad58e3b4436c93dd37ab082e60fc84271041cc7211f59b16b37",
+    "bytes": 882,
+    "name": "http-first.log",
+    "sha256": "35f725cd49dbd60b58b4d38f1f14d647b7739889577da58351b7075391fa02ef"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/http-home.log.gz",
+    "archiveSha256": "3c8909c9a64447df0dc87ebb5d6dba633c837bd527be92e6c213beca9181efad",
+    "bytes": 774,
+    "name": "http-home.log",
+    "sha256": "0343c70b2e9788bf1709bf3050a169c45fd159bbbcffe228368db8e30ec85bd8"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/http-hover.log.gz",
+    "archiveSha256": "e294c1cd5ba52660067b152f334b56c1a90dc4a7fcd7db0d76566ef087fe7e18",
+    "bytes": 894,
+    "name": "http-hover.log",
+    "sha256": "661d68b9aa616b7947c5117652d4ec8dd8c79bda7dc05121453ff260aca7febe"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/http-interior.log.gz",
+    "archiveSha256": "3ee80d9999f1036782c9c545e2d7b3cf352f9dd45c937c59b31a1ab39c0df963",
+    "bytes": 1312,
+    "name": "http-interior.log",
+    "sha256": "b8738ac29bfb69803e06c7fce23140ebb04a3cebf8f87f9fcd84b66a6c3fbb06"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/http-missing-fixed.log.gz",
+    "archiveSha256": "7befe3910a0b8d80629c6aac73730d6262d91422da23f475044920044391bdeb",
+    "bytes": 368,
+    "name": "http-missing-fixed.log",
+    "sha256": "4db1a5887e5fea96f5ff12d65db6df4ec7a75179e2dd7b5948b643c1d706b8cc"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/http-pointer-debug.log.gz",
+    "archiveSha256": "a11da0711c764eaa2c442a45cc07853e3f0fb01ccd97e8ede5d89cd403c26d5d",
+    "bytes": 1021,
+    "name": "http-pointer-debug.log",
+    "sha256": "8f80a9bab17e756f1147dc4c3c23927c3a7237c431ebfcde3bec4a8f3c71fa49"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/http-pointer.log.gz",
+    "archiveSha256": "3a5828bff8009492b179cf0d94cb0c2afb85d8313bcc0b3fae6bb76aa4994227",
+    "bytes": 1172,
+    "name": "http-pointer.log",
+    "sha256": "8f13857223c43e256eaa65338b7f9710554cbeabef50f7218e0cf656b1e4518c"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/http-raw-pixels.log.gz",
+    "archiveSha256": "d16f4e353e8ba2a80a27cc9933d510dcb57a1ad52725256bf7c229361f133612",
+    "bytes": 1021,
+    "name": "http-raw-pixels.log",
+    "sha256": "f6a0c8378046b7303f1736474e57df1640d1386c064e0d14f6cffda40994327a"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/http-selection.log.gz",
+    "archiveSha256": "4436dcab1ddf2c40f4f3fbb9e2d4da9c9c83bcff9f80b729368a89ecefff6263",
+    "bytes": 1020,
+    "name": "http-selection.log",
+    "sha256": "4244cea516841841e8b92ba40019c203126e8eba14f5790a99f202c762a045e1"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/http-stage-lasso.log.gz",
+    "archiveSha256": "8f0af7765db9399a9d0f6b73b87e2329508a26bf35b7a4f9ca1549c02825bed0",
+    "bytes": 368,
+    "name": "http-stage-lasso.log",
+    "sha256": "a5ac8d995b6025bbabb9c213897857c9871e34edfb5c410a3831679010389d23"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/http-target.log.gz",
+    "archiveSha256": "37384a6bd8c68005eab4fb2747013fa950c0cbce4857ad1c44d7809c4fe94112",
+    "bytes": 1021,
+    "name": "http-target.log",
+    "sha256": "7d1e0d91b2670c8e5592d14ae6ab1f5f50aeb08cb3f4f431d193c6b9ffd7e07f"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/http-zero-move.log.gz",
+    "archiveSha256": "4763ae77d3e6b72da03818582deed61642f9312ec4999ad4c8b3ea18276633a3",
+    "bytes": 1021,
+    "name": "http-zero-move.log",
+    "sha256": "3496e0feb5a36d69475bc44b35a039c9baaad326890f9d945d24d60aa51767c8"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/installed-causal.log.gz",
+    "archiveSha256": "eb820cd8a6c51e15b86b1cdd8bbb93797ef5f7648226631b9e44381580fe8ba9",
+    "bytes": 29347,
+    "name": "installed-causal.log",
+    "sha256": "d936a1fe04bbc4035735514220b7610bc3284dcc271db72a799b4924b4881a15"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/installed-click.log.gz",
+    "archiveSha256": "6db6cfd673f2079b339fca029293988ad62df2d00b25b62ac41f057c498e9c4f",
+    "bytes": 34048,
+    "name": "installed-click.log",
+    "sha256": "bf71e2f4a1aa6acd16c1231f53bf93b1e5b1a607a6b885bbbe26c8233197896f"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/installed-control.log.gz",
+    "archiveSha256": "6ce256e724a73cc5ebc5bbd5742df4f961ec86fbef178dd0c26c926ca299e66e",
+    "bytes": 29910,
+    "name": "installed-control.log",
+    "sha256": "7dbec1df34f3332faf744dd90acd1daff2a1d22be98c5db1144b3b5873450c47"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/installed-debug.log.gz",
+    "archiveSha256": "29ed29b5b222bf4ef0d298e202a74c524db9cacf4de6637fa6665ea4225fecf7",
+    "bytes": 29276,
+    "name": "installed-debug.log",
+    "sha256": "b9d1fa5def680e2345b650101e7d8826aa2f52596772d60bc93e988e4555d043"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/installed-domain.log.gz",
+    "archiveSha256": "4f41c2bed918e51f587ae094deeb487700526a7424c2f8bcbf99d2a7ced233ce",
+    "bytes": 28453,
+    "name": "installed-domain.log",
+    "sha256": "57210afd0e898a1312cf643a01c34166cb9e35dea8271ae3776ec6b1d6bf7faf"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/installed-epoch.log.gz",
+    "archiveSha256": "13336db3228bf37652c8ca35aed9260478474653e06f82fa58837043e0b27d0f",
+    "bytes": 99,
+    "name": "installed-epoch.log",
+    "sha256": "882c4439d527520655e0c3964035a9458f2d905536a8cf4d0f8880ea15ab8c60"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/installed-final-source-runner.log.gz",
+    "archiveSha256": "7187b9651810fa5b20038d64644f7f245d457ef2160d08c7e3bc0271d13b5465",
+    "bytes": 955,
+    "name": "installed-final-source-runner.log",
+    "sha256": "71e56bbf1a03c001ffd5ff94f91e384b2610abde41e4d293bb23f127cc2ee400"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/installed-first.log.gz",
+    "archiveSha256": "48900be1cf462ecc100e89125390fd416f0332f285cfa2e1ca60173a8895edd4",
+    "bytes": 28877,
+    "name": "installed-first.log",
+    "sha256": "af5a70133ef845c009b51a07e85b06a8b6349e14ff2768fee78df523a15d6458"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/installed-format.log.gz",
+    "archiveSha256": "8d0525b20a8061b8cfed186f3e9acc067824d7316cd6cf3e3fe158909cda1bc3",
+    "bytes": 19,
+    "name": "installed-format.log",
+    "sha256": "413a709001976657cb743636fd34e48fc41d8d302d665460d3f874b3313da127"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/installed-home.log.gz",
+    "archiveSha256": "f7c20d039d7335e7746ed0f41a9b11e088399d0e3447471e1647e2762c011015",
+    "bytes": 29347,
+    "name": "installed-home.log",
+    "sha256": "c55d889871813b8b0d0bc5bfcbb3117774e2a4d494435512b029f0f70017f8fb"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/installed-interior.log.gz",
+    "archiveSha256": "f49b93bf66d52d7609bfd40f354a7a3455b9b4184894594a16c6f44ebd2c8f58",
+    "bytes": 99,
+    "name": "installed-interior.log",
+    "sha256": "21f498f01e2d8bd97ab2faeaad2407661bee6080a1c55b9d27c92b643b59d9fe"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/installed-lint.log.gz",
+    "archiveSha256": "bcca46cec4c1e3a5ff62196cb9b8d7a012272c4046dcf53a1df7a1878a4e3ba0",
+    "bytes": 11600,
+    "name": "installed-lint.log",
+    "sha256": "b7b30af8e22f82f51c0c2249a32be1cc98c81dd9fcc0e003738589c46305fcaa"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/installed-raw-pixels.log.gz",
+    "archiveSha256": "73e9623408f419a6bc6b70c4a9c645819681293a63d4e90d49bac4b57912dec9",
+    "bytes": 33436,
+    "name": "installed-raw-pixels.log",
+    "sha256": "a9bf161ee5dc5c11474eb7d2c7eea2804ca712724e4b52f2fe55d6892f3729f3"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/installed-remount.log.gz",
+    "archiveSha256": "af2a30eda4395d57b9ceb44080663277bb33d583fa0b7c025faa5cdfd5633e60",
+    "bytes": 37949,
+    "name": "installed-remount.log",
+    "sha256": "1ff39b2612a779b97763f77cd25cf2a8c4e4e46cc18eb59999887dca257c4cb6"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/installed-rgb.log.gz",
+    "archiveSha256": "c355ab739c8100e7495c2b345ed9342138c809faa75c0b77c745c831223baf39",
+    "bytes": 28447,
+    "name": "installed-rgb.log",
+    "sha256": "811cb8d7f89d1808fb7ac5507f48b5da992b91f6f6da343b4c7d1a31a11cded3"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/installed-width.log.gz",
+    "archiveSha256": "dccbab28f9d146fa5d2d28f4ac5383a3400d5662ae542396b4c7cc452cfcf42e",
+    "bytes": 30006,
+    "name": "installed-width.log",
+    "sha256": "dd77977ca6f57b1ae715b08cca45eef13e112a21faef85105604b7587d1e5527"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/installed-wire.log.gz",
+    "archiveSha256": "b8ab9563938da61615343bf298f16baf2eb447e66a9a37174072ee4fd0b9bff3",
+    "bytes": 29347,
+    "name": "installed-wire.log",
+    "sha256": "f2cfcd9f80173550b7cd4919e622207142e5260699e86601d11d6b412ded9a3f"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/jupyter-install.log.gz",
+    "archiveSha256": "c7197d04b76326a2ace3f5cec94dab08d5aa5ea24f64842d7af92cc04228397e",
+    "bytes": 1576,
+    "name": "jupyter-install.log",
+    "sha256": "325933f305e87604cd61729510449aea38f59ac51f839b1a330cff86f9c92960"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/lifecycle-current2.log.gz",
+    "archiveSha256": "88d0a4e0b42db0042e1e1949b9cb0b985c86d755c16558bc8a03083f4b78c2fc",
+    "bytes": 110,
+    "name": "lifecycle-current2.log",
+    "sha256": "23daf61c8d660acb113a0db096f67f26eb1dda0245a41c670c354ea08c09d345"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/lifecycle-first.log.gz",
+    "archiveSha256": "6d1be7291b6dc64708a54b7b7d2178a789f3548698c7b93060d0cb29cdf21494",
+    "bytes": 98,
+    "name": "lifecycle-first.log",
+    "sha256": "ede3105d5befab1d1bf057b75ad6492c485516cbaf7b315aa4b2876b0fba20b6"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/lifecycle-format.log.gz",
+    "archiveSha256": "8d0525b20a8061b8cfed186f3e9acc067824d7316cd6cf3e3fe158909cda1bc3",
+    "bytes": 19,
+    "name": "lifecycle-format.log",
+    "sha256": "413a709001976657cb743636fd34e48fc41d8d302d665460d3f874b3313da127"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/lifecycle-lint.log.gz",
+    "archiveSha256": "3681c09e8478964def2c56e7188c20180292833064745d938d0609cb1382dde4",
+    "bytes": 13976,
+    "name": "lifecycle-lint.log",
+    "sha256": "177a1b92a22757f6afbd60772f60fb66b02d4d5ce061130ab6dbcf33dd73611b"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/merge-commit.log.gz",
+    "archiveSha256": "c50fa2252a3dde523f31a16cbb9291421e96a62cd7f76170c49e10637603b9f8",
+    "bytes": 99,
+    "name": "merge-commit.log",
+    "sha256": "47a5d9e46b9f3d170ea48187448f70cf663588916936850f6d322e0b47d8480b"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/merge-format.log.gz",
+    "archiveSha256": "241d29ffe1c4d93f84b13fc3374c78d5b1791d7ff44c5cd7299f1eba4532ea31",
+    "bytes": 29,
+    "name": "merge-format.log",
+    "sha256": "8c3e57f25afe8d8f1d2c8f36f27edbcc1ce3cc53595f02517fd5ec39ff770676"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/merge-hooks.log.gz",
+    "archiveSha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89",
+    "bytes": 240,
+    "name": "merge-hooks.log",
+    "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/merge-ruff.log.gz",
+    "archiveSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd",
+    "bytes": 19,
+    "name": "merge-ruff.log",
+    "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/node-0-1794096727041475241.log.gz",
+    "archiveSha256": "0b60f5e00803835a1e0888fb654618ca5db843691c79fe0c24b6480f515362a2",
+    "bytes": 256336,
+    "name": "node-0-1794096727041475241.log",
+    "sha256": "b9e9f24380793e876891023890f5090cf67119cc9d9de1e4f37fec1291fa45f7"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/node-0-1794096874302688065.log.gz",
+    "archiveSha256": "25836aa1d9730c9cf8dc5d947aec78b83ca2b16120841fdaa0f1e38bfb379f6b",
+    "bytes": 237731,
+    "name": "node-0-1794096874302688065.log",
+    "sha256": "3d57c93d3cd0edbf855bcfb8c245c646568b614e83ad510714d1bd527d55abe3"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/node-0-1794097152022626350.log.gz",
+    "archiveSha256": "40f76c8c8384e960f40b5b95d1e6d231a155ed4bb82a50a981ebbdf0d4255379",
+    "bytes": 237742,
+    "name": "node-0-1794097152022626350.log",
+    "sha256": "c92a4f80c0f10dd5e11a392bfe39ea637f6ca071657b286004f318a5e0ef6888"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/node-0-1794097272821270315.log.gz",
+    "archiveSha256": "a1e31a7954d8e674abe09a5a3c6654f5e6e40545326962b80ce4dbc70777e86f",
+    "bytes": 237760,
+    "name": "node-0-1794097272821270315.log",
+    "sha256": "0429372289c9eaa82976c92170daddd4d8dee994c63967d8160d56c0f35320a1"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/node-active-native.log.gz",
+    "archiveSha256": "ea009dfe926245603468bef052f61d2f5e6bd60b53e1f1575b541d7a5aae74bc",
+    "bytes": 1656,
+    "name": "node-active-native.log",
+    "sha256": "0a56a65e15672a9c21263034c660ecfa487fda2d1ba198e743f86314fef0528a"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/node-causal-runner.log.gz",
+    "archiveSha256": "edafa6244d785eb0c5f16b1f67d7cfd5e76206f8d069ab3875b423aee97e82b4",
+    "bytes": 186,
+    "name": "node-causal-runner.log",
+    "sha256": "4364f4494dd6b1da3a33406b4dbc3350b6e8b5313ca6600de01fe81d033ae05e"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/node-close-native-final.log.gz",
+    "archiveSha256": "625a1db8db8e09289d919a7350f1dc9a227666c1ba8c0e4fac1e29fdc887c8fd",
+    "bytes": 1658,
+    "name": "node-close-native-final.log",
+    "sha256": "f4c724f7eee17451c478d557c5d129a7231b51d92fca10a0c6bbddd7a74f14a4"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/node-compact.log.gz",
+    "archiveSha256": "ca97cc5d420f22fceb503ab5061707f93b93e05dc6e92f77cb3ccd8df2dd15d9",
+    "bytes": 1420,
+    "name": "node-compact.log",
+    "sha256": "c6062b59d4be59707df89d287a7a282ee5c8baf2bbb551fd1a83e90807c3d563"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/node-focused.log.gz",
+    "archiveSha256": "bf3aead3c651ae315f5ee6e794e5e2ce6e4fc43ee9b59e606055430ef85e07ca",
+    "bytes": 311,
+    "name": "node-focused.log",
+    "sha256": "0fcd3fb6e0eafa59809d12a012709712a8d77f617503299226e5729756bdee57"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/node-matrix-current.log.gz",
+    "archiveSha256": "c144bbe5b5ae72c5cabd36e003827ab389ba975a8f8d252a7c5f76236e72c972",
+    "bytes": 1658,
+    "name": "node-matrix-current.log",
+    "sha256": "350bfd48176a1fe9104cd388dd5f6f4b9077ee1b62e5fa85a62fdb1a8c453e5f"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/node-matrix.log.gz",
+    "archiveSha256": "b2f8fa9e228c3bdc1ae2f13df9348ae258b543a5365ea96a140fb07ca34d5001",
+    "bytes": 4313,
+    "name": "node-matrix.log",
+    "sha256": "d2e69075f7c2aae37d398248c7b863adb507099da7c7858a0371dc715f387a86"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/node-memory.log.gz",
+    "archiveSha256": "820b9e2b06939a383ffa2d708d2c0800e89620a3a3bb9c3ba2014a980eb2feb1",
+    "bytes": 3904,
+    "name": "node-memory.log",
+    "sha256": "75937497cde175fb774caa86159a17876640c91cbb7d389e31eb3ec9181f5883"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/node-minimum-final.log.gz",
+    "archiveSha256": "5ad3a982520f682b05b71dc4cc48e347ff4edab4275e3151840ec4d4d9847143",
+    "bytes": 1908,
+    "name": "node-minimum-final.log",
+    "sha256": "705704530a850663a4f89c787e32fed802943be18a89d2d0714bb7b0c431aca9"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/normal-package.log.gz",
+    "archiveSha256": "8b3fce3fbba1ad4d5abed59198df9434204b9012af51741920ce66ea62ae0377",
+    "bytes": 493,
+    "name": "normal-package.log",
+    "sha256": "d03db1e286a5c244115429f1f388406e74817f21c5ca7eddbd31deffb3e71160"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/observer-format.log.gz",
+    "archiveSha256": "8d0525b20a8061b8cfed186f3e9acc067824d7316cd6cf3e3fe158909cda1bc3",
+    "bytes": 19,
+    "name": "observer-format.log",
+    "sha256": "413a709001976657cb743636fd34e48fc41d8d302d665460d3f874b3313da127"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/old-focused.log.gz",
+    "archiveSha256": "62e5982c4137092928aef9c40952ea006fd9b22b70adc6620f87aaeb3bbdc3bf",
+    "bytes": 7001,
+    "name": "old-focused.log",
+    "sha256": "29462d3b46167c9f1b6cc31f9dcf8d7915d4a56304cbfb979127443f1a26160e"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/ownership-current.log.gz",
+    "archiveSha256": "7fc23af438f147c3f07362be5c5d80431d4f92b0ae171cf70a6e38b38e14959f",
+    "bytes": 279,
+    "name": "ownership-current.log",
+    "sha256": "34492e5fb460aef7650feaea0997df38357e76129cb3a806a7afbcb05d891166"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/ownership-first-failure.txt.gz",
+    "archiveSha256": "613255035a16d4022beaf03925051013f27203303c2abd63b7b80dd35d7a1687",
+    "bytes": 767,
+    "name": "ownership-first-failure.txt",
+    "sha256": "31542f4d29f106cdcaea35af1dbb1f822b49c82e73be0eaed0e4bb1434650fd4"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/preseal-format.log.gz",
+    "archiveSha256": "6fee15bef5949c6b37c34895235ca4c85eb948412b72956943a78fb924ff4734",
+    "bytes": 29,
+    "name": "preseal-format.log",
+    "sha256": "ac9a94f1a0a17e149c58e86b90342b20bd986175f4edbc136585411546dbfad6"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/preseal-ruff.log.gz",
+    "archiveSha256": "8d83c8aba198595d5075e5e86547a1cc41f68c638303e0b5faf6f0cac26bfdd7",
+    "bytes": 239,
+    "name": "preseal-ruff.log",
+    "sha256": "ed5fb2589b8e7153310b3ae0f8d64295e84e4b049f4d5133ee3bc77d87bbc718"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/publication-format.log.gz",
+    "archiveSha256": "8d0525b20a8061b8cfed186f3e9acc067824d7316cd6cf3e3fe158909cda1bc3",
+    "bytes": 19,
+    "name": "publication-format.log",
+    "sha256": "413a709001976657cb743636fd34e48fc41d8d302d665460d3f874b3313da127"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/python-bootstrap-format.log.gz",
+    "archiveSha256": "8d0525b20a8061b8cfed186f3e9acc067824d7316cd6cf3e3fe158909cda1bc3",
+    "bytes": 19,
+    "name": "python-bootstrap-format.log",
+    "sha256": "413a709001976657cb743636fd34e48fc41d8d302d665460d3f874b3313da127"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/python-focused.log.gz",
+    "archiveSha256": "3044551c4801f9956092f29bfa0eac6c1f4e4808fc92bb5b28bbc96f0cddcb54",
+    "bytes": 109,
+    "name": "python-focused.log",
+    "sha256": "56287e27886c455398a81643f7d62849413eef444e9e029ad8e5332fc9e88fc7"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/python-format.log.gz",
+    "archiveSha256": "f1eec7f22d112d80196fdd1e8437dec2534776512bee8c55b3e2d7609355e04c",
+    "bytes": 42,
+    "name": "python-format.log",
+    "sha256": "10869b88a75066aa23546ef1f95fcd4678c3fb92a56ed46ef91688052b67976a"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/python-lint.log.gz",
+    "archiveSha256": "ccb76413606c8f301d68c9f8982efabd190de2c6928c4d01387e979788566341",
+    "bytes": 38,
+    "name": "python-lint.log",
+    "sha256": "aac3a0503d8b95052cc85fb9f1717dc82b74aa55853a5aa9749b41e30275d472"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/python-related.log.gz",
+    "archiveSha256": "a68f323eabc0fd8522a377aff2fac97ab1398660ea4f03bb5cb1662a4f68b28b",
+    "bytes": 260,
+    "name": "python-related.log",
+    "sha256": "395b1e80c5783e36ada9e9980b687e9895cb6499e3949f20646c5574102a9fbc"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/remount-format.log.gz",
+    "archiveSha256": "8d0525b20a8061b8cfed186f3e9acc067824d7316cd6cf3e3fe158909cda1bc3",
+    "bytes": 19,
+    "name": "remount-format.log",
+    "sha256": "413a709001976657cb743636fd34e48fc41d8d302d665460d3f874b3313da127"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/required-0-1794096564634451875.log.gz",
+    "archiveSha256": "a20da90c05ea5b26e01574cdff841e71c289136594cbcd66e3db0bb3070a1d29",
+    "bytes": 19048,
+    "name": "required-0-1794096564634451875.log",
+    "sha256": "ff247b83d6d58a8ad6713fd92de8f7660b6544a72e68f702ba970092bc657d91"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/required-0-1794096702072059343.log.gz",
+    "archiveSha256": "b10e04928f4d620b9a12764995343af114f0ba771f8df2a7e888304a5ca2e079",
+    "bytes": 100,
+    "name": "required-0-1794096702072059343.log",
+    "sha256": "2c16e4702232232d20668746c6e6b6382e94ec7bd3fa4464a735d63d76546cdb"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/required-0-1794097001258522271.log.gz",
+    "archiveSha256": "b92e3cfa08eb9a1b8a63433269a65533956a4acb0dc42c9dd7e125593c060d2c",
+    "bytes": 100,
+    "name": "required-0-1794097001258522271.log",
+    "sha256": "0f559aa0dae919c7e6d11e487910b557703638a0ffe3e979b246147516eb0f1e"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/required-0-1794097125668073132.log.gz",
+    "archiveSha256": "033ff6a6a8e851434d83a6cf1f36ce34163355791714fdb0617bbb53af0b9220",
+    "bytes": 100,
+    "name": "required-0-1794097125668073132.log",
+    "sha256": "07d91c7da7176062cd511b7857a00a02881b30b68a22a0dc82488882288f9aed"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/required-0-1794097246951705840.log.gz",
+    "archiveSha256": "1b859f6f76a567c25a45129a93bc99b60a724b771dd6186c1fd464718f69e5f3",
+    "bytes": 100,
+    "name": "required-0-1794097246951705840.log",
+    "sha256": "c81c38e12dad2e74cb4928c31980c226e3c62f8fcaaebc3f789cf428f886f7d1"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/required-0-1794097591221866096.log.gz",
+    "archiveSha256": "bc083a1241f3f2b44db58b58f5f205e813d76700c77c7dad23c033df70579d1a",
+    "bytes": 110,
+    "name": "required-0-1794097591221866096.log",
+    "sha256": "7dfdc60a3f070dbbf390fec2f4f58c01ba4dc37f9f2a8548fa819154f7e5477e"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/required-ci-format.log.gz",
+    "archiveSha256": "8d0525b20a8061b8cfed186f3e9acc067824d7316cd6cf3e3fe158909cda1bc3",
+    "bytes": 19,
+    "name": "required-ci-format.log",
+    "sha256": "413a709001976657cb743636fd34e48fc41d8d302d665460d3f874b3313da127"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/required-ci-lint.log.gz",
+    "archiveSha256": "ccb76413606c8f301d68c9f8982efabd190de2c6928c4d01387e979788566341",
+    "bytes": 38,
+    "name": "required-ci-lint.log",
+    "sha256": "aac3a0503d8b95052cc85fb9f1717dc82b74aa55853a5aa9749b41e30275d472"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/required-ci-native.log.gz",
+    "archiveSha256": "13c16415c68f43c66852849d3bc4cef86f6c3cd5fb25569f7254626b7c0a9eee",
+    "bytes": 100,
+    "name": "required-ci-native.log",
+    "sha256": "e9cd01473a2cc439018168a844b6b18629ccc64175f09228eeb13defa3e198f4"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/required-ci-rebound.log.gz",
+    "archiveSha256": "5f862c0cf305089326074a930769224950384d939fe310257e8f2a0d546351d4",
+    "bytes": 100,
+    "name": "required-ci-rebound.log",
+    "sha256": "4456befa4d47d808b5dc610e61cf02dd3b9fcc322db60d49fc05e9e0924e923a"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/resource-complete-runner.log.gz",
+    "archiveSha256": "92e62e18f14e935f82d31e566f84e22a97b470683992ccf26e86b4816f5fd3dc",
+    "bytes": 989,
+    "name": "resource-complete-runner.log",
+    "sha256": "763ff652b3692cac752913cde614aadb61688a0409e673505106bf2c824e045f"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/resource-final-format.log.gz",
+    "archiveSha256": "58e5de868f9ca186dd6d60b6b5b65f3e653fc9c4a6cfa27121fca7745efbf2d5",
+    "bytes": 22,
+    "name": "resource-final-format.log",
+    "sha256": "d807f3580f2470a7fe15ad89e1a6c08e4166ffe1e33d94152d605f0c46d21bfa"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/resource-format.log.gz",
+    "archiveSha256": "ef1a1ddb2968ef5d76fc2d4135e8ef889732a34dfa3027c83dac32b4e8fead96",
+    "bytes": 20,
+    "name": "resource-format.log",
+    "sha256": "96a977f329ec3c59092d40e041a019b49dcf03ca04055e177aa0ccb8c27234df"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/ruff-current.log.gz",
+    "archiveSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd",
+    "bytes": 19,
+    "name": "ruff-current.log",
+    "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/source-final-format.log.gz",
+    "archiveSha256": "354c2dd1842df9288f1c8b4ae567105f5bdad1841908bc3636b6cf883f986660",
+    "bytes": 43,
+    "name": "source-final-format.log",
+    "sha256": "18e6d980f3240b191032244b3052f2ba69c5625810c41885654eb7d5488ac1e1"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/source-final-ruff.log.gz",
+    "archiveSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd",
+    "bytes": 19,
+    "name": "source-final-ruff.log",
+    "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/superseded-after.log.gz",
+    "archiveSha256": "9101b6d94de12fb0bc76ef05d0e6df7c18e526aebb05d26ac3c41741bc2bebec",
+    "bytes": 112,
+    "name": "superseded-after.log",
+    "sha256": "28b3e4545f1bad31862f3e5868facd194cb618da612cbba79f71189867b53c13"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/superseded-before.log.gz",
+    "archiveSha256": "8dfabf9eb2b1224c56ce41c9302606577aa8a30dc9bd6b8ac9748e2066b04acc",
+    "bytes": 2970,
+    "name": "superseded-before.log",
+    "sha256": "12df768c29b48227f21fc1f5b9e5e154c3333a0dec602de9c48fa393237bd622"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/typing-after.log.gz",
+    "archiveSha256": "c3814a363d9352fd324e1e0fcbd727f1146aabdc85a167fb09c37ecfc660c0ce",
+    "bytes": 4916,
+    "name": "typing-after.log",
+    "sha256": "d62ee44dead68d974a3efc2ae92c44c55c2c896c288c8d83f25f37f9c6af57a6"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/typing-final.log.gz",
+    "archiveSha256": "b759a77f2ef0bfdfd4e1724925115783c15c2d5539cba610cc1f773d41d6d6f9",
+    "bytes": 7639,
+    "name": "typing-final.log",
+    "sha256": "0cb2621ea2e6eec196b8c702d01961933b3f7e2ddc099e4b06013d9d419e84f9"
+  },
+  {
+    "archive": "spec/performance/chunked-native-installed-2026-11-07/attempts/wheel.log.gz",
+    "archiveSha256": "d84aaf70587366810eede7a5f09abc3c68b46e41dc03a44043d0e0d7f9ee9bd8",
+    "bytes": 133,
+    "name": "wheel.log",
+    "sha256": "e1499c9af35616557811b02b51a760feff39678f71b5e195be550c36efb7bcee"
+  }
+]

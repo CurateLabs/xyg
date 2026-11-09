@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "parent": "d660cfdd326dd4ff3b8b0f56ce4bd2c3619f6644",
+  "finding": "R4 P2 current WASM36 shared-PNG paragraph",
+  "changedExistingPaths": [
+    ".gitattributes",
+    "spec/design/browser-wasm.md",
+    "tests/test_graphforge_contract_corpus.py"
+  ],
+  "productionUnchanged": true,
+  "historicalReceiptsUnchanged": true,
+  "currentSources": 865,
+  "historicalBindings": 26,
+  "sourceBindingsSha256": "2025a1a747b08641003187c0d4d3172e12f5073341a581dbe3495d15d19f0205",
+  "freshChecks": [
+    {
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_graphforge_contract_corpus.py"
+      ],
+      "exit": 0,
+      "seconds": 2.541533946990967,
+      "log": "/home/ubuntu/.t3-owned/1cafa70d/png-spec-root/check-0.log"
+    },
+    {
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exit": 0,
+      "seconds": 0.808337926864624,
+      "log": "/home/ubuntu/.t3-owned/1cafa70d/png-spec-root/check-1.log"
+    },
+    {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exit": 0,
+      "seconds": 0.2573719024658203,
+      "log": "/home/ubuntu/.t3-owned/1cafa70d/png-spec-root/check-2.log"
+    },
+    {
+      "command": [
+        "uv",
+        "run",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exit": 0,
+      "seconds": 0.04373455047607422,
+      "log": "/home/ubuntu/.t3-owned/1cafa70d/png-spec-root/check-3.log"
+    }
+  ],
+  "initialChecks": [
+    {
+      "command": [
+        "uv",
+        "run",
+        "pytest",
+        "-q",
+        "tests/test_graphforge_contract_corpus.py"
+      ],
+      "exit": 0,
+      "seconds": 3.357450246810913,
+      "log": "/home/ubuntu/.t3-owned/1cafa70d/png-spec-root/check-0.log"
+    },
+    {
+      "command": [
+        "uv",
+        "run",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exit": 1,
+      "seconds": 4.174402952194214,
+      "log": "/home/ubuntu/.t3-owned/1cafa70d/png-spec-root/check-1.log"
+    }
+  ],
+  "initialDisposition": "Ruff format changed only line wrapping of the binding pointer; source binding refreshed and every check rerun successfully",
+  "logs": {
+    "check-0.log.gz": {
+      "sha256": "d0061574281cd5978d7ec0e4297cd1e9a8d5681147a5cb98673c2a7a8d8517f8",
+      "bytes": 51,
+      "rawSha256": "c45a89fe6c105679bcb271eafe9a9a7223f6ea6cb3e47ccac28c1f4a735ce92f",
+      "rawBytes": 98
+    },
+    "check-1.log.gz": {
+      "sha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 72,
+      "rawSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "rawBytes": 240
+    },
+    "check-2.log.gz": {
+      "sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 39,
+      "rawSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "rawBytes": 19
+    },
+    "check-3.log.gz": {
+      "sha256": "962d7bffaad42adb3a3eb66f899733f41d0f9f557a5f671ad51dfb40e61b953d",
+      "bytes": 49,
+      "rawSha256": "69425d6cd8235e1a4113d4eb545910ff06d23718d998267edd863b32474e9173",
+      "rawBytes": 29
+    },
+    "initial-check-0.log.gz": {
+      "sha256": "6f189163f141cc7d4f253882d8345cbb5b3c824f1f0bd6038ff105c5de1a40bc",
+      "bytes": 51,
+      "rawSha256": "16816b27e7e4ec4a1965444ebf2e3cf4b370baa11bfdabd484baa3ec76979bd3",
+      "rawBytes": 98
+    },
+    "initial-check-1.log.gz": {
+      "sha256": "68130be668e38bc4e42e5768e1c325266c2641bfa597b829fc7c56836741252b",
+      "bytes": 149,
+      "rawSha256": "baaca869be0f5c713aa2e7a5015b8a1c2c2f4b76b72d6d6ab56650d72cfe3d2d",
+      "rawBytes": 346
+    }
+  },
+  "unchangedArtifacts": {
+    "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-native/libxyg_core.so": {
+      "sha256": "1424331bd0569c3ecbab1e3e591022aa95adac0f2fce2c486e51909974cf2929",
+      "bytes": 6260072
+    },
+    "/home/ubuntu/.t3-owned/1cafa70d/png-next/qualified-client/xyg-wasm.wasm": {
+      "sha256": "9dbd29f1d5f20ec49494a84562de6cd43096ab02ab276b95c05a8e9e77fbb646",
+      "bytes": 1886125
+    }
+  },
+  "previousIndependentReview": {
+    "head": "d660cfdd326dd4ff3b8b0f56ce4bd2c3619f6644",
+    "recordSha256": "362d83ee1d60857df27fa10bb354e964d9b74512423265d3a02bc1aa312568a5",
+    "status": "No P1 product defect; approval pending this P2 specification correction"
+  },
+  "newIndependentReview": "Pending",
+  "limits": [
+    "No rebuild or new browser execution",
+    "Current-main/combined module/CI/queue and full #45 acceptance remain open"
+  ]
+}

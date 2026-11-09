@@ -1,0 +1,289 @@
+{
+  "parents": [
+    "084b3c1b7c393e135476aab9610bf8334767b2ac",
+    "b1491f9848f9e6e13d63adc81435f1f9ba1da243"
+  ],
+  "commands": [
+    {
+      "command": "node --test packages/xy-node/test/graph-session-wire.test.mjs",
+      "exit": 0
+    },
+    {
+      "command": "node --test js/test/graph-progressive-camera.test.mjs",
+      "exit": 0
+    },
+    {
+      "command": "uv run --python 3.12.15 pytest -q tests/test_graph_session_python_transport.py tests/test_graph_session_abi.py",
+      "exit": 0
+    },
+    {
+      "command": "uv run --python 3.12.15 python scripts/verify_wasm_assets.py",
+      "exit": 0
+    },
+    {
+      "command": "uv run --python 3.12.15 python scripts/check_release_inventory.py --write",
+      "exit": 0
+    },
+    {
+      "command": "uv run --python 3.12.15 pytest -q tests/test_graphforge_contract_corpus.py tests/test_release_inventory.py",
+      "exit": 0
+    },
+    {
+      "command": "uv run --python 3.12.15 python scripts/check_release_inventory.py",
+      "exit": 0
+    },
+    {
+      "command": "XYG_WASM_FOUNDATION_REPORT=$PWD/target/integration-1113/foundation.json XYG_GRAPH_SCHEDULING_REPORT=$PWD/target/integration-1113/scheduling.json node scripts/wasm_foundation_smoke.mjs",
+      "exit": 0
+    },
+    {
+      "command": "uv run --python 3.12.15 --with pre-commit pre-commit run --all-files",
+      "exit": 0
+    },
+    {
+      "command": "uv run --python 3.12.15 ruff check .",
+      "exit": 0
+    },
+    {
+      "command": "uv run --python 3.12.15 ruff format --check .",
+      "exit": 0
+    }
+  ],
+  "environment": {
+    "PATHPrefix": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin",
+    "node": "22.23.4",
+    "python": "3.12.15",
+    "UV_NO_SYNC": "1",
+    "TMPDIR": "/home/ubuntu/xyg734tmp",
+    "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-7340a026/target/release/libxyg_core.so",
+    "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+    "dependencySymlinksReadOnly": {
+      ".venv": "/home/ubuntu/.t3/worktrees/xyg/t3-3c28a8ac/.venv",
+      "node_modules": "/home/ubuntu/.t3/worktrees/xyg/t3-3c28a8ac/node_modules",
+      "packages/xy-node/node_modules": "/home/ubuntu/.t3/worktrees/xyg/t3-3c28a8ac/packages/xy-node/node_modules"
+    }
+  },
+  "producerArtifactsCopiedAfterExactVerification": {
+    "target/release/libxyg_core.so": {
+      "bytes": 6127992,
+      "sha256": "40a94cd7c043b675b8ccbaa622937e952d76f67625cf0adf52fa3e2111cc73e7"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 2124906,
+      "sha256": "58b1942eced656e7070c7cda9c2082d658dac8085fbef0579be6807459b2aaf3"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1927066,
+      "sha256": "06938b014a74528eb95a279971cb884b41a9dbcb094d3530a49a633ffd1e9792"
+    },
+    "packages/xy-client/dist/index.js": {
+      "bytes": 804132,
+      "sha256": "09144e0e40a7c278a7a103a96bdde3b7ae73e3d71b3fdf367a1353ddbad1b80d"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 56051,
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "8c184aa8e350a0a8bef3e44f976d051fa48ff5403933df20acefc7a284af51e9"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "bytes": 1927066,
+      "sha256": "06938b014a74528eb95a279971cb884b41a9dbcb094d3530a49a633ffd1e9792"
+    },
+    "python/xyg/static/index.js": {
+      "bytes": 804132,
+      "sha256": "09144e0e40a7c278a7a103a96bdde3b7ae73e3d71b3fdf367a1353ddbad1b80d"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "bytes": 56051,
+      "sha256": "bf6200ddca96f7c52a278258a87aeabf023e155d9bc1f57ce701adaae0f8673e"
+    }
+  },
+  "reviewedSource": {
+    "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+      "bytes": 64653,
+      "sha256": "930e0b46451e094ee902b23baf4977608beef4a49c3bfa4ac0258d1f025a552f"
+    },
+    "crates/xyg-engine/tests/graph_session_memory.rs": {
+      "bytes": 4259,
+      "sha256": "3d61a04c87bf22303cf6e83016c96b9eb3392f973334e6f83a7860ad70bdf703"
+    },
+    "packages/xy-node/test/graph-session-wire.test.mjs": {
+      "bytes": 45853,
+      "sha256": "504b559b1423729acdff05a32b2dfbf4d12361094d06ec1247dad668b5200f02"
+    },
+    "scripts/graph_session_public10k_smoke.mjs": {
+      "bytes": 15983,
+      "sha256": "7732918da1509b394ac2b180f1f34d8934c2f81bb16ff7714aa8e6266040e418"
+    },
+    "scripts/graph_session_public10k_replay.mjs": {
+      "bytes": 2260,
+      "sha256": "0643af11bf12aefbf1d65f717f3a79ae243f1e528ff9c9c2bc7abbf5b9a33331"
+    },
+    "spec/design/graph-interaction.md": {
+      "bytes": 110934,
+      "sha256": "e76e7e53ac035a7cec9c48eeb7f23ceb3163d0321441c9bda785050626ad5347"
+    },
+    "spec/design/graphforge-node-scheduling.md": {
+      "bytes": 25503,
+      "sha256": "4f439ac365d3a2b0c20742e185ce97ffcbca9d9c181988e811e4d3411f1df5dc"
+    },
+    "scripts/graph_session_controller_wasm_smoke.mjs": {
+      "bytes": 80300,
+      "sha256": "244a927e23681bfc2ca6b5add6c295b83fcebaed2dd5103eeb3a48522188075f"
+    },
+    "tests/browser/graph_session_controller_page.mjs": {
+      "bytes": 29715,
+      "sha256": "dfbf21ac796977e134e032b734b8eca6a3558ab233633c48c218ac38a5c49bae"
+    },
+    "js/src/63_graph_controller.ts": {
+      "bytes": 20649,
+      "sha256": "53a231dc02aafc217c37b764252a2459544ffec36b29c84b1e9fe65444bdd89d"
+    },
+    "Cargo.lock": {
+      "bytes": 20648,
+      "sha256": "b521317a3cee01d9e04f40fd97e2c7638d648f57052a42078dcb7c8593a4433a"
+    },
+    "rust-toolchain.toml": {
+      "bytes": 66,
+      "sha256": "e59c5da37d1f9f4e0f815bc188cb6056fc7410c9cdaa9673c2d44da557c75d12"
+    },
+    "package-lock.json": {
+      "bytes": 52836,
+      "sha256": "8d8fd757c65329343e3e212f540bf6dfd5a7950b3af321787a649b94ab15a5d8"
+    },
+    "js/package-wasm.mjs": {
+      "bytes": 13902,
+      "sha256": "e27f7a26c57d857b2897df83a08619f0d5ab9e534bc2b214f159a101a3a14d17"
+    },
+    "js/optimize-wasm.mjs": {
+      "bytes": 1078,
+      "sha256": "c9cf5458bebced72e5478d6a681c8df2a9ee3668273bad5c4f5d860d6c7f4658"
+    }
+  },
+  "currentCoreBinding": "spec/performance/graph-notebook-identity-order-2026-11-06/current-bindings.json",
+  "currentCoreBindingSha256": "bb5f99899f7ecd94b5cd4b27c7d555b666f1029a4013639d9947b39daa7a118c",
+  "inventoryContractSha256": "8063811aac76fb492eb3f6709accd0e02bdf9883fd924bcac2a420f3232782ce",
+  "files": {
+    "assets.log.gz": {
+      "sha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730",
+      "bytes": 104,
+      "decompressedSha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef"
+    },
+    "camera.log.gz": {
+      "sha256": "30d0e035895f9c739ec85259d660f09a8f7fd72b641407edfffbc17a3151b570",
+      "bytes": 552,
+      "decompressedSha256": "7ad7b62bd4824a17d969f24cd26ac1d7535ae7665cbde2c5d7874a72fcd99533"
+    },
+    "core-inventory.log.gz": {
+      "sha256": "5ba893dafe7541913aed3b6908a5f5d84276ca8cf7c85bfcbc8514fcaf2a54c2",
+      "bytes": 53,
+      "decompressedSha256": "c8139f4a89f853bc1ef4da996bbb2695e67c7fdcbe10ee056fe30224d3486955"
+    },
+    "format.log.gz": {
+      "sha256": "2c6ab4aea7deb473cb03120e197b035f027d28e416affb553cf4b8dc275d80b7",
+      "bytes": 49,
+      "decompressedSha256": "71828415ae7956717bbef7f9bd1683393e137b6b7b3f2ae381407f4327456e23"
+    },
+    "foundation.json.esm-malformed-inline-artifact.png": {
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+      "bytes": 11369
+    },
+    "foundation.json.esm-missing-inline-artifact.png": {
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+      "bytes": 11369
+    },
+    "foundation.json.esm-missing-retained-source.png": {
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66",
+      "bytes": 11315
+    },
+    "foundation.json.gz": {
+      "sha256": "68af867d9556ce5109ad4ae628d2bb79064b646d8265e6f2c502cb49d7d70859",
+      "bytes": 2195,
+      "decompressedSha256": "1d4b3c0ba23cdfc2f1fa859bc8be84aa4d9494a09132babfa48d8198235fc59c"
+    },
+    "foundation.json.iife-malformed-inline-artifact.png": {
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+      "bytes": 11369
+    },
+    "foundation.json.iife-missing-inline-artifact.png": {
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+      "bytes": 11369
+    },
+    "foundation.json.iife-missing-retained-source.png": {
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66",
+      "bytes": 11315
+    },
+    "foundation.log.gz": {
+      "sha256": "b172cc24e793c945fbb1f802bd61abaa785d6066c8927d3ce5e2278e4a6be211",
+      "bytes": 905,
+      "decompressedSha256": "de2bdb391995148fddd5de715e30ddc6cc23e07a38e4e0fcf473a823d24a21b6"
+    },
+    "hooks.log.gz": {
+      "sha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 72,
+      "decompressedSha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "inventory-write.log.gz": {
+      "sha256": "829f2c1074a4f38acde3d22c1ecb789a662925c5c59afe71127d27c0648c42c7",
+      "bytes": 100,
+      "decompressedSha256": "4ca8047382029cc6877337002694d1d92024329a5dc830334e8379f4ab8c70c9"
+    },
+    "inventory.log.gz": {
+      "sha256": "061e29d38894e10e9f9982462538fadbdf9051697515ec1315b4fc2b4d20e9f2",
+      "bytes": 101,
+      "decompressedSha256": "028948b6a97a454a66804a925b3ba9c08d8203a6079c57e5023fd621d6e54f7c"
+    },
+    "python.log.gz": {
+      "sha256": "050711ed319bfc0bed4cb0d34a44414d5a76ed84937e1f995fac8ec56a3b2d55",
+      "bytes": 52,
+      "decompressedSha256": "5a22e8cb99928acb3be81b6712ec2defd7c50f63ae5f0750565351c255541b3c"
+    },
+    "ruff.log.gz": {
+      "sha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 39,
+      "decompressedSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "scheduling.json.7101.final.png": {
+      "sha256": "44f583e3919388f6f5862b6d7c89234a36ae0ccce0acd7b185b3675c3bf18c3c",
+      "bytes": 9851
+    },
+    "scheduling.json.7101.initial.png": {
+      "sha256": "d378702d8644f2616909d71978479b0b684f4477871e68316d5c9280d88a52e9",
+      "bytes": 16340
+    },
+    "scheduling.json.7101.intermediate.png": {
+      "sha256": "537a6dfafbf78bfed38eb069fef836a0f44e694d6324045aa07beeda854b0497",
+      "bytes": 10405
+    },
+    "scheduling.json.7102.final.png": {
+      "sha256": "4453d9610a62a79b6a900bf2a3d67145ea2e95cf799286690cff9365a63ff06b",
+      "bytes": 8695
+    },
+    "scheduling.json.7102.initial.png": {
+      "sha256": "d378702d8644f2616909d71978479b0b684f4477871e68316d5c9280d88a52e9",
+      "bytes": 16340
+    },
+    "scheduling.json.7102.intermediate.png": {
+      "sha256": "86b4b1cb20b0aa65ade77479d6b17599e09123b660ceb57eae6bbd0054f4f5db",
+      "bytes": 9175
+    },
+    "scheduling.json.gz": {
+      "sha256": "49a86ffeb60603514afa14087a54f9680776a9ba6d6de3300b1f7a788b8ff967",
+      "bytes": 15046,
+      "decompressedSha256": "8bc42bcf575392d03d9c2c5c21c389bb3a3cba52c64f404fc7f43fc471f44560"
+    },
+    "wire.log.gz": {
+      "sha256": "131d88021bd7fc2e240dfca439682f3712059a72bbe7d12e7d3ed6e592d56173",
+      "bytes": 1062,
+      "decompressedSha256": "9283cd2b7e849fa7491e12c2ad913ed5c2cff759311219a5ecec95a95580913e"
+    },
+    "parent-protection.json.gz": {
+      "bytes": 1334144,
+      "sha256": "7229f34a495c1be0ac60ff63ee89f4421e7a6529c0c96054d1a4d5d3f8ef762b",
+      "decompressedSha256": "d0f8691311dc8387f1e43a9c142032082db8c735120dcb7151691f8261ee2736"
+    }
+  }
+}

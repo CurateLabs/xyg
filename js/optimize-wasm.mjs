@@ -1,4 +1,4 @@
-// Build-only pinned Binaryen pass. The browser artifact has no optimizer dependency.
+// Build-only pinned Binaryen pipeline. The browser artifact has no optimizer dependency.
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -15,7 +15,7 @@ export function optimizeWasm(input) {
     const output = join(directory, "optimized.wasm");
     writeFileSync(source, input);
     execFileSync(process.execPath, [join(root, "node_modules", "binaryen", "bin", "wasm-opt"),
-      source, "-O3", "--all-features", "-o", output], {stdio: "pipe", maxBuffer: 1024 * 1024});
+      source, "-O3", "--all-features", "--reorder-functions-by-name", "--strip-debug", "-o", output], {stdio: "pipe", maxBuffer: 1024 * 1024});
     return readFileSync(output);
   } finally { rmSync(directory, { recursive: true, force: true }); }
 }

@@ -1,0 +1,41 @@
+{
+  "candidateUnderTest": "d4c0f45db58ba4ca323cbb1336ba0d74d30757d2",
+  "diagnostic": "Unbound bench_workflows command reproduces native-core-load failure; all methodology commands pass with explicit current ABI405 and checkout PYTHONPATH. No code change required.",
+  "focusedCorrectEnvironmentRerun": {
+    "command": "uv run pytest -q tests/test_release_surface_gate.py -k broken_benchmark_report",
+    "environment": {
+      "PATH": "verified Node22 prepended",
+      "PYTHONPATH": "checkout/python",
+      "TMPDIR": "/var/tmp",
+      "XYG_NATIVE_LIB": "target/task-tmp/aggregate-qualification/native405.so"
+    },
+    "result": "2 passed, 54 deselected",
+    "seconds": 5.24
+  },
+  "fullCheckCi": {
+    "failureTests": [
+      "test_broken_benchmark_report_fails_the_aggregate_before_merge[merge_group]",
+      "test_broken_benchmark_report_fails_the_aggregate_before_merge[pull_request]"
+    ],
+    "qualification": "Original make command did not inherit explicit native/PYTHONPATH environment; failed run retained and not credited as a green full run.",
+    "result": "2 failed, 774 passed",
+    "seconds": 453.91,
+    "workflowInvariants": "passed"
+  },
+  "logs": {
+    "followup-check-ci-failed-cases-r2.log.gz": {
+      "rawSha256": "d91434a15b6b93328f4348d2fbd2818b4fe0cb6071951c2f4a17c41a4f45b90c",
+      "sha256": "518beafd4f6fe910d9b2ae58bb27b76ab9a8daf2dc039872cccb613c3f44f993"
+    },
+    "followup-check-ci-unbound-diagnostic.log.gz": {
+      "rawSha256": "387a77ab25263ac6e6b951c9642cd24fac37297f7c2ab13ae6202d4478fbc89a",
+      "sha256": "1a101c47c70a25e3fede4df114c3c9af7789ae5677afac98f3c6f27c2d36c1d9"
+    },
+    "followup-check-ci.log.gz": {
+      "rawSha256": "e318d9335d1b75f0b729fa01ce5216dcd03576a88283693fb2e153ec79cb6abf",
+      "sha256": "ed4bbf9adddfae299c91488efc3901b0452393a77c49ea2520d6c80f9c0e76a2"
+    }
+  },
+  "remaining": "Root retains hosted CI, independent review, current-main reconciliation and queue; full local suite was not repeated after the two focused passing reruns.",
+  "supersedesPendingStatusIn": "checks.json"
+}

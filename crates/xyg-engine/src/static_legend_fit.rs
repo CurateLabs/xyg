@@ -374,7 +374,7 @@ pub fn resolve_packed(data: &[u8]) -> Result<Vec<u8>> {
                     .map(|i| entry.x.get(i))
                     .filter(|x| x.is_finite())
                     .collect();
-                ecdf.sort_by(f64::total_cmp);
+                crate::shared_sort::by(&mut ecdf, f64::total_cmp);
                 ecdf.len()
             } else {
                 broadcast_len(entry.x.len(), entry.y.len())?

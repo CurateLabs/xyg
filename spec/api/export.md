@@ -337,3 +337,17 @@ Frozen geographic SVG/HTML explicitly default the SVG root font to
 browser serif. Explicit group/text font styles override the presentation
 attribute. System font availability and antialiasing can vary; native raster
 retains the baked face, and the existing PDF font policy is unchanged.
+
+## Temporal graph acquisition checkpoint
+
+`TemporalGraph.freeze` in Python and Node captures independent immutable native
+provenance and optional retained publication planes. Native snapshots export
+SVG/PNG/HTML/Scene/XYPB through the shared retained-paint canonical Scene path.
+V1 requires an explicit `focus_rgba` / `focusRgba` override; v2 defaults to its
+captured color. `from_artifact` / `fromArtifact` validates the whole artifact and
+recovers exact full XYFG. HTML embeds Scene/XYPB and the shipped ChartView client
+for sidecar-free offline paint. Public browser `session.freeze` captures the
+actual Worker publication and computed CSS focus; browser export supports
+Scene/XYPB/SVG/HTML. WASM PNG explicitly returns an unavailable resource error;
+full #45 acceptance remains open. See the normative
+[retained export contract](../design/temporal-graph-frozen.md).

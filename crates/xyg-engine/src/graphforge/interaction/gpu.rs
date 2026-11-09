@@ -3,23 +3,12 @@
 //! offset-f32 columns (§4/16/29). The CPU snapshot and pick index stay f64.
 use super::wire::{bad, gf, Builder, Container, Dtype, Result, RESULT_MAGIC};
 use super::{InteractionStatus, RenderOutput};
-use crate::graph_style::{ResolvedGraphStyle, SemanticPaintLayers};
-use crate::kernels::{encode_f32, f32_safe_scale, geometry_offset};
+use crate::kernels::{f32_safe_scale, geometry_offset, offset_f32};
 
-fn transform(values: impl Iterator<Item = f64>) -> Result<[f64; 2]> {
-    let (mut lo, mut hi) = (f64::INFINITY, f64::NEG_INFINITY);
-    for v in values {
-        if !v.is_finite() {
-            return bad();
-        }
-        lo = lo.min(v);
-        hi = hi.max(v);
-    }
+fn transform([lo, hi]: [f64; 2]) -> Result<[f64; 2]> {
     if lo > hi {
         return Ok([0., 1.]);
     }
-    // The kernel midpoint may overflow for extreme same-sign finite domains.
-    // Its pin-zero mode is also the established finite offset convention.
     let mut offset = geometry_offset(false, lo, hi);
     if !offset.is_finite() {
         offset = geometry_offset(true, lo, hi);
@@ -30,50 +19,83 @@ fn transform(values: impl Iterator<Item = f64>) -> Result<[f64; 2]> {
     }
     Ok([offset, scale])
 }
+fn extent(b: &mut [f64; 2], v: f64) -> Result<()> {
+    if !v.is_finite() {
+        return bad();
+    }
+    b[0] = b[0].min(v);
+    b[1] = b[1].max(v);
+    Ok(())
+}
+fn transforms(p: &super::PaintGeometry) -> Result<[[f64; 2]; 3]> {
+    let mut bounds = [[f64::INFINITY, f64::NEG_INFINITY]; 3];
+    // Preserve each axis's original visitation order and arithmetic, using
+    // one domain pass instead of specialized chained iterator state machines.
+    for n in &p.nodes {
+        for axis in 0..2 {
+            extent(&mut bounds[axis], n.center[axis])?;
+        }
+    }
+    for piece in &p.pieces {
+        for axis in 0..2 {
+            extent(&mut bounds[axis], piece.start[axis])?;
+            extent(&mut bounds[axis], piece.end[axis])?;
+        }
+    }
+    for piece in &p.pieces {
+        if let Some(head) = piece.head {
+            for point in head {
+                for axis in 0..2 {
+                    extent(&mut bounds[axis], point[axis])?;
+                }
+            }
+        }
+    }
+    for frame in &p.frames {
+        for axis in 0..2 {
+            extent(&mut bounds[axis], frame.bounds[axis])?;
+            extent(&mut bounds[axis], frame.bounds[axis + 2])?;
+        }
+    }
+    for piece in &p.pieces {
+        extent(&mut bounds[2], piece.dash_offset)?;
+    }
+    Ok([
+        transform(bounds[0])?,
+        transform(bounds[1])?,
+        transform(bounds[2])?,
+    ])
+}
 
+#[cfg_attr(target_arch = "wasm32", inline(never))]
 fn column(
     b: &mut Builder,
     name: &str,
     index: usize,
-    values: impl Iterator<Item = f64>,
+    values: &mut dyn Iterator<Item = f64>,
     [offset, scale]: [f64; 2],
 ) -> Result<()> {
-    let values: Vec<_> = values.collect();
-    let mut encoded = Vec::new();
-    encode_f32(&values, offset, scale, &mut encoded);
-    if values.iter().any(|v| !v.is_finite()) || encoded.iter().any(|v| !v.is_finite()) {
-        return bad();
-    }
-    b.bytes(
-        name,
-        index,
-        &encoded
-            .iter()
-            .flat_map(|v| v.to_le_bytes())
-            .collect::<Vec<_>>(),
+    // Lower directly into the packet-owned column. Both public encoders use
+    // the same scalar kernel; no intermediate f64/f32 vectors overlap it.
+    let mut encoded = Vec::with_capacity(
+        values
+            .size_hint()
+            .0
+            .checked_mul(4)
+            .ok_or(InteractionStatus::Budget)?,
     );
+    for value in values {
+        let lowered = offset_f32(value, offset, scale);
+        if !value.is_finite() || !lowered.is_finite() {
+            return bad();
+        }
+        encoded.extend_from_slice(&lowered.to_le_bytes());
+    }
+    b.push(name, index, Dtype::Bytes, encoded.len(), encoded);
     Ok(())
 }
 
-// Same resolved 60-byte f32/u8 attribute stride as the CPU inspection snapshot.
-// No resolving, recoloring, size normalization or host narrowing is involved.
-fn style(s: &ResolvedGraphStyle, l: &SemanticPaintLayers, out: &mut Vec<u8>) {
-    out.extend(s.fill);
-    out.extend(s.stroke);
-    out.extend(s.halo);
-    for v in [s.size, s.width, s.opacity] {
-        out.extend(v.to_le_bytes());
-    }
-    out.extend([s.shape, s.dash, s.arrow, s.state]);
-    out.extend(l.halo);
-    out.extend(l.body);
-    out.extend(l.stroke);
-    for v in [l.halo_extent, l.body_width, l.dash.0, l.dash.1] {
-        out.extend(v.to_le_bytes());
-    }
-    out.extend([u8::from(l.head), 0, 0, 0]);
-}
-
+#[cfg_attr(target_arch = "wasm32", inline(never))]
 pub(super) fn encode(b: &mut Builder, r: &RenderOutput) -> Result<()> {
     let p = &r.paint;
     let counts = [
@@ -89,27 +111,7 @@ pub(super) fn encode(b: &mut Builder, r: &RenderOutput) -> Result<()> {
     }
     header.push(0);
     b.u32s("gpu.header.u32", 0, &header);
-    let mut transforms = [[0., 1.]; 3];
-    for (axis, t) in transforms[..2].iter_mut().enumerate() {
-        *t = transform(
-            p.nodes
-                .iter()
-                .map(|n| n.center[axis])
-                .chain(p.pieces.iter().flat_map(|p| [p.start[axis], p.end[axis]]))
-                .chain(
-                    p.pieces
-                        .iter()
-                        .filter_map(|p| p.head)
-                        .flat_map(|h| h.map(|v| v[axis])),
-                )
-                .chain(
-                    p.frames
-                        .iter()
-                        .flat_map(|f| [f.bounds[axis], f.bounds[axis + 2]]),
-                ),
-        )?;
-    }
-    transforms[2] = transform(p.pieces.iter().map(|p| p.dash_offset))?;
+    let transforms = transforms(p)?;
     for (i, t) in transforms.iter().enumerate() {
         b.f64s("gpu.transform.f64", i, t);
     }
@@ -118,7 +120,7 @@ pub(super) fn encode(b: &mut Builder, r: &RenderOutput) -> Result<()> {
             b,
             "gpu.node.coord.bytes",
             axis,
-            p.nodes.iter().map(|n| n.center[axis]),
+            &mut p.nodes.iter().map(|n| n.center[axis]),
             transforms[axis],
         )?;
     }
@@ -127,7 +129,8 @@ pub(super) fn encode(b: &mut Builder, r: &RenderOutput) -> Result<()> {
             b,
             "gpu.shaft.coord.bytes",
             i,
-            p.pieces
+            &mut p
+                .pieces
                 .iter()
                 .map(|p| [p.start[0], p.start[1], p.end[0], p.end[1]][i]),
             transforms[i % 2],
@@ -136,14 +139,15 @@ pub(super) fn encode(b: &mut Builder, r: &RenderOutput) -> Result<()> {
             b,
             "gpu.frame.coord.bytes",
             i,
-            p.frames.iter().map(|f| f.bounds[i]),
+            &mut p.frames.iter().map(|f| f.bounds[i]),
             transforms[i % 2],
         )?;
         column(
             b,
             "gpu.shaft.attr.bytes",
             i,
-            p.pieces
+            &mut p
+                .pieces
                 .iter()
                 .map(|p| [p.half_width, p.dash.0, p.dash.1, p.dash_offset][i]),
             if i == 3 { transforms[2] } else { [0., 1.] },
@@ -154,7 +158,8 @@ pub(super) fn encode(b: &mut Builder, r: &RenderOutput) -> Result<()> {
             b,
             "gpu.head.coord.bytes",
             i,
-            p.pieces
+            &mut p
+                .pieces
                 .iter()
                 .filter_map(|p| p.head)
                 .map(|h| h[i / 2][i % 2]),
@@ -165,7 +170,7 @@ pub(super) fn encode(b: &mut Builder, r: &RenderOutput) -> Result<()> {
         b,
         "gpu.frame.width.bytes",
         0,
-        p.frames.iter().map(|f| f.half_width),
+        &mut p.frames.iter().map(|f| f.half_width),
         [0., 1.],
     )?;
     b.u32s(
@@ -196,16 +201,12 @@ pub(super) fn encode(b: &mut Builder, r: &RenderOutput) -> Result<()> {
         0,
         &p.frames.iter().map(|f| f.node as u32).collect::<Vec<_>>(),
     );
-    let mut styles = Vec::new();
-    for n in &p.nodes {
-        style(&n.style, &n.layers, &mut styles);
-    }
-    b.bytes("gpu.node.style.bytes", 0, &styles);
-    styles.clear();
-    for (s, l) in p.edge_styles.iter().zip(&p.edge_layers) {
-        style(s, l, &mut styles);
-    }
-    b.bytes("gpu.edge.style.bytes", 0, &styles);
+    super::wire_paint::styles(b, "gpu.node.style.bytes", p.nodes.len(), &|i| {
+        (&p.nodes[i].style, &p.nodes[i].layers)
+    });
+    super::wire_paint::styles(b, "gpu.edge.style.bytes", p.edge_styles.len(), &|i| {
+        (&p.edge_styles[i], &p.edge_layers[i])
+    });
     for node in [true, false] {
         let (visual, emphasis, source) = if node {
             (&r.visual_states, &r.emphasis, &r.source_node_flags)

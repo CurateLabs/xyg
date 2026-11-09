@@ -1,10 +1,12 @@
+import {temporalSceneCompile,encodeTemporalScene,TemporalSession} from "./temporal-scene.js";
 /**
  * Chart convenience constructors — all dual-host mark families.
  * Thin wrappers over mark composers + the minimal Node Figure.
  */
 
 import { figure } from "./figure.js";
-import { applyGraphHomeView } from "./scene.js";
+import { applyGraphHomeView, sceneBrowserPainter } from "./scene.js";
+import { temporalSceneSize } from "./temporal-scene-framing.js";
 import { attachScatter } from "./marks/scatter.js";
 import { attachLine } from "./marks/line.js";
 import { attachHistogram } from "./marks/histogram.js";
@@ -612,4 +614,37 @@ export class GeoChart {
 export function geoChart(...children) {
   const options = children.pop();
   return new GeoChart(children, options);
+}
+
+
+/** Exact temporal rows lower through the same canonical Scene engine. */
+export function temporalChart(kind, rows, opts) {
+  const count=rows.length;
+  temporalSceneSize(count, opts.timezone, opts.title);
+  const fig=figure({width:opts.width,height:opts.height,title:opts.title});
+  let disposed=false;let session=null;
+  let source=Array.from({length:count},(_,i)=>Object.freeze([...rows[i]]));
+  let packed=opts.dense?encodeTemporalScene({...opts,kind,rows:source}):null;
+  if(packed)source=[];
+  const compile=(extra={})=>{
+    if(disposed)throw new Error('temporal composition disposed');
+    if(!packed)return temporalSceneCompile({...opts,width:fig.width,height:fig.height,kind,rows:source,...extra},opts.budget);
+    const header=encodeTemporalScene({...opts,width:fig.width,height:fig.height,kind,rows:[],...extra});
+    new Uint8Array(header,12,4).set(new Uint8Array(packed,12,4));
+    session??=new TemporalSession(opts.budget);session.preview(header);
+    const packet=packed.slice(0),bytes=new Uint8Array(packet);
+    bytes.set(new Uint8Array(header,0,128));bytes.set(new Uint8Array(packed,12,4),12);
+    session??=new TemporalSession(opts.budget);
+    const job=session.begin(packet);return extra.defer?job:job.result();
+  };
+  fig.temporalCancel=()=>{session?.cancel();};
+  fig.temporalViewport=(domain,size={})=>{if(disposed)throw new Error('temporal composition disposed');fig.temporalCancel();opts={...opts,domain:[...domain]};if(size.width!==undefined)fig.width=size.width;if(size.height!==undefined)fig.height=size.height;return fig;};
+  fig.temporalBegin=()=>{if(!packed)throw new Error("incremental temporal operations require dense:true");return compile({defer:true});};
+  fig.temporalSupports=(metadata,cell,offset=0,limit=256)=>compile({operation:3,cell,offset,limit,publication:metadata.buffer.slice(metadata.byteOffset,metadata.byteOffset+metadata.byteLength)});
+  fig.temporalMetadata=()=>compile({operation:2});
+  fig.temporalMembers=(metadata,cell,offset=0,limit=256)=>compile({operation:1,cell,offset,limit,publication:metadata.buffer.slice(metadata.byteOffset,metadata.byteOffset+metadata.byteLength)});
+  fig.temporalDispose=()=>{disposed=true;source=[];packed=null;session?.close();};
+  fig._temporalCompile=(width=fig.width,height=fig.height)=>compile({width,height});
+  fig._temporalPainter=()=>sceneBrowserPainter(fig.toScene());
+  return fig;
 }

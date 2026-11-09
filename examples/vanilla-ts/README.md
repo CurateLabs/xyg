@@ -42,3 +42,33 @@ presentation. Run the reproducible proof from
 `spec/performance/graph-node-scheduling-35-2026-10-31/README.md`; no WASM build is
 needed for this native/painter journey. It replaces the whole view, with the same
 viewport reset limitation as this example; it is not a retained graph controller.
+
+`filter-linked.ts` attaches existing composed scatter views to one explicitly
+owned canonical source with `attachFilterDashboard`. Rust returns exact 2D
+total/selected counts and resolved density paint; pointer and keyboard ranges
+share its revisioned protocol. Serve the ordinary packaged Worker/WASM assets
+from the application origin. The bounded Chromium journey is reproducible with
+`node scripts/filter_tier_c_conformance.mjs --chromium <chromium> --capture <png>`.
+It covers five different-dimensional views, live pointer preview/cancel,
+keyboard edit/commit/cancel/clear, exact counts/membership, texture pixels and
+context/append/rebuild. Full 100M/≥50 FPS, automatic native widget transport,
+assistive hardware and competitor qualification remain open under #112.
+
+
+The repository-only `chunked-native-host.mjs` exports `createChunkedNativeApp` for
+local native chunked scatter: two independent `chart.liveHost` owners, raw XYBF
+paint/selection attachments and ordinary HTTP controls. The existing normal Node
+test command runs its trusted gesture, exact fullscan paint/data/identity, lasso,
+failure-retention and remount journey in `chunked-live-browser.test.mjs`. This
+consumer uses Node built-ins and the existing client; no framework ships with XYG.
+
+The optional `chartOptions` argument passes explicit Rust snapshot budgets to
+both owners; omitted options retain the example's existing defaults. The manual
+beyond-RAM journey uses a 4 MiB canonical budget and 2 MiB page/cache budget for
+1 MiB source chunks. Reproduce its materialized fixture, trusted navigation,
+complete scan and exact data/pixel verification with
+`scripts/chunked_massive_fixture.py`, `scripts/chunked_massive_navigation.mjs`
+and `scripts/verify_chunked_massive.py`; commands and qualification boundaries
+are in `spec/performance/chunked-beyond-ram-native-2026-11-08/README.md`.
+The 72 GB fixture stays outside Git and ordinary CI. This is functional native
+Node qualification, without a latency, competitor or global memory-budget claim.

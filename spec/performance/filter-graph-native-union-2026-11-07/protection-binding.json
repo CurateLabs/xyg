@@ -1,0 +1,8 @@
+{
+  "archive": "parent-protection.json.gz",
+  "archiveSha256": "ffeedc401cf225fe434b5d0b0f89075b64b8f0e7989365c69b0f963af85595e2",
+  "combinedPaths": 9,
+  "protectedPaths": 16160,
+  "rawBytes": 2332193,
+  "rawSha256": "7cf4dc4c9a549ee3dfed966551d1c11c4977fa28f8e23c35370ae6cba0358a88"
+}

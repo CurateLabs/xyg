@@ -188,6 +188,11 @@ fig.view_state()                       # -> last committed durable state
   ignored for them, they never enter the §4 stack, and `view_state()`
   reports them as the opaque marker `{"selection": {"rows": true}}` rather
   than the index set (§2 records why).
+  Geometric selections survive GPU eviction/context restoration: the first
+  replacement frame rebuilds their mask from retained CPU columns without a
+  new gesture, callback, broadcast or history entry. A kernel-backed chart uses
+  the existing scatter-only provisional mask until its authoritative reply;
+  standalone charts retain their original local selection universe.
 - `view_state()` does not round-trip: the kernel already observes every
   committed change through view/selection events; it caches the last
   durable state and serves reads from that cache. Immediately after a

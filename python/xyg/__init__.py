@@ -31,6 +31,8 @@ from typing import TYPE_CHECKING, Any
 __version__: str
 
 _EXPORTS = {
+    "TemporalChart": ".components",
+    "temporal_chart": ".components",
     "Annotation": ".components",
     "Animation": ".components",
     "Axis": ".components",
@@ -69,7 +71,9 @@ _EXPORTS = {
     "Spring": ".components",
     "Theme": ".components",
     "TemporalController": ".temporal_controller",
+    "TemporalSession": "._temporal_scene",
     "TemporalGraph": ".temporal_graph",
+    "FrozenTemporalGraph": "._temporal_graph_frozen",
     "TemporalGraphError": ".temporal_graph",
     "Tooltip": ".components",
     "ZoneMaps": ".columns",
@@ -178,6 +182,7 @@ __all__ = [
     "Engine",
     "ExportConfig",
     "FacetChart",
+    "FrozenTemporalGraph",
     "GeoChart",
     "GeoLayer",
     "GeoOverviewIndex",
@@ -201,9 +206,11 @@ __all__ = [
     "RetainedGeoSource",
     "Selection",
     "Spring",
+    "TemporalChart",
     "TemporalController",
     "TemporalGraph",
     "TemporalGraphError",
+    "TemporalSession",
     "Theme",
     "Tooltip",
     "ZoneMaps",
@@ -279,6 +286,7 @@ __all__ = [
     "stem_chart",
     "step",
     "step_chart",
+    "temporal_chart",
     "text",
     "theme",
     "theta_axis",
@@ -361,6 +369,8 @@ if TYPE_CHECKING:
         graphforge_table_html,
     )
     from ._ooc import ChunkedColumns
+    from ._temporal_graph_frozen import FrozenTemporalGraph
+    from ._temporal_scene import TemporalSession
     from .columns import Column, ColumnStore, ZoneMaps
     from .components import (
         Animation,
@@ -378,6 +388,7 @@ if TYPE_CHECKING:
         Mark,
         Modebar,
         Spring,
+        TemporalChart,
         Theme,
         Tooltip,
         animation,
@@ -442,6 +453,7 @@ if TYPE_CHECKING:
         stem_chart,
         step,
         step_chart,
+        temporal_chart,
         text,
         theme,
         theta_axis,

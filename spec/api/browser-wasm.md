@@ -467,3 +467,58 @@ drains admitted UI/time work, and `pinFocused(boolean)` forwards the Rust-issued
 focus target. Nonzero `load.pinned` is refused with temporal binding; pin after
 ready. Disposal stops the subscription and drains before closing the lane;
 see [temporal graph contracts](../design/temporal-graph.md).
+
+## Ordinary linked density (#112 bounded checkpoint)
+
+`createWasmFilterSession(worker, columns, {sourceId, epoch, firstRow,
+budgetBytes})` owns a dedicated ordinary Worker. Its thin client exposes the
+same binary Rust session methods as Python/Node, including `configureDensity`,
+`range`, `paint`, `baseFilter`, `beginEdit`, `cancelEdit`, `commitEdit`, append,
+eviction/rebuild and canonical membership pages.
+
+`attachFilterDashboard(session, bindings)` attaches existing composed
+`renderStandalone` ChartViews. Every binding explicitly supplies `view`, bigint
+`id/sourceId/epoch`, `dimension/cuts/step`, and a passive `grid` containing
+`x/y/width/height/xRange/yRange` and optional base/selected RGBA. The current
+surface supports one ordinary constant-color Cartesian scatter trace with primary linear axes per view. Rust
+owns default colors, counts, masks, predicate hashes, exact fallback and memory
+admission. The adapter routes pointer/keyboard input, uploads Rust-resolved
+paint through the ordinary renderer, and announces canonical totals. It never
+creates a second chart builder or renderer.
+
+The returned controller exposes `range(viewId, lo, hi)`, `clear`, `refresh`,
+`baseFilter`, `append`, `evict`, `ready`, `latest`, `error`, and `destroy`.
+Destroy detaches the presentation; the caller still owns the session and must
+close it. A view's destruction detaches the coordinated presentation. Use the
+session protocol for source mutation; external ordinary append invalidates and
+hides the binding. Existing WASM tick handles remain ordinary independent
+presentation adapters. See the [binary/exactness/lifecycle contract](../design/filter-tier-c.md)
+and [composition example](../../examples/vanilla-ts/filter-linked.ts).
+
+Real five-view Chromium pointer/keyboard/count/texture/context tests are in the
+existing Release surfaces command. This does not qualify automatic native
+widget transport, nonlinear/nonprimary/large-offset paint, active rectangles, Worker
+chunk cancellation, real assistive hardware, 100M/≥50 FPS or competitors.
+## Frozen temporal graph exports (WASM38)
+
+After an accepted idle temporal publication, `await session.freeze({timezone,
+window?, budgetBytes?})` returns an immutable `XygFrozenTemporalGraph`. Dispose
+the producer or use a fresh/drained Worker for `.fromBytes(bytes, worker)` and
+`frozen.export('scene'|'painter'|'svg'|'html'|'png', {worker, client?, scale?, focusRgba?})`. HTML
+requires the shipped standalone client bytes and paints offline through the
+same ChartView. `.fromArtifact(bytes, worker, client?)` validates complete output;
+HTML recovery requires the expected shipped client. PNG uses the native shared
+Rust raster/PNG path in the same bounded module; resource reservations can
+reject with `XYG_WASM_RESOURCE_LIMIT` before allocating paint buffers. Exact ingress,
+CSS capture, ownership and remaining #45 gaps are in the
+[frozen graph contract](../design/temporal-graph-frozen.md).
+
+Imported XYFGv1 has no captured CSS color: pass an explicit `focusRgba` export
+override or use `await frozen.captureFocus(rgba, worker)` to return v2 explicit
+presentation provenance. This does not mutate the original or its accepted
+controller context. It does not label an explicit override as captured CSS.
+
+The instance's unchanged arena ceiling also bounds export reservations. Rich
+retained SDF/HTML exports can exceed the default16 MiB Worker; callers may
+explicitly create the existing maximum384 MiB Worker. The API never enlarges
+an instance automatically, and insufficient reservations reject before output.

@@ -1,0 +1,163 @@
+{
+  "tests/fixtures/animation_emit_cross_host.json": {
+    "command": [
+      "node",
+      "packages/xy-node/scripts/animation_emit_cross_host.mjs"
+    ],
+    "predecessors": {
+      "403": {
+        "bytes": 5549,
+        "sha256": "125a57ad4765356e555d4083ec89565805df9a99d378e4e78005b8f9f5ac4339"
+      },
+      "404": {
+        "bytes": 5549,
+        "sha256": "4ec6ac81ce2b25bff512ce7416ddf3cc0e4b161deca62ab0aee523b468c5f423"
+      }
+    }
+  },
+  "tests/fixtures/default_styled_emit_cross_host.json": {
+    "command": [
+      "node",
+      "packages/xy-node/scripts/default_styled_emit_cross_host.mjs"
+    ],
+    "predecessors": {
+      "403": {
+        "bytes": 1857,
+        "sha256": "c6f6c400f85c4b0c733654a277058b69159069a21d15891904cb99489e227b44"
+      },
+      "404": {
+        "bytes": 1857,
+        "sha256": "167875ae7f4df17b99d468e117db7399bc125d259998ed4e81adc57cd25f526f"
+      }
+    }
+  },
+  "tests/fixtures/density_emit_cross_host.json": {
+    "command": [
+      "node",
+      "packages/xy-node/scripts/density_emit_cross_host.mjs"
+    ],
+    "predecessors": {
+      "403": {
+        "bytes": 12841,
+        "sha256": "d5fc33f56c3445e4834d4795b9eeace52a333b68895e597cbf58fc6c39e42071"
+      },
+      "404": {
+        "bytes": 12841,
+        "sha256": "4c9ce5711e416282a51f455e4d542e41089459b41b158cd5adcacb92d47b7cc8"
+      }
+    }
+  },
+  "tests/fixtures/force_emit_cross_host.json": {
+    "command": [
+      "node",
+      "packages/xy-node/scripts/force_emit_cross_host.mjs"
+    ],
+    "predecessors": {
+      "403": {
+        "bytes": 641,
+        "sha256": "4be406b9275f8dadf5e1809fceac699d96912a24a8883e2c2df2553b9d18bef0"
+      },
+      "404": {
+        "bytes": 641,
+        "sha256": "6bee2b5742646d1b5bc8eaeb0d60dead682fc0f4d10350fe0427682f4a13e981"
+      }
+    }
+  },
+  "tests/fixtures/geo_cross_host.json": {
+    "command": [
+      "/home/ubuntu/.t3/worktrees/xyg/t3-3cad2042/.venv/bin/python",
+      "packages/xy-node/test/fixtures/write_geo_cross_host_fixtures.py"
+    ],
+    "predecessors": {
+      "403": {
+        "bytes": 52759,
+        "sha256": "21fdd41095e39d293a93db34349d6eda199c97c27b92f7c9456edcfcb0c07d9f"
+      },
+      "404": {
+        "bytes": 52759,
+        "sha256": "2f99b7c6ed5ddb4084dca0f723d8da0b2344b28752ea47dabc927ac2b3aa22fc"
+      }
+    }
+  },
+  "tests/fixtures/payload_attach_cross_host.json": {
+    "command": [
+      "/home/ubuntu/.t3/worktrees/xyg/t3-3cad2042/.venv/bin/python",
+      "packages/xy-node/test/fixtures/write_payload_attach_cross_host_fixtures.py"
+    ],
+    "predecessors": {
+      "403": {
+        "bytes": 6190,
+        "sha256": "42d50b0528d6a68a466edb28c22a717c55ec00be96e3c4dfd3fdb4e0ea08385d"
+      },
+      "404": {
+        "bytes": 6190,
+        "sha256": "dfda3c4d9cabc9b6a3af994ef05c1376b5994fdbb858a9b4b40b37844b159132"
+      }
+    }
+  },
+  "tests/fixtures/payload_chrome_cross_host.json": {
+    "command": [
+      "/home/ubuntu/.t3/worktrees/xyg/t3-3cad2042/.venv/bin/python",
+      "packages/xy-node/test/fixtures/write_payload_chrome_cross_host_fixtures.py"
+    ],
+    "predecessors": {
+      "403": {
+        "bytes": 6642,
+        "sha256": "ae89b9acc62908cf86cc133a6adcdeca3fa8ac92696bbb7f1311489b52bc6b24"
+      },
+      "404": {
+        "bytes": 6642,
+        "sha256": "25ed3600c65ab7038955a97d576700077e8a5a62b4acdbca2b52ca5d9f1a7e47"
+      }
+    }
+  },
+  "tests/fixtures/payload_cross_host.json": {
+    "command": [
+      "/home/ubuntu/.t3/worktrees/xyg/t3-3cad2042/.venv/bin/python",
+      "packages/xy-node/test/fixtures/write_payload_cross_host_fixtures.py"
+    ],
+    "predecessors": {
+      "403": {
+        "bytes": 22224,
+        "sha256": "07ede77008b752d533809bd340b3e01bf7f43176120f3172193fa2240d10600b"
+      },
+      "404": {
+        "bytes": 22224,
+        "sha256": "b2b76846a58a80d6460cce2bdd6730929acc6d7fd3127fd3b9bf2ea5a839e5bb"
+      }
+    }
+  },
+  "tests/fixtures/series_palette_cross_host.json": {
+    "command": [
+      "/home/ubuntu/.t3/worktrees/xyg/t3-3cad2042/.venv/bin/python",
+      "tests/test_series_palette_cross_host.py",
+      "--write"
+    ],
+    "predecessors": {
+      "403": {
+        "bytes": 7216,
+        "sha256": "289b2dd18358a3f9e66a1be2d392646aaed64fe025d361c7671881ed33bd8f7d"
+      },
+      "404": {
+        "bytes": 7216,
+        "sha256": "0e82c8adb5bf1f74d6f3bb9e9a5ff8ce376000952b8384926c814256245314ce"
+      }
+    }
+  },
+  "tests/fixtures/tooltip_len_emit_cross_host.json": {
+    "command": [
+      "node",
+      "packages/xy-node/scripts/tooltip_len_emit_cross_host.mjs"
+    ],
+    "predecessors": {
+      "403": {
+        "bytes": 1679,
+        "sha256": "50739ff23a7b751ccbac0f84f86acbed134e0279972188d4fa78f4d4cf16bd67"
+      },
+      "404": {
+        "bytes": 1679,
+        "sha256": "17a49f446c25d1df2c382de852c6bd8b9800be22971fe763ac3e6c31362f2759"
+      }
+    }
+  }
+}

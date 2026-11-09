@@ -70,6 +70,8 @@
 //! row packer decimates them), direct scatters up to `DIRECT_SOFT_CEILING`
 //! summed per figure, and density-blit scatters (`public_lod_tier_admits`).
 
+use crate::scene::SceneByteWrite;
+
 use crate::lod_plan::{
     payload_tier, DECIMATION_THRESHOLD, DIRECT_SOFT_CEILING, MAX_SCREEN_DIM, PAYLOAD_KIND_LINE,
     PAYLOAD_TIER_DECIMATED,
@@ -755,7 +757,7 @@ fn put_key(buf: &mut Vec<u8>, key: &str) -> Result<(), ExportPackError> {
     if bytes.len() > MAX_XYEP_KEY_BYTES {
         return Err(ExportPackError::Limit);
     }
-    buf.extend_from_slice(&(bytes.len() as u16).to_le_bytes());
+    buf.push_word(bytes.len() as u16);
     buf.extend_from_slice(bytes);
     Ok(())
 }
@@ -958,14 +960,14 @@ pub fn pack_public_export(bytes: &[u8]) -> Result<Vec<u8>, ExportPackError> {
         .map_err(|_| ExportPackError::Length)?;
 
     let mut out = Vec::from(*XYEP_MAGIC);
-    out.extend_from_slice(&XYEP_VERSION.to_le_bytes());
-    out.extend_from_slice(&flags.to_le_bytes());
-    out.extend_from_slice(&n_style_keys.to_le_bytes());
-    out.extend_from_slice(&n_legend_keys.to_le_bytes());
-    out.extend_from_slice(&n_colorbar_keys.to_le_bytes());
-    out.extend_from_slice(&n_axes.to_le_bytes());
-    out.extend_from_slice(&n_annotations.to_le_bytes());
-    out.extend_from_slice(&n_traces.to_le_bytes());
+    out.push_word(XYEP_VERSION);
+    out.push_word(flags);
+    out.push_word(n_style_keys);
+    out.push_word(n_legend_keys);
+    out.push_word(n_colorbar_keys);
+    out.push_word(n_axes);
+    out.push_word(n_annotations);
+    out.push_word(n_traces);
     put_keys(&mut out, &style_keys)?;
     put_keys(&mut out, &legend_keys)?;
     put_keys(&mut out, &colorbar_keys)?;
@@ -1004,7 +1006,7 @@ pub fn pack_public_export(bytes: &[u8]) -> Result<Vec<u8>, ExportPackError> {
         let flags_ann = annotation_flags(not_object, &fields);
         out.push(kind);
         out.push(flags_ann);
-        out.extend_from_slice(&(fields.len() as u16).to_le_bytes());
+        out.push_word(fields.len() as u16);
         put_keys(&mut out, &fields)?;
     }
 
@@ -1066,23 +1068,23 @@ pub fn pack_public_export(bytes: &[u8]) -> Result<Vec<u8>, ExportPackError> {
         out.push(prev2_kind);
         out.push(prev3_kind);
         out.push(0);
-        out.extend_from_slice(&0u16.to_le_bytes());
-        out.extend_from_slice(&flags_tr.to_le_bytes());
-        out.extend_from_slice(&n_x.to_le_bytes());
-        out.extend_from_slice(&n_y.to_le_bytes());
-        out.extend_from_slice(&n_x0.to_le_bytes());
-        out.extend_from_slice(&n_y0.to_le_bytes());
-        out.extend_from_slice(&n_x1.to_le_bytes());
-        out.extend_from_slice(&n_y1.to_le_bytes());
-        out.extend_from_slice(&heatmap_rows.to_le_bytes());
-        out.extend_from_slice(&heatmap_cols.to_le_bytes());
-        out.extend_from_slice(&heatmap_values.to_le_bytes());
-        out.extend_from_slice(&(style_keys.len() as u16).to_le_bytes());
-        out.extend_from_slice(&(role.len() as u16).to_le_bytes());
-        out.extend_from_slice(&(symbol.len() as u16).to_le_bytes());
-        out.extend_from_slice(&(reduce.len() as u16).to_le_bytes());
-        out.extend_from_slice(&hex_dx.to_le_bytes());
-        out.extend_from_slice(&hex_dy.to_le_bytes());
+        out.push_word(0u16);
+        out.push_word(flags_tr);
+        out.push_word(n_x);
+        out.push_word(n_y);
+        out.push_word(n_x0);
+        out.push_word(n_y0);
+        out.push_word(n_x1);
+        out.push_word(n_y1);
+        out.push_word(heatmap_rows);
+        out.push_word(heatmap_cols);
+        out.push_word(heatmap_values);
+        out.push_word(style_keys.len() as u16);
+        out.push_word(role.len() as u16);
+        out.push_word(symbol.len() as u16);
+        out.push_word(reduce.len() as u16);
+        out.push_word(hex_dx);
+        out.push_word(hex_dy);
         out.extend_from_slice(role.as_bytes());
         out.extend_from_slice(symbol.as_bytes());
         out.extend_from_slice(reduce.as_bytes());

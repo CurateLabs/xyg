@@ -13,7 +13,7 @@ fn r1_projection(
     pick: Option<&PickReceipt>,
 ) -> Result<()> {
     let doc = gf(ComposedDocument::decode(bytes))?;
-    let mut refs = transport(s, &s.identity.refs_of(state.selection()))?;
+    let mut refs = transport(s, &s.source.identity.refs_of(state.selection()))?;
     // The temporal owner may retain derived keys belonging to another
     // composition. refs_of deliberately omits those without mutating the owner.
     if refs.len() > MAX_GRAPH_SELECTION_REFS {
@@ -29,12 +29,16 @@ fn r1_projection(
     let resolved = refs
         .iter()
         .map(|r| {
-            s.identity
+            s.source
+                .identity
                 .resolve(r)
                 .map_err(|_| InteractionStatus::Invalid)
         })
         .collect::<Result<Vec<_>>>()?;
-    let planes = gf(doc.projection_layers(s.identity.node_count(), s.identity.edge_count()))?;
+    let planes = gf(doc.projection_layers(
+        s.source.identity.node_count(),
+        s.source.identity.edge_count(),
+    ))?;
     let row = |index: ElementIndex, layer: usize| -> Option<u64> {
         let (plane, i) = match index {
             ElementIndex::Node(i) => (planes[layer].node_rows?, i),
@@ -258,10 +262,10 @@ fn receipt(
         member_count: u64::from(target.is_some()),
         source: source.map(|i| {
             let r = match i {
-                ElementIndex::Node(i) => s.identity.node_ref(i),
-                ElementIndex::Edge(i) => s.identity.edge_ref(i),
+                ElementIndex::Node(i) => s.source.identity.node_ref(i),
+                ElementIndex::Edge(i) => s.source.identity.edge_ref(i),
             };
-            (i, s.identity.to_transport(&r).unwrap())
+            (i, s.source.identity.to_transport(&r).unwrap())
         }),
     }
 }

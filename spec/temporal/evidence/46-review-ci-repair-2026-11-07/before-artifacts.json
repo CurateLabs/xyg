@@ -1,0 +1,22 @@
+{
+  "target/release/libxyg_core.so": {
+    "sha256": "8f1b7a544bdefab946099fbeab11e658e73c1262381113637baa7e131c561aa5",
+    "bytes": 6160104,
+    "archive": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/before/libxyg_core.so.gz"
+  },
+  "packages/xy-client/dist/xyg-wasm.wasm": {
+    "sha256": "82e32ff4c9d67433d1af4c54b6643c130fcfc49951b78b77fc0df5af81922169",
+    "bytes": 1886204,
+    "archive": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/before/xyg-wasm.wasm.gz"
+  },
+  "packages/xy-client/dist/index.js": {
+    "sha256": "874f33341eb35aae25457c3b6d9ec4557fa2388d6d8a8d0d073ff740fe2ed554",
+    "bytes": 811086,
+    "archive": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/before/index.js.gz"
+  },
+  "packages/xy-client/dist/standalone.js": {
+    "sha256": "ac4cd2c574e831ee9914b86c54795504614a242220f6f3f128df9675388c4114",
+    "bytes": 811114,
+    "archive": "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/target/task-tmp/catalog-review-and-ci-repair/before/standalone.js.gz"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "cases": 6,
+  "checks": [
+    "actual public Worker Scene bytes",
+    "actual public Worker metadata bytes",
+    "exact membership page bytes",
+    "painted colored coverage",
+    "stale publication rejection",
+    "task cancellation",
+    "composition disposal and Worker reuse"
+  ],
+  "result": "passed"
+}

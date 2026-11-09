@@ -1,0 +1,1 @@
+{"name":"xyg-mounted-hierarchy-temporal-journey","displayName":"XYG mounted hierarchy temporal journey","publisher":"xyg-local-test","version":"0.0.0","engines":{"vscode":"^1.103.0"},"activationEvents":["*"],"main":"./extension.cjs"}

@@ -12,6 +12,8 @@
 //! takes the browser payload's M4 tier here, in canonical f64 before
 //! packing and step/curve expansion (dossier §28).
 
+use crate::scene::SceneByteWrite;
+
 use crate::lod_plan::{
     payload_m4_indices, payload_tier, payload_visible_indices, screen_shape, PayloadIndexSel,
     MIN_SCREEN_DIM, PAYLOAD_KIND_LINE, PAYLOAD_TIER_DECIMATED,
@@ -524,18 +526,18 @@ fn write_xypk(
 ) -> Vec<u8> {
     let mut out = Vec::with_capacity(XYPK_V1_HEADER_BYTES + kind.len());
     out.extend_from_slice(XYPK_MAGIC);
-    out.extend_from_slice(&XYPK_VERSION.to_le_bytes());
-    out.extend_from_slice(&style_ref.to_le_bytes());
+    out.push_word(XYPK_VERSION);
+    out.push_word(style_ref);
     out.push(coords);
     out.push(symbol);
     out.push(authored_step);
     out.push(facts);
-    out.extend_from_slice(&trace_id.to_le_bytes());
-    out.extend_from_slice(&diameter.to_le_bytes());
-    out.extend_from_slice(&hex_dx.to_le_bytes());
-    out.extend_from_slice(&hex_dy.to_le_bytes());
-    out.extend_from_slice(&grid_rows.to_le_bytes());
-    out.extend_from_slice(&grid_cols.to_le_bytes());
+    out.push_word(trace_id);
+    out.push_word(diameter);
+    out.push_word(hex_dx);
+    out.push_word(hex_dy);
+    out.push_word(grid_rows);
+    out.push_word(grid_cols);
     out.extend_from_slice(kind.as_bytes());
     out
 }

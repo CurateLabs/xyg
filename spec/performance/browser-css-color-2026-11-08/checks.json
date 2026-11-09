@@ -1,0 +1,1723 @@
+{
+  "base": "af83f14c8cfbc05034076ba8378e4e56e91f0b37",
+  "baselineArtifacts": {
+    "packages/xy-client/dist/index.js": {
+      "bytes": 855560,
+      "sha256": "af48bff857ca4515d55ff5828e7020f5fcf5aa164aa41632fba404688ada0758",
+      "snapshot": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/css-host-color/baseline-af83/index.js"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 855580,
+      "sha256": "d7524c3c12713526423d5120b839d237ab1c949d7cbe1b913f19d928549fa819",
+      "snapshot": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/css-host-color/baseline-af83/standalone.js"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7",
+      "snapshot": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/css-host-color/baseline-af83/wasm-inline-worker.js"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7",
+      "snapshot": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/css-host-color/baseline-af83/wasm-worker.js"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2548750,
+      "sha256": "128586393e0a576b7d54f6d8354e297d3ccc4cf72e2594280510075e6c08b20f",
+      "snapshot": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/css-host-color/baseline-af83/xyg-wasm-inline.js"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "0460b161e4b45690a2a6f18bce57549a088d8ee0606d76afc2f352227f72fbc1",
+      "snapshot": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/css-host-color/baseline-af83/xyg-wasm.manifest.json"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1895719,
+      "sha256": "4cd1e964a16fb8be527b552dae50f94729e80d79ed8bcf936b53601914c8feba",
+      "snapshot": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/css-host-color/baseline-af83/xyg-wasm.wasm"
+    },
+    "target/release/libxyg_core.so": {
+      "bytes": 6374200,
+      "sha256": "1ac386f0d7af618a757fb51cca883f0c409f3991c976f7a9df0562f69524d316",
+      "snapshot": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/css-host-color/baseline-af83/libxyg_core.so"
+    }
+  },
+  "browserProducerInputs": {
+    "path": "spec/performance/browser-css-color-2026-11-08/browser-producer-inputs.json",
+    "sha256": "684fb42d29e2c5b79234a6cf12a918751c16d32fc3d42bb2e5b3769dc02aa64c"
+  },
+  "captures": {
+    "spec/performance/browser-css-color-2026-11-08/captures/after.png": {
+      "bytes": 1491,
+      "sha256": "865766a85a610d03beae351e17a941d953e7972904cf1c0badb873d3453f9299"
+    },
+    "spec/performance/browser-css-color-2026-11-08/captures/before.png": {
+      "bytes": 1354,
+      "sha256": "cb915372b06285ec0fc55ba20d0ead74a4efaa134ecd2bddcf01d93aabc33586"
+    }
+  },
+  "changedArtifacts": [
+    "packages/xy-client/dist/index.js",
+    "packages/xy-client/dist/standalone.js"
+  ],
+  "clientArchives": {
+    "baseline-index": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/artifacts/af48bff857ca4515d55ff5828e7020f5fcf5aa164aa41632fba404688ada0758.gz",
+      "archiveBytes": 244871,
+      "archiveSha256": "b944d207b86c9ed20cd934ae1dcce559bc089e9c25373635ae36d368322d68dc",
+      "bytes": 855560,
+      "producerPath": "target/task-tmp/css-host-color/baseline-af83/index.js",
+      "sha256": "af48bff857ca4515d55ff5828e7020f5fcf5aa164aa41632fba404688ada0758"
+    },
+    "baseline-standalone": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/artifacts/d7524c3c12713526423d5120b839d237ab1c949d7cbe1b913f19d928549fa819.gz",
+      "archiveBytes": 244914,
+      "archiveSha256": "9a77e77c1d20e0d8c8399e2ce7130bf97de2089a5bf4983455ac2c349e6e8f49",
+      "bytes": 855580,
+      "producerPath": "target/task-tmp/css-host-color/baseline-af83/standalone.js",
+      "sha256": "d7524c3c12713526423d5120b839d237ab1c949d7cbe1b913f19d928549fa819"
+    },
+    "current-index": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/artifacts/2afad9d735004bff948215b0d598efc00bbe4e50a05686c2e88bb6168b1d245a.gz",
+      "archiveBytes": 245138,
+      "archiveSha256": "cf5a15f724386576bf93de31a9cadf4c5315c0a7aeeef599ec95795dab743ab2",
+      "bytes": 856281,
+      "producerPath": "packages/xy-client/dist/index.js",
+      "sha256": "2afad9d735004bff948215b0d598efc00bbe4e50a05686c2e88bb6168b1d245a"
+    },
+    "current-standalone": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/artifacts/260604ced79fc5c8b1995f548eb59ffa9cc1bfd456867e2dedcea7610e8be1d1.gz",
+      "archiveBytes": 245187,
+      "archiveSha256": "4e9b84598e01d2acd9bee26c71d76e04ce6ecefadca5fbd57d49bfc579d256cd",
+      "bytes": 856296,
+      "producerPath": "packages/xy-client/dist/standalone.js",
+      "sha256": "260604ced79fc5c8b1995f548eb59ffa9cc1bfd456867e2dedcea7610e8be1d1"
+    }
+  },
+  "compiledInputs": {
+    "allUnchanged": 324,
+    "path": "spec/performance/dense-native-navigation-union-2026-11-08/compiled-input-equality.json",
+    "sha256": "c8ee716be372c060085e1faa448b81630ddcfa60f3dc23b1879423eb12c00495"
+  },
+  "environment": {
+    "TMPDIR": "/var/tmp",
+    "chromium": "156.0.8078.4",
+    "gpu": "SwiftShader",
+    "nativeAbi": 405,
+    "node": "22.23.4",
+    "os": "Linux x86_64",
+    "wasmAbi": 38
+  },
+  "evidence": {
+    "target/task-tmp/css-host-color/abi-check.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/eb8c840abbbfbbcc7b2fc02f6c1c2909f93ea1a5c8d5ab31aed178cc9a757485.gz",
+      "archiveBytes": 62,
+      "archiveSha256": "a91496309293e2723fe1760d8d62399e034736fca5a1687e6c9f2516cce87aba",
+      "bytes": 42,
+      "sha256": "eb8c840abbbfbbcc7b2fc02f6c1c2909f93ea1a5c8d5ab31aed178cc9a757485"
+    },
+    "target/task-tmp/css-host-color/abi-final.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/eb8c840abbbfbbcc7b2fc02f6c1c2909f93ea1a5c8d5ab31aed178cc9a757485.gz",
+      "archiveBytes": 62,
+      "archiveSha256": "a91496309293e2723fe1760d8d62399e034736fca5a1687e6c9f2516cce87aba",
+      "bytes": 42,
+      "sha256": "eb8c840abbbfbbcc7b2fc02f6c1c2909f93ea1a5c8d5ab31aed178cc9a757485"
+    },
+    "target/task-tmp/css-host-color/assets-final.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef.gz",
+      "archiveBytes": 104,
+      "archiveSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730",
+      "bytes": 88,
+      "sha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef"
+    },
+    "target/task-tmp/css-host-color/assets.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef.gz",
+      "archiveBytes": 104,
+      "archiveSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730",
+      "bytes": 88,
+      "sha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef"
+    },
+    "target/task-tmp/css-host-color/baseline-final-negative-disk.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/88dd341a1ae999b3ca09aff803afa24bfcd448aea1c6a61c159978f8053eb332.gz",
+      "archiveBytes": 306,
+      "archiveSha256": "6a38e651ead2c14877394655f2534ae13d4da308702eb34b8a0a243d2cd7ca89",
+      "bytes": 435,
+      "sha256": "88dd341a1ae999b3ca09aff803afa24bfcd448aea1c6a61c159978f8053eb332"
+    },
+    "target/task-tmp/css-host-color/baseline-final-negative.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/cef26e927034381c3654b4a0300b5281c7e8ae93bfcb5827046a28be2906f3ea.gz",
+      "archiveBytes": 3241,
+      "archiveSha256": "f32408d7e2d408153d46369b82736eab24d8ec17cc5a14c4cbc1ee23746d7c61",
+      "bytes": 19348,
+      "sha256": "cef26e927034381c3654b4a0300b5281c7e8ae93bfcb5827046a28be2906f3ea"
+    },
+    "target/task-tmp/css-host-color/baseline-negative.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/98ecbf969154711b79404cf5e907929cda3d8e884dfcbf1b420483627ca80306.gz",
+      "archiveBytes": 306,
+      "archiveSha256": "b030ade17bc19ee0a0469443bbef7761a1ff6686e1a196056afc5c10b7e7d5fb",
+      "bytes": 435,
+      "sha256": "98ecbf969154711b79404cf5e907929cda3d8e884dfcbf1b420483627ca80306"
+    },
+    "target/task-tmp/css-host-color/baseline-probe.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/313e08e14467258a4b194456d5bc184b0fc011792799adbf9b2a50e3045dd089.gz",
+      "archiveBytes": 529,
+      "archiveSha256": "b1509ce15783b3fdb6a2965ceabf673c2518c8654784d87d21de4ef78d1d4052",
+      "bytes": 6568,
+      "sha256": "313e08e14467258a4b194456d5bc184b0fc011792799adbf9b2a50e3045dd089"
+    },
+    "target/task-tmp/css-host-color/build-client.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f.gz",
+      "archiveBytes": 1056,
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "bytes": 5448,
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "target/task-tmp/css-host-color/build-final-client.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f.gz",
+      "archiveBytes": 1056,
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "bytes": 5448,
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "target/task-tmp/css-host-color/capabilities-check.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/bdc2e56e0f3a1c8ff8449f8f8747bdd19aa3adb0c478986abff006eabdda7674.gz",
+      "archiveBytes": 285,
+      "archiveSha256": "f46101dea8ae07b50c6afd97d3d839bb6f8b23606b73798b8d8fac04cfa143ba",
+      "bytes": 688,
+      "sha256": "bdc2e56e0f3a1c8ff8449f8f8747bdd19aa3adb0c478986abff006eabdda7674"
+    },
+    "target/task-tmp/css-host-color/capabilities-final-check.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/bdc2e56e0f3a1c8ff8449f8f8747bdd19aa3adb0c478986abff006eabdda7674.gz",
+      "archiveBytes": 285,
+      "archiveSha256": "f46101dea8ae07b50c6afd97d3d839bb6f8b23606b73798b8d8fac04cfa143ba",
+      "bytes": 688,
+      "sha256": "bdc2e56e0f3a1c8ff8449f8f8747bdd19aa3adb0c478986abff006eabdda7674"
+    },
+    "target/task-tmp/css-host-color/capabilities-final-write.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/bdc2e56e0f3a1c8ff8449f8f8747bdd19aa3adb0c478986abff006eabdda7674.gz",
+      "archiveBytes": 285,
+      "archiveSha256": "f46101dea8ae07b50c6afd97d3d839bb6f8b23606b73798b8d8fac04cfa143ba",
+      "bytes": 688,
+      "sha256": "bdc2e56e0f3a1c8ff8449f8f8747bdd19aa3adb0c478986abff006eabdda7674"
+    },
+    "target/task-tmp/css-host-color/capabilities-final.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/42b8d4d87753f9103ac02d0b33f9a3c6f6e68193684dd88198095d247c8e7392.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "b767dcba961ec36088a4508e2fc578c781b10bfd553f305c9afc72fb495506b6",
+      "bytes": 29,
+      "sha256": "42b8d4d87753f9103ac02d0b33f9a3c6f6e68193684dd88198095d247c8e7392"
+    },
+    "target/task-tmp/css-host-color/capabilities-uv-check.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/42b8d4d87753f9103ac02d0b33f9a3c6f6e68193684dd88198095d247c8e7392.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "b767dcba961ec36088a4508e2fc578c781b10bfd553f305c9afc72fb495506b6",
+      "bytes": 29,
+      "sha256": "42b8d4d87753f9103ac02d0b33f9a3c6f6e68193684dd88198095d247c8e7392"
+    },
+    "target/task-tmp/css-host-color/capabilities-write.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/b17e0095fa5976539d4384127f8f3a4f70d4b5a7e46db7b1444c42ed0a1a30dd.gz",
+      "archiveBytes": 78,
+      "archiveSha256": "dd8fc0b9124b5f226585d6eba95490f8f5d7fea73b7288c246a1725cdb154aeb",
+      "bytes": 71,
+      "sha256": "b17e0095fa5976539d4384127f8f3a4f70d4b5a7e46db7b1444c42ed0a1a30dd"
+    },
+    "target/task-tmp/css-host-color/changed-sources.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/54cc4f340b471c768488722379a373efcabca955fc310172d525ace3961487a6.gz",
+      "archiveBytes": 262,
+      "archiveSha256": "b414d3ff38ecfb2a13fdbdae07d4c77f42d8845d6e5def43ab933ed19edbba48",
+      "bytes": 468,
+      "sha256": "54cc4f340b471c768488722379a373efcabca955fc310172d525ace3961487a6"
+    },
+    "target/task-tmp/css-host-color/client-artifacts.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/6fe710b1bfcb21de1233b098a5dcfe27b2227561d226694fd84eb24004e59cfd.gz",
+      "archiveBytes": 626,
+      "archiveSha256": "ba28253c14a606d9ff487f72bb1beabe1d5f1813c4d7807f7539460054d991ff",
+      "bytes": 1839,
+      "sha256": "6fe710b1bfcb21de1233b098a5dcfe27b2227561d226694fd84eb24004e59cfd"
+    },
+    "target/task-tmp/css-host-color/color-final-hooks.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/c3aa39073f537ea385d1bf938d98c2f20e9abdb8fbe61019cb4121d50521a0b4.gz",
+      "archiveBytes": 1766,
+      "archiveSha256": "a7eb367088f4c58ff35072848a6debb2a9d5d738ae0a2ebcd764313e499653ac",
+      "bytes": 5933,
+      "sha256": "c3aa39073f537ea385d1bf938d98c2f20e9abdb8fbe61019cb4121d50521a0b4"
+    },
+    "target/task-tmp/css-host-color/color-final-hooks.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/d12d10f3e60f59a326b6810448c5402b7088b0f0b6992694d8a0a2152aa4c95a.gz",
+      "archiveBytes": 1687,
+      "archiveSha256": "39bd8c73c06435d96a2a0acd3aca723f5fa61cc0778b98a60d89cdc62579f859",
+      "bytes": 4432,
+      "sha256": "d12d10f3e60f59a326b6810448c5402b7088b0f0b6992694d8a0a2152aa4c95a"
+    },
+    "target/task-tmp/css-host-color/compare-inputs.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/04dbf70e5b90d020afbe45364f353f1cf387fb352aa43c48e0ad0aaa0ad6bcd6.gz",
+      "archiveBytes": 291,
+      "archiveSha256": "ca99051898208af204b6c2b19ad79f40d724be27a40326d1327962a4492cb70a",
+      "bytes": 498,
+      "sha256": "04dbf70e5b90d020afbe45364f353f1cf387fb352aa43c48e0ad0aaa0ad6bcd6"
+    },
+    "target/task-tmp/css-host-color/compare-inputs.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/css-host-color/compare-inputs.py": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/19bb5afee280e360b5abe0a04088776902fc9b71c4922893c61dae210d6f7707.gz",
+      "archiveBytes": 561,
+      "archiveSha256": "1f140140aa45efc6b4c6699c489b88a0ba45bb31e002bc8b3cb6a9cc36202353",
+      "bytes": 1019,
+      "sha256": "19bb5afee280e360b5abe0a04088776902fc9b71c4922893c61dae210d6f7707"
+    },
+    "target/task-tmp/css-host-color/core-ownership.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/477ac7b09c1f0a30b2f9451c18062febcd7fa5bea6001cc1efac9b8ee83c6aec.gz",
+      "archiveBytes": 53,
+      "archiveSha256": "cce7458c09a1b662587695ccf5653c8bcc3c025a144a25571ebf6388885b9f43",
+      "bytes": 100,
+      "sha256": "477ac7b09c1f0a30b2f9451c18062febcd7fa5bea6001cc1efac9b8ee83c6aec"
+    },
+    "target/task-tmp/css-host-color/draft-theme.ts": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/73ef7be2c6251e8fedd0d517ed48107c16614e71ee2e8ce16411ecfc121d6fd6.gz",
+      "archiveBytes": 6867,
+      "archiveSha256": "3253f45c235185819db314b5701607e41b32c688e1c5e8a768ba5c321d74b42c",
+      "bytes": 23300,
+      "sha256": "73ef7be2c6251e8fedd0d517ed48107c16614e71ee2e8ce16411ecfc121d6fd6"
+    },
+    "target/task-tmp/css-host-color/draft.diff": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/64d3d68508819d0a9f42a4a0b60cd67682a24481364422ef404be98ab21dd090.gz",
+      "archiveBytes": 1420,
+      "archiveSha256": "f6df6eb88cd87373b930141bb411c5e4774aea4fb22fda4770cde70b90e63f43",
+      "bytes": 3189,
+      "sha256": "64d3d68508819d0a9f42a4a0b60cd67682a24481364422ef404be98ab21dd090"
+    },
+    "target/task-tmp/css-host-color/final-cohort.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/ca8ed9d93d6a27e25a6b960da81adc54c72e5297263e57e1645f0ca5a1240ba2.gz",
+      "archiveBytes": 1764,
+      "archiveSha256": "7a7190a22a11d26cba59dfe70e8f87b60a16a2f90e8dfdc87b5d8a4b888bf5d3",
+      "bytes": 5933,
+      "sha256": "ca8ed9d93d6a27e25a6b960da81adc54c72e5297263e57e1645f0ca5a1240ba2"
+    },
+    "target/task-tmp/css-host-color/final-cohort.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/af6598a8ac787c94b62aea5c75f0461db0e2609d8c7b36d5bdc5b3ca0d2ff0ab.gz",
+      "archiveBytes": 1685,
+      "archiveSha256": "cc4525f2e23c30371763cdd54c2c066b87df3e9c06ab813c19cd2c87b6b95e3a",
+      "bytes": 4432,
+      "sha256": "af6598a8ac787c94b62aea5c75f0461db0e2609d8c7b36d5bdc5b3ca0d2ff0ab"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/7e67c86945ab015a5f8b2beaa1398ced1115cc7c611fb68034a607228f155c6c.gz",
+      "archiveBytes": 4612,
+      "archiveSha256": "18b76c7e51dafb1310f11c277abf18c51fb2bba04dd5d9b1cf226f2af70d01cf",
+      "bytes": 34069,
+      "sha256": "7e67c86945ab015a5f8b2beaa1398ced1115cc7c611fb68034a607228f155c6c"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/captures.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/94783c427aeb5b95f0a407443199f7462c8706f409107e86bf851d674822ec4c.gz",
+      "archiveBytes": 7774,
+      "archiveSha256": "df7d2d0820bab2818c6f2eaff543e5dfee608207284431cee992ee414f86379c",
+      "bytes": 165934,
+      "sha256": "94783c427aeb5b95f0a407443199f7462c8706f409107e86bf851d674822ec4c"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-0.html": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/fa30cd7e1c9553b3efc257a0a4590cdd099d01e5399de94ca215d65ac1fc3bf7.gz",
+      "archiveBytes": 825735,
+      "archiveSha256": "4ae7a46e4831bab86e9465abd52be30c5954e8f3cf725a38bfb98ab39f150258",
+      "bytes": 3753476,
+      "sha256": "fa30cd7e1c9553b3efc257a0a4590cdd099d01e5399de94ca215d65ac1fc3bf7"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-0.offline.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/cdae125f09dffbb580484834f16a5e1de5641fad4515fc041b67df19fb1980b9.gz",
+      "archiveBytes": 717,
+      "archiveSha256": "9577039afe8319efc1841b29992dcc848a365ce15fa99f008325b794fc53869e",
+      "bytes": 2423,
+      "sha256": "cdae125f09dffbb580484834f16a5e1de5641fad4515fc041b67df19fb1980b9"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-0.painter": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/5268eff5a73b52085224948804ee7689467cd84812467fb10d3d1825baa1ce9c.gz",
+      "archiveBytes": 30320,
+      "archiveSha256": "d9fb9ddaca9639e97944e9c9aa58eef8f8defca0a695b4e1005896b5c9395990",
+      "bytes": 116644,
+      "sha256": "5268eff5a73b52085224948804ee7689467cd84812467fb10d3d1825baa1ce9c"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-0.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/a95fafc8c4cad9a26cad0c3a20f3e7bc2390191d66dafd7726cd32d72809c59a.gz",
+      "archiveBytes": 4624,
+      "archiveSha256": "71a10cfcd0c6c85cd914546095cc7823b263d4e94359e038660310f0fa300945",
+      "bytes": 24160,
+      "sha256": "a95fafc8c4cad9a26cad0c3a20f3e7bc2390191d66dafd7726cd32d72809c59a"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-0.scene": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/d04633e2c2e0e0bbddf18f706a73122974f64922bfdd6c68b29523871406c4bf.gz",
+      "archiveBytes": 53431,
+      "archiveSha256": "2cd9534335b145b52e964b866375339f881ccf4ff4136e6a8d2c28abaddf7ec6",
+      "bytes": 540984,
+      "sha256": "d04633e2c2e0e0bbddf18f706a73122974f64922bfdd6c68b29523871406c4bf"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-0.svg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/f609e4c8c251b65539682b3ab7bac6e04b2890a66e99c980f16afcb42fe51375.gz",
+      "archiveBytes": 30105,
+      "archiveSha256": "69ac7fbd4088fa5a56bdbac4b7c3f0468de1c2484181117361feccba7fd90c16",
+      "bytes": 167512,
+      "sha256": "f609e4c8c251b65539682b3ab7bac6e04b2890a66e99c980f16afcb42fe51375"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-0.xyfg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/e8693a06e2b7062de2397691dcc3bfcee049ca27b8906919ebb59e5ddc280080.gz",
+      "archiveBytes": 2261,
+      "archiveSha256": "a67f96a47391bac7453d6e29712c6e2c5c53b60a0ff581e11b8e394ba5fc160b",
+      "bytes": 10568,
+      "sha256": "e8693a06e2b7062de2397691dcc3bfcee049ca27b8906919ebb59e5ddc280080"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-1.html": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/c352377ced71b3dc6339d3e4068b461c0cff18e39d7f07c9aeb10b5a3814e9cd.gz",
+      "archiveBytes": 780377,
+      "archiveSha256": "1d159015b3468840eb6d34c92c461d4fe3d673b526e00aba13df814bcfeec629",
+      "bytes": 3490808,
+      "sha256": "c352377ced71b3dc6339d3e4068b461c0cff18e39d7f07c9aeb10b5a3814e9cd"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-1.offline.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/aea817bb06f937d7ef0797e465b2fda598ebb601fde7d53b40cbc48285f95aaa.gz",
+      "archiveBytes": 707,
+      "archiveSha256": "806b33b408409feca5d79ec240e8d55d186c62fcc49d5399ba9711098dab299e",
+      "bytes": 2405,
+      "sha256": "aea817bb06f937d7ef0797e465b2fda598ebb601fde7d53b40cbc48285f95aaa"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-1.painter": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/998126d40ad27bd6aa6b193fda5475d88696dbba3914a47c5550147daba8d0c1.gz",
+      "archiveBytes": 21473,
+      "archiveSha256": "06d4fb2a05e44c99cdb66b404cd8da953846013975b782695e3c318e66385f27",
+      "bytes": 82148,
+      "sha256": "998126d40ad27bd6aa6b193fda5475d88696dbba3914a47c5550147daba8d0c1"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-1.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/c320ac9774715d9eea152b2d7be782191901354beb41eb8bf3c59ce9297540fd.gz",
+      "archiveBytes": 4848,
+      "archiveSha256": "f3d04c62ba43fc6baae4299c5586b165341c4513fe6609eea1bc5011d7a5e82d",
+      "bytes": 26312,
+      "sha256": "c320ac9774715d9eea152b2d7be782191901354beb41eb8bf3c59ce9297540fd"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-1.scene": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/cb7d6ddf27a0079a306fde11063e4a3e7a7274edc2d78cdfe809f73dce03bca2.gz",
+      "archiveBytes": 36795,
+      "archiveSha256": "aa89256d2ad8311e843c67030ca8d58033d85716433b32656a286500acc4f1a2",
+      "bytes": 377808,
+      "sha256": "cb7d6ddf27a0079a306fde11063e4a3e7a7274edc2d78cdfe809f73dce03bca2"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-1.svg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/ea9e1632aac417be003708d571afd8ac8124045670571ec27af71be57b0d4690.gz",
+      "archiveBytes": 22415,
+      "archiveSha256": "70e6be5b621918bc37925cd21993f8698e580e454ac0332140d8f2837a16559f",
+      "bytes": 128427,
+      "sha256": "ea9e1632aac417be003708d571afd8ac8124045670571ec27af71be57b0d4690"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-1.xyfg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/c335fd81a6996bd07558ed1cc00316f83b0d7ba45502b8651cb8327891ab9a96.gz",
+      "archiveBytes": 2464,
+      "archiveSha256": "b27ba9d2bcfc6d8f4c4625c5591a3b6019b5d9394120d78567c5fb9ca92edbf2",
+      "bytes": 11016,
+      "sha256": "c335fd81a6996bd07558ed1cc00316f83b0d7ba45502b8651cb8327891ab9a96"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-2.html": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/3827db4e0d5ac5b09bdec2dacb0590cc74fa259cdc5d0501ea8b3f0992c38d76.gz",
+      "archiveBytes": 826645,
+      "archiveSha256": "1eb061fedc0b7be3647fde282ea6fba395a0b8b307bba37d6c02e2670705cc1a",
+      "bytes": 3758500,
+      "sha256": "3827db4e0d5ac5b09bdec2dacb0590cc74fa259cdc5d0501ea8b3f0992c38d76"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-2.offline.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/699cd80ff2cb323a5dffc575cc4b686f2edd3c9ca56bb8ffe17e847f4c25e167.gz",
+      "archiveBytes": 906,
+      "archiveSha256": "4b44639abe0b78830f6bfca9f9eece9d0f6af003f3b313eb85a1e927160fad09",
+      "bytes": 2600,
+      "sha256": "699cd80ff2cb323a5dffc575cc4b686f2edd3c9ca56bb8ffe17e847f4c25e167"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-2.painter": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/fb7537a77ce69e95e18ca91ad4c17feb1db93a2d7ab5bbc4f1793876bb9cb754.gz",
+      "archiveBytes": 30527,
+      "archiveSha256": "56706f2cfb46620ffde7993aa16229aee8ff50cb2acbb78cdbb3a6cd5e27fcbe",
+      "bytes": 117620,
+      "sha256": "fb7537a77ce69e95e18ca91ad4c17feb1db93a2d7ab5bbc4f1793876bb9cb754"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-2.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/fca2e73bf7a7350b9293a6a3d284329facf9439d1a8dc7f2500ffafa4c6dd8c0.gz",
+      "archiveBytes": 5095,
+      "archiveSha256": "9c5c64cd9b6005be571719b83ca67c7d86692d0d19fd5f702abe5869dbe4844b",
+      "bytes": 26380,
+      "sha256": "fca2e73bf7a7350b9293a6a3d284329facf9439d1a8dc7f2500ffafa4c6dd8c0"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-2.scene": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/2d7cef57a609889f2733d0f4a5241a92c351d397c5f7e4a10c982d1a1245b9e7.gz",
+      "archiveBytes": 53656,
+      "archiveSha256": "29686f8dd7e240929f6c03fd6a4da55255fec0400edd5a5098d9ba0999c6a5b1",
+      "bytes": 543176,
+      "sha256": "2d7cef57a609889f2733d0f4a5241a92c351d397c5f7e4a10c982d1a1245b9e7"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-2.svg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/e1bab96a3a0d3d9b6c9d5d17419f34bf4fa78621d5dddac6284ee95af7e7c840.gz",
+      "archiveBytes": 30566,
+      "archiveSha256": "8b60d4be2b53f8f46dae55a5ceb86498b73b19be2b7d187f33949b6be5ab5f48",
+      "bytes": 170911,
+      "sha256": "e1bab96a3a0d3d9b6c9d5d17419f34bf4fa78621d5dddac6284ee95af7e7c840"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-2.xyfg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/e8713944e7f0981d45d94cec71c78b5dc45aac93efd4baf8235c6c91ccd3e6fa.gz",
+      "archiveBytes": 2468,
+      "archiveSha256": "8020564db523a89efd8687d2c54a994a0ac4c6da1c4b4176d7e77fc9d2e73c73",
+      "bytes": 10968,
+      "sha256": "e8713944e7f0981d45d94cec71c78b5dc45aac93efd4baf8235c6c91ccd3e6fa"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-3.html": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/a052a70541e82ca17cb61988366ecfea64382e6657ce0906c5f0000a3eec9b7d.gz",
+      "archiveBytes": 825739,
+      "archiveSha256": "5237d6b9d8e575ee63c240b2301a9cc993d78478401e632267dd244c431043b8",
+      "bytes": 3753380,
+      "sha256": "a052a70541e82ca17cb61988366ecfea64382e6657ce0906c5f0000a3eec9b7d"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-3.offline.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/cdae125f09dffbb580484834f16a5e1de5641fad4515fc041b67df19fb1980b9.gz",
+      "archiveBytes": 717,
+      "archiveSha256": "9577039afe8319efc1841b29992dcc848a365ce15fa99f008325b794fc53869e",
+      "bytes": 2423,
+      "sha256": "cdae125f09dffbb580484834f16a5e1de5641fad4515fc041b67df19fb1980b9"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-3.painter": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/5268eff5a73b52085224948804ee7689467cd84812467fb10d3d1825baa1ce9c.gz",
+      "archiveBytes": 30320,
+      "archiveSha256": "d9fb9ddaca9639e97944e9c9aa58eef8f8defca0a695b4e1005896b5c9395990",
+      "bytes": 116644,
+      "sha256": "5268eff5a73b52085224948804ee7689467cd84812467fb10d3d1825baa1ce9c"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-3.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/81ddab6146dda61213221e00393ec8da423d8f478ea775330da0539dbcad59dc.gz",
+      "archiveBytes": 4634,
+      "archiveSha256": "4a2566ddfc5aee2c6629e7355fa420eb0fcd13c0e71f333940a3952dccf5be6f",
+      "bytes": 24064,
+      "sha256": "81ddab6146dda61213221e00393ec8da423d8f478ea775330da0539dbcad59dc"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-3.scene": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/d04633e2c2e0e0bbddf18f706a73122974f64922bfdd6c68b29523871406c4bf.gz",
+      "archiveBytes": 53431,
+      "archiveSha256": "2cd9534335b145b52e964b866375339f881ccf4ff4136e6a8d2c28abaddf7ec6",
+      "bytes": 540984,
+      "sha256": "d04633e2c2e0e0bbddf18f706a73122974f64922bfdd6c68b29523871406c4bf"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-3.svg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/38f9c215f1f049f39d01f537eb479a6d8a4f628527bb6aec5e8fdb678e74823b.gz",
+      "archiveBytes": 30114,
+      "archiveSha256": "b464fe412f4417175c6d86d80a4af9cc27eefacf3a4a236b4bbc4f12d76471c4",
+      "bytes": 167416,
+      "sha256": "38f9c215f1f049f39d01f537eb479a6d8a4f628527bb6aec5e8fdb678e74823b"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-3.xyfg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/f64f3e91b8d4aec25a55bd76b04e3f1927ed2e1c525ad439797086e9e782fbf6.gz",
+      "archiveBytes": 2267,
+      "archiveSha256": "9fb59a458a31736b47953ab30b923b9b2b5c19d1d66a484fb92abc795abe6901",
+      "bytes": 10520,
+      "sha256": "f64f3e91b8d4aec25a55bd76b04e3f1927ed2e1c525ad439797086e9e782fbf6"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-4.html": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/3e9a69efd5a9ab85f81f1f062385f4d217d0c6665c2793fb3dba814ed84cc16e.gz",
+      "archiveBytes": 728740,
+      "archiveSha256": "0b1b6de9a88e992ec7d360df3e34d54dc426364e309bafa9a70402ccbd3457c6",
+      "bytes": 3168904,
+      "sha256": "3e9a69efd5a9ab85f81f1f062385f4d217d0c6665c2793fb3dba814ed84cc16e"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-4.offline.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/a100e4b42b509f9ed9135fd0dcf4f1329d0a2cf4a6e460ba9f36150f4fa5b8a2.gz",
+      "archiveBytes": 490,
+      "archiveSha256": "a1e3d8f814d4811b5cd2c6ee4955ae7d5ed93104639efecff2536ec7d3ec7bc4",
+      "bytes": 2233,
+      "sha256": "a100e4b42b509f9ed9135fd0dcf4f1329d0a2cf4a6e460ba9f36150f4fa5b8a2"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-4.painter": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/85d0e198a8d119c79a02d0a58bd589f0a6e84047e452caf576636d566d575604.gz",
+      "archiveBytes": 10391,
+      "archiveSha256": "94983dbfc1c009482ff3f4d6bcfa4bd1e9eb9d7c7df7c224e069a9e073c43719",
+      "bytes": 39236,
+      "sha256": "85d0e198a8d119c79a02d0a58bd589f0a6e84047e452caf576636d566d575604"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-4.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/a7f96ab19df84fce54741c9c393df5e5714ef8fe38797939ec687af76a0ba741.gz",
+      "archiveBytes": 3425,
+      "archiveSha256": "529d51f311906bb1daf1f6f8db56c053e58f02dcfd7218d0d5c51711cd0c19ec",
+      "bytes": 22209,
+      "sha256": "a7f96ab19df84fce54741c9c393df5e5714ef8fe38797939ec687af76a0ba741"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-4.scene": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/9f4d95d013a7bb85630b49fff7111f8bb305f85e994d5994b08e44fefccea86c.gz",
+      "archiveBytes": 17984,
+      "archiveSha256": "33a4472727c80e68362726b987cd3fa59c222364e61545714484ee9f94603b3d",
+      "bytes": 180648,
+      "sha256": "9f4d95d013a7bb85630b49fff7111f8bb305f85e994d5994b08e44fefccea86c"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-4.svg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/16fd961928b2dfe5b4229eafd93b86435ea49a05a5311a29dbe6f69bbb58556a.gz",
+      "archiveBytes": 11930,
+      "archiveSha256": "7e3798b5aa01360dced95caa0e248d86e000ed94a1fe80723093bf3741236662",
+      "bytes": 67189,
+      "sha256": "16fd961928b2dfe5b4229eafd93b86435ea49a05a5311a29dbe6f69bbb58556a"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-4.xyfg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/c2d4a851b9a209fdbb4b0152141b89581ff94b6077ab6f30d5c5890810ae8545.gz",
+      "archiveBytes": 2197,
+      "archiveSha256": "13990c925a96de3a1906d358eaccb220ab52225cc438819021e51c79bea830e2",
+      "bytes": 10112,
+      "sha256": "c2d4a851b9a209fdbb4b0152141b89581ff94b6077ab6f30d5c5890810ae8545"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-5.html": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/b84d793be2aba8d28dbc92abba5938f1e6348591392021d20a3e905ca0b31f72.gz",
+      "archiveBytes": 780378,
+      "archiveSha256": "4a9705762617984eaf1e45ce47b56e4815b6807be1b25d0e8b19151fb55ca6f3",
+      "bytes": 3490808,
+      "sha256": "b84d793be2aba8d28dbc92abba5938f1e6348591392021d20a3e905ca0b31f72"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-5.offline.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/aea817bb06f937d7ef0797e465b2fda598ebb601fde7d53b40cbc48285f95aaa.gz",
+      "archiveBytes": 707,
+      "archiveSha256": "806b33b408409feca5d79ec240e8d55d186c62fcc49d5399ba9711098dab299e",
+      "bytes": 2405,
+      "sha256": "aea817bb06f937d7ef0797e465b2fda598ebb601fde7d53b40cbc48285f95aaa"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-5.painter": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/998126d40ad27bd6aa6b193fda5475d88696dbba3914a47c5550147daba8d0c1.gz",
+      "archiveBytes": 21473,
+      "archiveSha256": "06d4fb2a05e44c99cdb66b404cd8da953846013975b782695e3c318e66385f27",
+      "bytes": 82148,
+      "sha256": "998126d40ad27bd6aa6b193fda5475d88696dbba3914a47c5550147daba8d0c1"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-5.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/ed94a25710ba2f939e8784e0cc32a35e32f120e439243ef48ce88ee98b56bdfd.gz",
+      "archiveBytes": 4842,
+      "archiveSha256": "1c399edf547efdfcf30d8e34e4b477e9bfbbb04215a314502255cc703970e470",
+      "bytes": 26312,
+      "sha256": "ed94a25710ba2f939e8784e0cc32a35e32f120e439243ef48ce88ee98b56bdfd"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-5.scene": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/cb7d6ddf27a0079a306fde11063e4a3e7a7274edc2d78cdfe809f73dce03bca2.gz",
+      "archiveBytes": 36795,
+      "archiveSha256": "aa89256d2ad8311e843c67030ca8d58033d85716433b32656a286500acc4f1a2",
+      "bytes": 377808,
+      "sha256": "cb7d6ddf27a0079a306fde11063e4a3e7a7274edc2d78cdfe809f73dce03bca2"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-5.svg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/3594d22424d19ec1d7a77b646f63ec0ea93e1a893cd63936929c266a7615d9b0.gz",
+      "archiveBytes": 22410,
+      "archiveSha256": "9bd84d250bbdab85f7df997630099f63868cc6427826af823776b79695f9ae3a",
+      "bytes": 128427,
+      "sha256": "3594d22424d19ec1d7a77b646f63ec0ea93e1a893cd63936929c266a7615d9b0"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/frame-5.xyfg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/cfc158212a4c39d94be153b811800eaa58cf1309fb2f967c9ad8b83ec429733e.gz",
+      "archiveBytes": 2461,
+      "archiveSha256": "d1384ebaaa86ee7137e75bd03259e7658126bdd48969b7a8cfa7f2ad01f4aebb",
+      "bytes": 11016,
+      "sha256": "cfc158212a4c39d94be153b811800eaa58cf1309fb2f967c9ad8b83ec429733e"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/live-0.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/9f2178f8f5545d604b2f21ac5da4fd6172c35bebc9d31e12fa2fe854b81ecbd1.gz",
+      "archiveBytes": 1771,
+      "archiveSha256": "3c7618838c7105dc73fe13bfbae59a25f42a3e5b0ed08c08c592c53a508b48af",
+      "bytes": 2310,
+      "sha256": "9f2178f8f5545d604b2f21ac5da4fd6172c35bebc9d31e12fa2fe854b81ecbd1"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/live-1.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/ca6b1ced92e0b66b4987bd48392ea80bae7b63474533a9ab7632db1a63261a0b.gz",
+      "archiveBytes": 1845,
+      "archiveSha256": "622c464e05d2265fdd53bb91d322919306d9e0d6c7fda03f6270a7b4347d4c28",
+      "bytes": 2382,
+      "sha256": "ca6b1ced92e0b66b4987bd48392ea80bae7b63474533a9ab7632db1a63261a0b"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/live-2.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/9b3e7c71687d2c54edcde60f2f79e0f68a8998f3fb8900ecb0e5f58edadfe38d.gz",
+      "archiveBytes": 1970,
+      "archiveSha256": "d5d3943c037c5488185a63a9b62dddb58c50208a7a2bc81739f897423f9dae46",
+      "bytes": 2506,
+      "sha256": "9b3e7c71687d2c54edcde60f2f79e0f68a8998f3fb8900ecb0e5f58edadfe38d"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/live-3.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/9f2178f8f5545d604b2f21ac5da4fd6172c35bebc9d31e12fa2fe854b81ecbd1.gz",
+      "archiveBytes": 1771,
+      "archiveSha256": "3c7618838c7105dc73fe13bfbae59a25f42a3e5b0ed08c08c592c53a508b48af",
+      "bytes": 2310,
+      "sha256": "9f2178f8f5545d604b2f21ac5da4fd6172c35bebc9d31e12fa2fe854b81ecbd1"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/live-4.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/f457903ade13efd7348d739a6f46a06fc5499d6bfe8fc6a8a7c009723f0f0d42.gz",
+      "archiveBytes": 859,
+      "archiveSha256": "2809fd2dc901aad936de70f5f7de43190402fd0fd80ed6f6039c6cd852b89764",
+      "bytes": 1392,
+      "sha256": "f457903ade13efd7348d739a6f46a06fc5499d6bfe8fc6a8a7c009723f0f0d42"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/live-5.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/ca6b1ced92e0b66b4987bd48392ea80bae7b63474533a9ab7632db1a63261a0b.gz",
+      "archiveBytes": 1845,
+      "archiveSha256": "622c464e05d2265fdd53bb91d322919306d9e0d6c7fda03f6270a7b4347d4c28",
+      "bytes": 2382,
+      "sha256": "ca6b1ced92e0b66b4987bd48392ea80bae7b63474533a9ab7632db1a63261a0b"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/report.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/d7c063f58c442c3d15f105bbbab2408639ab28093dc54086e0562843a7c37486.gz",
+      "archiveBytes": 48,
+      "archiveSha256": "159a7bec0a646d8b1e86f67e166c8614c0305952878a4f575a27678572c4525a",
+      "bytes": 33,
+      "sha256": "d7c063f58c442c3d15f105bbbab2408639ab28093dc54086e0562843a7c37486"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/wire.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/e555717ea476e90a279279978498d4227ca3fa61b9e5b0f7d7d73fdc0f4c20bd.gz",
+      "archiveBytes": 15923,
+      "archiveSha256": "d0ba4b9930e8423afc370d7e163b998dbd4c9fbfddfb9cc18f5b7b484e2a1305",
+      "bytes": 419066,
+      "sha256": "e555717ea476e90a279279978498d4227ca3fa61b9e5b0f7d7d73fdc0f4c20bd"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.aggregate-graph/worker.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/78e5a4828cb6883c00ab3cad092f755424f1346cc805a329fd5266e8c6652120.gz",
+      "archiveBytes": 8359917,
+      "archiveSha256": "7c9eea7c94d76b763a6301d856ff8f6768e44c30ef3959396389749e4ae24efa",
+      "bytes": 34100781,
+      "sha256": "78e5a4828cb6883c00ab3cad092f755424f1346cc805a329fd5266e8c6652120"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.css-color.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/ca8ed9d93d6a27e25a6b960da81adc54c72e5297263e57e1645f0ca5a1240ba2.gz",
+      "archiveBytes": 1764,
+      "archiveSha256": "7a7190a22a11d26cba59dfe70e8f87b60a16a2f90e8dfdc87b5d8a4b888bf5d3",
+      "bytes": 5933,
+      "sha256": "ca8ed9d93d6a27e25a6b960da81adc54c72e5297263e57e1645f0ca5a1240ba2"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/inline-worker-png.html": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/e4306e4b6b479185fb0844defda58322b2dd88ed31a17a8c591c277848af7794.gz",
+      "archiveBytes": 1319300,
+      "archiveSha256": "5cd53218115c8a8e4b52cdffef335e717d565b985719d2f31ae7c9819e774c95",
+      "bytes": 3512763,
+      "sha256": "e4306e4b6b479185fb0844defda58322b2dd88ed31a17a8c591c277848af7794"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/report.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/d89bb74361e69f92bfecc8aa8fe0eeda2da2e77112e30590c10f092dcad0e36d.gz",
+      "archiveBytes": 418,
+      "archiveSha256": "1f23d37442b12a4a42dcb78bc8019384d62cda14eeff65998697b248fcecdfdf",
+      "bytes": 1050,
+      "sha256": "d89bb74361e69f92bfecc8aa8fe0eeda2da2e77112e30590c10f092dcad0e36d"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-0.html": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/c7c0751ca732c00bcf19687de9ea9bb03e09bd06b39f103546f49268c718fbb7.gz",
+      "archiveBytes": 873495,
+      "archiveSha256": "2e4c455a396dabf8002cc6b5eb7173f78a884fe582ceb73d886ef9cee241d69c",
+      "bytes": 4055932,
+      "sha256": "c7c0751ca732c00bcf19687de9ea9bb03e09bd06b39f103546f49268c718fbb7"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-0.offline.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/73c2bb400eb58aa2529414e81c883ebac0d38eff7b507546ca477181629bcd0d.gz",
+      "archiveBytes": 3723,
+      "archiveSha256": "daf3f6b171586cbd85cb1df63fb630ec1d57d7a982dc74deb2c8757b760e37ef",
+      "bytes": 5440,
+      "sha256": "73c2bb400eb58aa2529414e81c883ebac0d38eff7b507546ca477181629bcd0d"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-0.painter": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/6708e63edaaf57c53b448567133bca28a2e9924ec2cca7987eac7c8ac9a1ee08.gz",
+      "archiveBytes": 35983,
+      "archiveSha256": "13d289cb24c0c8f12370f36a9eb01d8be10351ae6cd25348bcb80e9086b4cac1",
+      "bytes": 157260,
+      "sha256": "6708e63edaaf57c53b448567133bca28a2e9924ec2cca7987eac7c8ac9a1ee08"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-0.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/b67bfd6ea4426ebef754c8003fbd3cc632a763777baf2f7f9c85f41abce1fdc5.gz",
+      "archiveBytes": 12346,
+      "archiveSha256": "f61a57157ce00664e6ec8ae6753acb33c1ea7f95e56e8b71b1bb647574dc7658",
+      "bytes": 39129,
+      "sha256": "b67bfd6ea4426ebef754c8003fbd3cc632a763777baf2f7f9c85f41abce1fdc5"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-0.scale2.html": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/0293c1eff3ee030542a647744f3e3e04acb503d58d86b4fef9371b0ef306b374.gz",
+      "archiveBytes": 873495,
+      "archiveSha256": "aaf0c95779deddfe72e9d570dea1ec37732aabedaeb1f4be18b893ecd82dda2e",
+      "bytes": 4055932,
+      "sha256": "0293c1eff3ee030542a647744f3e3e04acb503d58d86b4fef9371b0ef306b374"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-0.scale2.offline.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/1476fc3ddd5181a37489bdf7aaf604cbea6b8508248335810bded6ed261da0d9.gz",
+      "archiveBytes": 7379,
+      "archiveSha256": "4bdbf9c6f8e42697bb51cdef6411e58d832b27a0bcf1e62d2e349edd7b0cb32a",
+      "bytes": 9246,
+      "sha256": "1476fc3ddd5181a37489bdf7aaf604cbea6b8508248335810bded6ed261da0d9"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-0.scale2.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/c729946f31c20d3ddd67ed5037cea8b833a102f5d144c867eb39727572fff81c.gz",
+      "archiveBytes": 20210,
+      "archiveSha256": "26e63143f3904e982695e2107b7a02daf72d70d72e2c826f0b9b821bee67c6b7",
+      "bytes": 60346,
+      "sha256": "c729946f31c20d3ddd67ed5037cea8b833a102f5d144c867eb39727572fff81c"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-0.scene": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/a9c38d638994ed878589264f5d624a95589dc199f0fee0153a22f557658fceaf.gz",
+      "archiveBytes": 70317,
+      "archiveSha256": "7c992617f678da0997212f926c191e17e6c61f87595ef47111578f2449f8ff5a",
+      "bytes": 725400,
+      "sha256": "a9c38d638994ed878589264f5d624a95589dc199f0fee0153a22f557658fceaf"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-0.svg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/9273505826e53b5721c9b1a7247a75cd66f7852d127bd7f6869f1767fb9cb34b.gz",
+      "archiveBytes": 40384,
+      "archiveSha256": "1bf886067c5842db31b348f1d94e1a8c755bb5aef89934750021af4f6bd473ce",
+      "bytes": 221391,
+      "sha256": "9273505826e53b5721c9b1a7247a75cd66f7852d127bd7f6869f1767fb9cb34b"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-0.xyfg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/b4c11af9ab5323170a01cc97ae5bc30422c5597c532d971a201a623e2714d142.gz",
+      "archiveBytes": 2847,
+      "archiveSha256": "1c94d2eefc540966907aaa33d7001cee2d8f8735ff02a26c62a097e9b2b558ca",
+      "bytes": 11776,
+      "sha256": "b4c11af9ab5323170a01cc97ae5bc30422c5597c532d971a201a623e2714d142"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-1.html": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/58329a2b76e6ce56f492bae461437a5bee96e4824f5dfff0fefd63d542b4ed4b.gz",
+      "archiveBytes": 720051,
+      "archiveSha256": "6207deedcb7f5bd8bc58d8d5c080a0fdf499bf77fa6824815078583a3d8b837d",
+      "bytes": 3233384,
+      "sha256": "58329a2b76e6ce56f492bae461437a5bee96e4824f5dfff0fefd63d542b4ed4b"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-1.offline.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/29745f349e29c9071fa9eee966709b8dd6de4bcc19bd1f38b61c10406bba5c34.gz",
+      "archiveBytes": 2918,
+      "archiveSha256": "0fd5fdc8102c901ecd3fcbd983a74a126de68260c9d5896b62aa6d74d85e3a74",
+      "bytes": 4555,
+      "sha256": "29745f349e29c9071fa9eee966709b8dd6de4bcc19bd1f38b61c10406bba5c34"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-1.painter": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/e13dd7515a42bb0b5c1c77b5a82a3bfeed988291e2e002fc68833102bc589b8f.gz",
+      "archiveBytes": 6830,
+      "archiveSha256": "019a29373247a64ac3aee5d818ecbdb9b02c4cce134a2bb55725797845ecfbce",
+      "bytes": 48396,
+      "sha256": "e13dd7515a42bb0b5c1c77b5a82a3bfeed988291e2e002fc68833102bc589b8f"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-1.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/d186b71b93393ada67ac812f51c228c21795988f97baf7e7944a7ab605762d92.gz",
+      "archiveBytes": 9481,
+      "archiveSha256": "26b1475b49d80309f5888e6f79103a6da9ae601a196edb5fbf80e4b62e136e88",
+      "bytes": 38002,
+      "sha256": "d186b71b93393ada67ac812f51c228c21795988f97baf7e7944a7ab605762d92"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-1.scale2.html": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/eb1cb2d5d518a7f7c7f558de38bdf4362332ab9b9c07d7bd8f474cf2dc0534a8.gz",
+      "archiveBytes": 720052,
+      "archiveSha256": "f54ba580fd99198ea566440dce402f7fd967ac5337099eb931b31169ecf97192",
+      "bytes": 3233384,
+      "sha256": "eb1cb2d5d518a7f7c7f558de38bdf4362332ab9b9c07d7bd8f474cf2dc0534a8"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-1.scale2.offline.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/ee6d49aa7e6d0e84111358bd58beac6663a37d987af1d86239cb4286a8881d91.gz",
+      "archiveBytes": 5724,
+      "archiveSha256": "a0fc56dad39b6001f539c6bf6d043ab97115263498b9e8963dc734ceda134004",
+      "bytes": 7340,
+      "sha256": "ee6d49aa7e6d0e84111358bd58beac6663a37d987af1d86239cb4286a8881d91"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-1.scale2.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/311b2566b392f0a59c6362f9918c077bcaca4fd25ec8e45fa5fad95c99136d95.gz",
+      "archiveBytes": 13374,
+      "archiveSha256": "bcc75f00bfe44eb21b0c9be329415dfc48559fd254e04c53b031ab8f2e61cd7f",
+      "bytes": 55097,
+      "sha256": "311b2566b392f0a59c6362f9918c077bcaca4fd25ec8e45fa5fad95c99136d95"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-1.scene": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/4a56d93214ec747ad9eccbba82577d3f6c5e84f91e8f4867f135c4fe1760f868.gz",
+      "archiveBytes": 16883,
+      "archiveSha256": "ed15f11b3801e8d912cbd5453e91dbe34fa51c5b2d303cd46ecb0015ff8f6ed0",
+      "bytes": 217352,
+      "sha256": "4a56d93214ec747ad9eccbba82577d3f6c5e84f91e8f4867f135c4fe1760f868"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-1.svg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/2018c16850ab6f20c9589ffa2e8776a99d994149aff503e0ae2758a17415f5ff.gz",
+      "archiveBytes": 12163,
+      "archiveSha256": "43b8df4043d44a2207758ee3aa5cc55e56078039465d6e268e3501c54ce5b4b9",
+      "bytes": 85689,
+      "sha256": "2018c16850ab6f20c9589ffa2e8776a99d994149aff503e0ae2758a17415f5ff"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-1.xyfg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/a9c14ae37279f8d5cd6b17cdd750b8ccaca14b70eb9eb093cbba0f895d00afbd.gz",
+      "archiveBytes": 2808,
+      "archiveSha256": "09aeb831435bf100f123d23e378653d4fc5cf2a765916f379b55dd7de21725ef",
+      "bytes": 11776,
+      "sha256": "a9c14ae37279f8d5cd6b17cdd750b8ccaca14b70eb9eb093cbba0f895d00afbd"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-2.html": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/d23738697fee103c6281982a7fb0f14e36edeecfa76a8c52e2574d9e94c4ab87.gz",
+      "archiveBytes": 741233,
+      "archiveSha256": "9da8d38eb45c456f88049cd0a2b15642dbbacd6c1daca2589f705b84c2023469",
+      "bytes": 3251272,
+      "sha256": "d23738697fee103c6281982a7fb0f14e36edeecfa76a8c52e2574d9e94c4ab87"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-2.offline.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/35daa48445de6c4f41329b92064d60af98ea443d785ac93fe4c933a36f27964b.gz",
+      "archiveBytes": 3250,
+      "archiveSha256": "c190ac7f8d60e0274adf6b152a29f837cd0b312688ddf965c56d3f4d5d9559ca",
+      "bytes": 4983,
+      "sha256": "35daa48445de6c4f41329b92064d60af98ea443d785ac93fe4c933a36f27964b"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-2.painter": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/c92c5718833e933b683f16353b3041a9e7e524cc57975e520b62eb4a60ffd5fd.gz",
+      "archiveBytes": 12633,
+      "archiveSha256": "3d9f75bff7bf2227b1594ef4cfd317be614674367abe0b5b7b21cb8807fb7311",
+      "bytes": 50556,
+      "sha256": "c92c5718833e933b683f16353b3041a9e7e524cc57975e520b62eb4a60ffd5fd"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-2.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/379b4dac23080c2e178700d3644f98d89bcfa59f85133dc1861a8b11ce0e50e8.gz",
+      "archiveBytes": 10680,
+      "archiveSha256": "d143d41c94347107d20eda7c73a047aa6ffc6a49931cf093df96e1e54da79b19",
+      "bytes": 39207,
+      "sha256": "379b4dac23080c2e178700d3644f98d89bcfa59f85133dc1861a8b11ce0e50e8"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-2.scale2.html": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/fa41eae319bead7f6156213accf86f54268643b2eb64787b7b26064847330448.gz",
+      "archiveBytes": 741234,
+      "archiveSha256": "cb9c8ba0646e056c93b5cadd572054dba3aa05abe1d945fdfe953b6f82afab0d",
+      "bytes": 3251272,
+      "sha256": "fa41eae319bead7f6156213accf86f54268643b2eb64787b7b26064847330448"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-2.scale2.offline.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/2cdf6eac8be3143ea2a72141ca6f3509a9cc81837d0b6d45ecf95d94142060b8.gz",
+      "archiveBytes": 6563,
+      "archiveSha256": "40295cf60382e95830b0e02a07473fd74fe10da77231bb9f1f9e18430f748822",
+      "bytes": 8215,
+      "sha256": "2cdf6eac8be3143ea2a72141ca6f3509a9cc81837d0b6d45ecf95d94142060b8"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-2.scale2.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/40999463b6d14b0306c598ea3f50a6f3ee445a05122c63f2ea6a95c8eb4c4459.gz",
+      "archiveBytes": 16286,
+      "archiveSha256": "776dca6586b736e02ce54a9807d76a10a8a4b31b65acf0e00c30299e815a2921",
+      "bytes": 59901,
+      "sha256": "40999463b6d14b0306c598ea3f50a6f3ee445a05122c63f2ea6a95c8eb4c4459"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-2.scene": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/19c425b85267e5f5d5308503947928fcd8fb2456c0be0a19fbbe304e54cc8d5f.gz",
+      "archiveBytes": 22526,
+      "archiveSha256": "a3a058739ffd3c0aaabc4557a5aaf66e576d6168b94ed7dcc5ad44d7e41795a7",
+      "bytes": 228608,
+      "sha256": "19c425b85267e5f5d5308503947928fcd8fb2456c0be0a19fbbe304e54cc8d5f"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-2.svg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/e78330a33e69b77cb86c16cd34970155330265cef67f405d93dce59b74220482.gz",
+      "archiveBytes": 15382,
+      "archiveSha256": "4886f0464f8ec9c6127bbde38e564d927b112d5a5e901df6e90705489950b2b0",
+      "bytes": 87468,
+      "sha256": "e78330a33e69b77cb86c16cd34970155330265cef67f405d93dce59b74220482"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-2.xyfg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/e3251c38c89b3738fd9d624b1808a5878f389012965885b62b3cc6ef90e14a43.gz",
+      "archiveBytes": 2859,
+      "archiveSha256": "5eca755064e510e1a634c8c7f4f690cd55cfe310264e69221b2dd0e7718f5651",
+      "bytes": 11776,
+      "sha256": "e3251c38c89b3738fd9d624b1808a5878f389012965885b62b3cc6ef90e14a43"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-3.html": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/287b7fff61eebe61cadbc56c76ad64bfddbc79d66d4370d0653d36297891ccbe.gz",
+      "archiveBytes": 738486,
+      "archiveSha256": "ebcdb7d2453b31219a2fadf1d6f984ff61cbe6a226d022dcc2c89c8f40b885c3",
+      "bytes": 3241128,
+      "sha256": "287b7fff61eebe61cadbc56c76ad64bfddbc79d66d4370d0653d36297891ccbe"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-3.offline.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/7f8a10366e0af63f0ae542f733305444dcbe4064246386a4a2a71d9e1b245a00.gz",
+      "archiveBytes": 3350,
+      "archiveSha256": "5c0b7bc5dd7b3c546f60849bc9244e0c210c95c66c0316f77aa5e237e688cf53",
+      "bytes": 5086,
+      "sha256": "7f8a10366e0af63f0ae542f733305444dcbe4064246386a4a2a71d9e1b245a00"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-3.painter": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/43a727ba17d01ce85f4366ff7d52302e1e0b33dfe958e2dc0ae548144dbd010c.gz",
+      "archiveBytes": 12785,
+      "archiveSha256": "330581877796a395a9179ad095aeac04aba8ce21980872cb02060ad2bb539d3c",
+      "bytes": 49332,
+      "sha256": "43a727ba17d01ce85f4366ff7d52302e1e0b33dfe958e2dc0ae548144dbd010c"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-3.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/0272bc26370eee3a35679d01b373d21c49f5cf3a0466490b97c8c68c1c7cdf0f.gz",
+      "archiveBytes": 10949,
+      "archiveSha256": "24cb34a616fda576bc051dccd0771e2ac5a1f70211fcf89acc1480aee4d5def0",
+      "bytes": 38994,
+      "sha256": "0272bc26370eee3a35679d01b373d21c49f5cf3a0466490b97c8c68c1c7cdf0f"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-3.scale2.html": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/f44dd8d82be425268268c7eacfe72b1debe4126fef40a32626ad3dfacda91b93.gz",
+      "archiveBytes": 738485,
+      "archiveSha256": "3a58228b7c99ab8d42519d7b76afcd564ee78d1e56474ffb3e15131a86be0574",
+      "bytes": 3241128,
+      "sha256": "f44dd8d82be425268268c7eacfe72b1debe4126fef40a32626ad3dfacda91b93"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-3.scale2.offline.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/f54bd830f98d1012799bd1dd4d6817b185663e93f980c7dd5624a29e32302b91.gz",
+      "archiveBytes": 6851,
+      "archiveSha256": "dc45be0f25e0b39eaa521a2d880f697ed5ce7f7abf938ad654e9055f12e04de3",
+      "bytes": 8474,
+      "sha256": "f54bd830f98d1012799bd1dd4d6817b185663e93f980c7dd5624a29e32302b91"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-3.scale2.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/37d1ec1d4e86b36fd2081b9ed5171dc25be425b4c2abbfe1e35f2fc20188e0f9.gz",
+      "archiveBytes": 16210,
+      "archiveSha256": "467c3070eac6edf57a2aa23dd2224704c0144cd161cf8fd0c1c825e671611cd9",
+      "bytes": 58510,
+      "sha256": "37d1ec1d4e86b36fd2081b9ed5171dc25be425b4c2abbfe1e35f2fc20188e0f9"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-3.scene": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/f1cb4edecb943da69a3ad2bad3e65fb578c73e6e7145ecff35d81d04fe01ce99.gz",
+      "archiveBytes": 21282,
+      "archiveSha256": "720499a218cf532554a9c6b3adda4007c96c4ee28efd2d732ad71fc51571e98e",
+      "bytes": 222224,
+      "sha256": "f1cb4edecb943da69a3ad2bad3e65fb578c73e6e7145ecff35d81d04fe01ce99"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-3.svg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/447ee495b80b862e9e25026037eba5176e42fb9081903395581c025ee5d9e187.gz",
+      "archiveBytes": 14660,
+      "archiveSha256": "557b178ca0664e9e236bdb5d6971b6641f1a519e52e9e56ff972b075b9b76166",
+      "bytes": 86672,
+      "sha256": "447ee495b80b862e9e25026037eba5176e42fb9081903395581c025ee5d9e187"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-3.xyfg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/847f2c92619c051318531cddde49d0dcceb781ab11e6107ab18c2c8a8f442ed7.gz",
+      "archiveBytes": 2854,
+      "archiveSha256": "35249f75b583180c5cb8122ea82998ec8996b109dc11504e8ea258eec28cf1ec",
+      "bytes": 11776,
+      "sha256": "847f2c92619c051318531cddde49d0dcceb781ab11e6107ab18c2c8a8f442ed7"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-4.html": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/955e0184f1ada6808f99b10e9b2bcd6b4fb221edec309c38094799a54af2f1d0.gz",
+      "archiveBytes": 720876,
+      "archiveSha256": "a2369f1615b2c97fddd4f4a1134c0d7cb1ed25f2aac91bcee40e5111738c6405",
+      "bytes": 3237340,
+      "sha256": "955e0184f1ada6808f99b10e9b2bcd6b4fb221edec309c38094799a54af2f1d0"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-4.offline.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/469dab77316ca8cc544910eca3e88690bc6b4c8870e69f1214ec58ef3d11657e.gz",
+      "archiveBytes": 3321,
+      "archiveSha256": "ed6a0d60f4dc5c0f37924c846683babd30d40e00e63a0517dff8193a546275d4",
+      "bytes": 5046,
+      "sha256": "469dab77316ca8cc544910eca3e88690bc6b4c8870e69f1214ec58ef3d11657e"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-4.painter": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/f7334fc326de07bfa8aeec957274cd81a881299a06ea3eb796397ad07b29ecfe.gz",
+      "archiveBytes": 7078,
+      "archiveSha256": "5c9a6224a0d4e1319c650b4c63f8869926580f824db21384a008844a83d109b7",
+      "bytes": 48828,
+      "sha256": "f7334fc326de07bfa8aeec957274cd81a881299a06ea3eb796397ad07b29ecfe"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-4.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/d8c59094e5dedf1d6ba9dda518881b6aa408782892aa68f95527c7cae490a1e0.gz",
+      "archiveBytes": 10324,
+      "archiveSha256": "271cc60c1c2c9d6e977e6b70398b9af10a944f4e4a2b64a90bde9622af002b76",
+      "bytes": 38405,
+      "sha256": "d8c59094e5dedf1d6ba9dda518881b6aa408782892aa68f95527c7cae490a1e0"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-4.scale2.html": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/81deae59a27c8e56b487e4170612b97a93a2b660c024903f474e0a6bfa3b13da.gz",
+      "archiveBytes": 720875,
+      "archiveSha256": "e59935c97dd98c5667a6dbdd949f52334393b16ba8b4d91ca127fa3c77d5d9a3",
+      "bytes": 3237340,
+      "sha256": "81deae59a27c8e56b487e4170612b97a93a2b660c024903f474e0a6bfa3b13da"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-4.scale2.offline.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/fadf4294cf55ddc21687f29ccff995650b6a19bea1f4b95401fe460f61b729da.gz",
+      "archiveBytes": 6511,
+      "archiveSha256": "b2184f3dd7b956a4eb5e4b8232addf6b54dfde2fc7df03f0b855e9eeee1c1884",
+      "bytes": 8125,
+      "sha256": "fadf4294cf55ddc21687f29ccff995650b6a19bea1f4b95401fe460f61b729da"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-4.scale2.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/9c00fdaadaeb52f6c1d4fbbea2568e46b2300589f497a55853ad791092a1283b.gz",
+      "archiveBytes": 14838,
+      "archiveSha256": "d3bcf8d017af25ce04bc959e43bce6bb689338e371e60441df4d4cb3b5f98ca3",
+      "bytes": 57404,
+      "sha256": "9c00fdaadaeb52f6c1d4fbbea2568e46b2300589f497a55853ad791092a1283b"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-4.scene": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/4b75b363d3abfe8633de8e4a372dcb06ed26a8317483f9a630b20ad0aab4303f.gz",
+      "archiveBytes": 16848,
+      "archiveSha256": "ad2a6ac9fd91bf2fe7f3bd461fcc8f618ed25c603f5fb1f51622d4746dbf0a09",
+      "bytes": 219888,
+      "sha256": "4b75b363d3abfe8633de8e4a372dcb06ed26a8317483f9a630b20ad0aab4303f"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-4.svg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/fb7a53aa65f6d3e3b1304e62c1f0b9a5d93346bbda90d65eeddd2b8852155bc1.gz",
+      "archiveBytes": 12251,
+      "archiveSha256": "a59e285423551fda575b9ddfe930768dcee3507ecd213d28e0c8f2eb8d98a0e4",
+      "bytes": 86457,
+      "sha256": "fb7a53aa65f6d3e3b1304e62c1f0b9a5d93346bbda90d65eeddd2b8852155bc1"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-4.xyfg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/7b1b26c8b032a940ab6c1bd93c46e94c098c1c7e4fac6e57da9a4433de4ba084.gz",
+      "archiveBytes": 2859,
+      "archiveSha256": "9a7394def7f4c9317543bf58d18e4f9ddcee038c465549a9d5001f5e8cc62bd9",
+      "bytes": 11776,
+      "sha256": "7b1b26c8b032a940ab6c1bd93c46e94c098c1c7e4fac6e57da9a4433de4ba084"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-5-parent.html": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/05edc87b74177cf6dbcac9682a6bde3d526894236f1ad896c00850eeb8dc1d90.gz",
+      "archiveBytes": 735651,
+      "archiveSha256": "7d086aec12172c985972c6fae4b3543b04e6e80204d3a38906ee088667679314",
+      "bytes": 3253012,
+      "sha256": "05edc87b74177cf6dbcac9682a6bde3d526894236f1ad896c00850eeb8dc1d90"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-5-parent.offline.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/c8d28893649e32c1c892a98edd5fd520d2b0a81d05d722615fe0bcd11ace17de.gz",
+      "archiveBytes": 3572,
+      "archiveSha256": "a4f56e389e2327ac16f122a75b42f8c087e2bff42097c005d9fe191cea48c576",
+      "bytes": 5273,
+      "sha256": "c8d28893649e32c1c892a98edd5fd520d2b0a81d05d722615fe0bcd11ace17de"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-5-parent.painter": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/12d70a96c1d14db02e3c8e822a27348c0952e9e53f0e4b9e4d4425b993f2c682.gz",
+      "archiveBytes": 11518,
+      "archiveSha256": "75ba1db88cfaa72f09c3dfd766910e12dfdcfd7ca51f378dbd5f2c4b57fec8b0",
+      "bytes": 51068,
+      "sha256": "12d70a96c1d14db02e3c8e822a27348c0952e9e53f0e4b9e4d4425b993f2c682"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-5-parent.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/329003c487a484c6dd1a6ab70139847ca1cab87fdee1c32aed62a0c5facd3fbb.gz",
+      "archiveBytes": 12324,
+      "archiveSha256": "9a3666c6edfcd6a7f2690abc63df67225c309afbb490e225e1d36f7114b71047",
+      "bytes": 42961,
+      "sha256": "329003c487a484c6dd1a6ab70139847ca1cab87fdee1c32aed62a0c5facd3fbb"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-5-parent.scale2.html": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/3258de247cb735297f13e24bda1c86985c807f9d9a5f4a50dee180b79303b3d6.gz",
+      "archiveBytes": 735651,
+      "archiveSha256": "3b76f3b98665d8f83cb0a1cb74ada5b91d50366769c0722343c5ac362cc696d2",
+      "bytes": 3253012,
+      "sha256": "3258de247cb735297f13e24bda1c86985c807f9d9a5f4a50dee180b79303b3d6"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-5-parent.scale2.offline.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/edefe2a9bcc24edaebfa626b6e0249334975969a91d59488c51813a6b2609cc1.gz",
+      "archiveBytes": 7358,
+      "archiveSha256": "272afd758dbad8530ec106ca5ac70e69fc7e084f78b5191a8080db8f5abcbe50",
+      "bytes": 9175,
+      "sha256": "edefe2a9bcc24edaebfa626b6e0249334975969a91d59488c51813a6b2609cc1"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-5-parent.scale2.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/e857ac26fad4bba7bc113ff9065d1973911e579038887781014d839265ede569.gz",
+      "archiveBytes": 19873,
+      "archiveSha256": "5bfa49a78ea4fa4f469faedb755b3f844759e2b60439d7c8cbecadd0dac39703",
+      "bytes": 67944,
+      "sha256": "e857ac26fad4bba7bc113ff9065d1973911e579038887781014d839265ede569"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-5-parent.scene": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/e45efa91f78d3471c5dba207002668eb2cb2d9e2173fa488d58000f0704a5f60.gz",
+      "archiveBytes": 20813,
+      "archiveSha256": "1f4f1f3ccee09699e17dd7bddd198c8ecc854e5ce07a50dc95e213b61af2950f",
+      "bytes": 229520,
+      "sha256": "e45efa91f78d3471c5dba207002668eb2cb2d9e2173fa488d58000f0704a5f60"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-5-parent.svg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/c4643889bc98973b84460e63a64b5d112ebab9505f96b90970e4405c94182e65.gz",
+      "archiveBytes": 14705,
+      "archiveSha256": "9e5695f1b5acde570ffcf6705e67037e8a6935cf47dff7863af5daf85bd8c825",
+      "bytes": 87092,
+      "sha256": "c4643889bc98973b84460e63a64b5d112ebab9505f96b90970e4405c94182e65"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-5-parent.xyfg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/011ddcf0661e7cd809096d6244d71320ef0b7aeee754e488c9aa6bbf62a3d2f0.gz",
+      "archiveBytes": 2853,
+      "archiveSha256": "a32306b9fdee8f5ce78e0602af239652d8d13d99f2db91e0d8179cea35a74fd4",
+      "bytes": 11696,
+      "sha256": "011ddcf0661e7cd809096d6244d71320ef0b7aeee754e488c9aa6bbf62a3d2f0"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-5.html": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/f32af0778fc72d75bc5d1344204ee8b418bdf1c840840d1ac67e58d7a7040e22.gz",
+      "archiveBytes": 735061,
+      "archiveSha256": "8ae465b4da03df8f7e7c6194646153228703b6f8cc173d3fe3a51de2b13bbb79",
+      "bytes": 3252572,
+      "sha256": "f32af0778fc72d75bc5d1344204ee8b418bdf1c840840d1ac67e58d7a7040e22"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-5.offline.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/3d79b707c17cebd10d708c9493ecb6346c4710b5b55bb419f19ab12fafe4f841.gz",
+      "archiveBytes": 3456,
+      "archiveSha256": "0d94e61f0baf6944d263a533fd40bcc3647d0bd496112e5118631f382fc6bd86",
+      "bytes": 5197,
+      "sha256": "3d79b707c17cebd10d708c9493ecb6346c4710b5b55bb419f19ab12fafe4f841"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-5.painter": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/61cb63d79bbd157d0e35f6c5d98ff802e2b5120474e3655e62ce7900e02aca12.gz",
+      "archiveBytes": 11481,
+      "archiveSha256": "975b17499d99c09428203382eac21cf7fe29e0d803c59b235b8bb9510a54facd",
+      "bytes": 50844,
+      "sha256": "61cb63d79bbd157d0e35f6c5d98ff802e2b5120474e3655e62ce7900e02aca12"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-5.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/f02d3429d83cd3166bdc9115f437b63cb68fc88a8a6b937dafe747652d5079be.gz",
+      "archiveBytes": 11993,
+      "archiveSha256": "c8964021d9b16c1c801e9e0841cc95533f610c9caf461c6973381aab2b72c97f",
+      "bytes": 38760,
+      "sha256": "f02d3429d83cd3166bdc9115f437b63cb68fc88a8a6b937dafe747652d5079be"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-5.scale2.html": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/1ba3a036d2ce45c88ac20ec8d2ed9a2e0a9d41f6340bf17fc1c84a43186a9cce.gz",
+      "archiveBytes": 735062,
+      "archiveSha256": "dbe571e7a98a385a203cc92f0a93a81bb9b81a78535cdc1c231829c313b61bea",
+      "bytes": 3252572,
+      "sha256": "1ba3a036d2ce45c88ac20ec8d2ed9a2e0a9d41f6340bf17fc1c84a43186a9cce"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-5.scale2.offline.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/21d20ddeca24a66bedf4897485c8004c103692f4ab152b7e44361d01ce32ada3.gz",
+      "archiveBytes": 6828,
+      "archiveSha256": "e1941d237e5b7292ca87185142bc710c2d065ced979930208cf22f177d582cf5",
+      "bytes": 8720,
+      "sha256": "21d20ddeca24a66bedf4897485c8004c103692f4ab152b7e44361d01ce32ada3"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-5.scale2.png": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/31ed8579a8d863bad4116a35fba90ca23a4ef1312b7d393695e9cfec1147bf91.gz",
+      "archiveBytes": 19528,
+      "archiveSha256": "450bed2f9d9bd4119d0a4e108baa12da5f1b4833971095f654e4ecf1db1adb58",
+      "bytes": 59214,
+      "sha256": "31ed8579a8d863bad4116a35fba90ca23a4ef1312b7d393695e9cfec1147bf91"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-5.scene": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/986b036c7ac0f009f07b74defd82cba2db13e7a5ee379522cb78b23f61c7f028.gz",
+      "archiveBytes": 20645,
+      "archiveSha256": "803997c132a44df661a203da432fe2992ba74049732d4819756d5994fe4e0aa5",
+      "bytes": 229296,
+      "sha256": "986b036c7ac0f009f07b74defd82cba2db13e7a5ee379522cb78b23f61c7f028"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-5.svg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/b6c9bde64eaf0b1eb673bdc8b37431a8e24ac9fe77f5fb854929694d76ec39ea.gz",
+      "archiveBytes": 14701,
+      "archiveSha256": "e947a928dca91bb48e78e54cfc38d5e32de6c0b79f69e94d727de915b6f1bfd0",
+      "bytes": 88503,
+      "sha256": "b6c9bde64eaf0b1eb673bdc8b37431a8e24ac9fe77f5fb854929694d76ec39ea"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.frozen-graph/shape-5.xyfg": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/0fb41ff8b658a4fb6ea6df11af8c02b64c61b83857289f1f40e8fc2e43a27106.gz",
+      "archiveBytes": 2855,
+      "archiveSha256": "366facd03c71255532eb4cf76503794787ea4e9a3dd428d4b002d49fb33450e8",
+      "bytes": 11776,
+      "sha256": "0fb41ff8b658a4fb6ea6df11af8c02b64c61b83857289f1f40e8fc2e43a27106"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.retained-temporal.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/9ec13739c57a1031625ea7b228720658f4e0e7865fc0bddd6c362b57519f2ab1.gz",
+      "archiveBytes": 5350,
+      "archiveSha256": "f8e29658f5051c5aa6a2fbf547c91096b7ef4c6a9c3c3555780a8abf6041ab73",
+      "bytes": 103395,
+      "sha256": "9ec13739c57a1031625ea7b228720658f4e0e7865fc0bddd6c362b57519f2ab1"
+    },
+    "target/task-tmp/css-host-color/final-foundation.json.retained-temporal.json.wire.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/8dc9943a220c5b4d5a951a30f4b39bec2a8e30c834c9c8bef40e749002f59e58.gz",
+      "archiveBytes": 127125,
+      "archiveSha256": "45961ad360bb9daeea6e57ebc3a2f4a5e70813808e2cbf7e45d013c50f9ee5b1",
+      "bytes": 3567548,
+      "sha256": "8dc9943a220c5b4d5a951a30f4b39bec2a8e30c834c9c8bef40e749002f59e58"
+    },
+    "target/task-tmp/css-host-color/final-foundation.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/737d9fd635bd0329597dcee05c53ca52c0917f949b9440418a67cc98c96f23f7.gz",
+      "archiveBytes": 3848,
+      "archiveSha256": "979bc312e275d5b6d01a63fddffaabc1fc5f64ff8127376e979a976f26d1e876",
+      "bytes": 12786,
+      "sha256": "737d9fd635bd0329597dcee05c53ca52c0917f949b9440418a67cc98c96f23f7"
+    },
+    "target/task-tmp/css-host-color/final.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/874af16856f2162f75c434a7e45dfc26578ac2750f6a63ce8a5ddab1e5f32275.gz",
+      "archiveBytes": 1755,
+      "archiveSha256": "9dfe704cdc879970bc282805582b7c9c3cfdd34f48892d7b70a4dee33daead03",
+      "bytes": 5913,
+      "sha256": "874af16856f2162f75c434a7e45dfc26578ac2750f6a63ce8a5ddab1e5f32275"
+    },
+    "target/task-tmp/css-host-color/final.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/ecd422a13df2bda6896f50dc291d9345355421dbb0ec73485f22270a3ba288ba.gz",
+      "archiveBytes": 1677,
+      "archiveSha256": "71756bda3bffefddade8e40c5e0bd059bdd06e0022c94bdaa2c8f8c3887b0dd5",
+      "bytes": 4416,
+      "sha256": "ecd422a13df2bda6896f50dc291d9345355421dbb0ec73485f22270a3ba288ba"
+    },
+    "target/task-tmp/css-host-color/fixed-probe.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/4e7565233c83d4af7284ffb8421f636434af1ba3a4ee5c101229986cd7ab9e3f.gz",
+      "archiveBytes": 531,
+      "archiveSha256": "eed8e5e7f68438a22130ccbfe8c5eb2ae2133f712d6a91bbdc1e1fb67546403d",
+      "bytes": 6329,
+      "sha256": "4e7565233c83d4af7284ffb8421f636434af1ba3a4ee5c101229986cd7ab9e3f"
+    },
+    "target/task-tmp/css-host-color/fixtures.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/78ac71966ba1a1e5d1503ecf8182781d3d7a754a2f3bfee86f36e5e7a29d949a.gz",
+      "archiveBytes": 712,
+      "archiveSha256": "3e3a96f14b197362789246aa1b3a53ea3e48fccc6ef6b1029355aa1e56f6b3a0",
+      "bytes": 5409,
+      "sha256": "78ac71966ba1a1e5d1503ecf8182781d3d7a754a2f3bfee86f36e5e7a29d949a"
+    },
+    "target/task-tmp/css-host-color/format-final.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/e921aaaf65986c6531c59f2065c35ed00cdcc7f22c1a12a135443e5e76f7f46a.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "ce42a3224112748d5dc59f4bfc1494cb313915f5b0b64f25ced5cbd42a51ed87",
+      "bytes": 29,
+      "sha256": "e921aaaf65986c6531c59f2065c35ed00cdcc7f22c1a12a135443e5e76f7f46a"
+    },
+    "target/task-tmp/css-host-color/format.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/e921aaaf65986c6531c59f2065c35ed00cdcc7f22c1a12a135443e5e76f7f46a.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "ce42a3224112748d5dc59f4bfc1494cb313915f5b0b64f25ced5cbd42a51ed87",
+      "bytes": 29,
+      "sha256": "e921aaaf65986c6531c59f2065c35ed00cdcc7f22c1a12a135443e5e76f7f46a"
+    },
+    "target/task-tmp/css-host-color/foundation.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/e5f1b9dd88c2294a380aa14f4bc336a595164bf9603a6ad5754fba28c49fdb7e.gz",
+      "archiveBytes": 4611,
+      "archiveSha256": "8b3cc55e43436f6b5141be2b93cb8093b84a68cfe8b18c6f466d2d541aeaa562",
+      "bytes": 34033,
+      "sha256": "e5f1b9dd88c2294a380aa14f4bc336a595164bf9603a6ad5754fba28c49fdb7e"
+    },
+    "target/task-tmp/css-host-color/foundation.json.css-color.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/c3aa39073f537ea385d1bf938d98c2f20e9abdb8fbe61019cb4121d50521a0b4.gz",
+      "archiveBytes": 1766,
+      "archiveSha256": "a7eb367088f4c58ff35072848a6debb2a9d5d738ae0a2ebcd764313e499653ac",
+      "bytes": 5933,
+      "sha256": "c3aa39073f537ea385d1bf938d98c2f20e9abdb8fbe61019cb4121d50521a0b4"
+    },
+    "target/task-tmp/css-host-color/foundation.json.retained-temporal.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/ae9da1b5788dd5368770525ada8683ca05aaf70a2a7a8c0c60c67e334ad00ce8.gz",
+      "archiveBytes": 5351,
+      "archiveSha256": "86b19ee528a5aee0b54c4443bbae671925866a5577d10b45e8d442fcac2f78db",
+      "bytes": 103396,
+      "sha256": "ae9da1b5788dd5368770525ada8683ca05aaf70a2a7a8c0c60c67e334ad00ce8"
+    },
+    "target/task-tmp/css-host-color/foundation.json.retained-temporal.json.wire.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/425ae71a10402663ec3d00cf40463549b3c01bf06dc848f6795b8272c7f8e83e.gz",
+      "archiveBytes": 134555,
+      "archiveSha256": "6add4ddb069e39cbfe9e60ef96e2c449dec74214678e1d679bc1de0c95e099a4",
+      "bytes": 3774640,
+      "sha256": "425ae71a10402663ec3d00cf40463549b3c01bf06dc848f6795b8272c7f8e83e"
+    },
+    "target/task-tmp/css-host-color/foundation.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/08761effd8f13ab33008f6052327a27f7e3abf1d4eca43eada28d198a03e0e17.gz",
+      "archiveBytes": 3840,
+      "archiveSha256": "fb0942b4c18b30994d25c1fc78d413b4a6b4e5f4a6b1c39e6559e3bca703563c",
+      "bytes": 12778,
+      "sha256": "08761effd8f13ab33008f6052327a27f7e3abf1d4eca43eada28d198a03e0e17"
+    },
+    "target/task-tmp/css-host-color/generate-fixtures.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/36a98d8f4cea140b8fbf7be2ce76139ac159cd71e13a0adc70de2159cb423084.gz",
+      "archiveBytes": 295,
+      "archiveSha256": "c7e5cd5f839dff9252aa691e09187a020caa3d060b6fc7f17b0f149d6cfd20f2",
+      "bytes": 539,
+      "sha256": "36a98d8f4cea140b8fbf7be2ce76139ac159cd71e13a0adc70de2159cb423084"
+    },
+    "target/task-tmp/css-host-color/generate-fixtures.py": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/d2ecf09488bb6a038049e59d301ea563ab7220fe142d0c609808d2e88524837f.gz",
+      "archiveBytes": 502,
+      "archiveSha256": "105f78e79bf0e71d62ec1c5d5c1eea1a3322876593a2f992ca62bae488a54640",
+      "bytes": 1076,
+      "sha256": "d2ecf09488bb6a038049e59d301ea563ab7220fe142d0c609808d2e88524837f"
+    },
+    "target/task-tmp/css-host-color/geo-hierarchy.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/697bb11849d84eb996987a6ab9c9feee1b1b718b8bc4585acbe978064aa23769.gz",
+      "archiveBytes": 1871,
+      "archiveSha256": "dba874883e51d52a996a350aed4bab0f72ce634d66b442e9d66f5eaa44a0efae",
+      "bytes": 33129,
+      "sha256": "697bb11849d84eb996987a6ab9c9feee1b1b718b8bc4585acbe978064aa23769"
+    },
+    "target/task-tmp/css-host-color/geo-hierarchy.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/32313c9434214756cb55c468735732f9c2c0816136cd4b7af58dea814b2023cb.gz",
+      "archiveBytes": 1142,
+      "archiveSha256": "7aa8ad196c16d83294f44652bb736914ba7fc6d03145328d80a122fd51439d16",
+      "bytes": 10333,
+      "sha256": "32313c9434214756cb55c468735732f9c2c0816136cd4b7af58dea814b2023cb"
+    },
+    "target/task-tmp/css-host-color/hooks.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/css-host-color/module-final.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/ab7d68ce30f870d837ddf996ec72fa80d384e3f3af5b1869215e3627bccc843a.gz",
+      "archiveBytes": 142,
+      "archiveSha256": "529f8e8eb93c9b6200d595e81ee3b959df7afa688b7d0d2984b0ca1ae37cd5bb",
+      "bytes": 148,
+      "sha256": "ab7d68ce30f870d837ddf996ec72fa80d384e3f3af5b1869215e3627bccc843a"
+    },
+    "target/task-tmp/css-host-color/no-dither-diagnostic.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/617c09483a7b893e67e89b25fc1dde7a56a799a2292a5cd17855eb9b5179c128.gz",
+      "archiveBytes": 453,
+      "archiveSha256": "4a00c43bd565a7280b7a2afe359b76ccf75d4fbf4269952a4269526c9645aca9",
+      "bytes": 678,
+      "sha256": "617c09483a7b893e67e89b25fc1dde7a56a799a2292a5cd17855eb9b5179c128"
+    },
+    "target/task-tmp/css-host-color/no-dither-diagnostic.mjs": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/d4e3bb78ec4a1ee56fba47e9fdfd5bcbc1f0cd1ea428fc783e7e5bdcbeec1985.gz",
+      "archiveBytes": 3426,
+      "archiveSha256": "9049c2250a5cdeb29523eeca6d20229e55ba39cedd5163a5abcab3dbcdb4a8a8",
+      "bytes": 8325,
+      "sha256": "d4e3bb78ec4a1ee56fba47e9fdfd5bcbc1f0cd1ea428fc783e7e5bdcbeec1985"
+    },
+    "target/task-tmp/css-host-color/ownership.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/723d8a9f723ff18ddb612e60289cd21750b3d50af346625b4f353419e4dc9261.gz",
+      "archiveBytes": 78,
+      "archiveSha256": "74d8a85616a9688fa2575622e400f3b87250978e9a35a7a9ba2ec3e8af77865c",
+      "bytes": 60,
+      "sha256": "723d8a9f723ff18ddb612e60289cd21750b3d50af346625b4f353419e4dc9261"
+    },
+    "target/task-tmp/css-host-color/precommit-final.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/css-host-color/probe-final-source.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/410c283edc2393c2ca0f7aec5ecb2a5758b922fbafdf061d1298ec7db9870217.gz",
+      "archiveBytes": 588,
+      "archiveSha256": "261de81d0a650c91ca2fddeef8fa85ae7f318033ce9708e85d0445cf0a941f63",
+      "bytes": 3291,
+      "sha256": "410c283edc2393c2ca0f7aec5ecb2a5758b922fbafdf061d1298ec7db9870217"
+    },
+    "target/task-tmp/css-host-color/probe-final-source.mjs": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/aab7840e0764b0fa293f44ac4d72d80182fff3c03571b439d9d86fcff947dff8.gz",
+      "archiveBytes": 1063,
+      "archiveSha256": "006d599bfba7edd95e56150a1f1477b815617d202a619656851057d1717e7c0d",
+      "bytes": 2032,
+      "sha256": "aab7840e0764b0fa293f44ac4d72d80182fff3c03571b439d9d86fcff947dff8"
+    },
+    "target/task-tmp/css-host-color/probe-fixed.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/7f98c5da0f45695d591cf667d354770aa4c8f0ed89e968933006eae8ba38b59d.gz",
+      "archiveBytes": 558,
+      "archiveSha256": "8aacac310fa2bb4b871f5aee28b65f31401bed4227c4c4bb6ed68a8f0a9c9991",
+      "bytes": 3243,
+      "sha256": "7f98c5da0f45695d591cf667d354770aa4c8f0ed89e968933006eae8ba38b59d"
+    },
+    "target/task-tmp/css-host-color/probe-r2.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/63c17a6d07f95dd5282d2399c084ca1acfbd5fac2a042d831a933ffeee791e64.gz",
+      "archiveBytes": 567,
+      "archiveSha256": "c013c901fa3320bfac99edaf62b9cb64ad1cbc0d8d011a25ff88a800b37d7392",
+      "bytes": 3550,
+      "sha256": "63c17a6d07f95dd5282d2399c084ca1acfbd5fac2a042d831a933ffeee791e64"
+    },
+    "target/task-tmp/css-host-color/probe.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/6af7c0db436fe0ef906de5cbe269ac1067179b51d72a40bcccd5a91865798d9f.gz",
+      "archiveBytes": 566,
+      "archiveSha256": "e665dec535c6382a472cc09701b19369d44bc3d5478bf24673e3830874c91f1c",
+      "bytes": 6446,
+      "sha256": "6af7c0db436fe0ef906de5cbe269ac1067179b51d72a40bcccd5a91865798d9f"
+    },
+    "target/task-tmp/css-host-color/probe.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/cb793367ea3b5a31acd72b72bd1c6c2f510e4314347214b188319e9aeb76bcc7.gz",
+      "archiveBytes": 385,
+      "archiveSha256": "a4970088dbb364c236743d6980801e9bb8a96b28990c57653689323d64ece204",
+      "bytes": 731,
+      "sha256": "cb793367ea3b5a31acd72b72bd1c6c2f510e4314347214b188319e9aeb76bcc7"
+    },
+    "target/task-tmp/css-host-color/probe.mjs": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/b94e8bfc44d233a7455cb456a5d06d266e56fc4f0f6631623457b0d372683334.gz",
+      "archiveBytes": 986,
+      "archiveSha256": "831768b7118a41e5fb95ae3ecac78b47689596a0b643ee774f9a6d3eeb0baf48",
+      "bytes": 1847,
+      "sha256": "b94e8bfc44d233a7455cb456a5d06d266e56fc4f0f6631623457b0d372683334"
+    },
+    "target/task-tmp/css-host-color/public-smoke-final-r2.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/874af16856f2162f75c434a7e45dfc26578ac2750f6a63ce8a5ddab1e5f32275.gz",
+      "archiveBytes": 1755,
+      "archiveSha256": "9dfe704cdc879970bc282805582b7c9c3cfdd34f48892d7b70a4dee33daead03",
+      "bytes": 5913,
+      "sha256": "874af16856f2162f75c434a7e45dfc26578ac2750f6a63ce8a5ddab1e5f32275"
+    },
+    "target/task-tmp/css-host-color/public-smoke-final-r2.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/ecd422a13df2bda6896f50dc291d9345355421dbb0ec73485f22270a3ba288ba.gz",
+      "archiveBytes": 1677,
+      "archiveSha256": "71756bda3bffefddade8e40c5e0bd059bdd06e0022c94bdaa2c8f8c3887b0dd5",
+      "bytes": 4416,
+      "sha256": "ecd422a13df2bda6896f50dc291d9345355421dbb0ec73485f22270a3ba288ba"
+    },
+    "target/task-tmp/css-host-color/public-smoke-final.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/6592b4b4d6019159c592636fb92dff71f933c123c155d5396136f03a99121d7c.gz",
+      "archiveBytes": 1713,
+      "archiveSha256": "f12c73d67704a27d43c94ef46107b97113aab0e3b19c121859b4ba46a6d6180f",
+      "bytes": 5846,
+      "sha256": "6592b4b4d6019159c592636fb92dff71f933c123c155d5396136f03a99121d7c"
+    },
+    "target/task-tmp/css-host-color/public-smoke-final.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/9562b199808909d60f1531ec460f512c4078c27d1bef0fac2999531e4fc585e5.gz",
+      "archiveBytes": 1634,
+      "archiveSha256": "6722916d79a287f812f8206ac86b5cdc97952c4b6bb549794e8ac67ae92da1d2",
+      "bytes": 4354,
+      "sha256": "9562b199808909d60f1531ec460f512c4078c27d1bef0fac2999531e4fc585e5"
+    },
+    "target/task-tmp/css-host-color/public-smoke-r2.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/731338e861a022af0dfcbf807d52c5e20f382194094d136db55ec84372e72948.gz",
+      "archiveBytes": 537,
+      "archiveSha256": "66d8c211a5ef7c30ea9804bf0b5139534f24dc8708b190ee82e847189d2199fe",
+      "bytes": 1043,
+      "sha256": "731338e861a022af0dfcbf807d52c5e20f382194094d136db55ec84372e72948"
+    },
+    "target/task-tmp/css-host-color/public-smoke-r3.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/33d8cf154c664015f205505856937d0668bb913b759bbbcfa45f5722a0a6767b.gz",
+      "archiveBytes": 284,
+      "archiveSha256": "ad56247053d88ddcfce543a885ebf79dddab7044bc45ef7f49799ef83fb1922d",
+      "bytes": 408,
+      "sha256": "33d8cf154c664015f205505856937d0668bb913b759bbbcfa45f5722a0a6767b"
+    },
+    "target/task-tmp/css-host-color/public-smoke-r4.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/d3c4fd6843434ac4b220c850436ea03b677c5fe17e530d4f99574f5562bc6922.gz",
+      "archiveBytes": 300,
+      "archiveSha256": "6f3ad7d6f45cbb9a1eb2ad42143dce1bebf6d2df37305b4618585f5135e8d967",
+      "bytes": 430,
+      "sha256": "d3c4fd6843434ac4b220c850436ea03b677c5fe17e530d4f99574f5562bc6922"
+    },
+    "target/task-tmp/css-host-color/public-smoke-r5.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/1a8438d0ebdbc5e8cdb3b9ab14d58ff800a847e8f25af172eadcf0571f631d27.gz",
+      "archiveBytes": 440,
+      "archiveSha256": "bb09701cd0fa7e1b062d89132fde1f9121bfe6eadfe742104d4fbd8a9ba7e30e",
+      "bytes": 657,
+      "sha256": "1a8438d0ebdbc5e8cdb3b9ab14d58ff800a847e8f25af172eadcf0571f631d27"
+    },
+    "target/task-tmp/css-host-color/public-smoke-r6.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/f9ad1e800e1a73d5205c6fa54570161109ecc2d30d0519a33b53fa165a22b522.gz",
+      "archiveBytes": 535,
+      "archiveSha256": "5ff81be0df6bae74855367d45d95a55652e74b735d91cda20f63e60ed2cf6716",
+      "bytes": 948,
+      "sha256": "f9ad1e800e1a73d5205c6fa54570161109ecc2d30d0519a33b53fa165a22b522"
+    },
+    "target/task-tmp/css-host-color/public-smoke-r7.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/6592b4b4d6019159c592636fb92dff71f933c123c155d5396136f03a99121d7c.gz",
+      "archiveBytes": 1713,
+      "archiveSha256": "f12c73d67704a27d43c94ef46107b97113aab0e3b19c121859b4ba46a6d6180f",
+      "bytes": 5846,
+      "sha256": "6592b4b4d6019159c592636fb92dff71f933c123c155d5396136f03a99121d7c"
+    },
+    "target/task-tmp/css-host-color/public-smoke-r7.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/9562b199808909d60f1531ec460f512c4078c27d1bef0fac2999531e4fc585e5.gz",
+      "archiveBytes": 1634,
+      "archiveSha256": "6722916d79a287f812f8206ac86b5cdc97952c4b6bb549794e8ac67ae92da1d2",
+      "bytes": 4354,
+      "sha256": "9562b199808909d60f1531ec460f512c4078c27d1bef0fac2999531e4fc585e5"
+    },
+    "target/task-tmp/css-host-color/public-smoke.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/d6abf5e00a79b9a0943af7a5752608975ab12d650a50ca1b4cd520bb6f8a7065.gz",
+      "archiveBytes": 321,
+      "archiveSha256": "d5daa33ec05fb028d858d3e013fae637fa143e171a00e231351d54d79cd4fe9f",
+      "bytes": 464,
+      "sha256": "d6abf5e00a79b9a0943af7a5752608975ab12d650a50ca1b4cd520bb6f8a7065"
+    },
+    "target/task-tmp/css-host-color/related-python-final.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/ba6a01551a002f6de620ea8c10cde380de86995a082de835d943aa1466de0f21.gz",
+      "archiveBytes": 85,
+      "archiveSha256": "8ddf553730b77c7f78096bb913b7382634fb396436e78edecbcffcb2ff324448",
+      "bytes": 190,
+      "sha256": "ba6a01551a002f6de620ea8c10cde380de86995a082de835d943aa1466de0f21"
+    },
+    "target/task-tmp/css-host-color/related-python.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/3cba217d2d2ecfed368ac1559814d8f138a3573a27cbcee949e38ff711998d1b.gz",
+      "archiveBytes": 77,
+      "archiveSha256": "f0d30567495f45c02d16cb93d38ae20816f975e2c608c035fda9830b32887dcb",
+      "bytes": 190,
+      "sha256": "3cba217d2d2ecfed368ac1559814d8f138a3573a27cbcee949e38ff711998d1b"
+    },
+    "target/task-tmp/css-host-color/ruff-final.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/css-host-color/ruff.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/css-host-color/runtime-equality.json": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/cc184a0aeae0dd0f78eee02b960ac7b7f743f256c81ccb4f111a6f2042c712e4.gz",
+      "archiveBytes": 819,
+      "archiveSha256": "f78d8d32d2b63dcfcd64c31d3694cb270133380d2da93c5e3c6eddc9fb43a256",
+      "bytes": 3735,
+      "sha256": "cc184a0aeae0dd0f78eee02b960ac7b7f743f256c81ccb4f111a6f2042c712e4"
+    },
+    "target/task-tmp/css-host-color/seal-sources-final.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/2ee8f53717cea82d4e810c55a5c4000b04d462c054f4c74dcd2b0e8fd85ef0f5.gz",
+      "archiveBytes": 75,
+      "archiveSha256": "4499e9f9e49de9849837c09c51371361b6063e8862cb1a53e58ff1cc4ce991f3",
+      "bytes": 61,
+      "sha256": "2ee8f53717cea82d4e810c55a5c4000b04d462c054f4c74dcd2b0e8fd85ef0f5"
+    },
+    "target/task-tmp/css-host-color/seal-sources.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/2ee8f53717cea82d4e810c55a5c4000b04d462c054f4c74dcd2b0e8fd85ef0f5.gz",
+      "archiveBytes": 75,
+      "archiveSha256": "4499e9f9e49de9849837c09c51371361b6063e8862cb1a53e58ff1cc4ce991f3",
+      "bytes": 61,
+      "sha256": "2ee8f53717cea82d4e810c55a5c4000b04d462c054f4c74dcd2b0e8fd85ef0f5"
+    },
+    "target/task-tmp/css-host-color/seal-sources.py": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/c46d0054c717a2dc31961bba97b5fcc89c068485cf8acd774f7676fff6da5bec.gz",
+      "archiveBytes": 865,
+      "archiveSha256": "82df73c585cee5b62e143b4c7897c30dc58f23590ff6f221a88398ff6ac4d307",
+      "bytes": 1835,
+      "sha256": "c46d0054c717a2dc31961bba97b5fcc89c068485cf8acd774f7676fff6da5bec"
+    },
+    "target/task-tmp/css-host-color/typecheck.log": {
+      "archive": "spec/performance/browser-css-color-2026-11-08/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "externalExecutables": {
+    "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome": {
+      "bytes": 301186376,
+      "sha256": "377a9fc07b495c3b8d0ab8ec1fdfd153641759f9756fea34d8dfce4de82f5025"
+    },
+    "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin/node": {
+      "bytes": 124902584,
+      "sha256": "94efd062ed066c1a0b332e18249859c905e920eeada5df55d24c99b919629a90"
+    }
+  },
+  "failedAndUnqualified": [
+    "Initial separate-surface antialiased mark and backdrop full-canvas comparisons fail by four one-channel bytes; unchanged backdrop redraws with identical LUT reproduce this. Complete exact same-surface mark checks and complete exact GPU palette plus opaque backdrop paint are the bounded accepted contract; categorical whole-frame stability remains open.",
+    "Initial TS7 transpileModule probe API, mouseenter instead of pointerenter, bare-python capability generator missing numpy, and final old-client run without disk TMPDIR failed; corrected executions are separate retained evidence.",
+    "No-dither diagnostic did not disable DITHER after GLHost reset; no dither repair credit.",
+    "Comparison packages absent: no Matplotlib/Plotly local runtime comparison or superiority credit.",
+    "Development diagnostics and pre-final-build runs are archived, not credited as final client executions.",
+    "Browser Canvas2D readback performance hints and intended invalid literal diagnostic remain recorded; no chart page errors."
+  ],
+  "fresh": {
+    "CoreOwnership": {
+      "exit": 0,
+      "log": "target/task-tmp/css-host-color/core-ownership.log",
+      "passed": 17,
+      "scope": "Eight Core source/binding/real-CRLF plus nine ownership tests"
+    },
+    "buildClient": {
+      "exit": 0,
+      "log": "target/task-tmp/css-host-color/build-final-client.log"
+    },
+    "format": {
+      "exit": 0,
+      "log": "target/task-tmp/css-host-color/format-final.log"
+    },
+    "fullFoundation": {
+      "exit": 0,
+      "log": "target/task-tmp/css-host-color/final-foundation.log",
+      "report": "target/task-tmp/css-host-color/final-foundation.json",
+      "scope": "Existing complete source distribution foundation plus unconditional new CSS regression; report harnessCommit is precommit base, exact current harness/source hashes are separately bound"
+    },
+    "generatorsAssets": {
+      "exit": 0,
+      "logs": [
+        "target/task-tmp/css-host-color/abi-final.log",
+        "target/task-tmp/css-host-color/assets-final.log",
+        "target/task-tmp/css-host-color/capabilities-final.log"
+      ]
+    },
+    "geoHierarchy": {
+      "exit": 0,
+      "publications": 15,
+      "report": "target/task-tmp/css-host-color/geo-hierarchy.json",
+      "scope": "Packaged strict-CSP attachGeoWebview + actual Node native backend; not installed Jupyter/VSCode"
+    },
+    "hooks": {
+      "exit": 0,
+      "log": "target/task-tmp/css-host-color/precommit-final.log"
+    },
+    "publicCss": {
+      "backdrops": 3,
+      "completeMarkCanvas": true,
+      "detachedHealed": true,
+      "exactPaletteBytesEach": 1024,
+      "exit": 0,
+      "legacyAlpha": 0.55,
+      "marks": 12,
+      "remainingCharts": 0,
+      "report": "target/task-tmp/css-host-color/final-cohort.json",
+      "sourceGeometryUploads": 0
+    },
+    "pythonRelated": {
+      "command": "uv run --no-sync pytest -q tests/test_css_validation.py tests/test_css_mark_styles.py tests/test_theme_tokens.py tests/test_capability_registry.py",
+      "exit": 0,
+      "log": "target/task-tmp/css-host-color/related-python-final.log",
+      "passed": 92,
+      "xfailed": 7
+    },
+    "ruff": {
+      "exit": 0,
+      "log": "target/task-tmp/css-host-color/ruff-final.log"
+    }
+  },
+  "inheritance": [
+    "Native/WASM algorithms,324 compiled/config inputs,artifacts remain base-exact. Parent engine proofs inherit only over this equality.",
+    "Actual Jupyter/VSCode application tests remain parent receipt evidence; final current client has fresh packaged native-browser hierarchy proof only.",
+    "No broad Rust/Python/Node suite, massive theme timing, all-host,WebKit/HDR or wholeimage AA result is claimed."
+  ],
+  "module": {
+    "bytes": 1895719,
+    "functionExports": 68,
+    "imports": 0,
+    "node22Gzip6": 786385,
+    "sha256": "4cd1e964a16fb8be527b552dae50f94729e80d79ed8bcf936b53601914c8feba"
+  },
+  "negativeControl": {
+    "clientSha256": "af48bff857ca4515d55ff5828e7020f5fcf5aa164aa41632fba404688ada0758",
+    "command": "TMPDIR=/var/tmp XYG_COLOR_CLIENT=<pinned af83 index.js> node scripts/css_color_bridge_smoke.mjs",
+    "exit": 1,
+    "expectedFailure": "mark RGBA differs from browser sRGB conversion: oklch(60% 0.2 30)",
+    "finalAssertions": true,
+    "log": "target/task-tmp/css-host-color/baseline-final-negative-disk.log"
+  },
+  "parentPreservation": {
+    "allHistoricalPerformanceEvidenceUnchanged": true,
+    "changedParentPaths": [
+      ".gitattributes",
+      "docs/styling/capabilities.md",
+      "docs/styling/themes-and-tokens.md",
+      "js/src/20_theme.ts",
+      "scripts/gen_capability_matrix.py",
+      "scripts/wasm_foundation_smoke.mjs",
+      "spec/api/capability-matrix.md",
+      "spec/design-dossier.md",
+      "tests/test_graphforge_contract_corpus.py"
+    ],
+    "nativeAndWasmProductionUnchanged": true,
+    "protectedModeObjects": 21620
+  },
+  "readmeSha256": "98d28e160e447e0c5198a1f178954a2328afd2fe4d62e07bb1c5bdc7364d454d",
+  "recordedAt": "2026-11-08T06:02:55.829815+00:00",
+  "remaining": [
+    "Independent final-diff review",
+    "Current-main,final-head hosted CI and merge queue",
+    "All listed whole-issue/milestone acceptance; global Canvas/driver/process budgeting and intended60fps100M theme target"
+  ],
+  "schemaVersion": 1,
+  "scope": "Browser-native CSS Color4 sRGB conversion through existing retained theme/paint bridge; one production module",
+  "shippingArtifacts": {
+    "packages/xy-client/dist/index.js": {
+      "bytes": 856281,
+      "sha256": "2afad9d735004bff948215b0d598efc00bbe4e50a05686c2e88bb6168b1d245a"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 856296,
+      "sha256": "260604ced79fc5c8b1995f548eb59ffa9cc1bfd456867e2dedcea7610e8be1d1"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2548750,
+      "sha256": "128586393e0a576b7d54f6d8354e297d3ccc4cf72e2594280510075e6c08b20f"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "0460b161e4b45690a2a6f18bce57549a088d8ee0606d76afc2f352227f72fbc1"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1895719,
+      "sha256": "4cd1e964a16fb8be527b552dae50f94729e80d79ed8bcf936b53601914c8feba"
+    },
+    "target/release/libxyg_core.so": {
+      "bytes": 6374200,
+      "sha256": "1ac386f0d7af618a757fb51cca883f0c409f3991c976f7a9df0562f69524d316"
+    }
+  },
+  "sourceBindings": {
+    "current": 3368,
+    "historical": 824,
+    "parents": 7,
+    "path": "spec/performance/browser-css-color-2026-11-08/current-bindings.json",
+    "sha256": "4988af38440e77bb4ff88f87a605bb48cd9c31f221d3c96e46294974848b6b1e"
+  },
+  "unchangedCompiledInputs": 324
+}

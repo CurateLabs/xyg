@@ -1,0 +1,401 @@
+{
+  "schema": "xyg.filter-linked-density/v1",
+  "cases": [
+    {
+      "name": "open",
+      "status": 0,
+      "tier": 0,
+      "rows": 13,
+      "selected": null
+    },
+    {
+      "name": "configure-2d-five-views",
+      "status": 0,
+      "tier": 0,
+      "rows": 13,
+      "selected": null
+    },
+    {
+      "name": "all-paint",
+      "status": 0,
+      "tier": 3,
+      "rows": 0,
+      "selected": 13
+    },
+    {
+      "name": "aligned",
+      "status": 0,
+      "tier": 3,
+      "rows": 0,
+      "selected": 2
+    },
+    {
+      "name": "aligned-paint",
+      "status": 0,
+      "tier": 3,
+      "rows": 0,
+      "selected": 2
+    },
+    {
+      "name": "aligned-membership",
+      "status": 0,
+      "tier": 2,
+      "rows": 13,
+      "selected": 2
+    },
+    {
+      "name": "partial",
+      "status": 0,
+      "tier": 2,
+      "rows": 13,
+      "selected": 2
+    },
+    {
+      "name": "partial-paint",
+      "status": 0,
+      "tier": 2,
+      "rows": 13,
+      "selected": 2
+    },
+    {
+      "name": "partial-membership",
+      "status": 0,
+      "tier": 2,
+      "rows": 13,
+      "selected": 2
+    },
+    {
+      "name": "zero",
+      "status": 0,
+      "tier": 2,
+      "rows": 13,
+      "selected": 2
+    },
+    {
+      "name": "zero-paint",
+      "status": 0,
+      "tier": 2,
+      "rows": 13,
+      "selected": 2
+    },
+    {
+      "name": "zero-membership",
+      "status": 0,
+      "tier": 2,
+      "rows": 13,
+      "selected": 2
+    },
+    {
+      "name": "reversed",
+      "status": 0,
+      "tier": 2,
+      "rows": 13,
+      "selected": 7
+    },
+    {
+      "name": "reversed-paint",
+      "status": 0,
+      "tier": 2,
+      "rows": 13,
+      "selected": 7
+    },
+    {
+      "name": "reversed-membership",
+      "status": 0,
+      "tier": 2,
+      "rows": 13,
+      "selected": 7
+    },
+    {
+      "name": "empty",
+      "status": 0,
+      "tier": 3,
+      "rows": 0,
+      "selected": 0
+    },
+    {
+      "name": "empty-paint",
+      "status": 0,
+      "tier": 3,
+      "rows": 0,
+      "selected": 0
+    },
+    {
+      "name": "empty-membership",
+      "status": 0,
+      "tier": 2,
+      "rows": 13,
+      "selected": 0
+    },
+    {
+      "name": "all-finite",
+      "status": 0,
+      "tier": 3,
+      "rows": 0,
+      "selected": 10
+    },
+    {
+      "name": "all-finite-paint",
+      "status": 0,
+      "tier": 3,
+      "rows": 0,
+      "selected": 10
+    },
+    {
+      "name": "all-finite-membership",
+      "status": 0,
+      "tier": 2,
+      "rows": 13,
+      "selected": 10
+    },
+    {
+      "name": "partial-refusal",
+      "status": 6,
+      "tier": 0,
+      "rows": 0,
+      "selected": null
+    },
+    {
+      "name": "nonfinite",
+      "status": 1,
+      "tier": 0,
+      "rows": 0,
+      "selected": null
+    },
+    {
+      "name": "clear",
+      "status": 0,
+      "tier": 2,
+      "rows": 13,
+      "selected": 13
+    },
+    {
+      "name": "A-and-B-base",
+      "status": 0,
+      "tier": 0,
+      "rows": 0,
+      "selected": null
+    },
+    {
+      "name": "base-rebuild",
+      "status": 0,
+      "tier": 2,
+      "rows": 13,
+      "selected": 10
+    },
+    {
+      "name": "C-a",
+      "status": 0,
+      "tier": 2,
+      "rows": 13,
+      "selected": 5
+    },
+    {
+      "name": "begin",
+      "status": 0,
+      "tier": 0,
+      "rows": 0,
+      "selected": null
+    },
+    {
+      "name": "switch-active-b",
+      "status": 0,
+      "tier": 0,
+      "rows": 13,
+      "selected": null
+    },
+    {
+      "name": "C-b-and-C-a",
+      "status": 0,
+      "tier": 3,
+      "rows": 0,
+      "selected": 2
+    },
+    {
+      "name": "composed-paint",
+      "status": 0,
+      "tier": 3,
+      "rows": 0,
+      "selected": 2
+    },
+    {
+      "name": "composed-membership",
+      "status": 0,
+      "tier": 2,
+      "rows": 13,
+      "selected": 2
+    },
+    {
+      "name": "cancel-edit",
+      "status": 0,
+      "tier": 0,
+      "rows": 0,
+      "selected": null
+    },
+    {
+      "name": "cancel-restored-paint",
+      "status": 0,
+      "tier": 2,
+      "rows": 13,
+      "selected": 5
+    },
+    {
+      "name": "cancel-restored-membership",
+      "status": 0,
+      "tier": 2,
+      "rows": 13,
+      "selected": 5
+    },
+    {
+      "name": "begin-again",
+      "status": 0,
+      "tier": 0,
+      "rows": 0,
+      "selected": null
+    },
+    {
+      "name": "switch-active-c",
+      "status": 0,
+      "tier": 0,
+      "rows": 13,
+      "selected": null
+    },
+    {
+      "name": "C-c",
+      "status": 0,
+      "tier": 3,
+      "rows": 0,
+      "selected": 2
+    },
+    {
+      "name": "commit",
+      "status": 0,
+      "tier": 0,
+      "rows": 0,
+      "selected": null
+    },
+    {
+      "name": "evict",
+      "status": 0,
+      "tier": 0,
+      "rows": 0,
+      "selected": null
+    },
+    {
+      "name": "evicted-membership",
+      "status": 0,
+      "tier": 2,
+      "rows": 13,
+      "selected": 2
+    },
+    {
+      "name": "automatic-rebuild",
+      "status": 0,
+      "tier": 2,
+      "rows": 13,
+      "selected": 2
+    },
+    {
+      "name": "append-with-persistent-mask",
+      "status": 0,
+      "tier": 0,
+      "rows": 1,
+      "selected": null
+    },
+    {
+      "name": "append-rebuild-mask-excludes-new-row",
+      "status": 0,
+      "tier": 2,
+      "rows": 14,
+      "selected": 2
+    },
+    {
+      "name": "append-membership",
+      "status": 0,
+      "tier": 2,
+      "rows": 14,
+      "selected": 2
+    },
+    {
+      "name": "remove-base-mask",
+      "status": 0,
+      "tier": 0,
+      "rows": 0,
+      "selected": null
+    },
+    {
+      "name": "base-invalidation-paint",
+      "status": 0,
+      "tier": 2,
+      "rows": 14,
+      "selected": 3
+    },
+    {
+      "name": "clear-after-eviction",
+      "status": 0,
+      "tier": 0,
+      "rows": 0,
+      "selected": null
+    },
+    {
+      "name": "clear-without-index",
+      "status": 0,
+      "tier": 2,
+      "rows": 14,
+      "selected": 14
+    },
+    {
+      "name": "clear-paint",
+      "status": 0,
+      "tier": 3,
+      "rows": 0,
+      "selected": 14
+    },
+    {
+      "name": "product-budget-refusal",
+      "status": 2,
+      "tier": 0,
+      "rows": 0,
+      "selected": null
+    },
+    {
+      "name": "zero-domain-refusal",
+      "status": 1,
+      "tier": 0,
+      "rows": 0,
+      "selected": null
+    },
+    {
+      "name": "after-refused-config",
+      "status": 0,
+      "tier": 3,
+      "rows": 0,
+      "selected": 14
+    },
+    {
+      "name": "capacity-failure",
+      "status": -4
+    },
+    {
+      "name": "capacity-failed-intent-not-published",
+      "status": 0,
+      "tier": 3,
+      "rows": 0,
+      "selected": 14
+    },
+    {
+      "name": "cancellation-watermark",
+      "status": 0,
+      "tier": 0,
+      "rows": 0,
+      "selected": null
+    },
+    {
+      "name": "after-cancel-newer",
+      "status": 0,
+      "tier": 3,
+      "rows": 0,
+      "selected": 14
+    }
+  ]
+}

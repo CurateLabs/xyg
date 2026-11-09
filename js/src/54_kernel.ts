@@ -1,5 +1,5 @@
 import { GPUAdmissionPending } from "./41_gpu_storage";
-import { payloadBuffers } from "./00_header";
+import { payloadBuffers, payloadCoherent } from "./00_header";
 import { buildLutData } from "./10_colormaps";
 import { parseColor } from "./20_theme";
 import {
@@ -25,7 +25,7 @@ const APPEND_REFINE_MAX_WAIT_MS = 300;
 
 Object.assign(ChartView.prototype, {
   _scheduleViewRequest(viewOverride = this.view, opts: any = {}) {
-    if (this._destroyed || this._glLost) return;
+    if (this._destroyed || this._glLost || this._filterDashboard) return;
     // An explicitly attached direct-WASM density handle is authoritative for
     // its supported trace even when this ChartView has a kernel transport.
     // Do not also send a density_view fallback that could race its XYAO grid.
@@ -266,7 +266,7 @@ Object.assign(ChartView.prototype, {
   // Compatibility entrypoint for callers that used the former standalone
   // sample re-bin path. Only an attached Rust/WASM handle may refine.
   _scheduleSampleRebin(viewOverride = this.view, opts: any = {}) {
-    if (this._destroyed || this._glLost) return;
+    if (this._destroyed || this._glLost || this._filterDashboard) return;
     // Direct Rust/WASM owns the only browser density aggregation path. It
     // retains the existing surface while it aggregates and rejects obsolete
     // viewport results by sequence.
@@ -330,6 +330,7 @@ Object.assign(ChartView.prototype, {
   // leaves the retained sample overlay alone (it is the re-bin source and the
   // deep-zoom point overlay). Texture lifetime stays with the LOD cache.
   _applySampleRebinGrid(g, density, rebinned) {
+    if (this._filterDashboard) return;
     g.prevDensity = g.density;
     g._densityFadeStart = this._now();
     g.densityNormMax = density.normMax || density.max;
@@ -346,7 +347,83 @@ Object.assign(ChartView.prototype, {
   // changed. An affected direct scatter/line whose encoding is unchanged
   // updates GPU buffers in place with a tail-only upload; everything else
   // rebuilds. Payloads may use split or legacy packed layout.
+  // XYGC replacements retain the camera, original home, and history verbatim.
+  _chunkedMemoryReport() {
+    const payloadOwners = new Set((Array.isArray(this._payload) ? this._payload : [this._payload]).filter(Boolean).map(b => b.buffer || b));
+    let gpuBytes = 0;
+    const gl = this.gl, seen = new Set();
+    if (gl && !this._glLost) {
+      const previous = gl.getParameter(gl.ARRAY_BUFFER_BINDING);
+      for (const owner of [this, ...this.gpuTraces]) for (const buffer of Object.values(owner)) {
+        if (!buffer || seen.has(buffer) || Object.prototype.toString.call(buffer) !== "[object WebGLBuffer]" || !gl.isBuffer(buffer)) continue;
+        seen.add(buffer); gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gpuBytes += gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
+      }
+      gl.bindBuffer(gl.ARRAY_BUFFER, previous);
+    }
+    return {paint_payload_capacity_bytes: [...payloadOwners].reduce((n, b: any) => n + b.byteLength, 0),
+      renderer_buffer_bytes_observed: gpuBytes, renderer_buffer_count: seen.size,
+      frontend_canvas_rgba8_bytes: this.canvas.width * this.canvas.height * 4,
+      pick_rgba8_subset_bytes: this.pickTex ? this._pickW * this._pickH * 4 : 0,
+      renderer_requested_client_bytes: String(this._glHost?.clientResourceBytes(this) || 0n),
+      renderer_shared_rgba_and_storage_bytes: String(this._glHost?.sharedResourceBytes() || 0n),
+      renderer_host_storage: this._glHost ? Object.fromEntries(Object.entries(this._glHost.storageSnapshot())
+        .map(([key, value]) => [key, typeof value === "bigint" ? String(value) : value])) : null,
+      process_or_gpu_total: false};
+  },
+
+  _applyChunkedFrame(msg, buffers) {
+    // Refinement replaces data, not the original chart's layout/home metadata.
+    const spec = {...this.spec, columns: msg.spec?.columns, traces: msg.spec?.traces,
+      buffer_layout: msg.spec?.buffer_layout, chunked: {...this.spec.chunked, ...msg.spec?.chunked}};
+    if (this._destroyed || this._glLost || !this.gl || (this._glHost && !this._glHost.clientAdmitted(this))) return false;
+    if (!spec?.chunked || !payloadCoherent(spec, buffers)) return false;
+    const payload = payloadBuffers(spec, spec.buffer_layout === "split" ? buffers : buffers[0]);
+    const next = [];
+    const previousSpec = this.spec;
+    try {
+      this.spec = spec;
+      if (!this._glLost && this.gl) {
+        for (const trace of spec.traces) next.push(this._buildTrace(payload, trace));
+      }
+    } catch (error) {
+      const seen = new Set();
+      for (const trace of next) this._destroyTraceResources(trace, seen);
+      this._dispatchChartEvent("chunked_error", {message: String(error)});
+      return false;
+    } finally {
+      this.spec = previousSpec;
+    }
+    // Hover targets retain the old trace object. Retire them before deleting
+    // its buffers so a pending draw cannot dereference a freed pick anchor.
+    this._hideTooltip();
+    this._hoverTarget = null;
+    this._hoverId = -1;
+    this._lastHoverXY = null;
+    this._a11yKeyboardReadout = null;
+    const previousPayload = this._payload, previousTraces = this.gpuTraces;
+    this.spec = spec;
+    this._payload = payload;
+    this.gpuTraces = next;
+    this._pickSeq = (this._pickSeq || 0) + 1;
+    this._restoreSceneIds();
+    this._reapplyLegendVisibility();
+    this._updatePickable();
+    let painted = false;
+    try { painted = this._drawNow() !== false; }
+    catch (error) { this._dispatchChartEvent("chunked_error", {message: String(error)}); }
+    if (!painted) {
+      this.spec = previousSpec; this._payload = previousPayload; this.gpuTraces = previousTraces;
+      const seen = new Set(); for (const trace of next) this._destroyTraceResources(trace, seen);
+      this._updatePickable(); this.draw(); return false;
+    }
+    const seen = new Set();
+    for (const trace of previousTraces) this._destroyTraceResources(trace, seen);
+    return true;
+  },
+
   _applyAppend(msg, buffers) {
+    if (this._filterDashboard) { this._filterDashboard.invalidateSource(); return; }
     const spec = msg.spec;
     if (!spec || !spec.traces) return;
     const raw = spec.buffer_layout === "split" ? buffers : buffers && buffers[0];
@@ -662,9 +739,15 @@ Object.assign(ChartView.prototype, {
   },
 
   _onKernelMsg(msg, buffers) {
+    if (this._filterDashboard) {
+      if (msg?.type === "append") this._filterDashboard.invalidateSource();
+      else if (["selection", "selection_rows", "state_patch"].includes(msg?.type)) this._filterDashboard.rejectExternal(msg.type);
+      return;
+    }
     if (this._destroyed) return;
     if (!msg) return;
     if ((this._glLost || (this._glHost && !this._glHost.clientAdmitted(this))) && msg.type !== "append" && msg.type !== "pick_result") return;
+    if (msg.chunked_frame !== undefined && msg.chunked_frame !== this.spec.chunked?.frame) return;
     if (msg.type === "tier_update") {
       if (msg.seq !== this.seq) return;
       for (const upd of msg.traces) {
@@ -826,12 +909,22 @@ Object.assign(ChartView.prototype, {
       if (msg.bounds) this._lastBrush = { mode: "box", ...msg.bounds };
       else if (msg.polygon) this._lastBrush = { mode: "poly", points: msg.polygon };
       if (!msg.traces || !msg.traces.length) this._lastBrush = null;
+      const sourceRows = [];
+      for (const ref of msg.source_row_ids || []) {
+        const raw = buffers?.[ref.buffer];
+        const span = raw instanceof ArrayBuffer ? {buffer: raw, byteOffset: 0, byteLength: raw.byteLength} : raw;
+        if (!span || ref.dtype !== "u64" || !Number.isSafeInteger(ref.length) || ref.length < 0
+            || span.byteLength !== ref.length * 8 || span.byteOffset % 8) return;
+        sourceRows.push({trace: ref.trace, ids: new BigUint64Array(span.buffer, span.byteOffset, ref.length)});
+      }
       this._applySelectionBuffers(msg, buffers);
       this._selectionCount = msg.total || 0;
       this.draw();
       if (msg.suppress_event !== true && this._interactionFlag("select", true)) {
         this._dispatchChartEvent("select", {
           total: this._selectionCount,
+          source_row_ids: sourceRows,
+          frame: msg.chunked_frame,
           view: this._eventView("select"),
         });
       }

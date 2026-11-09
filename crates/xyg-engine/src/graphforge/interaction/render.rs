@@ -15,7 +15,7 @@
 use std::borrow::Cow;
 
 use super::{GraphSession, InteractionStatus, OpHeader, OpOutcome, World};
-use crate::graph::{build_render, LodTier, Viewport, COSE_NO_PARENT};
+use crate::graph::{build_render_preallocated as build_render, LodTier, Viewport, COSE_NO_PARENT};
 use crate::graph_interaction_state::{
     ElementSet, Focus, GraphEntity, GraphInteractionState, HighlightPlane,
 };
@@ -44,6 +44,15 @@ pub struct Camera {
 }
 
 impl Camera {
+    /// Canonical CSS-pixel mapping shared by live paint and frozen validation.
+    #[inline]
+    pub(crate) fn project(&self, x: f64, y: f64) -> [f64; 2] {
+        [
+            x * self.scale_x + self.offset_x,
+            y * self.scale_y + self.offset_y,
+        ]
+    }
+
     pub(super) fn validate(&self) -> Result<(), InteractionStatus> {
         let finite = [
             self.scale_x,
@@ -187,6 +196,7 @@ impl GraphSession {
         self.published
             .as_ref()
             .filter(|_| self.published_revision == self.render_revision)
+            .map(AsRef::as_ref)
     }
 
     /// Resolve a reference, aggregates against the current publication.
@@ -206,7 +216,7 @@ impl GraphSession {
                 }
                 Ok(Resolved::Group { render: index })
             }
-            other => match self.identity.resolve(other) {
+            other => match self.source.identity.resolve(other) {
                 Ok(index) => Ok(Resolved::Element(index)),
                 Err(ResolveError::Unresolved | ResolveError::NeedsRender) => {
                     Err(InteractionStatus::Invalid)
@@ -220,7 +230,10 @@ impl GraphSession {
         &mut self,
         visibility: Option<(&[u8], &[u8])>,
     ) -> Result<Visible, InteractionStatus> {
-        let (n, e) = (self.identity.node_count(), self.identity.edge_count());
+        let (n, e) = (
+            self.source.identity.node_count(),
+            self.source.identity.edge_count(),
+        );
         let mut node = vec![1u8; n];
         let mut edge = vec![1u8; e];
         if let Some((nodes, edges)) = visibility {
@@ -228,7 +241,7 @@ impl GraphSession {
                 return Err(InteractionStatus::Invalid);
             }
             node.copy_from_slice(nodes);
-            for (index, &ordinal) in self.edge_ordinal.iter().enumerate() {
+            for (index, &ordinal) in self.source.edge_ordinal.iter().enumerate() {
                 if ordinal != u32::MAX {
                     edge[index] = *edges
                         .get(ordinal as usize)
@@ -238,8 +251,8 @@ impl GraphSession {
         }
         for index in 0..e {
             let (s, t) = (
-                self.edge_source[index] as usize,
-                self.edge_target[index] as usize,
+                self.source.edge_source[index] as usize,
+                self.source.edge_target[index] as usize,
             );
             edge[index] &= node[s] & node[t];
         }
@@ -255,14 +268,14 @@ impl GraphSession {
     pub(super) fn surviving_hierarchy(&self, node_visible: &[u8]) -> Hierarchy<'_> {
         if node_visible.iter().all(|&v| v == 1) {
             return Hierarchy {
-                parent: Cow::Borrowed(&self.parent[..]),
-                valid: Cow::Borrowed(&self.parent_valid[..]),
+                parent: Cow::Borrowed(&self.source.parent[..]),
+                valid: Cow::Borrowed(&self.source.parent_valid[..]),
                 collapsed: Cow::Borrowed(&self.collapsed[..]),
                 work: 0,
             };
         }
         let visible: Vec<bool> = node_visible.iter().map(|&v| v == 1).collect();
-        let (ancestor, links) = nearest_visible_ancestors(&self.parent, &visible);
+        let (ancestor, links) = nearest_visible_ancestors(&self.source.parent, &visible);
         let parent: Vec<u64> = (0..visible.len())
             .map(|i| {
                 if visible[i] {
@@ -297,7 +310,7 @@ impl GraphSession {
             camera.validate()?;
         }
         self.locked(|session, world| session.publish(camera, world))??;
-        self.published.as_ref().ok_or(InteractionStatus::Invalid)
+        self.published.as_deref().ok_or(InteractionStatus::Invalid)
     }
 
     fn publish(
@@ -324,26 +337,30 @@ impl GraphSession {
         }
         self.camera = camera;
         self.published_revision = self.render_revision;
-        self.published = Some(output);
+        self.published = Some(std::sync::Arc::new(output));
         Ok(())
     }
 
-    pub(super) fn collect_inputs(&mut self, state: &GraphInteractionState, vis: &Visible) -> Inputs {
-        let mut node_flags = self.node_style.flags.clone();
-        let mut edge_flags = self.edge_style.flags.clone();
+    pub(super) fn collect_inputs(
+        &mut self,
+        state: &GraphInteractionState,
+        vis: &Visible,
+    ) -> Inputs {
+        let mut node_flags = self.source.node_style.initial_flags();
+        let mut edge_flags = self.source.edge_style.initial_flags();
         let mark = |set: &ElementSet, flag: u32, nodes: &mut [u32], edges: &mut [u32]| {
             for id in &set.nodes {
-                if let Some(i) = self.identity.node_index(id) {
+                if let Some(i) = self.source.identity.node_index(id) {
                     nodes[i] |= flag;
                 }
             }
             for id in &set.edges {
-                if let Some(i) = self.identity.edge_index(id) {
+                if let Some(i) = self.source.identity.edge_index(id) {
                     edges[i] |= flag;
                 }
             }
             for key in &set.derived {
-                if let Some(i) = self.identity.resolve_derived_key(key) {
+                if let Some(i) = self.source.identity.resolve_derived_key(key) {
                     edges[i] |= flag;
                 }
             }
@@ -367,23 +384,23 @@ impl GraphSession {
             );
         }
         for id in state.pinned_nodes() {
-            if let Some(i) = self.identity.node_index(id) {
+            if let Some(i) = self.source.identity.node_index(id) {
                 node_flags[i] |= FLAG_PINNED;
             }
         }
         match state.focus() {
             Some(Focus::Entity(GraphEntity::Node(id))) => {
-                if let Some(i) = self.identity.node_index(id) {
+                if let Some(i) = self.source.identity.node_index(id) {
                     node_flags[i] |= FLAG_FOCUSED;
                 }
             }
             Some(Focus::Entity(GraphEntity::Edge(id))) => {
-                if let Some(i) = self.identity.edge_index(id) {
+                if let Some(i) = self.source.identity.edge_index(id) {
                     edge_flags[i] |= FLAG_FOCUSED;
                 }
             }
             Some(Focus::Derived(key)) => {
-                if let Some(i) = self.identity.resolve_derived_key(key) {
+                if let Some(i) = self.source.identity.resolve_derived_key(key) {
                     edge_flags[i] |= FLAG_FOCUSED;
                 }
             }
@@ -414,7 +431,7 @@ impl GraphSession {
     /// leaves a previously expanded hover set on unrelated source nodes.
     fn apply_hover(&mut self, inputs: &mut Inputs, collapse: &mut CompoundCollapse, vis: &Visible) {
         if !self.hover.nodes.is_empty() {
-            let mut hovered = vec![false; self.identity.node_count()];
+            let mut hovered = vec![false; self.source.identity.node_count()];
             for &node in &self.hover.nodes {
                 if vis.node[node] == 1 {
                     let representative = collapse.representative[node];
@@ -423,7 +440,7 @@ impl GraphSession {
                     inputs.node_flags[node] |= FLAG_HOVERED;
                 }
             }
-            for edge in 0..self.edge_source.len() {
+            for edge in 0..self.source.edge_source.len() {
                 if vis.edge[edge] == 0 || !collapse.edge_keep[edge] {
                     continue;
                 }
@@ -436,7 +453,8 @@ impl GraphSession {
                     inputs.node_flags[s] |= FLAG_NEIGHBOR;
                 }
             }
-            self.work += (hovered.len() + self.hover.nodes.len() + self.edge_source.len()) as u64;
+            self.work +=
+                (hovered.len() + self.hover.nodes.len() + self.source.edge_source.len()) as u64;
         }
         for &edge in &self.hover.edges {
             if vis.edge[edge] == 1 && collapse.edge_keep[edge] {
@@ -452,25 +470,54 @@ impl GraphSession {
         state: &GraphInteractionState,
         vis: &Visible,
     ) -> Result<RenderOutput, InteractionStatus> {
-        let (n, e) = (self.identity.node_count(), self.identity.edge_count());
+        let (n, e) = (
+            self.source.identity.node_count(),
+            self.source.identity.edge_count(),
+        );
         let mut inputs = self.collect_inputs(state, vis);
-        let hierarchy = self.surviving_hierarchy(&vis.node);
-        let mut collapse = compound_collapse(
-            &hierarchy.parent,
-            &hierarchy.valid,
-            &hierarchy.collapsed,
-            &inputs.node_flags,
-            &self.edge_source,
-            &self.edge_target,
-        )
-        .ok_or(InteractionStatus::Invalid)?;
-        let mut work = (n + e) as u64 + hierarchy.work;
-        drop(hierarchy);
-        self.apply_hover(&mut inputs, &mut collapse, vis);
+        // Identity topology uses the same mathematical collapse result without
+        // constructing maps that the canonical kernel never reads. Hover keeps
+        // the general topology realization, including its neighbor semantics.
+        let flat = self.source.parent_valid.iter().all(|&v| v == 0)
+            && self.collapsed.iter().all(|&v| v == 0)
+            && vis.node.iter().chain(&vis.edge).all(|&v| v == 1);
+        let mut work = (n + e) as u64;
+        let collapse = if flat && self.hover.nodes.is_empty() && self.hover.edges.is_empty() {
+            CompoundCollapse {
+                flags: inputs.node_flags.clone(),
+                visible: Vec::new(),
+                representative: Vec::new(),
+                edge_keep: Vec::new(),
+                edge_source: Vec::new(),
+                edge_target: Vec::new(),
+            }
+        } else {
+            let hierarchy = self.surviving_hierarchy(&vis.node);
+            work += hierarchy.work;
+            let mut collapse = compound_collapse(
+                &hierarchy.parent,
+                &hierarchy.valid,
+                &hierarchy.collapsed,
+                &inputs.node_flags,
+                &self.source.edge_source,
+                &self.source.edge_target,
+            )
+            .ok_or(InteractionStatus::Invalid)?;
+            drop(hierarchy);
+            self.apply_hover(&mut inputs, &mut collapse, vis);
+            if flat {
+                collapse.edge_source = Vec::new();
+                collapse.edge_target = Vec::new();
+                collapse.edge_keep = Vec::new();
+                collapse.representative = Vec::new();
+                collapse.visible = Vec::new();
+            }
+            collapse
+        };
 
         let (x, y) = self.positions.as_ref().ok_or(InteractionStatus::Invalid)?;
         let active: Vec<bool> = (0..n)
-            .map(|s| vis.node[s] == 1 && collapse.visible[s])
+            .map(|s| vis.node[s] == 1 && (flat || collapse.visible[s]))
             .collect();
         let masked = |plane: &[f64]| -> Vec<f64> {
             plane
@@ -479,23 +526,43 @@ impl GraphSession {
                 .map(|(&v, &on)| if on { v } else { f64::NAN })
                 .collect()
         };
-        let (mx, my) = (masked(x), masked(y));
-        let kept: Vec<usize> = (0..e)
-            .filter(|&i| vis.edge[i] == 1 && collapse.edge_keep[i])
-            .collect();
-        let ks: Vec<u64> = kept
-            .iter()
-            .map(|&i| collapse.edge_source[i] as u64)
-            .collect();
-        let kt: Vec<u64> = kept
-            .iter()
-            .map(|&i| collapse.edge_target[i] as u64)
-            .collect();
-        work += (n + e + kept.len()) as u64;
+        let (mx, my): (Cow<'_, [f64]>, Cow<'_, [f64]>) = if flat {
+            (Cow::Borrowed(x), Cow::Borrowed(y))
+        } else {
+            (Cow::Owned(masked(x)), Cow::Owned(masked(y)))
+        };
+        let kept: Vec<usize> = if flat {
+            Vec::new()
+        } else {
+            (0..e)
+                .filter(|&i| vis.edge[i] == 1 && collapse.edge_keep[i])
+                .collect()
+        };
+        let (ks, kt): (Cow<'_, [u64]>, Cow<'_, [u64]>) = if flat {
+            (
+                Cow::Borrowed(&self.source.edge_source),
+                Cow::Borrowed(&self.source.edge_target),
+            )
+        } else {
+            (
+                Cow::Owned(
+                    kept.iter()
+                        .map(|&i| collapse.edge_source[i] as u64)
+                        .collect(),
+                ),
+                Cow::Owned(
+                    kept.iter()
+                        .map(|&i| collapse.edge_target[i] as u64)
+                        .collect(),
+                ),
+            )
+        };
+        let kept_len = ks.len();
+        work += (n + e + kept_len) as u64;
 
         let (node_budget, edge_budget) = (self.budgets.0.max(1), self.budgets.1.max(1));
         let node_cap = node_budget.min(n as u64) as usize;
-        let edge_cap = edge_budget.min(kept.len() as u64) as usize;
+        let edge_cap = edge_budget.min(kept_len as u64) as usize;
         let mut out_x = vec![0.0f64; node_cap];
         let mut out_y = vec![0.0f64; node_cap];
         let mut built_member = vec![NOT_RENDERED; n];
@@ -503,7 +570,7 @@ impl GraphSession {
         let mut out_t = vec![0u64; edge_cap];
         let (mut out_nodes, mut out_edges) = (0u64, 0u64);
         let mut offsets = vec![0u64; edge_cap + 1];
-        let mut members = vec![0u64; kept.len()];
+        let mut members = vec![0u64; kept_len];
         let decision = build_render(
             n as u64,
             &mx,
@@ -523,6 +590,10 @@ impl GraphSession {
             Some((&mut offsets, &mut members)),
         )
         .ok_or(InteractionStatus::Invalid)?;
+        drop(mx);
+        drop(my);
+        drop(ks);
+        drop(kt);
         let (rn, re) = (out_nodes as usize, out_edges as usize);
         out_x.truncate(rn);
         out_y.truncate(rn);
@@ -532,8 +603,11 @@ impl GraphSession {
         members.truncate(offsets[re] as usize);
         // Render-edge members back to composed (source) edge indices.
         for member in &mut members {
-            *member = kept[*member as usize] as u64;
+            if !flat {
+                *member = kept[*member as usize] as u64;
+            }
         }
+        drop(kept);
         work += (rn + re + members.len()) as u64;
 
         // Source node -> representative -> render node. A temporally invisible
@@ -544,7 +618,7 @@ impl GraphSession {
                 if vis.node[s] == 0 {
                     NOT_RENDERED
                 } else {
-                    built_member[collapse.representative[s]]
+                    built_member[if flat { s } else { collapse.representative[s] }]
                 }
             })
             .collect();
@@ -569,6 +643,15 @@ impl GraphSession {
             }
         }
 
+        drop(active);
+        drop(built_member);
+        drop(node_counts);
+        let collapse_flags = collapse.flags;
+        drop(collapse.visible);
+        drop(collapse.representative);
+        drop(collapse.edge_keep);
+        drop(collapse.edge_source);
+        drop(collapse.edge_target);
         let mut edge_flags = vec![0u32; re];
         let mut edge_render = vec![NOT_RENDERED; e];
         for r in 0..re {
@@ -601,6 +684,7 @@ impl GraphSession {
                 *at += 1;
             }
         }
+        drop(cursor);
         work += (n + rn) as u64;
         self.work += work;
 
@@ -617,8 +701,8 @@ impl GraphSession {
         let (edge_visual_states, edge_emphasis) = states(&edge_flags);
         let mut output = RenderOutput {
             revision,
-            source_node_flags: inputs.node_flags.clone(),
-            source_edge_flags: inputs.edge_flags.clone(),
+            source_node_flags: Vec::new(),
+            source_edge_flags: Vec::new(),
             paint: super::PaintGeometry::default(),
             pick: super::PickIndex::default(),
             tier: decision.tier,
@@ -639,16 +723,31 @@ impl GraphSession {
             focus_node,
             edge_render,
         };
+        if self.transaction_bytes.is_some_and(|limit| {
+            super::wire_memory::paint_peak(&output, n, e).is_none_or(|bytes| bytes > limit)
+        }) {
+            return Err(InteractionStatus::Budget);
+        }
         output.paint = super::paint::build(
             self,
             &output,
             camera,
             &node_flags,
             &edge_flags,
-            &collapse.flags,
+            &collapse_flags,
             &inputs.edge_flags,
             vis,
         )?;
+        output.source_node_flags = inputs.node_flags;
+        output.source_edge_flags = inputs.edge_flags;
+        // Capacities reflect actual publication populations, including Aggregate
+        // omissions. Release unused kernel output slots before retaining a frame.
+        output.node_x.shrink_to_fit();
+        output.node_y.shrink_to_fit();
+        output.edge_source.shrink_to_fit();
+        output.edge_target.shrink_to_fit();
+        output.edge_member_offsets.shrink_to_fit();
+        output.edge_members.shrink_to_fit();
         output.pick = super::PickIndex::build(&output.paint);
         Ok(output)
     }

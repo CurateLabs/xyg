@@ -1,0 +1,354 @@
+[
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 69350,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 24947,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 13937,
+      "exit_code": 0,
+      "output": "Warning: truncated output (original token count: 672)\nTotal output lines: 93\n\n/**\n * VS Code extension surface for `@curatelabs/xyg-node`.\n *\n * Architecture note:\n * - The **extension host** is a Node process — import this package\n *  …592 tokens truncated….x_axis ?? \"x\"));\n      const yr = axisRange(String(t.y_axis ?? \"y\"));\n      specTraces.push(\n2087:    return identity == null ? null : identity.pick(segment);\n"
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 76324,
+      "exit_code": 1,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 56003,
+      "exit_code": 1,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 56251,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 27603,
+      "exit_code": 1,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 54401,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 29279,
+      "exit_code": 1,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 32644,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 79738,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 32034,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 3364,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 35724,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 21343,
+      "exit_code": 2,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 14327,
+      "exit_code": 1,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 40397,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 32787,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 98513,
+      "exit_code": 1,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 94766,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 79476,
+      "exit_code": 2,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 60406,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 91763,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 83532,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 2894,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 47634,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 85532,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 81882,
+      "exit_code": 1,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 95803,
+      "exit_code": 1,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 69549,
+      "exit_code": 1,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 35210,
+      "exit_code": 1,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 8420,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 26308,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 62703,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 63269,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 94641,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 92165,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 25456,
+      "exit_code": 1,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 13535,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 6575,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 50597,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 85035,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 81435,
+      "exit_code": 0,
+      "output": ""
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "id": 26125,
+      "exit_code": 0,
+      "output": ""
+    }
+  }
+]

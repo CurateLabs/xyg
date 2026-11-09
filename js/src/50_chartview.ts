@@ -583,8 +583,8 @@ export class ChartView {
     // dense pyplot subplot grids legitimately build sub-120px panels whose
     // plot boxes must land exactly on their matplotlib rects.
     this.size = {
-      w: Math.max(this._borrowedSurface ? 1 : this.fluid ? 120 : 48, cw),
-      h: Math.max(this._borrowedSurface ? 1 : this.fluidH ? 120 : 48, ch),
+      w: Math.max(this._borrowedSurface || this.spec?._frozen_pixel_ratio ? 1 : this.fluid ? 120 : 48, cw),
+      h: Math.max(this._borrowedSurface || this.spec?._frozen_pixel_ratio ? 1 : this.fluidH ? 120 : 48, ch),
     };
     this._layout();
 
@@ -1629,6 +1629,7 @@ export class ChartView {
       const msg = event.data || {};
       if (msg.source === this._linkedSource) return;
       if (this._interactionFlag("link_select") && msg.selection) {
+        if (this._filterDashboard) { this._filterDashboard.rejectExternal("coordinate selection broadcast"); return; }
         const selection = msg.selection;
         // Linked applies update the durable-state mirror but never push
         // history (view-state.md §4) — dispatch: false already skips it.
@@ -1692,6 +1693,7 @@ export class ChartView {
   }
 
   _broadcastLinkedSelection(selection) {
+    if (this._filterDashboard) return;
     if (!this._linkChannel || !this._interactionFlag("link_select")) return;
     this._linkChannel.postMessage({ source: this._linkedSource, selection });
   }
@@ -2023,6 +2025,10 @@ export class ChartView {
       try {
         this._initGl(this._payload);
         this._glLost = false;
+        // Durable brush geometry belongs to the view, while its mask belongs
+        // to the rebuilt traces. Restore it before publishing the first frame;
+        // neither a new gesture nor an authoritative host event is needed.
+        this._restoreSelectionLocalMask(this._stateSelection, { localMask: true });
         // Compile the programs this chart actually uses and submit a complete
         // frame before advertising the replacement context as live. Under
         // process-wide pressure Chrome can lose a just-created context during
@@ -2490,7 +2496,7 @@ export class ChartView {
     const h = this.fluidH && cssH ? Math.max(120, Math.round(cssH)) : this.size.h;
     // Browser zoom changes devicePixelRatio with no container resize (R7);
     // re-read it so backing stores stay crisp on a pure-DPR change too.
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = this.spec?._frozen_pixel_ratio || window.devicePixelRatio || 1;
     if (!forceLayout && w === this.size.w && h === this.size.h && dpr === this.dpr) return;
     this.dpr = dpr;
     this.size.w = w;
@@ -2688,7 +2694,7 @@ export class ChartView {
   _initA11y() {
     if (!this.a11ySummary || !this.canvas) return;
     this.a11ySummary.textContent = this._a11ySummaryText();
-    const instruction = this._pickable
+    const instruction = this._filterDashboard ? this._filterDashboard.instructions(this) : this._pickable
       ? " Use Arrow keys to explore data points in series data order; Home and End jump to the first and last point; Escape closes the readout."
       : "";
     this.canvas.setAttribute("aria-label", `Plot area.${instruction}`);
@@ -2709,6 +2715,7 @@ export class ChartView {
   }
 
   _reductionBadgeItems() {
+    if (this._filterDashboard?.latest) return this._filterDashboard.badgeItems();
     const items = [];
     const traces = this.gpuTraces && this.gpuTraces.length
       ? this.gpuTraces
@@ -3996,16 +4003,16 @@ export class ChartView {
   }
 
   _initGl(buffer) {
-    const dpr = this._borrowedSurface?.pixelRatio || window.devicePixelRatio || 1;
+    const dpr = this._borrowedSurface?.pixelRatio || this.spec?._frozen_pixel_ratio || window.devicePixelRatio || 1;
     this.dpr = dpr;
-    this.canvas.width = this._borrowedSurface?.gl.drawingBufferWidth ?? this.plot.w * dpr;
-    this.canvas.height = this._borrowedSurface?.gl.drawingBufferHeight ?? this.plot.h * dpr;
-    this.chrome.width = this.size.w * dpr;
-    this.chrome.height = this.size.h * dpr;
+    this.canvas.width = this._borrowedSurface?.gl.drawingBufferWidth ?? (this.spec?._frozen_pixel_ratio?Math.round(this.plot.w*dpr):this.plot.w*dpr);
+    this.canvas.height = this._borrowedSurface?.gl.drawingBufferHeight ?? (this.spec?._frozen_pixel_ratio?Math.round(this.plot.h*dpr):this.plot.h*dpr);
+    this.chrome.width = this.spec?._frozen_pixel_ratio?Math.round(this.size.w*dpr):this.size.w*dpr;
+    this.chrome.height = this.spec?._frozen_pixel_ratio?Math.round(this.size.h*dpr):this.size.h*dpr;
     this.chrome.style.width = this.size.w + "px";
     this.chrome.style.height = this.size.h + "px";
-    this.overlay.width = this.size.w * dpr;
-    this.overlay.height = this.size.h * dpr;
+    this.overlay.width = this.spec?._frozen_pixel_ratio?Math.round(this.size.w*dpr):this.size.w*dpr;
+    this.overlay.height = this.spec?._frozen_pixel_ratio?Math.round(this.size.h*dpr):this.size.h*dpr;
     this.overlay.style.width = this.size.w + "px";
     this.overlay.style.height = this.size.h + "px";
 
@@ -4017,7 +4024,12 @@ export class ChartView {
       this._sharedGlAttempted = true;
       const host = acquireGLHost(document, this);
       if (host) {
-        const present = this.canvas.getContext("2d", { alpha: true });
+        // An explicit accelerated-copy hint prevents browser adaptive readback
+        // migration from changing Canvas2D color conversion by one LSB after
+        // getImageData/export. GPU pixels and the copy operation stay unchanged.
+        const present = this.canvas.getContext("2d", {
+          alpha: true, willReadFrequently: false,
+        });
         if (present) {
           this._glHost = host;
           this._present2d = present;
@@ -4283,7 +4295,7 @@ export class ChartView {
           grid: lodCopyGrid(grid),
           rgba,
           filter,
-          tex: this._uploadGrid(grid, d.w, d.h, d.max, rgba, filter, this._fillOpacity(t.style)),
+          tex: this._uploadGrid(grid, d.w, d.h, d.max, rgba, filter, this._fillOpacity(t.style), d.coverage === "resolved"),
           lut: this._lut(d.colormap),
         };
         g.sampleOverlay = this._buildDensitySample(t, d.sample, buffer);
@@ -5557,10 +5569,10 @@ export class ChartView {
     return tex;
   }
 
-  _uploadGrid(f32, w, h, maxVal, rgba = null, filter = "linear", pointAlpha = 1) {
+  _uploadGrid(f32, w, h, maxVal, rgba = null, filter = "linear", pointAlpha = 1, resolved = false) {
     const gl = this.gl;
     const tex = gl.createTexture();
-    lodWriteGridTexture(gl, tex, f32, w, h, maxVal, rgba, filter, pointAlpha);
+    lodWriteGridTexture(gl, tex, f32, w, h, maxVal, rgba, filter, pointAlpha, resolved);
     return tex;
   }
 
@@ -9294,6 +9306,7 @@ export class ChartView {
 
   destroy() {
     if (this._destroyed) return;
+    this._filterDashboard?.destroy();
     this._destroyed = true;
     if (this._dataAnim) {
       this._emitAnimationLifecycle?.("end", this._dataAnim.phase, { cancelled: true });

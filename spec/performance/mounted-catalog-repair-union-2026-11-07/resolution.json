@@ -1,0 +1,20 @@
+{
+  "parents": [
+    "2fe570c63abe5a9d976151dd460a50e56fc88aa9",
+    "84fa2691fd280c7375496714db97bf4655ffb600"
+  ],
+  "resolutions": [
+    ".gitattributes",
+    "crates/xyg-wasm/src/lib.rs",
+    "python/xyg/_figure.py",
+    "spec/releases/0.6.0-api-inventory.json",
+    "tests/browser/wasm_foundation_page.mjs",
+    "tests/test_graphforge_contract_corpus.py"
+  ],
+  "filterExportBodyParent": "2fe570c63abe5a9d976151dd460a50e56fc88aa9",
+  "temporalExportBodyParent": "84fa2691fd280c7375496714db97bf4655ffb600",
+  "allOtherWasmLibBytesParent": "2fe570c63abe5a9d976151dd460a50e56fc88aa9",
+  "nativeAbi": 403,
+  "wasmAbi": 37,
+  "scope": "Source integration checkpoint; fresh native/WASM build and combined qualification pending"
+}

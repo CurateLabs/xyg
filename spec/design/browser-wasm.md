@@ -199,6 +199,21 @@ Render recovery before more input. The path never calls canonicalScene,
 `prepareScene`, `layoutWasmCose` or legacy graph-mark compilation. Existing
 `renderWasmGraphForge` canonicalScene behavior remains unchanged.
 
+For publications without frames and with at most `floor(GLsizei_MAX/6)`
+rendered nodes, the retained painter reads the original offset-f32 coordinate
+bytes from two RGBA8UI textures and draws each node as six procedural vertices
+(`0,1,2,2,1,3`). This changes input binding and primitive submission only:
+the geometry/style reader and fragment shader are shared with the reference
+instanced binding, all rendered nodes remain present in original order, and
+normal/focus passes retain their order. Publications with frames or larger
+node counts keep the reference binding. There is no new LOD or culling rule.
+Coordinate textures are shared across both passes, replace their repeated
+coordinate buffers, and remain inside the existing object-identity allocation
+ledger and whole-chart eviction lifecycle. The shared host resets textures
+and samplers on units 0–4, including the two coordinate units, before every
+client pass. The normal source foundation checks exact reference/procedural
+RGBA for all six glyphs, dirty bindings, failed upload, and context recovery.
+
 The controller owns primary-click/keyboard capture, DOM focus, ARIA, text-only Rust companion
 pages and event dispatch. Rust owns focus order, selection, identities,
 provenance, summary and aligned row refs. Hover/gestures/link/temporal/update/
@@ -251,13 +266,18 @@ record the bounded contract and actual proof.
 | `js/src/63_graph_gpu.ts` | GPU-v1 trust-boundary validation and raw buffer presentation through existing GLHost |
 | `js/src/49_wasm_chart.ts` | Bounded O(series) validation/framing and lifecycle handle; no record expansion or mark defaults |
 | `js/src/49_wasm_ticks.ts` | XYTK/XYTO codec plus latest-wins primary Cartesian ChartView attachment |
-| `dist/xyg-wasm.wasm` | Separately built direct-browser engine adapter; never copied into the Python static tree |
+| `dist/xyg-wasm.wasm` | Separately built direct-browser engine adapter; the single package producer also copies its verified bytes into Python static assets |
 
-The WASM adapter disables `xyg-engine`'s default `raster` feature. Native
-SVG/PNG/PDF export remains a native-host concern; browser output reuses the
-shared painter. The raw module must request no ambient WebAssembly imports.
+The WASM adapter disables `xyg-engine`'s default full `raster` feature and enables
+its shared `frozen-raster` capability for retained graph PNG. Native full-scene
+formats remain unchanged; frozen Scene/XYPB/SVG/HTML/PNG share Rust lowering,
+and HTML uses the shipped painter. The raw module must request no ambient WebAssembly imports.
+CI verifies the resolved normal feature graph: shared `frozen-raster` and the
+pinned vendored PNG are required, while full native `raster`/`default` features
+and `xyg-core` remain forbidden. It does not infer native format policy from
+the presence of PNG compression dependencies.
 
-**Artifact size.** `dist/xyg-wasm.wasm` is built with the workspace release
+**Historical artifact size.** Through ABI35, `dist/xyg-wasm.wasm` used the workspace release
 profile (`opt-level = 3`, fat LTO, one codegen unit, stripped) and is about
 921 KiB raw and 336 KiB gzipped at WASM ABI 27. ABI 28 with GeoColumn
 ingestion measures 968137 raw bytes and 352160 gzip bytes (level 9), within
@@ -1763,8 +1783,9 @@ R2 retained graph publications require the independent `clear.action.u32` v1
 after synchronous local admission to cancel an applicable Escape default; a
 later Rust refusal remains possible and is reported without replay or state
 replacement. Missing/malformed facts fail closed, including old same-ABI modules.
-The shared GLHost resets sampler and texture state on units 0–2 so the graph
-reference texture cannot inherit a neighbor's LINEAR sampler. See the
+The original shared GLHost contract reset sampler and texture state on units
+0–2 so the graph reference texture could not inherit a neighbor's LINEAR
+sampler. The procedural node binding extends that reset to units 0–4. See the
 [R2 receipt](../performance/graph-s5b-attachment-r2-2026-11-04/README.md).
 
 
@@ -1852,3 +1873,113 @@ reply guards; ordinary public temporal commands still cannot bypass the claim.
 See [the bounded retained temporal contract](temporal-graph.md#retained-automatic-presentation-bounded-45-slice)
 for scheduling, publication/refusal, UUID-state and disposal semantics. No ABI,
 package cap, layout/pick authority or runtime arena limit changes.
+
+### Frozen graph single-module profile (WASM36)
+
+The WASM36 qualification used target-only Rust `opt-level=2` and LLVM inline
+threshold50 for the single browser module. Native release remains O3. Fat LTO,
+one codegen unit, stripping, pinned Binaryen132 `-O3 --all-features`, exports,
+validation, 16/384-MiB runtime bounds, deadlines and the 1,927,168 raw / 786,432
+gzip6 packaging caps remain unchanged. This supersedes the historical compiler
+profile measurements above; the old receipts are immutable. No optional export
+module or second renderer is introduced. At the historical Worker-export
+checkpoint, the adapter disabled raster because the attempted shared PNG build
+exceeded those caps. That refusal and its receipts remain historical evidence.
+
+The [shared-PNG continuation](../performance/temporal-shared-png-2026-11-07/README.md)
+enables the shared Rust `frozen-raster` capability in this same module. Native,
+module Worker and offline Blob Worker PNG exports use the shared Scene/raster/
+PNG implementation. The qualified module is 1,886,125 raw / 784,655 Node22 gzip6
+bytes, below the unchanged caps. This standalone source qualification does not
+establish fit for a future combined-source/ABI module or full #45 acceptance.
+
+The [append-only continuation receipt](../performance/temporal-worker-export-2026-11-07/README.md)
+records same-source O3/inline50 versus O2/inline50 bytes, code/data attribution,
+complete output oracles, ABBA runtime observations, failed raster and optimizer
+attempts, normal packaging and full strict-CSP foundation. The profile is a
+size/runtime tradeoff, with no comparative speed or whole-#45 acceptance claim.
+The [frozen graph protocol](temporal-graph-frozen.md) owns XYFGv2, XYFX, accepted
+Worker/controller capture, CSS focus and offline Scene/XYPB ChartView HTML.
+
+### Combined filtering, catalog and frozen-export ABI
+
+The combined module uses native ABI405 and WASM ABI38. The declaration union
+retains all 551 native symbols and all 68 Worker exports, including XYFC
+filtering, XYTM temporal Scene compilation and XYFX frozen graph operations.
+Existing shared declarations retain their signatures. Both prior native403 and
+native404 fixture bytes remain append-only predecessors; only top-level ABI
+metadata may change when the normal fixture generators run. New adapters reject
+older incompatible native/Worker ABIs rather than silently dropping a feature.
+
+At the initial combined source checkpoint, the target compiler settings, native
+optimization, renderer, shared raster/PNG implementation and single-module size
+caps were unchanged. Standalone parent
+measurements do not qualify the combination; fresh combined native/WASM builds,
+package-size checks, cross-host packets, Scene/painter exports and actual Worker
+journeys are required. Integration evidence is retained in
+[the combined receipt](../performance/frozen-combined-module-2026-11-07/README.md).
+
+### Combined module function layout (WASM38)
+
+The wasm32 producer uses O2 with LLVM inlining threshold 0 and retains compiler
+function names until the pinned Binaryen132 `-O3 --all-features` pass completes.
+It then orders functions by name and strips debug/name sections. This supersedes
+the historical threshold50/early-stripping setting for this combined module;
+native O3 and stripping, Rust1.96, fat LTO, codegen1, dependencies, public
+declarations, validation, runtime budgets and packaging limits remain unchanged.
+That historical layout-qualified module retained all 68 function exports and
+no imports, measuring 1,897,244 raw /784,226 Node22 gzip6 bytes. The later
+[dense temporal/native navigation integration](../performance/dense-native-navigation-union-2026-11-08/README.md)
+retains the same exports and zero imports and measures **1,895,719 raw /786,385
+Node22 gzip6 bytes** against unchanged 1,927,168 /786,432 caps: **47 gzip bytes
+of headroom**. Earlier checkpoint measurements do not describe that combined
+module's remaining capacity.
+
+The [layout qualification receipt](../performance/combined-wasm-layout-2026-11-07/README.md)
+preserves the over-cap baseline and compiler/layout attribution separately.
+Same-source admitted outputs match; runtime samples include slower cases and
+do not establish a speed or competitor win. A selective projection hint and
+error-copy outlining were not retained. No optional module, second renderer,
+missing export, validator bypass or larger allowance supplies the size fit.
+Matching producer paths and affected browser/native/WASM journeys remain the
+required evidence; package fit alone does not close any milestone or issue.
+
+
+### Checked single-module source factoring continuation
+
+The source-factored active-milestone continuation is recorded in
+[the module-space recovery receipt](../performance/module-space-recovery-2026-11-08/README.md).
+It preserves native O3, the wasm32 O2/inline0 profile, pinned optimizer/order,
+all 68 functions, and the 1,927,168 raw / 786,432 gzip6 caps. Browser-only
+callback erasure shares exact wedge validation, lock/state transactions,
+text-list encoding, dash traversal and axis resolution; match-independent
+lease bookkeeping borrows the existing owners. Existing scalar writers retain
+endian and floating-bit semantics. Numeric filter buffers retain checked
+reservation and unchanged zero values. Native algorithms and all product
+admission, ordering, validation, rendering, output and disposal rules remain
+unchanged except the separately recorded co-owned temporal-job reservation
+correction. Complete output oracles and slower ABBA samples remain required;
+a size fit alone does not qualify final shipping or close milestones 4–7.
+
+### Current live-host and large-graph union qualification
+
+The current [live-host/large-graph union](../performance/current-large-graph-union-2026-11-09/README.md)
+combines the checked module factoring with controller-bound temporal Scenes,
+five issued geographic lanes and the hosted guard repairs. Fresh official
+native and WASM builds reproduce the factoring producer's artifacts. The
+single module is **1,886,348 raw /786,351 Node22 gzip6 bytes**, retains all 68
+functions and zero imports, and has **81 gzip bytes** under the unchanged cap.
+Earlier 47-byte and 27-byte measurements belong to their historical modules.
+The browser client is built from the complete union, not a parent client.
+
+Fresh source foundation and the 1M-primary/default1k-peer journey pass, including
+trusted input, camera, later progress, cancellation and disposal. Complete
+native/WASM/browser replies match for both large traces. The uninstrumented
+100k-primary/default1k-peer journey fails the existing scheduler wall limit;
+that live failure is not cleared by successful replay or an instrumented pass.
+Private timings locate the dominant wait in the host WebGL-to-Canvas2D copy,
+which includes completion of queued GPU work. These measurements do not yet
+separate rendering from readback cost or establish a repair. No Direct/LOD
+threshold, wall deadline, work/memory cap, peer or assertion is relaxed.
+General responsiveness, reliability, shipping and milestone acceptance remain
+unproved beyond the individually recorded bounded checks.

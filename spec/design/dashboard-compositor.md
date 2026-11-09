@@ -56,6 +56,13 @@ once to the host. Depth and stencil backing are disabled. Physical VRAM,
 implementation padding, driver retirement and Canvas2D presentation storage are
 not measured by this GPU logical-storage budget.
 
+The retained graph painter's eligible procedural node binding uploads its two
+raw coordinate planes as RGBA8UI textures once for both normal and focus
+passes. Their padded storage is charged before allocation, alongside the
+unchanged style/state/reference textures. Frame-bearing publications retain
+the instanced coordinate buffers. Both programs and all partial-build objects
+remain client-owned and are released on eviction, context loss and disposal.
+
 `applyDashboardResourceBudget(worker, budgetBytes, perChartBudgetBytes?)` and
 `watchDashboardResourceBudget` apply hierarchical whole-chart admission using
 the existing Rust XYDP planner. Where a per-chart cap is tighter than the
@@ -171,6 +178,25 @@ The issue's historical Reflex requirement conflicts with the current supported
 consumer contract; it does not authorize a Reflex product surface. No competitor
 performance win or full milestone closure is claimed.
 
+The same normal pressure command also mounts 32 ordinary composed views across
+line, scatter, histogram, grouped-bar and heatmap families. Box and polygon
+geometry survives whole-chart eviction and shared context loss. Before the
+first replacement frame, the existing local selection path rebuilds masks from
+retained CPU columns; no selection event, host command, link broadcast or history
+entry is replayed. Kernel-backed restoration retains its existing scatter-only
+preview universe. Row-index selections remain non-durable under the view-state
+contract.
+
+This bounded probe reads the actual GPU masks against authored row sets and
+compares complete presentation RGBA bytes, including evicted stand-ins. Its
+selected line/scatter use explicitly authored saturated red/blue paint; it does
+not qualify every default-palette antialiasing boundary. Real Tab/key events
+activate the same canonical scatter row before eviction and continue to the
+next row after readmission/context restoration, without changing a peer. An
+independent driver-call ledger checks logical buffer/texture storage and zero
+remaining allocations. The small fixtures do not establish mixed massive data,
+LOD/tile/graph pressure, latency, all-host accessibility or global CPU/WASM memory.
+
 
 ### Admission ownership and watcher cancellation
 
@@ -188,3 +214,11 @@ disposal. Existing and future work uses the most recent admitted budget intent.
 The normal 32-chart allocation oracle covers held real-WASM replies, different
 global budgets, per-chart zero caps, cancelled per-chart plans and superseded
 watcher notifications.
+
+The normal linked-filter Chromium conformance also evicts all five composed
+density views using a zero per-chart grant, verifies zero resident client
+storage, and readmits them through the same Rust planner. After the existing
+context-restored refresh, independent canonical-count, membership, exact texture
+and canvas-coordinate oracles verify the accepted predicate and selected-count
+planes. This bounded integration proof does not qualify massive mixed-family
+pressure, latency, driver/process memory or all-host acceptance.

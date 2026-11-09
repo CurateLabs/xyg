@@ -54,6 +54,13 @@ Both new CI steps explicitly select the just-built release library with
 parser or fallback discovery path. Workflow contract tests reject omitted,
 commented, echoed, or failure-suppressed graph-suite commands.
 
+Both native Python test lanes also export the just-built release library in
+the same shell as pytest. Their Python-to-Node bridge subprocesses inherit
+`XYG_NATIVE_LIB`; exports in an earlier workflow step do not carry into these
+steps. Node development loading keeps its explicit-path contract and does not
+search the checkout. The required chunked native viewport tests retain their
+browser admission, assertions and failure propagation.
+
 The hard `test` job also runs every benchmark body once without timing (divan `--test` for the Rust
 benches and `pytest benchmarks/test_codspeed_*.py` without `--codspeed`), so stale benchmark oracles
 fail pull requests instead of the nightly CodSpeed run; see
@@ -84,6 +91,47 @@ implementations and thresholds are unchanged.
 
 ## Packaged WASM assets (#1005, dossier §33)
 
+The earlier package-qualified filtering/temporal-catalog source used native ABI403 and WASM37.
+Its wasm32-only Cargo configuration used `opt-level=2` with LLVM inlining
+threshold 50; native release optimization remains O3. The single module keeps
+the complete parent export union, optimizer passes and unchanged 1927168 raw /
+786432 Node22 gzip6 byte limits. O3/50 exceeded both limits for this combined
+source; O3/40 also failed gzip. Their bytes and failures remain in
+[the integration evidence](../performance/filter-catalog-abi-union-2026-11-07/README.md).
+Same-source ABBA diagnostics retain complete admitted-output equality and
+slower cases. This compiler choice establishes package admission and the
+recorded bounded functional paths, not a latency or competitor win. Historical
+O3 receipts describe their historical sources and are not rewritten.
+
+The initial combined frozen-export source declares native ABI405 (551 symbols)
+and WASM38 (68 function exports). That source checkpoint was not a package pass.
+Sharing only the four geographic source/snapshot header-writer bodies on wasm32
+reduces the complete module to 1,936,761 raw /805,269 Node22 gzip6 bytes, still
+9,593 /18,837 bytes above the unchanged limits. Native compilation, compiler
+settings and shipping optimizer passes are unchanged; diagnostic extra passes
+are not adopted. Matching native-host paint qualification does not certify this
+unqualified WASM module. See the [follow-up evidence](../performance/indexed-temporal-hosts-header-sharing-2026-11-07/README.md).
+
+The combined producer now keeps wasm32 at O2, uses LLVM inlining threshold 0,
+and retains function names only until pinned Binaryen132 runs `-O3
+--all-features --reorder-functions-by-name --strip-debug`. Native O3 and its
+stripping remain unchanged. Names are absent from the final module; all 68
+function exports, ABI38 and the single-module caps are preserved. The fitting
+candidate measures 1,897,244 raw /784,226 Node22 gzip6 bytes. The
+[combined layout evidence](../performance/combined-wasm-layout-2026-11-07/README.md)
+records normal production, complete-output comparisons, slower runtime samples,
+and qualification boundaries. This is a size/runtime tradeoff, not a latency or
+competitor win. Historical profiles and failed artifacts remain immutable.
+
+The full source foundation also validates the six-family temporal catalog
+through the packaged Worker and existing ChartView painter. It compares
+requests and complete Scenes with the native hashes in
+`tests/fixtures/temporal/catalog-six-families.json`, checks actual source-color
+pixels and exact u64 identity metadata, and disposes each view. The ordinary
+Node catalog tests independently bind that fixture to the native compiler.
+This bounded proof adds no job or timing gate and does not qualify temporal
+controller interaction, accessibility, dense LOD or massive-scale behavior.
+
 Main run 38640943006 failed `Benchmark methodology suites` with
 `FileNotFoundError: packaged WASM tick assets missing: xyg-wasm.wasm`: the job built the
 client but nothing in its dependency graph produced the generated WASM assets, and the
@@ -93,11 +141,23 @@ them from the one producer.
 
 | Step | Contract |
 | --- | --- |
-| Producer | CI job `wasm_assets` runs the fail-closed raw build and PNG-dependency check, `node js/build.mjs`, the packaging contract tests, `npm run build:wasm`, and `scripts/verify_wasm_assets.py`, then uploads `wasm-assets` (`if-no-files-found: error`). Locally: `node js/build.mjs && npm run build:wasm`. |
+| Producer | CI job `wasm_assets` runs the fail-closed raw build and resolved browser feature-graph check, `node js/build.mjs`, the packaging contract tests, `npm run build:wasm`, and `scripts/verify_wasm_assets.py`, then uploads `wasm-assets` (`if-no-files-found: error`). Locally: `node js/build.mjs && npm run build:wasm`. |
 | Consumers | `test`, `wasm_foundation`, `python_floor`, `matplotlib_reference`, `benchmark_methodology`, `wheels`, `sdist` list `wasm_assets` in `needs`, run `node js/build.mjs` (`wasm-worker.js` is built, not part of the artifact), download `wasm-assets`, and verify before use. No consumer runs `npm run build:wasm`, `js/package-wasm.mjs`, or the wasm32 `cargo build` itself. `publish.yaml` has the same shape: producer `wasm-assets`; consumers `wheels`, `wasm` (PyEmscripten), `sdist`, `browser-package`; `XYG_REQUIRE_WASM=1` plus `--require-wasm` on the wheels and sdist, `--require-wasm` on the Pyodide wheel. |
 | Verifier | `scripts/verify_wasm_assets.py` (stdlib only; "stale" means manifest-, ABI- or client-build-inconsistent, not proof of freshness against the Rust source) checks presence in both locations, WebAssembly magic, `sha256`/`bytes` against `xyg-wasm.manifest.json`, ABI/Scene/painter versions against `spec/wasm/abi.json`, inline module hash, inline classic-worker freshness, and dist/static equality. One diagnostic names the files and the producer command. |
 | Artifacts | `XYG_REQUIRE_WASM=1` makes `hatch_build.py` fail without verified assets; the wheel and sdist jobs run `verify_wheel.py` / `verify_sdist.py --require-wasm`. |
 | Aggregate | A failed or skipped `wasm_assets` skips its consumers; `Release surfaces` lists it and every applicable consumer, so the aggregate fails (see [production-readiness.md](../process/production-readiness.md)). |
+
+The resolved normal dependency graph is retained with `cargo tree --edges normal
+--prefix none --format '{p}|{f}' --color never`. `scripts/check_wasm_features.py` requires the
+local engine's exact `frozen-raster` feature and pinned vendored PNG, rejects
+full native `raster`/`default` features, unexpected engine features and `xyg-core`,
+and fails on missing or malformed evidence. Explicit `--color never` keeps
+evidence parseable when the runner sets `CARGO_TERM_COLOR=always`. PNG's own compression dependencies
+are expected; their presence does not enable the engine's native format policy.
+Both CI and publication producers run this same check. The earlier blanket PNG
+absence check predates shared frozen PNG and incorrectly refused the implemented
+shipping contract. Package size/export/import/ABI validation remains unchanged.
+The bounded feature negatives run in the existing `make check-ci` aggregate.
 
 Scheduled workflows `ceiling-benchmark.yml`, `density-100m.yml`, and `docs.yml` do not
 exercise the WASM tick path (only `bench_interaction.py`, `bench_dashboard.py`, and the
@@ -201,3 +261,56 @@ existing WASM foundation / Release surfaces gate; no separate CI job or timing
 gate is added. Staged-package and focused density-only runs keep their existing
 scope. `XYG_GRAPH_SCHEDULING_REPORT` optionally records this sub-run's raw report
 and canvas captures. The focused command uses `XYG_GRAPH_SESSION_REPORT`.
+
+The scheduling branch also runs a separate two-1k trusted keyboard case
+(7201/7202, explicit 384 MiB each), preserving both preceding cases. The same
+foundation Node unit invocation runs `graph-progressive-keyboard.test.mjs`:
+captured-receipt controls reject no-op actions, wrong identity, untrusted input,
+terminal-only evidence, missing progress, intervening resets and peer leakage.
+The live case requires Tab navigation, unfinished focus/Replace and later native
+progress, then completed Toggle/Replace/Clear/empty Escape, native emphasis and
+actual host-colored focus pixels. No watchdog, default scheduling or load policy
+is relaxed. See the [qualified receipt](../performance/graph-keyboard-1k-2026-11-07/README.md).
+
+The same foundation scheduling entry now qualifies neutral retained1k graphs
+with the unchanged16MiB Worker default, actual init-message assertions, trusted
+pointer/camera and reviewed real-Tab keyboard identity/emphasis oracles. It also
+runs1k held-continuation coalescing, stale/lifetime and disposal controls. The
+explicit384MiB public10k path remains a separate bounded proof. Source populations
+and exact native visible membership are distinct assertions in complete reply
+replay; no offscreen GPU-count requirement is imposed.
+
+
+Graph replay capture waits for each public attachment's `whenIdle()` after its
+completed layout publication. Layout completion alone does not prove that every
+recorded transport command has received a reply. Both the default scheduling
+entry and public10k harness run a shared real-Worker negative control: one render
+request is recorded but withheld before posting; the old collector rejects that
+in-flight state, while capture readiness stays pending until the real reply.
+No commands are filtered away, and missing/corrupt replies still fail. This
+stronger boundary does not uniquely explain historical missing-reply failures;
+those failed runs remain preserved without pass or reliability credit.
+The full source-dist WASM foundation also executes
+`temporal_graph_frozen_smoke.mjs`: actual Worker session/controller capture,
+computed CSS focus, six glyphs and a focused compound frame, source scrub and
+disposal, native/WASM Scene/XYPB/SVG/HTML byte oracles, exact artifact recovery,
+independent retained head/phase/layer/position vectors and native/offline
+ChartView pixels. This is part of the existing gate, with no conditional
+fallback, deadline/cap increase or separate CI job. The ordinary discovered
+pytest frozen suite and explicit Node test list also cover the boundary.
+The historical pre-shared-PNG run asserted refusal and supplied no PNG acceptance.
+The current shared-raster continuation requires actual module and strict-CSP
+offline Worker PNG output, exact prior-native PNG parity, recovery and disposal.
+
+The source foundation step explicitly names its already-built native core in
+`XYG_NATIVE_LIB` for the frozen cross-host oracle; the workflow verifier requires
+that binding. The discovered pytest journey passes its actually loaded ctypes
+library path to Node, so both hosts exercise the same candidate even when the
+parent shell has no native override. Commands, triggers, deadlines, package caps
+and the existing Release surfaces aggregate remain unchanged.
+
+The full source `wasm_foundation_smoke.mjs` also invokes
+`temporal_graph_aggregate_smoke.mjs`: six actual temporal publications with
+independent CSR/UUID and rendered-artifact oracles. It follows the existing
+seven-shape frozen regression in the existing Release surfaces path; no new
+workflow, status check, queue rule or staged-package obligation is introduced.

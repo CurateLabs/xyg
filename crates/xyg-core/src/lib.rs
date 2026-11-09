@@ -203,7 +203,7 @@ pub use graphforge_session_ffi::*;
 /// ABI version — bumped on any signature change. The Python wrapper checks this
 /// at load time and refuses a mismatched library loudly (§33 comm-versioning
 /// rule, applied to the in-process boundary).
-pub const ABI_VERSION: u32 = 401;
+pub const ABI_VERSION: u32 = 405;
 
 /// Version of the bounded canonical scene record schema.
 #[no_mangle]
@@ -33195,4 +33195,151 @@ mod chunked_chart_publication_tests {
         drop(store);
         std::fs::remove_file(path).unwrap();
     }
+}
+
+mod filter_session_ffi;
+/// Allocate one ordinary filter session. Zero means registry exhaustion.
+#[no_mangle]
+pub extern "C" fn xyg_filter_session_new(max_bytes: u64) -> u64 {
+    ffi_guard(0, || filter_session_ffi::create(max_bytes))
+}
+/// Release a filter session and cancel any outstanding publication.
+#[no_mangle]
+pub extern "C" fn xyg_filter_session_free(handle: u64) {
+    ffi_guard((), || filter_session_ffi::free(handle));
+}
+/// Advance the cancellation watermark without waiting for a native scan lock.
+#[no_mangle]
+pub extern "C" fn xyg_filter_session_cancel(handle: u64, revision: u64) -> i32 {
+    ffi_guard(-3, || filter_session_ffi::cancel(handle, revision))
+}
+/// Execute XYFC v1. Protocol failures are XYFR status values. -4 reports needed
+/// output capacity without publication; retry requires a newer request revision.
+/// Safety: request/out/written address the declared readable/writable extents.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_filter_session_execute(
+    handle: u64,
+    request: *const u8,
+    request_len: usize,
+    out: *mut u8,
+    capacity: usize,
+    written: *mut usize,
+) -> i32 {
+    ffi_guard(-3, || {
+        filter_session_ffi::execute(handle, request, request_len, out, capacity, written)
+    })
+}
+
+/// Compile an exact XYTM temporal composition into the canonical Scene.
+/// # Safety
+/// Input and output describe nonoverlapping readable/writable byte regions.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_scene_compile(request: *const u8, request_len: usize, budget: usize, out: *mut u8, cap: usize, out_length: *mut usize) -> i32 {
+    ffi_guard(-1, || {
+        if request.is_null() || out_length.is_null() || (out.is_null() && cap != 0) {return -1;}
+        if request_len>budget || budget>xyg_engine::temporal_scene::MAX_BYTES {return -11;}
+        let input=std::slice::from_raw_parts(request,request_len);
+        if input.get(..4)==Some(b"XYTJ") && input.len()>=64 && input[8..12]!=3u32.to_le_bytes(){
+            if out.is_null(){*out_length=64;return 0;}
+            if cap<64{return -9;}
+        }
+        let value=if input.get(..4)==Some(b"XYTJ") {xyg_engine::temporal_scene::jobs::execute_with_capacity(input,budget,if out.is_null(){None}else{Some(cap)})}else{xyg_engine::temporal_scene::compile(input,budget)};
+        let result=match value{Ok(v)=>v,Err(e)=>return e as i32};
+        if !out.is_null() && cap<result.len(){return -9;}
+        if !out.is_null(){std::ptr::copy_nonoverlapping(result.as_ptr(),out,result.len());}
+        *out_length=result.len();0
+    })
+}
+
+mod temporal_graph_frozen_ffi;
+
+/// Render/recover frozen temporal graphs. Format 0 SVG, 1 PNG, 2 HTML,
+/// 3 canonical Scene, 4 XYPB; 5 recovers exact XYFG from an artifact.
+/// Output capacity failure writes no bytes and reports the required size.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_graph_frozen_export(
+    data: *const u8,
+    len: u64,
+    format: u32,
+    scale: f64,
+    focus_rgba: u32,
+    budget: u64,
+    out: *mut u8,
+    out_cap: u64,
+    out_len: *mut u64,
+) -> i32 {
+    use xyg_engine::temporal::TemporalError as E;
+    ffi_guard(E::InvalidArgument as i32, || {
+        if out_len.is_null() {
+            return E::InvalidArgument as i32;
+        }
+        *out_len = 0;
+        if budget > 384 * 1024 * 1024 || len > 384 * 1024 * 1024 || len > isize::MAX as u64 || (len != 0 && data.is_null()) {
+            return E::InvalidArgument as i32;
+        }
+        let bytes = if len == 0 {
+            &[]
+        } else {
+            std::slice::from_raw_parts(data, len as usize)
+        };
+        let result = if format == 5 {
+            xyg_engine::temporal_graph_export::recover(bytes, budget as usize)
+        } else {
+            xyg_engine::temporal_graph_export::export(
+                bytes,
+                format,
+                scale,
+                focus_rgba.to_le_bytes(),
+                budget as usize,
+            )
+        };
+        match result {
+            Err(e) => e as i32,
+            Ok(bytes) => {
+                *out_len = bytes.len() as u64;
+                if out_cap < bytes.len() as u64 || out.is_null() {
+                    return E::OutputCapacity as i32;
+                }
+                std::ptr::copy_nonoverlapping(bytes.as_ptr(), out, bytes.len());
+                0
+            }
+        }
+    })
+}
+
+/// Execute the shared XYFX frozen-graph export/import command, including HTML.
+/// Reports exact required output length; short capacity writes no output bytes.
+#[no_mangle]
+pub unsafe extern "C" fn xyg_temporal_graph_frozen_execute(
+    data: *const u8,
+    len: u64,
+    budget: u64,
+    out: *mut u8,
+    out_cap: u64,
+    out_len: *mut u64,
+) -> i32 {
+    use xyg_engine::temporal::TemporalError as E;
+    ffi_guard(E::InvalidArgument as i32, || {
+        if out_len.is_null() {
+            return E::InvalidArgument as i32;
+        }
+        *out_len = 0;
+        if len > 384 * 1024 * 1024 || budget > 384 * 1024 * 1024 || data.is_null() {
+            return E::InvalidArgument as i32;
+        }
+        match xyg_engine::temporal_graph_export::execute_packet(
+            std::slice::from_raw_parts(data, len as usize),
+            budget as usize,
+        ) {
+            Err(e) => e as i32,
+            Ok(bytes) => {
+                *out_len = bytes.len() as u64;
+                if out_cap < bytes.len() as u64 || out.is_null() {
+                    return E::OutputCapacity as i32;
+                }
+                std::ptr::copy_nonoverlapping(bytes.as_ptr(), out, bytes.len());
+                0
+            }
+        }
+    })
 }

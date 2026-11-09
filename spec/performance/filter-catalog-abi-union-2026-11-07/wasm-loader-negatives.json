@@ -1,0 +1,27 @@
+{
+  "results": [
+    {
+      "name": "filter",
+      "code": "XYG_WASM_ABI_MISMATCH",
+      "message": "XYG WASM ABI 36 does not match the client's 37; deploy the Worker, WASM, and client from one @curatelabs/xyg release"
+    },
+    {
+      "name": "catalog",
+      "code": "XYG_WASM_ABI_MISMATCH",
+      "message": "XYG WASM ABI 36 does not match the client's 37; deploy the Worker, WASM, and client from one @curatelabs/xyg release"
+    }
+  ],
+  "errors": [],
+  "artifacts": {
+    "filter": [
+      "/home/ubuntu/.t3/worktrees/xyg/t3-a6fec95d/packages/xy-client/dist/xyg-wasm.wasm",
+      "b262993164c6b55c5c8571b209df423e1d554708440d8629e2db5a5cd3a18680"
+    ],
+    "catalog": [
+      "/home/ubuntu/.t3/worktrees/xyg/t3-6f28d134/packages/xy-client/dist/xyg-wasm.wasm",
+      "82e32ff4c9d67433d1af4c54b6643c130fcfc49951b78b77fc0df5af81922169"
+    ]
+  },
+  "node": "v22.23.4",
+  "browser": "156.0.8078.4"
+}

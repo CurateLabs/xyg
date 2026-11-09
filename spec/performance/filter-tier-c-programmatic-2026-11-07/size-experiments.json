@@ -1,0 +1,66 @@
+[
+  {
+    "name": "O3",
+    "path": "target/ftmp/filter-O3.wasm",
+    "qualification": "exploratory before final source; not the shipping qualification",
+    "bytes": 1943129,
+    "gzipDefaultBytes": 793530,
+    "sha256": "d3c6cbad25d301aabf9f2a134f17067f44bbea993fe0e418a45cffa2282c6d71"
+  },
+  {
+    "name": "O3merge",
+    "path": "target/ftmp/filter-O3merge.wasm",
+    "qualification": "exploratory before final source; not the shipping qualification",
+    "bytes": 1915206,
+    "gzipDefaultBytes": 795868,
+    "sha256": "4762bf7013c700a17c480e026cbabe95abb530834b58b3b8ac5c11d13bd98812"
+  },
+  {
+    "name": "O3converge",
+    "path": "target/ftmp/filter-O3converge.wasm",
+    "qualification": "exploratory before final source; not the shipping qualification",
+    "bytes": 1942187,
+    "gzipDefaultBytes": 791874,
+    "sha256": "293afeb66e9ff3adb2d69661994676a2a21bfd8aa1c7508a45920fdada19fd9f"
+  },
+  {
+    "name": "Os",
+    "path": "target/ftmp/filter-Os.wasm",
+    "qualification": "exploratory before final source; not the shipping qualification",
+    "bytes": 1940326,
+    "gzipDefaultBytes": 794055,
+    "sha256": "ab7fc4b38a763ffff2941d63e3d2f94c2257dc35461e02f5c1a7a39e6800fe9b"
+  },
+  {
+    "name": "inline25",
+    "path": "target/ftmp/filter-inline25.wasm",
+    "qualification": "exploratory before final source; not the shipping qualification",
+    "bytes": 1874036,
+    "gzipDefaultBytes": 770824,
+    "sha256": "f5713b496dbc370caff78d53e5fc48ccb23e18c9cc3b5560341bb075383b1925"
+  },
+  {
+    "name": "inline25converge",
+    "path": "target/ftmp/filter-inline25converge.wasm",
+    "qualification": "exploratory before final source; not the shipping qualification",
+    "bytes": 1873060,
+    "gzipDefaultBytes": 768667,
+    "sha256": "a6ce05eac6aa2827cdea02816eaa5c9fc706db7145726727b3861f595cb0d312"
+  },
+  {
+    "name": "inline50-final",
+    "path": "target/ftmp/filter-inline50-final.wasm",
+    "qualification": "exploratory before final source; not the shipping qualification",
+    "bytes": 1886339,
+    "gzipDefaultBytes": 772209,
+    "sha256": "612cee2538ed0ad998fd613d0b35b1bf163ee75bd712c5d5f800bd380962d80b"
+  },
+  {
+    "name": "inline100-final",
+    "path": "target/ftmp/filter-inline100-final.wasm",
+    "qualification": "exploratory before final source; not the shipping qualification",
+    "bytes": 1943196,
+    "gzipDefaultBytes": 793535,
+    "sha256": "17a11a74d071109e380cbc95a0bb9e915bc8ac6e13d7af6df5291283f2491c25"
+  }
+]

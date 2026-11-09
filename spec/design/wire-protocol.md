@@ -572,3 +572,27 @@ five f64 operation arguments, optionally followed by XYGD source ingress.
 geometry/u64 identity/u32 offset/u8 ring-role planes. No camera/projection numeric
 arrays move as JSON. [The camera contract](geo-viewport-protocol.md) pins exact
 framing, bounds presence, normalized bit keys and atomic error behavior.
+
+## XYFC/XYFR ordinary filtering (#112 linked density checkpoint)
+
+[Filter Tier C protocol v1](filter-tier-c.md#binary-protocol-v1) carries source,
+revision, counts, and membership as raw typed binary in native and WASM hosts.
+Canonical f64 columns are ingress only; no live numeric filter payload uses
+JSON or base64. It is not a new paint format or renderer. Opcodes 10–15 extend the same owner with 2D passive counts, a flagged XYFP
+resolved density trailer, composed base range/mask predicates and edit
+transactions. Selected counts remain u64; derived f32/RGBA paint uses the
+existing density texture path. Pointer and keyboard edits share these packets.
+Automatic native-host/widget channel binding and massive qualification remain
+open; the bounded browser binding uses a dedicated ordinary Worker.
+### Temporal composition authoring candidate
+
+[XYTM v1](temporal-catalog.md#exactness-and-framing) carries raw i64 times/u64
+identities and u8 validity into Rust. Only derived ordinary Scene/painter
+geometry uses floating coordinates. This is authoring ingress, not a new live
+message or a temporal JSON-number protocol.
+
+Native local chunked charts now refine committed viewport gestures through the
+existing renderer, with exact accepted-frame source identity and cancellation.
+The installed Jupyter/anywidget and public Node binary HTTP journeys, lifecycle
+contract, required CI discovery and remaining issue-wide acceptance are specified
+in [the local native viewport contract](chunked-native-viewport.md).

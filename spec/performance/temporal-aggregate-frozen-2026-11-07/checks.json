@@ -1,0 +1,28 @@
+{
+  "failures": "All attempt logs/archives and focused pytest failures retained; no failed run credited",
+  "fresh": {
+    "checkCi": "running; not credited pending completion",
+    "coreBindingsFinal": "7 passed (includes Windows LF/binary checkout); current source hashes verified after documentation update",
+    "finalAggregate": "passed; 13 complete native/browser XYGR comparisons plus six native acquisitions and 30 exact artifact comparisons",
+    "finalAggregateLog": "aggregate-final.log.gz",
+    "focusedPytest": "42 passed, 1 LF pin failure corrected; seven Core corpus tests then passed",
+    "fullFoundation": "passed (existing seven shapes plus new actual aggregate proof)",
+    "fullFoundationLog": "foundation.log.gz",
+    "precommitAllFiles": "passed",
+    "requiredFullHooks": "hooks-commit.log.gz, ruff-commit.log.gz, format-commit.log.gz; passed",
+    "ruffCheckFull": "passed",
+    "ruffFormatCheckFull": "passed"
+  },
+  "inherited": {
+    "compiledProducers": "source/digest equality verified before reuse; pins in producer-inputs.json",
+    "unchangedGuarantees": "full foundation existing pointer/keyboard/GPU/filter/10k and seven shape coverage retained; no new massive or all-host claim"
+  },
+  "remainingAcceptance": [
+    "full assertion/history corpus scope",
+    "massive aggregate playback",
+    "broader accessibility",
+    "supported installed-host attachment",
+    "release-scale/platform/competitor evidence",
+    "root independent review/current-main/PR/hosted CI/queue"
+  ]
+}

@@ -290,3 +290,15 @@ not timing-dependent CI assertions or end-to-end scale qualification. The
 resident lookup must not scan or shift entries as chunk count grows.
 
 The local chunked-chart rendered regression checks browser configuration before importing its optional rendering helper, so lean package/floor test environments skip without requiring Pillow. The normal required-browser CI route still executes all four full-image comparisons and fails on missing configuration. The evidence helper tolerates unavailable Unix `resource`; RSS is null/unavailable when no supported measurement exists, rather than inventing zero usage. Known Darwin byte values are normalized to KiB; Linux retains KiB. This is host-process high-water evidence and excludes browser/GPU memory.
+
+
+## Native gesture refinement qualification
+
+The normal native Python and Node jobs require the installed Jupyter/anywidget and
+public Node binary HTTP journeys in `chunked-native-viewport.md`. Both use actual
+trusted browser gestures, exact RGBA backing-pixel and independent fullscan data
+oracles, pointer identities and failure-retained picture comparisons. DOM-clipped
+screenshot rasterization is captured separately from the exact canvas oracle.
+Linux lifecycle tests observe actual native positioned reads with inotify before
+cancelling and draining. Neither the small dense fixture nor the 262144-row
+cancellation fixture is larger than this machine's physical RAM.

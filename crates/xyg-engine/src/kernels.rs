@@ -833,7 +833,9 @@ pub fn object_rows_all_real_numeric(row_tags: &[u8]) -> Option<bool> {
         match tag {
             OBJECT_ROW_REAL_MISSING => {}
             OBJECT_ROW_REAL_NUMERIC | OBJECT_ROW_REAL_COERCIBLE => seen = true,
-            OBJECT_ROW_REAL_BOOL | OBJECT_ROW_REAL_TEXT | OBJECT_ROW_REAL_OTHER => return Some(false),
+            OBJECT_ROW_REAL_BOOL | OBJECT_ROW_REAL_TEXT | OBJECT_ROW_REAL_OTHER => {
+                return Some(false)
+            }
             _ => return None,
         }
     }
@@ -894,7 +896,11 @@ pub fn factorize_use_native_probe(distinct: usize, probe_len: usize, record_widt
 pub fn factorize_use_native_fixed(data: &[u8], n_rows: usize, record_width: usize) -> Option<bool> {
     let distinct = distinct_probe_count(data, n_rows, record_width)?;
     let probe_len = n_rows.min(FACTORIZE_PROBE_ROWS);
-    Some(factorize_use_native_probe(distinct, probe_len, record_width))
+    Some(factorize_use_native_probe(
+        distinct,
+        probe_len,
+        record_width,
+    ))
 }
 
 /// Sorted unique categories plus per-row codes for the label-policy path.
@@ -917,7 +923,11 @@ fn read_packed_row_labels(label_lens: &[u32], label_texts: &[u8]) -> Option<Vec<
         if end > label_texts.len() {
             return None;
         }
-        labels.push(std::str::from_utf8(&label_texts[offset..end]).ok()?.to_owned());
+        labels.push(
+            std::str::from_utf8(&label_texts[offset..end])
+                .ok()?
+                .to_owned(),
+        );
         offset = end;
     }
     if !label_lens.is_empty() && offset != label_texts.len() {
@@ -958,8 +968,7 @@ pub fn factorize_display_labels(row_labels: &[&str]) -> Option<FactorizedDisplay
             codes_u32: None,
         });
     }
-    let categories: std::collections::BTreeSet<&str> =
-        row_labels.iter().copied().collect();
+    let categories: std::collections::BTreeSet<&str> = row_labels.iter().copied().collect();
     let categories: Vec<String> = categories.into_iter().map(str::to_owned).collect();
     use std::collections::HashMap;
     let index: HashMap<&str, usize> = categories
@@ -970,9 +979,7 @@ pub fn factorize_display_labels(row_labels: &[&str]) -> Option<FactorizedDisplay
     if categories.len() <= 256 {
         let codes: Vec<u8> = row_labels
             .iter()
-            .map(|label| {
-                u8::try_from(*index.get(label)?).ok()
-            })
+            .map(|label| u8::try_from(*index.get(label)?).ok())
             .collect::<Option<_>>()?;
         Some(FactorizedDisplayLabels {
             categories,
@@ -1531,20 +1538,11 @@ pub fn scene_marker_path_admit(values: &[f64], lengths: &[u32]) -> bool {
 /// Matches Python `_annotation_allowed_style` / Node `annotationAllowedStyle`:
 /// wrapped returns early with label chrome; arrow/callout/text return before
 /// labelled extras; labelled `rule`/`band`/`marker` add label keys.
-pub fn scene_annotation_style_admit(
-    kind: &str,
-    wrapped: bool,
-    labelled: bool,
-    key: &str,
-) -> bool {
+pub fn scene_annotation_style_admit(kind: &str, wrapped: bool, labelled: bool, key: &str) -> bool {
     if wrapped {
         return matches!(
             key,
-            "color"
-                | "opacity"
-                | "label_background"
-                | "label_border_color"
-                | "label_border_width"
+            "color" | "opacity" | "label_background" | "label_border_color" | "label_border_width"
         );
     }
     match kind {
@@ -1830,7 +1828,7 @@ fn resolve_host_stop_positions(positions: &[Option<f64>]) -> Vec<f64> {
     if positions[count - 1].is_none() {
         anchors.push((count - 1, 1.0));
     }
-    anchors.sort_by_key(|(index, _)| *index);
+    crate::shared_sort::by_key(&mut anchors, |(index, _)| *index);
     let mut prev = 0.0;
     for anchor in &mut anchors {
         prev = anchor.1.max(prev);
@@ -1988,8 +1986,9 @@ fn finalize_colormap_custom_stops(
 /// still wrap authoring error text.
 pub fn colormap_custom_stops_resolve_gradient(css: &str, out: &mut [u8]) -> Result<usize, i32> {
     let parsed = scene_parse_linear_gradient(css, "mark").map_err(|code| match code {
-        SCENE_PARSE_LINEAR_GRADIENT_DIRECTION
-        | SCENE_PARSE_LINEAR_GRADIENT_MARK_AXIS => COLORMAP_RESOLVE_DIRECTION_KEYWORD,
+        SCENE_PARSE_LINEAR_GRADIENT_DIRECTION | SCENE_PARSE_LINEAR_GRADIENT_MARK_AXIS => {
+            COLORMAP_RESOLVE_DIRECTION_KEYWORD
+        }
         SCENE_PARSE_LINEAR_GRADIENT_STOP_COUNT => COLORMAP_RESOLVE_STOP_COUNT,
         SCENE_PARSE_LINEAR_GRADIENT_STOP_POS => COLORMAP_RESOLVE_INVALID_POSITION,
         _ => COLORMAP_RESOLVE_GRADIENT_PARSE,
@@ -2014,7 +2013,8 @@ pub fn colormap_custom_stops_resolve_list(
     positions: &[Option<f64>],
     out: &mut [u8],
 ) -> Result<usize, i32> {
-    if css.len() != positions.len() || !(2..=crate::colormap::MAX_COLORMAP_STOPS).contains(&css.len())
+    if css.len() != positions.len()
+        || !(2..=crate::colormap::MAX_COLORMAP_STOPS).contains(&css.len())
     {
         return Err(COLORMAP_RESOLVE_STOP_COUNT);
     }
@@ -2165,11 +2165,7 @@ pub fn scene_gradient_dir(text: &str) -> i32 {
 /// Trim, lowercase, then `starts_with("linear-gradient(")`. Dict/object fills
 /// stay host. Compile-path flag bits stay extra.
 pub fn scene_linear_gradient_prefix(text: &str) -> i32 {
-    i32::from(
-        text.trim()
-            .to_lowercase()
-            .starts_with("linear-gradient("),
-    )
+    i32::from(text.trim().to_lowercase().starts_with("linear-gradient("))
 }
 
 /// Scene fill-gradient space codes (ABI 231).
@@ -2929,12 +2925,7 @@ pub fn scene_hexbin_pitch_admit(dx: f64, dy: f64) -> i32 {
 /// `heatmap_extent_columns` in `scene_pack.rs` stays extra.
 pub fn scene_heatmap_extent_admit(x0: f64, x1: f64, y0: f64, y1: f64) -> i32 {
     i32::from(
-        x0.is_finite()
-            && x1.is_finite()
-            && y0.is_finite()
-            && y1.is_finite()
-            && x0 < x1
-            && y0 < y1,
+        x0.is_finite() && x1.is_finite() && y0.is_finite() && y1.is_finite() && x0 < x1 && y0 < y1,
     )
 }
 
@@ -2948,9 +2939,7 @@ pub fn scene_heatmap_colormap_admit(
     has_rgba_grid: i32,
     has_rgba: i32,
 ) -> i32 {
-    i32::from(
-        truecolor != 0 || has_colormap != 0 || has_rgba_grid != 0 || has_rgba != 0,
-    )
+    i32::from(truecolor != 0 || has_colormap != 0 || has_rgba_grid != 0 || has_rgba != 0)
 }
 
 const XYTA_HAS_NAMED_CMAP: u32 = 1 << 6;
@@ -3175,7 +3164,10 @@ pub fn scene_item_apply_opacity(
 pub fn scene_item_widths_admit(values: Option<&[f64]>, n: usize, scalar: f64) -> i32 {
     if let Some(values) = values {
         i32::from(
-            values.len() == n && values.iter().all(|width| width.is_finite() && *width >= 0.0),
+            values.len() == n
+                && values
+                    .iter()
+                    .all(|width| width.is_finite() && *width >= 0.0),
         )
     } else {
         i32::from(scalar.is_finite() && scalar >= 0.0)
@@ -3246,21 +3238,10 @@ pub fn f32_safe_scale(offset: f64, lo: f64, hi: f64) -> f64 {
 /// Snap a 1-D window outward to the power-of-two grid over its extent (LOD T13).
 ///
 /// The result always contains `[lo, hi]`. Degenerate inputs pass through unchanged.
-pub fn aligned_window(
-    lo: f64,
-    hi: f64,
-    extent_lo: f64,
-    extent_hi: f64,
-    pad: f64,
-) -> (f64, f64) {
+pub fn aligned_window(lo: f64, hi: f64, extent_lo: f64, extent_hi: f64, pad: f64) -> (f64, f64) {
     let span = hi - lo;
     let extent = extent_hi - extent_lo;
-    if !(span.is_finite()
-        && extent.is_finite()
-        && span > 0.0
-        && extent > 0.0
-        && pad >= 1.0)
-    {
+    if !(span.is_finite() && extent.is_finite() && span > 0.0 && extent > 0.0 && pad >= 1.0) {
         return (lo, hi);
     }
     if pad * span >= extent {
@@ -3290,6 +3271,12 @@ pub fn encoded_column_meta(offset: f64, lo: f64, hi: f64, kind: Option<&str>) ->
     (offset, f32_safe_scale(offset, lo, hi), kind.is_some())
 }
 
+/// Canonical scalar used by owned-column and streaming graph lowering.
+#[inline]
+pub(crate) fn offset_f32(value: f64, offset: f64, scale: f64) -> f32 {
+    ((value - offset) * scale) as f32
+}
+
 /// Encode canonical f64 values as relative f32: `(v - offset) * scale` (§4).
 ///
 /// NaN passes through as f32 NaN — the caller is responsible for keeping NaN out
@@ -3299,7 +3286,7 @@ pub fn encode_f32(data: &[f64], offset: f64, scale: f64, out: &mut Vec<f32>) {
     out.clear();
     out.reserve(data.len());
     // Simple loop autovectorizes; keep it branch-free on the hot path.
-    out.extend(data.iter().map(|&v| ((v - offset) * scale) as f32));
+    out.extend(data.iter().map(|&v| offset_f32(v, offset, scale)));
 }
 
 /// As [`encode_f32`] but into a caller-owned slice (the C ABI path — the output
@@ -3311,7 +3298,7 @@ pub fn encode_f32_into(data: &[f64], offset: f64, scale: f64, out: &mut [f32]) {
     let threads = par_threads(data.len());
     if threads <= 1 {
         for (o, &v) in out.iter_mut().zip(data) {
-            *o = ((v - offset) * scale) as f32;
+            *o = offset_f32(v, offset, scale);
         }
         return;
     }
@@ -3320,7 +3307,7 @@ pub fn encode_f32_into(data: &[f64], offset: f64, scale: f64, out: &mut [f32]) {
         for (dseg, oseg) in data.chunks(chunk).zip(out.chunks_mut(chunk)) {
             s.spawn(move || {
                 for (o, &v) in oseg.iter_mut().zip(dseg) {
-                    *o = ((v - offset) * scale) as f32;
+                    *o = offset_f32(v, offset, scale);
                 }
             });
         }
@@ -7723,7 +7710,12 @@ pub fn stratified_sample_range_plan(
     seed: u64,
     min_per_category: u32,
 ) -> Option<StratifiedSampleRangePlan> {
-    if n_groups == 0 || n_groups > 256 || target == 0 || level < 0 || !growth.is_finite() || growth < 1.0
+    if n_groups == 0
+        || n_groups > 256
+        || target == 0
+        || level < 0
+        || !growth.is_finite()
+        || growth < 1.0
     {
         return None;
     }
@@ -8932,8 +8924,7 @@ pub const DEFAULT_TEXT_ANNOTATION_DY: f64 = -6.0;
 /// through bounded ABI contracts; host packages must not mirror these values.
 pub const DEFAULT_PALETTE_VERSION: u32 = 1;
 pub const DEFAULT_PALETTE: [&str; 8] = [
-    "#3987e5", "#008300", "#d55181", "#c48300", "#199e70", "#d95926", "#9085e9",
-    "#e66767",
+    "#3987e5", "#008300", "#d55181", "#c48300", "#199e70", "#d95926", "#9085e9", "#e66767",
 ];
 pub const DEFAULT_MARK_COLOR: &str = DEFAULT_PALETTE[0];
 /// Default graph edge paint (#898): node–link edges recede in a neutral grey
@@ -9108,7 +9099,11 @@ pub fn categorical_palette_map_resolve(
 }
 
 /// Write UTF-8 strings into a packed `(lens, texts)` buffer.
-pub fn write_packed_strings(out_lens: &mut [u32], out_texts: &mut [u8], values: &[String]) -> Option<()> {
+pub fn write_packed_strings(
+    out_lens: &mut [u32],
+    out_texts: &mut [u8],
+    values: &[String],
+) -> Option<()> {
     if out_lens.len() < values.len() {
         return None;
     }
@@ -9204,7 +9199,7 @@ pub fn argsort_stable_f64(data: &[f64]) -> Option<Vec<u32>> {
         return None;
     }
     let mut indices: Vec<u32> = (0..data.len() as u32).collect();
-    indices.sort_by(|&i, &j| {
+    crate::shared_sort::by(&mut indices, |&i, &j| {
         let a = data[i as usize];
         let b = data[j as usize];
         match (a.is_nan(), b.is_nan()) {
@@ -9760,7 +9755,10 @@ mod tests {
             first_seen.categories,
             vec!["b".to_owned(), "a".to_owned(), "(missing)".to_owned()]
         );
-        assert_eq!(first_seen.codes_u8.as_deref(), Some([0, 1, 0, 2, 1].as_slice()));
+        assert_eq!(
+            first_seen.codes_u8.as_deref(),
+            Some([0, 1, 0, 2, 1].as_slice())
+        );
         let sorted = factorize_display_labels(&rows).expect("sorted");
         assert_eq!(
             sorted.categories,
@@ -9780,7 +9778,10 @@ mod tests {
                 .collect::<Vec<_>>()
         );
         assert_eq!(factored.code_width, FACTORIZE_DISPLAY_LABELS_CODE_U8);
-        assert_eq!(factored.codes_u8.as_deref(), Some([3, 0, 2, 0, 1].as_slice()));
+        assert_eq!(
+            factored.codes_u8.as_deref(),
+            Some([3, 0, 2, 0, 1].as_slice())
+        );
 
         let empty = factorize_display_labels(&[]).expect("empty");
         assert!(empty.categories.is_empty());
@@ -9803,11 +9804,7 @@ mod tests {
     fn object_rows_all_stringlike_matches_host_policy() {
         assert_eq!(object_rows_all_stringlike(&[]), Some(true));
         assert_eq!(
-            object_rows_all_stringlike(&[
-                OBJECT_ROW_TEXT,
-                OBJECT_ROW_MISSING,
-                OBJECT_ROW_BYTES,
-            ]),
+            object_rows_all_stringlike(&[OBJECT_ROW_TEXT, OBJECT_ROW_MISSING, OBJECT_ROW_BYTES,]),
             Some(true)
         );
         assert_eq!(
@@ -9849,8 +9846,8 @@ mod tests {
         assert_eq!(remapped.categories, vec!["a".to_owned(), "b".to_owned()]);
         assert_eq!(remapped.remap_u8.as_deref(), Some([1, 0, 1].as_slice()));
 
-        let with_counts = sorted_display_label_remap(&["b", "a", "b"], Some(&[2, 1, 3]))
-            .expect("counts");
+        let with_counts =
+            sorted_display_label_remap(&["b", "a", "b"], Some(&[2, 1, 3])).expect("counts");
         assert_eq!(with_counts.counts.as_deref(), Some([1, 5].as_slice()));
     }
 
@@ -9882,20 +9879,19 @@ mod tests {
         let in_texts = b"ba1";
         let mut out_lens = [0u32; 5];
         let mut out_texts = vec![0u8; 32];
-        let written = category_labels_packed(
-            &kinds,
-            &in_lens,
-            in_texts,
-            &mut out_lens,
-            &mut out_texts,
-        )
-        .expect("packed labels");
+        let written =
+            category_labels_packed(&kinds, &in_lens, in_texts, &mut out_lens, &mut out_texts)
+                .expect("packed labels");
         assert_eq!(written, 5);
         let mut labels = Vec::new();
         let mut offset = 0usize;
         for len in &out_lens {
             let end = offset + *len as usize;
-            labels.push(std::str::from_utf8(&out_texts[offset..end]).unwrap().to_owned());
+            labels.push(
+                std::str::from_utf8(&out_texts[offset..end])
+                    .unwrap()
+                    .to_owned(),
+            );
             offset = end;
         }
         assert_eq!(
@@ -10980,11 +10976,15 @@ mod tests {
         let keys: Vec<&str> = brand.iter().map(|(k, _)| *k).collect();
         let values: Vec<&str> = brand.iter().map(|(_, v)| *v).collect();
         let categories = ["setosa", "versicolor", "virginica"];
-        let resolved = categorical_palette_map_resolve(&categories, &keys, &values, &[])
-            .expect("resolve");
+        let resolved =
+            categorical_palette_map_resolve(&categories, &keys, &values, &[]).expect("resolve");
         assert_eq!(
             resolved.colors,
-            vec!["#4c72b0".to_string(), "#dd8452".to_string(), "#55a868".to_string()]
+            vec![
+                "#4c72b0".to_string(),
+                "#dd8452".to_string(),
+                "#55a868".to_string()
+            ]
         );
         assert_eq!(resolved.unmapped_count, 0);
         assert!(!resolved.map_exhausted);
@@ -11010,7 +11010,8 @@ mod tests {
     fn color_channel_direct_rgba_f64_continuous_matches_lut_path() {
         let values = [0.0, 0.5, 1.0, f64::NAN];
         let stops = [[255, 0, 0], [0, 255, 0]];
-        let rgba = color_channel_direct_rgba_f64_continuous(&values, 0.0, 1.0, &stops).expect("rgba");
+        let rgba =
+            color_channel_direct_rgba_f64_continuous(&values, 0.0, 1.0, &stops).expect("rgba");
         assert_eq!(rgba.len(), 16);
         assert!((rgba[0] - 1.0).abs() < 1e-12);
         assert!((rgba[5] - 0.5019607843137255).abs() < 1e-6);
@@ -11149,7 +11150,10 @@ mod tests {
     fn aligned_window_degenerate_inputs_pass_through() {
         assert_eq!(aligned_window(3.0, 3.0, 0.0, 10.0, 2.0), (3.0, 3.0));
         assert_eq!(aligned_window(1.0, 2.0, 5.0, 5.0, 2.0), (1.0, 2.0));
-        assert_eq!(aligned_window(1.0, 2.0, 0.0, f64::INFINITY, 2.0), (1.0, 2.0));
+        assert_eq!(
+            aligned_window(1.0, 2.0, 0.0, f64::INFINITY, 2.0),
+            (1.0, 2.0)
+        );
         assert_eq!(aligned_window(1.0, 9.0, 0.0, 10.0, 4.0), (0.0, 10.0));
         assert_eq!(aligned_window(-2.0, 9.0, 0.0, 10.0, 4.0), (-2.0, 10.0));
     }
@@ -11282,14 +11286,20 @@ mod tests {
     #[test]
     fn quantize_unit_u8_matches_host_policy() {
         let mut out = [0u8; 3];
-        assert_eq!(quantize_unit_u8_into(&[0.0, 5.0, 10.0], 0.0, 10.0, &mut out), 1);
+        assert_eq!(
+            quantize_unit_u8_into(&[0.0, 5.0, 10.0], 0.0, 10.0, &mut out),
+            1
+        );
         assert_eq!(out, [0, 128, 255]);
         assert_eq!(
             quantize_unit_u8_into(&[f64::INFINITY], 0.0, 1.0, &mut out[..1]),
             1
         );
         assert_eq!(out[0], 0);
-        assert_eq!(quantize_unit_u8_into(&[f64::NAN], 0.0, 1.0, &mut out[..1]), 1);
+        assert_eq!(
+            quantize_unit_u8_into(&[f64::NAN], 0.0, 1.0, &mut out[..1]),
+            1
+        );
         assert_eq!(out[0], 0);
         assert_eq!(quantize_unit_u8_into(&[1.0], 5.0, 5.0, &mut out[..1]), 1);
         assert_eq!(out[0], 0);
@@ -11429,7 +11439,12 @@ mod tests {
 
     #[test]
     fn category_label_kinds_from_probes_batch_matches_scalar() {
-        let probes = [VALUE_PROBE_MISSING, VALUE_PROBE_TEXT, VALUE_PROBE_BYTES, VALUE_PROBE_BOOL];
+        let probes = [
+            VALUE_PROBE_MISSING,
+            VALUE_PROBE_TEXT,
+            VALUE_PROBE_BYTES,
+            VALUE_PROBE_BOOL,
+        ];
         let mut out = [0u8; 4];
         assert!(category_label_kinds_from_probes(&probes, &mut out));
         assert_eq!(
@@ -11492,10 +11507,7 @@ mod tests {
             Err(COLORMAP_RESOLVE_UNRESOLVED_COLOR)
         );
         assert_eq!(
-            colormap_custom_stops_resolve_gradient(
-                "linear-gradient(to top, #000, #fff)",
-                &mut out
-            ),
+            colormap_custom_stops_resolve_gradient("linear-gradient(to top, #000, #fff)", &mut out),
             Err(COLORMAP_RESOLVE_DIRECTION_KEYWORD)
         );
     }
@@ -11507,10 +11519,7 @@ mod tests {
         let unresolved = palette_rows_rgba8(&entries, 2, &mut out, None).expect("palette rows");
         assert_eq!(unresolved, 1);
         assert_eq!(&out[..4], &crate::css::color_rgba8("#ff0000", 1.0));
-        assert_eq!(
-            &out[4..],
-            &crate::css::color_rgba8(DEFAULT_PALETTE[1], 1.0)
-        );
+        assert_eq!(&out[4..], &crate::css::color_rgba8(DEFAULT_PALETTE[1], 1.0));
         let mut flags = [0u8; 2];
         let _ = palette_rows_rgba8(&entries, 2, &mut out, Some(&mut flags));
         assert_eq!(flags, [0, 1]);
@@ -12289,37 +12298,78 @@ mod fuzz {
             "gap_start",
             "gap_end",
         ] {
-            assert!(scene_annotation_style_admit("arrow", false, false, key), "{key}");
-            assert!(!scene_annotation_style_admit("callout", false, false, key), "{key}");
-            assert!(!scene_annotation_style_admit("rule", false, false, key), "{key}");
+            assert!(
+                scene_annotation_style_admit("arrow", false, false, key),
+                "{key}"
+            );
+            assert!(
+                !scene_annotation_style_admit("callout", false, false, key),
+                "{key}"
+            );
+            assert!(
+                !scene_annotation_style_admit("rule", false, false, key),
+                "{key}"
+            );
         }
-        for key in ["curve", "angle_a", "elbow", "shaft_width_start", "head_size"] {
-            assert!(!scene_annotation_style_admit("arrow", false, false, key), "{key}");
+        for key in [
+            "curve",
+            "angle_a",
+            "elbow",
+            "shaft_width_start",
+            "head_size",
+        ] {
+            assert!(
+                !scene_annotation_style_admit("arrow", false, false, key),
+                "{key}"
+            );
         }
         assert!(!scene_annotation_style_admit(
-            "arrow", false, true, "label_color"
+            "arrow",
+            false,
+            true,
+            "label_color"
         ));
-        assert!(scene_annotation_style_admit("callout", false, false, "width"));
+        assert!(scene_annotation_style_admit(
+            "callout", false, false, "width"
+        ));
         assert!(!scene_annotation_style_admit("text", false, false, "width"));
         assert!(!scene_annotation_style_admit("text", true, true, "width"));
         assert!(scene_annotation_style_admit(
-            "text", true, true, "label_background"
+            "text",
+            true,
+            true,
+            "label_background"
         ));
         assert!(scene_annotation_style_admit("rule", false, false, "dash"));
         assert!(!scene_annotation_style_admit(
-            "rule", false, false, "label_color"
+            "rule",
+            false,
+            false,
+            "label_color"
         ));
         assert!(scene_annotation_style_admit(
-            "rule", false, true, "label_color"
+            "rule",
+            false,
+            true,
+            "label_color"
         ));
         assert!(!scene_annotation_style_admit(
-            "band", false, false, "label_color"
+            "band",
+            false,
+            false,
+            "label_color"
         ));
         assert!(scene_annotation_style_admit(
-            "band", false, true, "label_color"
+            "band",
+            false,
+            true,
+            "label_color"
         ));
         assert!(scene_annotation_style_admit(
-            "marker", false, false, "stroke_width"
+            "marker",
+            false,
+            false,
+            "stroke_width"
         ));
         assert!(!scene_annotation_style_admit("foo", false, true, "width"));
         assert!(scene_annotation_style_admit("", false, false, "color"));
@@ -12450,11 +12500,25 @@ mod fuzz {
             0
         );
         assert_eq!(
-            scene_fill_gradient_admit("data", "down", &[0.0, 1.0], &["#336699", "#34d399"], "#3987e5", &mut out),
+            scene_fill_gradient_admit(
+                "data",
+                "down",
+                &[0.0, 1.0],
+                &["#336699", "#34d399"],
+                "#3987e5",
+                &mut out
+            ),
             0
         );
         assert_eq!(
-            scene_fill_gradient_admit("mark", "diagonal", &[0.0, 1.0], &["#336699", "#34d399"], "#3987e5", &mut out),
+            scene_fill_gradient_admit(
+                "mark",
+                "diagonal",
+                &[0.0, 1.0],
+                &["#336699", "#34d399"],
+                "#3987e5",
+                &mut out
+            ),
             0
         );
         assert_eq!(
@@ -12476,19 +12540,17 @@ mod fuzz {
 
     #[test]
     fn scene_parse_linear_gradient_matches_host_table() {
-        let parsed = scene_parse_linear_gradient(
-            "linear-gradient(currentColor, transparent)",
-            "mark",
-        )
-        .unwrap();
+        let parsed =
+            scene_parse_linear_gradient("linear-gradient(currentColor, transparent)", "mark")
+                .unwrap();
         assert_eq!(parsed.dir, 0);
         assert_eq!(parsed.t, vec![0.0, 1.0]);
-        assert_eq!(parsed.css, vec!["currentColor".to_string(), "transparent".to_string()]);
-        let plot = scene_parse_linear_gradient(
-            "linear-gradient(to right, red 10%, blue)",
-            "plot",
-        )
-        .unwrap();
+        assert_eq!(
+            parsed.css,
+            vec!["currentColor".to_string(), "transparent".to_string()]
+        );
+        let plot = scene_parse_linear_gradient("linear-gradient(to right, red 10%, blue)", "plot")
+            .unwrap();
         assert_eq!(plot.dir, 2);
         assert_eq!(plot.t, vec![0.1, 1.0]);
         assert_eq!(plot.css, vec!["red".to_string(), "blue".to_string()]);
@@ -12526,7 +12588,10 @@ mod fuzz {
 
     #[test]
     fn scene_rect_extra_flags_matches_host_table() {
-        assert_eq!(scene_rect_extra_flags("bar", false, false, &[0.0], false, 0.0), 0);
+        assert_eq!(
+            scene_rect_extra_flags("bar", false, false, &[0.0], false, 0.0),
+            0
+        );
         assert_eq!(
             scene_rect_extra_flags("bar", false, true, &[0.0], false, 0.0),
             XYFS_TRACE_RECT_GRADIENT
@@ -12576,14 +12641,23 @@ mod fuzz {
 
     #[test]
     fn scene_linear_gradient_prefix_matches_host_table() {
-        assert_eq!(scene_linear_gradient_prefix("linear-gradient(red, blue)"), 1);
+        assert_eq!(
+            scene_linear_gradient_prefix("linear-gradient(red, blue)"),
+            1
+        );
         assert_eq!(
             scene_linear_gradient_prefix("  LINEAR-GRADIENT(red, blue)  "),
             1
         );
-        assert_eq!(scene_linear_gradient_prefix("linear-gradient(45deg, red, blue)"), 1);
+        assert_eq!(
+            scene_linear_gradient_prefix("linear-gradient(45deg, red, blue)"),
+            1
+        );
         assert_eq!(scene_linear_gradient_prefix("linear-gradient("), 1);
-        assert_eq!(scene_linear_gradient_prefix("radial-gradient(red, blue)"), 0);
+        assert_eq!(
+            scene_linear_gradient_prefix("radial-gradient(red, blue)"),
+            0
+        );
         assert_eq!(scene_linear_gradient_prefix("linear-gradient"), 0);
         assert_eq!(scene_linear_gradient_prefix(""), 0);
         assert_eq!(scene_linear_gradient_prefix("red"), 0);
@@ -12850,11 +12924,26 @@ mod fuzz {
     #[test]
     fn scene_artist_alpha_css_follows_the_paint_contract() {
         assert_eq!(scene_artist_alpha_css_rgba8("none", 0.5), [0, 0, 0, 0]);
-        assert_eq!(scene_artist_alpha_css_rgba8(" Transparent ", 0.5), [0, 0, 0, 0]);
-        assert_eq!(scene_artist_alpha_css_rgba8("#ff0000", 0.5), [255, 0, 0, 128]);
-        assert_eq!(scene_artist_alpha_css_rgba8("#ff000080", 0.5), [255, 0, 0, 128]);
-        assert_eq!(scene_artist_alpha_css_rgba8("#ff000000", 0.5), [255, 0, 0, 128]);
-        assert_eq!(scene_artist_alpha_css_rgba8("#ff000080", -1.0), [255, 0, 0, 128]);
+        assert_eq!(
+            scene_artist_alpha_css_rgba8(" Transparent ", 0.5),
+            [0, 0, 0, 0]
+        );
+        assert_eq!(
+            scene_artist_alpha_css_rgba8("#ff0000", 0.5),
+            [255, 0, 0, 128]
+        );
+        assert_eq!(
+            scene_artist_alpha_css_rgba8("#ff000080", 0.5),
+            [255, 0, 0, 128]
+        );
+        assert_eq!(
+            scene_artist_alpha_css_rgba8("#ff000000", 0.5),
+            [255, 0, 0, 128]
+        );
+        assert_eq!(
+            scene_artist_alpha_css_rgba8("#ff000080", -1.0),
+            [255, 0, 0, 128]
+        );
         assert!(scene_paint_is_absent_keyword("none"));
         assert!(!scene_paint_is_absent_keyword("#00000000"));
     }
@@ -12937,7 +13026,12 @@ mod fuzz {
     #[test]
     fn scene_item_fill_t_matches_host_table() {
         let mut out = [0.0; 2];
-        assert!(scene_item_fill_t(&[0.0, 10.0], 2, Some((0.0, 10.0)), &mut out));
+        assert!(scene_item_fill_t(
+            &[0.0, 10.0],
+            2,
+            Some((0.0, 10.0)),
+            &mut out
+        ));
         assert_eq!(out, [0.0, 1.0]);
         assert!(scene_item_fill_t(&[5.0, 5.0], 2, None, &mut out));
         assert_eq!(out, [0.0, 0.0]);
@@ -12987,9 +13081,18 @@ mod fuzz {
         let n = scene_gradient_spec_pack("mark", "right", &t, css, &lens, &mut out);
         assert_eq!(n, 4 + 2 * 10 + 14);
         assert_eq!(&out[..4], &[0, 2, 2, 0]);
-        assert_eq!(scene_gradient_spec_pack("mark", "right", &t, css, &lens, &mut out[..3]), -1);
-        assert_eq!(scene_gradient_spec_pack("mark", "right", &t, b"x", &lens, &mut out), 0);
-        assert_eq!(scene_gradient_spec_pack("mark", "right", &[0.0], css, &[], &mut out), 0);
+        assert_eq!(
+            scene_gradient_spec_pack("mark", "right", &t, css, &lens, &mut out[..3]),
+            -1
+        );
+        assert_eq!(
+            scene_gradient_spec_pack("mark", "right", &t, b"x", &lens, &mut out),
+            0
+        );
+        assert_eq!(
+            scene_gradient_spec_pack("mark", "right", &[0.0], css, &[], &mut out),
+            0
+        );
         let n = scene_gradient_spec_pack("", "", &[], &[], &[], &mut out);
         assert_eq!(n, 4);
         assert_eq!(&out[..4], &[255, 255, 0, 0]);
@@ -12997,16 +13100,20 @@ mod fuzz {
 
     #[test]
     fn scene_marker_blob_pack_matches_host_table() {
-        let diamond = [
-            0.0, 0.5, 0.5, 0.0, 0.0, -0.5, -0.5, 0.0, 0.0, 0.5,
-        ];
+        let diamond = [0.0, 0.5, 0.5, 0.0, 0.0, -0.5, -0.5, 0.0, 0.0, 0.5];
         let lens = [10u32];
         let mut out = vec![0u8; 128];
         let n = scene_marker_blob_pack(1, &diamond, &lens, &mut out);
         assert_eq!(n, 8 + 4 + 80);
         assert_eq!(&out[..8], &[1, 0, 0, 0, 1, 0, 0, 0]);
-        assert_eq!(scene_marker_blob_pack(1, &diamond, &lens, &mut out[..3]), -1);
-        assert_eq!(scene_marker_blob_pack(1, &diamond[..5], &[5, 6], &mut out), 0);
+        assert_eq!(
+            scene_marker_blob_pack(1, &diamond, &lens, &mut out[..3]),
+            -1
+        );
+        assert_eq!(
+            scene_marker_blob_pack(1, &diamond[..5], &[5, 6], &mut out),
+            0
+        );
         assert_eq!(scene_marker_blob_pack(2, &diamond, &lens, &mut out), 0);
     }
 
@@ -13075,7 +13182,10 @@ mod fuzz {
             scene_xytc_color2_flags_pack(SCENE_RIBBON_COLOR2_GRADIENT, 0, 0).unwrap(),
             XYTC_COLOR2
         );
-        assert_eq!(scene_xytc_color2_flags_pack(SCENE_RIBBON_COLOR2_ABSENT, 0, 0), Some(0));
+        assert_eq!(
+            scene_xytc_color2_flags_pack(SCENE_RIBBON_COLOR2_ABSENT, 0, 0),
+            Some(0)
+        );
         assert!(scene_xytc_color2_flags_pack(5, 0, 0).is_none());
     }
 
@@ -13142,13 +13252,13 @@ mod fuzz {
     #[test]
     fn scene_xytc_numeric_style_pack_matches_host_table() {
         let nan = f64::NAN;
-        let packed = scene_xytc_numeric_style_pack(0, 0, 0, 0, 0, 0, nan, nan, 0.0, 0.0, 0.0)
-            .unwrap();
+        let packed =
+            scene_xytc_numeric_style_pack(0, 0, 0, 0, 0, 0, nan, nan, 0.0, 0.0, 0.0).unwrap();
         assert_eq!(packed.flags, 0);
         assert!(packed.size.is_nan());
         assert!(packed.size_ch_value.is_nan());
-        let packed = scene_xytc_numeric_style_pack(1, 1, 1, 1, 1, 1, 4.0, 2.5, 1.0, 2.0, 3.0)
-            .unwrap();
+        let packed =
+            scene_xytc_numeric_style_pack(1, 1, 1, 1, 1, 1, 4.0, 2.5, 1.0, 2.0, 3.0).unwrap();
         assert_eq!(
             packed.flags,
             XYTC_HAS_STROKE_WIDTH
@@ -13162,8 +13272,8 @@ mod fuzz {
         assert_eq!(packed.stroke_width, 1.0);
         assert_eq!(packed.width, 2.0);
         assert_eq!(packed.line_width, 3.0);
-        let packed = scene_xytc_numeric_style_pack(1, 1, 0, 0, 0, 0, 5.0, nan, 0.0, 0.0, 0.0)
-            .unwrap();
+        let packed =
+            scene_xytc_numeric_style_pack(1, 1, 0, 0, 0, 0, 5.0, nan, 0.0, 0.0, 0.0).unwrap();
         assert_eq!(packed.flags, XYTC_HAS_SIZE | XYTC_HAS_SIZE_CH);
         assert!(packed.size_ch_value.is_nan());
         assert!(scene_xytc_numeric_style_pack(2, 0, 0, 0, 0, 0, nan, nan, 0.0, 0.0, 0.0).is_none());
@@ -13183,16 +13293,13 @@ mod fuzz {
 
     #[test]
     fn scene_xytc_radius_pack_matches_host_table() {
-        let (flags, tip, base, gap) =
-            scene_xytc_radius_pack("bar", 2, 1.0, 2.0, 0.0).unwrap();
+        let (flags, tip, base, gap) = scene_xytc_radius_pack("bar", 2, 1.0, 2.0, 0.0).unwrap();
         assert_eq!(flags, XYTC_HAS_CORNER_RADIUS);
         assert_eq!((tip, base, gap), (1.0, 2.0, 0.0));
-        let (flags, tip, base, gap) =
-            scene_xytc_radius_pack("bar", 1, 3.0, 0.0, 0.5).unwrap();
+        let (flags, tip, base, gap) = scene_xytc_radius_pack("bar", 1, 3.0, 0.0, 0.5).unwrap();
         assert_eq!(flags, XYTC_HAS_CORNER_RADIUS | XYTC_HAS_WEDGE_GAP);
         assert_eq!((tip, base, gap), (3.0, 3.0, 0.5));
-        let (flags, tip, base, gap) =
-            scene_xytc_radius_pack("scatter", 1, 3.0, 0.0, 0.5).unwrap();
+        let (flags, tip, base, gap) = scene_xytc_radius_pack("scatter", 1, 3.0, 0.0, 0.5).unwrap();
         assert_eq!(flags, 0);
         assert_eq!((tip, base, gap), (0.0, 0.0, 0.0));
         assert!(scene_xytc_radius_pack("bar", 3, 0.0, 0.0, 0.0).is_none());
@@ -13210,12 +13317,30 @@ mod fuzz {
 
     #[test]
     fn scene_constant_color_admit_matches_host_table() {
-        assert_eq!(scene_constant_color_admit(0, 0, 0, 0), SCENE_CONSTANT_COLOR_FALLBACK);
-        assert_eq!(scene_constant_color_admit(1, 1, 0, 0), SCENE_CONSTANT_COLOR_CONSTANT);
-        assert_eq!(scene_constant_color_admit(1, 0, 1, 0), SCENE_CONSTANT_COLOR_FALLBACK);
-        assert_eq!(scene_constant_color_admit(1, 0, 0, 1), SCENE_CONSTANT_COLOR_FALLBACK);
-        assert_eq!(scene_constant_color_admit(1, 0, 0, 0), SCENE_CONSTANT_COLOR_FAIL);
-        assert_eq!(scene_constant_color_admit(1, 1, 1, 1), SCENE_CONSTANT_COLOR_CONSTANT);
+        assert_eq!(
+            scene_constant_color_admit(0, 0, 0, 0),
+            SCENE_CONSTANT_COLOR_FALLBACK
+        );
+        assert_eq!(
+            scene_constant_color_admit(1, 1, 0, 0),
+            SCENE_CONSTANT_COLOR_CONSTANT
+        );
+        assert_eq!(
+            scene_constant_color_admit(1, 0, 1, 0),
+            SCENE_CONSTANT_COLOR_FALLBACK
+        );
+        assert_eq!(
+            scene_constant_color_admit(1, 0, 0, 1),
+            SCENE_CONSTANT_COLOR_FALLBACK
+        );
+        assert_eq!(
+            scene_constant_color_admit(1, 0, 0, 0),
+            SCENE_CONSTANT_COLOR_FAIL
+        );
+        assert_eq!(
+            scene_constant_color_admit(1, 1, 1, 1),
+            SCENE_CONSTANT_COLOR_CONSTANT
+        );
     }
 
     #[test]
@@ -13231,14 +13356,29 @@ mod fuzz {
     #[test]
     fn scene_channel_constant_css_matches_host_table() {
         let mut out = [0u8; 8];
-        assert_eq!(scene_channel_constant_css("constant", 1, "red", &mut out), 3);
+        assert_eq!(
+            scene_channel_constant_css("constant", 1, "red", &mut out),
+            3
+        );
         assert_eq!(&out[..3], b"red");
         assert_eq!(scene_channel_constant_css("constant", 1, "", &mut []), 0);
-        assert_eq!(scene_channel_constant_css("constant", 0, "red", &mut out), -1);
-        assert_eq!(scene_channel_constant_css("direct_rgba", 1, "red", &mut out), -1);
+        assert_eq!(
+            scene_channel_constant_css("constant", 0, "red", &mut out),
+            -1
+        );
+        assert_eq!(
+            scene_channel_constant_css("direct_rgba", 1, "red", &mut out),
+            -1
+        );
         assert_eq!(scene_channel_constant_css("", 1, "red", &mut out), -1);
-        assert_eq!(scene_channel_constant_css("CONSTANT", 1, "red", &mut out), -1);
-        assert_eq!(scene_channel_constant_css("constant", 1, "red", &mut [0u8; 2]), -2);
+        assert_eq!(
+            scene_channel_constant_css("CONSTANT", 1, "red", &mut out),
+            -1
+        );
+        assert_eq!(
+            scene_channel_constant_css("constant", 1, "red", &mut [0u8; 2]),
+            -2
+        );
     }
 
     #[test]

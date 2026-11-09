@@ -1,0 +1,429 @@
+[
+  {
+    "commit": "f03a95d7c269684616265fa48daa81631b79e57e",
+    "files": {
+      ".cargo/config.toml": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/.cargo__config.toml.gz",
+        "archiveSha256": "78340993fd297453fe34354dcf7ba73b117848634f1482af1e3cc5e724cfce22",
+        "bytes": 504,
+        "sha256": "971fd1242e48b9785e9ba43d870561502f5c18f6ba222ca7b1dcccd95c850fab"
+      },
+      ".gitattributes": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/.gitattributes.gz",
+        "archiveSha256": "6584536849578ac54b6314d1fe529b3b04cc6a938e0e2061e61711b46807be99",
+        "bytes": 62892,
+        "sha256": "e130bff6ea68cb1c8b6d0dc6f22bc875e8e1727649a916af17a68500460fc508"
+      },
+      ".github/workflows/ci.yml": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/.github__workflows__ci.yml.gz",
+        "archiveSha256": "e336206ca30ad4028b78c22d4d5963f20b5d1358e6a1c477060925d14981119d",
+        "bytes": 77876,
+        "sha256": "2deeb8b148be2e5795ec1c24b62e494dbae498212ce8fafd36f41be2ce49826f"
+      },
+      "examples/vanilla-ts/README.md": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/examples__vanilla-ts__README.md.gz",
+        "archiveSha256": "ade2a313023e301e2b9ef9859a8ce936a8e9c40b5ba3cf2b7ee1e60b9dba8fe2",
+        "bytes": 3072,
+        "sha256": "f09d9be970f5f36e108605862e839e978086a025a0dde9069e29b51cac3ee878"
+      },
+      "js/optimize-wasm.mjs": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/js__optimize-wasm.mjs.gz",
+        "archiveSha256": "28acd8dbd1603584670e8e96c23a26c3d6b800a44d9f5908c89115e5d7968c2d",
+        "bytes": 1078,
+        "sha256": "c9cf5458bebced72e5478d6a681c8df2a9ee3668273bad5c4f5d860d6c7f4658"
+      },
+      "js/src/54_kernel.ts": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/js__src__54_kernel.ts.gz",
+        "archiveSha256": "4db63852915e63c62c4149d07f4e009f7536dd044978380a9448c40435c6eedb",
+        "bytes": 48625,
+        "sha256": "251b5bc840bfaef1705bc46c50c2517ea861b68d7453605736ed8fca24f48387"
+      },
+      "js/src/60_entries.ts": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/js__src__60_entries.ts.gz",
+        "archiveSha256": "6c2838e39c4a539db9e592fa6f53e0187831194e9c0b6526f2f115f57d2cad91",
+        "bytes": 21153,
+        "sha256": "96bbdbc1b9ba00a7918dd4ba9dfaea1304478b52976ed556ba42ca3a612a41ca"
+      },
+      "packages/xy-node/package.json": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/packages__xy-node__package.json.gz",
+        "archiveSha256": "96108755d7767f60296fa4fa6be91a6fe3f19a16f46580eeb2fbeb9b5dc3a394",
+        "bytes": 3820,
+        "sha256": "e19251ebf1a037e6cb8b92a56162a0a79ea246825929996107cb2db53e064fba"
+      },
+      "packages/xy-node/src/chunked-columns.js": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/packages__xy-node__src__chunked-columns.js.gz",
+        "archiveSha256": "64c6ed615f6befd8a5917ef3d56482acae0cca2873f15653dd3b6b83995b0193",
+        "bytes": 8217,
+        "sha256": "630d7a8ccb5b326a846f199aaf76eaf699dc6b2096fef11d5da46902a3dd9987"
+      },
+      "packages/xy-node/src/chunked-live.js": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/packages__xy-node__src__chunked-live.js.gz",
+        "archiveSha256": "c154d196d2d4beb94979eb8eb258ee955979593fff3c3145c0bb2bfe8d36819e",
+        "bytes": 6408,
+        "sha256": "891cddb1566226a172e4a470b66a9c391fab50f875d5b44b1089a977943bb5ed"
+      },
+      "packages/xy-node/src/temporal-graph-frozen.js": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/packages__xy-node__src__temporal-graph-frozen.js.gz",
+        "archiveSha256": "68578639212186bb7975c713b2248b2d75da7ef7844d9d8920283005a116cdd2",
+        "bytes": 5894,
+        "sha256": "2eebfd1c83d7076d86f1238eb79dd31c96513aab01103ddbcd5708161b40be87"
+      },
+      "packages/xy-node/test/chunked-live.test.mjs": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/packages__xy-node__test__chunked-live.test.mjs.gz",
+        "archiveSha256": "380ec6aca061b5529f7755e0a7934290f7da254883f54db49122593964f2d587",
+        "bytes": 2442,
+        "sha256": "f4e1dd207479cb7d854f6c99620adf64cada6a121849bbfb2e99873f5fa026a5"
+      },
+      "packages/xy-node/test/geo-host.test.mjs": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/packages__xy-node__test__geo-host.test.mjs.gz",
+        "archiveSha256": "86f70a8dca5b40106f3fba3aa21be17c2cc8e414f275881331b44d1f1c38462e",
+        "bytes": 364,
+        "sha256": "70b40a39895acbf70d210b314f052df2672fb933191ab614fd8606094eee83e1"
+      },
+      "python/xyg/_chunked_live.py": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/python__xyg___chunked_live.py.gz",
+        "archiveSha256": "2de19f1b9825c6a3a2a39617aa7c821d5216852954c75cac7130953e2a296c6b",
+        "bytes": 8399,
+        "sha256": "557b3b7a37b3d9ff757954eec9c56d5944392b2f7308a324930ade15ab798bbd"
+      },
+      "python/xyg/_figure.py": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/python__xyg___figure.py.gz",
+        "archiveSha256": "9f12c9e9fd1011bc1d97c9da2031b03728df4f902b41f6f87eb4b4eebc7202fc",
+        "bytes": 20558,
+        "sha256": "a0fcceef1b8dea5d34e83694ac392b8e091dcc6b497147c167dea4da794403e6"
+      },
+      "python/xyg/_ooc.py": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/python__xyg___ooc.py.gz",
+        "archiveSha256": "ee5ecd6b29503f5d89b04086d8018c63e7b73683e081e0d1e3ff85f4814d5a16",
+        "bytes": 10949,
+        "sha256": "6255f3ff756f9e17afc242e7dba73320262ca2b5dc19f437823e95c213a3b22f"
+      },
+      "python/xyg/channel.py": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/python__xyg__channel.py.gz",
+        "archiveSha256": "1c39ccb2caf24af5c9f044716952862b51dad95ca1abdf65c3fcc9987bcd2a09",
+        "bytes": 17314,
+        "sha256": "6e14330c291c488889f02af78011e6119155d0554f055b3b65275804b84ca773"
+      },
+      "python/xyg/components.py": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/python__xyg__components.py.gz",
+        "archiveSha256": "3385bdd1a333123117aac997591cbb6b909c1d7ff062e0c90f4e1cb9ad8a1d4d",
+        "bytes": 316279,
+        "sha256": "f6ab89ae8dd1e37bd5b730b6c3c42102ca34f0480bd58380bb409c68eeafe11d"
+      },
+      "python/xyg/widget.py": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/python__xyg__widget.py.gz",
+        "archiveSha256": "bc6457fcd6bb32f7d7e9d707c016c98d075ffe71618ffe0899c6fbd1e520c946",
+        "bytes": 19485,
+        "sha256": "ba25c25f7588ca9e3fb280c8827d04b136947563775ab8c685ff7ef35a7afbac"
+      },
+      "scripts/verify_ci_workflow.py": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/scripts__verify_ci_workflow.py.gz",
+        "archiveSha256": "381ccc37f270bab5d2d730f75f965f01d883f66d5f24a19683c04aa9e3a669ab",
+        "bytes": 195673,
+        "sha256": "cbd402d3a01821288026b720219a23739a273756231dee4699a0255f6717e319"
+      },
+      "spec/design-dossier.md": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/spec__design-dossier.md.gz",
+        "archiveSha256": "d92efa0f8f1e057c002e8533d5f4984f4449dc408028de9f5953037e54d173c1",
+        "bytes": 299857,
+        "sha256": "0eb3889c4fb6af4b1b182793f80392f4aceb2223c9efb1175280355cfe1a7cbc"
+      },
+      "spec/design/application-consumers.md": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/spec__design__application-consumers.md.gz",
+        "archiveSha256": "40198331b8c1a7e54f49fe0a98834758c6b58d9a84450ed73c0edadcd60b64f8",
+        "bytes": 18912,
+        "sha256": "756e50901d1a818a9b64183bf235d4856d8fb0837cd5005b3abd94fc554754fe"
+      },
+      "spec/design/browser-wasm.md": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/spec__design__browser-wasm.md.gz",
+        "archiveSha256": "499e4d5d570e63810333ce32c1ad8916d75fe4c74a6baeac619ce5bfc8b1f4f2",
+        "bytes": 128662,
+        "sha256": "3b337468cbde335ca0ad3832c8025895ff747fd9e1da36ee35d9213bcccf0ec6"
+      },
+      "spec/design/build-ci.md": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/spec__design__build-ci.md.gz",
+        "archiveSha256": "bda4eeb1e8b94d3a34c9525a382a66cb26b2d859e0d06ed74444d9e29997949d",
+        "bytes": 18639,
+        "sha256": "d206e3f1f66297b057a247e2862176c69b8e09d40b3dc6ae0638bbee35807f29"
+      },
+      "spec/design/chunked-native-viewport.md": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/spec__design__chunked-native-viewport.md.gz",
+        "archiveSha256": "f8b22b372eeaab07f6eb7260cbf21c2529d850a515eba9770e0d3e5f5d3deae1",
+        "bytes": 4272,
+        "sha256": "401979f47cc12e6513e215be20e3151b3c92a8f36dd3b2793c6bc2f9e2efd91b"
+      },
+      "spec/design/dual-host-parity.json": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/spec__design__dual-host-parity.json.gz",
+        "archiveSha256": "a47b98ec1491a0d379aa08414570e748d18c7fa1a5a0ae27434b4485fc63884c",
+        "bytes": 15968,
+        "sha256": "fa1c6683cbcfa9d3b8aba256d0e049632f134d3c92bfe2e8f2fc93dc4ba3dfc6"
+      },
+      "spec/design/host-parity.md": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/spec__design__host-parity.md.gz",
+        "archiveSha256": "49c665edd28361f378960a7cdde91df38e794d7e7d8ce6f07f28e4b263eaf7df",
+        "bytes": 162620,
+        "sha256": "b999672ad9ef19cd6682111cb26463a5330ce40d16c591f4e27b611109f35c4c"
+      },
+      "spec/design/ownership-audit.json": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/spec__design__ownership-audit.json.gz",
+        "archiveSha256": "c0c1f788e16d4f01dd2511e584a6efaf45b7b800b434b8887ee82127f0dd6465",
+        "bytes": 183509,
+        "sha256": "ca76d202c0e0bbb6a3e72ea34a0b105c7cbc0d5971f47f55b2d419bcfaf20d57"
+      },
+      "spec/design/ownership-audit.md": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/spec__design__ownership-audit.md.gz",
+        "archiveSha256": "946398d2b8cb1bd8478b2cf234a4196de01cd6e4b5d07b531b0ae5029779ed0b",
+        "bytes": 209174,
+        "sha256": "ccb8c93f834e9f526a816f5818c3e4c57be049c97c4aa13510c86c3931fb65d7"
+      },
+      "spec/design/tier3-phase4-roadmap.md": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/spec__design__tier3-phase4-roadmap.md.gz",
+        "archiveSha256": "bd88d82077faef58ef4f3753087b3a2e965fb8c6a4e6ddfbe4ca16f6dbb116ec",
+        "bytes": 25662,
+        "sha256": "da631a9ebd25646cfe0440780684b436aeda9526a6c24aae61b1a4a9c5cca961"
+      },
+      "spec/design/tier3-testing.md": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/spec__design__tier3-testing.md.gz",
+        "archiveSha256": "321ce6dcf8e0a9d6ad12e91b76449a2c06f795b0158903d7dbb82163c011bff6",
+        "bytes": 18446,
+        "sha256": "80e4db6237b1fa8331b2e91b951b99b04c0c6791457a532b48e8f5996a5171b7"
+      },
+      "spec/design/wire-protocol.md": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/spec__design__wire-protocol.md.gz",
+        "archiveSha256": "5604ba8ce9cebf08540649f00ce9e25c5af2da9f77c3c039b68a4fa47fdbb20d",
+        "bytes": 36766,
+        "sha256": "6f4768a3669b109c98310a6c6ddf47dc21a44a514c0f1581497b76aeb129b60c"
+      },
+      "spec/releases/0.6.0-api-inventory.json": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/spec__releases__0.6.0-api-inventory.json.gz",
+        "archiveSha256": "f010280afdd692bf78d29423eb3c35b798c777389e91599b6e031afa9372baad",
+        "bytes": 1022429,
+        "sha256": "97e48dfa5e7f1f2c603d41f2118b48fdba8023002ec80d9f44e0f569980d3798"
+      },
+      "tests/test_chunked_live.py": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/tests__test_chunked_live.py.gz",
+        "archiveSha256": "0c6a0c1273616d812949dc34989b58d1ec6913c317e9371957d5189e5a89cfff",
+        "bytes": 15097,
+        "sha256": "56ad1050b8ac99f78156f3e3080a06badfbf9cda7fd1983be7c016d264c30d4b"
+      },
+      "tests/test_geo_host.py": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/tests__test_geo_host.py.gz",
+        "archiveSha256": "5f309534249930613c1ec3333398b63e9b85d4d7638d67264fb9d278de7ae410",
+        "bytes": 6860,
+        "sha256": "bc3dd7cc0c368f3520c47fbaf4a5f416c3f0e29d63c9e9cef63b5e0df2524a9d"
+      },
+      "tests/test_graphforge_contract_corpus.py": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/tests__test_graphforge_contract_corpus.py.gz",
+        "archiveSha256": "fd3cd1cf8a491385b3d3b7568a0606f2af9439c38d0f4cec4a686101ebeede7c",
+        "bytes": 10755,
+        "sha256": "358e144c41dac80e1b063411f8c4af180927b407992976cdafc0a69794fc2523"
+      },
+      "tests/test_verify_ci_workflow.py": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/f03a95d7/tests__test_verify_ci_workflow.py.gz",
+        "archiveSha256": "9dfd21962419b3b9662a78c9ac75391aeeb7a1716ce0ead7a99798180b19d08c",
+        "bytes": 220809,
+        "sha256": "a2122d3de86817a9e1c103e75bc193d261ecf9913ffb09dda724d9f31239eeec"
+      }
+    },
+    "parents": [
+      "ae58f6d8b0fbaff73885b442ed4b926e22dc682a"
+    ],
+    "tree": "19a739b6d7785e0386dee44dda95308e9b777956"
+  },
+  {
+    "commit": "93ddc636b7af2952c5c52f000c14b9e4ecdc6216",
+    "files": {
+      ".gitattributes": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/.gitattributes.gz",
+        "archiveSha256": "a808b5b86675c9faf9336d1ab2e91065eaf45702a4a085bc78069cacf6182ccf",
+        "bytes": 63118,
+        "sha256": "0b0db5b9798e779882c8b236ba882fcfd6765a73cc9b23f00f5e8f503f2961c1"
+      },
+      ".github/workflows/ci.yml": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/.github__workflows__ci.yml.gz",
+        "archiveSha256": "e336206ca30ad4028b78c22d4d5963f20b5d1358e6a1c477060925d14981119d",
+        "bytes": 77876,
+        "sha256": "2deeb8b148be2e5795ec1c24b62e494dbae498212ce8fafd36f41be2ce49826f"
+      },
+      "examples/vanilla-ts/README.md": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/examples__vanilla-ts__README.md.gz",
+        "archiveSha256": "ade2a313023e301e2b9ef9859a8ce936a8e9c40b5ba3cf2b7ee1e60b9dba8fe2",
+        "bytes": 3072,
+        "sha256": "f09d9be970f5f36e108605862e839e978086a025a0dde9069e29b51cac3ee878"
+      },
+      "js/src/54_kernel.ts": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/js__src__54_kernel.ts.gz",
+        "archiveSha256": "6c70a0c69ccc51f047b15a7c0c3a02df47081f225c8b1ef72f2e58486668eca4",
+        "bytes": 46919,
+        "sha256": "374997cc351d0dca47b6f9afce35c5ae452f809337cfa705ccb7cae2920cac15"
+      },
+      "js/src/60_entries.ts": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/js__src__60_entries.ts.gz",
+        "archiveSha256": "9277f9ffdaed9e03e7a6e772c81d75a33778fe3dd18167e28a352573f791a147",
+        "bytes": 19694,
+        "sha256": "d377e470d1d2e6b558b157457b63e7a80f66af35afaf5ef90b013764df1a09fd"
+      },
+      "packages/xy-node/README.md": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/packages__xy-node__README.md.gz",
+        "archiveSha256": "9511c53f9d1935ad2e2c5f6ae66e48ddb25adc8a3305c0aff33fcc55ef4af990",
+        "bytes": 10946,
+        "sha256": "531b67fd93a7cd9574443a75b50049053cefde97651bde9b334e7d1be5f5a7ce"
+      },
+      "packages/xy-node/package.json": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/packages__xy-node__package.json.gz",
+        "archiveSha256": "96108755d7767f60296fa4fa6be91a6fe3f19a16f46580eeb2fbeb9b5dc3a394",
+        "bytes": 3820,
+        "sha256": "e19251ebf1a037e6cb8b92a56162a0a79ea246825929996107cb2db53e064fba"
+      },
+      "packages/xy-node/src/chunked-columns.js": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/packages__xy-node__src__chunked-columns.js.gz",
+        "archiveSha256": "7cd356c621d21e1c321ca388868966a6e553d0ad70910723be407bf29b0f9a7a",
+        "bytes": 7920,
+        "sha256": "9781e92ab337f7d44e84f0ea111da3afaad7dbc79201560b3ebd6d3f482a20a6"
+      },
+      "pyproject.toml": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/pyproject.toml.gz",
+        "archiveSha256": "d165835ca4cab33038e4b5c35941434f2f10d8d1e5f98866cd8c676d15586912",
+        "bytes": 10362,
+        "sha256": "16ff23f598efbf06fcd1741019327f092460a35f6bfb89d2261f7867db02e537"
+      },
+      "python/xyg/_figure.py": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/python__xyg___figure.py.gz",
+        "archiveSha256": "30bb02c03195b7fb44b6cc2a1b8a63485c6f4051c1c5314a1a595bec14c5aa61",
+        "bytes": 20216,
+        "sha256": "b536d41e3f2367cab9f92993d54ca82e6c8bd1ee8496ebee14366c3d3a6a360d"
+      },
+      "python/xyg/_ooc.py": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/python__xyg___ooc.py.gz",
+        "archiveSha256": "65e4bd9006ee8d28e2142e0cb83a4be14aea6a1c514618f6f028cbb4dbef9e77",
+        "bytes": 10642,
+        "sha256": "1945918bf1d88fb71cddde062ea19cb3972adfe956a39ac323899a696d1a8bf9"
+      },
+      "python/xyg/channel.py": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/python__xyg__channel.py.gz",
+        "archiveSha256": "372cb90aa525fc0a1dc350ba93f9e012e3395bb795bbe295feffba7aff33fc55",
+        "bytes": 16474,
+        "sha256": "74db10e1ba6afb9cd58b1c9e465c10a11e3d1abf8d0ac7a7189c7f297f8ada86"
+      },
+      "python/xyg/components.py": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/python__xyg__components.py.gz",
+        "archiveSha256": "3385bdd1a333123117aac997591cbb6b909c1d7ff062e0c90f4e1cb9ad8a1d4d",
+        "bytes": 316279,
+        "sha256": "f6ab89ae8dd1e37bd5b730b6c3c42102ca34f0480bd58380bb409c68eeafe11d"
+      },
+      "python/xyg/interaction.py": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/python__xyg__interaction.py.gz",
+        "archiveSha256": "92571821bbe3c2babe08cefd3e44d61cdfc880a61ffb9d02d6567ce181d40996",
+        "bytes": 86451,
+        "sha256": "5cc9d01a26f4e1973d9a16f0fb29588b55e4148f8105ffddb9478267e1811228"
+      },
+      "python/xyg/widget.py": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/python__xyg__widget.py.gz",
+        "archiveSha256": "47713364e8863951f6ec4ef0b2bdadf8194339ce1d4e873219a7d84519c861d5",
+        "bytes": 18418,
+        "sha256": "cee96fc72d9ef1a4ff55873c535b56874b0d8db575605422bf47f5ab4917efe0"
+      },
+      "scripts/verify_ci_workflow.py": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/scripts__verify_ci_workflow.py.gz",
+        "archiveSha256": "381ccc37f270bab5d2d730f75f965f01d883f66d5f24a19683c04aa9e3a669ab",
+        "bytes": 195673,
+        "sha256": "cbd402d3a01821288026b720219a23739a273756231dee4699a0255f6717e319"
+      },
+      "spec/design-dossier.md": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/spec__design-dossier.md.gz",
+        "archiveSha256": "b4d93c3e01ee4ab156cd4a71ee4aa13842cba1a166ae80fe3a9cf512159be1d0",
+        "bytes": 299694,
+        "sha256": "6e722291579e8d09523eecf39bd4794e899e4a561f26f1c75acd76fdf106a7f0"
+      },
+      "spec/design/application-consumers.md": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/spec__design__application-consumers.md.gz",
+        "archiveSha256": "4294cf54198e0a8045ef076036c492f1734b00f49dde04723b52a4067f09c81c",
+        "bytes": 18756,
+        "sha256": "a811de67b5badcd7253c016f95804f0a6d74780b6d9f88524d1a66023cc87d7a"
+      },
+      "spec/design/dual-host-parity.json": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/spec__design__dual-host-parity.json.gz",
+        "archiveSha256": "86fb73840a96b0fbe0654ea7cbaf34e378c6b111dad58ac9b78a3c8c9dbc04f4",
+        "bytes": 15810,
+        "sha256": "d7fd2c11b27382b4b7bd479a5635945d6a656e48086db3aaa4fd69befbe72ec4"
+      },
+      "spec/design/host-parity.md": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/spec__design__host-parity.md.gz",
+        "archiveSha256": "81a58681133a70510e597f34db88a41fc7ecf91ca6d3b81c491bff2d4f9cf486",
+        "bytes": 162464,
+        "sha256": "0c0111564355b5853e5d0c537a4f49cb2a44367428c844b6fba785e669bcceb1"
+      },
+      "spec/design/ownership-audit.json": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/spec__design__ownership-audit.json.gz",
+        "archiveSha256": "c0c1f788e16d4f01dd2511e584a6efaf45b7b800b434b8887ee82127f0dd6465",
+        "bytes": 183509,
+        "sha256": "ca76d202c0e0bbb6a3e72ea34a0b105c7cbc0d5971f47f55b2d419bcfaf20d57"
+      },
+      "spec/design/ownership-audit.md": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/spec__design__ownership-audit.md.gz",
+        "archiveSha256": "946398d2b8cb1bd8478b2cf234a4196de01cd6e4b5d07b531b0ae5029779ed0b",
+        "bytes": 209174,
+        "sha256": "ccb8c93f834e9f526a816f5818c3e4c57be049c97c4aa13510c86c3931fb65d7"
+      },
+      "spec/design/rust-engine.md": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/spec__design__rust-engine.md.gz",
+        "archiveSha256": "9e786090578987e13a52a4677a76a44a78a81025304f4718ab23610d94c8eb5b",
+        "bytes": 95215,
+        "sha256": "9ec2f754cb9f5bc615dec801fb6a8ac063e3ee19e4b2deded6f661b714f0cdd5"
+      },
+      "spec/design/tier3-phase4-roadmap.md": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/spec__design__tier3-phase4-roadmap.md.gz",
+        "archiveSha256": "766c736e0eb5b86f7af716f13a76e7ca845b4c3b5362931523cfad0d21fa4a8d",
+        "bytes": 25506,
+        "sha256": "87d3f0a451780c982312598dd291c76652ff662d4c3c34c40390dc872bf0b6a0"
+      },
+      "spec/design/tier3-testing.md": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/spec__design__tier3-testing.md.gz",
+        "archiveSha256": "321ce6dcf8e0a9d6ad12e91b76449a2c06f795b0158903d7dbb82163c011bff6",
+        "bytes": 18446,
+        "sha256": "80e4db6237b1fa8331b2e91b951b99b04c0c6791457a532b48e8f5996a5171b7"
+      },
+      "spec/design/wire-protocol.md": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/spec__design__wire-protocol.md.gz",
+        "archiveSha256": "befab52655760d8b40ee8903b4fe4954d3280699b70c3a5a490213f0d33cc31c",
+        "bytes": 36610,
+        "sha256": "dd7cbafe905072546c46c7d69f8def2241a538fd52b53f5c122c7fc983b0ff4e"
+      },
+      "spec/releases/0.6.0-api-inventory.json": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/spec__releases__0.6.0-api-inventory.json.gz",
+        "archiveSha256": "9afe1ca3d6b89cd2a5fb19b59762950d83a8a425a64c659edc0fc80a06cb5998",
+        "bytes": 1022160,
+        "sha256": "8ef6fdab978123734dfd777544f6c63751ec04d96863c7493b16072a77719b2a"
+      },
+      "tests/test_chunked_columns.py": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/tests__test_chunked_columns.py.gz",
+        "archiveSha256": "b621bbbe05ed47a279984fdb340978bd71aa867e54e4eb047253133ac41a0064",
+        "bytes": 12349,
+        "sha256": "62689c48010befc3a85984cce8060cd98812aa0e9e8c7d16c7f5bdb45796b3e9"
+      },
+      "tests/test_graphforge_contract_corpus.py": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/tests__test_graphforge_contract_corpus.py.gz",
+        "archiveSha256": "5eab7d0683e75300843a3bb6a7139fa74951df212d0bd6158f67e37543b2c155",
+        "bytes": 10732,
+        "sha256": "a7059ab802de098198c3d622f72cb7f8cf89826fac72f0eb5eaadf09b47fac88"
+      },
+      "tests/test_verify_ci_workflow.py": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/tests__test_verify_ci_workflow.py.gz",
+        "archiveSha256": "9dfd21962419b3b9662a78c9ac75391aeeb7a1716ce0ead7a99798180b19d08c",
+        "bytes": 220809,
+        "sha256": "a2122d3de86817a9e1c103e75bc193d261ecf9913ffb09dda724d9f31239eeec"
+      },
+      "uv.lock": {
+        "archive": "spec/performance/chunked-native-installed-2026-11-07/predecessors/93ddc636/uv.lock.gz",
+        "archiveSha256": "9a40fcb37a85e043c0ae74714e693aaf6941e2872fa003a8973e1e18f2636d48",
+        "bytes": 392962,
+        "sha256": "9c897f644d4b241ab192c38d0afc26f4a49665dbf7734410e893b763ed9a0bef"
+      }
+    },
+    "parents": [
+      "13b580b7f3837e423f6a138b0343b0eea42b23e0",
+      "87f8a9f9082c563ee22cd25617f82cd75aa05e40"
+    ],
+    "tree": "1ce622573296476e626016806b5d1539ed390cee"
+  }
+]

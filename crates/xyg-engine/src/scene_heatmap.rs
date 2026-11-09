@@ -9,6 +9,8 @@
 //! colormap hexbin; HexCell expansion interns those fills. Encoded Scene v31
 //! is unchanged.
 
+use crate::scene::SceneByteWrite;
+
 use crate::css::color_rgba8;
 use crate::scene::{
     MAX_SCENE_IMAGE_PIXELS, XYHP_MAX_NAME_BYTES, XYHP_PAINT_COLORMAP, XYHP_PAINT_DENSITY,
@@ -125,21 +127,21 @@ fn f64_unit_to_u8(value: f64) -> u8 {
 
 fn encode_plane(stable_id: u64, rows: u32, cols: u32, kind: u32, payload: &[u8]) -> Vec<u8> {
     let mut out = Vec::with_capacity(XYHP_PLANE_HEADER_BYTES + payload.len());
-    out.extend_from_slice(&stable_id.to_le_bytes());
-    out.extend_from_slice(&rows.to_le_bytes());
-    out.extend_from_slice(&cols.to_le_bytes());
-    out.extend_from_slice(&kind.to_le_bytes());
-    out.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+    out.push_word(stable_id);
+    out.push_word(rows);
+    out.push_word(cols);
+    out.push_word(kind);
+    out.push_word(payload.len() as u32);
     out.extend_from_slice(payload);
     out
 }
 
 fn colormap_payload(lo: f64, hi: f64, count: u32, flag: u32, body: &[u8], extra: &[u8]) -> Vec<u8> {
     let mut payload = Vec::with_capacity(24 + body.len() + extra.len());
-    payload.extend_from_slice(&lo.to_le_bytes());
-    payload.extend_from_slice(&hi.to_le_bytes());
-    payload.extend_from_slice(&count.to_le_bytes());
-    payload.extend_from_slice(&flag.to_le_bytes());
+    payload.push_word(lo);
+    payload.push_word(hi);
+    payload.push_word(count);
+    payload.push_word(flag);
     payload.extend_from_slice(body);
     payload.extend_from_slice(extra);
     payload

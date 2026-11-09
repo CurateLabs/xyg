@@ -35,8 +35,10 @@ write("workers.mjs", `
   import { Worker as NativeWorker, isMainThread, parentPort, workerData } from 'node:worker_threads';
   import { trace } from './trace.mjs';
   export * from 'node:worker_threads';
-  const gate = new Int32Array(isMainThread ? new SharedArrayBuffer(4) : workerData.lifecycleGate);
+  const gate = new Int32Array(isMainThread ? new SharedArrayBuffer(8) : workerData.lifecycleGate);
   let activeWorker;
+  let abortBeforeWork;
+  export function setAbortBeforeWork(callback) { abortBeforeWork = callback; }
   if (!isMainThread) parentPort.on('message', msg => {
     if (msg.type === 'lifecycle-probe') {
       // Two explicit task turns let an unacknowledged old loop advance. The
@@ -57,11 +59,16 @@ write("workers.mjs", `
       super(filename, {...options, workerData: {...options.workerData, lifecycleGate: gate.buffer}});
       activeWorker = this;
       trace('spawn');
-      this.on('message', msg => trace('message', {message: msg.type}));
+      this.on('message', msg => {
+        trace('message', {message: msg.type});
+        if (msg.type === 'lifecycle-created') abortBeforeWork?.();
+      });
+      if (process.env.FORCE_CASE === 'startup-abort') this.once('online', () => abortBeforeWork());
       this.on('exit', code => trace('exit', {code}));
     }
     postMessage(msg, ...args) {
       trace('send', {message: msg.type, step: msg.step});
+      if (msg.type === 'cancel') { Atomics.store(gate, 1, 1); Atomics.notify(gate, 1); }
       // Simulate a worker that cannot process cancellation, while idle at a
       // checkpoint. Emergency termination must still await its real exit.
       if (process.env.FORCE_CASE === 'unresponsive') return;
@@ -72,9 +79,23 @@ write("workers.mjs", `
 `);
 write("abi.mjs", `
   import { trace, pause } from './trace.mjs';
+  import { isMainThread, parentPort, workerData } from 'node:worker_threads';
   const native = process.env.FORCE_NATIVE === '1' ? await import(${JSON.stringify(abi)}) : undefined;
+  const gate = !isMainThread ? new Int32Array(workerData.lifecycleGate) : undefined;
+  if (!isMainThread && ['startup-abort', 'startup-timeout'].includes(process.env.FORCE_CASE)) {
+    trace('startup-wait');
+    if (Atomics.wait(gate, 1, 0, 5000) === 'timed-out') throw Error('startup cancellation was not delivered');
+    trace('startup-cancel-observed');
+  }
   let ticks = 0;
-  export function graphForceCreate(...args) { const h = native?.graphForceCreate(...args) ?? 1; trace('create'); return h; }
+  export function graphForceCreate(...args) {
+    const h = native?.graphForceCreate(...args) ?? 1; trace('create');
+    if (process.env.FORCE_CASE === 'create-abort') {
+      parentPort.postMessage({type: 'lifecycle-created'});
+      if (Atomics.wait(gate, 1, 0, 5000) === 'timed-out') throw Error('post-create cancellation was not delivered');
+    }
+    return h;
+  }
   export function graphForceTick(...args) {
     trace('tick', {tick: ++ticks});
     if (!native) {
@@ -95,15 +116,16 @@ write("run.mjs", `
   import assert from 'node:assert/strict';
   import { runForceTicks } from ${JSON.stringify(scheduler)};
   import { trace, pause } from './trace.mjs';
-  import { checkpointTurn } from './workers.mjs';
+  import { checkpointTurn, setAbortBeforeWork } from './workers.mjs';
   const scenario = process.env.FORCE_CASE;
   const controller = new AbortController();
   const original = new Error('consumer failed');
+  setAbortBeforeWork(() => controller.abort());
   const args = {
     nNodes: 2, sources: new BigUint64Array([0n]), targets: new BigUint64Array([1n]),
     totalSteps: scenario === 'complete-failure' ? 1 : 4, chunkSteps: 1,
     signal: controller.signal,
-    maxWallMs: scenario === 'timeout' ? 250 : 5000,
+    maxWallMs: ['timeout', 'startup-timeout'].includes(scenario) ? 250 : 5000,
     onTick(state) {
       trace('callback', {step: state.step});
       if (scenario === 'mutated-step') state.step -= 1;
@@ -116,6 +138,10 @@ write("run.mjs", `
     },
   };
   if (scenario === 'pre-abort') controller.abort();
+  if (scenario === 'constructor-abort') {
+    args.algorithm = 'cose';
+    args.cose = { get idealEdgeLength() { trace('construction-abort'); controller.abort(); return 1; } };
+  }
   if (scenario === 'unresponsive') args.maxWallMs = 250;
   if (scenario === 'no-callback') delete args.onTick;
   try {
@@ -125,7 +151,7 @@ write("run.mjs", `
     trace('settled', {failed: false});
   } catch (error) {
     if (scenario === 'callback' || scenario === 'complete-failure') assert.equal(error, original);
-    else assert.match(error.message, scenario === 'native-error' ? /native tick failed/ : scenario === 'timeout' || scenario === 'unresponsive' ? /exceeded maxWallMs/ : /aborted/);
+    else assert.match(error.message, scenario === 'native-error' ? /native tick failed/ : scenario === 'timeout' || scenario === 'unresponsive' || scenario === 'startup-timeout' ? /exceeded maxWallMs/ : /aborted/);
     trace('settled', {failed: true, identity: error === original});
   }
   // A callback arriving after rejection is an observable failure too.
@@ -158,9 +184,25 @@ function cleanedBeforeSettlement(events, terminal) {
   assert.ok(!events.slice(at("settled") + 1).some(event => event.type === "callback"));
 }
 
+function cancelledBeforeAllocation(events) {
+  const at = type => events.findIndex(event => event.type === type);
+  assert.equal(events.filter(event => event.type === "spawn").length, 1);
+  for (const type of ["create", "tick", "destroy", "callback", "terminate"]) {
+    assert.equal(events.filter(event => event.type === type).length, 0, JSON.stringify(events));
+  }
+  assert.ok(events.some(event => event.type === "send" && event.message === "cancel"));
+  const receipt = events.findIndex(event => event.type === "message" && event.message === "cancelled");
+  assert.ok(receipt >= 0 && receipt < at("exit") && at("exit") < at("settled"), JSON.stringify(events));
+  assert.equal(events[at("exit")].code, 0);
+}
+
 for (const scenario of ["callback", "complete-failure", "abort", "timeout", "normal", "no-callback", "mutated-step", "native-error"]) {
   test(`force worker lifecycle: ${scenario} waits for destroy and exit`, () => {
     const events = run(scenario);
+    if (scenario === "timeout" && !events.some(event => event.type === "create")) {
+      cancelledBeforeAllocation(events);
+      return;
+    }
     const cancelled = ["callback", "complete-failure", "abort", "timeout"].includes(scenario);
     const ticks = events.filter(event => event.type === "tick");
     if (cancelled) {
@@ -198,6 +240,10 @@ test("force worker lifecycle: unresponsive worker uses bounded emergency termina
 for (const scenario of ["callback", "complete-failure", "abort", "timeout", "normal", "no-callback", "mutated-step"]) {
   test(`force worker lifecycle with native ABI: ${scenario}`, () => {
     const events = run(scenario, true);
+    if (scenario === "timeout" && !events.some(event => event.type === "create")) {
+      cancelledBeforeAllocation(events);
+      return;
+    }
     const terminal = scenario === "timeout"
       ? events.find(event => event.type === "message" && ["cancelled", "error"].includes(event.message))?.message
       : ["callback", "complete-failure", "abort"].includes(scenario) ? "cancelled" : "done";
@@ -206,4 +252,25 @@ for (const scenario of ["callback", "complete-failure", "abort", "timeout", "nor
       assert.equal(events.filter(event => event.type === "tick").length, 1);
     }
   });
+}
+
+// These barriers queue cancellation before the worker can process its port.
+// They require no startup-duration assumption and retain the existing deadlines.
+for (const scenario of ["startup-abort", "startup-timeout", "constructor-abort", "create-abort"]) {
+  for (const native of [false, true]) {
+    test(`force worker cancellation boundary: ${scenario}, native=${native}`, () => {
+      const events = run(scenario, native);
+      const at = type => events.findIndex(event => event.type === type);
+      const allocated = scenario === "create-abort" ? 1 : 0;
+      assert.equal(events.filter(event => event.type === "create").length, allocated, JSON.stringify(events));
+      assert.equal(events.filter(event => event.type === "destroy").length, allocated, JSON.stringify(events));
+      assert.equal(events.filter(event => event.type === "tick").length, 0, JSON.stringify(events));
+      assert.equal(events.filter(event => event.type === "callback").length, 0, JSON.stringify(events));
+      assert.ok(!events.some(event => event.type === "terminate"), JSON.stringify(events));
+      const receipt = events.findIndex(event => event.type === "message" && event.message === "cancelled");
+      assert.ok(receipt >= 0 && receipt < at("exit") && at("exit") < at("settled"), JSON.stringify(events));
+      assert.equal(events[at("exit")].code, 0);
+      if (allocated) assert.ok(at("destroy") < receipt, JSON.stringify(events));
+    });
+  }
 }

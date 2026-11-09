@@ -1,0 +1,43 @@
+{
+  "capturedAt": "2026-11-07T12:48:35.507165+00:00",
+  "platform": "Linux-7.0.0-31-generic-x86_64-with-glibc2.43",
+  "python": "3.12.15 (main, Oct  1 2026, 20:59:04) [Clang 22.1.3 ]",
+  "pythonExecutable": "/home/ubuntu/.t3/worktrees/xyg/t3-a6fec95d/.venv/bin/python",
+  "nativePath": "/home/ubuntu/.t3/worktrees/xyg/t3-a6fec95d/target/release/libxyg_core.so",
+  "nativeAbi": 402,
+  "backend": "native",
+  "rustc": "rustc 1.96.0 (ac68faa20 2026-05-25)\nbinary: rustc\ncommit-hash: ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96\ncommit-date: 2026-05-25\nhost: x86_64-unknown-linux-gnu\nrelease: 1.96.0\nLLVM version: 22.1.2",
+  "cargo": "cargo 1.96.0 (30a34c682 2026-05-25)",
+  "node": "v22.23.4",
+  "nodePath": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin/node",
+  "chromium": "Google Chrome for Testing 156.0.8078.4",
+  "chromiumPath": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+  "workspace": "/home/ubuntu/.t3/worktrees/xyg/t3-a6fec95d",
+  "branch": "t3/a6fec95d",
+  "buildParent": "514a2ac72a5b90ef53c8b8acc87e1afc345c9b5c",
+  "integrationParents": [
+    "b91b8099ff1281f3740c8f8d4fde461509c332d0",
+    "58960c7c6c814ed049209052cf66d77b5bb7ecfd"
+  ],
+  "requiredAcceptedM5": "58960c7c6c814ed049209052cf66d77b5bb7ecfd",
+  "observedMainAtFetch": "43c35f67b95ae4e78e3e96f200a0e6be8642199c",
+  "cargoBuildJobs": 2,
+  "tmpdir": "/var/tmp/xyg-f112",
+  "cpuAffinity": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "cpuCount": 8,
+  "buildEnvironment": {
+    "RUSTFLAGS": null,
+    "CARGO_ENCODED_RUSTFLAGS": null,
+    "CARGO_TARGET_DIR": null,
+    "RUSTUP_TOOLCHAIN": null
+  }
+}

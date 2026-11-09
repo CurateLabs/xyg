@@ -1435,6 +1435,14 @@ def figure_document(
     optimize_png: bool = False,
 ) -> bytes:
     """Compile one public Figure into its single-panel XYST document."""
+    if getattr(figure, "_temporal_composition", None) is not None:
+        return encode(
+            [Panel(figure.to_scene(width=width, height=height), 0, 0, width, height)],
+            width=width,
+            height=height,
+            background=background,
+            optimize_png=optimize_png,
+        )
     panel, legend = project_figure(
         figure, width=width, height=height, background=background, optimize_png=optimize_png
     )

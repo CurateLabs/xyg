@@ -1,0 +1,113 @@
+{
+  "tests/fixtures/animation_emit_cross_host.json": {
+    "command": [
+      "node",
+      "packages/xy-node/scripts/animation_emit_cross_host.mjs"
+    ],
+    "currentAbi": 403,
+    "currentSha256": "125a57ad4765356e555d4083ec89565805df9a99d378e4e78005b8f9f5ac4339",
+    "historicalAbi": 402,
+    "predecessorSha256": "ca35000536aeffdf4089b2957afc5176913ec0c50d7c3c3f746f619e288ef658"
+  },
+  "tests/fixtures/default_styled_emit_cross_host.json": {
+    "command": [
+      "node",
+      "packages/xy-node/scripts/default_styled_emit_cross_host.mjs"
+    ],
+    "currentAbi": 403,
+    "currentSha256": "c6f6c400f85c4b0c733654a277058b69159069a21d15891904cb99489e227b44",
+    "historicalAbi": 402,
+    "predecessorSha256": "c9ef952a669032493ba8ca8c26f45db61517527c27507fa4d7146c9315b43ce4"
+  },
+  "tests/fixtures/density_emit_cross_host.json": {
+    "command": [
+      "node",
+      "packages/xy-node/scripts/density_emit_cross_host.mjs"
+    ],
+    "currentAbi": 403,
+    "currentSha256": "d5fc33f56c3445e4834d4795b9eeace52a333b68895e597cbf58fc6c39e42071",
+    "historicalAbi": 402,
+    "predecessorSha256": "3ba0fe7ac14d2fe38cb003b2229804e9031a29ffd951027f0f528cb5603ee936"
+  },
+  "tests/fixtures/force_emit_cross_host.json": {
+    "command": [
+      "node",
+      "packages/xy-node/scripts/force_emit_cross_host.mjs"
+    ],
+    "currentAbi": 403,
+    "currentSha256": "4be406b9275f8dadf5e1809fceac699d96912a24a8883e2c2df2553b9d18bef0",
+    "historicalAbi": 402,
+    "predecessorSha256": "66f988aeb9c361dd6207ac53bc82d516c1c40e79a566cc69aac4549257d890df"
+  },
+  "tests/fixtures/geo_cross_host.json": {
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "packages/xy-node/test/fixtures/write_geo_cross_host_fixtures.py"
+    ],
+    "currentAbi": 403,
+    "currentSha256": "21fdd41095e39d293a93db34349d6eda199c97c27b92f7c9456edcfcb0c07d9f",
+    "historicalAbi": 402,
+    "predecessorSha256": "b2a9f58ac66d0ac9b9def3d167521affbfe43535e1cd22dcba01a6ae3e4403ed"
+  },
+  "tests/fixtures/payload_attach_cross_host.json": {
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "packages/xy-node/test/fixtures/write_payload_attach_cross_host_fixtures.py"
+    ],
+    "currentAbi": 403,
+    "currentSha256": "42d50b0528d6a68a466edb28c22a717c55ec00be96e3c4dfd3fdb4e0ea08385d",
+    "historicalAbi": 402,
+    "predecessorSha256": "c058b47617f0cc2a1ca5729bcfc7e020014ff03685b4720c1ec490ecf0bed97e"
+  },
+  "tests/fixtures/payload_chrome_cross_host.json": {
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "packages/xy-node/test/fixtures/write_payload_chrome_cross_host_fixtures.py"
+    ],
+    "currentAbi": 403,
+    "currentSha256": "ae89b9acc62908cf86cc133a6adcdeca3fa8ac92696bbb7f1311489b52bc6b24",
+    "historicalAbi": 402,
+    "predecessorSha256": "5e63dddcc8a761afe99dbb5f8e4feef236abbe7f87774aab8cd3afb864b4ea03"
+  },
+  "tests/fixtures/payload_cross_host.json": {
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "packages/xy-node/test/fixtures/write_payload_cross_host_fixtures.py"
+    ],
+    "currentAbi": 403,
+    "currentSha256": "07ede77008b752d533809bd340b3e01bf7f43176120f3172193fa2240d10600b",
+    "historicalAbi": 402,
+    "predecessorSha256": "80c85e82df33d1465520113cd84ace15ea9f93c7e167c9834d14cf9fdd3bf221"
+  },
+  "tests/fixtures/series_palette_cross_host.json": {
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "tests/test_series_palette_cross_host.py",
+      "--write"
+    ],
+    "currentAbi": 403,
+    "currentSha256": "289b2dd18358a3f9e66a1be2d392646aaed64fe025d361c7671881ed33bd8f7d",
+    "historicalAbi": 402,
+    "predecessorSha256": "a6e4fdf32b85c0a981acb50f1a600cbe1fb5ed6b20a74aa449affc63601cc9eb"
+  },
+  "tests/fixtures/tooltip_len_emit_cross_host.json": {
+    "command": [
+      "node",
+      "packages/xy-node/scripts/tooltip_len_emit_cross_host.mjs"
+    ],
+    "currentAbi": 403,
+    "currentSha256": "50739ff23a7b751ccbac0f84f86acbed134e0279972188d4fa78f4d4cf16bd67",
+    "historicalAbi": 402,
+    "predecessorSha256": "56d74362b2533ab2bb0c2228c3aaf94444d4480238e4addaafd063d4ebf060f6"
+  }
+}

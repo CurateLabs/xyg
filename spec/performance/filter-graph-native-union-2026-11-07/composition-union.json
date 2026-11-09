@@ -1,0 +1,14 @@
+{
+  "allTopLevelDefinitionsMatchAtLeastOneParent": true,
+  "attributePinUnion": true,
+  "inventoryGaps": 693,
+  "inventoryGapsExactParentUnion": true,
+  "nodeTestFiles": 67,
+  "ownershipEntries": 526,
+  "ownershipExactParentUnion": true,
+  "parents": [
+    "81c4ba55bb23a858b8f3dd8dd4ecbbf4e97377e5",
+    "0a85b8da98ceb5dd0f2ef308f51c85a46f22460e"
+  ],
+  "pythonDefinitions": 189
+}

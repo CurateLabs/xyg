@@ -1,0 +1,69 @@
+{
+  "ok": true,
+  "vscode": "1.103.2",
+  "node": "v22.17.0",
+  "platform": "linux",
+  "rows": [
+    {
+      "test": "mounted-temporal",
+      "request": "action:1",
+      "ok": true,
+      "coloredPixels": 44,
+      "centroid": 400.04545454545456
+    },
+    {
+      "test": "mounted-temporal",
+      "request": "action:2",
+      "ok": true,
+      "coloredPixels": 44,
+      "centroid": 360.04545454545456
+    },
+    {
+      "test": "mounted-temporal",
+      "request": "action:3",
+      "ok": true,
+      "coloredPixels": 44,
+      "centroid": 360.04545454545456
+    },
+    {
+      "test": "mounted-temporal",
+      "request": "action:4",
+      "ok": true,
+      "coloredPixels": 44,
+      "centroid": 360.04545454545456
+    },
+    {
+      "test": "mounted-temporal",
+      "request": "action:5",
+      "ok": true,
+      "coloredPixels": 0,
+      "centroid": null
+    },
+    {
+      "test": "mounted-temporal",
+      "request": "action:6",
+      "ok": true,
+      "coloredPixels": 44,
+      "centroid": 360.04545454545456
+    },
+    {
+      "test": "mounted-temporal",
+      "request": "action:7",
+      "ok": true,
+      "coloredPixels": 44,
+      "centroid": 360.04545454545456
+    }
+  ],
+  "premountLatest": true,
+  "exactI64U64": true,
+  "cameraPreserved": true,
+  "unfinishedReadSuperseded": true,
+  "failureRetained": true,
+  "rangeAndCursor": true,
+  "rebind": true,
+  "reload": true,
+  "realPanelDisposeDuringRead": true,
+  "independentCaller": true,
+  "currentPublicationPreserved": true,
+  "allNativeOwnersClosed": true
+}

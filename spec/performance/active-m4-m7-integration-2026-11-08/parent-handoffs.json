@@ -1,0 +1,14 @@
+{
+  "root-css": {
+    "path": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/css-host-color/handoff.json",
+    "archive": "spec/performance/active-m4-m7-integration-2026-11-08/review-evidence/fbcd32fa059916d64b6a871a26161cf3bb787481a24ac93d15c1f0a8669918b2.gz",
+    "bytes": 31079,
+    "sha256": "fbcd32fa059916d64b6a871a26161cf3bb787481a24ac93d15c1f0a8669918b2"
+  },
+  "graph": {
+    "path": "/home/ubuntu/.t3/worktrees/xyg/t3-55a40630/target/task-tmp/graph-public-scale/handoff/candidate.json",
+    "archive": "spec/performance/active-m4-m7-integration-2026-11-08/review-evidence/aea5388437710522d214d5201a51f8cf17dcc95176074e05d0d788c55c10383e.gz",
+    "bytes": 135759,
+    "sha256": "aea5388437710522d214d5201a51f8cf17dcc95176074e05d0d788c55c10383e"
+  }
+}

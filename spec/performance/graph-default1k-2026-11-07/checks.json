@@ -1,0 +1,453 @@
+{
+  "environment": {
+    "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-cc3b03dc",
+    "TMPDIR": "/var/tmp",
+    "CARGO_TARGET_DIR": "/var/tmp/xyg-default1k-target",
+    "XYG_NATIVE_LIB": "/var/tmp/xyg-default1k-target/release/libxyg_core.so",
+    "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-cc3b03dc/python",
+    "PATH_prepend": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin",
+    "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome"
+  },
+  "checks": [
+    {
+      "log": "implementation-first-tests.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo test -p xyg-engine graphforge::interaction --lib",
+      "exit": 0,
+      "scope": "153 predecessor tests; final156 includes three new boundary/accounting controls"
+    },
+    {
+      "log": "implementation-tests4.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo test -p xyg-engine graphforge::interaction --lib",
+      "exit": 0,
+      "scope": "153 predecessor tests; final156 includes three new boundary/accounting controls"
+    },
+    {
+      "log": "candidate-interactions.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo test -p xyg-engine graphforge::interaction --lib",
+      "exit": 0,
+      "scope": "153 predecessor tests; final156 includes three new boundary/accounting controls"
+    },
+    {
+      "log": "pinned-interactions.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo test -p xyg-engine graphforge::interaction --lib",
+      "exit": 0,
+      "scope": "153 predecessor tests; final156 includes three new boundary/accounting controls"
+    },
+    {
+      "log": "shared-publication-interactions.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo test -p xyg-engine graphforge::interaction --lib",
+      "exit": 0,
+      "scope": "153 predecessor tests; final156 includes three new boundary/accounting controls"
+    },
+    {
+      "log": "implementation-tests2.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo test -p xyg-engine graphforge::interaction --lib",
+      "exit": 101,
+      "scope": "invalid .25 literals in added tests; corrected and rerun"
+    },
+    {
+      "log": "implementation-tests3.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo test -p xyg-engine graphforge::interaction --lib",
+      "exit": 101,
+      "scope": "new test builder had reserved header word7 set on OPEN; corrected and rerun"
+    },
+    {
+      "log": "workspace-tests.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo test --workspace",
+      "exit": 101,
+      "scope": "68core and1859engine passed; old1MiB tiny OPEN refusal expectation failed under tighter valid source plan;64KiB refusal fixture repaired"
+    },
+    {
+      "log": "wasm-tests-repair.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo test -p xyg-wasm --lib",
+      "exit": 0,
+      "scope": "76tests"
+    },
+    {
+      "log": "final-wasm-tests.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo test -p xyg-wasm --lib",
+      "exit": 0,
+      "scope": "76tests"
+    },
+    {
+      "log": "shared-wasm-tests.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo test -p xyg-wasm --lib",
+      "exit": 0,
+      "scope": "76tests"
+    },
+    {
+      "log": "implementation-ledger.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo test -p xyg-engine --test graph_session_memory -- --nocapture",
+      "exit": 0,
+      "scope": "isolated native requested-byte ledger; source evolved as archived"
+    },
+    {
+      "log": "candidate-ledger.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo test -p xyg-engine --test graph_session_memory -- --nocapture",
+      "exit": 0,
+      "scope": "isolated native requested-byte ledger; source evolved as archived"
+    },
+    {
+      "log": "final-allocation-ledger.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo test -p xyg-engine --test graph_session_memory -- --nocapture",
+      "exit": 0,
+      "scope": "isolated native requested-byte ledger; source evolved as archived"
+    },
+    {
+      "log": "shared-publication-allocation.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo test -p xyg-engine --test graph_session_memory -- --nocapture",
+      "exit": 0,
+      "scope": "isolated native requested-byte ledger; source evolved as archived"
+    },
+    {
+      "log": "candidate-native-build.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo build -p xyg-core --release",
+      "exit": 0,
+      "scope": "only final shared-publication builds qualify final artifact"
+    },
+    {
+      "log": "candidate-native-final-build.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo build -p xyg-core --release",
+      "exit": 0,
+      "scope": "only final shared-publication builds qualify final artifact"
+    },
+    {
+      "log": "final-native-build.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo build -p xyg-core --release",
+      "exit": 0,
+      "scope": "only final shared-publication builds qualify final artifact"
+    },
+    {
+      "log": "pinned-native-build.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo build -p xyg-core --release",
+      "exit": 0,
+      "scope": "only final shared-publication builds qualify final artifact"
+    },
+    {
+      "log": "shared-publication-native-build.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo build -p xyg-core --release",
+      "exit": 0,
+      "scope": "only final shared-publication builds qualify final artifact"
+    },
+    {
+      "log": "implementation-wasm-build.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
+      "exit": 0,
+      "scope": "only final shared-publication builds qualify final artifact"
+    },
+    {
+      "log": "candidate-wasm-build.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
+      "exit": 0,
+      "scope": "only final shared-publication builds qualify final artifact"
+    },
+    {
+      "log": "final-wasm-build.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
+      "exit": 0,
+      "scope": "only final shared-publication builds qualify final artifact"
+    },
+    {
+      "log": "pinned-wasm-build.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
+      "exit": 0,
+      "scope": "only final shared-publication builds qualify final artifact"
+    },
+    {
+      "log": "shared-publication-wasm-build.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
+      "exit": 0,
+      "scope": "only final shared-publication builds qualify final artifact"
+    },
+    {
+      "log": "implementation-wasm-package.log.gz",
+      "command": "node js/package-wasm.mjs /var/tmp/xyg-default1k-target/wasm32-unknown-unknown/release/xyg_wasm.wasm",
+      "exit": 0,
+      "scope": "pinned-wasm-package was dispatched before compiler completion notification; unqualified. Final shared-package awaits finished build"
+    },
+    {
+      "log": "final-wasm-package.log.gz",
+      "command": "node js/package-wasm.mjs /var/tmp/xyg-default1k-target/wasm32-unknown-unknown/release/xyg_wasm.wasm",
+      "exit": 0,
+      "scope": "pinned-wasm-package was dispatched before compiler completion notification; unqualified. Final shared-package awaits finished build"
+    },
+    {
+      "log": "pinned-wasm-package.log.gz",
+      "command": "node js/package-wasm.mjs /var/tmp/xyg-default1k-target/wasm32-unknown-unknown/release/xyg_wasm.wasm",
+      "exit": 0,
+      "scope": "pinned-wasm-package was dispatched before compiler completion notification; unqualified. Final shared-package awaits finished build"
+    },
+    {
+      "log": "qualified-package.log.gz",
+      "command": "node js/package-wasm.mjs /var/tmp/xyg-default1k-target/wasm32-unknown-unknown/release/xyg_wasm.wasm",
+      "exit": 0,
+      "scope": "pinned-wasm-package was dispatched before compiler completion notification; unqualified. Final shared-package awaits finished build"
+    },
+    {
+      "log": "shared-package.log.gz",
+      "command": "node js/package-wasm.mjs /var/tmp/xyg-default1k-target/wasm32-unknown-unknown/release/xyg_wasm.wasm",
+      "exit": 0,
+      "scope": "pinned-wasm-package was dispatched before compiler completion notification; unqualified. Final shared-package awaits finished build"
+    },
+    {
+      "log": "default-first.log.gz",
+      "command": "XYG_GRAPH_SCHEDULING_ONLY=1 XYG_GRAPH_SESSION_REPORT=/var/tmp/xyg-default1k-evidence/default-first.json node scripts/graph_session_controller_wasm_smoke.mjs",
+      "exit": 0,
+      "scope": "default-faults helper delay scope failure corrected; intermediate grid-only captures"
+    },
+    {
+      "log": "default-faults.log.gz",
+      "command": "XYG_GRAPH_SCHEDULING_ONLY=1 XYG_GRAPH_SESSION_REPORT=/var/tmp/xyg-default1k-evidence/default-faults.json node scripts/graph_session_controller_wasm_smoke.mjs",
+      "exit": 1,
+      "scope": "default-faults helper delay scope failure corrected; intermediate grid-only captures"
+    },
+    {
+      "log": "default-faults-fixed.log.gz",
+      "command": "XYG_GRAPH_SCHEDULING_ONLY=1 XYG_GRAPH_SESSION_REPORT=/var/tmp/xyg-default1k-evidence/default-faults-fixed.json node scripts/graph_session_controller_wasm_smoke.mjs",
+      "exit": 0,
+      "scope": "default-faults helper delay scope failure corrected; intermediate grid-only captures"
+    },
+    {
+      "log": "foundation-final.log.gz",
+      "command": "XYG_WASM_FOUNDATION_REPORT=/var/tmp/xyg-default1k-evidence/foundation-final.json XYG_GRAPH_SCHEDULING_REPORT=/var/tmp/xyg-default1k-evidence/default-qualified.json node scripts/wasm_foundation_smoke.mjs",
+      "exit": 1,
+      "scope": "first failed existing aggregate timing expectation; final normal gate includes graph and temporal journeys"
+    },
+    {
+      "log": "foundation-retry.log.gz",
+      "command": "XYG_WASM_FOUNDATION_REPORT=/var/tmp/xyg-default1k-evidence/foundation-retry.json XYG_GRAPH_SCHEDULING_REPORT=/var/tmp/xyg-default1k-evidence/default-qualified.json node scripts/wasm_foundation_smoke.mjs",
+      "exit": 0,
+      "scope": "first failed existing aggregate timing expectation; final normal gate includes graph and temporal journeys"
+    },
+    {
+      "log": "shared-foundation.log.gz",
+      "command": "XYG_WASM_FOUNDATION_REPORT=/var/tmp/xyg-default1k-evidence/shared-foundation.json XYG_GRAPH_SCHEDULING_REPORT=/var/tmp/xyg-default1k-evidence/shared-default.json node scripts/wasm_foundation_smoke.mjs",
+      "exit": 0,
+      "scope": "first failed existing aggregate timing expectation; final normal gate includes graph and temporal journeys"
+    },
+    {
+      "log": "default-replay.log.gz",
+      "command": "node scripts/graph_session_public10k_replay.mjs /var/tmp/xyg-default1k-evidence/default-qualified.json",
+      "exit": 1,
+      "scope": "first tier assertion was wrong for legitimate viewport culling; exact visible membership oracle corrected without policy change"
+    },
+    {
+      "log": "keyboard-replay.log.gz",
+      "command": "node scripts/graph_session_public10k_replay.mjs /var/tmp/xyg-default1k-evidence/default-qualified.json.keyboard.json",
+      "exit": 1,
+      "scope": "first tier assertion was wrong for legitimate viewport culling; exact visible membership oracle corrected without policy change"
+    },
+    {
+      "log": "explicit10k-replay.log.gz",
+      "command": "node scripts/graph_session_public10k_replay.mjs /var/tmp/xyg-default1k-evidence/explicit10k-qualified.json",
+      "exit": 1,
+      "scope": "first tier assertion was wrong for legitimate viewport culling; exact visible membership oracle corrected without policy change"
+    },
+    {
+      "log": "default-replay-fixed.log.gz",
+      "command": "node scripts/graph_session_public10k_replay.mjs /var/tmp/xyg-default1k-evidence/default-qualified.json",
+      "exit": 0,
+      "scope": "first tier assertion was wrong for legitimate viewport culling; exact visible membership oracle corrected without policy change"
+    },
+    {
+      "log": "keyboard-replay-fixed.log.gz",
+      "command": "node scripts/graph_session_public10k_replay.mjs /var/tmp/xyg-default1k-evidence/default-qualified.json.keyboard.json",
+      "exit": 0,
+      "scope": "first tier assertion was wrong for legitimate viewport culling; exact visible membership oracle corrected without policy change"
+    },
+    {
+      "log": "explicit10k-replay-fixed.log.gz",
+      "command": "node scripts/graph_session_public10k_replay.mjs /var/tmp/xyg-default1k-evidence/explicit10k-qualified.json",
+      "exit": 0,
+      "scope": "first tier assertion was wrong for legitimate viewport culling; exact visible membership oracle corrected without policy change"
+    },
+    {
+      "log": "shared-default-replay.log.gz",
+      "command": "node scripts/graph_session_public10k_replay.mjs /var/tmp/xyg-default1k-evidence/shared-default.json",
+      "exit": 0,
+      "scope": "first tier assertion was wrong for legitimate viewport culling; exact visible membership oracle corrected without policy change"
+    },
+    {
+      "log": "shared-keyboard-replay.log.gz",
+      "command": "node scripts/graph_session_public10k_replay.mjs /var/tmp/xyg-default1k-evidence/shared-default.json.keyboard.json",
+      "exit": 0,
+      "scope": "first tier assertion was wrong for legitimate viewport culling; exact visible membership oracle corrected without policy change"
+    },
+    {
+      "log": "shared-10k-replay.log.gz",
+      "command": "node scripts/graph_session_public10k_replay.mjs /var/tmp/xyg-default1k-evidence/shared-10k.json",
+      "exit": 0,
+      "scope": "first tier assertion was wrong for legitimate viewport culling; exact visible membership oracle corrected without policy change"
+    },
+    {
+      "log": "explicit10k.log.gz",
+      "command": "XYG_GRAPH_SESSION_REPORT=/var/tmp/xyg-default1k-evidence/explicit10k.json node scripts/graph_session_public10k_smoke.mjs",
+      "exit": 0,
+      "scope": "explicit384MiB10k+1k; final shared-10k uses final artifact"
+    },
+    {
+      "log": "explicit10k-qualified.log.gz",
+      "command": "XYG_GRAPH_SESSION_REPORT=/var/tmp/xyg-default1k-evidence/explicit10k-qualified.json node scripts/graph_session_public10k_smoke.mjs",
+      "exit": 0,
+      "scope": "explicit384MiB10k+1k; final shared-10k uses final artifact"
+    },
+    {
+      "log": "shared-10k.log.gz",
+      "command": "XYG_GRAPH_SESSION_REPORT=/var/tmp/xyg-default1k-evidence/shared-10k.json node scripts/graph_session_public10k_smoke.mjs",
+      "exit": 0,
+      "scope": "explicit384MiB10k+1k; final shared-10k uses final artifact"
+    },
+    {
+      "log": "python-contract-gates.log.gz",
+      "command": "uv run pytest -q tests/test_graphforge_contract_corpus.py tests/test_verify_ci_workflow.py tests/test_verify_wasm_assets.py",
+      "exit": 1,
+      "scope": "711passed,1CRLF pin failure; repaired and corpus rerun"
+    },
+    {
+      "log": "corpus-crlf-focused.log.gz",
+      "command": "uv run pytest -q tests/test_graphforge_contract_corpus.py -x",
+      "exit": 1,
+      "scope": "realGit autocrlf true conversion; exact LF pins repaired for newly bound sources"
+    },
+    {
+      "log": "corpus-fixed.log.gz",
+      "command": "uv run pytest -q tests/test_graphforge_contract_corpus.py",
+      "exit": 0,
+      "scope": "realGit autocrlf true conversion; exact LF pins repaired for newly bound sources"
+    },
+    {
+      "log": "corpus-final.log.gz",
+      "command": "uv run pytest -q tests/test_graphforge_contract_corpus.py",
+      "exit": 0,
+      "scope": "realGit autocrlf true conversion; exact LF pins repaired for newly bound sources"
+    },
+    {
+      "log": "shared-corpus.log.gz",
+      "command": "uv run pytest -q tests/test_graphforge_contract_corpus.py",
+      "exit": 1,
+      "scope": "realGit autocrlf true conversion; exact LF pins repaired for newly bound sources"
+    },
+    {
+      "log": "shared-corpus-fixed.log.gz",
+      "command": "uv run pytest -q tests/test_graphforge_contract_corpus.py",
+      "exit": 0,
+      "scope": "realGit autocrlf true conversion; exact LF pins repaired for newly bound sources"
+    },
+    {
+      "log": "source-corpus-final.log.gz",
+      "command": "uv run pytest -q tests/test_graphforge_contract_corpus.py",
+      "exit": 0,
+      "scope": "realGit autocrlf true conversion; exact LF pins repaired for newly bound sources"
+    },
+    {
+      "log": "api-inventory-check.log.gz",
+      "command": "uv run python scripts/check_release_inventory.py --check",
+      "exit": 2,
+      "scope": "unsupported flag; corrected"
+    },
+    {
+      "log": "api-inventory-check-fixed.log.gz",
+      "command": "uv run python scripts/check_release_inventory.py",
+      "exit": 0,
+      "scope": "declarations match preparation inventory; no signature churn or acceptance freeze claim"
+    },
+    {
+      "log": "check-ci.log.gz",
+      "command": "make check-ci",
+      "exit": 0,
+      "scope": "normal CI verification gate"
+    },
+    {
+      "log": "oracle-mutations.log.gz",
+      "command": "node --test js/test/graph-progressive-keyboard.test.mjs js/test/graph-progressive-camera.test.mjs",
+      "exit": 0,
+      "scope": "40original mutation controls retained"
+    },
+    {
+      "log": "precommit-first.log.gz",
+      "command": "uv run --with pre-commit pre-commit run --all-files",
+      "exit": 0,
+      "scope": "full worktree hooks"
+    },
+    {
+      "log": "precommit-final.log.gz",
+      "command": "uv run --with pre-commit pre-commit run --all-files",
+      "exit": 0,
+      "scope": "full worktree hooks"
+    },
+    {
+      "log": "precommit-commit.log.gz",
+      "command": "uv run --with pre-commit pre-commit run --all-files",
+      "exit": 0,
+      "scope": "full worktree hooks"
+    },
+    {
+      "log": "ruff-check-first.log.gz",
+      "command": "uv run ruff check .",
+      "exit": 0,
+      "scope": "full worktree"
+    },
+    {
+      "log": "ruff-check-final.log.gz",
+      "command": "uv run ruff check .",
+      "exit": 0,
+      "scope": "full worktree"
+    },
+    {
+      "log": "ruff-check-commit.log.gz",
+      "command": "uv run ruff check .",
+      "exit": 0,
+      "scope": "full worktree"
+    },
+    {
+      "log": "ruff-format-first.log.gz",
+      "command": "uv run ruff format --check .",
+      "exit": 0,
+      "scope": "full worktree"
+    },
+    {
+      "log": "ruff-format-final.log.gz",
+      "command": "uv run ruff format --check .",
+      "exit": 0,
+      "scope": "full worktree"
+    },
+    {
+      "log": "ruff-format-commit.log.gz",
+      "command": "uv run ruff format --check .",
+      "exit": 0,
+      "scope": "full worktree"
+    },
+    {
+      "log": "workspace-final.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo test --workspace",
+      "exit": 0,
+      "scope": "final implementation:68core,1859engine,76WASM plus integration/doctests"
+    },
+    {
+      "log": "canonical-ledger-final.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo test -p xyg-engine --test graph_session_memory -- --nocapture",
+      "exit": 0,
+      "scope": "final extra full canonical UUID/position population assertions"
+    },
+    {
+      "log": "shared-publication-native-build.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo build -p xyg-core --release",
+      "exit": 0,
+      "scope": "final full-publication sharing artifact"
+    },
+    {
+      "log": "shared-publication-wasm-build.log.gz",
+      "command": "/home/ubuntu/.cargo/bin/cargo build -p xyg-wasm --release --target wasm32-unknown-unknown",
+      "exit": 0,
+      "scope": "final full-publication sharing artifact"
+    },
+    {
+      "log": "shared-wasm-memory.log.gz",
+      "command": "node /var/tmp/xyg-default1k-evidence/default-memory-probe.mjs packages/xy-client/dist/xyg-wasm.wasm",
+      "exit": 0,
+      "scope": "actual isolated final module linear-memory observations"
+    }
+  ],
+  "failuresAreNotPasses": true,
+  "scope": "No fullPython suite, independent review, remoteCI or integration claim; original baseline commands preserved in archive"
+}

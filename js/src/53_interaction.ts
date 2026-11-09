@@ -202,6 +202,7 @@ Object.assign(ChartView.prototype, {
       }
     };
     const cancelPointerGesture = () => {
+      this._filterDashboard?.cancelPointer();
       band?.capture.release();
       drag?.capture.release();
       this.selRect.style.display = "none";
@@ -242,10 +243,11 @@ Object.assign(ChartView.prototype, {
       const canBoxZoom = this._interactionFlag("box_zoom", true);
       // Shift-drag box-selects (§34); the modebar can make selection or box-zoom
       // the default plain-drag gesture; otherwise a plain drag pans.
+      if (this._filterDashboard && e.shiftKey) { this._filterDashboard.rejectTool("box"); return; }
       const canBrush = this._interactionFlag("brush", true) && this._interactionFlag("select", true);
       const selectMode = this.dragMode.startsWith("select") ? this.dragMode : null;
-      const mode = (e.shiftKey || selectMode) && canBrush && this._pickable
-        ? (e.shiftKey ? "select" : selectMode)
+      const mode = (e.shiftKey || selectMode) && canBrush && (this._pickable || this._filterDashboard)
+        ? (this._filterDashboard ? this._filterDashboard.dragMode(this) : e.shiftKey ? "select" : selectMode)
         : this.dragMode === "zoom" && canNavigate && canZoom && canBoxZoom ? "zoom" : null;
       if (mode) {
         const previousLasso = mode.startsWith("select") && this._lassoPolygon
@@ -265,6 +267,7 @@ Object.assign(ChartView.prototype, {
           previousBox,
           replacingLasso: false,
         };
+        if (mode.startsWith("select")) this._filterDashboard?.beginPointer(this, d0);
         band.capture = this._captureGesturePointer(c, e, endGestureWithoutRelease);
         this._hideTooltip();
         return;
@@ -292,7 +295,9 @@ Object.assign(ChartView.prototype, {
     this._listen(c, "pointermove", (e) => {
       const capture = band?.capture || drag?.capture;
       if (capture && !capture.guard(e)) return;
-      if (band) { this._updateBand(band, e); return; }
+      if (band) { this._updateBand(band, e);
+        if (band.mode.startsWith("select")) this._filterDashboard?.movePointer(this, band.d0, dataAt(e.clientX,e.clientY));
+        return; }
       if (drag) {
         drag.moved = true;
         const ranges = Object.fromEntries(
@@ -375,6 +380,7 @@ Object.assign(ChartView.prototype, {
           this._boxSelection = band.previousBox;
           this._renderBoxSelection();
         }
+        if (!moved) this._filterDashboard?.cancelPointer();
         band = null;
         return;
       }
@@ -432,7 +438,9 @@ Object.assign(ChartView.prototype, {
       this._resetView(true, "reset");
     });
     this._listen(c, "keydown", (e) => {
+      if (this._filterDashboard && (e.key === "Delete" || e.key === "Backspace") && band) cancelPointerGesture();
       if (e.key === "Escape" && (band || drag)) {
+        this._filterDashboard?.cancelPointer();
         // Release before dropping the records: the capture object is the only
         // handle on its `lostpointercapture` listener, so an unreleased gesture
         // strands that listener on the canvas for the life of the view.
@@ -475,6 +483,7 @@ Object.assign(ChartView.prototype, {
   },
 
   _onA11yKey(e) {
+    if (this._filterDashboard?.key(this, e)) return;
     const direction = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
     const activate = e.key === "Enter" || e.key === " ";
     if (direction === undefined && e.key !== "Home" && e.key !== "End" && e.key !== "Escape"
@@ -895,6 +904,7 @@ Object.assign(ChartView.prototype, {
   },
 
   _sendSelect(d0, d1, opts: any = {}) {
+    if (this._filterDashboard) { this._filterDashboard.pointer(this, d0, d1); return; }
     this._clearLassoOverlay();
     const x0 = Math.min(d0[0], d1[0]), x1 = Math.max(d0[0], d1[0]);
     const y0 = Math.min(d0[1], d1[1]), y1 = Math.max(d0[1], d1[1]);
@@ -960,11 +970,11 @@ Object.assign(ChartView.prototype, {
     }
   },
 
-  // Republish hydration has already restored the durable geometry through
-  // _applyStatePatch. Fill the rebuilt trace masks from the resident CPU
-  // columns while the authoritative kernel reply is in flight, without
-  // replaying a user gesture. The explicit option keeps this path private to
-  // restoration callers; an unavailable or lost GL context skips the preview.
+  // Republish/context hydration retains durable geometry on the view. Fill
+  // rebuilt trace masks from resident CPU columns without replaying a gesture.
+  // Kernel previews use their scatter-only selection universe; standalone
+  // restoration uses the same eligible marks as its original local gesture.
+  // An unavailable or lost GL context skips the preview.
   _restoreSelectionLocalMask(selection, opts: any = {}) {
     if (opts.localMask !== true || this._glLost || !this.gl
         || !selection || typeof selection !== "object") {
@@ -978,7 +988,7 @@ Object.assign(ChartView.prototype, {
         Math.max(x0, x1),
         Math.min(y0, y1),
         Math.max(y0, y1),
-        { dispatch: false, localMask: true },
+        { dispatch: false, localMask: this.comm != null },
       );
       return true;
     }
@@ -989,7 +999,7 @@ Object.assign(ChartView.prototype, {
         return false;
       }
       const polygon = selection.polygon.map((point) => [point[0], point[1]]);
-      this._selectLocalPolygon(polygon, { dispatch: false, localMask: true });
+      this._selectLocalPolygon(polygon, { dispatch: false, localMask: this.comm != null });
       return true;
     }
     return false;
@@ -1089,6 +1099,7 @@ Object.assign(ChartView.prototype, {
   },
 
   _clearSelection(opts: any = {}) {
+    if (this._filterDashboard) { void this._filterDashboard.clear(); return; }
     this._clearLassoOverlay();
     this._clearBoxOverlay();
     // Clearing a durable selection is itself a durable-state change; linked
@@ -1717,7 +1728,7 @@ Object.assign(ChartView.prototype, {
     // advertises a selection gesture the chart can't honor.
     this._syncModebarSelect = () => {
       if (!selectTrigger) return;
-      const on = Boolean(this._pickable);
+      const on = Boolean(this._pickable || this._filterDashboard);
       if (!on) {
         setSelectMenuOpen(false);
         if (this.dragMode.startsWith("select")) this._setDragMode("pan");
@@ -1857,6 +1868,7 @@ Object.assign(ChartView.prototype, {
   },
 
   _setDragMode(mode, { userInitiated = true } = {}) {
+    if (this._filterDashboard && mode.startsWith("select") && mode !== this._filterDashboard.dragMode(this)) { this._filterDashboard.rejectTool(mode); return; }
     // Calls here are explicit tool changes (modebar, keyboard, the
     // select-fallback) except the modebar-build re-assert, which passes
     // userInitiated: false. The wheel gate needs the distinction: a user
