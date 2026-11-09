@@ -5621,6 +5621,30 @@ def test_chunked_chart_rendering_cannot_be_disabled_in_ci(tmp_path: Path, comman
     assert any("required chunked chart rendered snapshots" in error for error in errors)
 
 
+@pytest.mark.parametrize(
+    ("name", "diagnostic"),
+    [
+        ("Python tests (native core)", "required chunked chart rendered snapshots"),
+        ("Python 3.11 tests (native core)", "explicit inherited library selection"),
+    ],
+)
+@pytest.mark.parametrize("replacement", ["", "# {line}", "echo '{line}'", "{line} || true"])
+def test_python_native_library_selection_cannot_be_omitted_or_masked(
+    tmp_path: Path, name: str, diagnostic: str, replacement: str
+) -> None:
+    source = verify_ci_workflow.DEFAULT_CI_WORKFLOW.read_text()
+    prefix, step = source.split(f"      - name: {name}", 1)
+    line = 'export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"'
+    original = f"          {line}\n"
+    assert original in step
+    patched = replacement.format(line=line)
+    step = step.replace(original, f"          {patched}\n" if patched else "", 1)
+    path = tmp_path / "ci.yml"
+    path.write_text(prefix + f"      - name: {name}" + step)
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+    assert any(diagnostic in error for error in errors)
+
+
 def test_ci_frozen_export_oracle_requires_explicit_native_candidate(tmp_path: Path) -> None:
     workflow = tmp_path / "ci.yml"
     source = verify_ci_workflow.DEFAULT_CI_WORKFLOW.read_text()

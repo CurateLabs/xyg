@@ -89,3 +89,17 @@ def test_floor_uses_pinned_browser_for_required_offline_fixtures():
     assert "require('playwright').chromium.executablePath()" in run
     assert run.splitlines()[-1] == ".venv/bin/python -m pytest -q"
     assert "||" not in run and "continue-on-error" not in run
+
+
+def test_python_native_lanes_export_library_to_node_child_processes():
+    ci = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
+    for job, name in [
+        ("test", "Python tests (native core)"),
+        ("python_floor", "Python 3.11 tests (native core)"),
+    ]:
+        step = next(s for s in ci["jobs"][job]["steps"] if s.get("name") == name)
+        lines = step["run"].splitlines()
+        export = 'export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"'
+        assert lines[0] == export
+        assert all("XYG_NATIVE_LIB" not in line for line in lines[1:])
+        assert "if" not in step and not step.get("continue-on-error")

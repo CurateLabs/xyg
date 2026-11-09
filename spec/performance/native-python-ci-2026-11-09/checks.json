@@ -1,0 +1,537 @@
+{
+  "base": "32d5839b522534efb10f61c8bea898ad0b3baac8",
+  "bindings": {
+    "current": 3409,
+    "historical": 1345,
+    "parents": 17,
+    "path": "spec/performance/native-python-ci-2026-11-09/current-bindings.json",
+    "sha256": "2d5a3bfba842e69d5968342698475d1dd8f3e2526905532180e48f7a7f8ab1de"
+  },
+  "checkCi": {
+    "exit": 0,
+    "log": "target/task-tmp/native-python-ci/check-ci-corrected.log",
+    "passed": 801
+  },
+  "compiledInputs": {
+    "count": 324,
+    "parentExact": true,
+    "path": "spec/performance/current-large-graph-union-2026-11-09/compiled-inputs.json",
+    "sha256": "14467233a1f6878d137490b6ef6741766486b42b37b8ed16aa01e2065113899e"
+  },
+  "coreAndCiGuards": {
+    "exit": 0,
+    "passed": 19
+  },
+  "evidence": {
+    "target/task-tmp/current-large-graph-union/hosted-continuation32-after-profile.json": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/500c2d7961abd2f6f6dc6698ca5e9129b45d7f2fdec0524739167db3969471d8.gz",
+      "archiveBytes": 1008,
+      "archiveSha256": "be77a806159d0398030920c561f2f235c919d156ecd965e5cedfa1435f838e81",
+      "bytes": 5100,
+      "sha256": "500c2d7961abd2f6f6dc6698ca5e9129b45d7f2fdec0524739167db3969471d8"
+    },
+    "target/task-tmp/current-large-graph-union/hosted32-main-job-plain.log": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/b380e6aff11a69a6edb6c242b419b8bf2777154c49578885ca1a8d5ebccc3f7d.gz",
+      "archiveBytes": 227429,
+      "archiveSha256": "de91a0d56f882b12f1e8da06809c1b75e9fbd146f1a8653eb9e9a2e407aa1674",
+      "bytes": 1208005,
+      "sha256": "b380e6aff11a69a6edb6c242b419b8bf2777154c49578885ca1a8d5ebccc3f7d"
+    },
+    "target/task-tmp/current-large-graph-union/hosted32-main-job.log": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/b787bb1b06ba271997be194bd4427f7db21c0467d3107d7b34b03086f6c24d9f.gz",
+      "archiveBytes": 228221,
+      "archiveSha256": "ca225a81914ed5d16db338e36b14eeb1cbdc8b6f5f9bd9ccdb6b4f503055cea0",
+      "bytes": 1216128,
+      "sha256": "b787bb1b06ba271997be194bd4427f7db21c0467d3107d7b34b03086f6c24d9f"
+    },
+    "target/task-tmp/current-large-graph-union/hosted32-run.json": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/f1cd9094ecf22b7a3bb80f74f2c212cfa19b1adedea4882cf6556e953b2719ea.gz",
+      "archiveBytes": 3586,
+      "archiveSha256": "88b09b767542777cca1fa1895ad43f78d759a1552ef4ab3b72f3ea6ddbefe289",
+      "bytes": 28474,
+      "sha256": "f1cd9094ecf22b7a3bb80f74f2c212cfa19b1adedea4882cf6556e953b2719ea"
+    },
+    "target/task-tmp/native-python-ci/check-ci-corrected.log": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/7d5f15cc59c214ae381007f8a8eff8d2883419ac30886af4fabe6a55a4412a0a.gz",
+      "archiveBytes": 434,
+      "archiveSha256": "3f58d3c0c7af0e3a028eebc465b48290f351d331cccc2b58cebef54e2ea2d9b7",
+      "bytes": 1985,
+      "sha256": "7d5f15cc59c214ae381007f8a8eff8d2883419ac30886af4fabe6a55a4412a0a"
+    },
+    "target/task-tmp/native-python-ci/check-ci.log": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/92ffd175dcb899009c362eee784f510aa50cd3b04569e6882b6c1194ee388f7f.gz",
+      "archiveBytes": 562,
+      "archiveSha256": "0792d54a27fe440bc3ae6e6dce7e4aab88a41816a0c3898e3912136302cdedc2",
+      "bytes": 1364,
+      "sha256": "92ffd175dcb899009c362eee784f510aa50cd3b04569e6882b6c1194ee388f7f"
+    },
+    "target/task-tmp/native-python-ci/core-contracts.log": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/1d06474f5498b3c7d3d69db8c4509afbbf86dea97fd15972887e15adb7a9890e.gz",
+      "archiveBytes": 53,
+      "archiveSha256": "ace9b038157b2ce2fbca2e1b0852f50a8d5930a51c3de18bb03a987e1d0ad790",
+      "bytes": 100,
+      "sha256": "1d06474f5498b3c7d3d69db8c4509afbbf86dea97fd15972887e15adb7a9890e"
+    },
+    "target/task-tmp/native-python-ci/core-final.log": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/06397c722ee1be24daf6bafddc21763c84647793bad84a658ce6719368076a5b.gz",
+      "archiveBytes": 63,
+      "archiveSha256": "a8eaa7659f323404caa9b6c43a55f022f2873b53c617b2c48f933c8cbdb5b486",
+      "bytes": 110,
+      "sha256": "06397c722ee1be24daf6bafddc21763c84647793bad84a658ce6719368076a5b"
+    },
+    "target/task-tmp/native-python-ci/format-final.log": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/234bea158cd45b8f52f8cf23029bd920e91050b5f2b0a911add80089cf7c38b3.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "9d9023b3e7e869eb6c727441a8ae41e4ec754988bd7e7a43c9b8fe4932163bfb",
+      "bytes": 29,
+      "sha256": "234bea158cd45b8f52f8cf23029bd920e91050b5f2b0a911add80089cf7c38b3"
+    },
+    "target/task-tmp/native-python-ci/format-preflight.log": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/234bea158cd45b8f52f8cf23029bd920e91050b5f2b0a911add80089cf7c38b3.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "9d9023b3e7e869eb6c727441a8ae41e4ec754988bd7e7a43c9b8fe4932163bfb",
+      "bytes": 29,
+      "sha256": "234bea158cd45b8f52f8cf23029bd920e91050b5f2b0a911add80089cf7c38b3"
+    },
+    "target/task-tmp/native-python-ci/hooks-final.log": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/native-python-ci/hooks-staged.log": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/native-python-ci/missing-native-negative.log": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/164ba8d335927fae687e45c5ce98f4ee607f4558d43f27a9bd11c4813cdad696.gz",
+      "archiveBytes": 4240,
+      "archiveSha256": "d83239316c8f105ae824948a3e912992d7b44268943d69a3caad9d19918ae0f0",
+      "bytes": 15587,
+      "sha256": "164ba8d335927fae687e45c5ce98f4ee607f4558d43f27a9bd11c4813cdad696"
+    },
+    "target/task-tmp/native-python-ci/python311-guard-negatives.log": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/d23a705435166ebce61b641fe682cdfc2009f83065afaaa81dec0b28f7772ebe.gz",
+      "archiveBytes": 68,
+      "archiveSha256": "9ada52aafc6fe61a0086856cbf9527a031724275aa34ff80381ad8c1ec6c170e",
+      "bytes": 115,
+      "sha256": "d23a705435166ebce61b641fe682cdfc2009f83065afaaa81dec0b28f7772ebe"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry.log": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/5bdcd359e8ff2b33ed6eba5f118b772502a5d85929a2b9438afff64841d5ee97.gz",
+      "archiveBytes": 50,
+      "archiveSha256": "5c473f1f47af319d6be78f2781aa75912cfa601c25323da1d90dc9d87737c978",
+      "bytes": 99,
+      "sha256": "5bdcd359e8ff2b33ed6eba5f118b772502a5d85929a2b9438afff64841d5ee97"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_0/failure-oracle-paint.png": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4.gz",
+      "archiveBytes": 21847,
+      "archiveSha256": "52e2127026d70675d7075fce1ca7db38a8e310e296c2c49bc25c0180335d2350",
+      "bytes": 23856,
+      "sha256": "04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_0/failure-oracle.png": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/d52a429dd9caae1e8306b805d85ffc76ae3eb429279029a620d8bd39fe39feb9.gz",
+      "archiveBytes": 14796,
+      "archiveSha256": "43edfc56ef22066a0c97f2dc32ad7589c2fadbda47ab9425b740748437cd995f",
+      "bytes": 16493,
+      "sha256": "d52a429dd9caae1e8306b805d85ffc76ae3eb429279029a620d8bd39fe39feb9"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_0/failure-retained-paint.png": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4.gz",
+      "archiveBytes": 21847,
+      "archiveSha256": "52e2127026d70675d7075fce1ca7db38a8e310e296c2c49bc25c0180335d2350",
+      "bytes": 23856,
+      "sha256": "04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_0/failure-retained.png": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/d52a429dd9caae1e8306b805d85ffc76ae3eb429279029a620d8bd39fe39feb9.gz",
+      "archiveBytes": 14796,
+      "archiveSha256": "43edfc56ef22066a0c97f2dc32ad7589c2fadbda47ab9425b740748437cd995f",
+      "bytes": 16493,
+      "sha256": "d52a429dd9caae1e8306b805d85ffc76ae3eb429279029a620d8bd39fe39feb9"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_0/oracle-paint.png": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/db414bcd039f3b8121a7112ee9404905ddd15ffb7b5ed6505eada185cd9e158a.gz",
+      "archiveBytes": 51835,
+      "archiveSha256": "172988c520d00ce8962d163eeba22b483716c41bc441f9f0e3245c9b58c59627",
+      "bytes": 52425,
+      "sha256": "db414bcd039f3b8121a7112ee9404905ddd15ffb7b5ed6505eada185cd9e158a"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_0/oracle.png": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/2a3b2c7400b15c5eb7b7507c10cdfbd3bdaebc54cf0a89094c63c7f9aeaa2979.gz",
+      "archiveBytes": 34220,
+      "archiveSha256": "49eb874b0c360de0391e51e657c9acf49b737f040b08c337a7e844c9d1bd30d5",
+      "bytes": 34516,
+      "sha256": "2a3b2c7400b15c5eb7b7507c10cdfbd3bdaebc54cf0a89094c63c7f9aeaa2979"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_0/overview-control-paint.png": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/a292278a1f1c907748ea851e8389135dc1fabc960904186c910f6eb2ef09fa53.gz",
+      "archiveBytes": 11974,
+      "archiveSha256": "71b7411c3d2166e994c12e35b160c6c83f5991e4f32ca7e85d49d9fa98ee151e",
+      "bytes": 12820,
+      "sha256": "a292278a1f1c907748ea851e8389135dc1fabc960904186c910f6eb2ef09fa53"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_0/overview-control.png": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/490fe80aee85db28b4bec06ce9b3836bee851678ce5526fbdab22fc507d57024.gz",
+      "archiveBytes": 11141,
+      "archiveSha256": "602024c8c8b5365194fb75256033948effb30b32b848d03dac760a12383ccac5",
+      "bytes": 11276,
+      "sha256": "490fe80aee85db28b4bec06ce9b3836bee851678ce5526fbdab22fc507d57024"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_0/refined-paint.png": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/db414bcd039f3b8121a7112ee9404905ddd15ffb7b5ed6505eada185cd9e158a.gz",
+      "archiveBytes": 51835,
+      "archiveSha256": "172988c520d00ce8962d163eeba22b483716c41bc441f9f0e3245c9b58c59627",
+      "bytes": 52425,
+      "sha256": "db414bcd039f3b8121a7112ee9404905ddd15ffb7b5ed6505eada185cd9e158a"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_0/refined.png": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/2a3b2c7400b15c5eb7b7507c10cdfbd3bdaebc54cf0a89094c63c7f9aeaa2979.gz",
+      "archiveBytes": 34220,
+      "archiveSha256": "49eb874b0c360de0391e51e657c9acf49b737f040b08c337a7e844c9d1bd30d5",
+      "bytes": 34516,
+      "sha256": "2a3b2c7400b15c5eb7b7507c10cdfbd3bdaebc54cf0a89094c63c7f9aeaa2979"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_0/remounted-paint.png": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4.gz",
+      "archiveBytes": 21847,
+      "archiveSha256": "52e2127026d70675d7075fce1ca7db38a8e310e296c2c49bc25c0180335d2350",
+      "bytes": 23856,
+      "sha256": "04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_0/report.json": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/ae5a2ac9af6118e57aa1f7700dcb1006dc6629f4774ba4ac1f58429cf7a0590d.gz",
+      "archiveBytes": 11266,
+      "archiveSha256": "d93cbef2cd8e828dd0c898fd3fe9a427df382b44ac38fb41610c437d6760387c",
+      "bytes": 63983,
+      "sha256": "ae5a2ac9af6118e57aa1f7700dcb1006dc6629f4774ba4ac1f58429cf7a0590d"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_0/server.log": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/496bcbe7983d4429a4fdc189c494f86ce3ff8a542d12d26e39c4c51370a8fa3b.gz",
+      "archiveBytes": 1507,
+      "archiveSha256": "09244ebea46cb03799afeaaad0ddf605cb036ba481c0bbb28428076ca3fcbfd6",
+      "bytes": 4771,
+      "sha256": "496bcbe7983d4429a4fdc189c494f86ce3ff8a542d12d26e39c4c51370a8fa3b"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_0/venv.log": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/8638e07897c0c4f179b3fa33f380d133bc5d3a800e9dcff63a3cd0f7702dd34e.gz",
+      "archiveBytes": 212,
+      "archiveSha256": "2f873a7bbacb19917259f6043f3290d66ae2ff86f1c7ff20e8400f4bfcacc130",
+      "bytes": 368,
+      "sha256": "8638e07897c0c4f179b3fa33f380d133bc5d3a800e9dcff63a3cd0f7702dd34e"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_0/wheel.log": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/65a8f186a2f4d2ef006548eb06b199456ee9ac07680a00caad7b170fed804c89.gz",
+      "archiveBytes": 169,
+      "archiveSha256": "e60c69c3b3e7f0c749a386c33a5ac8c467edff068ba1774cd964681f05a5cf1b",
+      "bytes": 188,
+      "sha256": "65a8f186a2f4d2ef006548eb06b199456ee9ac07680a00caad7b170fed804c89"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_current/failure-oracle-paint.png": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4.gz",
+      "archiveBytes": 21847,
+      "archiveSha256": "52e2127026d70675d7075fce1ca7db38a8e310e296c2c49bc25c0180335d2350",
+      "bytes": 23856,
+      "sha256": "04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_current/failure-oracle.png": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/d52a429dd9caae1e8306b805d85ffc76ae3eb429279029a620d8bd39fe39feb9.gz",
+      "archiveBytes": 14796,
+      "archiveSha256": "43edfc56ef22066a0c97f2dc32ad7589c2fadbda47ab9425b740748437cd995f",
+      "bytes": 16493,
+      "sha256": "d52a429dd9caae1e8306b805d85ffc76ae3eb429279029a620d8bd39fe39feb9"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_current/failure-retained-paint.png": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4.gz",
+      "archiveBytes": 21847,
+      "archiveSha256": "52e2127026d70675d7075fce1ca7db38a8e310e296c2c49bc25c0180335d2350",
+      "bytes": 23856,
+      "sha256": "04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_current/failure-retained.png": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/d52a429dd9caae1e8306b805d85ffc76ae3eb429279029a620d8bd39fe39feb9.gz",
+      "archiveBytes": 14796,
+      "archiveSha256": "43edfc56ef22066a0c97f2dc32ad7589c2fadbda47ab9425b740748437cd995f",
+      "bytes": 16493,
+      "sha256": "d52a429dd9caae1e8306b805d85ffc76ae3eb429279029a620d8bd39fe39feb9"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_current/oracle-paint.png": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/db414bcd039f3b8121a7112ee9404905ddd15ffb7b5ed6505eada185cd9e158a.gz",
+      "archiveBytes": 51835,
+      "archiveSha256": "172988c520d00ce8962d163eeba22b483716c41bc441f9f0e3245c9b58c59627",
+      "bytes": 52425,
+      "sha256": "db414bcd039f3b8121a7112ee9404905ddd15ffb7b5ed6505eada185cd9e158a"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_current/oracle.png": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/2a3b2c7400b15c5eb7b7507c10cdfbd3bdaebc54cf0a89094c63c7f9aeaa2979.gz",
+      "archiveBytes": 34220,
+      "archiveSha256": "49eb874b0c360de0391e51e657c9acf49b737f040b08c337a7e844c9d1bd30d5",
+      "bytes": 34516,
+      "sha256": "2a3b2c7400b15c5eb7b7507c10cdfbd3bdaebc54cf0a89094c63c7f9aeaa2979"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_current/overview-control-paint.png": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/a292278a1f1c907748ea851e8389135dc1fabc960904186c910f6eb2ef09fa53.gz",
+      "archiveBytes": 11974,
+      "archiveSha256": "71b7411c3d2166e994c12e35b160c6c83f5991e4f32ca7e85d49d9fa98ee151e",
+      "bytes": 12820,
+      "sha256": "a292278a1f1c907748ea851e8389135dc1fabc960904186c910f6eb2ef09fa53"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_current/overview-control.png": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/490fe80aee85db28b4bec06ce9b3836bee851678ce5526fbdab22fc507d57024.gz",
+      "archiveBytes": 11141,
+      "archiveSha256": "602024c8c8b5365194fb75256033948effb30b32b848d03dac760a12383ccac5",
+      "bytes": 11276,
+      "sha256": "490fe80aee85db28b4bec06ce9b3836bee851678ce5526fbdab22fc507d57024"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_current/refined-paint.png": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/db414bcd039f3b8121a7112ee9404905ddd15ffb7b5ed6505eada185cd9e158a.gz",
+      "archiveBytes": 51835,
+      "archiveSha256": "172988c520d00ce8962d163eeba22b483716c41bc441f9f0e3245c9b58c59627",
+      "bytes": 52425,
+      "sha256": "db414bcd039f3b8121a7112ee9404905ddd15ffb7b5ed6505eada185cd9e158a"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_current/refined.png": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/2a3b2c7400b15c5eb7b7507c10cdfbd3bdaebc54cf0a89094c63c7f9aeaa2979.gz",
+      "archiveBytes": 34220,
+      "archiveSha256": "49eb874b0c360de0391e51e657c9acf49b737f040b08c337a7e844c9d1bd30d5",
+      "bytes": 34516,
+      "sha256": "2a3b2c7400b15c5eb7b7507c10cdfbd3bdaebc54cf0a89094c63c7f9aeaa2979"
+    },
+    "target/task-tmp/native-python-ci/python311-installed-retry/test_installed_kernel_chunked_current/remounted-paint.png": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4.gz",
+      "archiveBytes": 21847,
+      "archiveSha256": "52e2127026d70675d7075fce1ca7db38a8e310e296c2c49bc25c0180335d2350",
+      "bytes": 23856,
+      "sha256": "04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4"
+    },
+    "target/task-tmp/native-python-ci/python311-required.log": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/093203566c1fc57ce441eced3221716831902b438e4d8640fcd07d775ad5873e.gz",
+      "archiveBytes": 7130,
+      "archiveSha256": "e3bdddb0ec5f4aac94d827eb4c0e39782363bf48d201052be783820d49c73d47",
+      "bytes": 28039,
+      "sha256": "093203566c1fc57ce441eced3221716831902b438e4d8640fcd07d775ad5873e"
+    },
+    "target/task-tmp/native-python-ci/qualification-pending.json": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/fcc30b9ea54f0059842b69ef7e4cefac13cd0020e997d78bb759c71501dd8257.gz",
+      "archiveBytes": 681,
+      "archiveSha256": "e884fe88e407330009e9a9556bcc5a71da5d663f031df7a568969688229ced4b",
+      "bytes": 1320,
+      "sha256": "fcc30b9ea54f0059842b69ef7e4cefac13cd0020e997d78bb759c71501dd8257"
+    },
+    "target/task-tmp/native-python-ci/required-native-tests.log": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/925e013f5d6abff8652136273551f38e9b4f39522cd6848a4ef3620e49274d30.gz",
+      "archiveBytes": 53,
+      "archiveSha256": "ee2b70faaf69afe9080934d2ea299b5ba8f1d7c6f3f9e3b5e1acfefb6ab6c718",
+      "bytes": 100,
+      "sha256": "925e013f5d6abff8652136273551f38e9b4f39522cd6848a4ef3620e49274d30"
+    },
+    "target/task-tmp/native-python-ci/ruff-final.log": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/native-python-ci/ruff-preflight.log": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/native-python-ci/seal-sources.log": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/bc4aed6ceed76bc9bd61bf583f3c8a68f4467ce69ebf92509e6600ce7779fbed.gz",
+      "archiveBytes": 66,
+      "archiveSha256": "7513d1cda155480cac21098d29c08379be310c197365ee80678a473d60b02118",
+      "bytes": 53,
+      "sha256": "bc4aed6ceed76bc9bd61bf583f3c8a68f4467ce69ebf92509e6600ce7779fbed"
+    },
+    "target/task-tmp/native-python-ci/seal-sources.py": {
+      "archive": "spec/performance/native-python-ci-2026-11-09/evidence/c2cd0aca6f27ae6c3ee6d9b18355825961d90ae3e29e9661d5d80d641aa75d61.gz",
+      "archiveBytes": 929,
+      "archiveSha256": "55af241d63c5e13df1a90ca13a2c954787070aad34a6a1e34477d5c7d8aa6415",
+      "bytes": 1933,
+      "sha256": "c2cd0aca6f27ae6c3ee6d9b18355825961d90ae3e29e9661d5d80d641aa75d61"
+    }
+  },
+  "excluded": "No renderer optimization retained; no100k/reliability/milestone/hostedCI/queue claim",
+  "firstCheckCi": {
+    "exit": 2,
+    "scope": "strict command list rejected newly added export before guard list was extended"
+  },
+  "format": {
+    "exit": 0,
+    "log": "target/task-tmp/native-python-ci/format-final.log"
+  },
+  "hooks": {
+    "exit": 0,
+    "log": "target/task-tmp/native-python-ci/hooks-final.log"
+  },
+  "installed311Rerun": {
+    "exit": 0,
+    "passed": 1,
+    "scope": "actual wheel/Jupyter/kernelPython3.11 using verified native/client; does not supersede original failure"
+  },
+  "missingEvidence": [
+    "The failedPython3.11 startup server.log was read but expired with pytest temporary-fixture cleanup before archival; the complete failing pytest log is retained; no startup cause or repair is certified"
+  ],
+  "missingNativeNegative": {
+    "exit": 1,
+    "scope": "same public Node browser bridge fails XYG_NATIVE_LIBRARY_MISSING without environment"
+  },
+  "originalMainJob": 129403131762,
+  "originalMainOutcome": "FAILURE",
+  "originalMainRun": 42688274537,
+  "originalRequiredBatch": {
+    "cause": "Node child missing XYG_NATIVE_LIB; no checkout fallback allowed",
+    "failed": 1,
+    "passed": 13
+  },
+  "priorIndependentReview": {
+    "head": "32d5839b522534efb10f61c8bea898ad0b3baac8",
+    "scope": "Inherited only for exact unchanged product/artifacts; no fresh broad product/build claim",
+    "sha256": "94db25309f8e8524ca5c4ac096953a53b496442c350f6df55f827841c48a1a01"
+  },
+  "python311Guards": {
+    "deselected": 674,
+    "exit": 0,
+    "passed": 11,
+    "scope": "native selection/bypass negatives and existing browser admission checks"
+  },
+  "readmeSha256": "619619de917eb183077dd56fc9700d27d9a98060b5fda5310fb1bb740cca531e",
+  "remaining": [
+    "Exact-diff independent correction review",
+    "New-head hosted required checks/currentmain freshness/queue",
+    "100k rendering, prior unresolved reliability failures and original milestones4-7 acceptance"
+  ],
+  "required311": {
+    "exit": 1,
+    "failed": 1,
+    "passed": 18,
+    "scope": "unchanged installed-Jupyter startup connection-refused; no reliability fix claimed"
+  },
+  "required312": {
+    "exit": 0,
+    "passed": 19,
+    "scope": "14 required native viewport/browser/installed cases and5CI guards"
+  },
+  "ruff": {
+    "exit": 0,
+    "log": "target/task-tmp/native-python-ci/ruff-final.log"
+  },
+  "runtime": {
+    "packages/xy-client/dist/index.js": {
+      "archive": "spec/performance/current-large-graph-union-2026-11-09/artifacts/13491332f9796a0c1e233e656ee7f2331f6b0e59697c2ab166d531e992ccbf04.gz",
+      "archiveBytes": 247044,
+      "archiveSha256": "cd806c910c7e3603e356dff11b35130db34ae4fe54fcd8b65d9b0dadfc899b45",
+      "bytes": 862251,
+      "sha256": "13491332f9796a0c1e233e656ee7f2331f6b0e59697c2ab166d531e992ccbf04"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "archive": "spec/performance/current-large-graph-union-2026-11-09/artifacts/bb9d6636fc108576fbec5a25f9875a4f81329ccd47fc63cb828cd5fd9fb0593d.gz",
+      "archiveBytes": 247126,
+      "archiveSha256": "4ee96cf45b27169c2975fd599b70119867083b9291d6c6ac027c37e7e54fc8cd",
+      "bytes": 862264,
+      "sha256": "bb9d6636fc108576fbec5a25f9875a4f81329ccd47fc63cb828cd5fd9fb0593d"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz",
+      "archiveBytes": 3838,
+      "archiveSha256": "dda8e6c4cec42d91f687b660d742d79dcc1a8c0d052ca6ca189c6acf095db2b4",
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8.gz",
+      "archiveBytes": 1043576,
+      "archiveSha256": "b09e635ab5663fabbb679592e2a8730413e322b541fd45d90105f73ca27c066c",
+      "bytes": 2536254,
+      "sha256": "fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "c4d9096b8df2ee31fc6c5e1a86cac0005b1406f5eee90de91d45fa72ba9f31f2",
+      "bytes": 226,
+      "sha256": "9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372.gz",
+      "archiveBytes": 781122,
+      "archiveSha256": "aad2d8c32a06b9155a6a2c466a64fc2df4effb1ec141722533cd30ecbf568413",
+      "bytes": 1886348,
+      "sha256": "1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372"
+    },
+    "python/xyg/static/index.js": {
+      "archive": "spec/performance/current-large-graph-union-2026-11-09/artifacts/13491332f9796a0c1e233e656ee7f2331f6b0e59697c2ab166d531e992ccbf04.gz",
+      "archiveBytes": 247044,
+      "archiveSha256": "cd806c910c7e3603e356dff11b35130db34ae4fe54fcd8b65d9b0dadfc899b45",
+      "bytes": 862251,
+      "sha256": "13491332f9796a0c1e233e656ee7f2331f6b0e59697c2ab166d531e992ccbf04"
+    },
+    "python/xyg/static/standalone.js": {
+      "archive": "spec/performance/current-large-graph-union-2026-11-09/artifacts/bb9d6636fc108576fbec5a25f9875a4f81329ccd47fc63cb828cd5fd9fb0593d.gz",
+      "archiveBytes": 247126,
+      "archiveSha256": "4ee96cf45b27169c2975fd599b70119867083b9291d6c6ac027c37e7e54fc8cd",
+      "bytes": 862264,
+      "sha256": "bb9d6636fc108576fbec5a25f9875a4f81329ccd47fc63cb828cd5fd9fb0593d"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8.gz",
+      "archiveBytes": 1043576,
+      "archiveSha256": "b09e635ab5663fabbb679592e2a8730413e322b541fd45d90105f73ca27c066c",
+      "bytes": 2536254,
+      "sha256": "fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "c4d9096b8df2ee31fc6c5e1a86cac0005b1406f5eee90de91d45fa72ba9f31f2",
+      "bytes": 226,
+      "sha256": "9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372.gz",
+      "archiveBytes": 781122,
+      "archiveSha256": "aad2d8c32a06b9155a6a2c466a64fc2df4effb1ec141722533cd30ecbf568413",
+      "bytes": 1886348,
+      "sha256": "1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372"
+    },
+    "target/release/libxyg_core.so": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/378a069c4f802bb97e6273333766a4afee99a626d4fc409f776f31d21968a4df.gz",
+      "archiveBytes": 2906222,
+      "archiveSha256": "e1a2c9c98f51d95d9ebaee58900a16680535d9747e5a7ec04e41a24cdbfba825",
+      "bytes": 6379784,
+      "sha256": "378a069c4f802bb97e6273333766a4afee99a626d4fc409f776f31d21968a4df"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/8eebf2a5621798d266fd9030caf04c20d0f89e2e17fb8137195ac2ddcaf4b6d2.gz",
+      "archiveBytes": 1253444,
+      "archiveSha256": "7f03900cf3918fae6592e2d4c54a9d3529ecba5af90d419262a45f778df96b0a",
+      "bytes": 4076094,
+      "sha256": "8eebf2a5621798d266fd9030caf04c20d0f89e2e17fb8137195ac2ddcaf4b6d2"
+    }
+  },
+  "schemaVersion": 1,
+  "scope": "CI-only explicit native selection; strict main/floor commands, unchanged runtime and acceptance"
+}

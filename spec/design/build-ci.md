@@ -54,6 +54,13 @@ Both new CI steps explicitly select the just-built release library with
 parser or fallback discovery path. Workflow contract tests reject omitted,
 commented, echoed, or failure-suppressed graph-suite commands.
 
+Both native Python test lanes also export the just-built release library in
+the same shell as pytest. Their Python-to-Node bridge subprocesses inherit
+`XYG_NATIVE_LIB`; exports in an earlier workflow step do not carry into these
+steps. Node development loading keeps its explicit-path contract and does not
+search the checkout. The required chunked native viewport tests retain their
+browser admission, assertions and failure propagation.
+
 The hard `test` job also runs every benchmark body once without timing (divan `--test` for the Rust
 benches and `pytest benchmarks/test_codspeed_*.py` without `--codspeed`), so stale benchmark oracles
 fail pull requests instead of the nightly CodSpeed run; see

@@ -454,6 +454,11 @@ tests/fixtures/temporal/frozen-history.json text eol=lf
 examples/temporal_graph_freeze.py text eol=lf
 scripts/gen_abi_manifest.py text eol=lf
 spec/design/temporal-graph-frozen.md text eol=lf
+
+# Native selection for Python-to-Node CI bridges and immutable predecessor bytes.
+spec/performance/native-python-ci-2026-11-09/** text eol=lf
+spec/performance/native-python-ci-2026-11-09/**/*.gz -text
+spec/design/build-ci.md text eol=lf
 spec/api/export.md text eol=lf
 spec/design/host-parity.md text eol=lf
 

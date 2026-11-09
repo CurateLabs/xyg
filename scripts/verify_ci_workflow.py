@@ -2114,11 +2114,21 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         jobs.get("test", ""),
         "Python tests (native core)",
         "native Python suite including required chunked chart rendered snapshots",
+        'export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"',
         'export XYG_CHROMIUM="$(node -e "console.log(require(\'playwright\').chromium.executablePath())")"',
         'export XYG_TEST_CHROMIUM="$XYG_CHROMIUM"',
         "export XY_REQUIRE_BROWSER=1",
         ".venv/bin/pytest -q tests/test_chunked_live.py tests/test_chunked_lifecycle.py tests/test_chunked_installed.py",
         ".venv/bin/pytest -q --ignore=tests/test_chunked_live.py --ignore=tests/test_chunked_lifecycle.py --ignore=tests/test_chunked_installed.py",
+    )
+    _require_step_runs_exactly(
+        errors,
+        jobs.get("python_floor", ""),
+        "Python 3.11 tests (native core)",
+        "native Python floor suite with explicit inherited library selection",
+        'export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"',
+        'export XYG_CHROMIUM="$(node -e "console.log(require(\'playwright\').chromium.executablePath())")"',
+        ".venv/bin/python -m pytest -q",
     )
     graph_step = "GraphForge native/WASM equivalence"
     step_order = list(test_steps)

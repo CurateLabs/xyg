@@ -11,9 +11,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-CURRENT_BINDINGS = Path(
-    "spec/performance/current-large-graph-union-2026-11-09/current-bindings.json"
-)
+CURRENT_BINDINGS = Path("spec/performance/native-python-ci-2026-11-09/current-bindings.json")
 
 
 def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> None:
@@ -329,7 +327,11 @@ def test_final_fit_two_parents():
 
 
 def test_current_union_preserves_all_qualified_root_and_fit_parents():
-    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/current-large-graph-union-2026-11-09/current-bindings.json"
+        ).read_text()
+    )
     expected = {
         "spec/performance/active-m4-m7-integration-2026-11-08/current-bindings.json",
         "spec/performance/browser-css-color-2026-11-08/current-bindings.json",
@@ -350,6 +352,20 @@ def test_current_union_preserves_all_qualified_root_and_fit_parents():
     }
     assert len(current["parents"]) == 16
     assert {parent["path"] for parent in current["parents"]} == expected
+    _assert_complete_parent_sources(current)
+
+
+def test_native_python_ci_successor_retains_complete_published_union():
+    parent_path = "spec/performance/current-large-graph-union-2026-11-09/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    assert len(current["parents"]) == 17
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
     _assert_complete_parent_sources(current)
 
 
