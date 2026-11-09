@@ -1,0 +1,242 @@
+{
+  "artifactEquality": {
+    "after": {
+      "packages/xy-client/dist/index.js": {
+        "bytes": 856281,
+        "sha256": "2afad9d735004bff948215b0d598efc00bbe4e50a05686c2e88bb6168b1d245a"
+      },
+      "packages/xy-client/dist/standalone.js": {
+        "bytes": 856296,
+        "sha256": "260604ced79fc5c8b1995f548eb59ffa9cc1bfd456867e2dedcea7610e8be1d1"
+      },
+      "packages/xy-client/dist/wasm-inline-worker.js": {
+        "bytes": 20933,
+        "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+      },
+      "packages/xy-client/dist/wasm-worker.js": {
+        "bytes": 61650,
+        "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+      },
+      "packages/xy-client/dist/xyg-wasm-inline.js": {
+        "bytes": 2548794,
+        "sha256": "0c8c2c761cbb908df25e4cf1ebd8629aeaa344542e2da11413775431a7db6fb2"
+      },
+      "packages/xy-client/dist/xyg-wasm.manifest.json": {
+        "bytes": 226,
+        "sha256": "1fe8cd78ec5441912c1f9bfbdcf59a258bdc653042a6430daeaad04473e809df"
+      },
+      "packages/xy-client/dist/xyg-wasm.wasm": {
+        "bytes": 1895754,
+        "sha256": "08e3d5db67555b2e55d971a32589d04566505f311f7306510d70e5a78b7b8ab5"
+      },
+      "target/release/libxyg_core.so": {
+        "bytes": 6374200,
+        "sha256": "1ac386f0d7af618a757fb51cca883f0c409f3991c976f7a9df0562f69524d316"
+      },
+      "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+        "bytes": 4076631,
+        "sha256": "89c1fce1b742e2b4f924171b7b9a40fbc16040fdaca758c6b0d751e95d53602e"
+      }
+    },
+    "allRuntimeAndCompilerArtifactsIdentical": true,
+    "baselineCommit": "5e42af822c32798c9238bcbd3b3e3ce22808964a",
+    "before": {
+      "packages/xy-client/dist/index.js": {
+        "bytes": 856281,
+        "sha256": "2afad9d735004bff948215b0d598efc00bbe4e50a05686c2e88bb6168b1d245a"
+      },
+      "packages/xy-client/dist/standalone.js": {
+        "bytes": 856296,
+        "sha256": "260604ced79fc5c8b1995f548eb59ffa9cc1bfd456867e2dedcea7610e8be1d1"
+      },
+      "packages/xy-client/dist/wasm-inline-worker.js": {
+        "bytes": 20933,
+        "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+      },
+      "packages/xy-client/dist/wasm-worker.js": {
+        "bytes": 61650,
+        "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+      },
+      "packages/xy-client/dist/xyg-wasm-inline.js": {
+        "bytes": 2548794,
+        "sha256": "0c8c2c761cbb908df25e4cf1ebd8629aeaa344542e2da11413775431a7db6fb2"
+      },
+      "packages/xy-client/dist/xyg-wasm.manifest.json": {
+        "bytes": 226,
+        "sha256": "1fe8cd78ec5441912c1f9bfbdcf59a258bdc653042a6430daeaad04473e809df"
+      },
+      "packages/xy-client/dist/xyg-wasm.wasm": {
+        "bytes": 1895754,
+        "sha256": "08e3d5db67555b2e55d971a32589d04566505f311f7306510d70e5a78b7b8ab5"
+      },
+      "target/release/libxyg_core.so": {
+        "bytes": 6374200,
+        "sha256": "1ac386f0d7af618a757fb51cca883f0c409f3991c976f7a9df0562f69524d316"
+      },
+      "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+        "bytes": 4076631,
+        "sha256": "89c1fce1b742e2b4f924171b7b9a40fbc16040fdaca758c6b0d751e95d53602e"
+      }
+    },
+    "changed": []
+  },
+  "base": "5e42af822c32798c9238bcbd3b3e3ce22808964a",
+  "compiledInputs": {
+    "changed": [
+      "crates/xyg-engine/src/temporal_scene.rs"
+    ],
+    "count": 324,
+    "path": "spec/performance/temporal-slice-clippy-2026-11-09/compiled-inputs.json",
+    "sha256": "6b467dcd6f88914704cbdf051d726778fab674b2d8299d5358ccd10eb6e7e91c"
+  },
+  "evidence": {
+    "target/task-tmp/graph-temporal-owner-charge/final-independent-review.json": {
+      "archive": "spec/performance/temporal-slice-clippy-2026-11-09/evidence/57ec49f97bb0156e51c7b258e20bf6eb109e9199b88e21cf86edc3d8df0dd539.gz",
+      "archiveBytes": 24442,
+      "archiveSha256": "ae2bb360cf10a4276cf39fc5d6d5318f54a1aaa22a354c03118f3b241fdecf6b",
+      "bytes": 102585,
+      "sha256": "57ec49f97bb0156e51c7b258e20bf6eb109e9199b88e21cf86edc3d8df0dd539"
+    },
+    "target/task-tmp/temporal-slice-clippy/artifact-equality.json": {
+      "archive": "spec/performance/temporal-slice-clippy-2026-11-09/evidence/2007f9e82e5ac6ee05b616e787f741789be11a957169b07720a68a2370fa19d5.gz",
+      "archiveBytes": 738,
+      "archiveSha256": "ee325221b197041da6f192dcc1a78c7eaff90b19948e81b2937badcb90f5b72b",
+      "bytes": 3096,
+      "sha256": "2007f9e82e5ac6ee05b616e787f741789be11a957169b07720a68a2370fa19d5"
+    },
+    "target/task-tmp/temporal-slice-clippy/baseline-artifacts.json": {
+      "archive": "spec/performance/temporal-slice-clippy-2026-11-09/evidence/c8497fd857ae0e731e523bf79072dd684b6c9877492a19422a788a7fdcd51011.gz",
+      "archiveBytes": 610,
+      "archiveSha256": "68dda6057f5b8cb9161789e72805150c536b77ef55e6cc524ed6fb7c567bc40f",
+      "bytes": 1394,
+      "sha256": "c8497fd857ae0e731e523bf79072dd684b6c9877492a19422a788a7fdcd51011"
+    },
+    "target/task-tmp/temporal-slice-clippy/clippy-workspace.log": {
+      "archive": "spec/performance/temporal-slice-clippy-2026-11-09/evidence/1709debacc176314a75e1c0bcb2eb11beb83ab30523cc88e4b0422144eec112e.gz",
+      "archiveBytes": 180,
+      "archiveSha256": "d30a01bdec138b632f0b4a1a91e225f23b6b0e2d34111053cbc1a73dc6584614",
+      "bytes": 347,
+      "sha256": "1709debacc176314a75e1c0bcb2eb11beb83ab30523cc88e4b0422144eec112e"
+    },
+    "target/task-tmp/temporal-slice-clippy/core-inventory.log": {
+      "archive": "spec/performance/temporal-slice-clippy-2026-11-09/evidence/a56ebeabc0c445c8d3a411c53ab67153e0e77c86327de2987584152a2428eeed.gz",
+      "archiveBytes": 53,
+      "archiveSha256": "c36502bcc359f1546dafd17ef7001066f1f316e929dc68d25b9d88c7bf58e557",
+      "bytes": 100,
+      "sha256": "a56ebeabc0c445c8d3a411c53ab67153e0e77c86327de2987584152a2428eeed"
+    },
+    "target/task-tmp/temporal-slice-clippy/format.log": {
+      "archive": "spec/performance/temporal-slice-clippy-2026-11-09/evidence/e921aaaf65986c6531c59f2065c35ed00cdcc7f22c1a12a135443e5e76f7f46a.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "ce42a3224112748d5dc59f4bfc1494cb313915f5b0b64f25ced5cbd42a51ed87",
+      "bytes": 29,
+      "sha256": "e921aaaf65986c6531c59f2065c35ed00cdcc7f22c1a12a135443e5e76f7f46a"
+    },
+    "target/task-tmp/temporal-slice-clippy/hooks-format-first.log": {
+      "archive": "spec/performance/temporal-slice-clippy-2026-11-09/evidence/dd7e0d1eb5964b33d05b7e567885ae762972da27ff351c715d7e71c3e77d6939.gz",
+      "archiveBytes": 148,
+      "archiveSha256": "51ecbb62cf889b443f1b76f64ff9950048e6eb74abb8ec70182d8d2960faf80e",
+      "bytes": 346,
+      "sha256": "dd7e0d1eb5964b33d05b7e567885ae762972da27ff351c715d7e71c3e77d6939"
+    },
+    "target/task-tmp/temporal-slice-clippy/hooks.log": {
+      "archive": "spec/performance/temporal-slice-clippy-2026-11-09/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/temporal-slice-clippy/native-release.log": {
+      "archive": "spec/performance/temporal-slice-clippy-2026-11-09/evidence/c2672a19bef48a0c815570e6da22fdc942273a90802ecc58f0a3f95939addb38.gz",
+      "archiveBytes": 172,
+      "archiveSha256": "3ac26ee9405f12b0be0d7782798629cd2e03ae4fefc984711ba2cbebdb2b7f34",
+      "bytes": 337,
+      "sha256": "c2672a19bef48a0c815570e6da22fdc942273a90802ecc58f0a3f95939addb38"
+    },
+    "target/task-tmp/temporal-slice-clippy/ruff.log": {
+      "archive": "spec/performance/temporal-slice-clippy-2026-11-09/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/temporal-slice-clippy/seal-sources.py": {
+      "archive": "spec/performance/temporal-slice-clippy-2026-11-09/evidence/55ccd688d8ed6ea9afdaac33205246e8eddd23f0f7179eddfb399483aae42ab1.gz",
+      "archiveBytes": 1035,
+      "archiveSha256": "ee257e411a89b7cae79a679d2abf5d95f9cde1cb51c64a6498a2def8a57c24d2",
+      "bytes": 2570,
+      "sha256": "55ccd688d8ed6ea9afdaac33205246e8eddd23f0f7179eddfb399483aae42ab1"
+    },
+    "target/task-tmp/temporal-slice-clippy/wasm-package.log": {
+      "archive": "spec/performance/temporal-slice-clippy-2026-11-09/evidence/92b8b8f8e2faddd1559e40d556d8276307aeeea32ce85787383c181ddbb265a3.gz",
+      "archiveBytes": 1207,
+      "archiveSha256": "1a6dea6145865b85119158332adb7e18582c8327dadfdbeee6b57d5a12a6d1a0",
+      "bytes": 4390,
+      "sha256": "92b8b8f8e2faddd1559e40d556d8276307aeeea32ce85787383c181ddbb265a3"
+    }
+  },
+  "fresh": [
+    {
+      "command": "cargo clippy --workspace --all-targets -- -D warnings",
+      "exit": 0,
+      "log": "target/task-tmp/temporal-slice-clippy/clippy-workspace.log"
+    },
+    {
+      "command": "cargo build --release",
+      "exit": 0,
+      "log": "target/task-tmp/temporal-slice-clippy/native-release.log"
+    },
+    {
+      "command": "npm run build:wasm",
+      "exit": 0,
+      "log": "target/task-tmp/temporal-slice-clippy/wasm-package.log"
+    },
+    {
+      "command": "TMPDIR=/var/tmp XYG_NATIVE_LIB=$PWD/target/release/libxyg_core.so uv run --no-sync pytest -q tests/test_graphforge_contract_corpus.py tests/test_release_inventory.py",
+      "exit": 0,
+      "log": "target/task-tmp/temporal-slice-clippy/core-inventory.log"
+    },
+    {
+      "command": "uv run --no-sync --with pre-commit pre-commit run --all-files",
+      "exit": 0,
+      "log": "target/task-tmp/temporal-slice-clippy/hooks.log"
+    },
+    {
+      "command": "uv run --no-sync ruff check .",
+      "exit": 0,
+      "log": "target/task-tmp/temporal-slice-clippy/ruff.log"
+    },
+    {
+      "command": "uv run --no-sync ruff format --check .",
+      "exit": 0,
+      "log": "target/task-tmp/temporal-slice-clippy/format.log"
+    }
+  ],
+  "inherited": {
+    "baseCorrectionReviewSha256": "57ec49f97bb0156e51c7b258e20bf6eb109e9199b88e21cf86edc3d8df0dd539",
+    "freshReviewerChecksInThatRecordOnly": "shipping owner regression, native/WASM wire, Core/CRLF, ABI and extra owner probes; this follow-up does not rerun them",
+    "runtimeQualification": "Inherited only over byte-identical matching artifacts; no fresh browser execution in this lint-only successor"
+  },
+  "preservedFailures": [
+    "Base strict-Clippy eight redundant borrow failures remain in base receipt; current workspace command is a new passing execution",
+    "Initial all-file hooks exit1: Ruff format normalized the new binding-pointer assignment. That log is retained; source hashes were resealed after formatting",
+    "Combined78cf module overage and historical100k watchdog failures remain unresolved in their own scope"
+  ],
+  "readmeSha256": "f71f7dd6a67a47b5b7f488ca0715398921cbf7d1703975e2590d17cc827dfdb0",
+  "recordedAt": "2026-11-09T16:22:33.095271+00:00",
+  "remaining": [
+    "Independent review of this exact correction",
+    "Separate graph/dense matching combined package qualification",
+    "Final-head hosted CI and merge queue",
+    "Global resource, host, accessibility, massive and competitor acceptance; milestones4-7 remain open"
+  ],
+  "schemaVersion": 1,
+  "scope": "Eight redundant borrowed-slice argument removals; no runtime behavior change",
+  "sourceBindings": {
+    "current": 3374,
+    "historical": 835,
+    "parents": 9,
+    "path": "spec/performance/temporal-slice-clippy-2026-11-09/current-bindings.json",
+    "sha256": "e5069d9b3778fd6eee26eee8607f662267f27f61f0bc9f56034f0e36c35bc4e9"
+  }
+}

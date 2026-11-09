@@ -1411,3 +1411,8 @@ spec/design/temporal-catalog.md text eol=lf
 tests/fixtures/graph-temporal-owners.json text eol=lf
 spec/performance/graph-temporal-owner-charge-2026-11-08/** text eol=lf
 spec/performance/graph-temporal-owner-charge-2026-11-08/**/*.gz -text
+
+# Slice-only strict-Clippy successor evidence.
+crates/xyg-engine/src/temporal_scene.rs text eol=lf
+spec/performance/temporal-slice-clippy-2026-11-09/** text eol=lf
+spec/performance/temporal-slice-clippy-2026-11-09/**/*.gz -text
