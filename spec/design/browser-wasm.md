@@ -1927,3 +1927,20 @@ error-copy outlining were not retained. No optional module, second renderer,
 missing export, validator bypass or larger allowance supplies the size fit.
 Matching producer paths and affected browser/native/WASM journeys remain the
 required evidence; package fit alone does not close any milestone or issue.
+
+
+### Checked single-module source factoring continuation
+
+The source-factored active-milestone continuation is recorded in
+[the module-space recovery receipt](../performance/module-space-recovery-2026-11-08/README.md).
+It preserves native O3, the wasm32 O2/inline0 profile, pinned optimizer/order,
+all 68 functions, and the 1,927,168 raw / 786,432 gzip6 caps. Browser-only
+callback erasure shares exact wedge validation, lock/state transactions,
+text-list encoding, dash traversal and axis resolution; match-independent
+lease bookkeeping borrows the existing owners. Existing scalar writers retain
+endian and floating-bit semantics. Numeric filter buffers retain checked
+reservation and unchanged zero values. Native algorithms and all product
+admission, ordering, validation, rendering, output and disposal rules remain
+unchanged except the separately recorded co-owned temporal-job reservation
+correction. Complete output oracles and slower ABBA samples remain required;
+a size fit alone does not qualify final shipping or close milestones 4–7.

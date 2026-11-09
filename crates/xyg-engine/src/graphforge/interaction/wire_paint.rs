@@ -3,6 +3,7 @@
 use super::paint::{EdgePiece, FramePaint, NodePaint, PaintGeometry};
 use super::wire::*;
 use super::InteractionStatus;
+use crate::scene::SceneByteWrite;
 use crate::graph_style::{ResolvedGraphStyle, SemanticPaintLayers};
 
 #[cfg_attr(target_arch = "wasm32", inline(never))]
@@ -15,7 +16,7 @@ pub(super) fn style_bytes(
     out.extend(style.stroke);
     out.extend(style.halo);
     for v in [style.size, style.width, style.opacity] {
-        out.extend(v.to_le_bytes());
+        out.push_word(v);
     }
     out.extend([style.shape, style.dash, style.arrow, style.state]);
     out.extend(layers.halo);
@@ -27,7 +28,7 @@ pub(super) fn style_bytes(
         layers.dash.0,
         layers.dash.1,
     ] {
-        out.extend(v.to_le_bytes());
+        out.push_word(v);
     }
     out.extend([u8::from(layers.head), 0, 0, 0]);
 }

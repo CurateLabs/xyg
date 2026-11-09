@@ -186,16 +186,47 @@ impl Builder {
     }
 
     pub fn texts<S: AsRef<str>>(&mut self, name: &str, index: usize, values: &[S]) {
-        let mut offsets = Vec::with_capacity(values.len() + 1);
+        #[cfg(target_arch = "wasm32")]
+        {
+            self.texts_erased(name, index, values.len(), &|i| values[i].as_ref());
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let mut offsets = Vec::with_capacity(values.len() + 1);
+            let mut text = Vec::new();
+            offsets.push(0u64);
+            for value in values {
+                text.extend_from_slice(value.as_ref().as_bytes());
+                offsets.push(text.len() as u64);
+            }
+            let mut payload: Vec<u8> = offsets.iter().flat_map(|v| v.to_le_bytes()).collect();
+            payload.extend_from_slice(&text);
+            self.push(name, index, Dtype::TextList, values.len(), payload);
+        }
+    }
+
+    // One text-list encoder for borrowed and owned strings in the browser.
+    // Counts, allocation growth, offsets and payload bytes remain identical.
+    #[cfg(target_arch = "wasm32")]
+    #[inline(never)]
+    fn texts_erased<'a>(
+        &mut self,
+        name: &str,
+        index: usize,
+        count: usize,
+        value: &dyn Fn(usize) -> &'a str,
+    ) {
+        let mut offsets = Vec::with_capacity(count + 1);
         let mut text = Vec::new();
         offsets.push(0u64);
-        for value in values {
-            text.extend_from_slice(value.as_ref().as_bytes());
+        for i in 0..count {
+            let value = value(i);
+            text.extend_from_slice(value.as_bytes());
             offsets.push(text.len() as u64);
         }
         let mut payload: Vec<u8> = offsets.iter().flat_map(|v| v.to_le_bytes()).collect();
         payload.extend_from_slice(&text);
-        self.push(name, index, Dtype::TextList, values.len(), payload);
+        self.push(name, index, Dtype::TextList, count, payload);
     }
 
     /// Copy every section of an existing container (names, indices, and

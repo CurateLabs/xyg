@@ -91,6 +91,28 @@ fn intervals(
     on: f64,
     off: f64,
     phase: f64,
+    emit: impl FnMut(f64, f64) -> Result<()>,
+) -> Result<()> {
+    #[cfg(target_arch = "wasm32")]
+    {
+        let mut emit = emit;
+        return intervals_erased(length, on, off, phase, &mut emit);
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    intervals_impl(length, on, off, phase, emit)
+}
+
+// Counting and emission share exactly the same bounded dash traversal.
+#[cfg(target_arch = "wasm32")]
+#[inline(never)]
+fn intervals_erased(
+    length: f64, on: f64, off: f64, phase: f64,
+    emit: &mut dyn FnMut(f64, f64) -> Result<()>,
+) -> Result<()> {
+    intervals_impl(length, on, off, phase, emit)
+}
+fn intervals_impl(
+    length: f64, on: f64, off: f64, phase: f64,
     mut emit: impl FnMut(f64, f64) -> Result<()>,
 ) -> Result<()> {
     if on == 0. || off == 0. {

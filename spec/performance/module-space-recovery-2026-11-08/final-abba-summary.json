@@ -1,0 +1,255 @@
+{
+  "graphBlocks": {
+    "final-graph-abba-100k-0-A.command.json": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/graph-timed-replay.mjs",
+        "/var/tmp/graph-review-100k-alone.json",
+        "target/task-tmp/module-fit/before/optimized-over-cap.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 16.980412483215332
+    },
+    "final-graph-abba-100k-1-B.command.json": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/graph-timed-replay.mjs",
+        "/var/tmp/graph-review-100k-alone.json",
+        "packages/xy-client/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 16.01694345474243
+    },
+    "final-graph-abba-100k-2-B.command.json": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/graph-timed-replay.mjs",
+        "/var/tmp/graph-review-100k-alone.json",
+        "packages/xy-client/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 16.000152587890625
+    },
+    "final-graph-abba-100k-3-A.command.json": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/graph-timed-replay.mjs",
+        "/var/tmp/graph-review-100k-alone.json",
+        "target/task-tmp/module-fit/before/optimized-over-cap.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 15.806855916976929
+    },
+    "final-graph-abba-1m-0-A.command.json": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/graph-timed-replay.mjs",
+        "/var/tmp/graph-review-1m.json",
+        "target/task-tmp/module-fit/before/optimized-over-cap.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 21.082772254943848
+    },
+    "final-graph-abba-1m-1-B.command.json": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/graph-timed-replay.mjs",
+        "/var/tmp/graph-review-1m.json",
+        "packages/xy-client/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 20.200325965881348
+    },
+    "final-graph-abba-1m-2-B.command.json": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/graph-timed-replay.mjs",
+        "/var/tmp/graph-review-1m.json",
+        "packages/xy-client/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 20.207192420959473
+    },
+    "final-graph-abba-1m-3-A.command.json": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/graph-timed-replay.mjs",
+        "/var/tmp/graph-review-1m.json",
+        "target/task-tmp/module-fit/before/optimized-over-cap.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 20.026719093322754
+    }
+  },
+  "rows": [
+    {
+      "AmedianMs": 0.03459000000000856,
+      "BSlowerThanAMedian": 20,
+      "BmedianMs": 0.03112600000000043,
+      "case": "bar",
+      "dataset": "final-abba-viewport",
+      "samplesPerVariant": 40
+    },
+    {
+      "AmedianMs": 0.04007000000001426,
+      "BSlowerThanAMedian": 40,
+      "BmedianMs": 0.052102499999989504,
+      "case": "donut",
+      "dataset": "final-abba-viewport",
+      "samplesPerVariant": 40
+    },
+    {
+      "AmedianMs": 0.02278000000001157,
+      "BSlowerThanAMedian": 19,
+      "BmedianMs": 0.0224189999999993,
+      "case": "line",
+      "dataset": "final-abba-viewport",
+      "samplesPerVariant": 40
+    },
+    {
+      "AmedianMs": 0.033692000000002054,
+      "BSlowerThanAMedian": 20,
+      "BmedianMs": 0.030515500000007023,
+      "case": "polar-bar",
+      "dataset": "final-abba-viewport",
+      "samplesPerVariant": 40
+    },
+    {
+      "AmedianMs": 0.024066000000004806,
+      "BSlowerThanAMedian": 20,
+      "BmedianMs": 0.023973500000010972,
+      "case": "scatter",
+      "dataset": "final-abba-viewport",
+      "samplesPerVariant": 40
+    },
+    {
+      "AmedianMs": 0.2461229999999972,
+      "BSlowerThanAMedian": 23,
+      "BmedianMs": 0.24648500000000695,
+      "case": "bar",
+      "dataset": "final-abba-temporal",
+      "samplesPerVariant": 40
+    },
+    {
+      "AmedianMs": 0.38247200000000703,
+      "BSlowerThanAMedian": 21,
+      "BmedianMs": 0.3892979999999966,
+      "case": "event",
+      "dataset": "final-abba-temporal",
+      "samplesPerVariant": 40
+    },
+    {
+      "AmedianMs": 0.5861825000000067,
+      "BSlowerThanAMedian": 35,
+      "BmedianMs": 0.5907209999999878,
+      "case": "gantt",
+      "dataset": "final-abba-temporal",
+      "samplesPerVariant": 40
+    },
+    {
+      "AmedianMs": 0.612756499999989,
+      "BSlowerThanAMedian": 23,
+      "BmedianMs": 0.618999500000001,
+      "case": "interval",
+      "dataset": "final-abba-temporal",
+      "samplesPerVariant": 40
+    },
+    {
+      "AmedianMs": 0.5888635000000022,
+      "BSlowerThanAMedian": 30,
+      "BmedianMs": 0.5938115000000153,
+      "case": "line",
+      "dataset": "final-abba-temporal",
+      "samplesPerVariant": 40
+    },
+    {
+      "AmedianMs": 0.35147100000000364,
+      "BSlowerThanAMedian": 40,
+      "BmedianMs": 0.35898550000001705,
+      "case": "scatter",
+      "dataset": "final-abba-temporal",
+      "samplesPerVariant": 40
+    }
+  ],
+  "scope": "final combined B module/packaged native versus preserved over-cap 78cf A; complete output assertions; ABBA targeted observations, all slower samples retained; micro observations overlapped graph replay, no Rust build, no speed win claim"
+}

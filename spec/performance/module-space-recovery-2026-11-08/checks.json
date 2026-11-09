@@ -1,0 +1,2703 @@
+{
+  "commands": {
+    "attempt1-native": {
+      "command": [
+        "cargo",
+        "build",
+        "--release"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 176.3030650615692
+    },
+    "attempt1-package": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 1,
+      "seconds": 56.53228259086609
+    },
+    "attempt1-temporal": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "scripts/temporal_catalog_wasm_parity.mjs",
+        "target/task-tmp/module-fit/attempt1/raw.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 1.711554765701294
+    },
+    "attempt1-wasm": {
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "xyg-wasm",
+        "--release",
+        "--target",
+        "wasm32-unknown-unknown"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 70.18623924255371
+    },
+    "attempt2-native": {
+      "command": [
+        "cargo",
+        "build",
+        "--release"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 167.0450897216797
+    },
+    "attempt2-package": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 1,
+      "seconds": 56.656553983688354
+    },
+    "attempt2-wasm": {
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "xyg-wasm",
+        "--release",
+        "--target",
+        "wasm32-unknown-unknown"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 65.42341804504395
+    },
+    "attempt3-frozen": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/frozen-oracle.mjs",
+        "target/task-tmp/module-fit/attempt3/raw.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 3.7021219730377197
+    },
+    "attempt3-native": {
+      "command": [
+        "cargo",
+        "build",
+        "--release"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 147.5314302444458
+    },
+    "attempt3-package": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 1,
+      "seconds": 52.91129446029663
+    },
+    "attempt3-temporal": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "scripts/temporal_catalog_wasm_parity.mjs",
+        "target/task-tmp/module-fit/attempt3/raw.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 1.6513333320617676
+    },
+    "attempt3-wasm": {
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "xyg-wasm",
+        "--release",
+        "--target",
+        "wasm32-unknown-unknown"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 63.04887318611145
+    },
+    "attempt4-native": {
+      "command": [
+        "cargo",
+        "build",
+        "--release"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 118.02094221115112
+    },
+    "attempt4-package": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 1,
+      "seconds": 50.50591206550598
+    },
+    "attempt4-wasm": {
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "xyg-wasm",
+        "--release",
+        "--target",
+        "wasm32-unknown-unknown"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 62.36375546455383
+    },
+    "attempt5-native": {
+      "command": [
+        "cargo",
+        "build",
+        "--release"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 176.78950762748718
+    },
+    "attempt5-package": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 1,
+      "seconds": 55.96358394622803
+    },
+    "attempt5-wasm": {
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "xyg-wasm",
+        "--release",
+        "--target",
+        "wasm32-unknown-unknown"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 73.6540367603302
+    },
+    "attempt6-native": {
+      "command": [
+        "cargo",
+        "build",
+        "--release"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 180.86306405067444
+    },
+    "attempt6-package": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 1,
+      "seconds": 53.17571973800659
+    },
+    "attempt6-wasm": {
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "xyg-wasm",
+        "--release",
+        "--target",
+        "wasm32-unknown-unknown"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 90.17354130744934
+    },
+    "attempt7-native": {
+      "command": [
+        "cargo",
+        "build",
+        "--release"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 169.43275547027588
+    },
+    "attempt7-package": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 1,
+      "seconds": 55.300201416015625
+    },
+    "attempt7-wasm": {
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "xyg-wasm",
+        "--release",
+        "--target",
+        "wasm32-unknown-unknown"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 117.10656332969666
+    },
+    "attempt8-assets": {
+      "command": [
+        "python3",
+        "scripts/verify_wasm_assets.py"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 0.4680156707763672
+    },
+    "attempt8-frozen-old-native": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/frozen-oracle.mjs",
+        "packages/xy-client/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 4.996933221817017
+    },
+    "attempt8-geo-selected": {
+      "command": [
+        "env",
+        "XYG_SELECTED_HIERARCHY_REPORT=target/task-tmp/module-fit/attempt8-geo-selected.json",
+        "node",
+        "scripts/geo_selected_hierarchy_conformance.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 4.137481927871704
+    },
+    "attempt8-graph-100k-old-native": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "scripts/graph_session_public_scale_replay.mjs",
+        "/var/tmp/graph-review-100k-alone.json"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 16.994235038757324
+    },
+    "attempt8-graph-1m-old-native": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "scripts/graph_session_public_scale_replay.mjs",
+        "/var/tmp/graph-review-1m.json"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 20.451825380325317
+    },
+    "attempt8-ledger-build": {
+      "command": [
+        "rustc",
+        "--edition=2021",
+        "spec/performance/graph-public-scale-ownership-2026-11-08/wire-trace.rs",
+        "-L",
+        "dependency=target/release/deps",
+        "--extern",
+        "xyg_engine=target/release/deps/libxyg_engine-c08e762ddb3a6e01.rlib",
+        "-o",
+        "target/task-tmp/module-fit/wire-trace"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 0.4368932247161865
+    },
+    "attempt8-memory-100k": {
+      "command": [
+        "target/task-tmp/module-fit/wire-trace",
+        "target/task-tmp/combined-integration/100k.trace"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 2.1589279174804688
+    },
+    "attempt8-memory-1m": {
+      "command": [
+        "target/task-tmp/module-fit/wire-trace",
+        "target/task-tmp/combined-integration/1m.trace"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 4.683963298797607
+    },
+    "attempt8-native": {
+      "command": [
+        "cargo",
+        "build",
+        "--release"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 122.39719295501709
+    },
+    "attempt8-node-tests": {
+      "command": [
+        "node",
+        "--test",
+        "packages/xy-node/test/graph-session-wire.test.mjs",
+        "packages/xy-node/test/painter-admission-wasm-parity.test.mjs",
+        "packages/xy-node/test/temporal-catalog.test.mjs",
+        "packages/xy-node/test/chunked-live.test.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 1.9687800407409668
+    },
+    "attempt8-package": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 52.169546365737915
+    },
+    "attempt8-temporal-current-native": {
+      "command": [
+        "node",
+        "scripts/temporal_catalog_wasm_parity.mjs",
+        "packages/xy-client/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 2.301154375076294
+    },
+    "attempt8-temporal-old-native": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "scripts/temporal_catalog_wasm_parity.mjs",
+        "packages/xy-client/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 1.8686506748199463
+    },
+    "attempt8-wasm": {
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "xyg-wasm",
+        "--release",
+        "--target",
+        "wasm32-unknown-unknown"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 133.58527779579163
+    },
+    "before-frozen": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/frozen-oracle.mjs",
+        "target/task-tmp/module-fit/before/optimized-over-cap.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 3.696575403213501
+    },
+    "before-geo-selected": {
+      "command": [
+        "env",
+        "XYG_SELECTED_HIERARCHY_WASM=target/task-tmp/module-fit/before/optimized-over-cap.wasm",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "XYG_SELECTED_HIERARCHY_REPORT=target/task-tmp/module-fit/before-geo-selected.json",
+        "node",
+        "scripts/geo_selected_hierarchy_conformance.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 2.478759765625
+    },
+    "before-temporal": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "scripts/temporal_catalog_wasm_parity.mjs",
+        "target/task-tmp/module-fit/before/optimized-over-cap.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 0.85951828956604
+    },
+    "clippy-borrows-fixed": {
+      "command": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 34.3407301902771
+    },
+    "clippy-current": {
+      "command": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 101,
+      "seconds": 37.2927770614624
+    },
+    "current-core-before-p1": {
+      "command": [
+        "cargo",
+        "build",
+        "--release",
+        "-p",
+        "xyg-core"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 96.00745701789856
+    },
+    "current-package-before-p1": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 50.93682289123535
+    },
+    "current-wasm-before-p1": {
+      "command": [
+        "cargo",
+        "build",
+        "--release",
+        "-p",
+        "xyg-wasm",
+        "--target",
+        "wasm32-unknown-unknown"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 64.37249326705933
+    },
+    "factoring-abba-temporal": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/abba.mjs",
+        "target/task-tmp/module-fit/attempt8/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 1,
+      "seconds": 0.23985552787780762
+    },
+    "factoring-abba-temporal-sequenced": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/abba.mjs",
+        "target/task-tmp/module-fit/attempt8/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 0.5784449577331543
+    },
+    "factoring-abba-viewport": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/viewport-oracle.mjs",
+        "target/task-tmp/module-fit/attempt8/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 1,
+      "seconds": 0.4451003074645996
+    },
+    "factoring-abba-viewport-sequenced": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/viewport-oracle.mjs",
+        "target/task-tmp/module-fit/attempt8/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 0.47724413871765137
+    },
+    "factoring-foundation-pre-p1": {
+      "command": [
+        "env",
+        "XYG_WASM_FOUNDATION_REPORT=target/task-tmp/module-fit/factoring-foundation-pre-p1.json",
+        "node",
+        "scripts/wasm_foundation_smoke.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 1,
+      "seconds": 18.498419284820557
+    },
+    "factoring-graph-abba-100k-0-A": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/graph-timed-replay.mjs",
+        "/var/tmp/graph-review-100k-alone.json",
+        "target/task-tmp/module-fit/before/optimized-over-cap.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 15.7417631149292
+    },
+    "factoring-graph-abba-100k-1-B": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/attempt8/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/graph-timed-replay.mjs",
+        "/var/tmp/graph-review-100k-alone.json",
+        "target/task-tmp/module-fit/attempt8/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 16.41161823272705
+    },
+    "factoring-graph-abba-100k-2-B": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/attempt8/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/graph-timed-replay.mjs",
+        "/var/tmp/graph-review-100k-alone.json",
+        "target/task-tmp/module-fit/attempt8/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 17.83582592010498
+    },
+    "factoring-graph-abba-100k-3-A": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/graph-timed-replay.mjs",
+        "/var/tmp/graph-review-100k-alone.json",
+        "target/task-tmp/module-fit/before/optimized-over-cap.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 15.808980703353882
+    },
+    "factoring-graph-abba-1m-0-A": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/graph-timed-replay.mjs",
+        "/var/tmp/graph-review-1m.json",
+        "target/task-tmp/module-fit/before/optimized-over-cap.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 20.219102382659912
+    },
+    "factoring-graph-abba-1m-1-B": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/attempt8/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/graph-timed-replay.mjs",
+        "/var/tmp/graph-review-1m.json",
+        "target/task-tmp/module-fit/attempt8/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 19.142180681228638
+    },
+    "factoring-graph-abba-1m-2-B": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/attempt8/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/graph-timed-replay.mjs",
+        "/var/tmp/graph-review-1m.json",
+        "target/task-tmp/module-fit/attempt8/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 20.88777995109558
+    },
+    "factoring-graph-abba-1m-3-A": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/graph-timed-replay.mjs",
+        "/var/tmp/graph-review-1m.json",
+        "target/task-tmp/module-fit/before/optimized-over-cap.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 20.730515956878662
+    },
+    "final-abba-temporal": {
+      "command": [
+        "node",
+        "target/task-tmp/module-fit/abba.mjs",
+        "packages/xy-client/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 0.575160026550293
+    },
+    "final-abba-viewport": {
+      "command": [
+        "node",
+        "target/task-tmp/module-fit/viewport-oracle.mjs",
+        "packages/xy-client/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 0.6092028617858887
+    },
+    "final-abi": {
+      "command": [
+        "python3",
+        "scripts/abi_smoke.py"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 0.4461686611175537
+    },
+    "final-assets": {
+      "command": [
+        "python3",
+        "scripts/verify_wasm_assets.py"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 0.5861015319824219
+    },
+    "final-bindings": {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "tests/test_graphforge_contract_corpus.py",
+        "-q"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 44.73109459877014
+    },
+    "final-bindings-sealed": {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/test_graphforge_contract_corpus.py"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 29.558597803115845
+    },
+    "final-ci-preflight": {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/test_release_surface_gate.py",
+        "tests/test_verify_wasm_assets.py",
+        "tests/test_check_scheduled_evidence.py",
+        "tests/test_wasm_feature_graph.py"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 15.054495573043823
+    },
+    "final-client": {
+      "command": [
+        "node",
+        "js/build.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 5.795804738998413
+    },
+    "final-clippy": {
+      "command": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 21.890299558639526
+    },
+    "final-core": {
+      "command": [
+        "cargo",
+        "build",
+        "--release",
+        "-p",
+        "xyg-core"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 127.79392719268799
+    },
+    "final-environment": {
+      "command": [
+        "python3",
+        "target/task-tmp/module-fit/environment.py"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 1.2071747779846191
+    },
+    "final-exports": {
+      "command": [
+        "node",
+        "--input-type=module",
+        "-e",
+        "import fs from \"node:fs\"; import {gzipSync} from \"node:zlib\"; const b=fs.readFileSync(\"packages/xy-client/dist/xyg-wasm.wasm\"),m=new WebAssembly.Module(b); console.log(JSON.stringify({bytes:b.length,gzip6:gzipSync(b,{level:6}).length,exports:WebAssembly.Module.exports(m),imports:WebAssembly.Module.imports(m)},null,2));"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 0.16681647300720215
+    },
+    "final-filter-browser": {
+      "command": [
+        "node",
+        "scripts/filter_tier_c_conformance.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 6.450516700744629
+    },
+    "final-foundation": {
+      "command": [
+        "env",
+        "XYG_WASM_FOUNDATION_REPORT=target/task-tmp/module-fit/final-foundation.json",
+        "node",
+        "scripts/wasm_foundation_smoke.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 133.4637143611908
+    },
+    "final-fresh-replay-100k": {
+      "command": [
+        "node",
+        "scripts/graph_session_public_scale_replay.mjs",
+        "target/task-tmp/module-fit/final-public-100k.json"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 17.194655179977417
+    },
+    "final-fresh-replay-1m": {
+      "command": [
+        "node",
+        "scripts/graph_session_public_scale_replay.mjs",
+        "target/task-tmp/module-fit/final-public-1m.json"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 24.655927181243896
+    },
+    "final-frozen-oracle": {
+      "command": [
+        "node",
+        "target/task-tmp/module-fit/frozen-oracle.mjs",
+        "packages/xy-client/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 4.274205446243286
+    },
+    "final-full-controller": {
+      "command": [
+        "env",
+        "XYG_GRAPH_SESSION_REPORT=target/task-tmp/module-fit/final-full-controller.json",
+        "node",
+        "scripts/graph_session_controller_wasm_smoke.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 30.972217082977295
+    },
+    "final-geo-selected": {
+      "command": [
+        "env",
+        "XYG_SELECTED_HIERARCHY_REPORT=target/task-tmp/module-fit/final-geo-selected.json",
+        "node",
+        "scripts/geo_selected_hierarchy_conformance.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 2.188424825668335
+    },
+    "final-gpu-browser": {
+      "command": [
+        "env",
+        "XYG_GPU_REPORT_DIR=target/task-tmp/module-fit/final-gpu-browser",
+        "node",
+        "scripts/dashboard_gpu_smoke.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 22.350566864013672
+    },
+    "final-graph-100k": {
+      "command": [
+        "node",
+        "scripts/graph_session_public_scale_replay.mjs",
+        "/var/tmp/graph-review-100k-alone.json"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 15.534462690353394
+    },
+    "final-graph-1m": {
+      "command": [
+        "node",
+        "scripts/graph_session_public_scale_replay.mjs",
+        "/var/tmp/graph-review-1m.json"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 20.049378395080566
+    },
+    "final-graph-abba-100k-0-A": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/graph-timed-replay.mjs",
+        "/var/tmp/graph-review-100k-alone.json",
+        "target/task-tmp/module-fit/before/optimized-over-cap.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 16.980412483215332
+    },
+    "final-graph-abba-100k-1-B": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/graph-timed-replay.mjs",
+        "/var/tmp/graph-review-100k-alone.json",
+        "packages/xy-client/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 16.01694345474243
+    },
+    "final-graph-abba-100k-2-B": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/graph-timed-replay.mjs",
+        "/var/tmp/graph-review-100k-alone.json",
+        "packages/xy-client/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 16.000152587890625
+    },
+    "final-graph-abba-100k-3-A": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/graph-timed-replay.mjs",
+        "/var/tmp/graph-review-100k-alone.json",
+        "target/task-tmp/module-fit/before/optimized-over-cap.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 15.806855916976929
+    },
+    "final-graph-abba-1m-0-A": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/graph-timed-replay.mjs",
+        "/var/tmp/graph-review-1m.json",
+        "target/task-tmp/module-fit/before/optimized-over-cap.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 21.082772254943848
+    },
+    "final-graph-abba-1m-1-B": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/graph-timed-replay.mjs",
+        "/var/tmp/graph-review-1m.json",
+        "packages/xy-client/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 20.200325965881348
+    },
+    "final-graph-abba-1m-2-B": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/graph-timed-replay.mjs",
+        "/var/tmp/graph-review-1m.json",
+        "packages/xy-client/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 20.207192420959473
+    },
+    "final-graph-abba-1m-3-A": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/graph-timed-replay.mjs",
+        "/var/tmp/graph-review-1m.json",
+        "target/task-tmp/module-fit/before/optimized-over-cap.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 20.026719093322754
+    },
+    "final-installed-jupyter-retry": {
+      "command": [
+        "env",
+        "VIRTUAL_ENV=/home/ubuntu/.t3/worktrees/xyg/t3-1319e871/.venv",
+        "XYG_TEST_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XY_REQUIRE_BROWSER=1",
+        "uv",
+        "run",
+        "--active",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/test_chunked_installed.py::test_installed_kernel_chunked_viewport",
+        "--basetemp=target/task-tmp/module-fit/hosts-python311-retry"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 23.99818992614746
+    },
+    "final-ledger-build": {
+      "command": [
+        "rustc",
+        "--edition=2021",
+        "spec/performance/graph-public-scale-ownership-2026-11-08/wire-trace.rs",
+        "-L",
+        "dependency=target/release/deps",
+        "--extern",
+        "xyg_engine=target/release/deps/libxyg_engine-c08e762ddb3a6e01.rlib",
+        "-o",
+        "target/task-tmp/module-fit/final-wire-trace"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 0.6819491386413574
+    },
+    "final-memory-100k": {
+      "command": [
+        "target/task-tmp/module-fit/final-wire-trace",
+        "target/task-tmp/module-fit/final-100k.trace"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 2.333717107772827
+    },
+    "final-memory-1m": {
+      "command": [
+        "target/task-tmp/module-fit/final-wire-trace",
+        "target/task-tmp/module-fit/final-1m.trace"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 6.264324903488159
+    },
+    "final-node-host-browser": {
+      "command": [
+        "node",
+        "--test",
+        "packages/xy-node/test/chunked-live-browser.test.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 7.371659994125366
+    },
+    "final-node-tests": {
+      "command": [
+        "node",
+        "--test",
+        "packages/xy-node/test/graph-session-wire.test.mjs",
+        "packages/xy-node/test/painter-admission-wasm-parity.test.mjs",
+        "packages/xy-node/test/temporal-catalog.test.mjs",
+        "packages/xy-node/test/chunked-live.test.mjs",
+        "packages/xy-node/test/geo-live-hierarchy-host.test.mjs",
+        "packages/xy-node/test/geo-native-overview-host.test.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 5.4665844440460205
+    },
+    "final-owner": {
+      "command": [
+        "node",
+        "scripts/graph_temporal_owner_conformance.mjs",
+        "packages/xy-client/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 0.40621018409729004
+    },
+    "final-package": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 50.07365584373474
+    },
+    "final-public-100k": {
+      "command": [
+        "env",
+        "XYG_GRAPH_SCALE=100000",
+        "XYG_GRAPH_SESSION_REPORT=target/task-tmp/module-fit/final-public-100k.json",
+        "node",
+        "scripts/graph_session_public_scale_smoke.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 37.06448578834534
+    },
+    "final-public-1m": {
+      "command": [
+        "env",
+        "XYG_GRAPH_SCALE=1000000",
+        "XYG_GRAPH_SESSION_REPORT=target/task-tmp/module-fit/final-public-1m.json",
+        "node",
+        "scripts/graph_session_public_scale_smoke.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 19.24513578414917
+    },
+    "final-python-related": {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/test_temporal_catalog.py",
+        "tests/test_graph_widget.py",
+        "tests/test_geo_host.py",
+        "tests/test_css_validation.py",
+        "tests/test_css_mark_styles.py",
+        "tests/test_theme_tokens.py",
+        "tests/test_capability_registry.py"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 12.58885145187378
+    },
+    "final-required-hosts": {
+      "command": [
+        "env",
+        "VIRTUAL_ENV=/home/ubuntu/.t3/worktrees/xyg/t3-1319e871/.venv",
+        "XYG_TEST_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XY_REQUIRE_BROWSER=1",
+        "uv",
+        "run",
+        "--active",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/test_chunked_live.py",
+        "tests/test_chunked_installed.py",
+        "--basetemp=target/task-tmp/module-fit/hosts-python311-final"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 1,
+      "seconds": 44.23655033111572
+    },
+    "final-source-audits": {
+      "command": [
+        "bash",
+        "-c",
+        "python3 scripts/gen_abi_manifest.py --check && python3 scripts/gen_wasm_abi.py --check && python3 scripts/verify_ownership.py && python3 scripts/check_release_inventory.py && python3 scripts/verify_ci_workflow.py"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 9.983040809631348
+    },
+    "final-temporal": {
+      "command": [
+        "node",
+        "scripts/temporal_catalog_wasm_parity.mjs",
+        "packages/xy-client/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 1.1796083450317383
+    },
+    "final-update-boundary": {
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "xyg-engine",
+        "update_document_ingress_exact_limit_refusal_and_retry_are_atomic",
+        "--",
+        "--nocapture"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 63.012619495391846
+    },
+    "final-wasm": {
+      "command": [
+        "cargo",
+        "build",
+        "--release",
+        "-p",
+        "xyg-wasm",
+        "--target",
+        "wasm32-unknown-unknown"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 73.27855777740479
+    },
+    "final-wheel-verifier": {
+      "command": [
+        "python3",
+        "scripts/verify_wheel.py",
+        "target/task-tmp/module-fit/official-dist/xyg-0.0.1.dev3137+78cf455a2-py3-none-linux_x86_64.whl",
+        "--expect-native",
+        "--require-wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 0.9566216468811035
+    },
+    "final-workspace": {
+      "command": [
+        "cargo",
+        "test",
+        "--workspace"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 193.90572500228882
+    },
+    "fit-commit-precommit": {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 10.13380217552185
+    },
+    "fit-commit-ruff-check": {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "ruff",
+        "check",
+        "."
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 1.0267510414123535
+    },
+    "fit-commit-ruff-format": {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 0.0942220687866211
+    },
+    "official-wheel": {
+      "command": [
+        "env",
+        "XYG_REQUIRE_CARGO=1",
+        "XYG_REQUIRE_WASM=1",
+        "uv",
+        "build",
+        "--wheel",
+        "--out-dir",
+        "target/task-tmp/module-fit/official-dist"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 130.62585735321045
+    },
+    "wheel-native-100k": {
+      "command": [
+        "node",
+        "scripts/graph_session_public_scale_replay.mjs",
+        "target/task-tmp/module-fit/final-public-100k.json"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 15.962716102600098
+    },
+    "wheel-native-1m": {
+      "command": [
+        "node",
+        "scripts/graph_session_public_scale_replay.mjs",
+        "target/task-tmp/module-fit/final-public-1m.json"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 22.51046109199524
+    },
+    "wheel-native-abi": {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/test_abi.py"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 4,
+      "seconds": 1.414921760559082
+    },
+    "wheel-native-abi-corrected": {
+      "command": [
+        "python3",
+        "scripts/abi_smoke.py"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 0.2808213233947754
+    },
+    "wheel-native-frozen": {
+      "command": [
+        "node",
+        "target/task-tmp/module-fit/frozen-oracle.mjs",
+        "packages/xy-client/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 4.4189534187316895
+    },
+    "wheel-native-geo": {
+      "command": [
+        "node",
+        "scripts/geo_selected_wasm_conformance.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 1,
+      "seconds": 0.08641171455383301
+    },
+    "wheel-native-geo-corrected": {
+      "command": [
+        "env",
+        "XYG_SELECTED_HIERARCHY_REPORT=target/task-tmp/module-fit/wheel-native-geo.json",
+        "node",
+        "scripts/geo_selected_hierarchy_conformance.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 2.579843282699585
+    },
+    "wheel-native-node-complete": {
+      "command": [
+        "node",
+        "--test",
+        "packages/xy-node/test/graph-session-wire.test.mjs",
+        "packages/xy-node/test/painter-admission-wasm-parity.test.mjs",
+        "packages/xy-node/test/temporal-catalog.test.mjs",
+        "packages/xy-node/test/chunked-live.test.mjs",
+        "packages/xy-node/test/geo-live-hierarchy-host.test.mjs",
+        "packages/xy-node/test/geo-native-overview-host.test.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 5.403918266296387
+    },
+    "wheel-native-temporal": {
+      "command": [
+        "node",
+        "scripts/temporal_catalog_wasm_parity.mjs",
+        "packages/xy-client/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 0.8221490383148193
+    },
+    "wheel-native-wire": {
+      "command": [
+        "node",
+        "--test",
+        "packages/xy-node/test/graph-wire.test.mjs",
+        "packages/xy-node/test/painter-admission.test.mjs",
+        "packages/xy-node/test/temporal-catalog.test.mjs",
+        "packages/xy-node/test/chunked-live.test.mjs",
+        "packages/xy-node/test/geo-live-hierarchy.test.mjs",
+        "packages/xy-node/test/geo-native-overview.test.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 1.2940623760223389
+    },
+    "workspace-current": {
+      "command": [
+        "cargo",
+        "test",
+        "--workspace"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 158.29924631118774
+    }
+  },
+  "currentProductionSourceMatchesOfficialWheelInputs": {
+    "mismatches": [],
+    "record": "official-wheel.source.json",
+    "sourceCount": 585
+  },
+  "failedCommands": {
+    "attempt1-package": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 1,
+      "seconds": 56.53228259086609
+    },
+    "attempt2-package": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 1,
+      "seconds": 56.656553983688354
+    },
+    "attempt3-package": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 1,
+      "seconds": 52.91129446029663
+    },
+    "attempt4-package": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 1,
+      "seconds": 50.50591206550598
+    },
+    "attempt5-package": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 1,
+      "seconds": 55.96358394622803
+    },
+    "attempt6-package": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 1,
+      "seconds": 53.17571973800659
+    },
+    "attempt7-package": {
+      "command": [
+        "node",
+        "js/package-wasm.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 1,
+      "seconds": 55.300201416015625
+    },
+    "clippy-current": {
+      "command": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 101,
+      "seconds": 37.2927770614624
+    },
+    "factoring-abba-temporal": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/abba.mjs",
+        "target/task-tmp/module-fit/attempt8/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 1,
+      "seconds": 0.23985552787780762
+    },
+    "factoring-abba-viewport": {
+      "command": [
+        "env",
+        "XYG_NATIVE_LIB=/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/task-tmp/module-fit/before/libxyg_core.so",
+        "node",
+        "target/task-tmp/module-fit/viewport-oracle.mjs",
+        "target/task-tmp/module-fit/attempt8/dist/xyg-wasm.wasm"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 1,
+      "seconds": 0.4451003074645996
+    },
+    "factoring-foundation-pre-p1": {
+      "command": [
+        "env",
+        "XYG_WASM_FOUNDATION_REPORT=target/task-tmp/module-fit/factoring-foundation-pre-p1.json",
+        "node",
+        "scripts/wasm_foundation_smoke.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 1,
+      "seconds": 18.498419284820557
+    },
+    "final-required-hosts": {
+      "command": [
+        "env",
+        "VIRTUAL_ENV=/home/ubuntu/.t3/worktrees/xyg/t3-1319e871/.venv",
+        "XYG_TEST_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XY_REQUIRE_BROWSER=1",
+        "uv",
+        "run",
+        "--active",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/test_chunked_live.py",
+        "tests/test_chunked_installed.py",
+        "--basetemp=target/task-tmp/module-fit/hosts-python311-final"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 1,
+      "seconds": 44.23655033111572
+    },
+    "wheel-native-abi": {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/test_abi.py"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 4,
+      "seconds": 1.414921760559082
+    },
+    "wheel-native-geo": {
+      "command": [
+        "node",
+        "scripts/geo_selected_wasm_conformance.mjs"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 1,
+      "seconds": 0.08641171455383301
+    }
+  },
+  "failureDispositions": {
+    "attempt1-package": "Expected strict package refusal, retained. No cap bypass; later source factoring fits.",
+    "attempt2-package": "Expected strict package refusal, retained. No cap bypass; later source factoring fits.",
+    "attempt3-package": "Expected strict package refusal, retained. No cap bypass; later source factoring fits.",
+    "attempt4-package": "Expected strict package refusal, retained. No cap bypass; later source factoring fits.",
+    "attempt5-package": "Expected strict package refusal, retained. No cap bypass; later source factoring fits.",
+    "attempt6-package": "Expected strict package refusal, retained. No cap bypass; later source factoring fits.",
+    "attempt7-package": "Expected strict package refusal, retained. No cap bypass; later source factoring fits.",
+    "clippy-current": "Eight unchanged preexisting redundant borrow diagnostics; exact eight mechanical argument removals; final strict workspace Clippy passes.",
+    "factoring-abba-temporal": "Harness reused sequence1; status7 correctly refused; sequence++ corrected in harness only and original harness/log retained.",
+    "factoring-abba-viewport": "Harness reused sequence1; status7 correctly refused; sequence++ corrected in harness only and original harness/log retained.",
+    "factoring-foundation-pre-p1": "Timing failure expected superseded request rejection; final passes with identical policy; no reliability repair established.",
+    "final-required-hosts": "Jupyter startup exhausted existing100poll readiness loop, ERR_CONNECTION_REFUSED just before readiness; unchanged retry passes. Reliability remains unresolved.",
+    "wheel-native-abi": "Incorrect command path, no test credit; corrected existing complete command separately passes.",
+    "wheel-native-geo": "Incorrect command path, no test credit; corrected existing complete command separately passes."
+  },
+  "forbiddenActions": {
+    "PRupdatesOrWatch": false,
+    "RootOrProducerSourceConfigWrites": false,
+    "children": false,
+    "historyRewrite": false,
+    "publication": false,
+    "push": false,
+    "remoteMutations": false
+  },
+  "freshScope": [
+    "workspace units/integrations/docs and strict workspace Clippy",
+    "ABI673; complete Node71; generation/ownership/inventory/workflow checks; focused releaseCI121; actual LF/CRLF parent tests11",
+    "ordinary current shipping foundation; strict CSP complete69controller; default1k trustedkeyboard;10k independentpeer; all15temporal inclGPU; sevenfreeze+aggregate formats/recovery/offline;CSS",
+    "fresh100k and1M browser each independentdefaultpeer; full old and fresh native/shippingWASM trace replies both rungs",
+    "temporal16direct+18dense+6stepped+1658clippedpages;78completefrozenoutputs;60hierarchyselectedpackets",
+    "5viewfilter/density exactpointerkeyboard;32chartGPU normal/mixedselection/context;nativeHTTPstyled;6widget/livehost;installedJupyter failedstartup then unchangedpassingretry",
+    "official wheel actualnative/WASM/client/static verification; packaged native complete-output requalification",
+    "requested-allocation ledger changedsource bothrungs andcalleroutput;distinctWASMlinear observations; ABBA fulloutputs and slower samples"
+  ],
+  "implementationParents": [
+    "78cf455a242971b01b8a5f1e0102d2f8d1106102",
+    "5e42af822c32798c9238bcbd3b3e3ce22808964a"
+  ],
+  "inheritedOrReceiptOnly": [
+    "parent independent reviews apply exact original parent bytes only; Root5e42 review57ecPASS; CSSb00707c6APPROVE; graph5ccAPPROVE",
+    "original fixture bytes/sourcechains and previous native/RSS/huge-source evidence preserved; no72GBrescan claimed",
+    "producer100k historicalpass receipt only; both reviewer historical100k watchdog failures retained; reviewer1M historicalpass distinct from freshcurrent runs",
+    "current foundation report/head metadata and wheel version name78cf reflect precommit workingtree builds; actual source/artifact hashes bind successor, not falsely built from eventual merge SHA"
+  ],
+  "mandatoryCommitGates": {
+    "fit-commit-precommit": {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 10.13380217552185
+    },
+    "fit-commit-ruff-check": {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "ruff",
+        "check",
+        "."
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 1.0267510414123535
+    },
+    "fit-commit-ruff-format": {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "cwd": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa",
+      "environment": {
+        "PATH": "/home/ubuntu/.cargo/bin:/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.codex/tmp/arg0-linux/codex-arg06m710H:/home/ubuntu/.codex/packages/standalone/releases/0.167.0-x86_64-unknown-linux-musl/codex-path:/home/ubuntu/.local/bin:/home/ubuntu/.nvm/versions/node/v24.21.0/bin:/home/ubuntu/.opencode/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/ubuntu/.pulumi/bin",
+        "PYTHONPATH": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/python",
+        "TMPDIR": "/var/tmp",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1248/chrome-linux64/chrome",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-2b4533aa/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "seconds": 0.0942220687866211
+    }
+  },
+  "mergeBases": [
+    "b007e2d7cafac6d107d6bb409eac89f8a79ee4c9"
+  ],
+  "otherObservedFailures": [
+    {
+      "failure": "Native full-byte equality assertion failed; final official wheel native378a differs from pre-wheelc828. All seven browser assets remain byte-identical. Pre-wheel native fullbytes unavailable; no invented comparison. Saved factoring native4fce differs from final378a only in buildID/relocation-data sections; text identical. ABI and all relevant complete native/WASM outputs rerun against actual packaged378a.",
+      "record": "post-wheel-artifacts.json"
+    },
+    {
+      "failure": "Node --test silently ignored four nonexistent filename arguments while running35 tests from two valid paths. No full-seam credit; corrected original six-file wheel-native-node-complete passes71 tests.",
+      "record": "wheel-native-wire.command.json"
+    }
+  ],
+  "package": {
+    "compilerOptimizerCapsDefaultsPolicies": "unchanged, except separately reviewed retained temporal-owner graph reservation correction",
+    "gzipCap": 786432,
+    "imports": 0,
+    "nativeABI": 405,
+    "nativeDeclarations": 551,
+    "nativeSha256": "378a069c4f802bb97e6273333766a4afee99a626d4fc409f776f31d21968a4df",
+    "node22gzip6": 786351,
+    "raw": 1886348,
+    "rawCap": 1927168,
+    "sha256": "1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372",
+    "shippingEmitted": true,
+    "spare": 81,
+    "wasmABI": 38,
+    "wasmFunctions": 68
+  },
+  "remaining": [
+    "independent final material combined review, Root-owned",
+    "hosted required CI and merge queue, Root-owned",
+    "both historical reviewer100k watchdog failures and earlierRoot startup/timer/Worker/AA unresolved",
+    "new earlier supersession timing failure and installedJupyter startup failure not repaired by passingretry",
+    "full milestone4\u20137 acceptance including remaininghost/accessibility/performance gaps open"
+  ],
+  "status": "Current local combined shipping module fits strict caps and bounded qualification passes; final material combined independent review/hosted CI/queue pending; no milestone closure"
+}

@@ -1412,3 +1412,16 @@ spec/performance/active-m4-m7-integration-2026-11-08/**/*.png -text
 spec/performance/graph-public-scale-ownership-2026-11-08/** text eol=lf
 spec/performance/graph-public-scale-ownership-2026-11-08/**/*.gz -text
 spec/performance/graph-public-scale-ownership-2026-11-08/**/*.png -text
+# Co-owned temporal-job graph admission successor evidence.
+crates/xyg-wasm/src/graphforge_session.rs text eol=lf
+scripts/graph_temporal_owner_conformance.mjs text eol=lf
+spec/design/graph-interaction.md text eol=lf
+spec/design/temporal-catalog.md text eol=lf
+tests/fixtures/graph-temporal-owners.json text eol=lf
+spec/performance/graph-temporal-owner-charge-2026-11-08/** text eol=lf
+spec/performance/graph-temporal-owner-charge-2026-11-08/**/*.gz -text
+
+# Source-factored union and immutable experiment/evidence bytes.
+spec/performance/module-space-recovery-2026-11-08/** text eol=lf
+spec/performance/module-space-recovery-2026-11-08/**/*.gz -text
+spec/performance/module-space-recovery-2026-11-08/**/*.png -text

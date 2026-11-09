@@ -11,9 +11,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-CURRENT_BINDINGS = Path(
-    "spec/performance/active-m4-m7-integration-2026-11-08/current-bindings.json"
-)
+CURRENT_BINDINGS = Path("spec/performance/module-space-recovery-2026-11-08/current-bindings.json")
 
 
 def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> None:
@@ -237,8 +235,6 @@ def test_rc7_artifact_provenance_and_every_generated_ipc_are_bound() -> None:
 
 
 def test_dense_navigation_successor_preserves_qualified_source_parents():
-    import gzip
-
     current = json.loads(
         (ROOT / "spec/performance/browser-css-color-2026-11-08/current-bindings.json").read_text()
     )
@@ -251,47 +247,76 @@ def test_dense_navigation_successor_preserves_qualified_source_parents():
         "spec/performance/geo-hierarchy-application-remount-2026-11-08/current-bindings.json",
         "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/current-bindings.json",
     }
+    assert len(current["parents"]) == 7
     assert {parent["path"] for parent in current["parents"]} == expected
-    for parent in current["parents"]:
-        raw = (ROOT / parent["path"]).read_bytes()
-        assert hashlib.sha256(raw).hexdigest() == parent["sha256"]
-        historical = json.loads(raw)
-        for source, digest in historical["sourceSha256"].items():
-            now = hashlib.sha256((ROOT / source).read_bytes()).hexdigest()
-            if now != digest:
-                archived = current["predecessorSources"].get(parent["path"], {}).get(source)
-                if archived is None:
-                    successor = json.loads((ROOT / CURRENT_BINDINGS).read_text())
-                    archived = successor["predecessorSources"][
-                        "spec/performance/browser-css-color-2026-11-08/current-bindings.json"
-                    ][source]
-                assert (
-                    hashlib.sha256(gzip.decompress((ROOT / archived).read_bytes())).hexdigest()
-                    == digest
-                )
-        for source, digest in historical["historicalBindings"].items():
-            assert current["historicalBindings"][source] == digest
+    _assert_complete_parent_sources(current)
 
 
 def test_combined_successor_preserves_both_complete_parent_bindings():
-    import gzip
-
-    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/active-m4-m7-integration-2026-11-08/current-bindings.json"
+        ).read_text()
+    )
     assert len(current["parents"]) == 2
     assert {p["path"] for p in current["parents"]} == {
         "spec/performance/browser-css-color-2026-11-08/current-bindings.json",
         "spec/performance/graph-public-scale-ownership-2026-11-08/current-bindings.json",
     }
-    for parent in current["parents"]:
+    _assert_complete_parent_sources(current)
+
+
+def _assert_complete_parent_sources(binding):
+    import gzip
+
+    successor = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    archives = list(binding.get("predecessorSources", {}).values())
+    archives += list(successor.get("predecessorSources", {}).values())
+    for parent in binding["parents"]:
         raw = (ROOT / parent["path"]).read_bytes()
         assert hashlib.sha256(raw).hexdigest() == parent["sha256"]
         historical = json.loads(raw)
         for source, digest in historical["sourceSha256"].items():
             if hashlib.sha256((ROOT / source).read_bytes()).hexdigest() != digest:
-                archived = current["predecessorSources"][parent["path"]][source]
-                assert (
-                    hashlib.sha256(gzip.decompress((ROOT / archived).read_bytes())).hexdigest()
+                candidates = {mapping[source] for mapping in archives if source in mapping}
+                assert any(
+                    hashlib.sha256(gzip.decompress((ROOT / path).read_bytes())).hexdigest()
                     == digest
-                )
+                    for path in candidates
+                ), (parent["path"], source, digest)
         for source, digest in historical["historicalBindings"].items():
-            assert current["historicalBindings"][source] == digest
+            assert successor["historicalBindings"][source] == digest
+
+
+def test_root_job_budget_eight_parents():
+    current = json.loads(
+        (
+            ROOT / "spec/performance/graph-temporal-owner-charge-2026-11-08/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 8
+    assert {p["path"] for p in current["parents"]} == {
+        "spec/performance/geo-hierarchy-held-reply-cleanup-2026-11-08/current-bindings.json",
+        "spec/performance/browser-css-color-2026-11-08/current-bindings.json",
+        "spec/performance/temporal-dense-continuation-2026-11-08/current-bindings.json",
+        "spec/performance/wasm-frozen-feature-ci-2026-11-08/current-bindings.json",
+        "spec/performance/dense-native-navigation-union-2026-11-08/current-bindings.json",
+        "spec/performance/geo-hierarchy-application-remount-2026-11-08/current-bindings.json",
+        "spec/performance/dense-union-module-status-2026-11-08/current-bindings.json",
+        "spec/performance/geo-hierarchy-temporal-remount-2026-11-08/current-bindings.json",
+    }
+    _assert_complete_parent_sources(current)
+
+
+def test_final_fit_two_parents():
+    current = json.loads(
+        (
+            ROOT / "spec/performance/module-space-recovery-2026-11-08/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 2
+    assert {p["path"] for p in current["parents"]} == {
+        "spec/performance/active-m4-m7-integration-2026-11-08/current-bindings.json",
+        "spec/performance/graph-temporal-owner-charge-2026-11-08/current-bindings.json",
+    }
+    _assert_complete_parent_sources(current)

@@ -282,3 +282,10 @@ if (!only && !browserPackage) {
       ...(reportPath ? { XYG_COLOR_REPORT: `${reportPath}.css-color.json` } : {}) },
   });
 }
+
+// Ordinary raw-WASM owners share the same logical graph admission ceiling.
+if (!only && !browserPackage) {
+  execFileSync(process.execPath, [join(root, "scripts/graph_temporal_owner_conformance.mjs"), join(browserDist, "xyg-wasm.wasm")], {
+    cwd: root, stdio: "inherit", timeout: 120000, env: process.env,
+  });
+}

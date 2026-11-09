@@ -1,0 +1,7 @@
+{
+  "path": "/var/tmp/xyg-review-5e42/review-57ec49f97bb0156e51c7b258e20bf6eb109e9199b88e21cf86edc3d8df0dd539.json",
+  "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/57ec49f97bb0156e51c7b258e20bf6eb109e9199b88e21cf86edc3d8df0dd539.gz",
+  "sha256": "57ec49f97bb0156e51c7b258e20bf6eb109e9199b88e21cf86edc3d8df0dd539",
+  "bytes": 102585,
+  "scope": "exact 5e42 184-path parent only; PASS/no findings; final material union review remains Root-owned"
+}

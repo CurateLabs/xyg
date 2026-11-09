@@ -1,5 +1,6 @@
 //! Frozen accountable geographic export (§27/§29); see geo-frozen-export.md.
 //! Immutable XYGX carries Scene32 and exact source/camera/time/revision facts.
+use crate::scene::SceneByteWrite;
 use crate::geo::{GeoCrs, GeoGeometry};
 use crate::geo_lod::{
     CLUSTER_CELL_LIMIT, DENSITY_CELL_LIMIT, GeoLodIdentity, GeoLodKey, GeoPointCell,
@@ -616,12 +617,12 @@ impl GeoFrozenSnapshot {
             b.extend_from_slice(&layer_bytes(layer));
         }
         for v in direct {
-            b.extend_from_slice(&v.layer_id.to_le_bytes());
-            b.extend_from_slice(&v.source_row.to_le_bytes());
-            b.extend_from_slice(&v.feature_id.to_le_bytes());
-            b.extend_from_slice(&v.chunk_index.to_le_bytes());
-            b.extend_from_slice(&v.row.to_le_bytes());
-            b.extend_from_slice(&v.vertex.to_le_bytes());
+            b.push_word(v.layer_id);
+            b.push_word(v.source_row);
+            b.push_word(v.feature_id);
+            b.push_word(v.chunk_index);
+            b.push_word(v.row);
+            b.push_word(v.vertex);
             b.extend_from_slice(&[0; 12]);
         }
         for v in membership {
@@ -636,7 +637,7 @@ impl GeoFrozenSnapshot {
             header[184..232].copy_from_slice(&g.style);
             b.extend_from_slice(&header);
             for i in 0..g.counts.len() {
-                b.extend_from_slice(&g.counts.count(i).to_le_bytes());
+                b.push_word(g.counts.count(i));
             }
         }
         for selection in selections {
@@ -648,7 +649,7 @@ impl GeoFrozenSnapshot {
             append_frozen_selection(&mut b, grid.key, selection);
         }
         for v in attributions {
-            b.extend_from_slice(&(v.len() as u32).to_le_bytes());
+            b.push_word(v.len() as u32);
             b.extend_from_slice(v.as_bytes());
         }
         b.extend_from_slice(tile);
@@ -1799,7 +1800,7 @@ fn append_frozen_selection(
         .iter()
         .chain(selection.selected_counts())
     {
-        out.extend_from_slice(&value.to_le_bytes());
+        out.push_word(value);
     }
 }
 

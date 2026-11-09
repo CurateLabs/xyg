@@ -568,10 +568,12 @@ impl GraphSession {
         #[cfg(target_arch = "wasm32")]
         {
             let (mut validate, mut f) = (Some(validate), Some(f));
+            let mut output = None;
             self.locked_validated_erased(
                 &mut |s, g| validate.take().expect("one owner validation")(s, g),
-                &mut |s, w| f.take().expect("one owner operation")(s, w),
-            )
+                &mut |s, w| output = Some(f.take().expect("one owner operation")(s, w)),
+            )?;
+            Ok(output.expect("one owner operation"))
         }
         #[cfg(not(target_arch = "wasm32"))]
         self.locked_validated_impl(validate, f)
@@ -579,11 +581,13 @@ impl GraphSession {
 
     #[cfg(target_arch = "wasm32")]
     #[inline(never)]
-    fn locked_validated_erased<R>(
+    // Keep the result in the caller's stack slot so the lock/state transaction
+    // has one browser body across operation result types; no heap owner added.
+    fn locked_validated_erased(
         &mut self,
         validate: &mut dyn FnMut(&Self, &TemporalGraph) -> Result<(), InteractionStatus>,
-        f: &mut dyn FnMut(&mut Self, World<'_>) -> R,
-    ) -> Result<R, InteractionStatus> {
+        f: &mut dyn FnMut(&mut Self, World<'_>),
+    ) -> Result<(), InteractionStatus> {
         self.locked_validated_impl(validate, f)
     }
 

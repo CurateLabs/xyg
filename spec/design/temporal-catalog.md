@@ -227,6 +227,12 @@ execute per operation; exhaustion refuses atomically. The 100k fixture at
 900px fits; 1M at that viewport refuses the declared working set before index
 allocation. CI never allocates 100M/1B rows. WASM admission also charges retained
 temporal owners and co-owned graph authorities against the instance ceiling.
+Graph transactions likewise reserve already-issued temporal jobs through the
+ordinary graph adapter's checked external charge. Refusing graph work leaves
+those jobs and the last graph publication intact; it cannot strand subsequent
+zero-byte staging. A GraphSession continues to exclude new ordinary temporal
+commands until that session is closed. This is per-instance logical ownership
+accounting, not proof of a global process/RSS/GPU ceiling.
 
 XYTJ v1 is a 64-byte control header plus optional XYTM bytes. Magic at 0,
 u32 version=1 at 4, u32 operation at 8, reserved 12..16 zero, u64 owner at 16,
