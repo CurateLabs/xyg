@@ -1454,3 +1454,12 @@ spec/design/temporal-catalog.md text eol=lf
 spec/performance/temporal-controller-view-2026-11-09/** text eol=lf
 spec/performance/temporal-controller-view-2026-11-09/**/*.gz -text
 spec/performance/temporal-controller-view-2026-11-09/**/*.png -text
+
+# Hosted naming/floor/discovery repair: preserve source and qualification bytes.
+scripts/check_stale_names.py text eol=lf
+tests/test_stale_names.py text eol=lf
+tests/test_chunked_required_ci.py text eol=lf
+spec/design/xyg-naming.md text eol=lf
+spec/process/contributing.md text eol=lf
+spec/performance/ci-vendor-floor-discovery-2026-11-09/** text eol=lf
+spec/performance/ci-vendor-floor-discovery-2026-11-09/**/*.gz -text

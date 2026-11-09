@@ -20,9 +20,31 @@ def test_node_command_preserves_unique_parent_union_and_requires_live_browser():
     assert current[:2] == ["node", "--test"]
     tests = current[2:]
     assert len(tests) == len(set(tests))
-    assert set(tests) == set(proof["requiredAdded"]).union(
+    # Later qualified integration adds five-view lifecycle coverage; preserve
+    # the immutable original producer list and require this addition explicitly.
+    assert set(tests) == {"test/geo-five-temporal.test.mjs"}.union(proof["requiredAdded"]).union(
         *(set(p["tests"]) for p in proof["parents"])
     )
+
+
+def test_floor_installs_parser_required_by_workflow_guard_collection():
+    import shlex
+
+    ci = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
+    floor = next(job for job in ci["jobs"].values() if job.get("name") == "Python 3.11 floor")
+    install = next(
+        step["run"]
+        for step in floor["steps"]
+        if step.get("name") == "Install package for Python 3.11"
+    )
+    commands = [
+        shlex.split(line)
+        for line in install.splitlines()
+        if line.strip().startswith("uv pip install ")
+    ]
+    assert len(commands) == 1
+    assert commands[0][:3] == ["uv", "pip", "install"]
+    assert "pyyaml>=6" in commands[0]
 
 
 def test_existing_python_job_requires_installed_render_without_skipping_or_duplicate_gate():

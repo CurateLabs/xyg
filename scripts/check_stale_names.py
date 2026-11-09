@@ -269,6 +269,26 @@ def _allowed_src_lib_rs(line: str, start: int) -> bool:
     )
 
 
+def _allowed_vendored_src_lib_rs(rel: str, line: str, start: int) -> bool:
+    """Recognize exact upstream entrypoint tokens, not the retired root ABI."""
+    prefix = line[:start]
+    if re.search(
+        r"""(?:^|[ \t"'`])(?:/(?:[\w.-]+/)*)?(?:vendor/(?:png|crc32fast)|EXTERNAL-PROBE/png)/$""",
+        prefix,
+    ) and re.match(r"""(?:$|[ \t"'`])""", line[start + len("src/lib.rs") :]):
+        return True
+    crates = ("vendor/png/", "vendor/crc32fast/")
+    pattern = None
+    if rel in {crate + "Cargo.toml" for crate in crates}:
+        pattern = r"""^\s*path\s*=\s*["'](?P<path>src/lib\.rs)["']\s*$"""
+    elif rel in {crate + "upstream-source-sha256.json" for crate in crates}:
+        pattern = r'^\s*"(?P<path>src/lib\.rs)"\s*:\s*"[0-9a-f]{64}"\s*,?\s*$'
+    elif rel == "vendor/png/XYG-PATCH.md":
+        pattern = r"^The only source changes are in `src/encoder\.rs` and its `(?P<path>src/lib\.rs)` re-export\.$"
+    match = None if pattern is None else re.match(pattern, line)
+    return match is not None and match.start("path") == start
+
+
 def _allowed_xy_node(line: str) -> bool:
     return "never publish" in line.lower()
 
@@ -305,6 +325,7 @@ _HISTORICAL_IDENTITY_ALLOWLIST = {
 # these exact canonical UTF-8/LF contents are historical evidence: changing
 # either the path or any content restores every ordinary identity check.
 _FROZEN_EVIDENCE_SNAPSHOTS = {
+    "spec/performance/temporal-shared-png-2026-11-07/final-data.json": "b277316c7b0868ec2b148a389a68734faa9873dceb68d7ba2cbb98a5012c10a8",
     "spec/performance/chunked-read-validation-2026-11-06/issue-11-blocked-by.json": "644f7b508bb36c53c3af96e9c4212cc6833eadf4020ef32ae68ad2ba3a8c8604",
     "spec/performance/chunked-read-validation-2026-11-06/issue-5-blocked-by.json": "8add22090cd068e7d1d00999e6517a8b218377ddeaed16aea0749ecc1eaed82d",
     "spec/performance/chunked-column-reuse-2026-11-06/rust-tests.json": "ab1fd6dd588c7022eda421e672d88d90ec0ee53a26402120f3258833362cb3eb",
@@ -382,7 +403,10 @@ def check_stale_names(root: Path = ROOT) -> list[str]:
                 continue
             for label, pattern in NEEDLES:
                 for match in pattern.finditer(line):
-                    if label == "src/lib.rs ABI" and _allowed_src_lib_rs(line, match.start()):
+                    if label == "src/lib.rs ABI" and (
+                        _allowed_src_lib_rs(line, match.start())
+                        or _allowed_vendored_src_lib_rs(rel, line, match.start())
+                    ):
                         continue
                     if label == "@xy/node" and _allowed_xy_node(line):
                         continue

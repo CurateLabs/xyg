@@ -1,0 +1,378 @@
+{
+  "base": "3548164e2c803f11b9ee07cb03f6e37ace66930c",
+  "bindings": {
+    "current": 3398,
+    "historical": 1059,
+    "parents": 13,
+    "path": "spec/performance/ci-vendor-floor-discovery-2026-11-09/current-bindings.json",
+    "sha256": "d1cee490a09355a3bc467ab3d2531fdf7f1a1510dd77e9a82d1f22917105c149"
+  },
+  "compiledInputs": {
+    "baseExact": true,
+    "count": 324,
+    "path": "spec/performance/ci-vendor-floor-discovery-2026-11-09/compiled-inputs.json",
+    "sha256": "6b467dcd6f88914704cbdf051d726778fab674b2d8299d5358ccd10eb6e7e91c"
+  },
+  "evidence": {
+    "target/task-tmp/ci-bc-repair/assets-final.log": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef.gz",
+      "archiveBytes": 104,
+      "archiveSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730",
+      "bytes": 88,
+      "sha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef"
+    },
+    "target/task-tmp/ci-bc-repair/check-ci.exit": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa.gz",
+      "archiveBytes": 22,
+      "archiveSha256": "89ed3b723e0e40d8957a2df55fcb04d57b6d95fa665c5fe67b098df7f29694ae",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "target/task-tmp/ci-bc-repair/check-ci.log": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/fac26e03fbd7500a80e8dd831ff1d21da8b9933d5ec031311d7f14ba087fd8b1.gz",
+      "archiveBytes": 428,
+      "archiveSha256": "69a82979945f07024551806cd3b076541145de4864b40a00dd76c067f9844888",
+      "bytes": 1899,
+      "sha256": "fac26e03fbd7500a80e8dd831ff1d21da8b9933d5ec031311d7f14ba087fd8b1"
+    },
+    "target/task-tmp/ci-bc-repair/core-final.log": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/d7e46fe55ab7bc3aa7dc7769f8a91bf1367dc0e4c7a42a9ebf7319ef2d24b8a0.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "41e041d290b2d5ca859cd5f51b4bd36d48f0578dc58a64f36e440e9a32783b9d",
+      "bytes": 99,
+      "sha256": "d7e46fe55ab7bc3aa7dc7769f8a91bf1367dc0e4c7a42a9ebf7319ef2d24b8a0"
+    },
+    "target/task-tmp/ci-bc-repair/core-first.log": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/bb93af1c559fac3217160f1ac91c97321230ea839748825bf1f8a06035da02ff.gz",
+      "archiveBytes": 1344,
+      "archiveSha256": "f43196d4db801215fc726741b709040e3ee16d5c29a676716137ad0069975ec3",
+      "bytes": 3800,
+      "sha256": "bb93af1c559fac3217160f1ac91c97321230ea839748825bf1f8a06035da02ff"
+    },
+    "target/task-tmp/ci-bc-repair/floor-final.log": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/1a2a3bb97cdceca8e9730507ec4769a5a050a42d701fe0e9a6bded636cdd9fae.gz",
+      "archiveBytes": 168,
+      "archiveSha256": "e6bceb3e11f26536132a7e4cee8385271ce42ed874fba9dfc3e66a73780bc2f2",
+      "bytes": 205,
+      "sha256": "1a2a3bb97cdceca8e9730507ec4769a5a050a42d701fe0e9a6bded636cdd9fae"
+    },
+    "target/task-tmp/ci-bc-repair/floor-numpy-setup.log": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/9eaa4bb844d464c08dc8615ec8872db3bc1627c79b26afa96ab95e908bb65f23.gz",
+      "archiveBytes": 140,
+      "archiveSha256": "84b36bfec3fd246dc84d7001604d122a2deca442fd7957ab8233b8fbe496ba0e",
+      "bytes": 148,
+      "sha256": "9eaa4bb844d464c08dc8615ec8872db3bc1627c79b26afa96ab95e908bb65f23"
+    },
+    "target/task-tmp/ci-bc-repair/floor-setup.log": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/35d3cdcae9455d9f8abdb43dfb63ab3d16464ba4f28b50ffea380a23e6efe50b.gz",
+      "archiveBytes": 289,
+      "archiveSha256": "ad84923829924dbc65709fae9b28156f2849ce029cf9d1a020b351b5621afa80",
+      "bytes": 489,
+      "sha256": "35d3cdcae9455d9f8abdb43dfb63ab3d16464ba4f28b50ffea380a23e6efe50b"
+    },
+    "target/task-tmp/ci-bc-repair/floor-with-runtime-deps.log": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/56677c83c96dcc42858f25d21eaa2775f5aee4c3ac2fb052b52d5ae8c36e3c50.gz",
+      "archiveBytes": 51,
+      "archiveSha256": "3b6d9789a1c2a6f081578e646f824474ff4185170c12286f36cfe37d5642a9ee",
+      "bytes": 98,
+      "sha256": "56677c83c96dcc42858f25d21eaa2775f5aee4c3ac2fb052b52d5ae8c36e3c50"
+    },
+    "target/task-tmp/ci-bc-repair/focused-final.log": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/8f765a4a9c1a4f87644ce7c547570839d4813f29be58ece9bdec4af2c990d4b9.gz",
+      "archiveBytes": 79,
+      "archiveSha256": "58337eeaf5f1e6a88cef44b20b82b7f00640f6c4348a1957a0ed961b13eef474",
+      "bytes": 272,
+      "sha256": "8f765a4a9c1a4f87644ce7c547570839d4813f29be58ece9bdec4af2c990d4b9"
+    },
+    "target/task-tmp/ci-bc-repair/focused-first.log": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/956bb8cf310509f35603de653834bb2fa40c128c6ab45ae7a6c3a1ab5028e14c.gz",
+      "archiveBytes": 691,
+      "archiveSha256": "ffa7aeb551adc47b0c3dde471fb165b52227905a0dafd02f81efce4d8b353eb9",
+      "bytes": 3076,
+      "sha256": "956bb8cf310509f35603de653834bb2fa40c128c6ab45ae7a6c3a1ab5028e14c"
+    },
+    "target/task-tmp/ci-bc-repair/format-first.log": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/910e2e16e3fa6b3e1582a9a5fd4ee684184a268b95128c7ff20f1edcc42c3528.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "b11c914ca01768be0fbae29a5590a64a512c0f6571f5bf12517b18448bb72b60",
+      "bytes": 29,
+      "sha256": "910e2e16e3fa6b3e1582a9a5fd4ee684184a268b95128c7ff20f1edcc42c3528"
+    },
+    "target/task-tmp/ci-bc-repair/hooks-first.log": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/ci-bc-repair/hosted-floor.log": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/73e412b6ab62c0dbda9d289d9a673139f675ec30df2ea21d7a601c38f285d8ba.gz",
+      "archiveBytes": 19334,
+      "archiveSha256": "55fdb0989e6ed6aa043e6dbce91678ff78fbe82c06a188bf63f00165bce13871",
+      "bytes": 149628,
+      "sha256": "73e412b6ab62c0dbda9d289d9a673139f675ec30df2ea21d7a601c38f285d8ba"
+    },
+    "target/task-tmp/ci-bc-repair/hosted-test.log": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/30e1f151da768f11e52837d9dfe4624edad29a8971b9626aab4b666bb11341ca.gz",
+      "archiveBytes": 115683,
+      "archiveSha256": "8343c88fac934748851dae8c6dcf3249200ab9df722b75336f4643658bd94b69",
+      "bytes": 591979,
+      "sha256": "30e1f151da768f11e52837d9dfe4624edad29a8971b9626aab4b666bb11341ca"
+    },
+    "target/task-tmp/ci-bc-repair/naming-final.log": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/1003caaf3711434f9f15fab5a76f470c95cf9f63df4d3b732b9e7fb3016ed840.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "c37334890ddf4df9c85150168328b2d0cc5bac95e9815dd234d2f9e53e0eba6f",
+      "bytes": 19,
+      "sha256": "1003caaf3711434f9f15fab5a76f470c95cf9f63df4d3b732b9e7fb3016ed840"
+    },
+    "target/task-tmp/ci-bc-repair/parent-check_stale_names.py": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/215fe4f6047ce01feec47d08531996c5920702ac1278497dbe31146b48b70f5a.gz",
+      "archiveBytes": 5244,
+      "archiveSha256": "3c7199d1b22d7d63b0709cd189d4ccbd85285eb6eab112ec64a30f5190caf978",
+      "bytes": 15562,
+      "sha256": "215fe4f6047ce01feec47d08531996c5920702ac1278497dbe31146b48b70f5a"
+    },
+    "target/task-tmp/ci-bc-repair/parent-negative.log": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/699c6c1663c87a603a7b069b24900adf2b8adad16f9143ee587ec2d405958668.gz",
+      "archiveBytes": 1264,
+      "archiveSha256": "82d5a95ee9525b2d6e87b09b0c1f5411a9b1c024ef75559a696ab5748da75161",
+      "bytes": 8642,
+      "sha256": "699c6c1663c87a603a7b069b24900adf2b8adad16f9143ee587ec2d405958668"
+    },
+    "target/task-tmp/ci-bc-repair/parent-negative.py": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/08bc7133b2927aaa1ae4e26c28c7d42adeae4b54e6ccbf3b64cf8ae2714e9d24.gz",
+      "archiveBytes": 479,
+      "archiveSha256": "0df268ee0cbd2dd84790e68450887f67b60b9f4af8f61d4eed003389e1ca18a6",
+      "bytes": 847,
+      "sha256": "08bc7133b2927aaa1ae4e26c28c7d42adeae4b54e6ccbf3b64cf8ae2714e9d24"
+    },
+    "target/task-tmp/ci-bc-repair/pr-body-before.md": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/f0612c68070fa0090188497015ac2304679ac6a6824bca25b941b1523da23ac2.gz",
+      "archiveBytes": 9952,
+      "archiveSha256": "3cf0b11195bfbfa9c01dffb694422cc004e82c0ad0487c516ec94ca3ef84a6c0",
+      "bytes": 23948,
+      "sha256": "f0612c68070fa0090188497015ac2304679ac6a6824bca25b941b1523da23ac2"
+    },
+    "target/task-tmp/ci-bc-repair/ruff-first.log": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/ci-bc-repair/runtime-equality.json": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/833a68ea9d6053081621082b4dc5eb6bad06ab3fa12f068332a93ef165d5bd96.gz",
+      "archiveBytes": 703,
+      "archiveSha256": "0c0ed37c123c36d731d17bd4c14de3eac0fd3053d6e7f136b787bd33c3f3f468",
+      "bytes": 1613,
+      "sha256": "833a68ea9d6053081621082b4dc5eb6bad06ab3fa12f068332a93ef165d5bd96"
+    },
+    "target/task-tmp/ci-bc-repair/temporal-binding-review.json": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/241106342be49a75f4243414861bf87b4b70cd61d7f018f22edd949dd4a98a61.gz",
+      "archiveBytes": 5075,
+      "archiveSha256": "9fc946a255e6864e7bba0e5a183064c86bdd02eb863caa90a3d37c8baf830615",
+      "bytes": 12468,
+      "sha256": "241106342be49a75f4243414861bf87b4b70cd61d7f018f22edd949dd4a98a61"
+    },
+    "target/task-tmp/ci-bc-repair/workflow-discovery-negative.log": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/6fe4ed995bf7fea814acced7142196c8f6ac5a90fd8afab31069c1a920092e18.gz",
+      "archiveBytes": 99,
+      "archiveSha256": "41c7f6970aed16e8d7b2f2a5ace6bc00db983e078d8a3027140d9f6177ba8148",
+      "bytes": 116,
+      "sha256": "6fe4ed995bf7fea814acced7142196c8f6ac5a90fd8afab31069c1a920092e18"
+    },
+    "target/task-tmp/ci-bc-repair/workflow-discovery-negative.py": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/78f3d3cf12aee183b4897466f2cc01fd54b044d1a3a43b418c8c5ca3500e04ba.gz",
+      "archiveBytes": 769,
+      "archiveSha256": "3e01f59950837deb6205957209461191167a4f8340c8d7e0a5aaecc32fbdf784",
+      "bytes": 1772,
+      "sha256": "78f3d3cf12aee183b4897466f2cc01fd54b044d1a3a43b418c8c5ca3500e04ba"
+    },
+    "target/task-tmp/ci-bc-repair/workflow-final.log": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/3d29b3df27ab04aa2eff268a14a0b1d0df03e4c53b766cae333c85eb9191ae26.gz",
+      "archiveBytes": 182,
+      "archiveSha256": "f97a7ddf802e55a37796b01161e00a0cf2c51f697c856c676e34316dc9c37163",
+      "bytes": 567,
+      "sha256": "3d29b3df27ab04aa2eff268a14a0b1d0df03e4c53b766cae333c85eb9191ae26"
+    },
+    "target/task-tmp/ci-bc-repair/workflow-test-disposition.json": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/86c242d8728ce2efbdbcb85f872987e41af723d4bedba97c66214a4f8a1facbd.gz",
+      "archiveBytes": 208,
+      "archiveSha256": "d416247411d64af7c0ace01c0412433d1ab227491588655974dbc3a238fc95c6",
+      "bytes": 266,
+      "sha256": "86c242d8728ce2efbdbcb85f872987e41af723d4bedba97c66214a4f8a1facbd"
+    },
+    "target/task-tmp/ci-bc-repair/workflow-tests.log": {
+      "archive": "spec/performance/ci-vendor-floor-discovery-2026-11-09/evidence/aee0e4c3d2ae93460bb48d4a723a58b7e1a2ac4ed88acb7badb347f7c08b7eb8.gz",
+      "archiveBytes": 199,
+      "archiveSha256": "026b78ec8046145489c01fd62ea578be6fdf33fc1cfb2215ac53400349be8cf5",
+      "bytes": 492,
+      "sha256": "aee0e4c3d2ae93460bb48d4a723a58b7e1a2ac4ed88acb7badb347f7c08b7eb8"
+    }
+  },
+  "fresh": {
+    "assets": {
+      "exit": 0,
+      "log": "target/task-tmp/ci-bc-repair/assets-final.log"
+    },
+    "checkCi": {
+      "exit": 0,
+      "log": "target/task-tmp/ci-bc-repair/check-ci.log",
+      "passed": 793
+    },
+    "core": {
+      "exit": 0,
+      "log": "target/task-tmp/ci-bc-repair/core-final.log",
+      "passed": 8,
+      "realGitCrLf": true
+    },
+    "floor": {
+      "environment": "New isolated environment, explicit existing NumPy runtime dependency plus pytest/PyYAML; source PYTHONPATH; no environment synchronization",
+      "exit": 0,
+      "log": "target/task-tmp/ci-bc-repair/floor-with-runtime-deps.log",
+      "passed": 3,
+      "python": "3.11.17"
+    },
+    "focused": {
+      "exit": 0,
+      "log": "target/task-tmp/ci-bc-repair/focused-final.log",
+      "passed": 180
+    },
+    "format": {
+      "exit": 0,
+      "log": "target/task-tmp/ci-bc-repair/format-first.log"
+    },
+    "hooks": {
+      "exit": 0,
+      "log": "target/task-tmp/ci-bc-repair/hooks-first.log"
+    },
+    "naming": {
+      "exit": 0,
+      "log": "target/task-tmp/ci-bc-repair/naming-final.log"
+    },
+    "parentNamingNegative": {
+      "exit": 0,
+      "failedAsExpected": 7,
+      "log": "target/task-tmp/ci-bc-repair/parent-negative.log",
+      "underlyingPytestExit": 1
+    },
+    "ruff": {
+      "exit": 0,
+      "log": "target/task-tmp/ci-bc-repair/ruff-first.log"
+    },
+    "workflow": {
+      "exit": 0,
+      "log": "target/task-tmp/ci-bc-repair/workflow-final.log"
+    },
+    "workflowDiscoveryNegatives": {
+      "exit": 0,
+      "log": "target/task-tmp/ci-bc-repair/workflow-discovery-negative.log",
+      "passed": 4
+    }
+  },
+  "inheritedOnlyByIdentity": [
+    "All runtime/native/WASM/client and compiled inputs base-exact",
+    "Prior bounded temporal/current-parent product approvals and foundation results",
+    "No new Rust build, large-data scan, installed-host or general performance qualification"
+  ],
+  "preservedFailures": [
+    {
+      "log": "target/task-tmp/ci-bc-repair/hosted-test.log",
+      "primary": "Naming false positives",
+      "scope": "Hosted bc040 main job",
+      "status": "failure"
+    },
+    {
+      "log": "target/task-tmp/ci-bc-repair/hosted-floor.log",
+      "primary": "PyYAML absent at test collection",
+      "scope": "Hosted bc040 Python3.11 floor",
+      "status": "failure"
+    },
+    {
+      "cause": "New compact JSON fixtures did not use the actual standalone vendor digest-field shape",
+      "exit": 1,
+      "failed": 2,
+      "log": "target/task-tmp/ci-bc-repair/focused-first.log",
+      "passed": 178,
+      "scope": "Initial focused tests"
+    },
+    {
+      "cause": "Omitted existing NumPy runtime dependency in reviewer-style isolated environment",
+      "exit": 4,
+      "log": "target/task-tmp/ci-bc-repair/floor-final.log",
+      "scope": "Initial clean floor setup"
+    },
+    {
+      "cause": "Newly bound contributor contract lacked LF pin",
+      "exit": 1,
+      "failed": 1,
+      "log": "target/task-tmp/ci-bc-repair/core-first.log",
+      "passed": 7,
+      "scope": "First Core checkout proof"
+    },
+    {
+      "credit": "No complete-suite pass claimed; included in completed required make check-ci instead",
+      "log": "target/task-tmp/ci-bc-repair/workflow-tests.log",
+      "observedPassed": 201,
+      "scope": "Redundant standalone workflow suite",
+      "status": "interrupted"
+    }
+  ],
+  "previousIndependentReview": {
+    "freshScope": "42 native/Worker painter and42 RGBA comparisons,44 focused tests, separate constructor/rebinding/attached refusal/ownership/FIFO/captured-plan controls",
+    "head": "3548164e2c803f11b9ee07cb03f6e37ace66930c",
+    "record": "target/task-tmp/ci-bc-repair/temporal-binding-review.json",
+    "recordSha256": "241106342be49a75f4243414861bf87b4b70cd61d7f018f22edd949dd4a98a61",
+    "verdict": "APPROVE"
+  },
+  "readmeSha256": "41d9b34fbf7be340be80717044704f6ad1163ec1a75fa3a8f8d87d78026b17e4",
+  "recordedAt": "2026-11-09T18:16:32.787926+00:00",
+  "remaining": [
+    "Independent review of this exact final CI-only delta",
+    "Final-head hosted checks/current-main freshness/merge queue",
+    "Separate large graph module fit and combined qualification",
+    "Whole issues and milestones4-7 acceptance"
+  ],
+  "runtime": {
+    "packages/xy-client/dist/index.js": {
+      "bytes": 861323,
+      "sha256": "a3a61e5c2984f230f27cb9c57ce1edcbc34ed0a553fb72af6cc2d3d120fd1d43"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "bytes": 861338,
+      "sha256": "268e2f66d8c9822b3eb6afde64d44d56f587e1c072d656dcb5c474edc45f35c4"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "bytes": 2548794,
+      "sha256": "0c8c2c761cbb908df25e4cf1ebd8629aeaa344542e2da11413775431a7db6fb2"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "bytes": 226,
+      "sha256": "1fe8cd78ec5441912c1f9bfbdcf59a258bdc653042a6430daeaad04473e809df"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "bytes": 1895754,
+      "sha256": "08e3d5db67555b2e55d971a32589d04566505f311f7306510d70e5a78b7b8ab5"
+    },
+    "target/release/libxyg_core.so": {
+      "bytes": 6374200,
+      "sha256": "1ac386f0d7af618a757fb51cca883f0c409f3991c976f7a9df0562f69524d316"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "bytes": 4076631,
+      "sha256": "89c1fce1b742e2b4f924171b7b9a40fbc16040fdaca758c6b0d751e95d53602e"
+    }
+  },
+  "runtimeBaseExact": true,
+  "schemaVersion": 1,
+  "scope": "CI naming/vendor false positives, explicit floor test parser and qualified successor Node discovery only"
+}

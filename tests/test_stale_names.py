@@ -500,3 +500,57 @@ def test_escaped_tag_text_is_not_a_json_tag_field(tmp_path: Path) -> None:
     assert any(
         "current product XY brand" in e for e in check_stale_names.check_stale_names(tmp_path)
     )
+
+
+@pytest.mark.parametrize("crate", ["png", "crc32fast"])
+def test_exact_vendored_entrypoint_tokens_preserve_other_identity_checks(tmp_path, crate):
+    entry = "vendor/" + crate + "/src/" + "lib.rs"
+    path = tmp_path / "source-manifest.json"
+    path.write_text(json.dumps({entry: "a" * 64}) + "\n")
+    assert check_stale_names.check_stale_names(tmp_path) == []
+    path.write_text(json.dumps({entry: "a" * 64, "abi": "src/" + "lib.rs"}) + "\n")
+    errors = check_stale_names.check_stale_names(tmp_path)
+    assert len(errors) == 1 and "src/lib.rs ABI" in errors[0]
+
+
+@pytest.mark.parametrize("suffix", ["-copy", ".backup", "/child", "!", "2"])
+@pytest.mark.parametrize("prefix", ["vendor/png/", "vendor/crc32fast/", "EXTERNAL-PROBE/png/"])
+def test_vendored_entrypoint_lookalikes_still_fail(tmp_path, prefix, suffix):
+    path = tmp_path / "manifest.json"
+    path.write_text(json.dumps({prefix + "src/" + "lib.rs" + suffix: "a" * 64}))
+    assert any("src/lib.rs ABI" in e for e in check_stale_names.check_stale_names(tmp_path))
+
+
+@pytest.mark.parametrize("crate", ["png", "crc32fast"])
+@pytest.mark.parametrize("name", ["Cargo.toml", "upstream-source-sha256.json"])
+def test_relative_vendor_entrypoint_requires_exact_file_and_field(tmp_path, crate, name):
+    path = tmp_path / "vendor" / crate / name
+    path.parent.mkdir(parents=True)
+    entry = "src/" + "lib.rs"
+    payload = (
+        'path = "' + entry + '"\n'
+        if name == "Cargo.toml"
+        else json.dumps({"files": {entry: "a" * 64}}, indent=2) + "\n"
+    )
+    path.write_text(payload)
+    assert check_stale_names.check_stale_names(tmp_path) == []
+    path.write_text(payload + "# ABI_VERSION in " + entry + "\n")
+    errors = check_stale_names.check_stale_names(tmp_path)
+    assert len(errors) == 1 and "src/lib.rs ABI" in errors[0]
+    path.write_text(payload)
+    path.rename(path.with_name("lookalike.toml" if name == "Cargo.toml" else "lookalike.json"))
+    assert check_stale_names.check_stale_names(tmp_path)
+
+
+def test_binary_string_diagnostic_is_frozen_by_exact_path_and_content(tmp_path):
+    relative = Path("spec/performance/temporal-shared-png-2026-11-07/final-data.json")
+    payload = (ROOT / relative).read_bytes()
+    path = tmp_path / relative
+    path.parent.mkdir(parents=True)
+    path.write_bytes(payload)
+    assert check_stale_names.check_stale_names(tmp_path) == []
+    path.write_bytes(payload + b'\n"brand": "' + b"X" + b'Y"\n')
+    assert check_stale_names.check_stale_names(tmp_path)
+    path.write_bytes(payload)
+    path.rename(path.with_name("copied.json"))
+    assert check_stale_names.check_stale_names(tmp_path)

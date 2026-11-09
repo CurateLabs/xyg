@@ -893,7 +893,7 @@ jobs:
           # Absolute path: newer uv resolves a bare name as a directory, not
           # the interpreter setup-python put on PATH.
           uv venv .venv --python "$(command -v python)"
-          uv pip install -p .venv/bin/python -e . "pytest>=8,<9"
+          uv pip install -p .venv/bin/python -e . "pytest>=8,<9" "pyyaml>=6"
 
       - name: Public API coherence
         run: .venv/bin/python scripts/check_public_api.py
