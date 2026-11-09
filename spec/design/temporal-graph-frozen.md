@@ -411,8 +411,13 @@ changes accompany this proof.
 The frozen Node/Python parity tests use `UV` when explicitly configured and
 otherwise resolve `uv` on `PATH`; they do not embed a developer's home path.
 Their Python calls use the prepared environment without synchronization.
-Python-floor offline fixtures use the same lockfile-pinned, unconfined
-Playwright Chromium as the main CI job. The actual HTML files, no-network
-checks, metadata/body tamper controls, pixel assertions and 30-second browser
-deadline remain unchanged. This environment correction does not qualify a
-new export capability or repair unrelated startup/Worker timing failures.
+Python-floor offline fixtures select the same lockfile-pinned, unconfined
+Playwright Chromium as the main CI job. Selection alone did not repair the
+Chrome 149 screenshot-CLI timeout. The test-only capture now owns that browser
+through Playwright, waits for the public frozen-ready marker and GPU traces,
+captures the unchanged HTML and closes explicitly. Page errors and network
+attempts fail the capture. The metadata/body tamper controls, pixel assertions
+and outer 30-second browser deadline remain unchanged. See the
+[capture correction](../performance/frozen-browser-ci-2026-11-09/README.md).
+This does not qualify a new export capability or repair unrelated startup or
+Worker timing failures.

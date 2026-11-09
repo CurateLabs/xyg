@@ -488,17 +488,13 @@ def test_rendered_exports_survive_disposal_and_reject_body_tampering(
         assert chrome is not None, "frozen offline HTML proof requires Chromium"
         result = subprocess.run(
             [
+                os.environ.get("XYG_NODE", "node"),
+                "scripts/frozen_html_screenshot.mjs",
                 chrome,
-                "--headless",
-                "--no-sandbox",
-                "--disable-dev-shm-usage",
-                "--no-proxy-server",
-                "--host-resolver-rules=MAP * ~NOTFOUND",
-                f"--user-data-dir={tmp_path / 'profile'}",
-                "--window-size=300,250",
-                f"--screenshot={tmp_path / 'offline.png'}",
-                (tmp_path / "frozen.html").as_uri(),
+                str(tmp_path / "frozen.html"),
+                str(tmp_path / "offline.png"),
             ],
+            cwd=Path(__file__).resolve().parents[1],
             capture_output=True,
             timeout=30,
         )

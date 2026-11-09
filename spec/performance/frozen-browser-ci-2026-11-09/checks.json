@@ -1,0 +1,762 @@
+{
+  "bindings": {
+    "current": 3411,
+    "historical": 1350,
+    "parents": 18,
+    "path": "spec/performance/frozen-browser-ci-2026-11-09/current-bindings.json",
+    "sha256": "7c9f605aa4ce616b9a0a1474c57fb0a0d632f0c14765a3957a798fb6ffe72ea1"
+  },
+  "compiledInputs": {
+    "count": 324,
+    "parentExact": true,
+    "path": "spec/performance/current-large-graph-union-2026-11-09/compiled-inputs.json",
+    "sha256": "14467233a1f6878d137490b6ef6741766486b42b37b8ed16aa01e2065113899e"
+  },
+  "evidence": {
+    "target/task-tmp/frozen-browser-ci/assertion-preservation.json": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/f74dd5c9f707bc748ca4ed91f4173ca31ac94718165253e05fbde9d9538b99d0.gz",
+      "archiveBytes": 204,
+      "archiveSha256": "f19ded0172ae7e94476bb1baeb4ba6268f45b3061559126658083e9d125a996e",
+      "bytes": 262,
+      "sha256": "f74dd5c9f707bc748ca4ed91f4173ca31ac94718165253e05fbde9d9538b99d0"
+    },
+    "target/task-tmp/frozen-browser-ci/baseline1228.log": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/7e0be2b50185da226f331c7b4e1921ae4c9cd3a740f9814529f08a3c2df6c4d3.gz",
+      "archiveBytes": 2630,
+      "archiveSha256": "86e0757bed1922d5dece25a5a57f33fef519d653b2798d7d3908cb619e193cdf",
+      "bytes": 8355,
+      "sha256": "7e0be2b50185da226f331c7b4e1921ae4c9cd3a740f9814529f08a3c2df6c4d3"
+    },
+    "target/task-tmp/frozen-browser-ci/baseline1228/test_rendered_exports_survive_0/frozen.html": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/b0d6286c62cbb0e83e380bd24a5197dfc93148fdcaf12c9f10f4139c440e2e96.gz",
+      "archiveBytes": 869895,
+      "archiveSha256": "a0e129238f1212363b28e47172856d796d6b5f7afef402085531f89a9da807a6",
+      "bytes": 4067672,
+      "sha256": "b0d6286c62cbb0e83e380bd24a5197dfc93148fdcaf12c9f10f4139c440e2e96"
+    },
+    "target/task-tmp/frozen-browser-ci/baseline1228/test_rendered_exports_survive_0/frozen.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/265773cbd1b55b464e8d915650b25d37ae3cc4da6167bb164cd7301275b594bb.gz",
+      "archiveBytes": 6127,
+      "archiveSha256": "3aac42bb2f2074b99acd566dccbe4fb2b07490da162408d8a43cf31d13246345",
+      "bytes": 26366,
+      "sha256": "265773cbd1b55b464e8d915650b25d37ae3cc4da6167bb164cd7301275b594bb"
+    },
+    "target/task-tmp/frozen-browser-ci/baseline1228/test_rendered_exports_survive_0/frozen.svg": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/ed3c802d80fd8f5e5b9485548ce1c8f8d6153a64c5e5edee81800ae1cd3fb4b6.gz",
+      "archiveBytes": 39703,
+      "archiveSha256": "9926c7dd506d3fa3f7fd4c6cdfc2152b9a4ed518aad67ce135dbdc07d310ed8d",
+      "bytes": 213701,
+      "sha256": "ed3c802d80fd8f5e5b9485548ce1c8f8d6153a64c5e5edee81800ae1cd3fb4b6"
+    },
+    "target/task-tmp/frozen-browser-ci/baseline1228/test_rendered_exports_survive_current/frozen.html": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/b0d6286c62cbb0e83e380bd24a5197dfc93148fdcaf12c9f10f4139c440e2e96.gz",
+      "archiveBytes": 869895,
+      "archiveSha256": "a0e129238f1212363b28e47172856d796d6b5f7afef402085531f89a9da807a6",
+      "bytes": 4067672,
+      "sha256": "b0d6286c62cbb0e83e380bd24a5197dfc93148fdcaf12c9f10f4139c440e2e96"
+    },
+    "target/task-tmp/frozen-browser-ci/baseline1228/test_rendered_exports_survive_current/frozen.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/265773cbd1b55b464e8d915650b25d37ae3cc4da6167bb164cd7301275b594bb.gz",
+      "archiveBytes": 6127,
+      "archiveSha256": "3aac42bb2f2074b99acd566dccbe4fb2b07490da162408d8a43cf31d13246345",
+      "bytes": 26366,
+      "sha256": "265773cbd1b55b464e8d915650b25d37ae3cc4da6167bb164cd7301275b594bb"
+    },
+    "target/task-tmp/frozen-browser-ci/baseline1228/test_rendered_exports_survive_current/frozen.svg": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/ed3c802d80fd8f5e5b9485548ce1c8f8d6153a64c5e5edee81800ae1cd3fb4b6.gz",
+      "archiveBytes": 39703,
+      "archiveSha256": "9926c7dd506d3fa3f7fd4c6cdfc2152b9a4ed518aad67ce135dbdc07d310ed8d",
+      "bytes": 213701,
+      "sha256": "ed3c802d80fd8f5e5b9485548ce1c8f8d6153a64c5e5edee81800ae1cd3fb4b6"
+    },
+    "target/task-tmp/frozen-browser-ci/blank.log": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/2c5303ca85a43ab4b20910f6e370a9063d526c7d4d221068491fdddb2eec9809.gz",
+      "archiveBytes": 77,
+      "archiveSha256": "44be1509993d41ad757bcb84eca4189af0e1c8fd7343535f7390d2437fd6a1e8",
+      "bytes": 57,
+      "sha256": "2c5303ca85a43ab4b20910f6e370a9063d526c7d4d221068491fdddb2eec9809"
+    },
+    "target/task-tmp/frozen-browser-ci/blank.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/d4016d65c7949b1b184ec321ea5d4be10bbae3f1333ef8f8724992957f9d79bb.gz",
+      "archiveBytes": 152,
+      "archiveSha256": "537f8da38ffaa0347c04447208953aab285c54776777172ecbb3ba576a866c30",
+      "bytes": 758,
+      "sha256": "d4016d65c7949b1b184ec321ea5d4be10bbae3f1333ef8f8724992957f9d79bb"
+    },
+    "target/task-tmp/frozen-browser-ci/core-corrected.log": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/7c8e989c27b1ec7309b07d83ef2314fa2b714cbe5906e7a2c520aa695a04f56d.gz",
+      "archiveBytes": 63,
+      "archiveSha256": "a3cec9395c80268553c808f463d2e495808242f5a59963b94c0307c35982c785",
+      "bytes": 110,
+      "sha256": "7c8e989c27b1ec7309b07d83ef2314fa2b714cbe5906e7a2c520aa695a04f56d"
+    },
+    "target/task-tmp/frozen-browser-ci/core.log": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/69a450d4870a3158cc282668f0fc925b2829695b0659a80df4ddfc4ef1816ae6.gz",
+      "archiveBytes": 879,
+      "archiveSha256": "691b2a5ec45c6934806165814401937724e816b3fbcf19e0bc2ccb1526fa5b7e",
+      "bytes": 2490,
+      "sha256": "69a450d4870a3158cc282668f0fc925b2829695b0659a80df4ddfc4ef1816ae6"
+    },
+    "target/task-tmp/frozen-browser-ci/format.log": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/234bea158cd45b8f52f8cf23029bd920e91050b5f2b0a911add80089cf7c38b3.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "9d9023b3e7e869eb6c727441a8ae41e4ec754988bd7e7a43c9b8fe4932163bfb",
+      "bytes": 29,
+      "sha256": "234bea158cd45b8f52f8cf23029bd920e91050b5f2b0a911add80089cf7c38b3"
+    },
+    "target/task-tmp/frozen-browser-ci/full311.log": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/2ffd6c2bd2ac62c16ce4705a0bda924491654ccfcbfc6e28431b117c7ca82913.gz",
+      "archiveBytes": 53,
+      "archiveSha256": "0721f9449b7357d2b5e11ddfd2daf8dcb1d52a22998b884f5dc6b44733be217d",
+      "bytes": 100,
+      "sha256": "2ffd6c2bd2ac62c16ce4705a0bda924491654ccfcbfc6e28431b117c7ca82913"
+    },
+    "target/task-tmp/frozen-browser-ci/hooks-first.log": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/frozen-browser-ci/minimal/stderr-timeout.log": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/18f52c7f1faa833bcaa1541fde7328b74b17a29811c694a86a513147b1494abc.gz",
+      "archiveBytes": 231,
+      "archiveSha256": "edaa086cf8906fff1cf8b06b2354c7758fa4619219fe1da55d368e99713dc3df",
+      "bytes": 305,
+      "sha256": "18f52c7f1faa833bcaa1541fde7328b74b17a29811c694a86a513147b1494abc"
+    },
+    "target/task-tmp/frozen-browser-ci/negative-controls-run.log": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/dede627f5ce83c5528e364ca9c8155bc5c13729250f07e37581474ecb9c17071.gz",
+      "archiveBytes": 283,
+      "archiveSha256": "8b1a52b3111eb518a67dbe31a4ac081304ed90e7cd9a8c95db6b3e93d8c61349",
+      "bytes": 1021,
+      "sha256": "dede627f5ce83c5528e364ca9c8155bc5c13729250f07e37581474ecb9c17071"
+    },
+    "target/task-tmp/frozen-browser-ci/negative-controls.json": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/aa96f81fa8ea75ef2c124bcbecd9d5cf93b05ceb879929fd82c6fb3d2658943f.gz",
+      "archiveBytes": 299,
+      "archiveSha256": "360fe2b84eba29949887ec78a158a787429757178a711f9b93b803dfb0080b73",
+      "bytes": 1197,
+      "sha256": "aa96f81fa8ea75ef2c124bcbecd9d5cf93b05ceb879929fd82c6fb3d2658943f"
+    },
+    "target/task-tmp/frozen-browser-ci/network.log": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/83fc1c6d632bb273ae6d271645a16057a03d9a8a125826bbe0c4a8bf5a5901f5.gz",
+      "archiveBytes": 360,
+      "archiveSha256": "689f1f74d10bd6a8d724964332562794aa9f02f63764dc3d61e0856fe629098b",
+      "bytes": 513,
+      "sha256": "83fc1c6d632bb273ae6d271645a16057a03d9a8a125826bbe0c4a8bf5a5901f5"
+    },
+    "target/task-tmp/frozen-browser-ci/network.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/9055089bed65e276b7bcd6d9209c0bd22f75381162265131fcd2ee9077d1766f.gz",
+      "archiveBytes": 1888,
+      "archiveSha256": "956d2f686dc4c210e84a25d8b1d6e3a3c71a330b45dc86464039c013225b6da6",
+      "bytes": 2416,
+      "sha256": "9055089bed65e276b7bcd6d9209c0bd22f75381162265131fcd2ee9077d1766f"
+    },
+    "target/task-tmp/frozen-browser-ci/old-cli-process-cleanup.json": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/50bb8948a4ea3774645fc672d4bbce7724231af3602f9e49225ce805dc3bfc23.gz",
+      "archiveBytes": 106,
+      "archiveSha256": "17306267f1b65cbbcf9cb53f37574a3b3ca82013f394648b3b4a81a7a94388b5",
+      "bytes": 92,
+      "sha256": "50bb8948a4ea3774645fc672d4bbce7724231af3602f9e49225ce805dc3bfc23"
+    },
+    "target/task-tmp/frozen-browser-ci/pageerror.log": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/63bdb8eb12d67704f6d1c953e5b7724b14c25678704c1e08883ea3cc75019cbb.gz",
+      "archiveBytes": 340,
+      "archiveSha256": "ef8cf8990978bd9596bc8e0f1816fe2352031f46db96decc46e7075b079d3215",
+      "bytes": 486,
+      "sha256": "63bdb8eb12d67704f6d1c953e5b7724b14c25678704c1e08883ea3cc75019cbb"
+    },
+    "target/task-tmp/frozen-browser-ci/pageerror.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/f00c7d8dc981dbd5968b015f6e95ea3c5e9494d6112f78f0c082ea638ad97cd3.gz",
+      "archiveBytes": 1284,
+      "archiveSha256": "17ffa5df0b4805fffddbffa32862bca68b2050d6fb9bc905888d9e656b2908f1",
+      "bytes": 1776,
+      "sha256": "f00c7d8dc981dbd5968b015f6e95ea3c5e9494d6112f78f0c082ea638ad97cd3"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1228.log": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/73323ae61070625ec4eb0e22078e535e78b06a25b2c269ada87399892be8a012.gz",
+      "archiveBytes": 68,
+      "archiveSha256": "61a7934b049c4635a7d6579efe5a61ddb03b05d28ea67b1e3053f05ebabad09a",
+      "bytes": 114,
+      "sha256": "73323ae61070625ec4eb0e22078e535e78b06a25b2c269ada87399892be8a012"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1228/test_rendered_exports_survive_0/frozen.html": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/b0d6286c62cbb0e83e380bd24a5197dfc93148fdcaf12c9f10f4139c440e2e96.gz",
+      "archiveBytes": 869895,
+      "archiveSha256": "a0e129238f1212363b28e47172856d796d6b5f7afef402085531f89a9da807a6",
+      "bytes": 4067672,
+      "sha256": "b0d6286c62cbb0e83e380bd24a5197dfc93148fdcaf12c9f10f4139c440e2e96"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1228/test_rendered_exports_survive_0/frozen.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/265773cbd1b55b464e8d915650b25d37ae3cc4da6167bb164cd7301275b594bb.gz",
+      "archiveBytes": 6127,
+      "archiveSha256": "3aac42bb2f2074b99acd566dccbe4fb2b07490da162408d8a43cf31d13246345",
+      "bytes": 26366,
+      "sha256": "265773cbd1b55b464e8d915650b25d37ae3cc4da6167bb164cd7301275b594bb"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1228/test_rendered_exports_survive_0/frozen.svg": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/ed3c802d80fd8f5e5b9485548ce1c8f8d6153a64c5e5edee81800ae1cd3fb4b6.gz",
+      "archiveBytes": 39703,
+      "archiveSha256": "9926c7dd506d3fa3f7fd4c6cdfc2152b9a4ed518aad67ce135dbdc07d310ed8d",
+      "bytes": 213701,
+      "sha256": "ed3c802d80fd8f5e5b9485548ce1c8f8d6153a64c5e5edee81800ae1cd3fb4b6"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1228/test_rendered_exports_survive_0/offline.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/f00c7d8dc981dbd5968b015f6e95ea3c5e9494d6112f78f0c082ea638ad97cd3.gz",
+      "archiveBytes": 1284,
+      "archiveSha256": "17ffa5df0b4805fffddbffa32862bca68b2050d6fb9bc905888d9e656b2908f1",
+      "bytes": 1776,
+      "sha256": "f00c7d8dc981dbd5968b015f6e95ea3c5e9494d6112f78f0c082ea638ad97cd3"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1228/test_rendered_exports_survive_1/frozen.html": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/538e9e9f4159fadf52dcee16e3cdfaf6d517581a98b3b2c0ff515bafcbb64958.gz",
+      "archiveBytes": 869890,
+      "archiveSha256": "3087825cdcd2d153f6cb58ffc31ddc9df1d85e76c3979831bdeb5493fdc98e87",
+      "bytes": 4067672,
+      "sha256": "538e9e9f4159fadf52dcee16e3cdfaf6d517581a98b3b2c0ff515bafcbb64958"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1228/test_rendered_exports_survive_1/frozen.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/9ae847f645a7e2b1e6b51dd7f53eacffa109d41ac278a32a9a765503ca0b3306.gz",
+      "archiveBytes": 9065,
+      "archiveSha256": "e4823f8fffcd10d4bb07fd70f62db3a145ae503c5d661737029c629a866499d5",
+      "bytes": 32644,
+      "sha256": "9ae847f645a7e2b1e6b51dd7f53eacffa109d41ac278a32a9a765503ca0b3306"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1228/test_rendered_exports_survive_1/frozen.svg": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/1f2e1931e84d0710f3a7f8d108d2efa85dc57d5ff7f6c9838e2916d2f2a5690a.gz",
+      "archiveBytes": 39702,
+      "archiveSha256": "5a010fac7ca8a49e155f274a8aaa6203f0d806945f290d3df1915121815057c0",
+      "bytes": 213701,
+      "sha256": "1f2e1931e84d0710f3a7f8d108d2efa85dc57d5ff7f6c9838e2916d2f2a5690a"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1228/test_rendered_exports_survive_1/offline.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/573ee1e69b24dededbd15afe1bc2dd2dc4dcdbb0bdb2b768a7b335728afe63e7.gz",
+      "archiveBytes": 1767,
+      "archiveSha256": "85690b03f1d166c51c69c349fff294c643453be0f3f834973e22073a08ed3fd0",
+      "bytes": 2259,
+      "sha256": "573ee1e69b24dededbd15afe1bc2dd2dc4dcdbb0bdb2b768a7b335728afe63e7"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1228/test_rendered_exports_survive_2/frozen.html": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/029eddddeb26e6d053fefe1e35d5af6793c2babd147ea6f4380dbdd48566926f.gz",
+      "archiveBytes": 828332,
+      "archiveSha256": "bb1e5f931a185a24a5eba008ff5f38d4bff23f47febf1e753332a20fb676e516",
+      "bytes": 3776480,
+      "sha256": "029eddddeb26e6d053fefe1e35d5af6793c2babd147ea6f4380dbdd48566926f"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1228/test_rendered_exports_survive_2/frozen.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/975957d021014a1ac6d76525e33caa21319ecc05e2b017d313a5caec4f791bc6.gz",
+      "archiveBytes": 5634,
+      "archiveSha256": "d74edafa285709b3cb54b07bfc4a54c89bdd9900edc5821d6950983f18efc01d",
+      "bytes": 26121,
+      "sha256": "975957d021014a1ac6d76525e33caa21319ecc05e2b017d313a5caec4f791bc6"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1228/test_rendered_exports_survive_2/frozen.svg": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/1f75e54e7ca447847e783b8a784ff75ee5caae4adeabf87396f30c3ba5670070.gz",
+      "archiveBytes": 30579,
+      "archiveSha256": "0789cbc1296627dd55a2ec77ef24225189011180dd80dd6e1794aa25e9f54722",
+      "bytes": 167461,
+      "sha256": "1f75e54e7ca447847e783b8a784ff75ee5caae4adeabf87396f30c3ba5670070"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1228/test_rendered_exports_survive_2/offline.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/e4d1643ef301f2074dd7d448c16f07c237587260ba9a9bdcd13d065942bbae90.gz",
+      "archiveBytes": 1280,
+      "archiveSha256": "50f8dc90686d47be8fd84ab590c79d16b366d73d6da49de0487f7a31b8a4c6ea",
+      "bytes": 1782,
+      "sha256": "e4d1643ef301f2074dd7d448c16f07c237587260ba9a9bdcd13d065942bbae90"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1228/test_rendered_exports_survive_3/frozen.html": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/7706669351172d419619c1d737502643d8d4873eb31719b835202d4347be1f14.gz",
+      "archiveBytes": 828329,
+      "archiveSha256": "08cb28f28f0704adccab3fdebc1a6f168dd99921fa0a720c22d5c9416e93a2de",
+      "bytes": 3776480,
+      "sha256": "7706669351172d419619c1d737502643d8d4873eb31719b835202d4347be1f14"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1228/test_rendered_exports_survive_3/frozen.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/9266a5f0d4335e370f9414078c88c5d4ccc2d9954a3cc3a3033c4d29e6030c5b.gz",
+      "archiveBytes": 7845,
+      "archiveSha256": "e0aa9c881cb02d1234ce7abca81e3dc6fbcd9e2ca51ddb4a8269485afd1f81eb",
+      "bytes": 32000,
+      "sha256": "9266a5f0d4335e370f9414078c88c5d4ccc2d9954a3cc3a3033c4d29e6030c5b"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1228/test_rendered_exports_survive_3/frozen.svg": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/e2a113e4d3793c3d16f3b86d5492b8655c6c11caa23a185974455d97553584e8.gz",
+      "archiveBytes": 30578,
+      "archiveSha256": "b4a43ea07219cf9ff3bd99ab2552d063ac0212ce2205b199456345e4ce8bcfb8",
+      "bytes": 167461,
+      "sha256": "e2a113e4d3793c3d16f3b86d5492b8655c6c11caa23a185974455d97553584e8"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1228/test_rendered_exports_survive_3/offline.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/961c3b3da955fd6dd95ff8b0108d5ad836ad6ca0975deae31440e40ea872e123.gz",
+      "archiveBytes": 1536,
+      "archiveSha256": "0bce9520a387e9139f685550465410a0b03556565bd7a502dd5f27f8aebd0aae",
+      "bytes": 2037,
+      "sha256": "961c3b3da955fd6dd95ff8b0108d5ad836ad6ca0975deae31440e40ea872e123"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1228/test_rendered_exports_survive_current/frozen.html": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/7706669351172d419619c1d737502643d8d4873eb31719b835202d4347be1f14.gz",
+      "archiveBytes": 828329,
+      "archiveSha256": "08cb28f28f0704adccab3fdebc1a6f168dd99921fa0a720c22d5c9416e93a2de",
+      "bytes": 3776480,
+      "sha256": "7706669351172d419619c1d737502643d8d4873eb31719b835202d4347be1f14"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1228/test_rendered_exports_survive_current/frozen.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/9266a5f0d4335e370f9414078c88c5d4ccc2d9954a3cc3a3033c4d29e6030c5b.gz",
+      "archiveBytes": 7845,
+      "archiveSha256": "e0aa9c881cb02d1234ce7abca81e3dc6fbcd9e2ca51ddb4a8269485afd1f81eb",
+      "bytes": 32000,
+      "sha256": "9266a5f0d4335e370f9414078c88c5d4ccc2d9954a3cc3a3033c4d29e6030c5b"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1228/test_rendered_exports_survive_current/frozen.svg": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/e2a113e4d3793c3d16f3b86d5492b8655c6c11caa23a185974455d97553584e8.gz",
+      "archiveBytes": 30578,
+      "archiveSha256": "b4a43ea07219cf9ff3bd99ab2552d063ac0212ce2205b199456345e4ce8bcfb8",
+      "bytes": 167461,
+      "sha256": "e2a113e4d3793c3d16f3b86d5492b8655c6c11caa23a185974455d97553584e8"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1228/test_rendered_exports_survive_current/offline.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/961c3b3da955fd6dd95ff8b0108d5ad836ad6ca0975deae31440e40ea872e123.gz",
+      "archiveBytes": 1536,
+      "archiveSha256": "0bce9520a387e9139f685550465410a0b03556565bd7a502dd5f27f8aebd0aae",
+      "bytes": 2037,
+      "sha256": "961c3b3da955fd6dd95ff8b0108d5ad836ad6ca0975deae31440e40ea872e123"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1248.log": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/000c63b047198f066b2f96314185a1f02eb9a2b9c4e2aa5c1cb95ea71bb40916.gz",
+      "archiveBytes": 68,
+      "archiveSha256": "210b36cd99980fbbc4566c33128a72c6d1e27f08100600d3eedd449cb8cd3c7b",
+      "bytes": 114,
+      "sha256": "000c63b047198f066b2f96314185a1f02eb9a2b9c4e2aa5c1cb95ea71bb40916"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1248/test_rendered_exports_survive_0/frozen.html": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/b0d6286c62cbb0e83e380bd24a5197dfc93148fdcaf12c9f10f4139c440e2e96.gz",
+      "archiveBytes": 869895,
+      "archiveSha256": "a0e129238f1212363b28e47172856d796d6b5f7afef402085531f89a9da807a6",
+      "bytes": 4067672,
+      "sha256": "b0d6286c62cbb0e83e380bd24a5197dfc93148fdcaf12c9f10f4139c440e2e96"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1248/test_rendered_exports_survive_0/frozen.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/265773cbd1b55b464e8d915650b25d37ae3cc4da6167bb164cd7301275b594bb.gz",
+      "archiveBytes": 6127,
+      "archiveSha256": "3aac42bb2f2074b99acd566dccbe4fb2b07490da162408d8a43cf31d13246345",
+      "bytes": 26366,
+      "sha256": "265773cbd1b55b464e8d915650b25d37ae3cc4da6167bb164cd7301275b594bb"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1248/test_rendered_exports_survive_0/frozen.svg": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/ed3c802d80fd8f5e5b9485548ce1c8f8d6153a64c5e5edee81800ae1cd3fb4b6.gz",
+      "archiveBytes": 39703,
+      "archiveSha256": "9926c7dd506d3fa3f7fd4c6cdfc2152b9a4ed518aad67ce135dbdc07d310ed8d",
+      "bytes": 213701,
+      "sha256": "ed3c802d80fd8f5e5b9485548ce1c8f8d6153a64c5e5edee81800ae1cd3fb4b6"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1248/test_rendered_exports_survive_0/offline.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/c59718676c213beb3923e60fa65119e7b53329a61373edbf8e8e6886b5c69c5b.gz",
+      "archiveBytes": 1352,
+      "archiveSha256": "10823e5cb972e01bada88210d999a7e339c04e5abf64ea2bee336e478aed4258",
+      "bytes": 1840,
+      "sha256": "c59718676c213beb3923e60fa65119e7b53329a61373edbf8e8e6886b5c69c5b"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1248/test_rendered_exports_survive_1/frozen.html": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/538e9e9f4159fadf52dcee16e3cdfaf6d517581a98b3b2c0ff515bafcbb64958.gz",
+      "archiveBytes": 869890,
+      "archiveSha256": "3087825cdcd2d153f6cb58ffc31ddc9df1d85e76c3979831bdeb5493fdc98e87",
+      "bytes": 4067672,
+      "sha256": "538e9e9f4159fadf52dcee16e3cdfaf6d517581a98b3b2c0ff515bafcbb64958"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1248/test_rendered_exports_survive_1/frozen.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/9ae847f645a7e2b1e6b51dd7f53eacffa109d41ac278a32a9a765503ca0b3306.gz",
+      "archiveBytes": 9065,
+      "archiveSha256": "e4823f8fffcd10d4bb07fd70f62db3a145ae503c5d661737029c629a866499d5",
+      "bytes": 32644,
+      "sha256": "9ae847f645a7e2b1e6b51dd7f53eacffa109d41ac278a32a9a765503ca0b3306"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1248/test_rendered_exports_survive_1/frozen.svg": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/1f2e1931e84d0710f3a7f8d108d2efa85dc57d5ff7f6c9838e2916d2f2a5690a.gz",
+      "archiveBytes": 39702,
+      "archiveSha256": "5a010fac7ca8a49e155f274a8aaa6203f0d806945f290d3df1915121815057c0",
+      "bytes": 213701,
+      "sha256": "1f2e1931e84d0710f3a7f8d108d2efa85dc57d5ff7f6c9838e2916d2f2a5690a"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1248/test_rendered_exports_survive_1/offline.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/573ee1e69b24dededbd15afe1bc2dd2dc4dcdbb0bdb2b768a7b335728afe63e7.gz",
+      "archiveBytes": 1767,
+      "archiveSha256": "85690b03f1d166c51c69c349fff294c643453be0f3f834973e22073a08ed3fd0",
+      "bytes": 2259,
+      "sha256": "573ee1e69b24dededbd15afe1bc2dd2dc4dcdbb0bdb2b768a7b335728afe63e7"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1248/test_rendered_exports_survive_2/frozen.html": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/029eddddeb26e6d053fefe1e35d5af6793c2babd147ea6f4380dbdd48566926f.gz",
+      "archiveBytes": 828332,
+      "archiveSha256": "bb1e5f931a185a24a5eba008ff5f38d4bff23f47febf1e753332a20fb676e516",
+      "bytes": 3776480,
+      "sha256": "029eddddeb26e6d053fefe1e35d5af6793c2babd147ea6f4380dbdd48566926f"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1248/test_rendered_exports_survive_2/frozen.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/975957d021014a1ac6d76525e33caa21319ecc05e2b017d313a5caec4f791bc6.gz",
+      "archiveBytes": 5634,
+      "archiveSha256": "d74edafa285709b3cb54b07bfc4a54c89bdd9900edc5821d6950983f18efc01d",
+      "bytes": 26121,
+      "sha256": "975957d021014a1ac6d76525e33caa21319ecc05e2b017d313a5caec4f791bc6"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1248/test_rendered_exports_survive_2/frozen.svg": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/1f75e54e7ca447847e783b8a784ff75ee5caae4adeabf87396f30c3ba5670070.gz",
+      "archiveBytes": 30579,
+      "archiveSha256": "0789cbc1296627dd55a2ec77ef24225189011180dd80dd6e1794aa25e9f54722",
+      "bytes": 167461,
+      "sha256": "1f75e54e7ca447847e783b8a784ff75ee5caae4adeabf87396f30c3ba5670070"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1248/test_rendered_exports_survive_2/offline.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/e4d1643ef301f2074dd7d448c16f07c237587260ba9a9bdcd13d065942bbae90.gz",
+      "archiveBytes": 1280,
+      "archiveSha256": "50f8dc90686d47be8fd84ab590c79d16b366d73d6da49de0487f7a31b8a4c6ea",
+      "bytes": 1782,
+      "sha256": "e4d1643ef301f2074dd7d448c16f07c237587260ba9a9bdcd13d065942bbae90"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1248/test_rendered_exports_survive_3/frozen.html": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/7706669351172d419619c1d737502643d8d4873eb31719b835202d4347be1f14.gz",
+      "archiveBytes": 828329,
+      "archiveSha256": "08cb28f28f0704adccab3fdebc1a6f168dd99921fa0a720c22d5c9416e93a2de",
+      "bytes": 3776480,
+      "sha256": "7706669351172d419619c1d737502643d8d4873eb31719b835202d4347be1f14"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1248/test_rendered_exports_survive_3/frozen.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/9266a5f0d4335e370f9414078c88c5d4ccc2d9954a3cc3a3033c4d29e6030c5b.gz",
+      "archiveBytes": 7845,
+      "archiveSha256": "e0aa9c881cb02d1234ce7abca81e3dc6fbcd9e2ca51ddb4a8269485afd1f81eb",
+      "bytes": 32000,
+      "sha256": "9266a5f0d4335e370f9414078c88c5d4ccc2d9954a3cc3a3033c4d29e6030c5b"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1248/test_rendered_exports_survive_3/frozen.svg": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/e2a113e4d3793c3d16f3b86d5492b8655c6c11caa23a185974455d97553584e8.gz",
+      "archiveBytes": 30578,
+      "archiveSha256": "b4a43ea07219cf9ff3bd99ab2552d063ac0212ce2205b199456345e4ce8bcfb8",
+      "bytes": 167461,
+      "sha256": "e2a113e4d3793c3d16f3b86d5492b8655c6c11caa23a185974455d97553584e8"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1248/test_rendered_exports_survive_3/offline.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/961c3b3da955fd6dd95ff8b0108d5ad836ad6ca0975deae31440e40ea872e123.gz",
+      "archiveBytes": 1536,
+      "archiveSha256": "0bce9520a387e9139f685550465410a0b03556565bd7a502dd5f27f8aebd0aae",
+      "bytes": 2037,
+      "sha256": "961c3b3da955fd6dd95ff8b0108d5ad836ad6ca0975deae31440e40ea872e123"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1248/test_rendered_exports_survive_current/frozen.html": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/7706669351172d419619c1d737502643d8d4873eb31719b835202d4347be1f14.gz",
+      "archiveBytes": 828329,
+      "archiveSha256": "08cb28f28f0704adccab3fdebc1a6f168dd99921fa0a720c22d5c9416e93a2de",
+      "bytes": 3776480,
+      "sha256": "7706669351172d419619c1d737502643d8d4873eb31719b835202d4347be1f14"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1248/test_rendered_exports_survive_current/frozen.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/9266a5f0d4335e370f9414078c88c5d4ccc2d9954a3cc3a3033c4d29e6030c5b.gz",
+      "archiveBytes": 7845,
+      "archiveSha256": "e0aa9c881cb02d1234ce7abca81e3dc6fbcd9e2ca51ddb4a8269485afd1f81eb",
+      "bytes": 32000,
+      "sha256": "9266a5f0d4335e370f9414078c88c5d4ccc2d9954a3cc3a3033c4d29e6030c5b"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1248/test_rendered_exports_survive_current/frozen.svg": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/e2a113e4d3793c3d16f3b86d5492b8655c6c11caa23a185974455d97553584e8.gz",
+      "archiveBytes": 30578,
+      "archiveSha256": "b4a43ea07219cf9ff3bd99ab2552d063ac0212ce2205b199456345e4ce8bcfb8",
+      "bytes": 167461,
+      "sha256": "e2a113e4d3793c3d16f3b86d5492b8655c6c11caa23a185974455d97553584e8"
+    },
+    "target/task-tmp/frozen-browser-ci/playwright1248/test_rendered_exports_survive_current/offline.png": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/961c3b3da955fd6dd95ff8b0108d5ad836ad6ca0975deae31440e40ea872e123.gz",
+      "archiveBytes": 1536,
+      "archiveSha256": "0bce9520a387e9139f685550465410a0b03556565bd7a502dd5f27f8aebd0aae",
+      "bytes": 2037,
+      "sha256": "961c3b3da955fd6dd95ff8b0108d5ad836ad6ca0975deae31440e40ea872e123"
+    },
+    "target/task-tmp/frozen-browser-ci/ruff.log": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/frozen-browser-ci/seal-sources-final.log": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/13400e876e1907ef7a508c6a3056efead5e3b9b69a47bdf2c825bb38d71f1981.gz",
+      "archiveBytes": 66,
+      "archiveSha256": "cb9c9075c24fc4000afedcab948ac9d10b1ca2524492bfb5a2f0cc8f3c009048",
+      "bytes": 53,
+      "sha256": "13400e876e1907ef7a508c6a3056efead5e3b9b69a47bdf2c825bb38d71f1981"
+    },
+    "target/task-tmp/frozen-browser-ci/seal-sources.log": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/13400e876e1907ef7a508c6a3056efead5e3b9b69a47bdf2c825bb38d71f1981.gz",
+      "archiveBytes": 66,
+      "archiveSha256": "cb9c9075c24fc4000afedcab948ac9d10b1ca2524492bfb5a2f0cc8f3c009048",
+      "bytes": 53,
+      "sha256": "13400e876e1907ef7a508c6a3056efead5e3b9b69a47bdf2c825bb38d71f1981"
+    },
+    "target/task-tmp/frozen-browser-ci/seal-sources.py": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/efc556aa9e08878c025ca86412db8b93cf43e21f73a5f059f563d12cdfa080a4.gz",
+      "archiveBytes": 1070,
+      "archiveSha256": "ebddc9ff0a1e03366b4cfe942e42dbfdb262fdaac931341c3167c4e5349f70ab",
+      "bytes": 2267,
+      "sha256": "efc556aa9e08878c025ca86412db8b93cf43e21f73a5f059f563d12cdfa080a4"
+    },
+    "target/task-tmp/frozen-browser-ci/setup-notes.json": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/a61de91597e9d6c99a0dcd4c0f3150b498902fbacb8a998f262be6879c45cd69.gz",
+      "archiveBytes": 428,
+      "archiveSha256": "b726a7c8fe5ae856b831b0a7361e3d7ba5b41e496130b54d7d839ffb1bbe4406",
+      "bytes": 652,
+      "sha256": "a61de91597e9d6c99a0dcd4c0f3150b498902fbacb8a998f262be6879c45cd69"
+    },
+    "target/task-tmp/frozen-browser-ci/workflow.log": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/3d29b3df27ab04aa2eff268a14a0b1d0df03e4c53b766cae333c85eb9191ae26.gz",
+      "archiveBytes": 182,
+      "archiveSha256": "f97a7ddf802e55a37796b01161e00a0cf2c51f697c856c676e34316dc9c37163",
+      "bytes": 567,
+      "sha256": "3d29b3df27ab04aa2eff268a14a0b1d0df03e4c53b766cae333c85eb9191ae26"
+    },
+    "target/task-tmp/native-python-ci/hosted32-floor-plain.log": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/410143e4eb256037afbb194cef68ce2020732a1e967dbbcfaaef29be6aac01af.gz",
+      "archiveBytes": 28041,
+      "archiveSha256": "25a3296e45868e0db7912d9426e13952d39bafbcd4058396a98c18eac4328df5",
+      "bytes": 151396,
+      "sha256": "410143e4eb256037afbb194cef68ce2020732a1e967dbbcfaaef29be6aac01af"
+    },
+    "target/task-tmp/native-python-ci/hosted32-floor.log": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/cb01c60b4c1ee1be3f904cb6ddc1ee21914b294c9275952c5db9bfb4dd1b4215.gz",
+      "archiveBytes": 28364,
+      "archiveSha256": "0ab70a08943f29e73a712846b7f47c4a7148d201b075a05e7160ced7807fae38",
+      "bytes": 154545,
+      "sha256": "cb01c60b4c1ee1be3f904cb6ddc1ee21914b294c9275952c5db9bfb4dd1b4215"
+    },
+    "target/task-tmp/native-python-ci/independent-review.json": {
+      "archive": "spec/performance/frozen-browser-ci-2026-11-09/evidence/afb5fa75926d431267f96d82d7a657d9b95557e70eec1295969e19821162cde0.gz",
+      "archiveBytes": 4527,
+      "archiveSha256": "e8dba1ea0cc1a9b82a67c61fad7a0f18be764e49af0ff3b523ca61f4899b4580",
+      "bytes": 12331,
+      "sha256": "afb5fa75926d431267f96d82d7a657d9b95557e70eec1295969e19821162cde0"
+    }
+  },
+  "fresh": {
+    "assertionPreservation": {
+      "allAssertionsAstIdentical": true,
+      "assertionCount": 17,
+      "entireFunctionExceptSubprocessInvocationAstIdentical": true,
+      "outerTimeoutSeconds": 30,
+      "parent": "67bb0926f016cabaf25656da0f2f9f3f89830a1f",
+      "path": "tests/test_temporal_graph_frozen.py"
+    },
+    "coreAndCi": {
+      "exit": 0,
+      "passed": 20,
+      "scope": "successor history and realLFCRLF"
+    },
+    "format": {
+      "exit": 0,
+      "log": "target/task-tmp/frozen-browser-ci/format.log"
+    },
+    "hooks": {
+      "exit": 0,
+      "log": "target/task-tmp/frozen-browser-ci/hooks-first.log"
+    },
+    "negatives": [
+      {
+        "argv": [
+          "target/task-tmp/node-v22.23.4-linux-x64/bin/node",
+          "scripts/frozen_html_screenshot.mjs",
+          "/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome",
+          "target/task-tmp/frozen-browser-ci/pageerror.html",
+          "target/task-tmp/frozen-browser-ci/pageerror.png"
+        ],
+        "exit": 1,
+        "name": "pageerror",
+        "outcome": "capture rejects"
+      },
+      {
+        "argv": [
+          "target/task-tmp/node-v22.23.4-linux-x64/bin/node",
+          "scripts/frozen_html_screenshot.mjs",
+          "/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome",
+          "target/task-tmp/frozen-browser-ci/network.html",
+          "target/task-tmp/frozen-browser-ci/network.png"
+        ],
+        "exit": 1,
+        "name": "network",
+        "outcome": "capture rejects"
+      },
+      {
+        "argv": [
+          "target/task-tmp/node-v22.23.4-linux-x64/bin/node",
+          "scripts/frozen_html_screenshot.mjs",
+          "/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome",
+          "target/task-tmp/frozen-browser-ci/blank.html",
+          "target/task-tmp/frozen-browser-ci/blank.png"
+        ],
+        "exit": 0,
+        "name": "blank",
+        "outcome": "original pixel inequality rejects"
+      }
+    ],
+    "python311chrome149": {
+      "exit": 0,
+      "passed": 36,
+      "scope": "complete frozen tests includingactualWorker/native exports"
+    },
+    "python312chrome149": {
+      "deselected": 32,
+      "exit": 0,
+      "passed": 4
+    },
+    "python312chrome156": {
+      "deselected": 32,
+      "exit": 0,
+      "passed": 4
+    },
+    "ruff": {
+      "exit": 0,
+      "log": "target/task-tmp/frozen-browser-ci/ruff.log"
+    },
+    "workflow": {
+      "exit": 0,
+      "log": "target/task-tmp/frozen-browser-ci/workflow.log"
+    }
+  },
+  "hostedFailure": {
+    "failed": 4,
+    "head": "32d5839b522534efb10f61c8bea898ad0b3baac8",
+    "job": 129403131741,
+    "passed": 8454,
+    "run": 42688274537,
+    "skipped": 365,
+    "status": "FAILED; never reclassified",
+    "xfailed": 84
+  },
+  "inheritedOnly": [
+    "Parent801CI/mergequeuecontract passes; workflow/validator/test bytes unchanged",
+    "Parent product reviews/build/runtime proofs only for equal bytes; no fresh Rust/native/WASM rebuild or fullNode/CI run"
+  ],
+  "parent": "67bb0926f016cabaf25656da0f2f9f3f89830a1f",
+  "preservedFailures": [
+    "Hosted32floor4screenshotCLI30secondtimeouts",
+    "LocalidenticalChrome149oldtest1timeout",
+    "MinimalstaticCLI10secondtimeout",
+    "InitialcontrolscriptusedbarePythonwithoutPillow; corrected to uv run --no-sync before controls executed",
+    "One initial patch hunk rejected because formatter collapsed CURRENT_BINDINGS to one line; no edits applied by rejected patch",
+    "FirstnewCorebatch1failed19passed: nested graph-public-scale source predecessor mapping omitted; exactGit source mapping added without weakening guard"
+  ],
+  "priorReview": {
+    "head": "67bb0926f016cabaf25656da0f2f9f3f89830a1f",
+    "scope": "bounded native-selection correction only; currentbrowserchange requiresnewreview",
+    "sha256": "afb5fa75926d431267f96d82d7a657d9b95557e70eec1295969e19821162cde0"
+  },
+  "readmeSha256": "4aee7c64ff88b2ec30840271bbfb74a795f189976a7ded3703a87e09bc4b6a80",
+  "remaining": [
+    "Final independent correction review",
+    "Finalhead hostedCI/currentmain freshness/mergequeue",
+    "Original milestone/issue acceptance and unresolved startup/Worker/100k failures"
+  ],
+  "runtime": {
+    "packages/xy-client/dist/index.js": {
+      "archive": "spec/performance/current-large-graph-union-2026-11-09/artifacts/13491332f9796a0c1e233e656ee7f2331f6b0e59697c2ab166d531e992ccbf04.gz",
+      "archiveBytes": 247044,
+      "archiveSha256": "cd806c910c7e3603e356dff11b35130db34ae4fe54fcd8b65d9b0dadfc899b45",
+      "bytes": 862251,
+      "sha256": "13491332f9796a0c1e233e656ee7f2331f6b0e59697c2ab166d531e992ccbf04"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "archive": "spec/performance/current-large-graph-union-2026-11-09/artifacts/bb9d6636fc108576fbec5a25f9875a4f81329ccd47fc63cb828cd5fd9fb0593d.gz",
+      "archiveBytes": 247126,
+      "archiveSha256": "4ee96cf45b27169c2975fd599b70119867083b9291d6c6ac027c37e7e54fc8cd",
+      "bytes": 862264,
+      "sha256": "bb9d6636fc108576fbec5a25f9875a4f81329ccd47fc63cb828cd5fd9fb0593d"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz",
+      "archiveBytes": 3838,
+      "archiveSha256": "dda8e6c4cec42d91f687b660d742d79dcc1a8c0d052ca6ca189c6acf095db2b4",
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8.gz",
+      "archiveBytes": 1043576,
+      "archiveSha256": "b09e635ab5663fabbb679592e2a8730413e322b541fd45d90105f73ca27c066c",
+      "bytes": 2536254,
+      "sha256": "fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "c4d9096b8df2ee31fc6c5e1a86cac0005b1406f5eee90de91d45fa72ba9f31f2",
+      "bytes": 226,
+      "sha256": "9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372.gz",
+      "archiveBytes": 781122,
+      "archiveSha256": "aad2d8c32a06b9155a6a2c466a64fc2df4effb1ec141722533cd30ecbf568413",
+      "bytes": 1886348,
+      "sha256": "1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372"
+    },
+    "python/xyg/static/index.js": {
+      "archive": "spec/performance/current-large-graph-union-2026-11-09/artifacts/13491332f9796a0c1e233e656ee7f2331f6b0e59697c2ab166d531e992ccbf04.gz",
+      "archiveBytes": 247044,
+      "archiveSha256": "cd806c910c7e3603e356dff11b35130db34ae4fe54fcd8b65d9b0dadfc899b45",
+      "bytes": 862251,
+      "sha256": "13491332f9796a0c1e233e656ee7f2331f6b0e59697c2ab166d531e992ccbf04"
+    },
+    "python/xyg/static/standalone.js": {
+      "archive": "spec/performance/current-large-graph-union-2026-11-09/artifacts/bb9d6636fc108576fbec5a25f9875a4f81329ccd47fc63cb828cd5fd9fb0593d.gz",
+      "archiveBytes": 247126,
+      "archiveSha256": "4ee96cf45b27169c2975fd599b70119867083b9291d6c6ac027c37e7e54fc8cd",
+      "bytes": 862264,
+      "sha256": "bb9d6636fc108576fbec5a25f9875a4f81329ccd47fc63cb828cd5fd9fb0593d"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8.gz",
+      "archiveBytes": 1043576,
+      "archiveSha256": "b09e635ab5663fabbb679592e2a8730413e322b541fd45d90105f73ca27c066c",
+      "bytes": 2536254,
+      "sha256": "fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "c4d9096b8df2ee31fc6c5e1a86cac0005b1406f5eee90de91d45fa72ba9f31f2",
+      "bytes": 226,
+      "sha256": "9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372.gz",
+      "archiveBytes": 781122,
+      "archiveSha256": "aad2d8c32a06b9155a6a2c466a64fc2df4effb1ec141722533cd30ecbf568413",
+      "bytes": 1886348,
+      "sha256": "1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372"
+    },
+    "target/release/libxyg_core.so": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/378a069c4f802bb97e6273333766a4afee99a626d4fc409f776f31d21968a4df.gz",
+      "archiveBytes": 2906222,
+      "archiveSha256": "e1a2c9c98f51d95d9ebaee58900a16680535d9747e5a7ec04e41a24cdbfba825",
+      "bytes": 6379784,
+      "sha256": "378a069c4f802bb97e6273333766a4afee99a626d4fc409f776f31d21968a4df"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/8eebf2a5621798d266fd9030caf04c20d0f89e2e17fb8137195ac2ddcaf4b6d2.gz",
+      "archiveBytes": 1253444,
+      "archiveSha256": "7f03900cf3918fae6592e2d4c54a9d3529ecba5af90d419262a45f778df96b0a",
+      "bytes": 4076094,
+      "sha256": "8eebf2a5621798d266fd9030caf04c20d0f89e2e17fb8137195ac2ddcaf4b6d2"
+    }
+  },
+  "schemaVersion": 1,
+  "scope": "Offline frozen test capture ownership/readiness; unchanged runtime, HTML, all17existing assertions and30second outer deadline"
+}
