@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-CURRENT_BINDINGS = Path("spec/performance/frozen-browser-ci-2026-11-09/current-bindings.json")
+CURRENT_BINDINGS = Path("spec/performance/graph-procedural-paint-2026-11-09/current-bindings.json")
 
 
 def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> None:
@@ -374,8 +374,24 @@ def test_native_python_ci_successor_retains_complete_published_union():
 def test_frozen_browser_ci_successor_retains_native_ci_history():
     parent_path = "spec/performance/native-python-ci-2026-11-09/current-bindings.json"
     parent = json.loads((ROOT / parent_path).read_text())
-    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    current = json.loads(
+        (ROOT / "spec/performance/frozen-browser-ci-2026-11-09/current-bindings.json").read_text()
+    )
     assert len(current["parents"]) == 18
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_procedural_graph_successor_retains_complete_frozen_ci_history():
+    parent_path = "spec/performance/frozen-browser-ci-2026-11-09/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    assert len(current["parents"]) == 19
     assert {p["path"] for p in current["parents"]} == {parent_path}.union(
         p["path"] for p in parent["parents"]
     )

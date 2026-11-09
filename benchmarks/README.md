@@ -3,6 +3,31 @@
 Benchmark artifacts are environment-scoped. Never merge SwiftShader CI rows and
 hardware-GPU rows into one table.
 
+## Retained graph repaint
+
+`bench_graph_retained_repaint.mjs` measures the complete command: fresh browser
+and Worker startup, a public authored-position Direct graph, initial paint,
+five identical accepted refreshes, six complete RGBA SHA-256 validations, and
+disposal. It checks every source node remains rendered and membership is
+complete. It does not measure steady-frame FPS, progressive scheduling, or a
+peer chart. `XYG_GRAPH_SCALE` accepts 1k, 10k and 100k. Run through CodSpeed:
+
+```bash
+codspeed exec --mode walltime --warmup-time 0s --max-rounds 3 \
+  --name retained-graph-100k-five-refreshes -- \
+  /usr/bin/env XYG_CHROMIUM=/path/to/pinned/chrome \
+  XYG_GRAPH_BENCH_REPORT=/absolute/path/report.json \
+  node benchmarks/bench_graph_retained_repaint.mjs
+```
+
+For paired controls, `XYG_GRAPH_BENCH_CLIENT=/absolute/path/archived-index.js`
+serves that immutable ESM entry with the same harness, Worker and WASM. The
+report hashes the actual served bytes. Each round verifies all six images;
+the optional report path retains the last round. Keep CodSpeed results,
+profiles, runtime pins and workload contracts with the qualification receipt.
+Browser/GPU work must run serially during paired measurements. A local
+SwiftShader improvement is not a hardware-GPU or competitor result.
+
 ## Setup
 
 Use Python 3.12, the repository Rust toolchain, Node 22, and Playwright 1.48:

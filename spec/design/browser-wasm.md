@@ -199,6 +199,21 @@ Render recovery before more input. The path never calls canonicalScene,
 `prepareScene`, `layoutWasmCose` or legacy graph-mark compilation. Existing
 `renderWasmGraphForge` canonicalScene behavior remains unchanged.
 
+For publications without frames and with at most `floor(GLsizei_MAX/6)`
+rendered nodes, the retained painter reads the original offset-f32 coordinate
+bytes from two RGBA8UI textures and draws each node as six procedural vertices
+(`0,1,2,2,1,3`). This changes input binding and primitive submission only:
+the geometry/style reader and fragment shader are shared with the reference
+instanced binding, all rendered nodes remain present in original order, and
+normal/focus passes retain their order. Publications with frames or larger
+node counts keep the reference binding. There is no new LOD or culling rule.
+Coordinate textures are shared across both passes, replace their repeated
+coordinate buffers, and remain inside the existing object-identity allocation
+ledger and whole-chart eviction lifecycle. The shared host resets textures
+and samplers on units 0–4, including the two coordinate units, before every
+client pass. The normal source foundation checks exact reference/procedural
+RGBA for all six glyphs, dirty bindings, failed upload, and context recovery.
+
 The controller owns primary-click/keyboard capture, DOM focus, ARIA, text-only Rust companion
 pages and event dispatch. Rust owns focus order, selection, identities,
 provenance, summary and aligned row refs. Hover/gestures/link/temporal/update/
@@ -1768,8 +1783,9 @@ R2 retained graph publications require the independent `clear.action.u32` v1
 after synchronous local admission to cancel an applicable Escape default; a
 later Rust refusal remains possible and is reported without replay or state
 replacement. Missing/malformed facts fail closed, including old same-ABI modules.
-The shared GLHost resets sampler and texture state on units 0–2 so the graph
-reference texture cannot inherit a neighbor's LINEAR sampler. See the
+The original shared GLHost contract reset sampler and texture state on units
+0–2 so the graph reference texture could not inherit a neighbor's LINEAR
+sampler. The procedural node binding extends that reset to units 0–4. See the
 [R2 receipt](../performance/graph-s5b-attachment-r2-2026-11-04/README.md).
 
 

@@ -361,6 +361,15 @@ frozen API without network access. Disposal rejects pending PNG work before the
 Worker acknowledgement and an immutable snapshot exports identically through a
 fresh Worker.
 
+The strict-CSP single-file regression declares UTF-8 before the CSP metadata
+and script. Its SHA-256 source hash is computed over those UTF-8 bytes; a
+legacy encoding must not reinterpret the shipped non-ASCII bundle text.
+The harness checks the effective charset and CSP violations and records
+console/page/CSP state if the unchanged 30-second completion wait fails.
+Controlled Windows-1252 decoding demonstrates the otherwise possible hash
+mismatch. This establishes an encoding weakness in the earlier fixture;
+it does not establish the cause of the hosted Blob Worker timeout.
+
 ### Remaining acceptance
 
 The append-only [shared PNG receipt](../performance/temporal-shared-png-2026-11-07/README.md)

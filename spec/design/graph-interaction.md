@@ -1397,8 +1397,9 @@ successful explicit refresh. Older same-ABI modules lacking this named fact fail
 closed; no ABI signature/version, outcome layout or reserved word is repurposed.
 Native and WASM publish the same section through the shared serializer.
 
-The shared GLHost pass boundary resets textures **and samplers** on units 0–2.
-The graph adapter's integer reference texture uses unit 2; inherited LINEAR
+The shared GLHost pass boundary resets textures **and samplers** on units 0–4.
+The original R2 contract used units 0–2; the procedural node coordinate binding
+adds units 3 and 4. The graph adapter's integer reference texture uses unit 2; inherited LINEAR
 samplers can silently corrupt its draws without producing a GL error. Exact
 pixel equality with a dirty neighbor, cleanup and context restoration are required.
 The [R2 receipt](../performance/graph-s5b-attachment-r2-2026-11-04/README.md)

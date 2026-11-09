@@ -1144,8 +1144,9 @@ same Rust planner. Activation reports prior unmanaged allocations separately;
 logical requested storage is not physical VRAM. See
 `spec/design/dashboard-compositor.md` for the transient-peak and rebuild contract.
 
-Pass isolation resets texture bindings and sampler bindings on units 0–2,
-including the retained graph painter's integer reference texture on unit 2.
+Pass isolation resets texture bindings and sampler bindings on units 0–4,
+including the retained graph painter's integer reference texture on unit 2
+and its procedural node coordinate textures on units 3 and 4.
 A sampler left by a neighboring client must not silently alter an integer
 texture's completeness or graph pixels; the same reset applies after restoration.
 

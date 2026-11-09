@@ -512,6 +512,7 @@ def test_rendered_exports_survive_disposal_and_reject_body_tampering(
 def test_real_worker_capture_import_and_offline_chartview(tmp_path):
     import shutil
     import subprocess
+    from html.parser import HTMLParser
 
     from xyg.export import find_chromium
 
@@ -529,6 +530,23 @@ def test_real_worker_capture_import_and_offline_chartview(tmp_path):
         timeout=180,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+    class Metadata(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.charsets = []
+            self.script_encodings = []
+
+        def handle_starttag(self, tag, attrs):
+            if tag == "meta" and "charset" in dict(attrs):
+                self.charsets.append(dict(attrs)["charset"])
+            if tag == "script":
+                self.script_encodings.append(tuple(self.charsets))
+
+    metadata = Metadata()
+    metadata.feed((tmp_path / "inline-worker-png.html").read_text(encoding="utf-8"))
+    assert metadata.charsets == ["utf-8"]
+    assert metadata.script_encodings == [("utf-8",)]
 
 
 def test_presentation_v2_exact_roundtrip_malformed_and_carrier_binding():

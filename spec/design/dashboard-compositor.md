@@ -56,6 +56,13 @@ once to the host. Depth and stencil backing are disabled. Physical VRAM,
 implementation padding, driver retirement and Canvas2D presentation storage are
 not measured by this GPU logical-storage budget.
 
+The retained graph painter's eligible procedural node binding uploads its two
+raw coordinate planes as RGBA8UI textures once for both normal and focus
+passes. Their padded storage is charged before allocation, alongside the
+unchanged style/state/reference textures. Frame-bearing publications retain
+the instanced coordinate buffers. Both programs and all partial-build objects
+remain client-owned and are released on eviction, context loss and disposal.
+
 `applyDashboardResourceBudget(worker, budgetBytes, perChartBudgetBytes?)` and
 `watchDashboardResourceBudget` apply hierarchical whole-chart admission using
 the existing Rust XYDP planner. Where a per-chart cap is tighter than the

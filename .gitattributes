@@ -460,6 +460,12 @@ tests/fixtures/temporal/frozen-history.json text eol=lf
 examples/temporal_graph_freeze.py text eol=lf
 scripts/gen_abi_manifest.py text eol=lf
 spec/design/temporal-graph-frozen.md text eol=lf
+benchmarks/README.md text eol=lf
+tests/test_shader_attribute_budget.py text eol=lf
+tests/test_shared_glhost.py text eol=lf
+spec/performance/graph-procedural-paint-2026-11-09/** text eol=lf
+spec/performance/graph-procedural-paint-2026-11-09/**/*.gz -text
+spec/performance/graph-procedural-paint-2026-11-09/**/*.png -text
 
 # Native selection for Python-to-Node CI bridges and immutable predecessor bytes.
 spec/performance/native-python-ci-2026-11-09/** text eol=lf

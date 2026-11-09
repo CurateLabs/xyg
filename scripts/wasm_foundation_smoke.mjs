@@ -252,6 +252,9 @@ try {
 // Keep the bounded retained temporal presentation journey in the existing
 // source-dist foundation CI command. Staged-package runs keep their own scope.
 if (!only && !browserPackage) {
+  execFileSync(process.execPath, [join(root, "scripts/graph_session_gpu_paint_smoke.mjs")], {
+    cwd: root, stdio: "inherit", env: process.env,
+  });
   execFileSync(process.execPath, [join(root, "scripts/graph_session_controller_wasm_smoke.mjs")], {
     cwd: root, stdio: "inherit",
     env: { ...process.env, XYG_GRAPH_TEMPORAL_ONLY: "1", ...(reportPath ? { XYG_GRAPH_SESSION_REPORT: `${reportPath}.retained-temporal.json` } : {}) },
