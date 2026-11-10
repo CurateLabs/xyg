@@ -161,6 +161,41 @@ try{
  assert.deepEqual(refused.state.selection,{rows:true});assert.deepEqual(await masks(),capacityMasks);
  assert.deepEqual((await geometry()).history,capacityGeometry.history);
  assert.equal(capacityAfter.paintSha256,capacityBefore.paintSha256,'capacity refusal preserves complete accepted RGBA');
+ // Seed one explicit prior snapshot to exercise Back while the real native
+ // owner table is full. The subsequent ordinary gestures keep their history.
+ const capacityHistory=await canvas.evaluate(canvas=>{
+  const view=globalThis[Symbol.for('reflex-dev.xy.shared-webgl-host.v2')].get(document).dashboardResourceSnapshot().clients.find(v=>v.canvas===canvas);
+  const before=view._durableState(),target=structuredClone(before);
+  target.ranges.x=target.ranges.x.map(v=>v+0.25);
+  target.selection={range:{x0:-1000,x1:1000,y0:-1000,y1:1000}};
+  view.__regionHistorySaved={past:[...view._historyPast],future:[...view._historyFuture],last:view._historyLastInteractionId};
+  view._historyPast.length=0;view._historyFuture.length=0;view._historyPast.push(target);
+  const status=[...canvas.closest('[data-graph-steps]').querySelectorAll('[aria-live]')].find(el=>el.textContent==='Graph selection exceeds the resource limit');
+  if(!status)throw Error('capacity history control requires the real refusal status');
+  globalThis.__regionHistoryRefused=false;
+  const observer=new MutationObserver(()=>{if(status.textContent==='Graph selection exceeds the resource limit'){
+   globalThis.__regionHistoryRefused=true;observer.disconnect();
+  }});observer.observe(status,{childList:true,characterData:true,subtree:true});
+  return {before,target,admitted:view.root.xy.back(),seededTarget:true};
+ });
+ assert.equal(capacityHistory.admitted,true);
+ await page.waitForFunction(()=>globalThis.__regionHistoryRefused,null,{timeout:10000});
+ await canvas.evaluate(canvas=>new Promise(resolve=>{
+  const view=globalThis[Symbol.for('reflex-dev.xy.shared-webgl-host.v2')].get(document).dashboardResourceSnapshot().clients.find(v=>v.canvas===canvas);
+  const check=()=>{if(!view._viewAnim)resolve();else requestAnimationFrame(check);};check();
+ }));
+ capacityHistory.after=await canvas.evaluate(canvas=>{
+  const view=globalThis[Symbol.for('reflex-dev.xy.shared-webgl-host.v2')].get(document).dashboardResourceSnapshot().clients.find(v=>v.canvas===canvas);
+  const result={state:view._durableState(),past:structuredClone(view._historyPast),future:structuredClone(view._historyFuture)};
+  const saved=view.__regionHistorySaved;view._historyPast.splice(0,view._historyPast.length,...saved.past);
+  view._historyFuture.splice(0,view._historyFuture.length,...saved.future);view._historyLastInteractionId=saved.last;delete view.__regionHistorySaved;
+  return result;
+ });
+ assert.deepEqual(capacityHistory.after.state,capacityHistory.before,'refused Back preserves the complete accepted camera and selection');
+ assert.deepEqual(capacityHistory.after.past,[capacityHistory.target]);assert.deepEqual(capacityHistory.after.future,[]);
+ assert.deepEqual(await masks(),capacityMasks);
+ const capacityHistoryPaint=await picture('capacity-history-refused',capacityGeometry.points);
+ assert.equal(capacityHistoryPaint.paintSha256,capacityBefore.paintSha256,'refused Back preserves the entire accepted RGBA');
  const clearStart=await page.evaluate(()=>globalThis.__regionEvents.length);
  await cell(2);await waitSelect(clearStart);
  let g=await geometry();const before=await picture('before',g.points),beforeEdges=await picture('before-edges',g.edgePoints);
@@ -220,11 +255,32 @@ try{
  await page.mouse.move(g.origin[0]+moved[0]+8,g.origin[1]+moved[1]+8,{steps:6});await page.mouse.up();await page.keyboard.up('Shift');
  await waitSelect(start);const cameraBox=await report(),cameraExpected=oracle(cameraBox),cameraMasks=await checkMasks(cameraExpected);
  assert.deepEqual(cameraExpected.nodes,[0]);assert.deepEqual(cameraExpected.edges,[]);
+ const combinedHistory=await canvas.evaluate(async canvas=>{
+  const view=globalThis[Symbol.for('reflex-dev.xy.shared-webgl-host.v2')].get(document).dashboardResourceSnapshot().clients.find(v=>v.canvas===canvas);
+  const wait=()=>new Promise((resolve,reject)=>{
+   const timer=setTimeout(()=>{stop();reject(Error('history selection reply timed out'));},10000);
+   const stop=view.comm.onMessage(msg=>{if(msg.type==='selection'){clearTimeout(timer);stop();resolve(msg);}});
+  });
+  const before=view._durableState(),past=view._historyPast.length;
+  const ranges=structuredClone(before.ranges);ranges.x=ranges.x.map(v=>v+0.25);
+  let done=wait();view.root.xy.applyState({ranges,selection:{range:{x0:-1000,x1:1000,y0:-1000,y1:1000}}});await done;
+  const after=view._durableState(),entries=structuredClone(view._historyPast);
+  done=wait();const back=view.root.xy.back();await done;
+  while(view._viewAnim)await new Promise(requestAnimationFrame);
+  const restored=view._durableState();
+  done=wait();const forward=view.root.xy.forward();await done;
+  while(view._viewAnim)await new Promise(requestAnimationFrame);
+  return {before,after,past,entries,back,restored,forward,reapplied:view._durableState()};
+ });
+ assert.equal(combinedHistory.entries.length,combinedHistory.past+1,'one mixed API update makes one undo entry');
+ assert.deepEqual(combinedHistory.entries.at(-1),combinedHistory.before);
+ assert.equal(combinedHistory.back,true);assert.deepEqual(combinedHistory.restored,combinedHistory.before);
+ assert.equal(combinedHistory.forward,true);assert.deepEqual(combinedHistory.reapplied,combinedHistory.after);
  const trusted=await page.evaluate(()=>globalThis.__regionTrusted);
  assert.ok(trusted.length>=2&&trusted.every(v=>v.trusted));assert.ok(trusted.some(v=>v.shift));assert.ok(trusted.some(v=>v.kind==='wheel'));
  await cell(3);await page.locator('.jp-Notebook .jp-Cell').nth(3).locator('.jp-OutputArea').getByText('XYG graph region cleanup',{exact:false}).waitFor({timeout:10000});
  assert.equal(errors.length,0,JSON.stringify(errors));assert.equal(external.length,0);
- const result={ok:true,artifactDir:temp,frontend,kernel,dpr,browser:browser.version(),initial,capacity:{before:capacityBefore,after:capacityAfter,refused,masks:capacityMasks},box,boxExpected,boxMasks,lasso,lassoExpected,lassoMasks,cameraBox,cameraExpected,cameraMasks,before,beforeEdges,afterBox,afterBoxEdges,afterLasso,trusted,disposed:true};
+ const result={ok:true,artifactDir:temp,frontend,kernel,dpr,browser:browser.version(),initial,capacity:{before:capacityBefore,after:capacityAfter,refused,masks:capacityMasks,history:capacityHistory,historyPaint:capacityHistoryPaint},combinedHistory,box,boxExpected,boxMasks,lasso,lassoExpected,lassoMasks,cameraBox,cameraExpected,cameraMasks,before,beforeEdges,afterBox,afterBoxEdges,afterLasso,trusted,disposed:true};
  await writeFile(join(temp,'report.json'),JSON.stringify(result,null,2)+'\n');
  if(process.env.XYG_GRAPH_REGION_REPORT)await writeFile(process.env.XYG_GRAPH_REGION_REPORT,JSON.stringify(result,null,2)+'\n');
  console.log(JSON.stringify({ok:true,artifactDir:temp,nodes:lassoExpected.nodes,edges:lassoExpected.edges,dpr}));

@@ -16,6 +16,8 @@ function fixture(saved) {
       this.replies = []; this.swaps = 0;
       this._stateSelection = null; this._historyPast = []; this._historyFuture = [];
       this.broadcasts = []; this._interactionSeq = 0;
+      this.axes = { x: { range: [0, 10] }, y: { range: [0, 10] } };
+      this.view = this._copyView({}); this.view0 = this._copyView(this.view);
       this.unsubscribe = comm.onMessage(content => {
         this.replies.push(content);
         if (content.type === "selection") this.mask = content.total;
@@ -46,10 +48,17 @@ function fixture(saved) {
     const methods = readFileSync(new URL(`../src/${name}.ts`, import.meta.url), "utf8").replace(/^import .*;$/mg, "");
     vm.runInContext(stripTypeScriptTypes(methods), context);
   }
-  // Use the actual mutation/history methods; only browser drawing is stubbed.
-  for (const name of ["_clearLassoOverlay", "_clearBoxOverlay", "_renderBoxSelection", "_renderLassoSelection", "_updateHistoryButtons", "_dispatchChartEvent", "_setView"]) ChartView.prototype[name] = () => {};
-  ChartView.prototype._durableState = function () { return { v: 1, ranges: {}, selection: JSON.parse(JSON.stringify(this._stateSelection)) }; };
-  ChartView.prototype._validateStatePatch = () => null;
+  // Exercise actual range mutation, state validation and history together.
+  // Only drawing/transport and unbounded linear fixture-axis clamping are stubbed.
+  for (const name of ["_clearLassoOverlay", "_clearBoxOverlay", "_renderBoxSelection", "_renderLassoSelection", "_updateHistoryButtons", "_dispatchChartEvent", "_scheduleViewRequest", "_emitViewChange"]) ChartView.prototype[name] = () => {};
+  const axes = readFileSync(new URL("../src/50_chartview.ts", import.meta.url), "utf8");
+  const axisMethods = axes.slice(axes.indexOf("  _axisIds() {"), axes.indexOf("  _axisPolicy(name) {"))
+    + axes.slice(axes.indexOf("  _axisRange(axisId, view = this.view) {"), axes.indexOf("  // Stride-thin radial tick LABELS"));
+  const AxisView = vm.runInContext(stripTypeScriptTypes(`(class { ${axisMethods} })`), context);
+  for (const name of ["_axisIds", "_copyView", "_viewFrom", "_axisRange"]) ChartView.prototype[name] = AxisView.prototype[name];
+  ChartView.prototype._axis = function (id) { return this.axes[id]; };
+  ChartView.prototype._clampView = view => view;
+  ChartView.prototype._prefersReducedMotion = () => true;
   ChartView.prototype._broadcastLinkedSelection = function (selection) { this.broadcasts.push(selection); };
   vm.runInContext(stripTypeScriptTypes(source) + ";globalThis.render=renderGraphHost;", context);
   const model = { state: { spec: { instance: "test", graph_snapshot: saved }, buffers: [] }, sent: [],
@@ -84,7 +93,7 @@ const json = value => JSON.parse(JSON.stringify(value));
 const predicate = x => ({ range: { x0: x, x1: x + 1, y0: 0, y1: 1 } });
 function accept(f, request, total = 1) {
   f.deliver({ type: "selection", graph_revision: 1, seq: request.seq,
-    selection_intent: request.selection_intent, selection: predicate(request.x0), traces: [{ id: 0 }], total });
+    selection: request.type === "select_clear" ? null : predicate(request.x0), traces: [{ id: 0 }], total });
 }
 test("accepted graph predicates commit history and linked geometry once", () => {
   const f = fixture(); f.frame(1); f.paint();
@@ -232,6 +241,98 @@ test("accepted graph history moves each stack once and stays idle while pending"
   assert.equal(f.view._historyForward(), true); accept(f, f.model.sent.at(-1));
   assert.equal(f.view._historyPast.length, 2); assert.equal(f.view._historyFuture.length, 0);
   assert.deepEqual(json(f.view._stateSelection), predicate(4));
+  f.cleanup();
+});
+
+test("a combined range and selection patch creates one complete undo entry", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  const before = json(f.view._durableState());
+  f.view._applyStatePatch({ ranges: { x: [20, 30] }, selection: predicate(2) });
+  accept(f, f.model.sent.at(-1));
+  assert.equal(f.view._historyPast.length, 1);
+  assert.deepEqual(json(f.view._historyPast[0]), before);
+  assert.deepEqual(json(f.view._durableState()), { ...before, ranges: { ...before.ranges, x: [20, 30] }, selection: predicate(2) });
+  f.cleanup();
+});
+
+test("refused history navigation preserves ranges and every accepted facet", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  f.view._sendSelect([2, 0], [3, 1]); accept(f, f.model.sent.at(-1), 2);
+  f.view._applyStatePatch({ ranges: { x: [20, 30] } });
+  const before = json(f.view._durableState()), past = json(f.view._historyPast), future = json(f.view._historyFuture);
+  assert.equal(f.view._historyBack(), true); const request = f.model.sent.at(-1);
+  f.deliver({ type: "selection_refused", graph_revision: 1, seq: request.seq, selection: predicate(2) });
+  assert.deepEqual(json(f.view._durableState()), before);
+  assert.deepEqual(json(f.view._historyPast), past); assert.deepEqual(json(f.view._historyFuture), future);
+  assert.equal(f.view.mask, 2);
+  f.cleanup();
+});
+
+test("accepted Back and Next commit the complete range and selection snapshot once", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  const before = json(f.view._durableState());
+  f.view._applyStatePatch({ ranges: { x: [20, 30] }, selection: predicate(2) });
+  accept(f, f.model.sent.at(-1)); const after = json(f.view._durableState());
+  assert.equal(f.view._historyBack(), true);
+  assert.deepEqual(json(f.view._durableState()), after);
+  accept(f, f.model.sent.at(-1), 0);
+  assert.deepEqual(json(f.view._durableState()), before);
+  assert.equal(f.view._historyPast.length, 0); assert.equal(f.view._historyFuture.length, 1);
+  assert.equal(f.view._historyForward(), true);
+  assert.deepEqual(json(f.view._durableState()), before);
+  accept(f, f.model.sent.at(-1));
+  assert.deepEqual(json(f.view._durableState()), after);
+  assert.equal(f.view._historyPast.length, 1); assert.equal(f.view._historyFuture.length, 0);
+  f.cleanup();
+});
+
+test("a newer non-history range write supersedes pending navigation without rollback", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  f.view._sendSelect([2, 0], [3, 1]); accept(f, f.model.sent.at(-1), 2);
+  f.view._applyStatePatch({ ranges: { x: [20, 30] } });
+  const past = json(f.view._historyPast), future = json(f.view._historyFuture);
+  assert.equal(f.view._historyBack(), true); const request = f.model.sent.at(-1);
+  f.view._applyStatePatch({ ranges: { x: [40, 50] } }, { history: false, source: "linked" });
+  const newer = json(f.view._durableState());
+  accept(f, request, 1);
+  assert.deepEqual(json(f.view._durableState()), newer); assert.equal(f.view.mask, 2);
+  assert.deepEqual(json(f.view._historyPast), past); assert.deepEqual(json(f.view._historyFuture), future);
+  f.cleanup();
+});
+
+test("refused Next preserves the camera, redo target and current masks", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  f.view._applyStatePatch({ ranges: { x: [20, 30] }, selection: predicate(2) }); accept(f, f.model.sent.at(-1), 2);
+  f.view._historyBack(); accept(f, f.model.sent.at(-1), 0);
+  const before = json(f.view._durableState()), past = json(f.view._historyPast), future = json(f.view._historyFuture);
+  assert.equal(f.view._historyForward(), true); const request = f.model.sent.at(-1);
+  f.deliver({ type: "selection_refused", graph_revision: 1, seq: request.seq, selection: null });
+  assert.deepEqual(json(f.view._durableState()), before); assert.equal(f.view.mask, 0);
+  assert.deepEqual(json(f.view._historyPast), past); assert.deepEqual(json(f.view._historyFuture), future);
+  f.cleanup();
+});
+
+test("opaque-row history restores ranges synchronously without requesting a predicate", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  f.deliver({ type: "selection_rows", graph_revision: 1, traces: [{ id: 0 }], total: 7 });
+  const before = json(f.view._durableState());
+  f.view._applyStatePatch({ ranges: { x: [20, 30] } }); const sent = f.model.sent.length;
+  assert.equal(f.view._historyBack(), true);
+  assert.deepEqual(json(f.view._durableState()), before); assert.equal(f.view.mask, 7);
+  assert.equal(f.model.sent.length, sent);
+  assert.equal(f.view._historyPast.length, 0); assert.equal(f.view._historyFuture.length, 1);
+  f.cleanup();
+});
+
+test("a history target with an obsolete axis schema refuses before any request or mutation", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  const before = json(f.view._durableState());
+  f.view._historyPast.push({ ...before, ranges: { removed: [0, 10] }, selection: predicate(2) });
+  const past = json(f.view._historyPast), count = f.model.sent.length;
+  assert.equal(f.view._historyBack(), false);
+  assert.deepEqual(json(f.view._durableState()), before);
+  assert.deepEqual(json(f.view._historyPast), past); assert.equal(f.view._historyFuture.length, 0);
+  assert.equal(f.model.sent.length, count);
   f.cleanup();
 });
 

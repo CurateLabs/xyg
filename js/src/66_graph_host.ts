@@ -44,18 +44,25 @@ export function renderGraphHost({ model, el, attachTicks }) {
     send,
     // Only this native graph host defers durable selection mutations. Other
     // chart transports retain their existing immediate mutation semantics.
-    deferSelection: opts => ({ seq: ++selectionSequence, history: opts.history !== false, broadcast: opts.broadcast !== false, source: opts.source, commitHistory: opts.commitHistory }),
+    deferSelection: opts => ({ seq: ++selectionSequence, history: opts.history !== false, broadcast: opts.broadcast !== false, source: opts.source, interactionId: opts.interactionId, commitHistory: opts.commitHistory }),
     deferHistory: direction => {
       if (selectionPending !== null) return false;
       const from = direction === "back" ? view._historyPast : view._historyFuture;
       const to = direction === "back" ? view._historyFuture : view._historyPast;
       const target = from.at(-1), before = view._durableState();
-      if (!target) return false;
+      if (!target || view._validateStatePatch({ ranges: target.ranges })) return false;
       const commitHistory = () => {
-        if (from.at(-1) !== target) return;
-        from.pop(); to.push(before); view._updateHistoryButtons();
+        // A later range write owns the camera, even if it did not record
+        // history (for example a linked update). Never undo that newer write.
+        if (from.at(-1) !== target || JSON.stringify(view._durableState().ranges) !== JSON.stringify(before.ranges)) return false;
+        from.pop(); to.push(before);
+        view._applyStatePatch({ ranges: target.ranges }, { source: "history", animate: true, history: false });
+        view._updateHistoryButtons();
+        return true;
       };
-      view._historyApply(target, { commitHistory });
+      // Query the stored data-space predicate in the currently accepted
+      // picture. Its target camera becomes durable only after admission.
+      view._historyApply({ ...target, ranges: {} }, { commitHistory });
       if (selectionPending === null) commitHistory(); // ranges-only/opaque-row snapshot
       return true;
     },
@@ -66,7 +73,9 @@ export function renderGraphHost({ model, el, attachTicks }) {
     if (acceptedSelection && acceptedSelection.content.seq > presentedSelection) {
       const { content, buffers } = acceptedSelection;
       const predicate = content.selection ?? null, intent = acceptedSelection.intent ?? {};
-      intent.commitHistory?.();
+      if (intent.commitHistory?.() === false) {
+        acceptedSelection = null; presentSelection(true); return;
+      }
       if (JSON.stringify(view._stateSelection ?? null) !== JSON.stringify(predicate)) view._historyRecord(intent);
       view._applyStatePatch({ selection: predicate }, { dispatch: false, broadcast: false, history: false });
       selection = acceptedSelection; selectedRows = rowSpace();

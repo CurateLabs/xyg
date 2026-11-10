@@ -113,7 +113,7 @@ Consequences:
 - Selection changes keep the shipped ordering invariant (`on_brush` before
   `on_select`) regardless of writer.
 - There is exactly one implementation of "apply a state patch" in
-  `js/src/53_interaction.ts`, and every entry point in this document is a
+  `js/src/57_viewstate.ts`, and every entry point in this document is a
   caller of it.
 
 The browser client owns the live state; the kernel and application hosts
@@ -156,7 +156,15 @@ Superseded unpresented accepted results can coalesce; the bounded transport may
 present the last accepted result when a newer intent refuses. A newer explicit
 API row selection owns its facet over an older in-flight geometric reply.
 Back/Next move their stacks only after accepted navigation and do not start
-while another geometric selection is pending. Cached row masks survive only
+while another geometric selection is pending. The stored ranges also wait for
+predicate acceptance; refusal preserves the entire preceding camera/selection
+snapshot. An intervening range write or changed history target supersedes that
+navigation without rolling back the newer state. Opaque-row/ranges-only history
+keeps its existing synchronous, non-reselecting behavior. A combined API
+range/selection patch preserves its interaction ID through deferred acceptance,
+so the two facets create one undo entry. Targets with obsolete axis schemas
+refuse through the shared validator before querying or moving stacks.
+Cached row masks survive only
 an equal, valid compiler row-space stamp; changed membership or shipped-row
 mapping revokes those masks without guessing a replacement predicate.
 Ordinary transports retain the immediate mutation path described above.

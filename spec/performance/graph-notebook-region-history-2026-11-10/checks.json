@@ -1,0 +1,1165 @@
+{
+  "base": "0e19fea7580b611716e2935ed76b2752f84b1fca",
+  "bindings": {
+    "current": 3458,
+    "historical": 1502,
+    "parents": 31,
+    "path": "spec/performance/graph-notebook-region-history-2026-11-10/current-bindings.json",
+    "sha256": "e6998de8def2f641efcba778dfc20fa433f6663185dc961937043dd446b20e57"
+  },
+  "captures": {
+    "target/task-tmp/graph-geometric-notebook/region-history-final-dpr1.json": {
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/before-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d.gz",
+        "archiveBytes": 14102,
+        "archiveSha256": "dc12a7e87d6f16007a5988a87d8911c56100f6665cd0a46c9bf908faf2969824",
+        "bytes": 16592,
+        "sha256": "50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/before-edges-pixels.json": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/f1431c987d47b977672ca3210fd042a709eae2d210f91edef3dfd4384c99f3f8.gz",
+        "archiveBytes": 485,
+        "archiveSha256": "2b2c184ee261171b635128c77204c84dc8cb40f23bc8f8de16e8efdc0f8e80be",
+        "bytes": 3518,
+        "sha256": "f1431c987d47b977672ca3210fd042a709eae2d210f91edef3dfd4384c99f3f8"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/before-edges.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/b846412b123a3406cd89c8ab0376726cb9049d85067a51d8a8962e820965eb26.gz",
+        "archiveBytes": 23725,
+        "archiveSha256": "c319047b595d8386f63a1a4453f353120184566e4a34289e4144dc44d92aac76",
+        "bytes": 24448,
+        "sha256": "b846412b123a3406cd89c8ab0376726cb9049d85067a51d8a8962e820965eb26"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/before-paint.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d.gz",
+        "archiveBytes": 14102,
+        "archiveSha256": "dc12a7e87d6f16007a5988a87d8911c56100f6665cd0a46c9bf908faf2969824",
+        "bytes": 16592,
+        "sha256": "50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/before-pixels.json": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/9b7e94e63b995bcd0b2d9c192e14c55806773f622d85c90c6e6c1ecd599a1f46.gz",
+        "archiveBytes": 394,
+        "archiveSha256": "ea44f202d56df53d0b1810dcddf8625fd81d11fd19f756b7139846866ee37e27",
+        "bytes": 2203,
+        "sha256": "9b7e94e63b995bcd0b2d9c192e14c55806773f622d85c90c6e6c1ecd599a1f46"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/before.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/f7fbe6ab0cec385525c930f47ac8e41c616a27877a68df8e802d6246001833f4.gz",
+        "archiveBytes": 23102,
+        "archiveSha256": "74d765630f2eb34582bc021ba9f150583fc4a6eb9432f8a9674ad5f804803157",
+        "bytes": 23801,
+        "sha256": "f7fbe6ab0cec385525c930f47ac8e41c616a27877a68df8e802d6246001833f4"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/box-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f.gz",
+        "archiveBytes": 13199,
+        "archiveSha256": "427c557ffd6fe9630fb583dac7eac30a6fa6b82c371e530567aac0cc380bfca3",
+        "bytes": 16176,
+        "sha256": "dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/box-edges-pixels.json": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/c12de2dd985dc03357d8b67e1d2d3cb8c8e3c32ead6cba5210d99ca4b7ed9851.gz",
+        "archiveBytes": 512,
+        "archiveSha256": "74f9219a2f4b5015d7282066b92260990255eda20afdbf1cadcf4af81c102842",
+        "bytes": 3498,
+        "sha256": "c12de2dd985dc03357d8b67e1d2d3cb8c8e3c32ead6cba5210d99ca4b7ed9851"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/box-edges.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/26602ab91e970327c7290e32dff9b3675bbf768984480e54aebdb2566006da8d.gz",
+        "archiveBytes": 22556,
+        "archiveSha256": "81d5309139919e9bc032362536f5bf17c602ea82bd47e5be95c78b975b3083ae",
+        "bytes": 23325,
+        "sha256": "26602ab91e970327c7290e32dff9b3675bbf768984480e54aebdb2566006da8d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/box-paint.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f.gz",
+        "archiveBytes": 13199,
+        "archiveSha256": "427c557ffd6fe9630fb583dac7eac30a6fa6b82c371e530567aac0cc380bfca3",
+        "bytes": 16176,
+        "sha256": "dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/box-pixels.json": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/e86a8d854abfe5f229b1825a2eb05fe2e822c0b6ca76aa88628229f0086b331e.gz",
+        "archiveBytes": 404,
+        "archiveSha256": "4bda815926af965295d678bf8df0a8d95d8754cdc36954405e40cf699771ad78",
+        "bytes": 2188,
+        "sha256": "e86a8d854abfe5f229b1825a2eb05fe2e822c0b6ca76aa88628229f0086b331e"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/box.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/a283f45994f632936809ed496ce5ec797e972d36f8e5db21c2e8fd9bf0b466d9.gz",
+        "archiveBytes": 21899,
+        "archiveSha256": "4bedb4c1763679804eed80b2c4d99c043cf229c1975bf8666ceeabf0c6a9997b",
+        "bytes": 22658,
+        "sha256": "a283f45994f632936809ed496ce5ec797e972d36f8e5db21c2e8fd9bf0b466d9"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/capacity-before-paint.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/capacity-before-pixels.json": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/ccd0bfdb2c3ddd7bafe94ec6e9d7889ce904ad875918a59866ebe88d5704dcea.gz",
+        "archiveBytes": 398,
+        "archiveSha256": "ff1a3ef451900ba4860415dc105545553cc7edfc4516104646ae8d299466b9a2",
+        "bytes": 2188,
+        "sha256": "ccd0bfdb2c3ddd7bafe94ec6e9d7889ce904ad875918a59866ebe88d5704dcea"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/capacity-before.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/750112b4a8ce65bc4dc6cddedd2c5b3abaa1effe3cb7b5ded8ad3fa9989f0730.gz",
+        "archiveBytes": 22514,
+        "archiveSha256": "dbe30b00bf39e605f04e48db470747ed9f07270c912191e8efbac2e67b35747f",
+        "bytes": 23290,
+        "sha256": "750112b4a8ce65bc4dc6cddedd2c5b3abaa1effe3cb7b5ded8ad3fa9989f0730"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/capacity-history-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/capacity-history-refused-pixels.json": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/367a4eb47e664c5dc642005acd1b83a5eaf81d7cde3de314857e320de3474322.gz",
+        "archiveBytes": 398,
+        "archiveSha256": "8953896f078723f538f31df44853944deed0d67d1ca30badaea54c343da87643",
+        "bytes": 2188,
+        "sha256": "367a4eb47e664c5dc642005acd1b83a5eaf81d7cde3de314857e320de3474322"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/capacity-history-refused.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/cb922c12a539422f179aa8b5bd28a18eaceadffffcbaa39e4a10ff1059da4f8e.gz",
+        "archiveBytes": 22571,
+        "archiveSha256": "b4e1c965bace5789ee3b7ab20003000f4a6bad3603b5afb232ed96a897130b1b",
+        "bytes": 23319,
+        "sha256": "cb922c12a539422f179aa8b5bd28a18eaceadffffcbaa39e4a10ff1059da4f8e"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/capacity-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/capacity-refused-pixels.json": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/96b4ffda92c7ff1f47b3afeb99541bba644aacbac06116f4d30858cbce9ed3d7.gz",
+        "archiveBytes": 396,
+        "archiveSha256": "86973f103f4da32287ccf3971ba47d2cc46f5c5439c13d19381d4ab23e7fad96",
+        "bytes": 2188,
+        "sha256": "96b4ffda92c7ff1f47b3afeb99541bba644aacbac06116f4d30858cbce9ed3d7"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/capacity-refused.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/a7666118bb3eff7f3994c2501f4df67fdce66bc87f7c77558afb0edc461a1a78.gz",
+        "archiveBytes": 20694,
+        "archiveSha256": "3380455fc787f6b62e1dc2bf081a45b9ba51d36c858dcf54a854c2815d681816",
+        "bytes": 21526,
+        "sha256": "a7666118bb3eff7f3994c2501f4df67fdce66bc87f7c77558afb0edc461a1a78"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/lasso-paint.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/513b6d49016a5ca7b80eff9ae9828acd6a9ceefeb836664697fbd2c07d6090aa.gz",
+        "archiveBytes": 13986,
+        "archiveSha256": "4ca240262c17892db53f533fabfde65fbab1ff33a66f2cdadb4ef2b055b39186",
+        "bytes": 16720,
+        "sha256": "513b6d49016a5ca7b80eff9ae9828acd6a9ceefeb836664697fbd2c07d6090aa"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/lasso-pixels.json": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/cd39f7cfed847bb144a6f7e9019ea45c95df204d582ded1a2f3f6d1056c2ab6f.gz",
+        "archiveBytes": 394,
+        "archiveSha256": "189ffdf410985ab4f1934d05d7674432bdcb61d0417cc768eb598198e423b935",
+        "bytes": 2193,
+        "sha256": "cd39f7cfed847bb144a6f7e9019ea45c95df204d582ded1a2f3f6d1056c2ab6f"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/lasso.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/5313c77655051301c98ac157ab07a2a7ac310d198755f163738ba806ef2ce546.gz",
+        "archiveBytes": 24502,
+        "archiveSha256": "2506ad801bc5b89aafd31c5a6710359b00b9218219ba18c09f52237455a1f41f",
+        "bytes": 25175,
+        "sha256": "5313c77655051301c98ac157ab07a2a7ac310d198755f163738ba806ef2ce546"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-gNFXlv/regions.ipynb": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd.gz",
+        "archiveBytes": 1695,
+        "archiveSha256": "655dbbb990ffebf0a9427ba64505f4c430c754b21731850e0b1911c2021b021f",
+        "bytes": 5892,
+        "sha256": "8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd"
+      },
+      "target/task-tmp/graph-geometric-notebook/region-history-final-dpr1.json": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/d570bbc32e2bda4cb712b8dbfb929b5630421e44758e4fb96b8ab33e90654efa.gz",
+        "archiveBytes": 5820,
+        "archiveSha256": "41db8706164c766cda6b930662c2ff4a25e1bf57305affe085e21fa89dc6f3d8",
+        "bytes": 83408,
+        "sha256": "d570bbc32e2bda4cb712b8dbfb929b5630421e44758e4fb96b8ab33e90654efa"
+      }
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-final-dpr2.json": {
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/before-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c.gz",
+        "archiveBytes": 30991,
+        "archiveSha256": "a1c60b150090a1ac67897881c1a0a44ca28df7507517e42983578b01277bd825",
+        "bytes": 43777,
+        "sha256": "950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/before-edges-pixels.json": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/52c08f4bfb55d33f15337e4b598748db2e6ef65f1a93c9da000b7d497fd21dfc.gz",
+        "archiveBytes": 425,
+        "archiveSha256": "a23fc53bfabc4e9b6cceca77bd9a568a4a7c739c75b9b2a2743374c270967fb0",
+        "bytes": 3521,
+        "sha256": "52c08f4bfb55d33f15337e4b598748db2e6ef65f1a93c9da000b7d497fd21dfc"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/before-edges.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/9eb0dedac429ef92376bceac7ba8ffee44d1152a8fc87977b2c8d8a44495def4.gz",
+        "archiveBytes": 56890,
+        "archiveSha256": "4553a8ba46df03807e1e748e463c586dc3cf81cadb538f217c75a3f6d52a5f30",
+        "bytes": 60386,
+        "sha256": "9eb0dedac429ef92376bceac7ba8ffee44d1152a8fc87977b2c8d8a44495def4"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/before-paint.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c.gz",
+        "archiveBytes": 30991,
+        "archiveSha256": "a1c60b150090a1ac67897881c1a0a44ca28df7507517e42983578b01277bd825",
+        "bytes": 43777,
+        "sha256": "950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/before-pixels.json": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/7843e0f65db363ed26dbf29b9166169c607de377ad1cd90fccd108079f26372d.gz",
+        "archiveBytes": 393,
+        "archiveSha256": "2919522f76e8a821889a861a89adab7db647dab2b8794ec023a3009626b60fbc",
+        "bytes": 2204,
+        "sha256": "7843e0f65db363ed26dbf29b9166169c607de377ad1cd90fccd108079f26372d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/before.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/4e9a7bd66c60a85dbfdfada4d78cedd6ec9e9db26d3a30ead9970154d0f96061.gz",
+        "archiveBytes": 55986,
+        "archiveSha256": "4876d2350c4329126f6c7d2771af541f5ecaf58d8bacf0f8a77431a35d4d6280",
+        "bytes": 59489,
+        "sha256": "4e9a7bd66c60a85dbfdfada4d78cedd6ec9e9db26d3a30ead9970154d0f96061"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/box-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d.gz",
+        "archiveBytes": 28480,
+        "archiveSha256": "eff9458fb453c519a73094f6822a72d8ea853a5b9d2bc973b525d700ca891b94",
+        "bytes": 43605,
+        "sha256": "43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/box-edges-pixels.json": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/d715975b4347c79f9e446e4899f0d7d22aecadf862cb52b78f70cf395a2c18d0.gz",
+        "archiveBytes": 435,
+        "archiveSha256": "c3da0c1ed9aaed1a11b1ae291bbaaba1fa7bb82bf31785ef5cdbbf4617040fcf",
+        "bytes": 3501,
+        "sha256": "d715975b4347c79f9e446e4899f0d7d22aecadf862cb52b78f70cf395a2c18d0"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/box-edges.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/cc9c8ae35e63b787560742910d1eabaaa11e603f01d7d3f7d5577d1412a6f7ea.gz",
+        "archiveBytes": 54679,
+        "archiveSha256": "7eb9a6af3ea8979eb021eb60c69ce345cb32684899679e41b4d602f563b8d11a",
+        "bytes": 58629,
+        "sha256": "cc9c8ae35e63b787560742910d1eabaaa11e603f01d7d3f7d5577d1412a6f7ea"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/box-paint.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d.gz",
+        "archiveBytes": 28480,
+        "archiveSha256": "eff9458fb453c519a73094f6822a72d8ea853a5b9d2bc973b525d700ca891b94",
+        "bytes": 43605,
+        "sha256": "43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/box-pixels.json": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/de2f49abf333809ccb445812a4d5d21c7f9af74946a0c7c49c4de6f25a2477a0.gz",
+        "archiveBytes": 405,
+        "archiveSha256": "8a0ab7b4bc0fbb7ba38b00dfdec643fca800e22f9ef6f645b95acb539cfbe728",
+        "bytes": 2189,
+        "sha256": "de2f49abf333809ccb445812a4d5d21c7f9af74946a0c7c49c4de6f25a2477a0"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/box.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/0ef40a3accc3b9f6d67311961dd62e599b5b064cdaf41f8900c23c12739b8cea.gz",
+        "archiveBytes": 53694,
+        "archiveSha256": "76d8c06da2843c2cb370f3a2d4bee62234ece82e3a5ae1b4f01985d7d0d03c78",
+        "bytes": 57696,
+        "sha256": "0ef40a3accc3b9f6d67311961dd62e599b5b064cdaf41f8900c23c12739b8cea"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/capacity-before-paint.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502.gz",
+        "archiveBytes": 29490,
+        "archiveSha256": "6b15c029d96c60fa028a87f1e72bf10579ed594bde3ab0875b84b9801054a560",
+        "bytes": 44131,
+        "sha256": "d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/capacity-before-pixels.json": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/c918cdc0714cde7052611ffeb8b43f574aa4c138c7035d45d93cb1aca70c575e.gz",
+        "archiveBytes": 396,
+        "archiveSha256": "0b2fc39eded52702cb995a67af896f4e059881c6ea3d4b60a0ebcc56d77ebaa5",
+        "bytes": 2189,
+        "sha256": "c918cdc0714cde7052611ffeb8b43f574aa4c138c7035d45d93cb1aca70c575e"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/capacity-before.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/3a0c68842e6df2c2a204f0d5f25985c8f745d1839055b10903fdb43c8fd1f66c.gz",
+        "archiveBytes": 54384,
+        "archiveSha256": "aa1d0c65caf8c0e2c3d97733106edb12b6d3087bc39c73e01488df8e7080e109",
+        "bytes": 58180,
+        "sha256": "3a0c68842e6df2c2a204f0d5f25985c8f745d1839055b10903fdb43c8fd1f66c"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/capacity-history-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502.gz",
+        "archiveBytes": 29490,
+        "archiveSha256": "6b15c029d96c60fa028a87f1e72bf10579ed594bde3ab0875b84b9801054a560",
+        "bytes": 44131,
+        "sha256": "d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/capacity-history-refused-pixels.json": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/656239db67d39e3d20b9e6b5ba817e58ced7df95ed5ba828467f382f04afa3ae.gz",
+        "archiveBytes": 399,
+        "archiveSha256": "f1943db91fe58b4aba56deb150dbf3adf983786d318f8f2afe5560470260a971",
+        "bytes": 2189,
+        "sha256": "656239db67d39e3d20b9e6b5ba817e58ced7df95ed5ba828467f382f04afa3ae"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/capacity-history-refused.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/9e50517064ae827d0e5dc39bd93c661de7adbcacf9346fbaed1a4ba8c7554a43.gz",
+        "archiveBytes": 54141,
+        "archiveSha256": "1891e34ca1571a877ba6efa4eb1c98ac7e345e11803d8c98fefc583117b71eb5",
+        "bytes": 58127,
+        "sha256": "9e50517064ae827d0e5dc39bd93c661de7adbcacf9346fbaed1a4ba8c7554a43"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/capacity-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502.gz",
+        "archiveBytes": 29490,
+        "archiveSha256": "6b15c029d96c60fa028a87f1e72bf10579ed594bde3ab0875b84b9801054a560",
+        "bytes": 44131,
+        "sha256": "d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/capacity-refused-pixels.json": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/6db3c343bbbdd98d7bb50ef981eba720e9848014e808b24cf8f7fdb2d5aa00eb.gz",
+        "archiveBytes": 397,
+        "archiveSha256": "9b33cca8c88feebc11333a91359e4db3385b6c78b31360821cf5c6be65f38bd6",
+        "bytes": 2189,
+        "sha256": "6db3c343bbbdd98d7bb50ef981eba720e9848014e808b24cf8f7fdb2d5aa00eb"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/capacity-refused.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/624b0bee63e3542c7fa4367a922815a5effb94cb5be0e8064d1424ae045335ea.gz",
+        "archiveBytes": 49802,
+        "archiveSha256": "da9bc0e0b830bcf817bcb86d93ee482ca8e7427af6d7c7c6d81ba6ef3643cc65",
+        "bytes": 53854,
+        "sha256": "624b0bee63e3542c7fa4367a922815a5effb94cb5be0e8064d1424ae045335ea"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/lasso-paint.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/ba9db221026bc03b24778592e8f65a018b5e17e14e68a0159a36098e405a6abd.gz",
+        "archiveBytes": 29981,
+        "archiveSha256": "93436e7f361bc53b2f5bf3aba03c1d6071efbde587e5b812b98e46aeaaab6dcd",
+        "bytes": 44025,
+        "sha256": "ba9db221026bc03b24778592e8f65a018b5e17e14e68a0159a36098e405a6abd"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/lasso-pixels.json": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/444fe4c45fcc63f08081b0e420fe697b46e5bfe2871b078821a9229f0864e4af.gz",
+        "archiveBytes": 392,
+        "archiveSha256": "9a0e15445a402a35026b447ed18670e908ff85283cac2878dbc61ac14672e361",
+        "bytes": 2194,
+        "sha256": "444fe4c45fcc63f08081b0e420fe697b46e5bfe2871b078821a9229f0864e4af"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/lasso.png": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/1a680cecbb2f8d97176652da0d20651639659fdacbe05e5fded0449c08a53890.gz",
+        "archiveBytes": 59393,
+        "archiveSha256": "7d4f5262bf610b056920b715b1dc2a74b104b15b2554d63dede3a7a6782db412",
+        "bytes": 62682,
+        "sha256": "1a680cecbb2f8d97176652da0d20651639659fdacbe05e5fded0449c08a53890"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-LrqE3S/regions.ipynb": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd.gz",
+        "archiveBytes": 1695,
+        "archiveSha256": "655dbbb990ffebf0a9427ba64505f4c430c754b21731850e0b1911c2021b021f",
+        "bytes": 5892,
+        "sha256": "8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd"
+      },
+      "target/task-tmp/graph-geometric-notebook/region-history-final-dpr2.json": {
+        "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/108482296ae3e39a02fee6a61c20e3053b8ace61ec73d7be9add07e6a4412740.gz",
+        "archiveBytes": 5725,
+        "archiveSha256": "0c706f14e3942ab3af98f964ba49c90acd3392982fb932aa543c705dd9bddcf8",
+        "bytes": 83413,
+        "sha256": "108482296ae3e39a02fee6a61c20e3053b8ace61ec73d7be9add07e6a4412740"
+      }
+    }
+  },
+  "changedRuntime": [
+    "packages/xy-client/dist/index.js",
+    "packages/xy-client/dist/standalone.js",
+    "python/xyg/static/index.js",
+    "python/xyg/static/standalone.js"
+  ],
+  "compiledInputs": {
+    "changed": [
+      "crates/xyg-engine/src/graphforge/interaction/pick.rs",
+      "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs",
+      "crates/xyg-engine/src/graphforge/interaction/tests/wire.rs",
+      "crates/xyg-engine/src/graphforge/interaction/wire.rs"
+    ],
+    "count": 324,
+    "path": "spec/performance/graph-notebook-regions-2026-11-10/compiled-inputs.json",
+    "sha256": "a0ca8b566fd0a7c6502d6f6cb5b2070ff148290a846d1e7189d8388d95061dca"
+  },
+  "compiledInputsUnchanged": 324,
+  "delivery": {
+    "hostedCI": "pending",
+    "independentCorrectionReview": "pending",
+    "mergeQueue": "required"
+  },
+  "diagnosticOnly": {
+    "exit": 0,
+    "log": "target/task-tmp/graph-geometric-notebook/region-history-density-diagnostic.log",
+    "scope": "instrumented browser/GL observer; NO acceptance or reliability credit"
+  },
+  "evidence": {
+    "target/task-tmp/graph-geometric-notebook/history-before-control.mjs": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/d16a0057472e9bf80f551b9cd6dd029a1ea6740adf50882627b5e26db2643324.gz",
+      "archiveBytes": 4536,
+      "archiveSha256": "eff04ddb6826ea2b1066a058be055e52852c2521c29f120d3dc4b20ec1b874ef",
+      "bytes": 17519,
+      "sha256": "d16a0057472e9bf80f551b9cd6dd029a1ea6740adf50882627b5e26db2643324"
+    },
+    "target/task-tmp/graph-geometric-notebook/history-before-control/binding-29-tests.json": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/15afd7387663397b200d881e35f29a5f1600d20367638e0eba1db04ca9345750.gz",
+      "archiveBytes": 365,
+      "archiveSha256": "016bb706defb3da75d0ae5958ce87490ab078dee06d5d7ac599aef0b14b6bd9d",
+      "bytes": 560,
+      "sha256": "15afd7387663397b200d881e35f29a5f1600d20367638e0eba1db04ca9345750"
+    },
+    "target/task-tmp/graph-geometric-notebook/history-before-control/binding-30-tests.json": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/15afd7387663397b200d881e35f29a5f1600d20367638e0eba1db04ca9345750.gz",
+      "archiveBytes": 365,
+      "archiveSha256": "016bb706defb3da75d0ae5958ce87490ab078dee06d5d7ac599aef0b14b6bd9d",
+      "bytes": 560,
+      "sha256": "15afd7387663397b200d881e35f29a5f1600d20367638e0eba1db04ca9345750"
+    },
+    "target/task-tmp/graph-geometric-notebook/history-before-control/binding.json": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/98868a58eeba14e156dab85c4f8e920d9b2c6949e6c90e28bd8ac4a699daab4e.gz",
+      "archiveBytes": 366,
+      "archiveSha256": "c160a59b56992f16f9d3f21afe4ca05659108b9f60343a4a7c4f3e051defcfcb",
+      "bytes": 560,
+      "sha256": "98868a58eeba14e156dab85c4f8e920d9b2c6949e6c90e28bd8ac4a699daab4e"
+    },
+    "target/task-tmp/graph-geometric-notebook/history-before-control/js/src/50_chartview.ts": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/72a7fa6dfdf9d3fad2635f46b425e584de640bdb92c751ea898e586b728fb6a6.gz",
+      "archiveBytes": 118880,
+      "archiveSha256": "8acde2436d95b628d0c40436d7a8507c52ff752a128eec5e8c443ac7c772b62e",
+      "bytes": 435367,
+      "sha256": "72a7fa6dfdf9d3fad2635f46b425e584de640bdb92c751ea898e586b728fb6a6"
+    },
+    "target/task-tmp/graph-geometric-notebook/history-before-control/js/src/53_interaction.ts": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/5483b83679b9f82b7534a43821963e974fdf49366745f29c399e145cc338fe3a.gz",
+      "archiveBytes": 31032,
+      "archiveSha256": "1ac85517972cf459041a4a2f2a77d43d167bd79b892433a4bda53cc39af7d787",
+      "bytes": 121982,
+      "sha256": "5483b83679b9f82b7534a43821963e974fdf49366745f29c399e145cc338fe3a"
+    },
+    "target/task-tmp/graph-geometric-notebook/history-before-control/js/src/57_viewstate.ts": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/0c2af5908b601e3f09d7ef905fb1133d87fdc88214e2dcec661f8329eb6346bc.gz",
+      "archiveBytes": 7454,
+      "archiveSha256": "f103b6869bd9e7353369bfe7ac421d5129532e7e2cd46495323fff135b171c8a",
+      "bytes": 25194,
+      "sha256": "0c2af5908b601e3f09d7ef905fb1133d87fdc88214e2dcec661f8329eb6346bc"
+    },
+    "target/task-tmp/graph-geometric-notebook/history-before-control/js/src/66_graph_host.ts": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/96b110f80368223c82d3168288a93c7f5b248c7b32e87ae334a7b6be920dd2d9.gz",
+      "archiveBytes": 3910,
+      "archiveSha256": "66a66104bacf35f11c4fc322fef0329595bf63120aed236f77bba7c3816c4079",
+      "bytes": 13070,
+      "sha256": "96b110f80368223c82d3168288a93c7f5b248c7b32e87ae334a7b6be920dd2d9"
+    },
+    "target/task-tmp/graph-geometric-notebook/history-before-control/js/test/graph-host-transport.test.mjs": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/ed5ee44459addfc06586fe9181fc817026798aff98e6a2c3f655884902012f6b.gz",
+      "archiveBytes": 5859,
+      "archiveSha256": "3ab8e09bdc35fc8fa16ffd3d4c2403bc628c030f934378a29d33431196f686d3",
+      "bytes": 26739,
+      "sha256": "ed5ee44459addfc06586fe9181fc817026798aff98e6a2c3f655884902012f6b"
+    },
+    "target/task-tmp/graph-geometric-notebook/history-before-control/package.json": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/1239d4d885dcad42201a27ed9324f8f0f760b78700d8db9ced39a511cffe7eae.gz",
+      "archiveBytes": 38,
+      "archiveSha256": "2d42bd87b173dc76232d12dd18c386e7612e066c2739580812b6056376765e93",
+      "bytes": 18,
+      "sha256": "1239d4d885dcad42201a27ed9324f8f0f760b78700d8db9ced39a511cffe7eae"
+    },
+    "target/task-tmp/graph-geometric-notebook/history-old-client-failure.json": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/e7ca6a8b8cbfbb2995b39c40dc8c38ff455be5150869d4ab90c1a3b1ca710a58.gz",
+      "archiveBytes": 5719,
+      "archiveSha256": "4fed5a204c66ec6088d03cf1570182c5c3fe2b464976b81ca0db9544eba01441",
+      "bytes": 19666,
+      "sha256": "e7ca6a8b8cbfbb2995b39c40dc8c38ff455be5150869d4ab90c1a3b1ca710a58"
+    },
+    "target/task-tmp/graph-geometric-notebook/history-review-r1/independent-final-review.json": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/9680302e6732865620764946da5b4b5976f64adba44e6be5df3059842e617e34.gz",
+      "archiveBytes": 4131,
+      "archiveSha256": "d12404a8285b2b5929c9b00d5aa51e5b859f26f9c1aebbfd37b0d43cdfead830",
+      "bytes": 9167,
+      "sha256": "9680302e6732865620764946da5b4b5976f64adba44e6be5df3059842e617e34"
+    },
+    "target/task-tmp/graph-geometric-notebook/history-review-r1/js/test/review-adversarial.mjs": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/e6320cf7873ded2f194174d9622ed8d19b40858825b8730494e44c75771b49e1.gz",
+      "archiveBytes": 2133,
+      "archiveSha256": "210f79f93c262ee6d9fb5bb8f43a9a8725c94af5b125f9a189b186a4458d91a0",
+      "bytes": 5747,
+      "sha256": "e6320cf7873ded2f194174d9622ed8d19b40858825b8730494e44c75771b49e1"
+    },
+    "target/task-tmp/graph-geometric-notebook/history-review-r1/pins.json": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/890e886a5bc46aa45e1c1d179e04a1f44a763a0fa63bf1588a5a1d195e497f0b.gz",
+      "archiveBytes": 294,
+      "archiveSha256": "1f0b397701b30b7b7f7bde262762a7f1d076f37870176ea40abf05d882a8997b",
+      "bytes": 423,
+      "sha256": "890e886a5bc46aa45e1c1d179e04a1f44a763a0fa63bf1588a5a1d195e497f0b"
+    },
+    "target/task-tmp/graph-geometric-notebook/history-review-r1/review-history-browser-both.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/e8252c2bbeabd435fcb3d841834f5bde00af0e0ad1829b24daea34eef2ff4b0c.gz",
+      "archiveBytes": 340,
+      "archiveSha256": "639ce4667de0a49ef29336aa29b7dfa394dcc46134128e61efd4d41d965cd37a",
+      "bytes": 1228,
+      "sha256": "e8252c2bbeabd435fcb3d841834f5bde00af0e0ad1829b24daea34eef2ff4b0c"
+    },
+    "target/task-tmp/graph-geometric-notebook/history-review-r1/scripts/review-history-browser.mjs": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/7d4b7e89d3e8d7a30bac0529d6fb8d0c759941ace1e8f804ca1ed4d8ab6478a6.gz",
+      "archiveBytes": 4652,
+      "archiveSha256": "c2034ad01d7af903c99ca1a1deaf5886ee720810b48b5fc8df5f580bc59fa79d",
+      "bytes": 12552,
+      "sha256": "7d4b7e89d3e8d7a30bac0529d6fb8d0c759941ace1e8f804ca1ed4d8ab6478a6"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-assets.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef.gz",
+      "archiveBytes": 104,
+      "archiveSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730",
+      "bytes": 88,
+      "sha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-browser-negative-binding.json": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/a3976850f95acad7e6f6f227b1fb678af2d371e1c3e13d433356d739ce52b46e.gz",
+      "archiveBytes": 524,
+      "archiveSha256": "853adcac664dca0490c460e33dc2cad2de70d253880a93c4662cfb0b4ef3a213",
+      "bytes": 868,
+      "sha256": "a3976850f95acad7e6f6f227b1fb678af2d371e1c3e13d433356d739ce52b46e"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-client-build.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f.gz",
+      "archiveBytes": 1056,
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "bytes": 5448,
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-core.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/86158add9a2611685cbed3781eeb77832ffd98c3fac291251e3c35f44de94c0f.gz",
+      "archiveBytes": 53,
+      "archiveSha256": "54d4dee243ccceb3fbac6e010f6d8f4f9552674125e0430382ccdd4f56df9b2c",
+      "bytes": 100,
+      "sha256": "86158add9a2611685cbed3781eeb77832ffd98c3fac291251e3c35f44de94c0f"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-density-accepted-main.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/b52360b1f99e8d06ef5a9e6cd7a3ccad9547d0171843a5e7475b5eff27e4bc00.gz",
+      "archiveBytes": 398,
+      "archiveSha256": "33122a9736a6733527c2fb8912701f41ab594e7793fe74f5d1a6c070874725f9",
+      "bytes": 782,
+      "sha256": "b52360b1f99e8d06ef5a9e6cd7a3ccad9547d0171843a5e7475b5eff27e4bc00"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-density-baseline-pins.json": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/0160e59a0ac4a5e9bd7a315ffd3d9b421409b094dc943ebb5e230f1293fbe173.gz",
+      "archiveBytes": 837,
+      "archiveSha256": "71d1b4713f190d8c211a48cc17eb42b3266e76e11021827b4c64afb6cb87129c",
+      "bytes": 1412,
+      "sha256": "0160e59a0ac4a5e9bd7a315ffd3d9b421409b094dc943ebb5e230f1293fbe173"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-density-diagnostic.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/77f2ad7d8fba119d8574dbb23c20bb63539d2fd3ad608a9027822027bd4e8380.gz",
+      "archiveBytes": 1071,
+      "archiveSha256": "c0d06ec7d4fc6f8a4c1b9fca9ba1683ac5cc04aed74f678150e53a274cd6b414",
+      "bytes": 6854,
+      "sha256": "77f2ad7d8fba119d8574dbb23c20bb63539d2fd3ad608a9027822027bd4e8380"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-density-diagnostic.mjs": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/9121f0436e3eb77c106a3e065dabc21ff01a8eb5a6acf94b1a7f89615c02c82c.gz",
+      "archiveBytes": 5407,
+      "archiveSha256": "d5466adf183baa4542ff5f2656c3b7b74229b75b2bf8d1db1fe11fe34c1b984f",
+      "bytes": 16985,
+      "sha256": "9121f0436e3eb77c106a3e065dabc21ff01a8eb5a6acf94b1a7f89615c02c82c"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-density-parent-control.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/b53fe503cd37899bafccb0f88bd19b487c4a51652d6fac1da402ce687332122c.gz",
+      "archiveBytes": 350,
+      "archiveSha256": "78140b0b4f2dec0a1baab141f89052d93d8739f1afe3d964f8bb0513462b9c02",
+      "bytes": 602,
+      "sha256": "b53fe503cd37899bafccb0f88bd19b487c4a51652d6fac1da402ce687332122c"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-density-parent-corrected.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/63fbe7226ab88786288384b557fe4bbe3d3fd3130f160ade05da6da55d2320be.gz",
+      "archiveBytes": 343,
+      "archiveSha256": "5ee69aa59f8563fcfa28f56c380146b2a527e23380400458a9fdc1ab6d1ae0c0",
+      "bytes": 624,
+      "sha256": "63fbe7226ab88786288384b557fe4bbe3d3fd3130f160ade05da6da55d2320be"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-dpr1.json": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/c3ecdef47c6ff2142326afc35f7f14d0cc9fad2b4dbbbb7bb6a47d70c08bde5d.gz",
+      "archiveBytes": 5821,
+      "archiveSha256": "0971ccddb5da21b3a8aa86b99a1fbf075d89ccd7104dbc14294d42ff8fe18365",
+      "bytes": 83408,
+      "sha256": "c3ecdef47c6ff2142326afc35f7f14d0cc9fad2b4dbbbb7bb6a47d70c08bde5d"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-dpr1.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/1230d07162e09e964fedd20a0750556b2f50667b7b992850f32ee48aa8008a00.gz",
+      "archiveBytes": 141,
+      "archiveSha256": "73183d8d5db0ef3bc8a8f20737d397c1593e107ab198b10fd5ff24fcfd6464ec",
+      "bytes": 141,
+      "sha256": "1230d07162e09e964fedd20a0750556b2f50667b7b992850f32ee48aa8008a00"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-dpr2.json": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/e67f97bcd193a18ae35f028f0e6d322bfc2118bfbefa4929c58045829458ea05.gz",
+      "archiveBytes": 5725,
+      "archiveSha256": "fa79b487f7a269eb5a4d354753681cfc12abd34495706467ff0be5f5f990ef6a",
+      "bytes": 83413,
+      "sha256": "e67f97bcd193a18ae35f028f0e6d322bfc2118bfbefa4929c58045829458ea05"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-dpr2.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/b11e91939e6638d58f8f601dd3c775fc02a14d0441e46956e7fa6e664d6d667b.gz",
+      "archiveBytes": 141,
+      "archiveSha256": "26e007dfc7e4d186d6526ca77bd8f86ee823c22ad06e35f09cdecfd78f27760e",
+      "bytes": 141,
+      "sha256": "b11e91939e6638d58f8f601dd3c775fc02a14d0441e46956e7fa6e664d6d667b"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-exact-before-final-controls.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/25bd39e57d886581e02d79a289721e63ce0529af771db48bdf117b12c88ad4fe.gz",
+      "archiveBytes": 2336,
+      "archiveSha256": "f7c9c503e46103a15225d354db9dba9e1d100ec56fa53effb2d6bf38ff69d909",
+      "bytes": 11490,
+      "sha256": "25bd39e57d886581e02d79a289721e63ce0529af771db48bdf117b12c88ad4fe"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-exact-parent-31-controls.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/e0ee6ef879751757e5315a407b96cddd380e2fe6746cea999a305703855aa026.gz",
+      "archiveBytes": 2426,
+      "archiveSha256": "854863c010d8e486a2260e1a021c34c448635a373d256876d92b8d25b0afa089",
+      "bytes": 12692,
+      "sha256": "e0ee6ef879751757e5315a407b96cddd380e2fe6746cea999a305703855aa026"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-exact-parent-all-controls.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/8e06eded7dc1e36b6e12e0218f2f8cb84b51ae4dd52f41ee0ed5cd6a1d8faf4d.gz",
+      "archiveBytes": 2345,
+      "archiveSha256": "55a9706eb0504386a58eb3d90986017c1209f33a917b82369efe0031f1ac8094",
+      "bytes": 11487,
+      "sha256": "8e06eded7dc1e36b6e12e0218f2f8cb84b51ae4dd52f41ee0ed5cd6a1d8faf4d"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-final-binding.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/f0a26259c64fcacbb2157c5d37928dbfa090dd0f8b1e463556c55ded9c4d0245.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "4cdd8ff4c73d7a38a9c3e656a978d74ff210903396f3f7d381787ac6f79aa2bd",
+      "bytes": 98,
+      "sha256": "f0a26259c64fcacbb2157c5d37928dbfa090dd0f8b1e463556c55ded9c4d0245"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-final-dpr1.json": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/d570bbc32e2bda4cb712b8dbfb929b5630421e44758e4fb96b8ab33e90654efa.gz",
+      "archiveBytes": 5820,
+      "archiveSha256": "41db8706164c766cda6b930662c2ff4a25e1bf57305affe085e21fa89dc6f3d8",
+      "bytes": 83408,
+      "sha256": "d570bbc32e2bda4cb712b8dbfb929b5630421e44758e4fb96b8ab33e90654efa"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-final-dpr1.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/052ee4c2eab5320f2a2f54628aab42a36953fb8f1dd6f43cd26c67efff71b7aa.gz",
+      "archiveBytes": 143,
+      "archiveSha256": "36b7835dc0c289fc8cfeb966e74d629ffa08ceeaab2bcff43fc4b0a50945a06f",
+      "bytes": 141,
+      "sha256": "052ee4c2eab5320f2a2f54628aab42a36953fb8f1dd6f43cd26c67efff71b7aa"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-final-dpr2.json": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/108482296ae3e39a02fee6a61c20e3053b8ace61ec73d7be9add07e6a4412740.gz",
+      "archiveBytes": 5725,
+      "archiveSha256": "0c706f14e3942ab3af98f964ba49c90acd3392982fb932aa543c705dd9bddcf8",
+      "bytes": 83413,
+      "sha256": "108482296ae3e39a02fee6a61c20e3053b8ace61ec73d7be9add07e6a4412740"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-final-dpr2.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/35c08e42ef06a31c667c771fd435507415978f89f246b060bf5594eab2bf8d12.gz",
+      "archiveBytes": 142,
+      "archiveSha256": "6ca143bced799d323125b94e7af51bb6653c33841f2e346d59420ef8148525c4",
+      "bytes": 141,
+      "sha256": "35c08e42ef06a31c667c771fd435507415978f89f246b060bf5594eab2bf8d12"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-final-format.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/127ebb8c6685712ecc74c244dc0e19ad295f928ac7d0522c2809f39a024ce543.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "131a6ca95f69fab672e22b8e10e6145e37549999675f5109b8dfa04e0797b6b0",
+      "bytes": 29,
+      "sha256": "127ebb8c6685712ecc74c244dc0e19ad295f928ac7d0522c2809f39a024ce543"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-final-foundation.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/0f403e868c32a313918cd4bd987f612411fbbb9cc9b9f12e7298888c94864511.gz",
+      "archiveBytes": 352,
+      "archiveSha256": "b6dc76a4818f5227f58cb707d6ba0e16a2bf08ccbd955898c99fc5ac94e16933",
+      "bytes": 640,
+      "sha256": "0f403e868c32a313918cd4bd987f612411fbbb9cc9b9f12e7298888c94864511"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-final-full-node.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/6b8bd1c751a0c2a9d33f52438f6e46320836837e5a91773f04b74149de5bf813.gz",
+      "archiveBytes": 40597,
+      "archiveSha256": "287290baeb452c12b8c568c176ed03002ab3cebf94b5344332264e67aa70f198",
+      "bytes": 241812,
+      "sha256": "6b8bd1c751a0c2a9d33f52438f6e46320836837e5a91773f04b74149de5bf813"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-final-gates.json": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/5ea218b3ddce644318e6c384cb88e551e1a9db932ddf2342bad2682804d523b0.gz",
+      "archiveBytes": 341,
+      "archiveSha256": "adcc677abcf8d43c554c13db3e0699f86eed70bd726f064724d70945ca5884d9",
+      "bytes": 573,
+      "sha256": "5ea218b3ddce644318e6c384cb88e551e1a9db932ddf2342bad2682804d523b0"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-final-gates.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-final-gates.py": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/e263e863e654bbcd2e0141a2e6f4c7593bcd7b9fc6dada87945cec6f3ce21068.gz",
+      "archiveBytes": 659,
+      "archiveSha256": "53a28327593b9209e7311c8f8f32df5193ac7feeaae26268401bcfa5fd095090",
+      "bytes": 1137,
+      "sha256": "e263e863e654bbcd2e0141a2e6f4c7593bcd7b9fc6dada87945cec6f3ce21068"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-final-hooks.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-final-node.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/9e68b84377b3fdf350f3a74a402612a4cfdb72f17f422db45ce8a8ff65890921.gz",
+      "archiveBytes": 1694,
+      "archiveSha256": "6560e6b559899c0f0dedcefd642e3e64b07f41607614b4e27e13f29680d4031a",
+      "bytes": 6749,
+      "sha256": "9e68b84377b3fdf350f3a74a402612a4cfdb72f17f422db45ce8a8ff65890921"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-final-ruff.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-final-ty.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-final-wire-transport.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/9ba9d125eb270775fe0dd2046827eb9c13e1e655ea2768f1e83b3b4aae7111d9.gz",
+      "archiveBytes": 2823,
+      "archiveSha256": "94492662c27c7636c5d9fe4156d4b0f1d32c1d91f33630395770e9e79b956a25",
+      "bytes": 10515,
+      "sha256": "9ba9d125eb270775fe0dd2046827eb9c13e1e655ea2768f1e83b3b4aae7111d9"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-format.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/127ebb8c6685712ecc74c244dc0e19ad295f928ac7d0522c2809f39a024ce543.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "131a6ca95f69fab672e22b8e10e6145e37549999675f5109b8dfa04e0797b6b0",
+      "bytes": 29,
+      "sha256": "127ebb8c6685712ecc74c244dc0e19ad295f928ac7d0522c2809f39a024ce543"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-foundation-quiet.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/2ac3d45f56a2c38f4b88ad30fb506ad4a355444d34e3eff146bf2665c363537b.gz",
+      "archiveBytes": 4631,
+      "archiveSha256": "a2e1421f326d26641fc6f40513be0c1548c0c5e6575a012f0fa7de57a8c05687",
+      "bytes": 15906,
+      "sha256": "2ac3d45f56a2c38f4b88ad30fb506ad4a355444d34e3eff146bf2665c363537b"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-foundation.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/0f403e868c32a313918cd4bd987f612411fbbb9cc9b9f12e7298888c94864511.gz",
+      "archiveBytes": 352,
+      "archiveSha256": "b6dc76a4818f5227f58cb707d6ba0e16a2bf08ccbd955898c99fc5ac94e16933",
+      "bytes": 640,
+      "sha256": "0f403e868c32a313918cd4bd987f612411fbbb9cc9b9f12e7298888c94864511"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-full-node.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/793b50400efbc0b3a769f7cb33fe27af5820bdb84728b77e3b79fefaf0d849a1.gz",
+      "archiveBytes": 40555,
+      "archiveSha256": "f594bcdc837c9c844293269fe41a0cfdbf9d71c54a2088d1e42d70c36efbe54e",
+      "bytes": 241797,
+      "sha256": "793b50400efbc0b3a769f7cb33fe27af5820bdb84728b77e3b79fefaf0d849a1"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-hooks.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-inventory.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/e788cfdec5c8896e774454bb7208484839d5a8e081d4f28f67a988d65b9e7f45.gz",
+      "archiveBytes": 161,
+      "archiveSha256": "067379f8fc1815e1918abb22b185edb44c8688e21eb6c767cba5f29e6952a894",
+      "bytes": 201,
+      "sha256": "e788cfdec5c8896e774454bb7208484839d5a8e081d4f28f67a988d65b9e7f45"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-obsolete-axis-before.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/55948f936d77358d7c1f0431c98def76a64eeb7ef5282c0bad02e59fe6240f0d.gz",
+      "archiveBytes": 2088,
+      "archiveSha256": "f21c82a01bfe86ab2421054a46ad530d623e70d1eba6e95d96c65240bd0508ac",
+      "bytes": 7826,
+      "sha256": "55948f936d77358d7c1f0431c98def76a64eeb7ef5282c0bad02e59fe6240f0d"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-old-client-browser-negative.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/90d085c344fd325545dad48278330378135fdc228238d03b8debf94b79b72b2e.gz",
+      "archiveBytes": 499,
+      "archiveSha256": "4fba2872ed3518be4848c9eeaeaa8ab3e90b8483acede67468875f7c63410bfd",
+      "bytes": 1000,
+      "sha256": "90d085c344fd325545dad48278330378135fdc228238d03b8debf94b79b72b2e"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-python.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/c0a047ddef85fc9caa05f99edef461c8a74984bbf151ce55af04fb2cbbeca550.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "ab56cc8565edf4ae1b8a89ff9da2290e48c9e7ba144ee3ed25b5bd1a298257d1",
+      "bytes": 99,
+      "sha256": "c0a047ddef85fc9caa05f99edef461c8a74984bbf151ce55af04fb2cbbeca550"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-r1-complete.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/f8c93b6676b3bc576bb24d6749305c7a79cc2416f08a5fb5781a7b8418b9c753.gz",
+      "archiveBytes": 1641,
+      "archiveSha256": "5ecafdf1427aa9459d423684a130a53e060d1de629f01804183a6af6d625b66e",
+      "bytes": 6551,
+      "sha256": "f8c93b6676b3bc576bb24d6749305c7a79cc2416f08a5fb5781a7b8418b9c753"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-r1-corrected.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/725a0c4794aff95d5e849766ec912403646642e63a5c7f640ef23f9d0c4622d4.gz",
+      "archiveBytes": 1517,
+      "archiveSha256": "a34eeb3883bd6e2ce32416ce082a8945314b6c7bf102c2f1a7e950a4a0b7171f",
+      "bytes": 5864,
+      "sha256": "725a0c4794aff95d5e849766ec912403646642e63a5c7f640ef23f9d0c4622d4"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-r1-final-assertions-negative.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/1de0fca0b51d171bae49b80bf15eade11692ad77a1548708117d926318f3d44c.gz",
+      "archiveBytes": 2028,
+      "archiveSha256": "9185eaa8fc09d2141cdb12cd13c83c3a92f6f4c80bc0bbdec986ec834d8ad71b",
+      "bytes": 8045,
+      "sha256": "1de0fca0b51d171bae49b80bf15eade11692ad77a1548708117d926318f3d44c"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-roundtrip.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/b0bdeac486b396d415503c0542aa30b39c417d217600e30058b0e47cfc63115d.gz",
+      "archiveBytes": 1222,
+      "archiveSha256": "93302e73195c039a1681ade347f60f213fe278d66b67ea8e7a34dbbb29c513c5",
+      "bytes": 4390,
+      "sha256": "b0bdeac486b396d415503c0542aa30b39c417d217600e30058b0e47cfc63115d"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-ruff.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-seal-sources.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/16cdcfacd5912e1783349eed838a0eae07287b1ff52fdbdd611db223be0d9f33.gz",
+      "archiveBytes": 66,
+      "archiveSha256": "73839c87f745bffe4c5d50fd1bac0b4e1bb50dc5f33d6c2dd4c43dcd22473a8b",
+      "bytes": 53,
+      "sha256": "16cdcfacd5912e1783349eed838a0eae07287b1ff52fdbdd611db223be0d9f33"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-source-format.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/413a709001976657cb743636fd34e48fc41d8d302d665460d3f874b3313da127.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "2283aea2b330488a006d79106f5f562181af4f1fab820fd23ed7f19cf203d3f9",
+      "bytes": 19,
+      "sha256": "413a709001976657cb743636fd34e48fc41d8d302d665460d3f874b3313da127"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-ty.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-validated-client-build.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f.gz",
+      "archiveBytes": 1056,
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "bytes": 5448,
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-validated-final-node.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/6b840b5ff6a2a9f0e6d7acaf4fc6b56f6e37462d0a5a5e3eff6a79ce92c6d409.gz",
+      "archiveBytes": 1744,
+      "archiveSha256": "0effbc30cbb4d00b87bfd1d0735fa5f8ada4104e24dbf3af5b2485f495f8a4b7",
+      "bytes": 6994,
+      "sha256": "6b840b5ff6a2a9f0e6d7acaf4fc6b56f6e37462d0a5a5e3eff6a79ce92c6d409"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-wire-transport.log": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/fc546d0e4cb08885684496b7ee51a8019bd38717886ab8cde049d764061658d2.gz",
+      "archiveBytes": 2771,
+      "archiveSha256": "261a6b89c9e74b61709b1b12a900a1ba93c84c59815c6b6d6665e6245344ba62",
+      "bytes": 10278,
+      "sha256": "fc546d0e4cb08885684496b7ee51a8019bd38717886ab8cde049d764061658d2"
+    },
+    "target/task-tmp/graph-geometric-notebook/seal-history-evidence.py": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/698d69d3ff7eab4949a53bc3875df75590d48b8ea905a5f3075a215c53cdbe78.gz",
+      "archiveBytes": 3568,
+      "archiveSha256": "e8c37c108fd7ca09a3879d3c652cf59b0f1fca14098b68189c5fcb19bd61aa3b",
+      "bytes": 9241,
+      "sha256": "698d69d3ff7eab4949a53bc3875df75590d48b8ea905a5f3075a215c53cdbe78"
+    },
+    "target/task-tmp/graph-geometric-notebook/seal-history-sources.py": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/2389480445112d8883a0e569362af7453b5b117957950b6c8bccfd52dcc4c307.gz",
+      "archiveBytes": 1153,
+      "archiveSha256": "abce816dbb59e04b9f92db9ab5eb1e16a5174d6e07b6e1814811035f67bb3f23",
+      "bytes": 2735,
+      "sha256": "2389480445112d8883a0e569362af7453b5b117957950b6c8bccfd52dcc4c307"
+    }
+  },
+  "failedAttempts": [
+    {
+      "exit": 1,
+      "log": "target/task-tmp/graph-geometric-notebook/region-history-foundation.log",
+      "scope": "density presentation context lost; intermediate quiet full rerun passes; cause unresolved"
+    },
+    {
+      "exit": 1,
+      "log": "target/task-tmp/graph-geometric-notebook/region-history-final-foundation.log",
+      "scope": "FINAL client full foundation remains FAILED at density context-loss guard; no green final full invocation claimed"
+    },
+    {
+      "exit": 1,
+      "log": "target/task-tmp/graph-geometric-notebook/region-history-density-parent-control.log",
+      "scope": "initial control setup lacked optional staged-package manifest; no browser credit"
+    },
+    {
+      "exit": 1,
+      "log": "target/task-tmp/graph-geometric-notebook/region-history-density-parent-corrected.log",
+      "scope": "exact parent0e export also reproduces density context loss"
+    },
+    {
+      "exit": 1,
+      "log": "target/task-tmp/graph-geometric-notebook/region-history-density-accepted-main.log",
+      "scope": "exact accepted mainf75 source/artifacts also reproduce density context loss"
+    }
+  ],
+  "fresh": {
+    "assets": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync python scripts/verify_wasm_assets.py",
+      "exit": 0,
+      "log": "target/task-tmp/graph-geometric-notebook/region-history-assets.log"
+    },
+    "clientBuild": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" target/task-tmp/node-v22.23.4-linux-x64/bin/node js/build.mjs",
+      "exit": 0,
+      "log": "target/task-tmp/graph-geometric-notebook/region-history-validated-client-build.log"
+    },
+    "coreInventory": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync pytest -q tests/test_graphforge_contract_corpus.py::test_hash_bound_core_evidence_survives_windows_checkout tests/test_graphforge_contract_corpus.py::test_rc7_artifact_provenance_and_every_generated_ipc_are_bound tests/test_graphforge_contract_corpus.py::test_notebook_region_history_preserves_the_complete_candidate_and_review_chain tests/test_release_inventory.py",
+      "exit": 0,
+      "log": "target/task-tmp/graph-geometric-notebook/region-history-core.log",
+      "passed": 29
+    },
+    "finalBindings": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync pytest -q tests/test_graphforge_contract_corpus.py::test_rc7_artifact_provenance_and_every_generated_ipc_are_bound",
+      "exit": 0,
+      "log": "target/task-tmp/graph-geometric-notebook/region-history-final-binding.log",
+      "passed": 1
+    },
+    "format": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync ruff format --check .",
+      "exit": 0,
+      "log": "target/task-tmp/graph-geometric-notebook/region-history-final-format.log"
+    },
+    "fullNode": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" PATH=\"$PWD/target/task-tmp/node-v22.23.4-linux-x64/bin:$PATH\" npm test --prefix packages/xy-node",
+      "exit": 0,
+      "log": "target/task-tmp/graph-geometric-notebook/region-history-final-full-node.log",
+      "passed": 1156,
+      "skipped": 2
+    },
+    "hooks": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync --with pre-commit pre-commit run --all-files",
+      "exit": 0,
+      "log": "target/task-tmp/graph-geometric-notebook/region-history-final-hooks.log"
+    },
+    "inventory": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync python scripts/check_release_inventory.py",
+      "exit": 0,
+      "log": "target/task-tmp/graph-geometric-notebook/region-history-inventory.log"
+    },
+    "notebookDpr1": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" XYG_GRAPH_JUPYTER=\"$PWD/target/task-tmp/vscode-jupyter-graph/server-venv/bin/jupyter-lab\" XYG_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome XYG_GRAPH_REGION_DPR=1 XYG_GRAPH_REGION_REPORT=\"$PWD/target/task-tmp/graph-geometric-notebook/region-history-final-dpr1.json\" target/task-tmp/node-v22.23.4-linux-x64/bin/node scripts/graph_notebook_regions_smoke.mjs",
+      "exit": 0,
+      "log": "target/task-tmp/graph-geometric-notebook/region-history-final-dpr1.log"
+    },
+    "notebookDpr2": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" XYG_GRAPH_JUPYTER=\"$PWD/target/task-tmp/vscode-jupyter-graph/server-venv/bin/jupyter-lab\" XYG_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome XYG_GRAPH_REGION_DPR=2 XYG_GRAPH_REGION_REPORT=\"$PWD/target/task-tmp/graph-geometric-notebook/region-history-final-dpr2.json\" target/task-tmp/node-v22.23.4-linux-x64/bin/node scripts/graph_notebook_regions_smoke.mjs",
+      "exit": 0,
+      "log": "target/task-tmp/graph-geometric-notebook/region-history-final-dpr2.log"
+    },
+    "python": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync pytest -q tests/test_graph_widget_regions.py tests/test_graph_widget.py",
+      "exit": 0,
+      "log": "target/task-tmp/graph-geometric-notebook/region-history-python.log",
+      "passed": 52
+    },
+    "ruff": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync ruff check .",
+      "exit": 0,
+      "log": "target/task-tmp/graph-geometric-notebook/region-history-final-ruff.log"
+    },
+    "transportAndWire": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" target/task-tmp/node-v22.23.4-linux-x64/bin/node --test js/test/graph-host-transport.test.mjs packages/xy-node/test/graph-session-wire.test.mjs",
+      "exit": 0,
+      "log": "target/task-tmp/graph-geometric-notebook/region-history-final-wire-transport.log",
+      "passed": 43
+    },
+    "typing": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync ty check",
+      "exit": 0,
+      "log": "target/task-tmp/graph-geometric-notebook/region-history-final-ty.log"
+    }
+  },
+  "inherited": "Original Rust/ABI, Python3.11 and CI885 qualification only over verified unchanged production/compiled inputs; R1 whole-scope review is conditional on correcting its findings, not an independent approval. Final full foundation FAILED with matching accepted-main and parent controls; cause unresolved.",
+  "nativeAndWasmRebuilt": false,
+  "negativeControls": [
+    {
+      "exit": 1,
+      "failed": 5,
+      "log": "target/task-tmp/graph-geometric-notebook/region-history-exact-parent-31-controls.log",
+      "passed": 26,
+      "scope": "final31 assertions with exact parent host and identical current helpers"
+    },
+    {
+      "exit": 1,
+      "log": "target/task-tmp/graph-geometric-notebook/region-history-old-client-browser-negative.log",
+      "scope": "new notebook assertion rejects the digest-bound parent client at complete refused-Back camera equality"
+    }
+  ],
+  "package": {
+    "gzip6": 786379,
+    "gzip6Cap": 786432,
+    "gzip6Headroom": 53,
+    "raw": 1885379,
+    "rawCap": 1927168,
+    "sha256": "c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271"
+  },
+  "parentReceipt": {
+    "path": "spec/performance/graph-notebook-regions-2026-11-10/checks.json",
+    "sha256": "0d18f9d910ad95d76f638eedee2fa42eb724629ae8607a8e417e7bc5e0b310aa"
+  },
+  "priorCorrectionFoundation": {
+    "exit": 0,
+    "log": "target/task-tmp/graph-geometric-notebook/region-history-foundation-quiet.log",
+    "scope": "before final obsolete-axis validation guard and rebuilt client; not final-head qualification"
+  },
+  "readmeSha256": "38672c4344e9cd9be7b0d1d1d457c7af1b146108fa624a6b1da686ab01efa3a6",
+  "remaining": [
+    "Whole1015 and milestones4-7 remain open",
+    "changed-LOD/aggregate/categorical-edge notebook regions",
+    "massive/all-host/accessibility/export/latency/competitor/global-memory qualification"
+  ],
+  "reviewR1": {
+    "disposition": "REQUEST_CHANGES; both P2s reproduced and corrected; final independent re-review pending",
+    "record": "target/task-tmp/graph-geometric-notebook/history-review-r1/independent-final-review.json",
+    "sha256": "9680302e6732865620764946da5b4b5976f64adba44e6be5df3059842e617e34"
+  },
+  "runtime": {
+    "packages/xy-client/dist/index.js": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/6cff4f67fadd7f206dd86819bb6044c150536d7a8d50f350fddf1a25deda782d.gz",
+      "archiveBytes": 248719,
+      "archiveSha256": "858d2f3cfd723f2c141f04c6cef4990d262383d5eb860cfb3a747a978eb8bf22",
+      "bytes": 867784,
+      "sha256": "6cff4f67fadd7f206dd86819bb6044c150536d7a8d50f350fddf1a25deda782d"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/e2347130cee05a714fe4e769e73bc42eff4b049b766cbdf248b4269b4ef9627f.gz",
+      "archiveBytes": 248787,
+      "archiveSha256": "5c5a42d16c2739279ae98d3289713f086a65f37d48df0b6e5ee27ca9e58454c0",
+      "bytes": 867797,
+      "sha256": "e2347130cee05a714fe4e769e73bc42eff4b049b766cbdf248b4269b4ef9627f"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz",
+      "archiveBytes": 3838,
+      "archiveSha256": "dda8e6c4cec42d91f687b660d742d79dcc1a8c0d052ca6ca189c6acf095db2b4",
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/70302dd988dd7ea4bbf25b4b2f57cac0c85d7c8d2d207499a585db0a672a29b5.gz",
+      "archiveBytes": 1043256,
+      "archiveSha256": "8208c789c89c7893c1ed21ddb8b9526c8d555b83926e0c623badd5a886318695",
+      "bytes": 2534962,
+      "sha256": "70302dd988dd7ea4bbf25b4b2f57cac0c85d7c8d2d207499a585db0a672a29b5"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/3a216a6158fa8aca0844fcdf2e3c1bafa6d3b1dc29f1734dea8da3c18609abab.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "e0c290ee70a86c99e2a250eb56162c30cb89e78a3189610e8199fd154f555765",
+      "bytes": 226,
+      "sha256": "3a216a6158fa8aca0844fcdf2e3c1bafa6d3b1dc29f1734dea8da3c18609abab"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271.gz",
+      "archiveBytes": 781160,
+      "archiveSha256": "1788dfdad46ec12eb81712329e48375306fd9a47a994b0a030f9ebab236fd142",
+      "bytes": 1885379,
+      "sha256": "c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271"
+    },
+    "python/xyg/static/index.js": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/6cff4f67fadd7f206dd86819bb6044c150536d7a8d50f350fddf1a25deda782d.gz",
+      "archiveBytes": 248719,
+      "archiveSha256": "858d2f3cfd723f2c141f04c6cef4990d262383d5eb860cfb3a747a978eb8bf22",
+      "bytes": 867784,
+      "sha256": "6cff4f67fadd7f206dd86819bb6044c150536d7a8d50f350fddf1a25deda782d"
+    },
+    "python/xyg/static/standalone.js": {
+      "archive": "spec/performance/graph-notebook-region-history-2026-11-10/evidence/e2347130cee05a714fe4e769e73bc42eff4b049b766cbdf248b4269b4ef9627f.gz",
+      "archiveBytes": 248787,
+      "archiveSha256": "5c5a42d16c2739279ae98d3289713f086a65f37d48df0b6e5ee27ca9e58454c0",
+      "bytes": 867797,
+      "sha256": "e2347130cee05a714fe4e769e73bc42eff4b049b766cbdf248b4269b4ef9627f"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/70302dd988dd7ea4bbf25b4b2f57cac0c85d7c8d2d207499a585db0a672a29b5.gz",
+      "archiveBytes": 1043256,
+      "archiveSha256": "8208c789c89c7893c1ed21ddb8b9526c8d555b83926e0c623badd5a886318695",
+      "bytes": 2534962,
+      "sha256": "70302dd988dd7ea4bbf25b4b2f57cac0c85d7c8d2d207499a585db0a672a29b5"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/3a216a6158fa8aca0844fcdf2e3c1bafa6d3b1dc29f1734dea8da3c18609abab.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "e0c290ee70a86c99e2a250eb56162c30cb89e78a3189610e8199fd154f555765",
+      "bytes": 226,
+      "sha256": "3a216a6158fa8aca0844fcdf2e3c1bafa6d3b1dc29f1734dea8da3c18609abab"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271.gz",
+      "archiveBytes": 781160,
+      "archiveSha256": "1788dfdad46ec12eb81712329e48375306fd9a47a994b0a030f9ebab236fd142",
+      "bytes": 1885379,
+      "sha256": "c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271"
+    },
+    "target/release/libxyg_core.so": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/ae8dc056771abb1109381202b4143d81157ac0235555ad3d527a426a807bc4bb.gz",
+      "archiveBytes": 2905861,
+      "archiveSha256": "1e22d36c42e15f3afb52ab09cbddc6bec063217e8fa6a499569d0e4114348533",
+      "bytes": 6379944,
+      "sha256": "ae8dc056771abb1109381202b4143d81157ac0235555ad3d527a426a807bc4bb"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d8c7089327b8828b99e98c6e78510676a6703f40628a64f5c714f4edec96da4f.gz",
+      "archiveBytes": 1253247,
+      "archiveSha256": "b6f6c9bc953c17356b0da2ce132395d8e5a3e65f11b9e50aeff2cc581e51741c",
+      "bytes": 4075069,
+      "sha256": "d8c7089327b8828b99e98c6e78510676a6703f40628a64f5c714f4edec96da4f"
+    }
+  },
+  "schemaVersion": 1,
+  "scope": "Two independently reproduced notebook history P2 corrections"
+}

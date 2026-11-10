@@ -347,7 +347,10 @@ Duplicate/older replies cannot release another outstanding request or replace a
 newer API row selection. Accepted predicates are captured before Python callbacks
 can issue a reentrant API write. Back/Next are also acceptance-gated and refuse
 to start while a geometric selection is pending; a failed navigation leaves
-both history stacks intact. Ordinary chart transports retain immediate
+both history stacks and the accepted camera intact. A newer camera write
+supersedes pending navigation. Deferred acceptance retains the shared
+interaction ID of a combined API range/selection patch, preserving one undo
+entry. Ordinary chart transports retain immediate
 selection mutation behavior.
 
 Each notebook graph payload includes an opaque `_graph_row_space` equality

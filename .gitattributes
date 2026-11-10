@@ -1567,3 +1567,5 @@ tests/notebook_graph_regions.ipynb text eol=lf
 scripts/graph_notebook_regions_smoke.mjs text eol=lf
 spec/performance/graph-notebook-regions-2026-11-10/** text eol=lf
 spec/performance/graph-notebook-regions-2026-11-10/**/*.gz -text
+spec/performance/graph-notebook-region-history-2026-11-10/** text eol=lf
+spec/performance/graph-notebook-region-history-2026-11-10/**/*.gz -text
