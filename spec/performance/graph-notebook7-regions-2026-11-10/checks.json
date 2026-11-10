@@ -1214,11 +1214,11 @@
       "sha256": "44b7657c69906057bf48270e58acf9feb2728e245f60d1f59c10051efcd361b0"
     },
     "target/task-tmp/notebook7-regions/seal-evidence-final.log": {
-      "archive": "spec/performance/graph-notebook7-regions-2026-11-10/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
-      "archiveBytes": 20,
-      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
-      "bytes": 0,
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      "archive": "spec/performance/graph-notebook7-regions-2026-11-10/evidence/6a2c54dc1999238d048f86677ef8b35eb3adab87fe804580d3190edb4c71e6dc.gz",
+      "archiveBytes": 93,
+      "archiveSha256": "2ca16e388333513ac443596118c3beec3596f91929fe374554d2178954dc6fa4",
+      "bytes": 86,
+      "sha256": "6a2c54dc1999238d048f86677ef8b35eb3adab87fe804580d3190edb4c71e6dc"
     },
     "target/task-tmp/notebook7-regions/seal-evidence.py": {
       "archive": "spec/performance/graph-notebook7-regions-2026-11-10/evidence/94ca8c6eb8fac1052f57bfca38570734375d791d9db41fd7f16ceb733d8e15f9.gz",
@@ -1593,5 +1593,6 @@
     }
   },
   "schemaVersion": 1,
-  "scope": "Actual stock Notebook7 geometric native graph selection with shared JupyterLab oracles at DPR1/2 and required CI"
+  "scope": "Actual stock Notebook7 geometric native graph selection with shared JupyterLab oracles at DPR1/2 and required CI",
+  "sealingObservation": "The first committed seal indexed its own redirected stdout before its final print. This successor binds the completed stdout. Earlier commit and empty archive remain historical; no test result or source/runtime binding changed."
 }
