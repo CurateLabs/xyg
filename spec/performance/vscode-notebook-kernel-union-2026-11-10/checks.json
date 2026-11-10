@@ -1,0 +1,298 @@
+{
+  "bindings": {
+    "current": 3443,
+    "historical": 1442,
+    "parents": 26,
+    "path": "spec/performance/vscode-notebook-kernel-union-2026-11-10/current-bindings.json",
+    "sha256": "059ed20c22daa481aca6dc8297df39976237f7cb4f2c1b6c32efaed6b38f5ef9"
+  },
+  "compiledInputs": {
+    "count": 324,
+    "parentExact": true,
+    "path": "spec/performance/current-large-graph-union-2026-11-09/compiled-inputs.json",
+    "sha256": "14467233a1f6878d137490b6ef6741766486b42b37b8ed16aa01e2065113899e"
+  },
+  "compiledInputsVerified": 324,
+  "evidence": {
+    "/var/tmp/xyg-kernel-witness-review-evidence/independent-review-41fc61e7a54b1d3a11e32785aec15549daf4e75e33c7586357b8a18792a25828.json": {
+      "archive": "spec/performance/vscode-notebook-kernel-union-2026-11-10/evidence/41fc61e7a54b1d3a11e32785aec15549daf4e75e33c7586357b8a18792a25828.gz",
+      "archiveBytes": 5484,
+      "archiveSha256": "6d0510e2d39dcc294237d3843800f48e109a00e99edf60d9bb2c513502b62a39",
+      "bytes": 17327,
+      "sha256": "41fc61e7a54b1d3a11e32785aec15549daf4e75e33c7586357b8a18792a25828"
+    },
+    "/var/tmp/xyg-keyboard-review-8kbpn60q/independent-review-595cc5342f35288cefa7bb35198899cca282c1c5baf1d97fe28a13fd11206d04.json": {
+      "archive": "spec/performance/vscode-notebook-kernel-union-2026-11-10/evidence/595cc5342f35288cefa7bb35198899cca282c1c5baf1d97fe28a13fd11206d04.gz",
+      "archiveBytes": 5987,
+      "archiveSha256": "1693b19b888947cd4df87c065a52552be963ab1cc464b5790219456fc601c2f0",
+      "bytes": 15436,
+      "sha256": "595cc5342f35288cefa7bb35198899cca282c1c5baf1d97fe28a13fd11206d04"
+    },
+    "/var/tmp/xyg-vscode-complete-rereview-sn8u6bay/independent-correction-review.json": {
+      "archive": "spec/performance/vscode-notebook-kernel-union-2026-11-10/evidence/da2877e002653b599c1f5f697239f88fd284e9c1488ffb84d98fa895c8a99814.gz",
+      "archiveBytes": 9605,
+      "archiveSha256": "ed1899606f5a22ddff517d48092b4f8125e6a7f6f297fb884de22e7190f886a2",
+      "bytes": 33775,
+      "sha256": "da2877e002653b599c1f5f697239f88fd284e9c1488ffb84d98fa895c8a99814"
+    },
+    "/var/tmp/xyg-vscode-final-review-snqpoo8l/independent-final-review.json": {
+      "archive": "spec/performance/vscode-notebook-kernel-union-2026-11-10/evidence/3d1437c36d744a1d457291b608e921dced18895f3ed439fd43f2fd80f86c66ff.gz",
+      "archiveBytes": 3757,
+      "archiveSha256": "1d9cef4a417292593bac3326a9d99eb6b8158505f72c1f5f4a9a9be880f45470",
+      "bytes": 11861,
+      "sha256": "3d1437c36d744a1d457291b608e921dced18895f3ed439fd43f2fd80f86c66ff"
+    },
+    "target/task-tmp/vscode-jupyter-graph/desktop-kernel-union-check-ci.log": {
+      "archive": "spec/performance/vscode-notebook-kernel-union-2026-11-10/evidence/e44f698c6baab82f6b50dcfaf6735c479707c34293b5327e1d7b512f7e1f2269.gz",
+      "archiveBytes": 452,
+      "archiveSha256": "b712ee28f6319bc59404dfed7be649f3b4b171a18fa9713613f1c692e49199ee",
+      "bytes": 2022,
+      "sha256": "e44f698c6baab82f6b50dcfaf6735c479707c34293b5327e1d7b512f7e1f2269"
+    },
+    "target/task-tmp/vscode-jupyter-graph/desktop-kernel-union-focused.log": {
+      "archive": "spec/performance/vscode-notebook-kernel-union-2026-11-10/evidence/0e84e6a0b5fc44ac760c194424dc8e39a27d292f1ae11850b7b5d98ff130f5f8.gz",
+      "archiveBytes": 95,
+      "archiveSha256": "99e65a43e8b8af929435633d609137eeadcc5af89f549af1bdacaeac49e3fab1",
+      "bytes": 286,
+      "sha256": "0e84e6a0b5fc44ac760c194424dc8e39a27d292f1ae11850b7b5d98ff130f5f8"
+    },
+    "target/task-tmp/vscode-jupyter-graph/desktop-kernel-union-format.log": {
+      "archive": "spec/performance/vscode-notebook-kernel-union-2026-11-10/evidence/ee6d6526f525a55dacc48011cd7b020ebf7cb3c52c83ec46898eb993a38db7bd.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "900cb3ef939391da5110cba14cdc4eef8dcbd0d6759b3e4c80ec3adcd103d89b",
+      "bytes": 29,
+      "sha256": "ee6d6526f525a55dacc48011cd7b020ebf7cb3c52c83ec46898eb993a38db7bd"
+    },
+    "target/task-tmp/vscode-jupyter-graph/desktop-kernel-union-hooks.log": {
+      "archive": "spec/performance/vscode-notebook-kernel-union-2026-11-10/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/vscode-jupyter-graph/desktop-kernel-union-merge-preview.txt": {
+      "archive": "spec/performance/vscode-notebook-kernel-union-2026-11-10/evidence/0f2917acf2addefa39d54b4e1b7724f7ab3bfa29e58120c7703ec1eca42e0c7e.gz",
+      "archiveBytes": 380,
+      "archiveSha256": "0f0294eeab00dd71497310800944ae954246c2f4068be4523a2b74267bcbcd04",
+      "bytes": 783,
+      "sha256": "0f2917acf2addefa39d54b4e1b7724f7ab3bfa29e58120c7703ec1eca42e0c7e"
+    },
+    "target/task-tmp/vscode-jupyter-graph/desktop-kernel-union-merge.log": {
+      "archive": "spec/performance/vscode-notebook-kernel-union-2026-11-10/evidence/11fcb14278aede199199399d57a701b59a5579adaf2d0cfc6a3e0a548b1eeaa5.gz",
+      "archiveBytes": 198,
+      "archiveSha256": "e073917d56ea7536f61eb364ee1b995bc8bd94ee7592279421e0caa9001645bc",
+      "bytes": 339,
+      "sha256": "11fcb14278aede199199399d57a701b59a5579adaf2d0cfc6a3e0a548b1eeaa5"
+    },
+    "target/task-tmp/vscode-jupyter-graph/desktop-kernel-union-preview-protection.json": {
+      "archive": "spec/performance/vscode-notebook-kernel-union-2026-11-10/evidence/f6f9a4fcce3b59bc7a860d4678735710f48bf56e0922477c40ecc35d436b5bac.gz",
+      "archiveBytes": 819900,
+      "archiveSha256": "0d099d86f51ecfe502a8f310298051c5c66ce360b7c3eff740b5b1154ee2067c",
+      "bytes": 5158339,
+      "sha256": "f6f9a4fcce3b59bc7a860d4678735710f48bf56e0922477c40ecc35d436b5bac"
+    },
+    "target/task-tmp/vscode-jupyter-graph/desktop-kernel-union-ruff.log": {
+      "archive": "spec/performance/vscode-notebook-kernel-union-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/vscode-jupyter-graph/resolve-desktop-kernel-union.py": {
+      "archive": "spec/performance/vscode-notebook-kernel-union-2026-11-10/evidence/981eb17bd2f4e324af13348daf8bbb768af9f1bbaa0a3b5538c944240e2fd0bd.gz",
+      "archiveBytes": 2380,
+      "archiveSha256": "e48def240a6d62d67de03e1995df4ca15e02a5eb2bcf35d06ff55a9085ae4c2d",
+      "bytes": 5867,
+      "sha256": "981eb17bd2f4e324af13348daf8bbb768af9f1bbaa0a3b5538c944240e2fd0bd"
+    },
+    "target/task-tmp/vscode-jupyter-graph/seal-desktop-kernel-union-evidence.py": {
+      "archive": "spec/performance/vscode-notebook-kernel-union-2026-11-10/evidence/c02b2b35c177ae6d1878f815c40a3b891035b9099e7d834d78fa0e853da6e6a9.gz",
+      "archiveBytes": 2616,
+      "archiveSha256": "1023b312c9f0ef20184901081a8b6595035bd7e3ef69596b55b6c940f3de40bd",
+      "bytes": 6330,
+      "sha256": "c02b2b35c177ae6d1878f815c40a3b891035b9099e7d834d78fa0e853da6e6a9"
+    },
+    "target/task-tmp/vscode-jupyter-graph/seal-desktop-kernel-union-sources.py": {
+      "archive": "spec/performance/vscode-notebook-kernel-union-2026-11-10/evidence/e21eb31b9bb4acd7f7d4b85889c2bc3d2a2de9176e585934b3d8308cb3d01dd7.gz",
+      "archiveBytes": 1569,
+      "archiveSha256": "ab0322ee9a0b51acbed86472f41bdc438583f33f029f9c11a8845c8824e7be72",
+      "bytes": 4126,
+      "sha256": "e21eb31b9bb4acd7f7d4b85889c2bc3d2a2de9176e585934b3d8308cb3d01dd7"
+    }
+  },
+  "mergeBase": "efe193dc8673b0c83a79f6d4ea5753471b8ad1d5",
+  "parentProtection": {
+    "identities": 24808,
+    "ownership": {
+      "both": 24502,
+      "desktop": 267,
+      "kernel": 39
+    },
+    "path": "spec/performance/vscode-notebook-kernel-union-2026-11-10/parent-protection.json",
+    "seams": [
+      ".gitattributes",
+      "spec/design/graph-session-python-transport.md",
+      "tests/test_graphforge_contract_corpus.py"
+    ],
+    "sha256": "ce297082fd4467a3e5fcc0347e3b8ed384cb017800abe45c801add9bfc68f805"
+  },
+  "parentReceipts": [
+    {
+      "evidenceArchivesVerified": 101,
+      "path": "spec/performance/graph-vscode-cohort-correction-2026-11-10/checks.json",
+      "sha256": "66c7c80afdb0a4f2f96068ed9d45fe2ecc0d9d9b3251bad102303e26ebd126af"
+    },
+    {
+      "evidenceArchivesVerified": 30,
+      "path": "spec/performance/notebook-kernel-witness-2026-11-10/checks.json",
+      "sha256": "a811c55528a67385196d666639f42ab081c9303c830fa929e666947f5e05b45e"
+    }
+  ],
+  "parents": [
+    "a50003a0257aa5091b29c973811418f23d05461c",
+    "0219c636b88816c5494bbab7007bb52d4b5b56a1"
+  ],
+  "qualification": {
+    "acceptedMainHostedCIQueue": "pending",
+    "checkCi": {
+      "exit": 0,
+      "passed": 884
+    },
+    "finalIndependentIntegrationReview": "pending",
+    "focused": {
+      "deselected": 15,
+      "exit": 0,
+      "passed": 166,
+      "scope": "all75generic+83desktop report controls and8Core/provenance tests including actualGitLFCRLF"
+    },
+    "integrationDevelopment": "first source-sealer attempt omitted legacy sources-format fallback and stopped; corrected; first resolver CurrentBindings literal formatting mismatch caught before tests and repaired by AST assertion",
+    "mandatoryHooks": {
+      "exit": 0
+    },
+    "parentActualJourneys": "inherited only after exact source/artifact equality; Lab4.6.5/Notebook7.5.8 and desktop311/312/intentionalfailure independently reviewed",
+    "parentOriginalReview": "REQUEST_CHANGES3d1437; twoP2 resolved by completed da2877 correction review",
+    "reviewerSetupAndRootOriginalFailures": "preserved unchanged; no generic startup/Worker or all-host reliability claim",
+    "ruffCheck": {
+      "exit": 0
+    },
+    "ruffFormatCheck": {
+      "exit": 0
+    }
+  },
+  "readmeSha256": "f7201b5e558e130e824ca38921b4e600ef54e943b38ef735894b85a8b641ddca",
+  "remaining": [
+    "Whole1015/geometricedgepolicy/frontends/scale/exports/accessibility/performance/competitor/M4-M7 criteria",
+    "Ordinary hosted desktop result, finalhead CI and merge queue",
+    "Offline/fullprocess/globalmemory and generic startup/Worker reliability not qualified"
+  ],
+  "runtime": {
+    "packages/xy-client/dist/index.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa.gz",
+      "archiveBytes": 247736,
+      "archiveSha256": "d1fcee9875cd320e48f3a05b6d3e268d4b67b16f152f54cc041c3cb14d2566cf",
+      "bytes": 864422,
+      "sha256": "447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/75e142e1c6066e2cca8055a49dcfc328abab7b847e12aebc8c9f8ce3eaa1580c.gz",
+      "archiveBytes": 247816,
+      "archiveSha256": "3160fae11e6cc52a41d6ed29c585dbb30e1b462a9592f9ae0da3bf0cd9806b7a",
+      "bytes": 864435,
+      "sha256": "75e142e1c6066e2cca8055a49dcfc328abab7b847e12aebc8c9f8ce3eaa1580c"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz",
+      "archiveBytes": 3838,
+      "archiveSha256": "dda8e6c4cec42d91f687b660d742d79dcc1a8c0d052ca6ca189c6acf095db2b4",
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8.gz",
+      "archiveBytes": 1043576,
+      "archiveSha256": "b09e635ab5663fabbb679592e2a8730413e322b541fd45d90105f73ca27c066c",
+      "bytes": 2536254,
+      "sha256": "fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "c4d9096b8df2ee31fc6c5e1a86cac0005b1406f5eee90de91d45fa72ba9f31f2",
+      "bytes": 226,
+      "sha256": "9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372.gz",
+      "archiveBytes": 781122,
+      "archiveSha256": "aad2d8c32a06b9155a6a2c466a64fc2df4effb1ec141722533cd30ecbf568413",
+      "bytes": 1886348,
+      "sha256": "1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372"
+    },
+    "python/xyg/static/index.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa.gz",
+      "archiveBytes": 247736,
+      "archiveSha256": "d1fcee9875cd320e48f3a05b6d3e268d4b67b16f152f54cc041c3cb14d2566cf",
+      "bytes": 864422,
+      "sha256": "447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa"
+    },
+    "python/xyg/static/standalone.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/75e142e1c6066e2cca8055a49dcfc328abab7b847e12aebc8c9f8ce3eaa1580c.gz",
+      "archiveBytes": 247816,
+      "archiveSha256": "3160fae11e6cc52a41d6ed29c585dbb30e1b462a9592f9ae0da3bf0cd9806b7a",
+      "bytes": 864435,
+      "sha256": "75e142e1c6066e2cca8055a49dcfc328abab7b847e12aebc8c9f8ce3eaa1580c"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8.gz",
+      "archiveBytes": 1043576,
+      "archiveSha256": "b09e635ab5663fabbb679592e2a8730413e322b541fd45d90105f73ca27c066c",
+      "bytes": 2536254,
+      "sha256": "fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "c4d9096b8df2ee31fc6c5e1a86cac0005b1406f5eee90de91d45fa72ba9f31f2",
+      "bytes": 226,
+      "sha256": "9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372.gz",
+      "archiveBytes": 781122,
+      "archiveSha256": "aad2d8c32a06b9155a6a2c466a64fc2df4effb1ec141722533cd30ecbf568413",
+      "bytes": 1886348,
+      "sha256": "1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372"
+    },
+    "target/release/libxyg_core.so": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/378a069c4f802bb97e6273333766a4afee99a626d4fc409f776f31d21968a4df.gz",
+      "archiveBytes": 2906222,
+      "archiveSha256": "e1a2c9c98f51d95d9ebaee58900a16680535d9747e5a7ec04e41a24cdbfba825",
+      "bytes": 6379784,
+      "sha256": "378a069c4f802bb97e6273333766a4afee99a626d4fc409f776f31d21968a4df"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/8eebf2a5621798d266fd9030caf04c20d0f89e2e17fb8137195ac2ddcaf4b6d2.gz",
+      "archiveBytes": 1253444,
+      "archiveSha256": "7f03900cf3918fae6592e2d4c54a9d3529ecba5af90d419262a45f778df96b0a",
+      "bytes": 4076094,
+      "sha256": "8eebf2a5621798d266fd9030caf04c20d0f89e2e17fb8137195ac2ddcaf4b6d2"
+    }
+  },
+  "runtimeRebuilt": false,
+  "schemaVersion": 1,
+  "scope": "Integration of reviewed named desktop notebook proof and reviewed atomic Lab/Notebook7 readiness evidence, no runtime changes"
+}

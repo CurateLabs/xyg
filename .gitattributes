@@ -1536,3 +1536,13 @@ spec/performance/graph-vscode-notebook-2026-11-10/**/*.png -text
 spec/performance/graph-vscode-cohort-correction-2026-11-10/** text eol=lf
 spec/performance/graph-vscode-cohort-correction-2026-11-10/**/*.gz -text
 spec/performance/graph-vscode-cohort-correction-2026-11-10/**/*.png -text
+
+# Named-idle kernel admission witness and append-only hosted correction evidence.
+scripts/graph_notebook_kernel_witness.mjs text eol=lf
+js/test/graph-notebook-kernel-witness.test.mjs text eol=lf
+spec/performance/notebook-kernel-witness-2026-11-10/** text eol=lf
+spec/performance/notebook-kernel-witness-2026-11-10/**/*.gz -text
+
+# Combined actual desktop and atomic kernel witness provenance.
+spec/performance/vscode-notebook-kernel-union-2026-11-10/** text eol=lf
+spec/performance/vscode-notebook-kernel-union-2026-11-10/**/*.gz -text

@@ -437,8 +437,11 @@ or legacy receipt cannot satisfy the Notebook7 gate by changing only a label.
 Notebook7 lacks Lab's textual Idle status, and its initial execution indicator
 can say idle before a kernel is selected. Both applications must expose a named
 nonempty kernel and an idle execution indicator before first submission; Lab
-also retains its textual Idle check. Actual native output and subsequent kernel
-callbacks establish execution. This closes the observed premature-readiness
+also retains its textual Idle check. The harness retains the exact named-idle
+state returned by its readiness predicate; a later DOM read could observe a new
+busy transition. This evidence certifies admission at first readiness, not permanent
+kernel idleness. Busy or unselected predicates remain inadmissible. Actual native
+output and subsequent kernel callbacks establish execution. This closes the observed premature-readiness
 gap; the earlier unexecuted-cell attempt does not establish a general startup
 reliability fix. Existing output/interaction deadlines
 remain unchanged. Each bounded invocation retains the existing four-minute
