@@ -1,0 +1,1074 @@
+{
+  "base": "5a93604cbd74ee43ecb34225e98c2752e49373cc",
+  "bindings": {
+    "current": 3461,
+    "historical": 1530,
+    "parents": 34,
+    "path": "spec/performance/graph-linked-mask-refresh-2026-11-10/current-bindings.json",
+    "sha256": "4dcc1e0344481dd664f8a98a1aab1a4cf8a8990a3c4c0018c2f2896d4a02ec2f"
+  },
+  "captures": {
+    "target/task-tmp/graph-linked-mask/notebook-dpr1.json": {
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/before-edges-paint.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d.gz",
+        "archiveBytes": 14102,
+        "archiveSha256": "dc12a7e87d6f16007a5988a87d8911c56100f6665cd0a46c9bf908faf2969824",
+        "bytes": 16592,
+        "sha256": "50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/before-edges-pixels.json": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/f1431c987d47b977672ca3210fd042a709eae2d210f91edef3dfd4384c99f3f8.gz",
+        "archiveBytes": 485,
+        "archiveSha256": "2b2c184ee261171b635128c77204c84dc8cb40f23bc8f8de16e8efdc0f8e80be",
+        "bytes": 3518,
+        "sha256": "f1431c987d47b977672ca3210fd042a709eae2d210f91edef3dfd4384c99f3f8"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/before-edges.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/b846412b123a3406cd89c8ab0376726cb9049d85067a51d8a8962e820965eb26.gz",
+        "archiveBytes": 23725,
+        "archiveSha256": "c319047b595d8386f63a1a4453f353120184566e4a34289e4144dc44d92aac76",
+        "bytes": 24448,
+        "sha256": "b846412b123a3406cd89c8ab0376726cb9049d85067a51d8a8962e820965eb26"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/before-paint.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d.gz",
+        "archiveBytes": 14102,
+        "archiveSha256": "dc12a7e87d6f16007a5988a87d8911c56100f6665cd0a46c9bf908faf2969824",
+        "bytes": 16592,
+        "sha256": "50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/before-pixels.json": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/9b7e94e63b995bcd0b2d9c192e14c55806773f622d85c90c6e6c1ecd599a1f46.gz",
+        "archiveBytes": 394,
+        "archiveSha256": "ea44f202d56df53d0b1810dcddf8625fd81d11fd19f756b7139846866ee37e27",
+        "bytes": 2203,
+        "sha256": "9b7e94e63b995bcd0b2d9c192e14c55806773f622d85c90c6e6c1ecd599a1f46"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/before.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/f7fbe6ab0cec385525c930f47ac8e41c616a27877a68df8e802d6246001833f4.gz",
+        "archiveBytes": 23102,
+        "archiveSha256": "74d765630f2eb34582bc021ba9f150583fc4a6eb9432f8a9674ad5f804803157",
+        "bytes": 23801,
+        "sha256": "f7fbe6ab0cec385525c930f47ac8e41c616a27877a68df8e802d6246001833f4"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/box-edges-paint.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f.gz",
+        "archiveBytes": 13199,
+        "archiveSha256": "427c557ffd6fe9630fb583dac7eac30a6fa6b82c371e530567aac0cc380bfca3",
+        "bytes": 16176,
+        "sha256": "dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/box-edges-pixels.json": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/c12de2dd985dc03357d8b67e1d2d3cb8c8e3c32ead6cba5210d99ca4b7ed9851.gz",
+        "archiveBytes": 512,
+        "archiveSha256": "74f9219a2f4b5015d7282066b92260990255eda20afdbf1cadcf4af81c102842",
+        "bytes": 3498,
+        "sha256": "c12de2dd985dc03357d8b67e1d2d3cb8c8e3c32ead6cba5210d99ca4b7ed9851"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/box-edges.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/26602ab91e970327c7290e32dff9b3675bbf768984480e54aebdb2566006da8d.gz",
+        "archiveBytes": 22556,
+        "archiveSha256": "81d5309139919e9bc032362536f5bf17c602ea82bd47e5be95c78b975b3083ae",
+        "bytes": 23325,
+        "sha256": "26602ab91e970327c7290e32dff9b3675bbf768984480e54aebdb2566006da8d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/box-paint.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f.gz",
+        "archiveBytes": 13199,
+        "archiveSha256": "427c557ffd6fe9630fb583dac7eac30a6fa6b82c371e530567aac0cc380bfca3",
+        "bytes": 16176,
+        "sha256": "dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/box-pixels.json": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/e8b1778a599a64cf5ac3a70a798dfdff193198f49965e2a8e67b7b7832396925.gz",
+        "archiveBytes": 401,
+        "archiveSha256": "7f725a8ecfcc582ce8bc7c241f2cada327ee4819cd3595138940ffd448b18493",
+        "bytes": 2188,
+        "sha256": "e8b1778a599a64cf5ac3a70a798dfdff193198f49965e2a8e67b7b7832396925"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/box.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/608825adf2015d7188c4c9ef9e6c238c64165487dfc50a27d210d9f1f8ea9587.gz",
+        "archiveBytes": 21971,
+        "archiveSha256": "1383ab01ff052710629f41d996591d8ae8c76b4a8e9a9e78304312aa6f5dac4b",
+        "bytes": 22834,
+        "sha256": "608825adf2015d7188c4c9ef9e6c238c64165487dfc50a27d210d9f1f8ea9587"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/capacity-before-paint.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/capacity-before-pixels.json": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/367a4eb47e664c5dc642005acd1b83a5eaf81d7cde3de314857e320de3474322.gz",
+        "archiveBytes": 398,
+        "archiveSha256": "8953896f078723f538f31df44853944deed0d67d1ca30badaea54c343da87643",
+        "bytes": 2188,
+        "sha256": "367a4eb47e664c5dc642005acd1b83a5eaf81d7cde3de314857e320de3474322"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/capacity-before.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/cb922c12a539422f179aa8b5bd28a18eaceadffffcbaa39e4a10ff1059da4f8e.gz",
+        "archiveBytes": 22571,
+        "archiveSha256": "b4e1c965bace5789ee3b7ab20003000f4a6bad3603b5afb232ed96a897130b1b",
+        "bytes": 23319,
+        "sha256": "cb922c12a539422f179aa8b5bd28a18eaceadffffcbaa39e4a10ff1059da4f8e"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/capacity-history-refused-paint.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/capacity-history-refused-pixels.json": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/367a4eb47e664c5dc642005acd1b83a5eaf81d7cde3de314857e320de3474322.gz",
+        "archiveBytes": 398,
+        "archiveSha256": "8953896f078723f538f31df44853944deed0d67d1ca30badaea54c343da87643",
+        "bytes": 2188,
+        "sha256": "367a4eb47e664c5dc642005acd1b83a5eaf81d7cde3de314857e320de3474322"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/capacity-history-refused.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/cb922c12a539422f179aa8b5bd28a18eaceadffffcbaa39e4a10ff1059da4f8e.gz",
+        "archiveBytes": 22571,
+        "archiveSha256": "b4e1c965bace5789ee3b7ab20003000f4a6bad3603b5afb232ed96a897130b1b",
+        "bytes": 23319,
+        "sha256": "cb922c12a539422f179aa8b5bd28a18eaceadffffcbaa39e4a10ff1059da4f8e"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/capacity-refused-paint.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/capacity-refused-pixels.json": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/96b4ffda92c7ff1f47b3afeb99541bba644aacbac06116f4d30858cbce9ed3d7.gz",
+        "archiveBytes": 396,
+        "archiveSha256": "86973f103f4da32287ccf3971ba47d2cc46f5c5439c13d19381d4ab23e7fad96",
+        "bytes": 2188,
+        "sha256": "96b4ffda92c7ff1f47b3afeb99541bba644aacbac06116f4d30858cbce9ed3d7"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/capacity-refused.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/a7666118bb3eff7f3994c2501f4df67fdce66bc87f7c77558afb0edc461a1a78.gz",
+        "archiveBytes": 20694,
+        "archiveSha256": "3380455fc787f6b62e1dc2bf081a45b9ba51d36c858dcf54a854c2815d681816",
+        "bytes": 21526,
+        "sha256": "a7666118bb3eff7f3994c2501f4df67fdce66bc87f7c77558afb0edc461a1a78"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/lasso-paint.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/513b6d49016a5ca7b80eff9ae9828acd6a9ceefeb836664697fbd2c07d6090aa.gz",
+        "archiveBytes": 13986,
+        "archiveSha256": "4ca240262c17892db53f533fabfde65fbab1ff33a66f2cdadb4ef2b055b39186",
+        "bytes": 16720,
+        "sha256": "513b6d49016a5ca7b80eff9ae9828acd6a9ceefeb836664697fbd2c07d6090aa"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/lasso-pixels.json": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/18bb238107ebad1ff79b0a47a8deff7c3ba05f093b968afcb30dfdea688a9e0d.gz",
+        "archiveBytes": 397,
+        "archiveSha256": "4bd080d107a1f71b5ae28f9993fce3a7eeb8b496a94d4a6415f0d2776a79026a",
+        "bytes": 2193,
+        "sha256": "18bb238107ebad1ff79b0a47a8deff7c3ba05f093b968afcb30dfdea688a9e0d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/lasso.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/c457fdbaf6ec8defddaecb17c114b0dbf1b329a66dce0d1293ede733f7dc6350.gz",
+        "archiveBytes": 24958,
+        "archiveSha256": "3523186492429015f2f2dac6c890e0d240ed0c9905e1747754cb89d224132583",
+        "bytes": 25653,
+        "sha256": "c457fdbaf6ec8defddaecb17c114b0dbf1b329a66dce0d1293ede733f7dc6350"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-tKveyp/regions.ipynb": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd.gz",
+        "archiveBytes": 1695,
+        "archiveSha256": "655dbbb990ffebf0a9427ba64505f4c430c754b21731850e0b1911c2021b021f",
+        "bytes": 5892,
+        "sha256": "8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd"
+      },
+      "target/task-tmp/graph-linked-mask/notebook-dpr1.json": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/49a63f9ad291bb02b556a56e3e8c7a720d408c149913a106fd0c3d0e9f33c1da.gz",
+        "archiveBytes": 5778,
+        "archiveSha256": "6605815a314b65b7cab6b1433af4d663f2726a9a9a64b1c32ef8aad8a0fa9e54",
+        "bytes": 83408,
+        "sha256": "49a63f9ad291bb02b556a56e3e8c7a720d408c149913a106fd0c3d0e9f33c1da"
+      }
+    },
+    "target/task-tmp/graph-linked-mask/notebook-dpr2.json": {
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/before-edges-paint.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c.gz",
+        "archiveBytes": 30991,
+        "archiveSha256": "a1c60b150090a1ac67897881c1a0a44ca28df7507517e42983578b01277bd825",
+        "bytes": 43777,
+        "sha256": "950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/before-edges-pixels.json": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/52c08f4bfb55d33f15337e4b598748db2e6ef65f1a93c9da000b7d497fd21dfc.gz",
+        "archiveBytes": 425,
+        "archiveSha256": "a23fc53bfabc4e9b6cceca77bd9a568a4a7c739c75b9b2a2743374c270967fb0",
+        "bytes": 3521,
+        "sha256": "52c08f4bfb55d33f15337e4b598748db2e6ef65f1a93c9da000b7d497fd21dfc"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/before-edges.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/9eb0dedac429ef92376bceac7ba8ffee44d1152a8fc87977b2c8d8a44495def4.gz",
+        "archiveBytes": 56890,
+        "archiveSha256": "4553a8ba46df03807e1e748e463c586dc3cf81cadb538f217c75a3f6d52a5f30",
+        "bytes": 60386,
+        "sha256": "9eb0dedac429ef92376bceac7ba8ffee44d1152a8fc87977b2c8d8a44495def4"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/before-paint.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c.gz",
+        "archiveBytes": 30991,
+        "archiveSha256": "a1c60b150090a1ac67897881c1a0a44ca28df7507517e42983578b01277bd825",
+        "bytes": 43777,
+        "sha256": "950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/before-pixels.json": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/145ee0cecdb78234d79b6833fc1cfe07da7773af56ecd12fb530e63cf103e2fa.gz",
+        "archiveBytes": 393,
+        "archiveSha256": "1fb7c57715fa3a828deebf01e6497abdbf73518ee1bdf33a862c1d4a9d074a8c",
+        "bytes": 2204,
+        "sha256": "145ee0cecdb78234d79b6833fc1cfe07da7773af56ecd12fb530e63cf103e2fa"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/before.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/c452213ad2cd61195b179af1f41ae99f736fc5e8654ae40ec3da274543c67412.gz",
+        "archiveBytes": 54471,
+        "archiveSha256": "846e06ce37ddf182d5d8fc36c993bd88fb782f2b95f7b6f53a3e0f27cce15fe7",
+        "bytes": 57973,
+        "sha256": "c452213ad2cd61195b179af1f41ae99f736fc5e8654ae40ec3da274543c67412"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/box-edges-paint.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d.gz",
+        "archiveBytes": 28480,
+        "archiveSha256": "eff9458fb453c519a73094f6822a72d8ea853a5b9d2bc973b525d700ca891b94",
+        "bytes": 43605,
+        "sha256": "43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/box-edges-pixels.json": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/d715975b4347c79f9e446e4899f0d7d22aecadf862cb52b78f70cf395a2c18d0.gz",
+        "archiveBytes": 435,
+        "archiveSha256": "c3da0c1ed9aaed1a11b1ae291bbaaba1fa7bb82bf31785ef5cdbbf4617040fcf",
+        "bytes": 3501,
+        "sha256": "d715975b4347c79f9e446e4899f0d7d22aecadf862cb52b78f70cf395a2c18d0"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/box-edges.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/cc9c8ae35e63b787560742910d1eabaaa11e603f01d7d3f7d5577d1412a6f7ea.gz",
+        "archiveBytes": 54679,
+        "archiveSha256": "7eb9a6af3ea8979eb021eb60c69ce345cb32684899679e41b4d602f563b8d11a",
+        "bytes": 58629,
+        "sha256": "cc9c8ae35e63b787560742910d1eabaaa11e603f01d7d3f7d5577d1412a6f7ea"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/box-paint.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d.gz",
+        "archiveBytes": 28480,
+        "archiveSha256": "eff9458fb453c519a73094f6822a72d8ea853a5b9d2bc973b525d700ca891b94",
+        "bytes": 43605,
+        "sha256": "43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/box-pixels.json": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/de2f49abf333809ccb445812a4d5d21c7f9af74946a0c7c49c4de6f25a2477a0.gz",
+        "archiveBytes": 405,
+        "archiveSha256": "8a0ab7b4bc0fbb7ba38b00dfdec643fca800e22f9ef6f645b95acb539cfbe728",
+        "bytes": 2189,
+        "sha256": "de2f49abf333809ccb445812a4d5d21c7f9af74946a0c7c49c4de6f25a2477a0"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/box.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/0ef40a3accc3b9f6d67311961dd62e599b5b064cdaf41f8900c23c12739b8cea.gz",
+        "archiveBytes": 53694,
+        "archiveSha256": "76d8c06da2843c2cb370f3a2d4bee62234ece82e3a5ae1b4f01985d7d0d03c78",
+        "bytes": 57696,
+        "sha256": "0ef40a3accc3b9f6d67311961dd62e599b5b064cdaf41f8900c23c12739b8cea"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/capacity-before-paint.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502.gz",
+        "archiveBytes": 29490,
+        "archiveSha256": "6b15c029d96c60fa028a87f1e72bf10579ed594bde3ab0875b84b9801054a560",
+        "bytes": 44131,
+        "sha256": "d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/capacity-before-pixels.json": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/c918cdc0714cde7052611ffeb8b43f574aa4c138c7035d45d93cb1aca70c575e.gz",
+        "archiveBytes": 396,
+        "archiveSha256": "0b2fc39eded52702cb995a67af896f4e059881c6ea3d4b60a0ebcc56d77ebaa5",
+        "bytes": 2189,
+        "sha256": "c918cdc0714cde7052611ffeb8b43f574aa4c138c7035d45d93cb1aca70c575e"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/capacity-before.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/3a0c68842e6df2c2a204f0d5f25985c8f745d1839055b10903fdb43c8fd1f66c.gz",
+        "archiveBytes": 54384,
+        "archiveSha256": "aa1d0c65caf8c0e2c3d97733106edb12b6d3087bc39c73e01488df8e7080e109",
+        "bytes": 58180,
+        "sha256": "3a0c68842e6df2c2a204f0d5f25985c8f745d1839055b10903fdb43c8fd1f66c"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/capacity-history-refused-paint.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502.gz",
+        "archiveBytes": 29490,
+        "archiveSha256": "6b15c029d96c60fa028a87f1e72bf10579ed594bde3ab0875b84b9801054a560",
+        "bytes": 44131,
+        "sha256": "d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/capacity-history-refused-pixels.json": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/8e0d3873f13235ad0624a00b034aa323323051e7ce409b549153ea29a23e8fb2.gz",
+        "archiveBytes": 397,
+        "archiveSha256": "78fb852632920fa608d39887de0e22ac63e805a8812692bb47039d1e23734680",
+        "bytes": 2189,
+        "sha256": "8e0d3873f13235ad0624a00b034aa323323051e7ce409b549153ea29a23e8fb2"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/capacity-history-refused.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/2da773db788eaa31a0e75eaa6d76d95113d73c707966b49b0c9fa7024d85778f.gz",
+        "archiveBytes": 54939,
+        "archiveSha256": "774fa6ad46277889cea54a5b6ad47d6046f637fd5116c3eaf2dc56ecec984fc0",
+        "bytes": 58693,
+        "sha256": "2da773db788eaa31a0e75eaa6d76d95113d73c707966b49b0c9fa7024d85778f"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/capacity-refused-paint.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502.gz",
+        "archiveBytes": 29490,
+        "archiveSha256": "6b15c029d96c60fa028a87f1e72bf10579ed594bde3ab0875b84b9801054a560",
+        "bytes": 44131,
+        "sha256": "d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/capacity-refused-pixels.json": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/3fc3679ed61229da917e637a6cc3b203e49a222190a7a8c2d1387c22402b3c13.gz",
+        "archiveBytes": 398,
+        "archiveSha256": "b7a681270bb78bd831fb2c12a215dc82e3ba386c2d76ad4909b942395b62fc19",
+        "bytes": 2189,
+        "sha256": "3fc3679ed61229da917e637a6cc3b203e49a222190a7a8c2d1387c22402b3c13"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/capacity-refused.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/1d8999b8a4c10d01921d18dde4ef47ad2650db46ad7604482cb2ed138e9a5e97.gz",
+        "archiveBytes": 45344,
+        "archiveSha256": "f4a6112fb5ec64f97529ffb562b1c49bae21845b67640cb209acef3926313616",
+        "bytes": 49849,
+        "sha256": "1d8999b8a4c10d01921d18dde4ef47ad2650db46ad7604482cb2ed138e9a5e97"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/lasso-paint.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/ba9db221026bc03b24778592e8f65a018b5e17e14e68a0159a36098e405a6abd.gz",
+        "archiveBytes": 29981,
+        "archiveSha256": "93436e7f361bc53b2f5bf3aba03c1d6071efbde587e5b812b98e46aeaaab6dcd",
+        "bytes": 44025,
+        "sha256": "ba9db221026bc03b24778592e8f65a018b5e17e14e68a0159a36098e405a6abd"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/lasso-pixels.json": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/0a4906fbc48a436aed6231da17a18627a116d8beb6db9a38969fcab33b2360de.gz",
+        "archiveBytes": 392,
+        "archiveSha256": "d727ebca84ddb1b68a6cec856534ab5e419505337ab29445bc7f37d003facdda",
+        "bytes": 2194,
+        "sha256": "0a4906fbc48a436aed6231da17a18627a116d8beb6db9a38969fcab33b2360de"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/lasso.png": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/6b493ed54ff3cb36caa89d8fcaffe99a3797810c0ef3b2f660effd7675452384.gz",
+        "archiveBytes": 60463,
+        "archiveSha256": "ccd44a0c6af0ebe587bcb05685d8ad5e0254796e70476f4e9fe3ca79d94d2980",
+        "bytes": 64576,
+        "sha256": "6b493ed54ff3cb36caa89d8fcaffe99a3797810c0ef3b2f660effd7675452384"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-XMGU5j/regions.ipynb": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd.gz",
+        "archiveBytes": 1695,
+        "archiveSha256": "655dbbb990ffebf0a9427ba64505f4c430c754b21731850e0b1911c2021b021f",
+        "bytes": 5892,
+        "sha256": "8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd"
+      },
+      "target/task-tmp/graph-linked-mask/notebook-dpr2.json": {
+        "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/cb512410e2fd17e4f878acdc9334fedfd82f0c1caa0b158ca4b17e26f710b8ea.gz",
+        "archiveBytes": 5724,
+        "archiveSha256": "2ee4f5b581f3700bc35b72a65fb01c6efae48dc04687135456fed2254374d453",
+        "bytes": 83413,
+        "sha256": "cb512410e2fd17e4f878acdc9334fedfd82f0c1caa0b158ca4b17e26f710b8ea"
+      }
+    }
+  },
+  "changedRuntime": [
+    "packages/xy-client/dist/index.js",
+    "packages/xy-client/dist/standalone.js",
+    "python/xyg/static/index.js",
+    "python/xyg/static/standalone.js"
+  ],
+  "compiledInputs": {
+    "changed": [
+      "crates/xyg-engine/src/graphforge/interaction/pick.rs",
+      "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs",
+      "crates/xyg-engine/src/graphforge/interaction/tests/wire.rs",
+      "crates/xyg-engine/src/graphforge/interaction/wire.rs"
+    ],
+    "count": 324,
+    "path": "spec/performance/graph-notebook-regions-2026-11-10/compiled-inputs.json",
+    "sha256": "a0ca8b566fd0a7c6502d6f6cb5b2070ff148290a846d1e7189d8388d95061dca"
+  },
+  "compiledInputsUnchanged": 324,
+  "delivery": {
+    "hostedCI": "pending",
+    "independentCorrectionReview": "pending",
+    "mergeQueue": "required"
+  },
+  "evidence": {
+    "target/task-tmp/graph-linked-mask/after.png": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/fb8f87a4e6baa1b76c6d0d6be8fe52b936893c93a720b747e3ed514f28fd3123.gz",
+      "archiveBytes": 7329,
+      "archiveSha256": "c5cc6d5ab96275d142f9ea375de2e6c6aceb50b38f187d1cb3a966c09d8a0a23",
+      "bytes": 8802,
+      "sha256": "fb8f87a4e6baa1b76c6d0d6be8fe52b936893c93a720b747e3ed514f28fd3123"
+    },
+    "target/task-tmp/graph-linked-mask/before.png": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/fb8f87a4e6baa1b76c6d0d6be8fe52b936893c93a720b747e3ed514f28fd3123.gz",
+      "archiveBytes": 7329,
+      "archiveSha256": "c5cc6d5ab96275d142f9ea375de2e6c6aceb50b38f187d1cb3a966c09d8a0a23",
+      "bytes": 8802,
+      "sha256": "fb8f87a4e6baa1b76c6d0d6be8fe52b936893c93a720b747e3ed514f28fd3123"
+    },
+    "target/task-tmp/graph-linked-mask/browser-mask-disk.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/21b3cf35be36b7c01d63e040f77db08717ddc2fae381fd0bbb3e9a8acbec41da.gz",
+      "archiveBytes": 436,
+      "archiveSha256": "8a6fcbd0a357d83663ae3cb8b3e4d04c70e9925fddb35cf57bb22010202031ef",
+      "bytes": 707,
+      "sha256": "21b3cf35be36b7c01d63e040f77db08717ddc2fae381fd0bbb3e9a8acbec41da"
+    },
+    "target/task-tmp/graph-linked-mask/browser-mask-final.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/0f9769af4ba04aa371dc06af5349e3dd88ea55c0b86e9078731676170cfb72bc.gz",
+      "archiveBytes": 89,
+      "archiveSha256": "0bf28c5d21b13847c62aaff32bd198e6458767d26daacf7d11069f1c6b7aff4e",
+      "bytes": 74,
+      "sha256": "0f9769af4ba04aa371dc06af5349e3dd88ea55c0b86e9078731676170cfb72bc"
+    },
+    "target/task-tmp/graph-linked-mask/browser-mask-incomplete.mjs": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/0a85c5a38f69e4b0ca9c2ed44dafd948aa583392adebe40d8b9e63c54f9bcfe9.gz",
+      "archiveBytes": 2832,
+      "archiveSha256": "fcbef734e38cf4fbfdce96e845725394921365e8b5961a478c33f63c81c6e3a7",
+      "bytes": 6478,
+      "sha256": "0a85c5a38f69e4b0ca9c2ed44dafd948aa583392adebe40d8b9e63c54f9bcfe9"
+    },
+    "target/task-tmp/graph-linked-mask/browser-mask-report.json": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/b5c321fc609062d18019ab71c0171fe1c25a4e875f4725eab5a672ecbd16b2e6.gz",
+      "archiveBytes": 605,
+      "archiveSha256": "8edeb31203a168a11c62d61750dc61d697cde9e92f203ce99038e7567799b24d",
+      "bytes": 2046,
+      "sha256": "b5c321fc609062d18019ab71c0171fe1c25a4e875f4725eab5a672ecbd16b2e6"
+    },
+    "target/task-tmp/graph-linked-mask/browser-mask.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/4dab585d20bf4a273875c1c2b4a1aa7457d27316fd986f938050fe980b13d5de.gz",
+      "archiveBytes": 1458,
+      "archiveSha256": "0ddbeba11477a97021ceeb0a214765b69e9bb0088889f353154741b3e0d4325b",
+      "bytes": 7025,
+      "sha256": "4dab585d20bf4a273875c1c2b4a1aa7457d27316fd986f938050fe980b13d5de"
+    },
+    "target/task-tmp/graph-linked-mask/browser-mask.mjs": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/ee6b5933d9655f29cd4c7f2aaf7bf7abcc0eef8dcb1df0631672412b78c65b47.gz",
+      "archiveBytes": 2964,
+      "archiveSha256": "9abca65de4f1d4a9d0e315e16883cb3e156e3600f604c6a50b9c904d38cf503c",
+      "bytes": 6859,
+      "sha256": "ee6b5933d9655f29cd4c7f2aaf7bf7abcc0eef8dcb1df0631672412b78c65b47"
+    },
+    "target/task-tmp/graph-linked-mask/browser-parent-negative.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/1c51a045a04b5c538d626eed7515f4557aa6b1bc7c5d21877970374159929913.gz",
+      "archiveBytes": 329,
+      "archiveSha256": "4baec37a165ed5053f32fee4352ca2117d881ca100f2862fe9a7a147338de5d3",
+      "bytes": 452,
+      "sha256": "1c51a045a04b5c538d626eed7515f4557aa6b1bc7c5d21877970374159929913"
+    },
+    "target/task-tmp/graph-linked-mask/build-final-source.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f.gz",
+      "archiveBytes": 1056,
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "bytes": 5448,
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "target/task-tmp/graph-linked-mask/build-final.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f.gz",
+      "archiveBytes": 1056,
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "bytes": 5448,
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "target/task-tmp/graph-linked-mask/build.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f.gz",
+      "archiveBytes": 1056,
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "bytes": 5448,
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "target/task-tmp/graph-linked-mask/core.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/c2be1e2836b3902a9e8bc8aea0cfed1fb127c2714f16bfd29b9b3a804f05cb50.gz",
+      "archiveBytes": 63,
+      "archiveSha256": "ac57e888ae8695f1eca7a889461a9789954ba1f28cbbcdee080b37f8d37117ab",
+      "bytes": 110,
+      "sha256": "c2be1e2836b3902a9e8bc8aea0cfed1fb127c2714f16bfd29b9b3a804f05cb50"
+    },
+    "target/task-tmp/graph-linked-mask/final-regressions.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/a3cdd450e19b8ea4301a3ea30eea78f1a9e6b259373aec012ce84c831ced7893.gz",
+      "archiveBytes": 3353,
+      "archiveSha256": "5bcfa0324e3ebe67708917cf147181b8eabdcd0b025d742c5ebd8324c2537632",
+      "bytes": 13855,
+      "sha256": "a3cdd450e19b8ea4301a3ea30eea78f1a9e6b259373aec012ce84c831ced7893"
+    },
+    "target/task-tmp/graph-linked-mask/format.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/127ebb8c6685712ecc74c244dc0e19ad295f928ac7d0522c2809f39a024ce543.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "131a6ca95f69fab672e22b8e10e6145e37549999675f5109b8dfa04e0797b6b0",
+      "bytes": 29,
+      "sha256": "127ebb8c6685712ecc74c244dc0e19ad295f928ac7d0522c2809f39a024ce543"
+    },
+    "target/task-tmp/graph-linked-mask/foundation.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/5ccb73be8271da1c85f28b88764a11f15ae75cefcfa6703758564ab01b6fe64a.gz",
+      "archiveBytes": 4632,
+      "archiveSha256": "260aa21b0c3a480b8a1879ff795c5a0519e718e3a70bd39353e9a9ce3452a9ee",
+      "bytes": 15905,
+      "sha256": "5ccb73be8271da1c85f28b88764a11f15ae75cefcfa6703758564ab01b6fe64a"
+    },
+    "target/task-tmp/graph-linked-mask/full-node.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/9789f687feffc464098a1c22f2c6c70ab4c2f001b8f65021b3653ea7f780611f.gz",
+      "archiveBytes": 40654,
+      "archiveSha256": "e6660eceab2c4e67c1ba03ebe73a1bb060876b8dc2b9e4f3b371c1950677f6c0",
+      "bytes": 241848,
+      "sha256": "9789f687feffc464098a1c22f2c6c70ab4c2f001b8f65021b3653ea7f780611f"
+    },
+    "target/task-tmp/graph-linked-mask/gates.json": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/74fdb41619accca9e80a59aa9281c612ded1d0c143dff04860b84ae6d5dfa6b7.gz",
+      "archiveBytes": 724,
+      "archiveSha256": "2f998e5a0063a4ae292863ef15581d12d119505b939a0f8218c5065668cd04bc",
+      "bytes": 3556,
+      "sha256": "74fdb41619accca9e80a59aa9281c612ded1d0c143dff04860b84ae6d5dfa6b7"
+    },
+    "target/task-tmp/graph-linked-mask/gates.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/2b89393ec25eeb44702f24ca27481e317a3f06a6912def2a77b778e116d404e8.gz",
+      "archiveBytes": 698,
+      "archiveSha256": "1d37df0f6d15a715bb542cba6d81e2087a407afb1a2260adfd85a0ebf8bdea97",
+      "bytes": 3182,
+      "sha256": "2b89393ec25eeb44702f24ca27481e317a3f06a6912def2a77b778e116d404e8"
+    },
+    "target/task-tmp/graph-linked-mask/greptile-findings.json": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/adccb09fbf0210c006bcb95575654cfd65be6d458b44c587b6141a6ffd525afa.gz",
+      "archiveBytes": 749,
+      "archiveSha256": "37e8ee1f30318f89534604c048c18d2eeca420568ed93dd7addf45c634f781f5",
+      "bytes": 1530,
+      "sha256": "adccb09fbf0210c006bcb95575654cfd65be6d458b44c587b6141a6ffd525afa"
+    },
+    "target/task-tmp/graph-linked-mask/hooks.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/graph-linked-mask/incomplete-after.png": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/769d8ff3e0f810aa8566a74114e822a958ea606e9b13a63b91f4500263b914ec.gz",
+      "archiveBytes": 7378,
+      "archiveSha256": "fd88023efbb927976f1369c0861d71491229ee7b3bfbd73d5c5c26995b40c263",
+      "bytes": 8876,
+      "sha256": "769d8ff3e0f810aa8566a74114e822a958ea606e9b13a63b91f4500263b914ec"
+    },
+    "target/task-tmp/graph-linked-mask/incomplete-before.png": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/fb8f87a4e6baa1b76c6d0d6be8fe52b936893c93a720b747e3ed514f28fd3123.gz",
+      "archiveBytes": 7329,
+      "archiveSha256": "c5cc6d5ab96275d142f9ea375de2e6c6aceb50b38f187d1cb3a966c09d8a0a23",
+      "bytes": 8802,
+      "sha256": "fb8f87a4e6baa1b76c6d0d6be8fe52b936893c93a720b747e3ed514f28fd3123"
+    },
+    "target/task-tmp/graph-linked-mask/independent-linked-mask-refresh.test.mjs": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/f1737118a1d0a9bd8d1ffe5077192428c92a72aba854271f589800fd5aaf8974.gz",
+      "archiveBytes": 2951,
+      "archiveSha256": "26d076729446b69d52821470780f65664624ae3ce5874e256020e4fc3b0bd2bd",
+      "bytes": 7932,
+      "sha256": "f1737118a1d0a9bd8d1ffe5077192428c92a72aba854271f589800fd5aaf8974"
+    },
+    "target/task-tmp/graph-linked-mask/native-picture.json": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/f3a4590648d9d07c8593d176eed449d03e61f042fee5ee14821917b8704468de.gz",
+      "archiveBytes": 2531,
+      "archiveSha256": "6a3e44bd66198eb6af62b586e8e3af04750576ac55091b47a4243af9c74e9b24",
+      "bytes": 9539,
+      "sha256": "f3a4590648d9d07c8593d176eed449d03e61f042fee5ee14821917b8704468de"
+    },
+    "target/task-tmp/graph-linked-mask/notebook-dpr1.json": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/49a63f9ad291bb02b556a56e3e8c7a720d408c149913a106fd0c3d0e9f33c1da.gz",
+      "archiveBytes": 5778,
+      "archiveSha256": "6605815a314b65b7cab6b1433af4d663f2726a9a9a64b1c32ef8aad8a0fa9e54",
+      "bytes": 83408,
+      "sha256": "49a63f9ad291bb02b556a56e3e8c7a720d408c149913a106fd0c3d0e9f33c1da"
+    },
+    "target/task-tmp/graph-linked-mask/notebook-dpr1.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/325adb2fffccd9321ec959286a7d5875e258cd54b691562d4220cdd3be2c42e5.gz",
+      "archiveBytes": 140,
+      "archiveSha256": "0fcd442a8d742f9fc157396c79818ece496ac73a56f60e2d77268509cc05ebae",
+      "bytes": 141,
+      "sha256": "325adb2fffccd9321ec959286a7d5875e258cd54b691562d4220cdd3be2c42e5"
+    },
+    "target/task-tmp/graph-linked-mask/notebook-dpr2.json": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/cb512410e2fd17e4f878acdc9334fedfd82f0c1caa0b158ca4b17e26f710b8ea.gz",
+      "archiveBytes": 5724,
+      "archiveSha256": "2ee4f5b581f3700bc35b72a65fb01c6efae48dc04687135456fed2254374d453",
+      "bytes": 83413,
+      "sha256": "cb512410e2fd17e4f878acdc9334fedfd82f0c1caa0b158ca4b17e26f710b8ea"
+    },
+    "target/task-tmp/graph-linked-mask/notebook-dpr2.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/9ed4c573da039c0ed6a42bd9b20ac1a61dfac72d90030e64cd0357600a0a9b5e.gz",
+      "archiveBytes": 144,
+      "archiveSha256": "bc393d9e07f90164b46e95512c92a22576f70b6bb92514205c43036a9656ad61",
+      "bytes": 141,
+      "sha256": "9ed4c573da039c0ed6a42bd9b20ac1a61dfac72d90030e64cd0357600a0a9b5e"
+    },
+    "target/task-tmp/graph-linked-mask/original-mask-failures.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/5dfccf84b5627fb8d6687eb0517d5b06ac8746481bf7a3b60459bbadcbeb53f3.gz",
+      "archiveBytes": 732,
+      "archiveSha256": "581cd7ca4d1740f336672dc5d72e31570244b468c5b686c0fefc2c6d5f240913",
+      "bytes": 2262,
+      "sha256": "5dfccf84b5627fb8d6687eb0517d5b06ac8746481bf7a3b60459bbadcbeb53f3"
+    },
+    "target/task-tmp/graph-linked-mask/parent-control/binding.json": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/275f7ddeef3a1e52174ee7b240c1abd898e2c1197eff44988b6798469d9e7927.gz",
+      "archiveBytes": 428,
+      "archiveSha256": "cb27c2989c43be917b281efcbb8bcf438ecbe5afd6bf1b0713c7c82a9fcd95f2",
+      "bytes": 686,
+      "sha256": "275f7ddeef3a1e52174ee7b240c1abd898e2c1197eff44988b6798469d9e7927"
+    },
+    "target/task-tmp/graph-linked-mask/parent-control/js/src/50_chartview.ts": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/1993e5ebaa95dbf091eb2a43b7ede47d3bd99cb548347e76d8a035e2122ee5e1.gz",
+      "archiveBytes": 118899,
+      "archiveSha256": "3ad59f39aa8a6f1e312fc3cbcc30d22357d73c28383bf22e497732dc7b4d284e",
+      "bytes": 435504,
+      "sha256": "1993e5ebaa95dbf091eb2a43b7ede47d3bd99cb548347e76d8a035e2122ee5e1"
+    },
+    "target/task-tmp/graph-linked-mask/parent-control/js/src/53_interaction.ts": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/23f402d27c14f6b25fbba29dce7b7e8e494312252b478c9fcb1e7e521a7e5f22.gz",
+      "archiveBytes": 31175,
+      "archiveSha256": "5fbef23860b7ff5d28e36c24e3c71f51b8bb5d0c64ef8f5e95150c193d3586f6",
+      "bytes": 122406,
+      "sha256": "23f402d27c14f6b25fbba29dce7b7e8e494312252b478c9fcb1e7e521a7e5f22"
+    },
+    "target/task-tmp/graph-linked-mask/parent-control/js/src/54_kernel.ts": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/e751adada2eb75469a2f2a1b757d3196be401408a56e7410cb9d6f2f8fef29a2.gz",
+      "archiveBytes": 16464,
+      "archiveSha256": "e99dfabb8808cbc8c0cef7f3c5b27c334c21e07b3a40427ad4b86fa79c4e78b8",
+      "bytes": 51895,
+      "sha256": "e751adada2eb75469a2f2a1b757d3196be401408a56e7410cb9d6f2f8fef29a2"
+    },
+    "target/task-tmp/graph-linked-mask/parent-control/js/src/57_viewstate.ts": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/e97ca4fc8b29d22607acb26007e7045c26a6af5b8b12d412be4cb9d9094e7b9b.gz",
+      "archiveBytes": 7465,
+      "archiveSha256": "8bf61e45dbd31d57ecd51890e40e373455e2b14e719f165b4a47e8eda048d09b",
+      "bytes": 25230,
+      "sha256": "e97ca4fc8b29d22607acb26007e7045c26a6af5b8b12d412be4cb9d9094e7b9b"
+    },
+    "target/task-tmp/graph-linked-mask/parent-control/js/src/66_graph_host.ts": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/e65962006a6083ca03c4a3068a7a323bbe36a3a4d59da94f1949210fb4721cdf.gz",
+      "archiveBytes": 4267,
+      "archiveSha256": "69d2c8aa70aba494152e1eb0c6aa8ce43a5e3e17b19dc0ba0e74c5c5c9834e11",
+      "bytes": 14290,
+      "sha256": "e65962006a6083ca03c4a3068a7a323bbe36a3a4d59da94f1949210fb4721cdf"
+    },
+    "target/task-tmp/graph-linked-mask/parent-control/js/test/graph-host-transport.test.mjs": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/06c8d3466e4b554439c13ab0a92b43251fbcb130c1905329ee889d4cd38a4ba7.gz",
+      "archiveBytes": 7750,
+      "archiveSha256": "a67feb21d897b63a10f370abc93e196b96bf5639e93962c03230e205b816ba54",
+      "bytes": 37700,
+      "sha256": "06c8d3466e4b554439c13ab0a92b43251fbcb130c1905329ee889d4cd38a4ba7"
+    },
+    "target/task-tmp/graph-linked-mask/parent-negative-observed.json": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/a796cd023a453d1299b29ab0ef2d44fa6c4b3a20c4d7dcdb8073c401f92f4c97.gz",
+      "archiveBytes": 8432,
+      "archiveSha256": "b3b3340b4c1aabe9702396a556dbcbb9ab028a4bc855aa5f415896c4e7533641",
+      "bytes": 24998,
+      "sha256": "a796cd023a453d1299b29ab0ef2d44fa6c4b3a20c4d7dcdb8073c401f92f4c97"
+    },
+    "target/task-tmp/graph-linked-mask/parent-negative.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/df4d892e5f62cedc9b519bbdba55fa0e0b6f3c5b1f18a10719fab0f7ed7ae602.gz",
+      "archiveBytes": 2780,
+      "archiveSha256": "f80f7ffac2b1d6234cdb3343eaad6fd314a10bd16512190bc44c79e1e832dc0b",
+      "bytes": 15512,
+      "sha256": "df4d892e5f62cedc9b519bbdba55fa0e0b6f3c5b1f18a10719fab0f7ed7ae602"
+    },
+    "target/task-tmp/graph-linked-mask/pixel-diagnostic.json": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/aa108e91cb2ed279f92ea9608eb011cc02ee7552e9dc90633cd47003d3cbbb70.gz",
+      "archiveBytes": 699,
+      "archiveSha256": "833df79796d7bb2061e9ebf6b631035dd8e01bf2f731d641d30e4d7b6acfd160",
+      "bytes": 4734,
+      "sha256": "aa108e91cb2ed279f92ea9608eb011cc02ee7552e9dc90633cd47003d3cbbb70"
+    },
+    "target/task-tmp/graph-linked-mask/polygon-final-after.png": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/fb8f87a4e6baa1b76c6d0d6be8fe52b936893c93a720b747e3ed514f28fd3123.gz",
+      "archiveBytes": 7329,
+      "archiveSha256": "c5cc6d5ab96275d142f9ea375de2e6c6aceb50b38f187d1cb3a966c09d8a0a23",
+      "bytes": 8802,
+      "sha256": "fb8f87a4e6baa1b76c6d0d6be8fe52b936893c93a720b747e3ed514f28fd3123"
+    },
+    "target/task-tmp/graph-linked-mask/polygon-final-before.png": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/fb8f87a4e6baa1b76c6d0d6be8fe52b936893c93a720b747e3ed514f28fd3123.gz",
+      "archiveBytes": 7329,
+      "archiveSha256": "c5cc6d5ab96275d142f9ea375de2e6c6aceb50b38f187d1cb3a966c09d8a0a23",
+      "bytes": 8802,
+      "sha256": "fb8f87a4e6baa1b76c6d0d6be8fe52b936893c93a720b747e3ed514f28fd3123"
+    },
+    "target/task-tmp/graph-linked-mask/polygon-final-observed.json": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/bbd5868b0fabb81b226ffd6cda3b56f8909955d1b819ae5633fe73d6e4108c26.gz",
+      "archiveBytes": 8457,
+      "archiveSha256": "4aa7b06102a290d6ce42d6151b4bb0d2ecfa834c2cb8af1c8cde2810d7485f3a",
+      "bytes": 25503,
+      "sha256": "bbd5868b0fabb81b226ffd6cda3b56f8909955d1b819ae5633fe73d6e4108c26"
+    },
+    "target/task-tmp/graph-linked-mask/polygon-final-report.json": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/09fed5f747d84e77cfef2ec600a5fbc290296e7c5380e1aeae67f281b5b959f1.gz",
+      "archiveBytes": 635,
+      "archiveSha256": "d1494df098a5fcb190c870f6fab29e9ff2b3e22693bf47215439664c4d8bfd97",
+      "bytes": 2691,
+      "sha256": "09fed5f747d84e77cfef2ec600a5fbc290296e7c5380e1aeae67f281b5b959f1"
+    },
+    "target/task-tmp/graph-linked-mask/polygon-final.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/0f9769af4ba04aa371dc06af5349e3dd88ea55c0b86e9078731676170cfb72bc.gz",
+      "archiveBytes": 89,
+      "archiveSha256": "0bf28c5d21b13847c62aaff32bd198e6458767d26daacf7d11069f1c6b7aff4e",
+      "bytes": 74,
+      "sha256": "0f9769af4ba04aa371dc06af5349e3dd88ea55c0b86e9078731676170cfb72bc"
+    },
+    "target/task-tmp/graph-linked-mask/prior-review.json": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/afce361dbb23d72474bcfdba9161b32a137dc0ab9ce56c39b533c5edb4d5ebac.gz",
+      "archiveBytes": 4136,
+      "archiveSha256": "d712e35a96845c6bb6e16f3111a1b3ab60c0f9546ec7979a2298cb9eacf9e058",
+      "bytes": 10167,
+      "sha256": "afce361dbb23d72474bcfdba9161b32a137dc0ab9ce56c39b533c5edb4d5ebac"
+    },
+    "target/task-tmp/graph-linked-mask/range-final-after.png": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/fb8f87a4e6baa1b76c6d0d6be8fe52b936893c93a720b747e3ed514f28fd3123.gz",
+      "archiveBytes": 7329,
+      "archiveSha256": "c5cc6d5ab96275d142f9ea375de2e6c6aceb50b38f187d1cb3a966c09d8a0a23",
+      "bytes": 8802,
+      "sha256": "fb8f87a4e6baa1b76c6d0d6be8fe52b936893c93a720b747e3ed514f28fd3123"
+    },
+    "target/task-tmp/graph-linked-mask/range-final-before.png": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/fb8f87a4e6baa1b76c6d0d6be8fe52b936893c93a720b747e3ed514f28fd3123.gz",
+      "archiveBytes": 7329,
+      "archiveSha256": "c5cc6d5ab96275d142f9ea375de2e6c6aceb50b38f187d1cb3a966c09d8a0a23",
+      "bytes": 8802,
+      "sha256": "fb8f87a4e6baa1b76c6d0d6be8fe52b936893c93a720b747e3ed514f28fd3123"
+    },
+    "target/task-tmp/graph-linked-mask/range-final-observed.json": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/cf2e82cbfffb4e6fb2adf1d77aeafc1b2ea5d47c51da4cf2f9a5a07cc772285f.gz",
+      "archiveBytes": 8418,
+      "archiveSha256": "7ae9c8cb05884172f924b4d9e82dd9a799f38ed160a069223b082ec9071b8273",
+      "bytes": 24930,
+      "sha256": "cf2e82cbfffb4e6fb2adf1d77aeafc1b2ea5d47c51da4cf2f9a5a07cc772285f"
+    },
+    "target/task-tmp/graph-linked-mask/range-final-report.json": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/b5c321fc609062d18019ab71c0171fe1c25a4e875f4725eab5a672ecbd16b2e6.gz",
+      "archiveBytes": 605,
+      "archiveSha256": "8edeb31203a168a11c62d61750dc61d697cde9e92f203ce99038e7567799b24d",
+      "bytes": 2046,
+      "sha256": "b5c321fc609062d18019ab71c0171fe1c25a4e875f4725eab5a672ecbd16b2e6"
+    },
+    "target/task-tmp/graph-linked-mask/range-final.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/0f9769af4ba04aa371dc06af5349e3dd88ea55c0b86e9078731676170cfb72bc.gz",
+      "archiveBytes": 89,
+      "archiveSha256": "0bf28c5d21b13847c62aaff32bd198e6458767d26daacf7d11069f1c6b7aff4e",
+      "bytes": 74,
+      "sha256": "0f9769af4ba04aa371dc06af5349e3dd88ea55c0b86e9078731676170cfb72bc"
+    },
+    "target/task-tmp/graph-linked-mask/regressions-eligible-marks.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/ac137badceb32173890a9bc4df0c2e7fdcc0320836ae4c0f5dda72592a0e138e.gz",
+      "archiveBytes": 3366,
+      "archiveSha256": "6f842b0f10247ea9c627fcf09aad5d46ac5ea3e214ef894bed4e342742653a8e",
+      "bytes": 13857,
+      "sha256": "ac137badceb32173890a9bc4df0c2e7fdcc0320836ae4c0f5dda72592a0e138e"
+    },
+    "target/task-tmp/graph-linked-mask/regressions-final-source.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/1cc162711ccfde5edc305c2eb3469baf271c4cb5e664159d76d4efe5bb6d698f.gz",
+      "archiveBytes": 3374,
+      "archiveSha256": "ba28a7fef6bd466c936ad510540747b0d702c0ed860ee3991ce4f0264eeb1f81",
+      "bytes": 13858,
+      "sha256": "1cc162711ccfde5edc305c2eb3469baf271c4cb5e664159d76d4efe5bb6d698f"
+    },
+    "target/task-tmp/graph-linked-mask/regressions.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/ad15a4d973608c8312c358cd58dd736dce097b669867161214f3641b77d76830.gz",
+      "archiveBytes": 3742,
+      "archiveSha256": "b86ffc8d4cc841bbc5f42166e8fa73f07298afaf5a6be8df03db4694c34d11c1",
+      "bytes": 16784,
+      "sha256": "ad15a4d973608c8312c358cd58dd736dce097b669867161214f3641b77d76830"
+    },
+    "target/task-tmp/graph-linked-mask/ruff.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/graph-linked-mask/run-gates.py": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/10fa0f501f4cc34e550df26727b99b0e9398dcb817b28713df1fe4c93076465f.gz",
+      "archiveBytes": 835,
+      "archiveSha256": "27f33891fd4ad1511536fd6c905e10c1898d5c2ebad2d7e002dbc3e91776580c",
+      "bytes": 1469,
+      "sha256": "10fa0f501f4cc34e550df26727b99b0e9398dcb817b28713df1fe4c93076465f"
+    },
+    "target/task-tmp/graph-linked-mask/seal-evidence.py": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/7c79537a597bb83b43661bc35ce4c011d89f139182102ca4761ba81b1d93fd5a.gz",
+      "archiveBytes": 3593,
+      "archiveSha256": "8ff1218043d9dfdd02acfd5496dbcfaf32de34bf1173e6be1f9af1dd1aa0bbf5",
+      "bytes": 8667,
+      "sha256": "7c79537a597bb83b43661bc35ce4c011d89f139182102ca4761ba81b1d93fd5a"
+    },
+    "target/task-tmp/graph-linked-mask/seal-sources.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/21f3ef46e4e26b08e8e9393244da3025e954e2ed75a17aaa7afcd0f3038b59cf.gz",
+      "archiveBytes": 65,
+      "archiveSha256": "935bc78d42e1575291837e55cef35170cab4d7148b600101c27e6bda77b8c661",
+      "bytes": 53,
+      "sha256": "21f3ef46e4e26b08e8e9393244da3025e954e2ed75a17aaa7afcd0f3038b59cf"
+    },
+    "target/task-tmp/graph-linked-mask/seal-sources.py": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/0f1893c233bc6595204569d75c337384f8a24a811949b27b1ddea21509491608.gz",
+      "archiveBytes": 1162,
+      "archiveSha256": "eb6c5ca739a6959e26bec7cead286c87ad992be061bdd0db7b2fc936faf56306",
+      "bytes": 2755,
+      "sha256": "0f1893c233bc6595204569d75c337384f8a24a811949b27b1ddea21509491608"
+    },
+    "target/task-tmp/graph-linked-mask/ty.log": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    }
+  },
+  "externalReviewFindings": {
+    "disposition": "REQUEST_CHANGES at5a93604; remaining mask-loss P2 reproduced and corrected; final independent re-review pending",
+    "record": "target/task-tmp/graph-linked-mask/prior-review.json",
+    "sha256": "afce361dbb23d72474bcfdba9161b32a137dc0ab9ce56c39b533c5edb4d5ebac"
+  },
+  "failedAttempts": [
+    {
+      "exit": 1,
+      "log": "target/task-tmp/graph-linked-mask/regressions.log",
+      "scope": "Initial resource fixture object spread captured the status getter too early; corrected fixture preserves getter; three fixture status failures retained"
+    },
+    {
+      "exit": 1,
+      "log": "target/task-tmp/graph-linked-mask/browser-mask.log",
+      "scope": "Initial private browser launch omitted disk TMPDIR; launch failed, no product credit"
+    },
+    {
+      "exit": 1,
+      "log": "target/task-tmp/graph-linked-mask/browser-mask-disk.log",
+      "scope": "Draft scatter-only restoration passed node mask/state but exact PNG failed;707 changed pixels diagnose missing original local segment eligibility; no tolerance changed"
+    }
+  ],
+  "fresh": {
+    "browserMaskpolygon": {
+      "command": "TMPDIR=/var/tmp XYG_MASK_NAME=polygon-final XYG_MASK_POLYGON=1 XYG_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome target/task-tmp/node-v22.23.4-linux-x64/bin/node target/task-tmp/graph-linked-mask/browser-mask.mjs",
+      "exit": 0,
+      "log": "target/task-tmp/graph-linked-mask/polygon-final.log",
+      "scope": "Actual shipped GL renderer/BroadcastChannel over native-compiled picture, controlled transport order; no full native-worker publication credit"
+    },
+    "browserMaskrange": {
+      "command": "TMPDIR=/var/tmp XYG_MASK_NAME=range-final XYG_MASK_POLYGON=0 XYG_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome target/task-tmp/node-v22.23.4-linux-x64/bin/node target/task-tmp/graph-linked-mask/browser-mask.mjs",
+      "exit": 0,
+      "log": "target/task-tmp/graph-linked-mask/range-final.log",
+      "scope": "Actual shipped GL renderer/BroadcastChannel over native-compiled picture, controlled transport order; no full native-worker publication credit"
+    },
+    "clientBuild": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" target/task-tmp/node-v22.23.4-linux-x64/bin/node js/build.mjs",
+      "exit": 0,
+      "log": "target/task-tmp/graph-linked-mask/build-final-source.log"
+    },
+    "coreInventory": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync pytest -q tests/test_graphforge_contract_corpus.py::test_hash_bound_core_evidence_survives_windows_checkout tests/test_graphforge_contract_corpus.py::test_rc7_artifact_provenance_and_every_generated_ipc_are_bound tests/test_graphforge_contract_corpus.py::test_linked_mask_refresh_preserves_the_complete_candidate_and_review_chain tests/test_release_inventory.py",
+      "exit": 0,
+      "log": "target/task-tmp/graph-linked-mask/core.log",
+      "passed": 29
+    },
+    "format": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync ruff format --check .",
+      "exit": 0,
+      "log": "target/task-tmp/graph-linked-mask/format.log"
+    },
+    "foundation": {
+      "command": [
+        "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin/node",
+        "scripts/wasm_foundation_smoke.mjs"
+      ],
+      "environment": {
+        "TMPDIR": "/var/tmp",
+        "UV_NO_SYNC": "1",
+        "XYG_CHROMIUM": "/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome",
+        "XYG_GRAPH_JUPYTER": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/vscode-jupyter-graph/server-venv/bin/jupyter-lab",
+        "XYG_NATIVE_LIB": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/release/libxyg_core.so"
+      },
+      "exit": 0,
+      "log": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/graph-linked-mask/foundation.log",
+      "name": "foundation",
+      "sha256": "5ccb73be8271da1c85f28b88764a11f15ae75cefcfa6703758564ab01b6fe64a"
+    },
+    "fullNode": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" PATH=\"$PWD/target/task-tmp/node-v22.23.4-linux-x64/bin:$PATH\" npm test --prefix packages/xy-node",
+      "exit": 0,
+      "log": "target/task-tmp/graph-linked-mask/full-node.log",
+      "passed": 1156,
+      "skipped": 2
+    },
+    "hooks": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync --with pre-commit pre-commit run --all-files",
+      "exit": 0,
+      "log": "target/task-tmp/graph-linked-mask/hooks.log"
+    },
+    "notebookDpr1": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" XYG_GRAPH_REGION_DPR=1 XYG_GRAPH_REGION_REPORT=\"$PWD/target/task-tmp/graph-linked-mask/notebook-dpr1.json\" XYG_GRAPH_JUPYTER=\"$PWD/target/task-tmp/vscode-jupyter-graph/server-venv/bin/jupyter-lab\" XYG_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome target/task-tmp/node-v22.23.4-linux-x64/bin/node scripts/graph_notebook_regions_smoke.mjs",
+      "exit": 0,
+      "log": "target/task-tmp/graph-linked-mask/notebook-dpr1.log"
+    },
+    "notebookDpr2": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" XYG_GRAPH_REGION_DPR=2 XYG_GRAPH_REGION_REPORT=\"$PWD/target/task-tmp/graph-linked-mask/notebook-dpr2.json\" XYG_GRAPH_JUPYTER=\"$PWD/target/task-tmp/vscode-jupyter-graph/server-venv/bin/jupyter-lab\" XYG_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome target/task-tmp/node-v22.23.4-linux-x64/bin/node scripts/graph_notebook_regions_smoke.mjs",
+      "exit": 0,
+      "log": "target/task-tmp/graph-linked-mask/notebook-dpr2.log"
+    },
+    "ruff": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync ruff check .",
+      "exit": 0,
+      "log": "target/task-tmp/graph-linked-mask/ruff.log"
+    },
+    "transportAndWire": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" target/task-tmp/node-v22.23.4-linux-x64/bin/node --test js/test/graph-host-transport.test.mjs packages/xy-node/test/graph-session-wire.test.mjs",
+      "exit": 0,
+      "log": "target/task-tmp/graph-linked-mask/regressions-final-source.log",
+      "passed": 59
+    },
+    "typing": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync ty check",
+      "exit": 0,
+      "log": "target/task-tmp/graph-linked-mask/ty.log"
+    }
+  },
+  "inherited": "Earlier Rust/ABI/Python/CI qualification only over verified unchanged identities; full foundation old failures remain failures. No broad all-host or reliability acceptance follows.",
+  "nativeAndWasmRebuilt": false,
+  "negativeControls": [
+    {
+      "exit": 1,
+      "failed": 5,
+      "log": "target/task-tmp/graph-linked-mask/parent-negative.log",
+      "passed": 42,
+      "scope": "Final47 transport assertions against five exact Git-parent production sources including actual append"
+    }
+  ],
+  "package": {
+    "gzip6": 786379,
+    "gzip6Cap": 786432,
+    "gzip6Headroom": 53,
+    "raw": 1885379,
+    "rawCap": 1927168,
+    "sha256": "c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271"
+  },
+  "parentReceipt": {
+    "path": "spec/performance/graph-linked-selection-ownership-2026-11-10/checks.json",
+    "sha256": "7a8ae81ce06b70af3ce56df43aa696c4b74c898977fe1d9e5bee8acd6e1533d1"
+  },
+  "priorIndependentReview": {
+    "record": "target/task-tmp/graph-linked-mask/prior-review.json",
+    "sha256": "afce361dbb23d72474bcfdba9161b32a137dc0ab9ce56c39b533c5edb4d5ebac"
+  },
+  "readmeSha256": "04913fdf3a213fdec9040f790fc3726fffd95a9ef8d1d48f090f2abc87f83eab",
+  "remaining": [
+    "Whole1015 and milestones4-7 remain open",
+    "changed-LOD/aggregate/categorical-edge notebook regions",
+    "massive/all-host/accessibility/export/latency/competitor/global-memory qualification"
+  ],
+  "runtime": {
+    "packages/xy-client/dist/index.js": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/0c7e3170d315a13ff4edd7a295827dba26473ba5e3daaefe0a638ba012a84e4b.gz",
+      "archiveBytes": 248927,
+      "archiveSha256": "c17f732c8d17682f74a44cb672d5f60c7ba308c7b46850f9df23ee4177ee9d0e",
+      "bytes": 868431,
+      "sha256": "0c7e3170d315a13ff4edd7a295827dba26473ba5e3daaefe0a638ba012a84e4b"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/88af0d1e7f35335707ee7bd22e723e9572a832a83905ba1daa22e3168a35f547.gz",
+      "archiveBytes": 248997,
+      "archiveSha256": "8b40c283183a244f772a7bc154ae33f5fe15aa8473905cad00dddc8a8df5f72d",
+      "bytes": 868444,
+      "sha256": "88af0d1e7f35335707ee7bd22e723e9572a832a83905ba1daa22e3168a35f547"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz",
+      "archiveBytes": 3838,
+      "archiveSha256": "dda8e6c4cec42d91f687b660d742d79dcc1a8c0d052ca6ca189c6acf095db2b4",
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/70302dd988dd7ea4bbf25b4b2f57cac0c85d7c8d2d207499a585db0a672a29b5.gz",
+      "archiveBytes": 1043256,
+      "archiveSha256": "8208c789c89c7893c1ed21ddb8b9526c8d555b83926e0c623badd5a886318695",
+      "bytes": 2534962,
+      "sha256": "70302dd988dd7ea4bbf25b4b2f57cac0c85d7c8d2d207499a585db0a672a29b5"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/3a216a6158fa8aca0844fcdf2e3c1bafa6d3b1dc29f1734dea8da3c18609abab.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "e0c290ee70a86c99e2a250eb56162c30cb89e78a3189610e8199fd154f555765",
+      "bytes": 226,
+      "sha256": "3a216a6158fa8aca0844fcdf2e3c1bafa6d3b1dc29f1734dea8da3c18609abab"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271.gz",
+      "archiveBytes": 781160,
+      "archiveSha256": "1788dfdad46ec12eb81712329e48375306fd9a47a994b0a030f9ebab236fd142",
+      "bytes": 1885379,
+      "sha256": "c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271"
+    },
+    "python/xyg/static/index.js": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/0c7e3170d315a13ff4edd7a295827dba26473ba5e3daaefe0a638ba012a84e4b.gz",
+      "archiveBytes": 248927,
+      "archiveSha256": "c17f732c8d17682f74a44cb672d5f60c7ba308c7b46850f9df23ee4177ee9d0e",
+      "bytes": 868431,
+      "sha256": "0c7e3170d315a13ff4edd7a295827dba26473ba5e3daaefe0a638ba012a84e4b"
+    },
+    "python/xyg/static/standalone.js": {
+      "archive": "spec/performance/graph-linked-mask-refresh-2026-11-10/evidence/88af0d1e7f35335707ee7bd22e723e9572a832a83905ba1daa22e3168a35f547.gz",
+      "archiveBytes": 248997,
+      "archiveSha256": "8b40c283183a244f772a7bc154ae33f5fe15aa8473905cad00dddc8a8df5f72d",
+      "bytes": 868444,
+      "sha256": "88af0d1e7f35335707ee7bd22e723e9572a832a83905ba1daa22e3168a35f547"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/70302dd988dd7ea4bbf25b4b2f57cac0c85d7c8d2d207499a585db0a672a29b5.gz",
+      "archiveBytes": 1043256,
+      "archiveSha256": "8208c789c89c7893c1ed21ddb8b9526c8d555b83926e0c623badd5a886318695",
+      "bytes": 2534962,
+      "sha256": "70302dd988dd7ea4bbf25b4b2f57cac0c85d7c8d2d207499a585db0a672a29b5"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/3a216a6158fa8aca0844fcdf2e3c1bafa6d3b1dc29f1734dea8da3c18609abab.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "e0c290ee70a86c99e2a250eb56162c30cb89e78a3189610e8199fd154f555765",
+      "bytes": 226,
+      "sha256": "3a216a6158fa8aca0844fcdf2e3c1bafa6d3b1dc29f1734dea8da3c18609abab"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271.gz",
+      "archiveBytes": 781160,
+      "archiveSha256": "1788dfdad46ec12eb81712329e48375306fd9a47a994b0a030f9ebab236fd142",
+      "bytes": 1885379,
+      "sha256": "c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271"
+    },
+    "target/release/libxyg_core.so": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/ae8dc056771abb1109381202b4143d81157ac0235555ad3d527a426a807bc4bb.gz",
+      "archiveBytes": 2905861,
+      "archiveSha256": "1e22d36c42e15f3afb52ab09cbddc6bec063217e8fa6a499569d0e4114348533",
+      "bytes": 6379944,
+      "sha256": "ae8dc056771abb1109381202b4143d81157ac0235555ad3d527a426a807bc4bb"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d8c7089327b8828b99e98c6e78510676a6703f40628a64f5c714f4edec96da4f.gz",
+      "archiveBytes": 1253247,
+      "archiveSha256": "b6f6c9bc953c17356b0da2ce132395d8e5a3e65f11b9e50aeff2cc581e51741c",
+      "bytes": 4075069,
+      "sha256": "d8c7089327b8828b99e98c6e78510676a6703f40628a64f5c714f4edec96da4f"
+    }
+  },
+  "schemaVersion": 1,
+  "scope": "Reviewer P2: same-row local linked masks retain visual ownership across actual publication replacement; unknown mappings refuse"
+}

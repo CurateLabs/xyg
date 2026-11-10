@@ -614,3 +614,59 @@ test("disabled-select Back completes its own local clear and camera atomically",
   assert.equal(f.model.sent.length, sent);
   f.cleanup();
 });
+
+function retainedAppendFixture() {
+  const f = fixture();
+  const spec = { traces: [{ id: 0, kind: "scatter", tier: "direct" }, { id: 1, kind: "segments", tier: "direct" }], _graph_row_space: "a".repeat(64), buffer_layout: "split", x_axis: { range: [0, 10] }, y_axis: { range: [0, 10] } };
+  f.frame(1, { spec }); f.paint();
+  const kernel = readFileSync(new URL("../src/54_kernel.ts", import.meta.url), "utf8");
+  const method = kernel.slice(kernel.indexOf("  _applyAppend(msg, buffers) {"), kernel.indexOf("  // Post-append window refinement"));
+  const Kernel = vm.runInNewContext(stripTypeScriptTypes(`(class { ${method.trim().replace(/},$/, "}")} })`), { payloadBuffers: (_, raw) => raw });
+  f.view._applyAppend = Kernel.prototype._applyAppend;
+  // Resource allocation/upload is the boundary; replacement and local masks
+  // use the actual append, receiver and interaction implementations.
+  f.view.gl = {}; f.view._normalizeAxes = () => ({ x: { range: [0, 10] }, y: { range: [0, 10] } });
+  f.view._appendTraceInPlace = () => false; f.view._destroyTraceResources = () => {};
+  const fresh = trace => ({ trace, tier: "direct", n: 2, selActive: false, _cpu: { x: new Float32Array([2, 8]), y: new Float32Array([1, 1]), xMeta: { offset: 0, scale: 1 }, yMeta: { offset: 0, scale: 1 } } });
+  f.view.gpuTraces = spec.traces.map(fresh); f.view._buildTrace = (_, trace) => fresh(trace);
+  for (const name of ["_restoreSceneIds", "_reapplyLegendVisibility", "_updatePickable", "_scheduleAppendRefine"]) f.view[name] = () => {};
+  f.view._applySelMask = (g, mask) => { g.selActive = true; g.mask = Array.from(mask); };
+  f.view.interaction = { link_group: "retained-mask" }; f.view._initLinkedCharts();
+  return Object.assign(f, { spec });
+}
+for (const selection of [{ range: { x0: 7, x1: 10, y0: 0, y1: 2 } }, { polygon: [[7, 0], [10, 0], [10, 2], [7, 2]] }]) {
+  test(`linked ${Object.keys(selection)[0]} mask survives actual trace replacement after stale navigation`, () => {
+    const f = retainedAppendFixture();
+    f.view._sendSelect([2, 0], [3, 2]); accept(f, f.model.sent.at(-1));
+    f.view._applyStatePatch({ ranges: { x: [20, 30] } });
+    f.view._historyBack(); const pending = f.model.sent.at(-1);
+    f.view._linkChannel.onmessage({ data: { source: "peer", selection } });
+    assert.deepEqual(f.view.gpuTraces[0].mask, [0, 1]);
+    const previous = f.view.gpuTraces[0], state = json(f.view._durableState());
+    f.frame(2, { spec: f.spec }); assert.equal(f.view.gpuTraces[0], previous);
+    accept(f, pending); f.paint();
+    assert.notEqual(f.view.gpuTraces[0], previous);
+    assert.deepEqual(json(f.view._durableState()), state);
+    assert.equal(f.view.gpuTraces[0].selActive, true);
+    assert.deepEqual(f.view.gpuTraces[0].mask, [0, 1]);
+    assert.equal(f.view.gpuTraces[1].selActive, true, "retain the original local gesture's segment eligibility");
+    assert.deepEqual(f.view.gpuTraces[1].mask, [0, 1]);
+    f.cleanup();
+  });
+}
+for (const stamp of ["b".repeat(64), null, "invalid"]) {
+  test(`linked local masks refuse changed or unavailable row space ${stamp?.slice(0, 7)}`, () => {
+    const f = retainedAppendFixture();
+    f.view._linkChannel.onmessage({ data: { source: "peer", selection: { range: { x0: 7, x1: 10, y0: 0, y1: 2 } } } });
+    assert.equal(f.view.gpuTraces[0].selActive, true);
+    const sent = f.model.sent.filter(msg => msg.type === "select").length, past = f.view._historyPast.length;
+    f.frame(2, { spec: { ...f.spec, _graph_row_space: stamp } }); f.paint();
+    assert.equal(f.view.gpuTraces[0].selActive, false);
+    assert.equal(f.view._stateSelection, null);
+    assert.equal(f.view._lastBrush, null);
+    assert.equal(f.view._historyPast.length, past);
+    assert.equal(f.model.sent.filter(msg => msg.type === "select").length, sent);
+    assert.equal(f.status, "Graph selection is unavailable for this picture");
+    f.cleanup();
+  });
+}

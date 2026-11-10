@@ -360,6 +360,11 @@ masks without fabricating completion of the outstanding native request. A clear
 suppressed by `interaction.select=false` finishes its local durable/history
 change; it does not wait for a request that was never sent. Older native replies
 only release their exact transport correlation and cannot restore old state.
+When that reply releases a waiting same-row publication, local linked masks
+are rebuilt using the existing local coordinate renderer and the original
+gesture's mark eligibility. No native UUID/induced-edge lookup is repeated in
+JavaScript. Changed or absent row-space provenance revokes the local predicate
+and masks with the unavailable status, rather than remapping unqualified rows.
 
 Each notebook graph payload includes an opaque `_graph_row_space` equality
 stamp over ordered node/edge identities, native node membership and edge CSR,

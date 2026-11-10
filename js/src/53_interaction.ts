@@ -989,8 +989,8 @@ Object.assign(ChartView.prototype, {
 
   // Republish/context hydration retains durable geometry on the view. Fill
   // rebuilt trace masks from resident CPU columns without replaying a gesture.
-  // Kernel previews use their scatter-only selection universe; standalone
-  // restoration uses the same eligible marks as its original local gesture.
+  // Kernel previews use their scatter-only selection universe; explicitly
+  // local linked/standalone restoration keeps the original gesture's marks.
   // An unavailable or lost GL context skips the preview.
   _restoreSelectionLocalMask(selection, opts: any = {}) {
     if (opts.localMask !== true || this._glLost || !this.gl
@@ -1005,7 +1005,7 @@ Object.assign(ChartView.prototype, {
         Math.max(x0, x1),
         Math.min(y0, y1),
         Math.max(y0, y1),
-        { dispatch: false, localMask: this.comm != null },
+        { dispatch: false, localMask: this.comm != null && opts.kernelPreview !== false },
       );
       return true;
     }
@@ -1016,7 +1016,7 @@ Object.assign(ChartView.prototype, {
         return false;
       }
       const polygon = selection.polygon.map((point) => [point[0], point[1]]);
-      this._selectLocalPolygon(polygon, { dispatch: false, localMask: this.comm != null });
+      this._selectLocalPolygon(polygon, { dispatch: false, localMask: this.comm != null && opts.kernelPreview !== false });
       return true;
     }
     return false;

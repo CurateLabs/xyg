@@ -1576,3 +1576,8 @@ spec/performance/graph-notebook-camera-owner-2026-11-10/**/*.gz -text
 spec/performance/graph-linked-selection-ownership-2026-11-10/*.md text eol=lf
 spec/performance/graph-linked-selection-ownership-2026-11-10/*.json text eol=lf
 spec/performance/graph-linked-selection-ownership-2026-11-10/**/*.gz -text
+
+# Same-row linked-mask qualification preserves source and raw artifacts.
+spec/performance/graph-linked-mask-refresh-2026-11-10/*.md text eol=lf
+spec/performance/graph-linked-mask-refresh-2026-11-10/*.json text eol=lf
+spec/performance/graph-linked-mask-refresh-2026-11-10/**/*.gz -text

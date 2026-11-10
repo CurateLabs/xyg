@@ -164,6 +164,13 @@ When the `select` interaction flag suppresses a clear request, API clearing
 completes locally instead of deferring forever: durable selection and brush
 become null, history follows its normal policy, and stale cached buffers are
 revoked. Internal accepted-result restoration remains non-broadcasting.
+Local linked masks also carry their compiler row-space stamp. A same-row
+publication rebuild rehydrates their coordinate predicate through the existing
+local renderer with its original eligible marks, including segments. Native
+kernel previews retain their scatter-only eligibility. A changed, missing or
+invalid stamp revokes the local mask and durable brush without history, request
+or broadcast and announces that the previous selection is unavailable. This
+does not resolve canonical UUIDs or remap across changed LOD/membership.
 Back/Next move their stacks only after accepted navigation and do not start
 while another geometric selection is pending. The stored ranges also wait for
 predicate acceptance; refusal preserves the entire preceding camera/selection

@@ -14,6 +14,7 @@ export function renderGraphHost({ model, el, attachTicks }) {
   const rowSpace = () => view?.spec?._graph_row_space ?? null;
   const sameRows = (a, b) => typeof a === "string" && /^[a-f0-9]{64}$/.test(a) && a === b;
   let selectedRows: string | null = null;
+  let localSelection: { rows: string | null } | null = null;
   let selectionUnavailable = false;
   const picks = new Set<string>();
   let selectionPending: { seq: number; intent: any } | null = null;
@@ -52,6 +53,7 @@ export function renderGraphHost({ model, el, attachTicks }) {
       selectionBarrier = selectionSequence;
       acceptedSelection = null; queuedSelection = null;
       selection = null; selectedRows = null;
+      localSelection = { rows: rowSpace() };
       selectionUnavailable = false; status.textContent = layoutStatus;
     },
     deferHistory: direction => {
@@ -79,6 +81,19 @@ export function renderGraphHost({ model, el, attachTicks }) {
     wantsViewChange: () => view?.spec?.interaction?._transport_view_change === true,
     onMessage: cb => { listeners.add(cb); return () => listeners.delete(cb); },
   };
+  function restoreLocalSelection() {
+    if (!localSelection) return;
+    // Rehydrate the existing local coordinate mask, never native edge/UUID
+    // membership. Changed compiler row mappings require fresh qualification.
+    if (sameRows(localSelection.rows, rowSpace())) {
+      view._restoreSelectionLocalMask(view._stateSelection, { localMask: true, kernelPreview: false });
+    } else {
+      localSelection = null;
+      view._clearSelection({ dispatch: false, broadcast: false, history: false });
+      selectionUnavailable = true;
+      status.textContent = "Graph selection is unavailable for this picture";
+    }
+  }
   function presentSelection(restore = false) {
     if (acceptedSelection && acceptedSelection.content.seq > presentedSelection) {
       const { content, buffers } = acceptedSelection;
@@ -87,6 +102,7 @@ export function renderGraphHost({ model, el, attachTicks }) {
         acceptedSelection = null; presentSelection(true); return;
       }
       if (JSON.stringify(view._stateSelection ?? null) !== JSON.stringify(predicate)) view._historyRecord(intent);
+      localSelection = null;
       view._applyStatePatch({ selection: predicate }, { dispatch: false, broadcast: false, history: false });
       selection = acceptedSelection; selectedRows = rowSpace();
       presentedSelection = content.seq;
@@ -103,6 +119,7 @@ export function renderGraphHost({ model, el, attachTicks }) {
       const predicate = view._stateSelection?.rows ? null : view._stateSelection ?? null;
       view._applyStatePatch({ selection: predicate }, { dispatch: false, broadcast: false, history: false });
       if (selection) { view._applySelectionBuffers(selection.content, selection.buffers); view.draw(); }
+      restoreLocalSelection();
     }
   }
   function refresh(spec, buffers, affected = spec.traces.map(t => t.id)) {
@@ -131,6 +148,7 @@ export function renderGraphHost({ model, el, attachTicks }) {
         status.textContent = "Graph selection is unavailable for this picture";
       }
       if (selection) { view._applySelectionBuffers(selection.content, selection.buffers); view.draw(); }
+      restoreLocalSelection();
   }
   function message(content, buffers) {
     if (disposed || content.graph_instance !== instance || content.graph_epoch !== epoch) return;
@@ -158,8 +176,10 @@ export function renderGraphHost({ model, el, attachTicks }) {
           // reply. It owns this facet; old replies only release backpressure.
           selectionBarrier = selectionSequence; acceptedSelection = null;
           queuedSelection = null;
+          localSelection = null;
         }
         if (!sequenced && (content.type === "selection" || content.type === "selection_rows")) {
+          localSelection = null;
           selection = { content, buffers }; selectedRows = rowSpace();
           selectionUnavailable = false; status.textContent = layoutStatus;
         }
