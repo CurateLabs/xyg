@@ -65,7 +65,8 @@ Actual JupyterLab 4.6.5 and Notebook 7.5.8 share the bounded
 [routed identity journey](../design/graph-session-python-transport.md#notebook7-frontend-qualification-2026-11-10),
 including parallel/self-loop picks, layered rows and delivered GPU UUID masks.
 Stock Notebook 7.6.4 remains unqualified because of its retained upstream shortcuts-registry exception.
-VS Code Jupyter, exact geometric UUID sets, exports and scale budgets remain open.
+A separate [actual VS Code 1.103.2/Jupyter 2025.7.0 Linux desktop cohort](../design/graph-session-python-transport.md#vs-code-jupyter-desktop-qualification-2026-11-10) retains the same public notebook and strict identity proof.
+Broader host versions/installed distributions, exact geometric UUID sets, exports and scale budgets remain open.
 
 Named-colorbar numeric-domain admission has a separate
 [capability comparison and reproducible Matplotlib evidence](../benchmarks/named-colorbar-888/README.md).

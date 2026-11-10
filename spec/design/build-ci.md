@@ -314,3 +314,24 @@ The full source `wasm_foundation_smoke.mjs` also invokes
 independent CSR/UUID and rendered-artifact oracles. It follows the existing
 seven-shape frozen regression in the existing Release surfaces path; no new
 workflow, status check, queue rule or staged-package obligation is introduced.
+
+
+### Bounded desktop graph notebook gate (2026-11-10)
+
+The existing `test` job adds `VS Code notebook test cohort` followed by
+`VS Code Jupyter graph journey`, each with a four-minute step ceiling. The
+first extends the existing isolated Notebook7 server environment with pinned
+NbClassic/widget assets and verifies/installs the named Linux desktop app and
+VSIX artifacts into new private directories. The second uses Xvfb and the
+actual desktop Jupyter notebook, then runs the strict application/graph/sidecar
+verifier. Both are unconditional required command lists for an applicable
+Release surfaces test job; missing setup, execution, verifier, conditional
+execution and masked failures are rejected by the workflow guards.
+`make check-ci` includes the desktop receipt and bypass regressions. No new
+runner, required status, optional-browser skip or broader platform claim is
+introduced. Native/client production and the earlier Lab/Notebook7 gates keep
+their existing commands and budgets. The fixture's private runtime/profile
+files and credentials must not be uploaded; its receipt enumerates the allowed
+source, version, report, capture and log artifacts explicitly. The test-only
+named cohort, observed bootstrap-network scope and remaining #1015 acceptance
+are defined in the desktop section of `graph-session-python-transport.md`.

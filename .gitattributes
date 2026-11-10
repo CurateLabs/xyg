@@ -1520,3 +1520,14 @@ tests/test_accessibility_contract.py text eol=lf
 spec/performance/embedded-keyboard-2026-11-10/** text eol=lf
 spec/performance/embedded-keyboard-2026-11-10/**/*.gz -text
 spec/performance/embedded-keyboard-2026-11-10/**/*.png -text
+
+# Named desktop notebook proof and append-only source/evidence successor.
+scripts/graph_vscode_notebook_smoke.py text eol=lf
+scripts/install_vscode_graph_notebook.py text eol=lf
+scripts/verify_vscode_graph_notebook_report.py text eol=lf
+scripts/graph_notebook_pixels.py text eol=lf
+tests/test_vscode_graph_notebook_report.py text eol=lf
+tests/vscode_graph_notebook/** text eol=lf
+spec/performance/graph-vscode-notebook-2026-11-10/** text eol=lf
+spec/performance/graph-vscode-notebook-2026-11-10/**/*.gz -text
+spec/performance/graph-vscode-notebook-2026-11-10/**/*.png -text

@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-CURRENT_BINDINGS = Path("spec/performance/embedded-keyboard-2026-11-10/current-bindings.json")
+CURRENT_BINDINGS = Path("spec/performance/graph-vscode-notebook-2026-11-10/current-bindings.json")
 
 
 def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> None:
@@ -469,8 +469,24 @@ def test_notebook7_successor_retains_complete_routed_identity_history():
 def test_embedded_keyboard_successor_preserves_complete_notebook_history():
     parent_path = "spec/performance/graph-notebook7-2026-11-10/current-bindings.json"
     parent = json.loads((ROOT / parent_path).read_text())
-    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    current = json.loads(
+        (ROOT / "spec/performance/embedded-keyboard-2026-11-10/current-bindings.json").read_text()
+    )
     assert len(current["parents"]) == 22
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_vscode_successor_preserves_complete_embedded_keyboard_history():
+    parent_path = "spec/performance/embedded-keyboard-2026-11-10/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    assert len(current["parents"]) == 23
     assert {p["path"] for p in current["parents"]} == {parent_path}.union(
         p["path"] for p in parent["parents"]
     )

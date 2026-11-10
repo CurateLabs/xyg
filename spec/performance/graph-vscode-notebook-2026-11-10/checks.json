@@ -1,0 +1,1266 @@
+{
+  "bindings": {
+    "current": 3436,
+    "historical": 1409,
+    "parents": 23,
+    "path": "spec/performance/graph-vscode-notebook-2026-11-10/current-bindings.json",
+    "sha256": "5bf69d345d4eb9d16faab9217b69d0e976feec2d2a78811f8a7151295efdaa03"
+  },
+  "compiledInputs": {
+    "count": 324,
+    "parentExact": true,
+    "path": "spec/performance/current-large-graph-union-2026-11-09/compiled-inputs.json",
+    "sha256": "14467233a1f6878d137490b6ef6741766486b42b37b8ed16aa01e2065113899e"
+  },
+  "evidence": {
+    "/var/tmp/xyg-vscode-proof-audit/audit.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/a444c3befc1f94545267dcf5bf7007db04231ef1840fb883463d86c205001b04.gz",
+      "archiveBytes": 3619,
+      "archiveSha256": "796000cf27cdfbc6284b178f12ca87c7be51178671f2bf0490038e487f898173",
+      "bytes": 8728,
+      "sha256": "a444c3befc1f94545267dcf5bf7007db04231ef1840fb883463d86c205001b04"
+    },
+    "target/task-tmp/vscode-jupyter-graph/ci-display28-runner.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0.gz",
+      "archiveBytes": 85,
+      "archiveSha256": "af9cd43aa91696b98bc4c3cfa81f47261b91f1b35d149565056531b4b3056065",
+      "bytes": 71,
+      "sha256": "26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0"
+    },
+    "target/task-tmp/vscode-jupyter-graph/ci-display28-verifier.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/f939fd95ccd8a4d892a81b4476dad95dd54db7ec4fe4c10f97b0c760387b215e.gz",
+      "archiveBytes": 100,
+      "archiveSha256": "e597f3187387e3c3d850667943d35d0715056b8b69793de982e4ddc9b1ba6bd9",
+      "bytes": 86,
+      "sha256": "f939fd95ccd8a4d892a81b4476dad95dd54db7ec4fe4c10f97b0c760387b215e"
+    },
+    "target/task-tmp/vscode-jupyter-graph/clean-installed-cohort/downloads/ms-toolsai.jupyter-keymap-1.1.2.vsix": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/879c64b9a46e7f928e2cf8a69ba7a8b624b901983b11a0fe7796b57992c4dee7.gz",
+      "archiveBytes": 80266,
+      "archiveSha256": "3da774e4363693a1c151230c0f820ee0e8670be60d909ac38c4b303d5266d1f5",
+      "bytes": 80223,
+      "sha256": "879c64b9a46e7f928e2cf8a69ba7a8b624b901983b11a0fe7796b57992c4dee7"
+    },
+    "target/task-tmp/vscode-jupyter-graph/install-clean-cohort-gzip.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/c553025fd01ef0508e59df08f2fc9aa62665a889aed97839f6b199822b1d4ec1.gz",
+      "archiveBytes": 78,
+      "archiveSha256": "4522217019c05c8908709af597a574bf2cb457574813a2a938fdc66d6e94ad82",
+      "bytes": 66,
+      "sha256": "c553025fd01ef0508e59df08f2fc9aa62665a889aed97839f6b199822b1d4ec1"
+    },
+    "target/task-tmp/vscode-jupyter-graph/install-clean-cohort.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/d99e32918c4cfa45ab46c41a72addc4cff1c2595c1a06882400e2d7ab89785fb.gz",
+      "archiveBytes": 322,
+      "archiveSha256": "40f86b7aed84eeef8eff36cd4ab5012d0f7ac065bf9ebc491d7d2508dd00360f",
+      "bytes": 712,
+      "sha256": "d99e32918c4cfa45ab46c41a72addc4cff1c2595c1a06882400e2d7ab89785fb"
+    },
+    "target/task-tmp/vscode-jupyter-graph/install-final-cohort.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/c553025fd01ef0508e59df08f2fc9aa62665a889aed97839f6b199822b1d4ec1.gz",
+      "archiveBytes": 78,
+      "archiveSha256": "4522217019c05c8908709af597a574bf2cb457574813a2a938fdc66d6e94ad82",
+      "bytes": 66,
+      "sha256": "c553025fd01ef0508e59df08f2fc9aa62665a889aed97839f6b199822b1d4ec1"
+    },
+    "target/task-tmp/vscode-jupyter-graph/install-locked-cohort.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/c553025fd01ef0508e59df08f2fc9aa62665a889aed97839f6b199822b1d4ec1.gz",
+      "archiveBytes": 78,
+      "archiveSha256": "4522217019c05c8908709af597a574bf2cb457574813a2a938fdc66d6e94ad82",
+      "bytes": 66,
+      "sha256": "c553025fd01ef0508e59df08f2fc9aa62665a889aed97839f6b199822b1d4ec1"
+    },
+    "target/task-tmp/vscode-jupyter-graph/install-pinned-cohort.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/c553025fd01ef0508e59df08f2fc9aa62665a889aed97839f6b199822b1d4ec1.gz",
+      "archiveBytes": 78,
+      "archiveSha256": "4522217019c05c8908709af597a574bf2cb457574813a2a938fdc66d6e94ad82",
+      "bytes": 66,
+      "sha256": "c553025fd01ef0508e59df08f2fc9aa62665a889aed97839f6b199822b1d4ec1"
+    },
+    "target/task-tmp/vscode-jupyter-graph/installed25-runner.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0.gz",
+      "archiveBytes": 85,
+      "archiveSha256": "af9cd43aa91696b98bc4c3cfa81f47261b91f1b35d149565056531b4b3056065",
+      "bytes": 71,
+      "sha256": "26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0"
+    },
+    "target/task-tmp/vscode-jupyter-graph/installed25-verifier.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/f939fd95ccd8a4d892a81b4476dad95dd54db7ec4fe4c10f97b0c760387b215e.gz",
+      "archiveBytes": 100,
+      "archiveSha256": "e597f3187387e3c3d850667943d35d0715056b8b69793de982e4ddc9b1ba6bd9",
+      "bytes": 86,
+      "sha256": "f939fd95ccd8a4d892a81b4476dad95dd54db7ec4fe4c10f97b0c760387b215e"
+    },
+    "target/task-tmp/vscode-jupyter-graph/installer-keymap-transport.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/b57a0d18a48b710c3be96ff26455d66a0db2fb5b11ac9f785fa0ac018cc362b0.gz",
+      "archiveBytes": 218,
+      "archiveSha256": "95da712435ec6f6fda73e7705151bfe7ba00f67bd8b298f2943c9fb880566913",
+      "bytes": 289,
+      "sha256": "b57a0d18a48b710c3be96ff26455d66a0db2fb5b11ac9f785fa0ac018cc362b0"
+    },
+    "target/task-tmp/vscode-jupyter-graph/kernel311-33-runner.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0.gz",
+      "archiveBytes": 85,
+      "archiveSha256": "af9cd43aa91696b98bc4c3cfa81f47261b91f1b35d149565056531b4b3056065",
+      "bytes": 71,
+      "sha256": "26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0"
+    },
+    "target/task-tmp/vscode-jupyter-graph/kernel311-33-verifier.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/f939fd95ccd8a4d892a81b4476dad95dd54db7ec4fe4c10f97b0c760387b215e.gz",
+      "archiveBytes": 100,
+      "archiveSha256": "e597f3187387e3c3d850667943d35d0715056b8b69793de982e4ddc9b1ba6bd9",
+      "bytes": 86,
+      "sha256": "f939fd95ccd8a4d892a81b4476dad95dd54db7ec4fe4c10f97b0c760387b215e"
+    },
+    "target/task-tmp/vscode-jupyter-graph/kernel32-runner.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0.gz",
+      "archiveBytes": 85,
+      "archiveSha256": "af9cd43aa91696b98bc4c3cfa81f47261b91f1b35d149565056531b4b3056065",
+      "bytes": 71,
+      "sha256": "26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0"
+    },
+    "target/task-tmp/vscode-jupyter-graph/kernel32-verifier.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/f939fd95ccd8a4d892a81b4476dad95dd54db7ec4fe4c10f97b0c760387b215e.gz",
+      "archiveBytes": 100,
+      "archiveSha256": "e597f3187387e3c3d850667943d35d0715056b8b69793de982e4ddc9b1ba6bd9",
+      "bytes": 86,
+      "sha256": "f939fd95ccd8a4d892a81b4476dad95dd54db7ec4fe4c10f97b0c760387b215e"
+    },
+    "target/task-tmp/vscode-jupyter-graph/locked-failure27-runner.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/6a3fb5a065aca57056afb478f33d726d845a589a20158fa1cca63bce82649e0f.gz",
+      "archiveBytes": 251,
+      "archiveSha256": "d2b8a8dd6dafce6137700f7e16741425b12dfafd1f7da585af125be4a9ab7f4e",
+      "bytes": 478,
+      "sha256": "6a3fb5a065aca57056afb478f33d726d845a589a20158fa1cca63bce82649e0f"
+    },
+    "target/task-tmp/vscode-jupyter-graph/locked-failure27-verifier.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/11cc76e0df42d655b1de06dc46dfb9376a5483e86c07acecbfcba637e70408e7.gz",
+      "archiveBytes": 75,
+      "archiveSha256": "07b13ad86820d62febdfd99b32f8a26c62a4765bd18fbfc9213af6da51248b83",
+      "bytes": 58,
+      "sha256": "11cc76e0df42d655b1de06dc46dfb9376a5483e86c07acecbfcba637e70408e7"
+    },
+    "target/task-tmp/vscode-jupyter-graph/locked-installed-cohort/installation.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/a44c47e8c43203ccf0b9580c5be964899955969f10fcc92d62121b4678b03e98.gz",
+      "archiveBytes": 13315,
+      "archiveSha256": "6083d37b745f3a057e789247634679a48555ee8b97ea148903349ac646f5f21a",
+      "bytes": 33614,
+      "sha256": "a44c47e8c43203ccf0b9580c5be964899955969f10fcc92d62121b4678b03e98"
+    },
+    "target/task-tmp/vscode-jupyter-graph/locked-installed-cohort/ms-toolsai.jupyter-keymap.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/9368c595f4047b008701c0d7d79a2355aaf1e1559701219392b2fba32721069c.gz",
+      "archiveBytes": 106,
+      "archiveSha256": "0bebbb35fbf760cdcb8164dbb5fe259c67ad1f887775803488eb2c44cc751c29",
+      "bytes": 102,
+      "sha256": "9368c595f4047b008701c0d7d79a2355aaf1e1559701219392b2fba32721069c"
+    },
+    "target/task-tmp/vscode-jupyter-graph/locked-installed-cohort/ms-toolsai.jupyter-renderers.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/dcfec2ff825d19d1076a0707e6ca296f30d05c0e12d10e725793dcd797543c0b.gz",
+      "archiveBytes": 110,
+      "archiveSha256": "f5558d2ff0630897afae8d35e09330963e1ba5a3399249a8b41ac32d9bced76e",
+      "bytes": 105,
+      "sha256": "dcfec2ff825d19d1076a0707e6ca296f30d05c0e12d10e725793dcd797543c0b"
+    },
+    "target/task-tmp/vscode-jupyter-graph/locked-installed-cohort/ms-toolsai.jupyter.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/0a6290602100f807fa307ad31e3f78c90271282a6d3202e65129a8fbcd9bd166.gz",
+      "archiveBytes": 106,
+      "archiveSha256": "4f40ff03773e7e22154378293240c362b517fdb6bb5f8edcdb3557a1d6569073",
+      "bytes": 98,
+      "sha256": "0a6290602100f807fa307ad31e3f78c90271282a6d3202e65129a8fbcd9bd166"
+    },
+    "target/task-tmp/vscode-jupyter-graph/locked-installed-cohort/ms-toolsai.vscode-jupyter-cell-tags.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/6f428aaf830f0284f63c61acecb9d6bb458d90e4ac38cbd25d0ebd147358448c.gz",
+      "archiveBytes": 116,
+      "archiveSha256": "4b7dcf2c240bea523db0bc7cc5ece96fff3192434a99885514d8a030ba480e3f",
+      "bytes": 112,
+      "sha256": "6f428aaf830f0284f63c61acecb9d6bb458d90e4ac38cbd25d0ebd147358448c"
+    },
+    "target/task-tmp/vscode-jupyter-graph/locked-installed-cohort/ms-toolsai.vscode-jupyter-slideshow.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/8a618be2ddbe0cbc676bafe53abd5170979bc0122c142d7bc48d85b076c27239.gz",
+      "archiveBytes": 116,
+      "archiveSha256": "7e1ce5e763c7716edbd336d40345b9e89b955d561cace065f56fe338737a7501",
+      "bytes": 112,
+      "sha256": "8a618be2ddbe0cbc676bafe53abd5170979bc0122c142d7bc48d85b076c27239"
+    },
+    "target/task-tmp/vscode-jupyter-graph/locked26-final-verifier.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/f939fd95ccd8a4d892a81b4476dad95dd54db7ec4fe4c10f97b0c760387b215e.gz",
+      "archiveBytes": 100,
+      "archiveSha256": "e597f3187387e3c3d850667943d35d0715056b8b69793de982e4ddc9b1ba6bd9",
+      "bytes": 86,
+      "sha256": "f939fd95ccd8a4d892a81b4476dad95dd54db7ec4fe4c10f97b0c760387b215e"
+    },
+    "target/task-tmp/vscode-jupyter-graph/locked26-runner.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0.gz",
+      "archiveBytes": 85,
+      "archiveSha256": "af9cd43aa91696b98bc4c3cfa81f47261b91f1b35d149565056531b4b3056065",
+      "bytes": 71,
+      "sha256": "26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0"
+    },
+    "target/task-tmp/vscode-jupyter-graph/locked311-29-runner.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0.gz",
+      "archiveBytes": 85,
+      "archiveSha256": "af9cd43aa91696b98bc4c3cfa81f47261b91f1b35d149565056531b4b3056065",
+      "bytes": 71,
+      "sha256": "26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0"
+    },
+    "target/task-tmp/vscode-jupyter-graph/locked311-29-verifier.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/f939fd95ccd8a4d892a81b4476dad95dd54db7ec4fe4c10f97b0c760387b215e.gz",
+      "archiveBytes": 100,
+      "archiveSha256": "e597f3187387e3c3d850667943d35d0715056b8b69793de982e4ddc9b1ba6bd9",
+      "bytes": 86,
+      "sha256": "f939fd95ccd8a4d892a81b4476dad95dd54db7ec4fe4c10f97b0c760387b215e"
+    },
+    "target/task-tmp/vscode-jupyter-graph/mark30-runner.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0.gz",
+      "archiveBytes": 85,
+      "archiveSha256": "af9cd43aa91696b98bc4c3cfa81f47261b91f1b35d149565056531b4b3056065",
+      "bytes": 71,
+      "sha256": "26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0"
+    },
+    "target/task-tmp/vscode-jupyter-graph/mark30-verifier.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/f939fd95ccd8a4d892a81b4476dad95dd54db7ec4fe4c10f97b0c760387b215e.gz",
+      "archiveBytes": 100,
+      "archiveSha256": "e597f3187387e3c3d850667943d35d0715056b8b69793de982e4ddc9b1ba6bd9",
+      "bytes": 86,
+      "sha256": "f939fd95ccd8a4d892a81b4476dad95dd54db7ec4fe4c10f97b0c760387b215e"
+    },
+    "target/task-tmp/vscode-jupyter-graph/mark311-31-runner.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0.gz",
+      "archiveBytes": 85,
+      "archiveSha256": "af9cd43aa91696b98bc4c3cfa81f47261b91f1b35d149565056531b4b3056065",
+      "bytes": 71,
+      "sha256": "26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0"
+    },
+    "target/task-tmp/vscode-jupyter-graph/mark311-31-verifier.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/f939fd95ccd8a4d892a81b4476dad95dd54db7ec4fe4c10f97b0c760387b215e.gz",
+      "archiveBytes": 100,
+      "archiveSha256": "e597f3187387e3c3d850667943d35d0715056b8b69793de982e4ddc9b1ba6bd9",
+      "bytes": 86,
+      "sha256": "f939fd95ccd8a4d892a81b4476dad95dd54db7ec4fe4c10f97b0c760387b215e"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/ci-display28/cleanup.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/7b6e9c223b79dbd140ac485934337749da254e0fe253ea076e1aef053987e535.gz",
+      "archiveBytes": 122,
+      "archiveSha256": "3a5901b146c0a164fa9391a879ba2439188b8686460f79d4306b2ac4984ebba0",
+      "bytes": 296,
+      "sha256": "7b6e9c223b79dbd140ac485934337749da254e0fe253ea076e1aef053987e535"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/ci-display28/controller-complete.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "857e8dc6760f12d1b6ad15479d85e8145534f75f681ff8d45982c2d09cb947b6",
+      "bytes": 33,
+      "sha256": "b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/ci-display28/report.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/435d73b55eb128421ec39ad627c2eba090fd2e9726486eb0353869f576fe01e9.gz",
+      "archiveBytes": 19426,
+      "archiveSha256": "33d2221774fcab548790c3ce52075ac7e9d9888ad569a3d57754a8c444881706",
+      "bytes": 324210,
+      "sha256": "435d73b55eb128421ec39ad627c2eba090fd2e9726486eb0353869f576fe01e9"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/ci-display28/run-result.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/6529305bc3c4723cc55af6f6064b676ef15db8d0216ca29baa779315c0b6ed7e.gz",
+      "archiveBytes": 521,
+      "archiveSha256": "d8591b7913080f28cd55f700af919bb475eb4c2e0d545fe306ee027eb6d36cea",
+      "bytes": 1204,
+      "sha256": "6529305bc3c4723cc55af6f6064b676ef15db8d0216ca29baa779315c0b6ed7e"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/installed25/cleanup.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/649b5405008ac4015fe2abaeb55fede94195f8135672c2911f89c18bff4a3ad4.gz",
+      "archiveBytes": 128,
+      "archiveSha256": "8517e8cb135a61fe87bd902783c8b6684c8933c4fdad95186f934d5a0982419f",
+      "bytes": 379,
+      "sha256": "649b5405008ac4015fe2abaeb55fede94195f8135672c2911f89c18bff4a3ad4"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/installed25/controller-complete.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "857e8dc6760f12d1b6ad15479d85e8145534f75f681ff8d45982c2d09cb947b6",
+      "bytes": 33,
+      "sha256": "b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/installed25/report.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/c79a3fc6661a3789b3df232926660bf2ae81df9c901d435406b7a8b78481ebcf.gz",
+      "archiveBytes": 19301,
+      "archiveSha256": "24d402ef8d543f542fa28882d8800deb99bb887fdb0e0fcc9318ae057c5eb941",
+      "bytes": 314682,
+      "sha256": "c79a3fc6661a3789b3df232926660bf2ae81df9c901d435406b7a8b78481ebcf"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/installed25/run-result.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/1a1c09d599a98a2cbf3f6b4e858cc113b94bd2d32472505af26a1683a202d406.gz",
+      "archiveBytes": 517,
+      "archiveSha256": "8b1d5eb6468fbd3957c41f06e5bf8f6b8fc0051361af62f0c82c34e5fa8d7a0c",
+      "bytes": 1200,
+      "sha256": "1a1c09d599a98a2cbf3f6b4e858cc113b94bd2d32472505af26a1683a202d406"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel311-33/attach.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/914408d29b65be405a7b7e5de46644065260cbc22c3f7ac77d29df4663801669.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "353ee798081a6eadd80724efce87173d86c6ffce24ebe09836111084cc59b046",
+      "bytes": 32,
+      "sha256": "914408d29b65be405a7b7e5de46644065260cbc22c3f7ac77d29df4663801669"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel311-33/cleanup.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/649b5405008ac4015fe2abaeb55fede94195f8135672c2911f89c18bff4a3ad4.gz",
+      "archiveBytes": 128,
+      "archiveSha256": "8517e8cb135a61fe87bd902783c8b6684c8933c4fdad95186f934d5a0982419f",
+      "bytes": 379,
+      "sha256": "649b5405008ac4015fe2abaeb55fede94195f8135672c2911f89c18bff4a3ad4"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel311-33/connected.png": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/eeab994e1051c3006f0cbf6d7dba5aaf1e4d1041c573b21dcb4284c26e5b6ef0.gz",
+      "archiveBytes": 20244,
+      "archiveSha256": "50718aa57b8bdb74392df45e80cc7c429ddbeb395049cd225c389b23c6f2f413",
+      "bytes": 21065,
+      "sha256": "eeab994e1051c3006f0cbf6d7dba5aaf1e4d1041c573b21dcb4284c26e5b6ef0"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel311-33/controller-complete.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "857e8dc6760f12d1b6ad15479d85e8145534f75f681ff8d45982c2d09cb947b6",
+      "bytes": 33,
+      "sha256": "b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel311-33/extension-state.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/6a0783adc28d7887ef06df102f1a7e51a8e3ce7cd9037902239278315cc04a61.gz",
+      "archiveBytes": 9316,
+      "archiveSha256": "9e25a0f0bca36cc2e591afd824483d02efa316044a0fa136fbebdf70f8a35e30",
+      "bytes": 81221,
+      "sha256": "6a0783adc28d7887ef06df102f1a7e51a8e3ce7cd9037902239278315cc04a61"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel311-33/final-workbench.png": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/0c88985f179b27ab07e0450e2342c064da5a7ae51fc5e92e4d40e3b0fb881c9c.gz",
+      "archiveBytes": 70006,
+      "archiveSha256": "f949ec26737d5eada2a26dc91d63045a460c2dd3ddcaf7efb7aed09737fbb3b6",
+      "bytes": 74366,
+      "sha256": "0c88985f179b27ab07e0450e2342c064da5a7ae51fc5e92e4d40e3b0fb881c9c"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel311-33/final.png": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/851cea05525135445d51fc0243ae1c755b395983483306a6cd4500f00b3bdf41.gz",
+      "archiveBytes": 9644,
+      "archiveSha256": "7b2eacdc0eee528c9f255959a386d98b0060c81bc747c0e0c9107965894a7211",
+      "bytes": 11236,
+      "sha256": "851cea05525135445d51fc0243ae1c755b395983483306a6cd4500f00b3bdf41"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel311-33/geometry-diagnostic.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/c005e34295e073dad3512bc7a7b8859268d3aeb1a15efc9a692a33c3478b8733.gz",
+      "archiveBytes": 364,
+      "archiveSha256": "3c971b49040ef444ecc22fda486970be6268cdebcedf42e80b3ff91885b6877c",
+      "bytes": 1167,
+      "sha256": "c005e34295e073dad3512bc7a7b8859268d3aeb1a15efc9a692a33c3478b8733"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel311-33/graph.ipynb": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/204347084f54eed77ce9e607ccd6168f82cb19858581435944eaa87f6a743a0f.gz",
+      "archiveBytes": 6932,
+      "archiveSha256": "369956c472935e322bc868980c835dbef34caab3aac454a2cc98391d3f752f83",
+      "bytes": 38513,
+      "sha256": "204347084f54eed77ce9e607ccd6168f82cb19858581435944eaa87f6a743a0f"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel311-33/identity-parity-input.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/d61bc9cd9febf7cf06784bfb938355a5c9d3d19e7bbca2a66f2596c842c91d2c.gz",
+      "archiveBytes": 4214,
+      "archiveSha256": "3d7bf18e21efd474f4086df6088a6404144c964b6679b452b17f637d633f9968",
+      "bytes": 17814,
+      "sha256": "d61bc9cd9febf7cf06784bfb938355a5c9d3d19e7bbca2a66f2596c842c91d2c"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel311-33/identity-parity.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/ea80ea7189b6763969bbbca36ca084a6011b0883d9c6f1542249566cfe253ffd.gz",
+      "archiveBytes": 440,
+      "archiveSha256": "6e4f59d1b24dc6542854a4f034d973c5af5c4877367533fca737b0ffa2e6e6a3",
+      "bytes": 1233,
+      "sha256": "ea80ea7189b6763969bbbca36ca084a6011b0883d9c6f1542249566cfe253ffd"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel311-33/initial-workbench.png": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/de19ddb8bcb39ad1ff3cff76569c121b47c066ba7ef51ee1f45543e4bfceb6d0.gz",
+      "archiveBytes": 78548,
+      "archiveSha256": "6818d3fd5064f4ba83f0e2f04660ed42ade89de18c8e1f7ff279ae0fb2030668",
+      "bytes": 82652,
+      "sha256": "de19ddb8bcb39ad1ff3cff76569c121b47c066ba7ef51ee1f45543e4bfceb6d0"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel311-33/initial.png": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/763ac789d685c2f6fb99394e48919d845a7c7f99db828d53690ade7632947f50.gz",
+      "archiveBytes": 12411,
+      "archiveSha256": "7423565a9d0a32492c3187199200b409067fbb29bee949acb4bb1da73a58a10c",
+      "bytes": 14012,
+      "sha256": "763ac789d685c2f6fb99394e48919d845a7c7f99db828d53690ade7632947f50"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel311-33/inspector-sources.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/9bcd5cc14098d2a9dea80017ea5c75f73e42159097130a798d120fe77693deb9.gz",
+      "archiveBytes": 295,
+      "archiveSha256": "85383833125ec2c76de4c69feaff059620d91836e06ce352398a983a51782f62",
+      "bytes": 1342,
+      "sha256": "9bcd5cc14098d2a9dea80017ea5c75f73e42159097130a798d120fe77693deb9"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel311-33/installation.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/a44c47e8c43203ccf0b9580c5be964899955969f10fcc92d62121b4678b03e98.gz",
+      "archiveBytes": 13315,
+      "archiveSha256": "6083d37b745f3a057e789247634679a48555ee8b97ea148903349ac646f5f21a",
+      "bytes": 33614,
+      "sha256": "a44c47e8c43203ccf0b9580c5be964899955969f10fcc92d62121b4678b03e98"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel311-33/kernel-info.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/c4b38d08827014b51c8ef664d82580f693c56c88a1bde43aff5c351b27b1aff6.gz",
+      "archiveBytes": 138,
+      "archiveSha256": "922a7433d65fe9587d949e22230024f91e4fb5f4d09aa61d17052bdcf940142d",
+      "bytes": 192,
+      "sha256": "c4b38d08827014b51c8ef664d82580f693c56c88a1bde43aff5c351b27b1aff6"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel311-33/kernel-info.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel311-33/mark-pixels.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/76f92ddc38a786f7981df3dd8df6664683f72cd9e231e1aec001650a6dc5be78.gz",
+      "archiveBytes": 214,
+      "archiveSha256": "ba07c8d62215a5f799c98f22f333b6d6f1ac70094df1addc7d97bdb69787649b",
+      "bytes": 504,
+      "sha256": "76f92ddc38a786f7981df3dd8df6664683f72cd9e231e1aec001650a6dc5be78"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel311-33/report.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/744cddcf189f92059557a0f0805432554e86a5eb6324954828f0d4a9502ccd01.gz",
+      "archiveBytes": 19839,
+      "archiveSha256": "82d608806e04352106565ce5e29d8385271f31d92b77f8f5c322d69af7b3e233",
+      "bytes": 326317,
+      "sha256": "744cddcf189f92059557a0f0805432554e86a5eb6324954828f0d4a9502ccd01"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel311-33/routed.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/a5ef0138f40cbe88fdfe5c752954aa6fdd1710e73e72b7b1d4b487787ab568c4.gz",
+      "archiveBytes": 2616,
+      "archiveSha256": "d438a90e79582815c181057da0a7bb0844fb870e61f6620e6177d3f5d144ac5d",
+      "bytes": 13724,
+      "sha256": "a5ef0138f40cbe88fdfe5c752954aa6fdd1710e73e72b7b1d4b487787ab568c4"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel311-33/run-result.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/73366c2e250cd2e9961816f7a70d38cd2e099601cf8de40ff8ad20d0c4750f13.gz",
+      "archiveBytes": 517,
+      "archiveSha256": "2ef806fc78952b34b842db51bec48b0e9ffedc4fd59fd0821cc2e26cd19e2f12",
+      "bytes": 1204,
+      "sha256": "73366c2e250cd2e9961816f7a70d38cd2e099601cf8de40ff8ad20d0c4750f13"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel311-33/served-widget-assets.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/5e3c88fbc7dd9b5c4f28ecb561eb505785ad787db5a67f9a7daf03e9d11ee795.gz",
+      "archiveBytes": 301,
+      "archiveSha256": "098be3cf496d6aacc2e24b8c6752907b35abcf18577faefb8afca3057086a6f9",
+      "bytes": 649,
+      "sha256": "5e3c88fbc7dd9b5c4f28ecb561eb505785ad787db5a67f9a7daf03e9d11ee795"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel311-33/server-environment.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/15f6c2fd302e6710bbb21ab71e225844dacd89e2591fd134bdcbeb42407c3385.gz",
+      "archiveBytes": 208,
+      "archiveSha256": "83906ea7806346f9309fe16618fac1f99e60cfcd10ef3f5ee84b1c7bd893bc7d",
+      "bytes": 281,
+      "sha256": "15f6c2fd302e6710bbb21ab71e225844dacd89e2591fd134bdcbeb42407c3385"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel32/attach.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/914408d29b65be405a7b7e5de46644065260cbc22c3f7ac77d29df4663801669.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "353ee798081a6eadd80724efce87173d86c6ffce24ebe09836111084cc59b046",
+      "bytes": 32,
+      "sha256": "914408d29b65be405a7b7e5de46644065260cbc22c3f7ac77d29df4663801669"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel32/cleanup.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/7b6e9c223b79dbd140ac485934337749da254e0fe253ea076e1aef053987e535.gz",
+      "archiveBytes": 122,
+      "archiveSha256": "3a5901b146c0a164fa9391a879ba2439188b8686460f79d4306b2ac4984ebba0",
+      "bytes": 296,
+      "sha256": "7b6e9c223b79dbd140ac485934337749da254e0fe253ea076e1aef053987e535"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel32/connected.png": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/eeab994e1051c3006f0cbf6d7dba5aaf1e4d1041c573b21dcb4284c26e5b6ef0.gz",
+      "archiveBytes": 20244,
+      "archiveSha256": "50718aa57b8bdb74392df45e80cc7c429ddbeb395049cd225c389b23c6f2f413",
+      "bytes": 21065,
+      "sha256": "eeab994e1051c3006f0cbf6d7dba5aaf1e4d1041c573b21dcb4284c26e5b6ef0"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel32/controller-complete.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "857e8dc6760f12d1b6ad15479d85e8145534f75f681ff8d45982c2d09cb947b6",
+      "bytes": 33,
+      "sha256": "b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel32/extension-state.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/534f1a36a79d717e68c07e99d2d02ede8ce01840aabb6e86b9bf59c2910c2d19.gz",
+      "archiveBytes": 9313,
+      "archiveSha256": "aac9a06c268749eea330070d60581b45b5f1f52263d03a3a930c4780087bf5b7",
+      "bytes": 81159,
+      "sha256": "534f1a36a79d717e68c07e99d2d02ede8ce01840aabb6e86b9bf59c2910c2d19"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel32/final-workbench.png": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/209931b1d8d50a6696a9303ab65d9c9b6af0f8732b72e36af84859bd70a73f5a.gz",
+      "archiveBytes": 69993,
+      "archiveSha256": "c9af667a287f0fd07b30d1c49d02c7e88524ac01d01de5e9416effecebae0d1c",
+      "bytes": 74330,
+      "sha256": "209931b1d8d50a6696a9303ab65d9c9b6af0f8732b72e36af84859bd70a73f5a"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel32/final.png": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/d12a160b9d514c82609fda76f202ed2188499648335a7c74ddc240abb2c0b103.gz",
+      "archiveBytes": 9680,
+      "archiveSha256": "78023e8c646fffb68c5d168481f62ce8d580513c9f830f20093d7b5ab1c3f1be",
+      "bytes": 11185,
+      "sha256": "d12a160b9d514c82609fda76f202ed2188499648335a7c74ddc240abb2c0b103"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel32/geometry-diagnostic.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/c06de4a2c08724379892791464dab5204c73add6cbc7df38c01b7b46864afe56.gz",
+      "archiveBytes": 365,
+      "archiveSha256": "67c885643fc33aabd6398aa4c834298f1e571485267897eac07d731155e96acc",
+      "bytes": 1167,
+      "sha256": "c06de4a2c08724379892791464dab5204c73add6cbc7df38c01b7b46864afe56"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel32/graph.ipynb": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/7598ddb4b4d0d5f0a852d39003cc33000b2694ccc45ea1d391ad77e7ed778030.gz",
+      "archiveBytes": 6933,
+      "archiveSha256": "a255b5404482b3b98da71d2707f41d48c21853a3170d6aa74e6e0f612e1866f8",
+      "bytes": 38513,
+      "sha256": "7598ddb4b4d0d5f0a852d39003cc33000b2694ccc45ea1d391ad77e7ed778030"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel32/identity-parity-input.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/d61bc9cd9febf7cf06784bfb938355a5c9d3d19e7bbca2a66f2596c842c91d2c.gz",
+      "archiveBytes": 4214,
+      "archiveSha256": "3d7bf18e21efd474f4086df6088a6404144c964b6679b452b17f637d633f9968",
+      "bytes": 17814,
+      "sha256": "d61bc9cd9febf7cf06784bfb938355a5c9d3d19e7bbca2a66f2596c842c91d2c"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel32/identity-parity.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/ea80ea7189b6763969bbbca36ca084a6011b0883d9c6f1542249566cfe253ffd.gz",
+      "archiveBytes": 440,
+      "archiveSha256": "6e4f59d1b24dc6542854a4f034d973c5af5c4877367533fca737b0ffa2e6e6a3",
+      "bytes": 1233,
+      "sha256": "ea80ea7189b6763969bbbca36ca084a6011b0883d9c6f1542249566cfe253ffd"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel32/initial-workbench.png": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/5ac20e84e8c8dad4db99c5cfe995dbf2e8aa41d96e370e727fb5f00a354fd91b.gz",
+      "archiveBytes": 78833,
+      "archiveSha256": "6baeb80d27f8daf80d5e71078f9a96ae4a5a8233a0a41a7332f56cee8eb564ae",
+      "bytes": 82891,
+      "sha256": "5ac20e84e8c8dad4db99c5cfe995dbf2e8aa41d96e370e727fb5f00a354fd91b"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel32/initial.png": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/7cf256f7c8aada6ffd995d0b0578b7dea41d879c7f1a21cec1936a71577220e1.gz",
+      "archiveBytes": 12576,
+      "archiveSha256": "178ac2e144a03dbf1a6ced905bf9be2feafd217f5eb67c197be1367d6152a8a2",
+      "bytes": 14261,
+      "sha256": "7cf256f7c8aada6ffd995d0b0578b7dea41d879c7f1a21cec1936a71577220e1"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel32/inspector-sources.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/0077f2c7601e82b29befb857234e3c3738c8b66aa8eeb88b829df6b65a8bbec9.gz",
+      "archiveBytes": 296,
+      "archiveSha256": "2c7a9bfbbc72cba39b9051f92e9f8fb347ba1edfe5d86d94febfa63fcc5d0c3e",
+      "bytes": 1342,
+      "sha256": "0077f2c7601e82b29befb857234e3c3738c8b66aa8eeb88b829df6b65a8bbec9"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel32/installation.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/a44c47e8c43203ccf0b9580c5be964899955969f10fcc92d62121b4678b03e98.gz",
+      "archiveBytes": 13315,
+      "archiveSha256": "6083d37b745f3a057e789247634679a48555ee8b97ea148903349ac646f5f21a",
+      "bytes": 33614,
+      "sha256": "a44c47e8c43203ccf0b9580c5be964899955969f10fcc92d62121b4678b03e98"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel32/kernel-info.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/8db7cfc12cf13d3cc9108b782e98b1b21d045bc30b9693951ea2c1699defcdac.gz",
+      "archiveBytes": 138,
+      "archiveSha256": "8f57b2fd7f2217c876e0330d81c9dd14846a7c42b2b19ba6303fab06b2434653",
+      "bytes": 192,
+      "sha256": "8db7cfc12cf13d3cc9108b782e98b1b21d045bc30b9693951ea2c1699defcdac"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel32/kernel-info.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel32/mark-pixels.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/76f92ddc38a786f7981df3dd8df6664683f72cd9e231e1aec001650a6dc5be78.gz",
+      "archiveBytes": 214,
+      "archiveSha256": "ba07c8d62215a5f799c98f22f333b6d6f1ac70094df1addc7d97bdb69787649b",
+      "bytes": 504,
+      "sha256": "76f92ddc38a786f7981df3dd8df6664683f72cd9e231e1aec001650a6dc5be78"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel32/report.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/84b75688b161fb29790db3ed2441f29931e10d1e8aa1314f2909cafad3054085.gz",
+      "archiveBytes": 19863,
+      "archiveSha256": "f38d180ca6d88e46e51656d27b6dac98c1b2d194f3d042b6d05d30c5f76a1467",
+      "bytes": 326370,
+      "sha256": "84b75688b161fb29790db3ed2441f29931e10d1e8aa1314f2909cafad3054085"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel32/routed.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/a5ef0138f40cbe88fdfe5c752954aa6fdd1710e73e72b7b1d4b487787ab568c4.gz",
+      "archiveBytes": 2616,
+      "archiveSha256": "d438a90e79582815c181057da0a7bb0844fb870e61f6620e6177d3f5d144ac5d",
+      "bytes": 13724,
+      "sha256": "a5ef0138f40cbe88fdfe5c752954aa6fdd1710e73e72b7b1d4b487787ab568c4"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel32/run-result.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/896ea335551184df63dd1276e58a4d5041d97867f361bac9008297bdea9d714f.gz",
+      "archiveBytes": 517,
+      "archiveSha256": "a3adba0d6a21703aae27e830cc9395aaf5be33a85753560dd29020590f140ac3",
+      "bytes": 1196,
+      "sha256": "896ea335551184df63dd1276e58a4d5041d97867f361bac9008297bdea9d714f"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel32/served-widget-assets.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/5e3c88fbc7dd9b5c4f28ecb561eb505785ad787db5a67f9a7daf03e9d11ee795.gz",
+      "archiveBytes": 301,
+      "archiveSha256": "098be3cf496d6aacc2e24b8c6752907b35abcf18577faefb8afca3057086a6f9",
+      "bytes": 649,
+      "sha256": "5e3c88fbc7dd9b5c4f28ecb561eb505785ad787db5a67f9a7daf03e9d11ee795"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/kernel32/server-environment.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/602787bb95b56602d712e9ddcdba30f46c0ef8805d281fd9a295e7e9610bff5c.gz",
+      "archiveBytes": 208,
+      "archiveSha256": "43cf7d28ac5eed65d0abb00af6d1093265e957466f5f36e53c9f05c5c29400ce",
+      "bytes": 281,
+      "sha256": "602787bb95b56602d712e9ddcdba30f46c0ef8805d281fd9a295e7e9610bff5c"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/locked-failure27/attach.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/25a263e82d9c70ca5bae892e2cade1a0074ac1993d3277e1f5f259250c264b17.gz",
+      "archiveBytes": 229,
+      "archiveSha256": "fb2eb448ebf1a52e395dcfa57195130b13b37db876be4392aa7f050b3091cdd2",
+      "bytes": 360,
+      "sha256": "25a263e82d9c70ca5bae892e2cade1a0074ac1993d3277e1f5f259250c264b17"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/locked-failure27/cleanup.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/f60414b1370abbe55a50b86497058ef1815acc235c21ab332deafb29f7c89f93.gz",
+      "archiveBytes": 132,
+      "archiveSha256": "92f65024544d508b4fa22d31bd16a945aae18aa26d6aee58c1d51f0e2c793f62",
+      "bytes": 379,
+      "sha256": "f60414b1370abbe55a50b86497058ef1815acc235c21ab332deafb29f7c89f93"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/locked-failure27/controller-complete.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/f85703178f3d92d6ffe68081477ac6aef82371ba6a97652c82e22a517a680ab5.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "fedd2098615853ec234d3c6c8b7b96e6e6544fcf989ff5d6d7c763e75cf235bd",
+      "bytes": 180,
+      "sha256": "f85703178f3d92d6ffe68081477ac6aef82371ba6a97652c82e22a517a680ab5"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/locked-failure27/extension-state.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/a8669c95fccccedfab0eb4017171e4b41e19429e79ab683b04c94e3a45875f07.gz",
+      "archiveBytes": 1345,
+      "archiveSha256": "cb393e9c151aca0f2627261324d6b573be6abad0946c1a7215e2e04b538fc241",
+      "bytes": 8982,
+      "sha256": "a8669c95fccccedfab0eb4017171e4b41e19429e79ab683b04c94e3a45875f07"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/locked-failure27/failure.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/e08a158f5ba124d9e5c3098bba56f615ea7ca86a7bae8b60d469396c66a582fe.gz",
+      "archiveBytes": 3866,
+      "archiveSha256": "e5c12683436e3eaa7d4c5d935b408b6bf662e0c6e0d5d306a21640081641d5ce",
+      "bytes": 62195,
+      "sha256": "e08a158f5ba124d9e5c3098bba56f615ea7ca86a7bae8b60d469396c66a582fe"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/locked-failure27/run-result.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/49c2992cf3a8140436d4ceddf6576bcafa5bf76458eeb1ebf1968f24ab08424d.gz",
+      "archiveBytes": 516,
+      "archiveSha256": "d8afb4792ff20d2cd239e7fbfd8653aa8800e28480d72bbdbf46e19f4673be6c",
+      "bytes": 1209,
+      "sha256": "49c2992cf3a8140436d4ceddf6576bcafa5bf76458eeb1ebf1968f24ab08424d"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/locked26/cleanup.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/649b5405008ac4015fe2abaeb55fede94195f8135672c2911f89c18bff4a3ad4.gz",
+      "archiveBytes": 128,
+      "archiveSha256": "8517e8cb135a61fe87bd902783c8b6684c8933c4fdad95186f934d5a0982419f",
+      "bytes": 379,
+      "sha256": "649b5405008ac4015fe2abaeb55fede94195f8135672c2911f89c18bff4a3ad4"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/locked26/controller-complete.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "857e8dc6760f12d1b6ad15479d85e8145534f75f681ff8d45982c2d09cb947b6",
+      "bytes": 33,
+      "sha256": "b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/locked26/report.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/1e906962797f5a0a5f4c1f294b27e927d0516fcf72a7cfe07c06d375c6a7aed0.gz",
+      "archiveBytes": 19299,
+      "archiveSha256": "641da3f02ab40d479e7665000b155d0a129ff9de7750339d3b9b21336f554f20",
+      "bytes": 315337,
+      "sha256": "1e906962797f5a0a5f4c1f294b27e927d0516fcf72a7cfe07c06d375c6a7aed0"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/locked26/run-result.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/4f7ff37b377c2918c98f45279e765621acd32677001652b70bd06bcd354e0d94.gz",
+      "archiveBytes": 516,
+      "archiveSha256": "d7602aa31250fdd37dd0007f40a2da9444e85dc876fb177d6058baf4781e949a",
+      "bytes": 1196,
+      "sha256": "4f7ff37b377c2918c98f45279e765621acd32677001652b70bd06bcd354e0d94"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/locked311-29/cleanup.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/649b5405008ac4015fe2abaeb55fede94195f8135672c2911f89c18bff4a3ad4.gz",
+      "archiveBytes": 128,
+      "archiveSha256": "8517e8cb135a61fe87bd902783c8b6684c8933c4fdad95186f934d5a0982419f",
+      "bytes": 379,
+      "sha256": "649b5405008ac4015fe2abaeb55fede94195f8135672c2911f89c18bff4a3ad4"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/locked311-29/controller-complete.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "857e8dc6760f12d1b6ad15479d85e8145534f75f681ff8d45982c2d09cb947b6",
+      "bytes": 33,
+      "sha256": "b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/locked311-29/report.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/d0337f8eacc65927e145840c11d326652393a207abbe67f722913688b9a055b8.gz",
+      "archiveBytes": 19444,
+      "archiveSha256": "9a9a81f3f49e839023c3b9c09bf766a29f056aff6744ef2866dd5ab222f96c25",
+      "bytes": 324336,
+      "sha256": "d0337f8eacc65927e145840c11d326652393a207abbe67f722913688b9a055b8"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/locked311-29/run-result.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/d5942f6ae92afe275f07bd00d77e652134028397beef444fc6b7650cd6ad7b19.gz",
+      "archiveBytes": 519,
+      "archiveSha256": "2859c4456e1ab015d1b40a44cd788616b48c865c570257f87ccd2265b5852134",
+      "bytes": 1204,
+      "sha256": "d5942f6ae92afe275f07bd00d77e652134028397beef444fc6b7650cd6ad7b19"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/tracked23/cleanup.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/649b5405008ac4015fe2abaeb55fede94195f8135672c2911f89c18bff4a3ad4.gz",
+      "archiveBytes": 128,
+      "archiveSha256": "8517e8cb135a61fe87bd902783c8b6684c8933c4fdad95186f934d5a0982419f",
+      "bytes": 379,
+      "sha256": "649b5405008ac4015fe2abaeb55fede94195f8135672c2911f89c18bff4a3ad4"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/tracked23/controller-complete.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "857e8dc6760f12d1b6ad15479d85e8145534f75f681ff8d45982c2d09cb947b6",
+      "bytes": 33,
+      "sha256": "b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/tracked23/report.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/b6c2057f5de1c1e14313e04695c887876da40ad243e3e94ad79a4db0c99b3050.gz",
+      "archiveBytes": 19296,
+      "archiveSha256": "fb99d29a11ca762c07931babd43fbae496129be89328b3ca1809cd05bdc705b9",
+      "bytes": 309213,
+      "sha256": "b6c2057f5de1c1e14313e04695c887876da40ad243e3e94ad79a4db0c99b3050"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/tracked23/run-result.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/021806b42a0c1312d1a125a638e2813496b6c1e65e423f4adfef550e92181b76.gz",
+      "archiveBytes": 490,
+      "archiveSha256": "97dce7db1ce4e425bf701973bab64d281b59c94673295780211a626db85dc866",
+      "bytes": 1105,
+      "sha256": "021806b42a0c1312d1a125a638e2813496b6c1e65e423f4adfef550e92181b76"
+    },
+    "target/task-tmp/vscode-jupyter-graph/proof-python311-freeze.txt": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/8510df49f95dcc0025c203d7e524d24fb8e977b0be9f983b40b63c94450accf0.gz",
+      "archiveBytes": 982,
+      "archiveSha256": "a314a2b1ea64b4d45a097e9170773c9042bf83c24a09fa3d35b617c9ff0737a3",
+      "bytes": 1958,
+      "sha256": "8510df49f95dcc0025c203d7e524d24fb8e977b0be9f983b40b63c94450accf0"
+    },
+    "target/task-tmp/vscode-jupyter-graph/proof-python312-freeze.txt": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/dfbdc586e638c29be2cba6374d7abcdc785032dea2142d4900187a199fbbd00e.gz",
+      "archiveBytes": 974,
+      "archiveSha256": "e8bf8baa49a0ab501c8e39f3ee10b7ca0fc676e3b187ad3fa545efd049e9881e",
+      "bytes": 1939,
+      "sha256": "dfbdc586e638c29be2cba6374d7abcdc785032dea2142d4900187a199fbbd00e"
+    },
+    "target/task-tmp/vscode-jupyter-graph/seal-vscode-evidence.py": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/4710d1c97cb76105894f0275819ae4fe2c92f46c89fbfd776cd68827afa27dc4.gz",
+      "archiveBytes": 2221,
+      "archiveSha256": "860bbd18ce03fe182ae5614e5707b786b580b9ee274038d7b0cda32a0e677df4",
+      "bytes": 6181,
+      "sha256": "4710d1c97cb76105894f0275819ae4fe2c92f46c89fbfd776cd68827afa27dc4"
+    },
+    "target/task-tmp/vscode-jupyter-graph/seal-vscode-sources.py": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/03789a4666d297cbf8f1ce3b278a5879996c5bbf6cdb9bae8945404d8f3ea139.gz",
+      "archiveBytes": 1213,
+      "archiveSha256": "7903ec0168ec5b902beb94e4d973bd7d65cc2e536ee6004d4dbe109f26a1a6f4",
+      "bytes": 2643,
+      "sha256": "03789a4666d297cbf8f1ce3b278a5879996c5bbf6cdb9bae8945404d8f3ea139"
+    },
+    "target/task-tmp/vscode-jupyter-graph/source-installed25/manifest.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/e3c71f752b20ed420e59cbcd79a3aa3db87a4c68d7b13d7bb29e87d6889d7df7.gz",
+      "archiveBytes": 488,
+      "archiveSha256": "1c174b1a34398e3757a68c0b3b74c396c1bc5e6967ddc4b200efdeff4f59efda",
+      "bytes": 920,
+      "sha256": "e3c71f752b20ed420e59cbcd79a3aa3db87a4c68d7b13d7bb29e87d6889d7df7"
+    },
+    "target/task-tmp/vscode-jupyter-graph/source-installed25/scripts/graph_vscode_notebook_smoke.py": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/b56e3137990e25887eb1f3290bbf30b43f3ac420f13e855c4d07d06c88dac719.gz",
+      "archiveBytes": 4377,
+      "archiveSha256": "420abb7ea670673283a560f18be4038342b62941b9facc1074b6f02d4560d3e6",
+      "bytes": 13927,
+      "sha256": "b56e3137990e25887eb1f3290bbf30b43f3ac420f13e855c4d07d06c88dac719"
+    },
+    "target/task-tmp/vscode-jupyter-graph/source-installed25/scripts/install_vscode_graph_notebook.py": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/b31a5cdc1ce91da8209ad3fb0346c8595839b38d67b247ce880a8767a74078c9.gz",
+      "archiveBytes": 2901,
+      "archiveSha256": "8701c43d5706fdcd64c1ebc488bcd72e39e3a28679872572d5b1eb4f83b21663",
+      "bytes": 8654,
+      "sha256": "b31a5cdc1ce91da8209ad3fb0346c8595839b38d67b247ce880a8767a74078c9"
+    },
+    "target/task-tmp/vscode-jupyter-graph/source-installed25/scripts/verify_vscode_graph_notebook_report.py": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/6a484ead4e54802371d1e55790d2665ef2fa165118a5a0ea4f55d1cd3c275311.gz",
+      "archiveBytes": 4587,
+      "archiveSha256": "9a041fd4b9a950c2da8ebff3384a811a224af2cd7286503f33f8334c6f3914c7",
+      "bytes": 14511,
+      "sha256": "6a484ead4e54802371d1e55790d2665ef2fa165118a5a0ea4f55d1cd3c275311"
+    },
+    "target/task-tmp/vscode-jupyter-graph/source-installed25/tests/vscode_graph_notebook/controller.cjs": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/8730e67440191c3a631799791ae472b7839570baf5dbeaf157f4ab4ae338f297.gz",
+      "archiveBytes": 1567,
+      "archiveSha256": "045a1a91d3f212e8e0cab52927247446af0ef50b27c338f5bed9a3d33744d264",
+      "bytes": 3960,
+      "sha256": "8730e67440191c3a631799791ae472b7839570baf5dbeaf157f4ab4ae338f297"
+    },
+    "target/task-tmp/vscode-jupyter-graph/source-installed25/tests/vscode_graph_notebook/extension.cjs": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/cea436a58a1b8e58a887f6121aa2127bd46c3271ca440dd682ff9ca1f933d751.gz",
+      "archiveBytes": 446,
+      "archiveSha256": "d65d41b377cadf33268da429415ec9e19315ae1cbb76acaa3c3dae3d0fabf346",
+      "bytes": 861,
+      "sha256": "cea436a58a1b8e58a887f6121aa2127bd46c3271ca440dd682ff9ca1f933d751"
+    },
+    "target/task-tmp/vscode-jupyter-graph/source-installed25/tests/vscode_graph_notebook/package.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/95b4e8c34bd68f0ab3cf3bc953f3c8abdd834f4ab3bf9ff3478b75ad63bf9a36.gz",
+      "archiveBytes": 156,
+      "archiveSha256": "9f136d10280432c8d3fc66bff2316cfcdeef3623e7a743c7507b5c819f6d4354",
+      "bytes": 177,
+      "sha256": "95b4e8c34bd68f0ab3cf3bc953f3c8abdd834f4ab3bf9ff3478b75ad63bf9a36"
+    },
+    "target/task-tmp/vscode-jupyter-graph/source-installed25/tests/vscode_graph_notebook/page.mjs": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/bc05470fafcfa2d0d86b3c88f7abff2412c4dfc26c482c9d937bb92332ddb002.gz",
+      "archiveBytes": 8559,
+      "archiveSha256": "073fdb10d10f96f6f55313dcc6e5a75031c4de4711932a80e00339eeab491bfa",
+      "bytes": 28966,
+      "sha256": "bc05470fafcfa2d0d86b3c88f7abff2412c4dfc26c482c9d937bb92332ddb002"
+    },
+    "target/task-tmp/vscode-jupyter-graph/source-installed25/tests/vscode_graph_notebook/toolchain.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/a0f64f2ec4f0928264b7da865f36dd393a781359d7480090735db122a1a23bfe.gz",
+      "archiveBytes": 791,
+      "archiveSha256": "deaa92b545aadf4506ed20be10c00ca42f63b82987136dcf29ec97a433ef6e12",
+      "bytes": 2310,
+      "sha256": "a0f64f2ec4f0928264b7da865f36dd393a781359d7480090735db122a1a23bfe"
+    },
+    "target/task-tmp/vscode-jupyter-graph/tracked23-runner.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0.gz",
+      "archiveBytes": 85,
+      "archiveSha256": "af9cd43aa91696b98bc4c3cfa81f47261b91f1b35d149565056531b4b3056065",
+      "bytes": 71,
+      "sha256": "26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0"
+    },
+    "target/task-tmp/vscode-jupyter-graph/tracked23-verifier.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/f939fd95ccd8a4d892a81b4476dad95dd54db7ec4fe4c10f97b0c760387b215e.gz",
+      "archiveBytes": 100,
+      "archiveSha256": "e597f3187387e3c3d850667943d35d0715056b8b69793de982e4ddc9b1ba6bd9",
+      "bytes": 86,
+      "sha256": "f939fd95ccd8a4d892a81b4476dad95dd54db7ec4fe4c10f97b0c760387b215e"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-abi-check.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/eb8c840abbbfbbcc7b2fc02f6c1c2909f93ea1a5c8d5ab31aed178cc9a757485.gz",
+      "archiveBytes": 62,
+      "archiveSha256": "6b122b899451b0ab6c58d466a84b6cd6390ee050b4f5aa113c6b0d9afeba9beb",
+      "bytes": 42,
+      "sha256": "eb8c840abbbfbbcc7b2fc02f6c1c2909f93ea1a5c8d5ab31aed178cc9a757485"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-capability-check.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/42b8d4d87753f9103ac02d0b33f9a3c6f6e68193684dd88198095d247c8e7392.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "15213b9bbbcf38534099e828865d521d547ad81047ad5eb33817f53dd46e99da",
+      "bytes": 29,
+      "sha256": "42b8d4d87753f9103ac02d0b33f9a3c6f6e68193684dd88198095d247c8e7392"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-capability-write.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/b17e0095fa5976539d4384127f8f3a4f70d4b5a7e46db7b1444c42ed0a1a30dd.gz",
+      "archiveBytes": 78,
+      "archiveSha256": "c268c7b7a1eb61a1f466388705471454b1257ae22d853e3488950e9dca8d162b",
+      "bytes": 71,
+      "sha256": "b17e0095fa5976539d4384127f8f3a4f70d4b5a7e46db7b1444c42ed0a1a30dd"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-check-ci-final.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/4ccc4f331c1be7aed67113e7d1766e039bfe76ddaa8a2be67689cbdb6a536a2a.gz",
+      "archiveBytes": 451,
+      "archiveSha256": "9edfd8c0a0060ad4a174285e37f872266a1d68dfc92c5a21dafdfdd383043795",
+      "bytes": 2022,
+      "sha256": "4ccc4f331c1be7aed67113e7d1766e039bfe76ddaa8a2be67689cbdb6a536a2a"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-check-ci.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/d08ef1612d7fc180db9d80a9fdb0c8e108ff143e4c9ea73d7b72a88a4fa13d1e.gz",
+      "archiveBytes": 450,
+      "archiveSha256": "b3921c339836e21c783b16769c12aa1a8a0cf268f9f20ae26e27831e9b8ae4fd",
+      "bytes": 2022,
+      "sha256": "d08ef1612d7fc180db9d80a9fdb0c8e108ff143e4c9ea73d7b72a88a4fa13d1e"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-core-corpus-final.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/d00ce79a7b2717923a70f9f66f489f7f7ab5a048a00f4d1d52abd117d58638e9.gz",
+      "archiveBytes": 64,
+      "archiveSha256": "ed48a1ef368c1b05e72c7913e52631c09a6a18dfcacf8d5ee568d1d9dabac88c",
+      "bytes": 111,
+      "sha256": "d00ce79a7b2717923a70f9f66f489f7f7ab5a048a00f4d1d52abd117d58638e9"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-core-corpus.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/67120f69a6ab3d3279a09ef655172f6eb408157dfca6ee1e9cd4e3c630f38787.gz",
+      "archiveBytes": 64,
+      "archiveSha256": "2af1ecff4681d40ba8e0571378cba40de928bfca16215f3810ffc08e608f45b4",
+      "bytes": 111,
+      "sha256": "67120f69a6ab3d3279a09ef655172f6eb408157dfca6ee1e9cd4e3c630f38787"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-final-format-kernel.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/ee6d6526f525a55dacc48011cd7b020ebf7cb3c52c83ec46898eb993a38db7bd.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "900cb3ef939391da5110cba14cdc4eef8dcbd0d6759b3e4c80ec3adcd103d89b",
+      "bytes": 29,
+      "sha256": "ee6d6526f525a55dacc48011cd7b020ebf7cb3c52c83ec46898eb993a38db7bd"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-final-hooks-kernel.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-final-ruff-kernel.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-format.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/5fe2cb43f8cddc11bf7c3f8cd50f7cf82b4869b1d49b6bb7142d28840f240d86.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "3408a2a5cf2ecce84b8d9b0c1a4b37a814001162757d9340bdb29aacaea44ea4",
+      "bytes": 29,
+      "sha256": "5fe2cb43f8cddc11bf7c3f8cd50f7cf82b4869b1d49b6bb7142d28840f240d86"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-hooks-first.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-inventory-staged.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/62c66b5fe9d7020cb43896e4af1d7893f384f7614ac920aca50738b2d060f4aa.gz",
+      "archiveBytes": 160,
+      "archiveSha256": "b616e7bef5f0a5f995deb938233daf106131ba820668e40b1cd6ea5cd1186645",
+      "bytes": 200,
+      "sha256": "62c66b5fe9d7020cb43896e4af1d7893f384f7614ac920aca50738b2d060f4aa"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-kernel-verifier-tests-py311.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/4c1993b28b0d907251595011f75c7554b88ab78916a233909b39fa748ce0b085.gz",
+      "archiveBytes": 51,
+      "archiveSha256": "0d64cfba6ad4e0646028cca7bb7215f9d5775187e56885f49df06e35af9bfac1",
+      "bytes": 99,
+      "sha256": "4c1993b28b0d907251595011f75c7554b88ab78916a233909b39fa748ce0b085"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-kernel-verifier-tests.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/07f4351c528b41e50b74d936bbed9f6d2f9d34178893241b9a50b35211f29ad8.gz",
+      "archiveBytes": 51,
+      "archiveSha256": "398aeae04dbe70b67f4687d3ef06f3574684f041985f67817c35eada6826d713",
+      "bytes": 99,
+      "sha256": "07f4351c528b41e50b74d936bbed9f6d2f9d34178893241b9a50b35211f29ad8"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-nearby-notebook-tests.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/b2df8cb63c2a6e487440ec80dfd4aa9be4cc5f3f69a7b92b2795083e00d60d1e.gz",
+      "archiveBytes": 63,
+      "archiveSha256": "2126427c342c6b3aed06a32e256812931cf40fcc7f9335db2a7e74d8b69f5196",
+      "bytes": 181,
+      "sha256": "b2df8cb63c2a6e487440ec80dfd4aa9be4cc5f3f69a7b92b2795083e00d60d1e"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-ownership-staged.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/0346e5f863fff39baa6bacf31bdd7e62ebabb22240cb4ec08961be24846b7cc2.gz",
+      "archiveBytes": 78,
+      "archiveSha256": "1508d62e4fa3c6bcc47a100393d24ea9287d24a39d8098ecb56558b8ca11a437",
+      "bytes": 60,
+      "sha256": "0346e5f863fff39baa6bacf31bdd7e62ebabb22240cb4ec08961be24846b7cc2"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-pixel-verifier-tests-py311.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/db9e53a123ea687d3e89e93a817cb99a5aede5fdf5a16846e7adf1d1bf0ef958.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "520e4d893d5d16d8c83bb48844e66155f42095a2f5acbf527b66d55bff809650",
+      "bytes": 99,
+      "sha256": "db9e53a123ea687d3e89e93a817cb99a5aede5fdf5a16846e7adf1d1bf0ef958"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-pixel-verifier-tests.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/beeb561a63106bd0efbd8f2897aa22610c9cdd3103fa9f5e2e9febfffe1764e6.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "2cfd4aa7edf4503839c9540814e9dfa8540ab3af4be0d2046171f509312dfb94",
+      "bytes": 99,
+      "sha256": "beeb561a63106bd0efbd8f2897aa22610c9cdd3103fa9f5e2e9febfffe1764e6"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-qualification.json": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/8d6d8c6fd6a8957da0d175392b18174017ff81cac7c4aaf67045834f6b5167b7.gz",
+      "archiveBytes": 1445,
+      "archiveSha256": "981c9c39a1c06148667ec06298e8ec31062f7708f07233b3af8322db72136ab1",
+      "bytes": 3904,
+      "sha256": "8d6d8c6fd6a8957da0d175392b18174017ff81cac7c4aaf67045834f6b5167b7"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-ruff.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-verifier-tests-corrected.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/6fe17918325ee4eff016415c11f2a2fa769646a8d053bac077f14654c4f1e474.gz",
+      "archiveBytes": 1565,
+      "archiveSha256": "121db1fecc3af396e29cb51028ba8118eb6d5417ca6779e72c8816fe40a15be4",
+      "bytes": 10004,
+      "sha256": "6fe17918325ee4eff016415c11f2a2fa769646a8d053bac077f14654c4f1e474"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-verifier-tests-final.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/fd32a612aa527846796a09d9e7e573cd0f6cb943139e3259b996e7de70e77226.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "e795315c4f7f6585b3f2c0d9c74a4e4e50e24c9b69dcc686aabcd2fdf67b76e6",
+      "bytes": 99,
+      "sha256": "fd32a612aa527846796a09d9e7e573cd0f6cb943139e3259b996e7de70e77226"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-verifier-tests-py311.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/591d363574e73b89d784e523d3bd5e567b9ce3987253ac696fe5957dd87eb698.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "ae1715fe8e79a6047c66df7777a027508075f1e52f9555a975cb765869b1d420",
+      "bytes": 99,
+      "sha256": "591d363574e73b89d784e523d3bd5e567b9ce3987253ac696fe5957dd87eb698"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-verifier-tests.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/2ad557c150c248c2b221aa2663f9dd152dea90a70ae632efe38abf652ad1dcd1.gz",
+      "archiveBytes": 2521,
+      "archiveSha256": "654f3d0a97dc47f5bd73242503d2c2d7abbd34ad5a3e8cd398c7e14141ac337e",
+      "bytes": 109621,
+      "sha256": "2ad557c150c248c2b221aa2663f9dd152dea90a70ae632efe38abf652ad1dcd1"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-wasm-assets.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef.gz",
+      "archiveBytes": 104,
+      "archiveSha256": "a9024230f03cfab4b76058c9f343d5ede416ef53be37bda0ca0cf926621cec18",
+      "bytes": 88,
+      "sha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-workflow-validator.log": {
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/3d29b3df27ab04aa2eff268a14a0b1d0df03e4c53b766cae333c85eb9191ae26.gz",
+      "archiveBytes": 182,
+      "archiveSha256": "23ce4e00dc4f4fcfca876155c8c8f9eed9b3195cbc5e9265b2a5094fc3a2c816",
+      "bytes": 567,
+      "sha256": "3d29b3df27ab04aa2eff268a14a0b1d0df03e4c53b766cae333c85eb9191ae26"
+    }
+  },
+  "fixtureManifestSha256": "7495c4fcc9c0579e2487476053c893daed57dff2d6e77dbbdace00e87308deea",
+  "parent": "efe193dc8673b0c83a79f6d4ea5753471b8ad1d5",
+  "qualification": {
+    "abi": {
+      "exit": 0,
+      "log": "vscode-abi-check.log",
+      "scope": "551 declarations ABI405; no Rust rebuild/ABI change"
+    },
+    "actualPython311": {
+      "directory": "probe/kernel311-33",
+      "display": "private TCP Xvfb; final canonical-pixel and read-only kernel identity witnesses",
+      "runnerExit": 0,
+      "runnerLog": "kernel311-33-runner.log",
+      "verifierExit": 0,
+      "verifierLog": "kernel311-33-verifier.log"
+    },
+    "actualPython312": {
+      "directory": "probe/kernel32",
+      "display": "ordinary xvfb-run, matching CI; final canonical-pixel and read-only kernel identity witnesses",
+      "runnerExit": 0,
+      "runnerLog": "kernel32-runner.log",
+      "verifierExit": 0,
+      "verifierLog": "kernel32-verifier.log"
+    },
+    "assets": {
+      "exit": 0,
+      "log": "vscode-wasm-assets.log"
+    },
+    "capability": {
+      "checkExit": 0,
+      "checkLog": "vscode-capability-check.log",
+      "writeExit": 0,
+      "writeLog": "vscode-capability-write.log"
+    },
+    "checkCi": {
+      "exit": 0,
+      "log": "vscode-check-ci-final.log",
+      "passed": 873,
+      "scope": "final full aggregate including 72 desktop verifier controls; prior 866-pass invocation retained separately"
+    },
+    "coreCorpus": {
+      "exit": 0,
+      "log": "vscode-core-corpus-final.log",
+      "passed": 20,
+      "scope": "final3436current/1409historical/23parent bindings and actual GitLF-CRLF checkout"
+    },
+    "failureDisposition": "Installer first refused HTTPgzipencoded VSIX wirebytes; decoded archive exactlymatchesoriginalpin. Initial fixture generator systemPython lackedPIL; corresponding setup failures uncredited. Two metadata negative controls exposed missing verifier checks, now repaired. Initial color-count-only image gate inadequate, supersededby actualconnectednative-center oracle. Earlier runs are scope-limited; all original failures remain failed. No generic startup/Worker repair or all-host/network/process-memory proof.",
+    "freshVsInherited": "All listed actual frontend runs, negative controls, 72 tests per interpreter and corpus results are Root executions. Parent runtime/foundation qualifications inherit only over verified byte identities. Immutable final review remains pending.",
+    "intentionalFailure": {
+      "applicationExit": 0,
+      "attachmentExit": 1,
+      "directory": "probe/locked-failure27",
+      "runnerExit": 1,
+      "runnerLog": "locked-failure27-runner.log",
+      "scope": "original intentional error, actual first two cells; direct-process/cookie cleanup only",
+      "verifierExit": 0,
+      "verifierLog": "locked-failure27-verifier.log"
+    },
+    "inventory": {
+      "exit": 0,
+      "log": "vscode-inventory-staged.log"
+    },
+    "mandatoryHooks": {
+      "exit": 0,
+      "log": "vscode-final-hooks-kernel.log"
+    },
+    "nearbyNotebook": {
+      "exit": 0,
+      "log": "vscode-nearby-notebook-tests.log",
+      "passed": 112,
+      "scope": "Root Python source/native discovery; no claim of explicit-override invocation for this command"
+    },
+    "ownership": {
+      "exit": 0,
+      "log": "vscode-ownership-staged.log"
+    },
+    "priorCheckCi": {
+      "exit": 0,
+      "log": "vscode-check-ci.log",
+      "passed": 866,
+      "scope": "earlier pre-pixel/kernel identity source"
+    },
+    "ruffCheck": {
+      "exit": 0,
+      "log": "vscode-final-ruff-kernel.log"
+    },
+    "ruffFormatCheck": {
+      "exit": 0,
+      "log": "vscode-final-format-kernel.log"
+    },
+    "unitPython311": {
+      "exit": 0,
+      "log": "vscode-kernel-verifier-tests-py311.log",
+      "passed": 72
+    },
+    "unitPython312": {
+      "exit": 0,
+      "log": "vscode-kernel-verifier-tests.log",
+      "passed": 72
+    },
+    "workflow": {
+      "exit": 0,
+      "log": "vscode-workflow-validator.log"
+    },
+    "workingAudit": {
+      "record": "/var/tmp/xyg-vscode-proof-audit/audit.json",
+      "scope": "implementation-time read-only audit; both late-network and layered-module gaps fixed, not final review",
+      "sha256": "a444c3befc1f94545267dcf5bf7007db04231ef1840fb883463d86c205001b04"
+    }
+  },
+  "readmeSha256": "16f6b53ccaab6e9ca081df5432a7c52af0bc61fd7be68f793aeb88dc8e3e75f5",
+  "remaining": [
+    "Final immutable-diff independent review, actual-main freshness, hosted checks and queue",
+    "Other desktop/extension versions/platforms, installed XYG distributions/localPython-extension discovery",
+    "Full notebook ladder, box/lasso edge policies, derived/aggregate/compound routing, selected/annotated exports, full accessibility, resource/performance/competitor acceptance",
+    "Offline/extension-host Node network audit, descendant/process-wide memory and generic startup/Worker reliability remain unproved"
+  ],
+  "runtime": {
+    "packages/xy-client/dist/index.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa.gz",
+      "archiveBytes": 247736,
+      "archiveSha256": "d1fcee9875cd320e48f3a05b6d3e268d4b67b16f152f54cc041c3cb14d2566cf",
+      "bytes": 864422,
+      "sha256": "447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/75e142e1c6066e2cca8055a49dcfc328abab7b847e12aebc8c9f8ce3eaa1580c.gz",
+      "archiveBytes": 247816,
+      "archiveSha256": "3160fae11e6cc52a41d6ed29c585dbb30e1b462a9592f9ae0da3bf0cd9806b7a",
+      "bytes": 864435,
+      "sha256": "75e142e1c6066e2cca8055a49dcfc328abab7b847e12aebc8c9f8ce3eaa1580c"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz",
+      "archiveBytes": 3838,
+      "archiveSha256": "dda8e6c4cec42d91f687b660d742d79dcc1a8c0d052ca6ca189c6acf095db2b4",
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8.gz",
+      "archiveBytes": 1043576,
+      "archiveSha256": "b09e635ab5663fabbb679592e2a8730413e322b541fd45d90105f73ca27c066c",
+      "bytes": 2536254,
+      "sha256": "fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "c4d9096b8df2ee31fc6c5e1a86cac0005b1406f5eee90de91d45fa72ba9f31f2",
+      "bytes": 226,
+      "sha256": "9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372.gz",
+      "archiveBytes": 781122,
+      "archiveSha256": "aad2d8c32a06b9155a6a2c466a64fc2df4effb1ec141722533cd30ecbf568413",
+      "bytes": 1886348,
+      "sha256": "1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372"
+    },
+    "python/xyg/static/index.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa.gz",
+      "archiveBytes": 247736,
+      "archiveSha256": "d1fcee9875cd320e48f3a05b6d3e268d4b67b16f152f54cc041c3cb14d2566cf",
+      "bytes": 864422,
+      "sha256": "447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa"
+    },
+    "python/xyg/static/standalone.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/75e142e1c6066e2cca8055a49dcfc328abab7b847e12aebc8c9f8ce3eaa1580c.gz",
+      "archiveBytes": 247816,
+      "archiveSha256": "3160fae11e6cc52a41d6ed29c585dbb30e1b462a9592f9ae0da3bf0cd9806b7a",
+      "bytes": 864435,
+      "sha256": "75e142e1c6066e2cca8055a49dcfc328abab7b847e12aebc8c9f8ce3eaa1580c"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8.gz",
+      "archiveBytes": 1043576,
+      "archiveSha256": "b09e635ab5663fabbb679592e2a8730413e322b541fd45d90105f73ca27c066c",
+      "bytes": 2536254,
+      "sha256": "fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "c4d9096b8df2ee31fc6c5e1a86cac0005b1406f5eee90de91d45fa72ba9f31f2",
+      "bytes": 226,
+      "sha256": "9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372.gz",
+      "archiveBytes": 781122,
+      "archiveSha256": "aad2d8c32a06b9155a6a2c466a64fc2df4effb1ec141722533cd30ecbf568413",
+      "bytes": 1886348,
+      "sha256": "1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372"
+    },
+    "target/release/libxyg_core.so": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/378a069c4f802bb97e6273333766a4afee99a626d4fc409f776f31d21968a4df.gz",
+      "archiveBytes": 2906222,
+      "archiveSha256": "e1a2c9c98f51d95d9ebaee58900a16680535d9747e5a7ec04e41a24cdbfba825",
+      "bytes": 6379784,
+      "sha256": "378a069c4f802bb97e6273333766a4afee99a626d4fc409f776f31d21968a4df"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/8eebf2a5621798d266fd9030caf04c20d0f89e2e17fb8137195ac2ddcaf4b6d2.gz",
+      "archiveBytes": 1253444,
+      "archiveSha256": "7f03900cf3918fae6592e2d4c54a9d3529ecba5af90d419262a45f778df96b0a",
+      "bytes": 4076094,
+      "sha256": "8eebf2a5621798d266fd9030caf04c20d0f89e2e17fb8137195ac2ddcaf4b6d2"
+    }
+  },
+  "runtimeRebuilt": false,
+  "schemaVersion": 1,
+  "scope": "Named actual desktop VSCode/Jupyter source-checkout graph notebook qualification; whole1015/M4-M7 remain open"
+}
