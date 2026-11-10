@@ -20,9 +20,10 @@ try{
   record.selectionReturned=true;save();
   const runCell=async(index)=>{
    const args={ranges:[{start:index,end:index+1}],document:document.uri};
+   const previousOrder=document.cellAt(index).executionSummary?.executionOrder;
    await vscode.commands.executeCommand('notebook.cell.execute',args);
    const deadline=Date.now()+45000;
-   while(document.cellAt(index).executionSummary?.success===undefined){if(Date.now()>deadline)throw Error('cell execution did not settle '+index);await new Promise(r=>setTimeout(r,20));}
+   while(document.cellAt(index).executionSummary?.success===undefined||!Number.isSafeInteger(document.cellAt(index).executionSummary?.executionOrder)||document.cellAt(index).executionSummary.executionOrder===previousOrder){if(Date.now()>deadline)throw Error('cell execution did not settle '+index);await new Promise(r=>setTimeout(r,20));}
    const cell=document.cellAt(index);
    await vscode.commands.executeCommand('notebook.cell.collapseCellInput',args);
    if(index===0||index===8)vscode.window.activeNotebookEditor.revealRange(new vscode.NotebookRange(index,index+1),vscode.NotebookEditorRevealType.AtTop);

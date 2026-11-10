@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-CURRENT_BINDINGS = Path("spec/performance/graph-notebook7-regions-2026-11-10/current-bindings.json")
+CURRENT_BINDINGS = Path("spec/performance/graph-vscode-regions-2026-11-10/current-bindings.json")
 
 
 def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> None:
@@ -733,8 +733,26 @@ def test_empty_clear_status_preserves_the_complete_candidate_and_review_chain():
 def test_notebook7_regions_preserve_the_complete_candidate_and_review_chain():
     parent_path = "spec/performance/graph-empty-clear-status-2026-11-10/current-bindings.json"
     parent = json.loads((ROOT / parent_path).read_text())
-    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/graph-notebook7-regions-2026-11-10/current-bindings.json"
+        ).read_text()
+    )
     assert len(current["parents"]) == 36
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_desktop_regions_preserve_the_complete_candidate_and_review_chain():
+    parent_path = "spec/performance/graph-notebook7-regions-2026-11-10/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    assert len(current["parents"]) == 37
     assert {p["path"] for p in current["parents"]} == {parent_path}.union(
         p["path"] for p in parent["parents"]
     )

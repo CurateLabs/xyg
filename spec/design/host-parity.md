@@ -2247,3 +2247,12 @@ Host bootstrap traffic is disclosed; this is not offline or all-network evidence
 The explicit server-provider route, Python/server package versions and remaining
 cohort, installed-distribution, scale, export and accessibility gaps are retained
 in that contract and its receipt. No issue or milestone closure is implied.
+
+The [shared desktop geometric notebook proof](graph-session-python-transport.md#shared-geometric-notebook-proof-and-desktop-adapter-2026-11-10)
+adds actual VS Code box/lasso UUID sets, induced parallel/self-loop edges,
+mask/pixel witnesses, native-capacity refusal/history, pan/zoom and cleanup.
+Lab/Notebook7 retain the same oracle at DPR1/2; the named desktop cohort is DPR1.
+The default desktop progressive journey remains distinct and required. Isolated
+WebGL, ordinary cell execution and trusted iframe-translated input remain the
+actual product path. This is bounded source-checkout evidence, not general
+installed-wheel, host-version, scale, export or full-accessibility acceptance.

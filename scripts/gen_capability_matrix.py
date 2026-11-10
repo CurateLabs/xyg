@@ -116,6 +116,7 @@ def render() -> str:
         "The [native JupyterLab region continuation](../performance/graph-notebook-regions-2026-11-10/README.md)",
         "proves exact box/lasso UUID sets and induced published edges at DPR1/2,",
         "including refusal/recovery, accepted-mask pixels, camera changes and isolation.",
+        "The [shared geometric notebook proof](../design/graph-session-python-transport.md#shared-geometric-notebook-proof-and-desktop-adapter-2026-11-10) also covers stock Notebook7 DPR1/2 and the named VS Code desktop at DPR1, preserving its isolated WebGL defaults.",
         "Broader host versions/installed distributions, changed-LOD/aggregate notebook",
         "regions, exports and scale budgets remain open.",
         "",

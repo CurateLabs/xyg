@@ -546,3 +546,52 @@ the same application map and exact extension ID/version list. This strengthens
 the admission witness; it does not change runtime rendering or kernel policy.
 The original review findings and correction evidence are retained in
 `spec/performance/graph-vscode-cohort-correction-2026-11-10/`.
+
+### Shared geometric notebook proof and desktop adapter (2026-11-10)
+
+The source-checkout Lab/Notebook7 and named VS Code desktop journeys use one
+`graph_notebook_region_journey.mjs` interaction/oracle body. It retains the
+native f64 range/polygon oracle, exact UUID/result-row sets, induced parallel
+edges and self-loop, crossing-edge exclusion, actual GPU masks, selected and
+dimmed pixels, real owner-table capacity refusal/recovery, complete refused
+RGBA/history/camera, mixed API/Back/Forward, pan/wheel, isolation and cleanup.
+No renderer, predicate policy, layout, public protocol or runtime default changes.
+
+`graph_vscode_notebook_smoke.py --regions` opens the same four original region
+notebook cells in the existing stock VS Code1.103.2/Jupyter2025.7.0 Linux cohort.
+Its default ten-cell progressive journey and strict verifier remain separate and
+required. Repeated report-cell execution must acquire a new execution order and
+increment the report sequence; an earlier completed summary cannot qualify.
+Actual kernel-info sidecars bind Python identity and final idle/disconnected
+state. The named GUI app, installed payloads, authenticated local server and
+widget scripts retain their existing admission rules.
+
+The desktop keeps its default isolated direct WebGL contexts. Read-only cached
+module/CDP inspection binds both used canvases to the exact built client.
+Trusted input uses measured, unscaled iframe-chain coordinates with visibility
+checks. Workbench screenshots are actual viewport clips. Because direct WebGL
+buffers are transient, a test-only synchronous existing draw/readPixels capture
+also retains raw RGBA, vertically flipped and unpremultiplied exactly for PNG
+inspection. It does not enable shared-host rendering or preserveDrawingBuffer.
+Raw selected-center and dimmed-alpha guards retain their original tolerances;
+a separate actual-workbench witness requires visible dimming while allowing the
+persistent selection overlay to tint selected centers. This is not a whole-image
+antialiasing or frame-stability claim.
+
+Output-document replacement requires reinstalling the test's DOM listeners;
+previous observations are retained without duplicate listeners. The first private
+prototype's lost-listener timeout remains failed. An intentional report-cell
+failure must preserve its original error, execute the native cleanup cell, and
+finish direct-process/private-cookie teardown. It cannot qualify as success.
+These proof and verifier development failures do not establish a product repair.
+
+The existing Release surfaces job requires the desktop region command and strict
+verifier under the unchanged four-minute step ceiling. An always-run upload uses
+an explicit allowlist of reports, images, input and nonsecret sidecars. Profiles,
+Jupyter runtime/config/data directories, tokens and X cookies are excluded.
+Observed renderer bootstrap traffic remains bounded by the existing allowlist;
+no offline or extension-host network claim follows. Qualification and preserved
+failures are in [the desktop region receipt](../performance/graph-vscode-regions-2026-11-10/README.md).
+Broader installed distributions/platforms, aggregate/collapsed/categorical/changed
+LOD notebook matching, accessibility, exports, scale/competitor and global-memory
+acceptance remain open; #1015/#36 and milestones4–7 are not complete.

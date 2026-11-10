@@ -1,8 +1,11 @@
+import {runDesktopGraphRegions} from './regions.mjs';
+import {installGraphRegionHooks} from '../../scripts/graph_notebook_region_journey.mjs';
 import {chromium} from 'playwright';
 import {readFile,writeFile,rename} from 'node:fs/promises';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
+const regionsMode=process.env.XYG_VSCODE_GRAPH_REGIONS==='1';
 const root=process.cwd(),dir=process.env.XYG_NOTEBOOK_PROBE,temp=dir;let browser,ui,graphFrame,selected=false;
 const errors=[],pageErrors=[],external=[],network=[],hostAssets=[],outputs=new Map();let serial=0;
 const remoteHostPaths=new Map([
@@ -120,11 +123,16 @@ const installHooks=()=>{
  const observer=new MutationObserver(record);observer.observe(document,{subtree:true,attributes:true,attributeFilter:['data-graph-steps'],childList:true});cleanup.push(()=>observer.disconnect());
  globalThis.__graphHookCleanup=()=>cleanup.forEach(f=>f());record();
 };await ui.addInitScript(installHooks);for(const frame of ui.frames())await frame.evaluate(installHooks).catch(()=>{});
+if(regionsMode){await ui.addInitScript(installGraphRegionHooks);for(const frame of ui.frames())await frame.evaluate(installGraphRegionHooks).catch(()=>{});}
 await ui.getByText('XYG local notebook server',{exact:true}).click({timeout:30000});
 await ui.locator('.quick-input-widget .monaco-list-row').filter({hasText:'Python 3 (ipykernel)'}).click({timeout:30000});selected=true;
 const deadline=Date.now()+45000;while(Date.now()<deadline){const dialog=ui.getByRole('dialog').filter({hasText:'Widgets require us to download supporting files from a 3rd party website.'});if(await dialog.count()){await writeFile(join(dir,'first-use-dialog.txt'),await dialog.innerText());const local=dialog.getByRole('button',{name:/do(n.t| not) show again/i});await local.click();}for(const f of ui.frames()){await f.evaluate(installHooks).catch(()=>{});if(await f.locator('[data-graph-steps]').count().catch(()=>0)){graphFrame=f;break;}}if(graphFrame)break;await new Promise(r=>setTimeout(r,20));}
 if(!graphFrame)throw Error('real notebook graph output did not paint');
 await graphFrame.evaluate(installHooks);const surface=graphFrame.locator('[data-graph-steps]').first();await surface.locator('canvas[role=img]').waitFor({timeout:5000});await writeFile(join(dir,'first-state.json'),JSON.stringify(await graphFrame.evaluate(()=>({frames:globalThis.__graphFrames,step:document.querySelector('[data-graph-steps]')?.dataset.graphSteps})),null,2));
+if(regionsMode){
+ await graphFrame.evaluate(installGraphRegionHooks);
+ await runDesktopGraphRegions({root,dir,graphFrame,ui,browser,executeCell,outputText,revealCell,captureActualViews,viewportRect,nativeHover,pendingAssets,network,hostAssets,expectedClient,inspectedSources,pageErrors,external});
+}else{
 const picture=async name=>{await revealCell(0);const path=join(temp,name+'.png');const clip=await viewportRect(canvas);const bytes=await ui.screenshot({path,clip});await ui.screenshot({path:join(temp,name+'-workbench.png')});const probe=spawnSync(join(root,'.venv/bin/python'),['-c','from PIL import Image; import sys,json; im=Image.open(sys.argv[1]).convert("RGB"); print(json.dumps({"colors":len(im.getcolors(im.width*im.height)),"width":im.width,"height":im.height}))',path],{encoding:'utf8'});if(probe.status!==0)throw Error(probe.stderr);const result={...JSON.parse(probe.stdout),sha256:createHash('sha256').update(bytes).digest('hex'),step:await surface.getAttribute('data-graph-steps')};if(result.colors<=2)throw Error('empty graph canvas');return result;};
 const firstSteps=await surface.getAttribute('data-graph-steps');
  const canvas=surface.locator('canvas[role="img"]');
@@ -274,5 +282,6 @@ if(external.length)throw Error('unapproved late renderer requests '+JSON.stringi
 if(initialClientSources.length!==2||initialClientSources.some(pin=>!pin?.exactClientSource||pin.sha256!==clientSha256))throw Error('initial widget source identity mismatch');
 if(!primaryClientSource?.exactClientSource||!layeredClientSource?.exactClientSource||primaryClientSource.sha256!==clientSha256||layeredClientSource.sha256!==clientSha256)throw Error('used canvas source identity mismatch');
 await inspector?.detach();inspector=null;await writeFile(join(dir,'report.json'),JSON.stringify(result,null,2)+'\n');console.log('actual VSCode notebook complete');
-}catch(error){await writeFile(join(dir,'failure.json'),JSON.stringify({error:error.message,stack:error.stack,errors,pageErrors,network,actions:await graphFrame?.evaluate(()=>globalThis.__graphActions).catch(()=>[]),frames:await graphFrame?.evaluate(()=>globalThis.__graphFrames).catch(e=>({diagnosticUnavailable:e.message})),events:await graphFrame?.evaluate(()=>globalThis.__graphEvents).catch(e=>({diagnosticUnavailable:e.message})),body:await ui?.locator('body').innerText().catch(()=>''),graphBody:await graphFrame?.locator('body').innerText().catch(()=>'' )},null,2));throw error;}
-finally{await inspector?.detach().catch(()=>{});if(!selected)await ui?.keyboard.press('Escape').catch(()=>{});await writeFile(join(dir,'done'),'done\n');await browser?.close();}
+}
+}catch(error){await writeFile(join(dir,'failure.json'),JSON.stringify({error:error.message,stack:error.stack,errors,pageErrors,network,regionEvents:regionsMode?await graphFrame?.evaluate(()=>globalThis.__regionEvents).catch(()=>[]):undefined,actions:await graphFrame?.evaluate(()=>globalThis.__graphActions).catch(()=>[]),frames:await graphFrame?.evaluate(()=>globalThis.__graphFrames).catch(e=>({diagnosticUnavailable:e.message})),events:await graphFrame?.evaluate(()=>globalThis.__graphEvents).catch(e=>({diagnosticUnavailable:e.message})),body:await ui?.locator('body').innerText().catch(()=>''),graphBody:await graphFrame?.locator('body').innerText().catch(()=>'' )},null,2));throw error;}
+finally{if(regionsMode&&selected&&graphFrame&&!outputs.get(3)){try{await executeCell(3);await writeFile(join(dir,'failure-owner-cleanup.json'),JSON.stringify({output:outputText(3)})+'\n');}catch(error){await writeFile(join(dir,'failure-owner-cleanup.json'),JSON.stringify({error:error.message})+'\n');}}await inspector?.detach().catch(()=>{});if(!selected)await ui?.keyboard.press('Escape').catch(()=>{});await writeFile(join(dir,'done'),'done\n');await browser?.close();}

@@ -359,3 +359,27 @@ files and credentials must not be uploaded; its receipt enumerates the allowed
 source, version, report, capture and log artifacts explicitly. The test-only
 named cohort, observed bootstrap-network scope and remaining #1015 acceptance
 are defined in the desktop section of `graph-session-python-transport.md`.
+
+### Desktop geometric graph regions (2026-11-10)
+
+`VS Code Jupyter graph regions` reuses the existing pinned desktop/server cohort
+and invokes `graph_vscode_notebook_smoke.py --regions`, followed by the strict
+`verify_vscode_graph_regions_report.py`. Both commands and native selection are
+required in the existing test/Release surfaces aggregate. The normal ten-cell
+progressive desktop command/verifier remain unchanged and required. The step
+retains its four-minute ceiling; no status or merge-queue policy is added.
+
+The shared Lab/Notebook7/desktop region oracle covers UUIDs, induced edges,
+GPU masks, raw RGBA/refusal/history, trusted gestures and release. Desktop
+adapters preserve isolated direct WebGL and measured iframe input coordinates.
+The verifier additionally binds fresh repeated-cell orders, actual application,
+installed payloads, kernel, screenshot/pixel and process sidecars. `make check-ci`
+includes its adversarial artifact controls; required browser execution cannot
+be replaced by optional PNG unit-test admission.
+
+`Retain desktop graph region evidence` runs on success and failure with fatal
+missing-output handling. Its explicit files and PNG/pixel patterns exclude the
+Jupyter runtime/profile directories and credentials. Missing paths, conditional
+or continued upload, masked execution and removed verifier must fail the workflow
+validator. The bounded source-checkout proof does not qualify broader notebook
+versions/platforms, massive-scale performance, exports or accessibility.
