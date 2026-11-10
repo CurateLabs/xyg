@@ -1510,6 +1510,8 @@ has no focus/selection input. This does not close M4/#35/#36/#1015 or qualify
 100k/1M, reliable two-10k, latency, peak RAM/GPU, platforms, notebooks, exports or
 competitors. Historical pointer/camera receipts and their limitations remain.
 
+<a id="plain-retained-graph-phase-admission-default-arena"></a>
+
 ### Persisted graph phase admission (default arena)
 
 The browser default remains **16 MiB** and the maximum/native default remains

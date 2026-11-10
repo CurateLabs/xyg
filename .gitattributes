@@ -1608,3 +1608,8 @@ spec/performance/graph-notebook-ci-repair-2026-11-10/**/*.gz -text
 spec/performance/graph-semantic-session-2026-11-10/*.md text eol=lf
 spec/performance/graph-semantic-session-2026-11-10/*.json text eol=lf
 spec/performance/graph-semantic-session-2026-11-10/**/*.gz -text
+
+# Preserve the source-qualified semantic admission receipt and its legacy link.
+spec/performance/graph-semantic-anchor-2026-11-10/*.md text eol=lf
+spec/performance/graph-semantic-anchor-2026-11-10/*.json text eol=lf
+spec/performance/graph-semantic-anchor-2026-11-10/**/*.gz -text
