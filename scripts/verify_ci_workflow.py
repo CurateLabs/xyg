@@ -2125,6 +2125,36 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     _require_step_runs_exactly(
         errors,
         jobs.get("test", ""),
+        "VS Code notebook test cohort",
+        "pinned actual VS Code notebook application and widget cohort",
+        'uv pip install --python "$RUNNER_TEMP/graph-notebook7-env/bin/python" nbclassic==1.3.3 ipywidgets==8.1.9 widgetsnbextension==4.0.16 jupyterlab_widgets==3.0.17',
+        '.venv/bin/python scripts/install_vscode_graph_notebook.py --output "$RUNNER_TEMP/graph-vscode-cohort"',
+    )
+    _require_step_runs_exactly(
+        errors,
+        jobs.get("test", ""),
+        "VS Code Jupyter graph journey",
+        "bounded actual VS Code Jupyter graph identity and native progress",
+        'export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"',
+        'xvfb-run --auto-servernum --server-args="-screen 0 1280x900x24" .venv/bin/python scripts/graph_vscode_notebook_smoke.py --code "$RUNNER_TEMP/graph-vscode-cohort/application/VSCode-linux-x64/code" --extensions "$RUNNER_TEMP/graph-vscode-cohort/extensions" --server-python "$RUNNER_TEMP/graph-notebook7-env/bin/python" --output "$RUNNER_TEMP/graph-vscode"',
+        '.venv/bin/python scripts/verify_vscode_graph_notebook_report.py "$RUNNER_TEMP/graph-vscode"',
+    )
+    vscode_journey = "VS Code Jupyter graph journey"
+    for prerequisite in (
+        "Build native core",
+        "Build JS client",
+        "Notebook 7 graph journey",
+        "VS Code notebook test cohort",
+    ):
+        if (
+            prerequisite not in test_steps
+            or vscode_journey not in test_steps
+            or list(test_steps).index(prerequisite) >= list(test_steps).index(vscode_journey)
+        ):
+            errors.append(f"CI {vscode_journey} must run after {prerequisite}")
+    _require_step_runs_exactly(
+        errors,
+        jobs.get("test", ""),
         "Python tests (native core)",
         "native Python suite including required chunked chart rendered snapshots",
         'export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"',

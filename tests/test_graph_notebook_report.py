@@ -3,6 +3,7 @@
 import copy
 import gzip
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -440,3 +441,14 @@ def test_recorded_notebook764_runtime_failure_remains_unqualified():
     assert "browser runtime errors" in verify(
         report, expected_abi=405, require_routed=True, expected_frontend="notebook7"
     )
+
+
+def test_notebook_kernel_witness_retains_the_admitted_state_without_a_second_dom_read():
+    result = subprocess.run(
+        ["node", "--test", "js/test/graph-notebook-kernel-witness.test.mjs"],
+        cwd=Path(__file__).resolve().parents[1],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

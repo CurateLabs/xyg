@@ -2208,9 +2208,25 @@ now runs against actual JupyterLab 4.6.5 and Notebook 7.5.8. Both use the same
 native FigureWidget/ChartView path and exact kernel identity, GPU UUID mask,
 progress, isolation, cleanup and Node parity assertions. Their real application
 configuration, route and static assets are verified separately. This resolves
-the bounded Notebook7 frontend proof gap; VS Code Jupyter, full notebook scale,
-geometric edge policies, exports and complete accessibility remain unqualified.
+the bounded Notebook7 frontend proof gap. The named desktop VS Code cohort
+below adds separate coverage; full notebook scale, geometric edge policies,
+exports and complete accessibility remain unqualified.
 Stock Notebook 7.6.4 separately fails the strict browser-error requirement due
 to the retained upstream shortcuts-registry exception; it receives no positive
 frontend qualification. Passing 7.5.8 is additional compatibility evidence, not
 a repair or waiver for 7.6.4 or all Notebook7 versions.
+
+
+### Actual VS Code Jupyter desktop (2026-11-10)
+
+The [desktop notebook contract](graph-session-python-transport.md#vs-code-jupyter-desktop-qualification-2026-11-10)
+qualifies the unchanged public fixture in VS Code 1.103.2/Jupyter extension
+2025.7.0 on Linux x86_64, using the same native channel and generated ChartView.
+The pinned application/extension installer, strict sidecar verifier and existing
+Release surfaces job bind actual cell execution, trusted unfinished input,
+canonical routed/layered identity, GPU masks, Node parity and direct-owner
+cleanup. Installed files and every used widget module have byte identities.
+Host bootstrap traffic is disclosed; this is not offline or all-network evidence.
+The explicit server-provider route, Python/server package versions and remaining
+cohort, installed-distribution, scale, export and accessibility gaps are retained
+in that contract and its receipt. No issue or milestone closure is implied.

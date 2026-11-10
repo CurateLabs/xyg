@@ -123,12 +123,13 @@ display(widget)
 widget.select(uuids=[composition.nodes.uuid[0]])
 ```
 
-Source-checkout journeys exercise actual JupyterLab 4.6.5 and Notebook 7.5.8
+Source-checkout journeys exercise actual JupyterLab 4.6.5, Notebook 7.5.8 and
+the named Linux VS Code 1.103.2/Jupyter extension 2025.7.0 server-provider cohort
 with IPython/anywidget: progressive native layout, concurrent cell execution,
 parallel-edge and self-loop picks, layered result rows, UUID highlights and
 two-widget isolation. These are small-fixture proofs, not notebook-scale or
-complete accessibility qualification. VS Code Jupyter qualification, exact
-graph-specific box/lasso edge policies and selected/annotated notebook exports
+complete accessibility qualification. Other host/app versions, local Python
+extension discovery, installed XYG distributions, exact graph-specific box/lasso edge policies and selected/annotated notebook exports
 remain open. If the optional identity service cannot admit a request, the
 ordinary callback carries `graphforge_error` rather than a false empty identity
 success. Static `to_html()` and HTML-mode display have no kernel callback bridge.

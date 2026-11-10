@@ -1,0 +1,381 @@
+{
+  "bindings": {
+    "current": 3450,
+    "historical": 1470,
+    "parents": 29,
+    "path": "spec/performance/vscode-floor-collection-2026-11-10/current-bindings.json",
+    "sha256": "85142288b072a39b765531bd383973483ec0ca4e8a731bdf97c9b9d51173f104"
+  },
+  "compiledInputs": {
+    "count": 324,
+    "parentExact": true,
+    "path": "spec/performance/current-large-graph-union-2026-11-09/compiled-inputs.json",
+    "sha256": "14467233a1f6878d137490b6ef6741766486b42b37b8ed16aa01e2065113899e"
+  },
+  "compiledInputsVerified": 324,
+  "evidence": {
+    "target/task-tmp/vscode-jupyter-graph/floor-check-ci.log": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/af82d61737ad4b271558d3cb1b72f78e0f4584140977aa25c47d9d5c13ec47fb.gz",
+      "archiveBytes": 457,
+      "archiveSha256": "06e0f749e0f07baa4e37f6ee70f4f2103beb2cc9ac9ff6198b91d7ebf6c15157",
+      "bytes": 2065,
+      "sha256": "af82d61737ad4b271558d3cb1b72f78e0f4584140977aa25c47d9d5c13ec47fb"
+    },
+    "target/task-tmp/vscode-jupyter-graph/floor-command-and-preservation.json": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/7b0b2a0e84d870b2234ae2a5cc7c1187db64cf8b7e6d66c737a96e295fd99aa6.gz",
+      "archiveBytes": 934,
+      "archiveSha256": "aa65a06fda24d25d29a7cc457db75586e0f2a31e820afbf3bd38311afeb225cd",
+      "bytes": 2197,
+      "sha256": "7b0b2a0e84d870b2234ae2a5cc7c1187db64cf8b7e6d66c737a96e295fd99aa6"
+    },
+    "target/task-tmp/vscode-jupyter-graph/floor-core-collection.log": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/ba29095da2e2bb6cac5483c780defcc7970f6374176fc4822ab679edd425c14d.gz",
+      "archiveBytes": 645,
+      "archiveSha256": "34f706fc3b1b36f5054f927a066d95437e732a2ed4884d208f83f1c4bf332eda",
+      "bytes": 2856,
+      "sha256": "ba29095da2e2bb6cac5483c780defcc7970f6374176fc4822ab679edd425c14d"
+    },
+    "target/task-tmp/vscode-jupyter-graph/floor-dev-corrected-tests.log": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/7535c9fdc0d9a289d3a79d4c8845a60f7c75f0a1bf21d7e0ecc0a29d69376e37.gz",
+      "archiveBytes": 61,
+      "archiveSha256": "4ba02fa1590fc26b3e090e2f63ec70999dd38fa9ac17cd265c8b2c1731c7425d",
+      "bytes": 179,
+      "sha256": "7535c9fdc0d9a289d3a79d4c8845a60f7c75f0a1bf21d7e0ecc0a29d69376e37"
+    },
+    "target/task-tmp/vscode-jupyter-graph/floor-format.log": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/c6282c5e9f2e991a04cb0283ce60c1c8c141d46af4314244f6bc925aff3b459c.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "a39eb761e2aeef8e6faced33d8295670c1cedcb787d398de06cb02ea95f49604",
+      "bytes": 29,
+      "sha256": "c6282c5e9f2e991a04cb0283ce60c1c8c141d46af4314244f6bc925aff3b459c"
+    },
+    "target/task-tmp/vscode-jupyter-graph/floor-hooks.log": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/vscode-jupyter-graph/floor-minimal-corrected-tests.log": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/a35c92c278318a65968c93e145bcda6a930506b81d9c1571ff5ff98b06b36091.gz",
+      "archiveBytes": 63,
+      "archiveSha256": "7d68028e727bf024ebd202c3d9a7dd680526ec462d76cfcc833f1b26eb6aa8db",
+      "bytes": 110,
+      "sha256": "a35c92c278318a65968c93e145bcda6a930506b81d9c1571ff5ff98b06b36091"
+    },
+    "target/task-tmp/vscode-jupyter-graph/floor-minimal-create.log": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/2c8b8423152e67d24e4b9c14613fab180c9bbd5e1b07b0995a63cb8552761320.gz",
+      "archiveBytes": 168,
+      "archiveSha256": "553e7592934fdeb6ef64f179c814f4643a4f3bf521dcce4b89e260f054d1b8c3",
+      "bytes": 276,
+      "sha256": "2c8b8423152e67d24e4b9c14613fab180c9bbd5e1b07b0995a63cb8552761320"
+    },
+    "target/task-tmp/vscode-jupyter-graph/floor-minimal-editable-focused.log": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/87e5cc624823ccac23940dfbe9914d410ca42cea85cb47dc0161533b23603edc.gz",
+      "archiveBytes": 63,
+      "archiveSha256": "209bd5584440082df02692eeda036825916e10b3e50e025e2f6ddd7415677637",
+      "bytes": 110,
+      "sha256": "87e5cc624823ccac23940dfbe9914d410ca42cea85cb47dc0161533b23603edc"
+    },
+    "target/task-tmp/vscode-jupyter-graph/floor-minimal-editable-install.log": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/8005cda1b8902f16b92d3104dee1fdb1dc9337e0f90456ff63bca48c584dff11.gz",
+      "archiveBytes": 247,
+      "archiveSha256": "3eac16865aae38abcb0fe270680ffb7778026cd735b33f1ca5b32e49de755f62",
+      "bytes": 405,
+      "sha256": "8005cda1b8902f16b92d3104dee1fdb1dc9337e0f90456ff63bca48c584dff11"
+    },
+    "target/task-tmp/vscode-jupyter-graph/floor-minimal-environment.json": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/324f6676a1262cb03b8e51f67dcef0efcb9def6c5095e099496a76bf1b517c49.gz",
+      "archiveBytes": 447,
+      "archiveSha256": "2a70880e334e8719e48effffd4cf0d6e0982d368ed075e2f378e15bb6d6d8b27",
+      "bytes": 898,
+      "sha256": "324f6676a1262cb03b8e51f67dcef0efcb9def6c5095e099496a76bf1b517c49"
+    },
+    "target/task-tmp/vscode-jupyter-graph/floor-minimal-final-collection.log": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/b503d69d35f458a40b335989be1236c75620751a88cb134b962d0f6306bc2388.gz",
+      "archiveBytes": 128759,
+      "archiveSha256": "be0064bb218b1b6cd9bb36373a86ffa7572e9e4908ae4987db3f15ea709adc02",
+      "bytes": 903180,
+      "sha256": "b503d69d35f458a40b335989be1236c75620751a88cb134b962d0f6306bc2388"
+    },
+    "target/task-tmp/vscode-jupyter-graph/floor-minimal-full-collection.log": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/49684bf9623d2737adac3f4f277ec7fbb4b562d638fd73451ff8858b67eff2c5.gz",
+      "archiveBytes": 128747,
+      "archiveSha256": "cc5f0331a922fece3448bbdf6abe47e11a4e175191680750169b8f5b9c73dccb",
+      "bytes": 903067,
+      "sha256": "49684bf9623d2737adac3f4f277ec7fbb4b562d638fd73451ff8858b67eff2c5"
+    },
+    "target/task-tmp/vscode-jupyter-graph/floor-minimal-install.log": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/a4ff2d7eb450171268c53b511b584b749b1b87c0a2e14494770da1d6b5708077.gz",
+      "archiveBytes": 434,
+      "archiveSha256": "124fb27f5baf54c3a2b19475787f23ff672048132d8140e51461598e42e4d641",
+      "bytes": 759,
+      "sha256": "a4ff2d7eb450171268c53b511b584b749b1b87c0a2e14494770da1d6b5708077"
+    },
+    "target/task-tmp/vscode-jupyter-graph/floor-minimal-parent-collection.log": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/20ef9354c626ea775d7b6f7686be0a70ed631e3087b7f9f38938901e2b18f539.gz",
+      "archiveBytes": 463,
+      "archiveSha256": "00c9a2626c79fdd234efabd658711a0d30407eb07cadb6d05d73b91bb0aff153",
+      "bytes": 1017,
+      "sha256": "20ef9354c626ea775d7b6f7686be0a70ed631e3087b7f9f38938901e2b18f539"
+    },
+    "target/task-tmp/vscode-jupyter-graph/floor-repair-parent-run-jobs.json": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/4aa9901473bd6d1a2d966493767692859733d71c8f1d3bd46beea7cf63b18e5b.gz",
+      "archiveBytes": 5381,
+      "archiveSha256": "48a56330e1ed8dc5b55d7c15087462c3346cb7b6f8677d97699980bb4d5ca7a7",
+      "bytes": 53562,
+      "sha256": "4aa9901473bd6d1a2d966493767692859733d71c8f1d3bd46beea7cf63b18e5b"
+    },
+    "target/task-tmp/vscode-jupyter-graph/floor-ruff.log": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/vscode-jupyter-graph/floor-source-tests.log": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/1a65108c968b3aabbf06a0d665d81bbd81fd854a2d49de54ab990144dc92580c.gz",
+      "archiveBytes": 74,
+      "archiveSha256": "60a3881245b4353b32482de38188c26f4a083a45b8d369abf4a120669c53343f",
+      "bytes": 192,
+      "sha256": "1a65108c968b3aabbf06a0d665d81bbd81fd854a2d49de54ab990144dc92580c"
+    },
+    "target/task-tmp/vscode-jupyter-graph/floor-test-identity.json": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/224dd48ced4d2baab0e9e9aecb93da198c6a63abe021a8c550a2262e9d63f015.gz",
+      "archiveBytes": 158,
+      "archiveSha256": "b8f5fb64b3a5e0881ff9d1cc1aa16e4df6ea64cfcdd00aff961362c04721deae",
+      "bytes": 178,
+      "sha256": "224dd48ced4d2baab0e9e9aecb93da198c6a63abe021a8c550a2262e9d63f015"
+    },
+    "target/task-tmp/vscode-jupyter-graph/floor311-dev-corrected-tests.log": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/9f77e3c609aafb3a13bf68ae442ec7bdb577621a05c6d7b49256bb91aff992a1.gz",
+      "archiveBytes": 61,
+      "archiveSha256": "16ee3eb19ce8dada651a3224f3a1005b87bf150a55a03f07ad72c1ea5efbfe7d",
+      "bytes": 179,
+      "sha256": "9f77e3c609aafb3a13bf68ae442ec7bdb577621a05c6d7b49256bb91aff992a1"
+    },
+    "target/task-tmp/vscode-jupyter-graph/pr1119-floor-129681311051.log": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/9b761aff4d174c1b82aaa5835682783a7f8659f60fcc2cd28411f4438bc662e3.gz",
+      "archiveBytes": 18216,
+      "archiveSha256": "be68be1007eecc5301ff3b81ce8fbedc5d1f738fc17b080f03533f07370c2677",
+      "bytes": 84740,
+      "sha256": "9b761aff4d174c1b82aaa5835682783a7f8659f60fcc2cd28411f4438bc662e3"
+    },
+    "target/task-tmp/vscode-jupyter-graph/pr1119-run42771601692.json": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/c398e3b254bfafef92f1f4d0d8bd88fcf0b83535644c41c122a85474b3a935d0.gz",
+      "archiveBytes": 3602,
+      "archiveSha256": "20ccb52926632091e5786fd1f8c5b8b9eb321090cbb08a08cc8986110e530a24",
+      "bytes": 28013,
+      "sha256": "c398e3b254bfafef92f1f4d0d8bd88fcf0b83535644c41c122a85474b3a935d0"
+    },
+    "target/task-tmp/vscode-jupyter-graph/seal-floor-collection-evidence.py": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/83fdd3b61b1acf34e1b9308c2e0fe1fda1e99c5078ece6b867218999d5754184.gz",
+      "archiveBytes": 1945,
+      "archiveSha256": "7bae076cc1f73a9455ccce6836fd942ce17cb06a7929cf7a79ea2e7117951f42",
+      "bytes": 5023,
+      "sha256": "83fdd3b61b1acf34e1b9308c2e0fe1fda1e99c5078ece6b867218999d5754184"
+    },
+    "target/task-tmp/vscode-jupyter-graph/seal-floor-collection-sources.py": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/b71cbd7e0ce0610d0945d044963e7c2ae970d904257a387ab4a87440c447a7c5.gz",
+      "archiveBytes": 1159,
+      "archiveSha256": "60dd0dcd4ec9c72bf4297f6d419cbdbfa1515e7c04529c61c5eaff5f3491dab9",
+      "bytes": 2553,
+      "sha256": "b71cbd7e0ce0610d0945d044963e7c2ae970d904257a387ab4a87440c447a7c5"
+    },
+    "target/task-tmp/vscode-jupyter-graph/split-floor-cohort-tests.py": {
+      "archive": "spec/performance/vscode-floor-collection-2026-11-10/evidence/e821f403987c6c49d17a2b8fdcf6b6e862746f4c350f57b554b6a39f00d0c2b0.gz",
+      "archiveBytes": 1083,
+      "archiveSha256": "b621b2bbb8ba84369565b26f13f3ea41b8ef80af72538df890a56b8e2f2d73e0",
+      "bytes": 2778,
+      "sha256": "e821f403987c6c49d17a2b8fdcf6b6e862746f4c350f57b554b6a39f00d0c2b0"
+    }
+  },
+  "findingSha256": "d628dfd6da4a6bcabfd8aa119d4096ef2e05265623a5152fb842da8aed739103",
+  "originalTestDefinitionsPreserved": {
+    "allOriginalFunctionDefinitionsAndDecoratorsEqual": true,
+    "newBoundaryRegression": 1,
+    "originalDefinitions": 14,
+    "parent": "ab625c5b68c87c25e7c59a62de63fe7e5a8a24cc"
+  },
+  "parent": "ab625c5b68c87c25e7c59a62de63fe7e5a8a24cc",
+  "parentReceipt": {
+    "evidenceArchivesVerified": 12,
+    "path": "spec/performance/desktop-exact-reply-union-2026-11-10/checks.json",
+    "sha256": "e79fca73846056130bc780f7acc8c766fb08b3f9a2d2c40fe3dc8051b59242f7"
+  },
+  "qualification": {
+    "coreAndFocused": {
+      "exit": 0,
+      "includes": "actual Git LF/CRLF successor checks",
+      "passed": 110
+    },
+    "developmentFocused": {
+      "python3.11": {
+        "exit": 0,
+        "passed": 84
+      },
+      "python3.12": {
+        "exit": 0,
+        "passed": 84
+      }
+    },
+    "finalIndependentReview": "pending",
+    "fullCheckCi": {
+      "exit": 0,
+      "passed": 885
+    },
+    "hooks": {
+      "exit": 0
+    },
+    "minimalCorrected": {
+      "exit": 0,
+      "passed": 16,
+      "python": "3.11.17",
+      "scope": "one optional PNG-oracle module; dependency-light15 cases and new boundary test execute",
+      "skipped": 1
+    },
+    "minimalFullCollection": {
+      "collected": 8976,
+      "editableInstall": "existing prebuilt flags; all15 runtime hashes unchanged",
+      "executionClaim": false,
+      "exit": 0,
+      "python": "3.11.17"
+    },
+    "newHeadHostedCIQueue": "pending",
+    "parentHostedFloor": {
+      "exit": 2,
+      "head": "ab625c5b68c87c25e7c59a62de63fe7e5a8a24cc",
+      "job": 129681311051,
+      "result": "FAILED missing optional Pillow during collection; preserved",
+      "run": 42771601692
+    },
+    "parentMinimalReproduction": {
+      "exit": 2,
+      "python": "3.11.17",
+      "result": "same missing PIL import"
+    },
+    "ruffCheck": {
+      "exit": 0
+    },
+    "ruffFormat": {
+      "exit": 0
+    }
+  },
+  "readmeSha256": "6af874fc7c84bb35463fa07a86ec9c74a4f0f2e96ef060be149b2b02d4f43595",
+  "remaining": [
+    "Completed independent correction review and final-head hosted CI/merge queue",
+    "Whole1015 andmilestones4-7 originalrequirements remain open"
+  ],
+  "requiredDesktopCommandsAndVerifierUnchanged": true,
+  "runtime": {
+    "packages/xy-client/dist/index.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa.gz",
+      "archiveBytes": 247736,
+      "archiveSha256": "d1fcee9875cd320e48f3a05b6d3e268d4b67b16f152f54cc041c3cb14d2566cf",
+      "bytes": 864422,
+      "sha256": "447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/75e142e1c6066e2cca8055a49dcfc328abab7b847e12aebc8c9f8ce3eaa1580c.gz",
+      "archiveBytes": 247816,
+      "archiveSha256": "3160fae11e6cc52a41d6ed29c585dbb30e1b462a9592f9ae0da3bf0cd9806b7a",
+      "bytes": 864435,
+      "sha256": "75e142e1c6066e2cca8055a49dcfc328abab7b847e12aebc8c9f8ce3eaa1580c"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz",
+      "archiveBytes": 3838,
+      "archiveSha256": "dda8e6c4cec42d91f687b660d742d79dcc1a8c0d052ca6ca189c6acf095db2b4",
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8.gz",
+      "archiveBytes": 1043576,
+      "archiveSha256": "b09e635ab5663fabbb679592e2a8730413e322b541fd45d90105f73ca27c066c",
+      "bytes": 2536254,
+      "sha256": "fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "c4d9096b8df2ee31fc6c5e1a86cac0005b1406f5eee90de91d45fa72ba9f31f2",
+      "bytes": 226,
+      "sha256": "9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372.gz",
+      "archiveBytes": 781122,
+      "archiveSha256": "aad2d8c32a06b9155a6a2c466a64fc2df4effb1ec141722533cd30ecbf568413",
+      "bytes": 1886348,
+      "sha256": "1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372"
+    },
+    "python/xyg/static/index.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa.gz",
+      "archiveBytes": 247736,
+      "archiveSha256": "d1fcee9875cd320e48f3a05b6d3e268d4b67b16f152f54cc041c3cb14d2566cf",
+      "bytes": 864422,
+      "sha256": "447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa"
+    },
+    "python/xyg/static/standalone.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/75e142e1c6066e2cca8055a49dcfc328abab7b847e12aebc8c9f8ce3eaa1580c.gz",
+      "archiveBytes": 247816,
+      "archiveSha256": "3160fae11e6cc52a41d6ed29c585dbb30e1b462a9592f9ae0da3bf0cd9806b7a",
+      "bytes": 864435,
+      "sha256": "75e142e1c6066e2cca8055a49dcfc328abab7b847e12aebc8c9f8ce3eaa1580c"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8.gz",
+      "archiveBytes": 1043576,
+      "archiveSha256": "b09e635ab5663fabbb679592e2a8730413e322b541fd45d90105f73ca27c066c",
+      "bytes": 2536254,
+      "sha256": "fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "c4d9096b8df2ee31fc6c5e1a86cac0005b1406f5eee90de91d45fa72ba9f31f2",
+      "bytes": 226,
+      "sha256": "9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372.gz",
+      "archiveBytes": 781122,
+      "archiveSha256": "aad2d8c32a06b9155a6a2c466a64fc2df4effb1ec141722533cd30ecbf568413",
+      "bytes": 1886348,
+      "sha256": "1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372"
+    },
+    "target/release/libxyg_core.so": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/378a069c4f802bb97e6273333766a4afee99a626d4fc409f776f31d21968a4df.gz",
+      "archiveBytes": 2906222,
+      "archiveSha256": "e1a2c9c98f51d95d9ebaee58900a16680535d9747e5a7ec04e41a24cdbfba825",
+      "bytes": 6379784,
+      "sha256": "378a069c4f802bb97e6273333766a4afee99a626d4fc409f776f31d21968a4df"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/8eebf2a5621798d266fd9030caf04c20d0f89e2e17fb8137195ac2ddcaf4b6d2.gz",
+      "archiveBytes": 1253444,
+      "archiveSha256": "7f03900cf3918fae6592e2d4c54a9d3529ecba5af90d419262a45f778df96b0a",
+      "bytes": 4076094,
+      "sha256": "8eebf2a5621798d266fd9030caf04c20d0f89e2e17fb8137195ac2ddcaf4b6d2"
+    }
+  },
+  "runtimeDependenciesAndFloorInstallUnchanged": true,
+  "runtimeRebuilt": false,
+  "schemaVersion": 1,
+  "scope": "Preserve minimal Python-floor collection without weakening required desktop or installer qualification"
+}

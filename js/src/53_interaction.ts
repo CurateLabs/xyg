@@ -482,6 +482,24 @@ Object.assign(ChartView.prototype, {
       g._cpu.x && g._cpu.y && Math.min(g._cpu.x.length, g._cpu.y.length) > 0);
   },
 
+  _a11yClientPoint(hit) {
+    const g = hit?.g;
+    const cpu = g?._cpu;
+    if (!cpu?.x || !cpu?.y) return null;
+    const xValue = this._decodeValue(cpu.x, cpu.xMeta || g.xMeta, hit.index);
+    const yValue = this._decodeValue(cpu.y, cpu.yMeta || g.yMeta, hit.index);
+    const [chartX, chartY] = this._projectDataPoint(
+      g.xAxis || "x", g.yAxis || "y", xValue, yValue,
+    );
+    // A polar view can cull rows outside its authored sector or radial window.
+    if (!Number.isFinite(chartX) || !Number.isFinite(chartY)) return null;
+    const rect = this.canvas.getBoundingClientRect();
+    return {
+      clientX: rect.left + Math.max(0, Math.min(rect.width, chartX - this.plot.x)),
+      clientY: rect.top + Math.max(0, Math.min(rect.height, chartY - this.plot.y)),
+    };
+  },
+
   _onA11yKey(e) {
     if (this._filterDashboard?.key(this, e)) return;
     const direction = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
@@ -493,10 +511,14 @@ Object.assign(ChartView.prototype, {
     if (activate) {
       if (!this._interactionFlag("click") || !this._hoverTarget) return;
       e.preventDefault();
+      e.stopPropagation?.();
       const hit = this._hoverTarget;
       const rect = this.canvas.getBoundingClientRect();
-      const clientX = this._lastHoverXY?.clientX ?? rect.left;
-      const clientY = this._lastHoverXY?.clientY ?? rect.top;
+      const xy = this._a11yKeyboardReadout ? this._a11yClientPoint(hit) : this._lastHoverXY;
+      if (this._a11yKeyboardReadout && !xy) return;
+      if (this._a11yKeyboardReadout) this._lastHoverXY = xy;
+      const clientX = xy?.clientX ?? rect.left;
+      const clientY = xy?.clientY ?? rect.top;
       const screen = { x: clientX - rect.left, y: clientY - rect.top };
       const modifiers = {
         shift: e.shiftKey === true,
@@ -525,6 +547,7 @@ Object.assign(ChartView.prototype, {
     }
     if (e.key === "Escape") {
       e.preventDefault();
+      e.stopPropagation?.();
       const hadHover = this._hoverId !== -1;
       this._hideTooltip();
       this._hoverId = -1;
@@ -543,6 +566,9 @@ Object.assign(ChartView.prototype, {
       return;
     }
     e.preventDefault();
+    // Embedded hosts may forward bubbling keys even when default is prevented.
+    // Only recognized plot keys are consumed; Tab and other host keys pass on.
+    e.stopPropagation?.();
     // Match pointer hover: never expose a readout against an in-between view,
     // density handoff, or animated tier frame.
     if (this._interactionTransitionActive()) return;
@@ -568,24 +594,13 @@ Object.assign(ChartView.prototype, {
     const hit = { trace: g.trace.id, index: offset, g };
     // Use the encoded numeric coordinates for positioning; _localRow may have
     // already converted categorical coordinates into display strings.
-    const xValue = this._decodeValue(g._cpu.x, g._cpu.xMeta || g.xMeta, offset);
-    const yValue = this._decodeValue(g._cpu.y, g._cpu.yMeta || g.yMeta, offset);
-    const [chartX, chartY] = this._projectDataPoint(
-      g.xAxis || "x",
-      g.yAxis || "y",
-      xValue,
-      yValue,
-    );
     // A polar view can legitimately cull source rows outside its authored
     // sector or radial window. Keyboard traversal still advances over that row,
     // but it must not publish a hover or feed NaN coordinates to tooltip
     // placement; the next traversal key continues from this source position.
-    if (!Number.isFinite(chartX) || !Number.isFinite(chartY)) return;
-    const x = chartX - this.plot.x;
-    const y = chartY - this.plot.y;
-    const rect = this.canvas.getBoundingClientRect();
-    const clientX = rect.left + Math.max(0, Math.min(rect.width, x));
-    const clientY = rect.top + Math.max(0, Math.min(rect.height, y));
+    const xy = this._a11yClientPoint(hit);
+    if (!xy) return;
+    const { clientX, clientY } = xy;
     this._hoverId = hit.trace * 1e9 + hit.index;
     this._hoverTarget = hit;
     this._lastHoverXY = { clientX, clientY };

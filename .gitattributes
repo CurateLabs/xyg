@@ -1514,3 +1514,48 @@ spec/performance/graph-notebook7-2026-11-10/** text eol=lf
 spec/performance/graph-notebook7-2026-11-10/**/*.gz -text
 spec/performance/graph-notebook7-2026-11-10/**/*.png -text
 docs/integrations/graphforge.md text eol=lf
+
+# Embedded keyboard movement/key ownership successor evidence.
+tests/test_accessibility_contract.py text eol=lf
+spec/performance/embedded-keyboard-2026-11-10/** text eol=lf
+spec/performance/embedded-keyboard-2026-11-10/**/*.gz -text
+spec/performance/embedded-keyboard-2026-11-10/**/*.png -text
+
+# Named desktop notebook proof and append-only source/evidence successor.
+scripts/graph_vscode_notebook_smoke.py text eol=lf
+scripts/install_vscode_graph_notebook.py text eol=lf
+scripts/verify_vscode_graph_notebook_report.py text eol=lf
+scripts/graph_notebook_pixels.py text eol=lf
+tests/test_vscode_graph_notebook_report.py text eol=lf
+tests/vscode_graph_notebook/** text eol=lf
+spec/performance/graph-vscode-notebook-2026-11-10/** text eol=lf
+spec/performance/graph-vscode-notebook-2026-11-10/**/*.gz -text
+spec/performance/graph-vscode-notebook-2026-11-10/**/*.png -text
+
+# Complete installed desktop-cohort correction evidence.
+spec/performance/graph-vscode-cohort-correction-2026-11-10/** text eol=lf
+spec/performance/graph-vscode-cohort-correction-2026-11-10/**/*.gz -text
+spec/performance/graph-vscode-cohort-correction-2026-11-10/**/*.png -text
+
+# Named-idle kernel admission witness and append-only hosted correction evidence.
+scripts/graph_notebook_kernel_witness.mjs text eol=lf
+js/test/graph-notebook-kernel-witness.test.mjs text eol=lf
+spec/performance/notebook-kernel-witness-2026-11-10/** text eol=lf
+spec/performance/notebook-kernel-witness-2026-11-10/**/*.gz -text
+
+# Combined actual desktop and atomic kernel witness provenance.
+spec/performance/vscode-notebook-kernel-union-2026-11-10/** text eol=lf
+spec/performance/vscode-notebook-kernel-union-2026-11-10/**/*.gz -text
+
+# Exact-reply consumption conformance and append-only correction evidence.
+spec/performance/keyboard-exact-reply-guard-2026-11-10/** text eol=lf
+spec/performance/keyboard-exact-reply-guard-2026-11-10/**/*.gz -text
+
+# Final desktop and consumed-exact-reply integration evidence.
+spec/performance/desktop-exact-reply-union-2026-11-10/** text eol=lf
+spec/performance/desktop-exact-reply-union-2026-11-10/**/*.gz -text
+
+# Minimal-floor desktop collection and append-only qualification.
+tests/test_vscode_graph_notebook_cohort.py text eol=lf
+spec/performance/vscode-floor-collection-2026-11-10/** text eol=lf
+spec/performance/vscode-floor-collection-2026-11-10/**/*.gz -text

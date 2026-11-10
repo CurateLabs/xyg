@@ -1,0 +1,900 @@
+{
+  "bindings": {
+    "current": 3438,
+    "historical": 1418,
+    "parents": 24,
+    "path": "spec/performance/graph-vscode-cohort-correction-2026-11-10/current-bindings.json",
+    "sha256": "4f5812a5f651355d2b8e774f644f15f26fd108e2ebd52b99f89aad0b88f49603"
+  },
+  "compiledInputs": {
+    "count": 324,
+    "parentExact": true,
+    "path": "spec/performance/current-large-graph-union-2026-11-09/compiled-inputs.json",
+    "sha256": "14467233a1f6878d137490b6ef6741766486b42b37b8ed16aa01e2065113899e"
+  },
+  "evidence": {
+    "/var/tmp/xyg-vscode-final-review-snqpoo8l/app-identity-control.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/5ac0daa5cf89e25927d195d76593faafc4070e0319b5b9f9cb5098b5f3bd5571.gz",
+      "archiveBytes": 328,
+      "archiveSha256": "f183725a068a09d5d5b75f7b904724edca63ee7f7717f9f4679b589fb0182983",
+      "bytes": 468,
+      "sha256": "5ac0daa5cf89e25927d195d76593faafc4070e0319b5b9f9cb5098b5f3bd5571"
+    },
+    "/var/tmp/xyg-vscode-final-review-snqpoo8l/app_identity_control.py": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/77035037af1e3de5e8dd241ec85f674e935949c016d9c4dafe3b30548ce7677a.gz",
+      "archiveBytes": 1042,
+      "archiveSha256": "252028e2fe598ae73a63a392d795a6286c32c27431fc508e6b54cc01cdb5f6f2",
+      "bytes": 2284,
+      "sha256": "77035037af1e3de5e8dd241ec85f674e935949c016d9c4dafe3b30548ce7677a"
+    },
+    "/var/tmp/xyg-vscode-final-review-snqpoo8l/independent-controls.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/523ed814a430d271714073803b4e357b3375f5d06b5db75874cd23010c742525.gz",
+      "archiveBytes": 576,
+      "archiveSha256": "40e44fb312bce8a5d8671ba53cc0e80d55184c2c6b8b0bc7239c23b600ba9207",
+      "bytes": 1283,
+      "sha256": "523ed814a430d271714073803b4e357b3375f5d06b5db75874cd23010c742525"
+    },
+    "/var/tmp/xyg-vscode-final-review-snqpoo8l/independent-final-review.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/3d1437c36d744a1d457291b608e921dced18895f3ed439fd43f2fd80f86c66ff.gz",
+      "archiveBytes": 3757,
+      "archiveSha256": "1d9cef4a417292593bac3326a9d99eb6b8158505f72c1f5f4a9a9be880f45470",
+      "bytes": 11861,
+      "sha256": "3d1437c36d744a1d457291b608e921dced18895f3ed439fd43f2fd80f86c66ff"
+    },
+    "/var/tmp/xyg-vscode-final-review-snqpoo8l/independent_controls.py": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/d0f867af509721a90b8724fe876d369c98e3f65c4d2c4828f2d4639c87318cf9.gz",
+      "archiveBytes": 1339,
+      "archiveSha256": "7305d56134dba0c83f1ef862b22ced34db1d47da3eb547a05467c240f325dc08",
+      "bytes": 2981,
+      "sha256": "d0f867af509721a90b8724fe876d369c98e3f65c4d2c4828f2d4639c87318cf9"
+    },
+    "target/task-tmp/vscode-jupyter-graph/app-archive-layout.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/5e32baf6b1b709ed2ffa95ca81481d0756ce464c976fe0d5b1be13d08aadbcde.gz",
+      "archiveBytes": 74,
+      "archiveSha256": "ec209b58edea564c5f8fe7a1d73e76f65f872771d8226ed2a2d3bd93b5c79cf8",
+      "bytes": 69,
+      "sha256": "5e32baf6b1b709ed2ffa95ca81481d0756ce464c976fe0d5b1be13d08aadbcde"
+    },
+    "target/task-tmp/vscode-jupyter-graph/app-current-entries.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/20e8735d479aa923c91a510cbc8628f4d5e17a41f8e32d0e173dc0ce3b0f564c.gz",
+      "archiveBytes": 127447,
+      "archiveSha256": "ee78f554075afebfc43e1bd4b7d6b6d7ec6ca53250d703eb480ae7487a3556c4",
+      "bytes": 628067,
+      "sha256": "20e8735d479aa923c91a510cbc8628f4d5e17a41f8e32d0e173dc0ce3b0f564c"
+    },
+    "target/task-tmp/vscode-jupyter-graph/app-pin-derivation.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/9fac1ebeff18594c5350d994d68228836741606fa5284ab0e65ec7a5f345884c.gz",
+      "archiveBytes": 286,
+      "archiveSha256": "7b8b07c236ac8b7180c4c6269bd759a8af2b1b522e54ca43d7334f21a3a7a2fd",
+      "bytes": 374,
+      "sha256": "9fac1ebeff18594c5350d994d68228836741606fa5284ab0e65ec7a5f345884c"
+    },
+    "target/task-tmp/vscode-jupyter-graph/app-pin-derivation.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/ccc6f9220b189e9a50119285cbf5d64c762475bad0849640741ca980ab9482c4.gz",
+      "archiveBytes": 283,
+      "archiveSha256": "fd9f16bffb96cd3e80dfce3d5907cf959e28705d10f4aca57e50ba824a404285",
+      "bytes": 362,
+      "sha256": "ccc6f9220b189e9a50119285cbf5d64c762475bad0849640741ca980ab9482c4"
+    },
+    "target/task-tmp/vscode-jupyter-graph/cohort-failure37-tcp-runner.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/9402e10b1e7ececb2d4372bff36ed64b0277cc1e1236ba252c7d34162e906bb8.gz",
+      "archiveBytes": 248,
+      "archiveSha256": "844f7178c834813f0560468d3c6975d1d1b586fabfa3dbc13938f4ef3fd7eeaa",
+      "bytes": 478,
+      "sha256": "9402e10b1e7ececb2d4372bff36ed64b0277cc1e1236ba252c7d34162e906bb8"
+    },
+    "target/task-tmp/vscode-jupyter-graph/cohort-failure37-tcp-verifier.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/11cc76e0df42d655b1de06dc46dfb9376a5483e86c07acecbfcba637e70408e7.gz",
+      "archiveBytes": 75,
+      "archiveSha256": "07b13ad86820d62febdfd99b32f8a26c62a4765bd18fbfc9213af6da51248b83",
+      "bytes": 58,
+      "sha256": "11cc76e0df42d655b1de06dc46dfb9376a5483e86c07acecbfcba637e70408e7"
+    },
+    "target/task-tmp/vscode-jupyter-graph/cohort-temp-write.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/c4b14bbdc859bc9d831b3b9bf93f23d9b0a0e21eaa24d6a11afec3b700340632.gz",
+      "archiveBytes": 121,
+      "archiveSha256": "c65b585e0b22536260cf8420326a65dbdaff481b736705876a1edcefe98ecf18",
+      "bytes": 159,
+      "sha256": "c4b14bbdc859bc9d831b3b9bf93f23d9b0a0e21eaa24d6a11afec3b700340632"
+    },
+    "target/task-tmp/vscode-jupyter-graph/cohort-xvfb-diagnostic.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/3f9da775bcbbcd85c94040b0f583b37346b7f80aceafa55e4fdfbfbfffb490de.gz",
+      "archiveBytes": 122,
+      "archiveSha256": "dcea379e1b1c0d5d8a5b56f7b71ba17585940a90b5ac315706887278d1f19c6a",
+      "bytes": 133,
+      "sha256": "3f9da775bcbbcd85c94040b0f583b37346b7f80aceafa55e4fdfbfbfffb490de"
+    },
+    "target/task-tmp/vscode-jupyter-graph/cohort-xvfb-diagnostic.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/a5bb673fd7cc4126fa8b8bf98a1205d90ccbd2bef0ec86f2ec6c098eaab970f2.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "15bdb2c086571f7cc0cb2803abca9820117248c13b5e7fc83e78cc15b2fbff3e",
+      "bytes": 945,
+      "sha256": "a5bb673fd7cc4126fa8b8bf98a1205d90ccbd2bef0ec86f2ec6c098eaab970f2"
+    },
+    "target/task-tmp/vscode-jupyter-graph/cohort-xvfb-disposition.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/69016291436e487a3aff43c5f8d3c31e0b6d1185958b754c7cc2698d20bbdcf8.gz",
+      "archiveBytes": 419,
+      "archiveSha256": "8242dc2b1a8cdf52a375fd2651ca9224b3dd6f986a4a67c81d6e60b17fca7699",
+      "bytes": 731,
+      "sha256": "69016291436e487a3aff43c5f8d3c31e0b6d1185958b754c7cc2698d20bbdcf8"
+    },
+    "target/task-tmp/vscode-jupyter-graph/cohort311-36-tcp-runner.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0.gz",
+      "archiveBytes": 85,
+      "archiveSha256": "af9cd43aa91696b98bc4c3cfa81f47261b91f1b35d149565056531b4b3056065",
+      "bytes": 71,
+      "sha256": "26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0"
+    },
+    "target/task-tmp/vscode-jupyter-graph/cohort311-36-tcp-verifier.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/f939fd95ccd8a4d892a81b4476dad95dd54db7ec4fe4c10f97b0c760387b215e.gz",
+      "archiveBytes": 100,
+      "archiveSha256": "e597f3187387e3c3d850667943d35d0715056b8b69793de982e4ddc9b1ba6bd9",
+      "bytes": 86,
+      "sha256": "f939fd95ccd8a4d892a81b4476dad95dd54db7ec4fe4c10f97b0c760387b215e"
+    },
+    "target/task-tmp/vscode-jupyter-graph/cohort34-runner.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/9402e10b1e7ececb2d4372bff36ed64b0277cc1e1236ba252c7d34162e906bb8.gz",
+      "archiveBytes": 248,
+      "archiveSha256": "844f7178c834813f0560468d3c6975d1d1b586fabfa3dbc13938f4ef3fd7eeaa",
+      "bytes": 478,
+      "sha256": "9402e10b1e7ececb2d4372bff36ed64b0277cc1e1236ba252c7d34162e906bb8"
+    },
+    "target/task-tmp/vscode-jupyter-graph/cohort35-tcp-runner.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0.gz",
+      "archiveBytes": 85,
+      "archiveSha256": "af9cd43aa91696b98bc4c3cfa81f47261b91f1b35d149565056531b4b3056065",
+      "bytes": 71,
+      "sha256": "26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0"
+    },
+    "target/task-tmp/vscode-jupyter-graph/cohort35-tcp-verifier.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/f939fd95ccd8a4d892a81b4476dad95dd54db7ec4fe4c10f97b0c760387b215e.gz",
+      "archiveBytes": 100,
+      "archiveSha256": "e597f3187387e3c3d850667943d35d0715056b8b69793de982e4ddc9b1ba6bd9",
+      "bytes": 86,
+      "sha256": "f939fd95ccd8a4d892a81b4476dad95dd54db7ec4fe4c10f97b0c760387b215e"
+    },
+    "target/task-tmp/vscode-jupyter-graph/complete-installed-cohort/installation.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/f97851d7d5442fafb6b0380eb1bdf7c14639006279839a23a6b848565d4387c8.gz",
+      "archiveBytes": 141173,
+      "archiveSha256": "343696010d14f119a66c2a02dc61fcd405a9e34845bca53d1eb68ed88508ebcf",
+      "bytes": 695414,
+      "sha256": "f97851d7d5442fafb6b0380eb1bdf7c14639006279839a23a6b848565d4387c8"
+    },
+    "target/task-tmp/vscode-jupyter-graph/complete-installed-cohort/ms-toolsai.jupyter-keymap.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/9368c595f4047b008701c0d7d79a2355aaf1e1559701219392b2fba32721069c.gz",
+      "archiveBytes": 106,
+      "archiveSha256": "0bebbb35fbf760cdcb8164dbb5fe259c67ad1f887775803488eb2c44cc751c29",
+      "bytes": 102,
+      "sha256": "9368c595f4047b008701c0d7d79a2355aaf1e1559701219392b2fba32721069c"
+    },
+    "target/task-tmp/vscode-jupyter-graph/complete-installed-cohort/ms-toolsai.jupyter-renderers.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/dcfec2ff825d19d1076a0707e6ca296f30d05c0e12d10e725793dcd797543c0b.gz",
+      "archiveBytes": 110,
+      "archiveSha256": "f5558d2ff0630897afae8d35e09330963e1ba5a3399249a8b41ac32d9bced76e",
+      "bytes": 105,
+      "sha256": "dcfec2ff825d19d1076a0707e6ca296f30d05c0e12d10e725793dcd797543c0b"
+    },
+    "target/task-tmp/vscode-jupyter-graph/complete-installed-cohort/ms-toolsai.jupyter.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/0a6290602100f807fa307ad31e3f78c90271282a6d3202e65129a8fbcd9bd166.gz",
+      "archiveBytes": 106,
+      "archiveSha256": "4f40ff03773e7e22154378293240c362b517fdb6bb5f8edcdb3557a1d6569073",
+      "bytes": 98,
+      "sha256": "0a6290602100f807fa307ad31e3f78c90271282a6d3202e65129a8fbcd9bd166"
+    },
+    "target/task-tmp/vscode-jupyter-graph/complete-installed-cohort/ms-toolsai.vscode-jupyter-cell-tags.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/6f428aaf830f0284f63c61acecb9d6bb458d90e4ac38cbd25d0ebd147358448c.gz",
+      "archiveBytes": 116,
+      "archiveSha256": "4b7dcf2c240bea523db0bc7cc5ece96fff3192434a99885514d8a030ba480e3f",
+      "bytes": 112,
+      "sha256": "6f428aaf830f0284f63c61acecb9d6bb458d90e4ac38cbd25d0ebd147358448c"
+    },
+    "target/task-tmp/vscode-jupyter-graph/complete-installed-cohort/ms-toolsai.vscode-jupyter-slideshow.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/8a618be2ddbe0cbc676bafe53abd5170979bc0122c142d7bc48d85b076c27239.gz",
+      "archiveBytes": 116,
+      "archiveSha256": "7e1ce5e763c7716edbd336d40345b9e89b955d561cace065f56fe338737a7501",
+      "bytes": 112,
+      "sha256": "8a618be2ddbe0cbc676bafe53abd5170979bc0122c142d7bc48d85b076c27239"
+    },
+    "target/task-tmp/vscode-jupyter-graph/desktop-cohort-core.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/33c3aa98e3d22b3d56445293357d15d7f07a9fa946a3ab3cc42d9e9f532331b6.gz",
+      "archiveBytes": 67,
+      "archiveSha256": "f143525becb26c4eb797795d28a63bb91c26a533e61ddccd7b34a4e0527a4afb",
+      "bytes": 114,
+      "sha256": "33c3aa98e3d22b3d56445293357d15d7f07a9fa946a3ab3cc42d9e9f532331b6"
+    },
+    "target/task-tmp/vscode-jupyter-graph/desktop-cohort-format.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/ee6d6526f525a55dacc48011cd7b020ebf7cb3c52c83ec46898eb993a38db7bd.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "900cb3ef939391da5110cba14cdc4eef8dcbd0d6759b3e4c80ec3adcd103d89b",
+      "bytes": 29,
+      "sha256": "ee6d6526f525a55dacc48011cd7b020ebf7cb3c52c83ec46898eb993a38db7bd"
+    },
+    "target/task-tmp/vscode-jupyter-graph/desktop-cohort-hooks.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/vscode-jupyter-graph/desktop-cohort-ruff.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/vscode-jupyter-graph/desktop-cohort-verifier-tests-py311.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/3cb5f177f4725a2be01eebab75df56662b935c5bba18a9d54eea27da6aa9751d.gz",
+      "archiveBytes": 61,
+      "archiveSha256": "9854d7e96811d1fa01f3aac63da8074f9e806e5893474c89c4126ad91a673d07",
+      "bytes": 179,
+      "sha256": "3cb5f177f4725a2be01eebab75df56662b935c5bba18a9d54eea27da6aa9751d"
+    },
+    "target/task-tmp/vscode-jupyter-graph/desktop-cohort-verifier-tests.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/f162eee4922a98ca145c6e8a4a93bf0e2a3eb08de16c488c1a9ddcb4e03e8594.gz",
+      "archiveBytes": 61,
+      "archiveSha256": "fb808657ca26b004b856480a11fc0e511d1b4239beecbd8e6d0ad420a25802d6",
+      "bytes": 179,
+      "sha256": "f162eee4922a98ca145c6e8a4a93bf0e2a3eb08de16c488c1a9ddcb4e03e8594"
+    },
+    "target/task-tmp/vscode-jupyter-graph/desktop-complete-cohort-controls.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/f7f44c7daaa9ba54e5077622c609c4c2fbb747bb407e1212ac0d58188031185c.gz",
+      "archiveBytes": 282,
+      "archiveSha256": "2bcacf418082363da2bdcf275a45bfe3815029585ecb42f7d42201d0b0aabeae",
+      "bytes": 404,
+      "sha256": "f7f44c7daaa9ba54e5077622c609c4c2fbb747bb407e1212ac0d58188031185c"
+    },
+    "target/task-tmp/vscode-jupyter-graph/desktop-complete-cohort-controls.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/c58e67db0b3e16f33ded6f4164b8c042744a5878b71bb74cb4ba8507f001a24c.gz",
+      "archiveBytes": 274,
+      "archiveSha256": "9b9cb15ff2cf562d7934619a7c962e02092af67becd706b826d27bc46699a31e",
+      "bytes": 378,
+      "sha256": "c58e67db0b3e16f33ded6f4164b8c042744a5878b71bb74cb4ba8507f001a24c"
+    },
+    "target/task-tmp/vscode-jupyter-graph/desktop-complete-cohort-controls.py": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/c44d746aa3956bc2f696b36ff9e1a1e3738b95c66c207bf81a3d4faf7977bf8f.gz",
+      "archiveBytes": 1210,
+      "archiveSha256": "1ea100df0368d974d544999a96deb157c8519776e9c0e2136eb9c025cc0bcf2c",
+      "bytes": 2952,
+      "sha256": "c44d746aa3956bc2f696b36ff9e1a1e3738b95c66c207bf81a3d4faf7977bf8f"
+    },
+    "target/task-tmp/vscode-jupyter-graph/desktop-duplicate-parent-negative.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/639a61c48875920aafcce577dfba816b817a4b581f88e16f7c990ec7be567b84.gz",
+      "archiveBytes": 169,
+      "archiveSha256": "69f7c59ae4cf137ec89d2a1f5278737fb1404a8cda300f9955977f1f1236c660",
+      "bytes": 207,
+      "sha256": "639a61c48875920aafcce577dfba816b817a4b581f88e16f7c990ec7be567b84"
+    },
+    "target/task-tmp/vscode-jupyter-graph/parent-desktop-installer.py": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/1d4d1c020d633675896b4a6b018e50bac85c9c40d17f9f1e6f3bfd79474a0a5a.gz",
+      "archiveBytes": 3031,
+      "archiveSha256": "fe823f294da054faaf416f30eac9b0c016b57eece5100acbfbe3c1d1d382fcf0",
+      "bytes": 9254,
+      "sha256": "1d4d1c020d633675896b4a6b018e50bac85c9c40d17f9f1e6f3bfd79474a0a5a"
+    },
+    "target/task-tmp/vscode-jupyter-graph/pin-complete-app.py": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/7e287842c8c4dbf8892e48c65f9172bd2cebf379c268ed67cc1beedb149dcc4e.gz",
+      "archiveBytes": 825,
+      "archiveSha256": "4ce4be9c4969d3c53063ca9f468a3c2a53ca183c3b26686c0564f16750082205",
+      "bytes": 1731,
+      "sha256": "7e287842c8c4dbf8892e48c65f9172bd2cebf379c268ed67cc1beedb149dcc4e"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort-failure37-tcp/attach.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/4fefb50f0bd372b295b4ebb569331435e6ec934237822f590be168006e07a276.gz",
+      "archiveBytes": 230,
+      "archiveSha256": "9e90c9c34a1df3ecb15601c195527a6f5a292da8d7f55650bed5896ec2696ff5",
+      "bytes": 360,
+      "sha256": "4fefb50f0bd372b295b4ebb569331435e6ec934237822f590be168006e07a276"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort-failure37-tcp/cleanup.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/f60414b1370abbe55a50b86497058ef1815acc235c21ab332deafb29f7c89f93.gz",
+      "archiveBytes": 132,
+      "archiveSha256": "92f65024544d508b4fa22d31bd16a945aae18aa26d6aee58c1d51f0e2c793f62",
+      "bytes": 379,
+      "sha256": "f60414b1370abbe55a50b86497058ef1815acc235c21ab332deafb29f7c89f93"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort-failure37-tcp/controller-complete.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/116e2d2049e97afed624df8857881686d372dcc296f182fdf3b478e71cdbd226.gz",
+      "archiveBytes": 172,
+      "archiveSha256": "9eb5eb1653dfe7598d9b7b8d5573f2fb2b2fb210ad839b0c008e3cf295bf4734",
+      "bytes": 184,
+      "sha256": "116e2d2049e97afed624df8857881686d372dcc296f182fdf3b478e71cdbd226"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort-failure37-tcp/extension-state.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/9d8f5cee534f4c875a9cc0f4c2bedb4094c997cd46d7a7c0c23ac7be5afab018.gz",
+      "archiveBytes": 1461,
+      "archiveSha256": "de7d5d91bcb792c35545344082586909a2fa7c49d5ef358cac1f26daa4ec820b",
+      "bytes": 9562,
+      "sha256": "9d8f5cee534f4c875a9cc0f4c2bedb4094c997cd46d7a7c0c23ac7be5afab018"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort-failure37-tcp/failure.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/cb389c233e664935b41434d4308ed8e9c0bec32bd0c8da23a58bc8007c5d5cdf.gz",
+      "archiveBytes": 4231,
+      "archiveSha256": "c79a3c08aafdb53db5ca4800e4631394f7e6fb00b229df8debd427a8528803c7",
+      "bytes": 70800,
+      "sha256": "cb389c233e664935b41434d4308ed8e9c0bec32bd0c8da23a58bc8007c5d5cdf"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort-failure37-tcp/run-result.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/01ed9c1f0caec1f792c2eee3899e5300491fe15198338b7ae0afbd1e2edf650b.gz",
+      "archiveBytes": 521,
+      "archiveSha256": "5b0474df8ed1cbf5663b7b112f3ac1cd7993a1281a67ec0af6bf3b5af00821a8",
+      "bytes": 1221,
+      "sha256": "01ed9c1f0caec1f792c2eee3899e5300491fe15198338b7ae0afbd1e2edf650b"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort311-36-tcp/attach.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/914408d29b65be405a7b7e5de46644065260cbc22c3f7ac77d29df4663801669.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "353ee798081a6eadd80724efce87173d86c6ffce24ebe09836111084cc59b046",
+      "bytes": 32,
+      "sha256": "914408d29b65be405a7b7e5de46644065260cbc22c3f7ac77d29df4663801669"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort311-36-tcp/cleanup.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/649b5405008ac4015fe2abaeb55fede94195f8135672c2911f89c18bff4a3ad4.gz",
+      "archiveBytes": 128,
+      "archiveSha256": "8517e8cb135a61fe87bd902783c8b6684c8933c4fdad95186f934d5a0982419f",
+      "bytes": 379,
+      "sha256": "649b5405008ac4015fe2abaeb55fede94195f8135672c2911f89c18bff4a3ad4"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort311-36-tcp/connected.png": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/eeab994e1051c3006f0cbf6d7dba5aaf1e4d1041c573b21dcb4284c26e5b6ef0.gz",
+      "archiveBytes": 20244,
+      "archiveSha256": "50718aa57b8bdb74392df45e80cc7c429ddbeb395049cd225c389b23c6f2f413",
+      "bytes": 21065,
+      "sha256": "eeab994e1051c3006f0cbf6d7dba5aaf1e4d1041c573b21dcb4284c26e5b6ef0"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort311-36-tcp/controller-complete.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "857e8dc6760f12d1b6ad15479d85e8145534f75f681ff8d45982c2d09cb947b6",
+      "bytes": 33,
+      "sha256": "b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort311-36-tcp/extension-state.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/4e94558a10a7a0291ce53673b08f4c97c4c00d6f18e1dc42fa280c63718d3b44.gz",
+      "archiveBytes": 9320,
+      "archiveSha256": "5d9869777f66b7350fce8d0bfbd88aa51c6d42b20d42abf7cede088f7d1332a5",
+      "bytes": 81225,
+      "sha256": "4e94558a10a7a0291ce53673b08f4c97c4c00d6f18e1dc42fa280c63718d3b44"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort311-36-tcp/final-workbench.png": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/78e72ea779b7f3911915ddf57f2cca2ec8aecda599af1f563ad61ffd925205eb.gz",
+      "archiveBytes": 70682,
+      "archiveSha256": "91589a9e38cfa41e26e13b75bad15e23d4a49baba9fda263f2a519ab4e62ed6b",
+      "bytes": 74772,
+      "sha256": "78e72ea779b7f3911915ddf57f2cca2ec8aecda599af1f563ad61ffd925205eb"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort311-36-tcp/final.png": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/c605018b3adf9545d19c8096fed0a2f29ff9c57edee65f9d051293a57243eb9a.gz",
+      "archiveBytes": 9188,
+      "archiveSha256": "3b8bc75ec9dbe423fe13025d4aed4fd677f74d9113ece956e3676ca942e4407b",
+      "bytes": 10645,
+      "sha256": "c605018b3adf9545d19c8096fed0a2f29ff9c57edee65f9d051293a57243eb9a"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort311-36-tcp/geometry-diagnostic.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/103e04c94fc3863d70402d60a987237873ba1014ae5f85b4e4c019fe3a8aae41.gz",
+      "archiveBytes": 363,
+      "archiveSha256": "fcc747a7a48ced1c48d04a7af2458965e20c569199237a8f70c239dc51f5085c",
+      "bytes": 1167,
+      "sha256": "103e04c94fc3863d70402d60a987237873ba1014ae5f85b4e4c019fe3a8aae41"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort311-36-tcp/graph.ipynb": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/3e6c53b186c7f5573bd81e411e55e99c3961f33de16f4dd3bf25b171718b3b1d.gz",
+      "archiveBytes": 6928,
+      "archiveSha256": "50492cd3509fee9d7b46d7da36888e3a37545da1978b023eda6f2ce10c520960",
+      "bytes": 38513,
+      "sha256": "3e6c53b186c7f5573bd81e411e55e99c3961f33de16f4dd3bf25b171718b3b1d"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort311-36-tcp/identity-parity-input.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/d61bc9cd9febf7cf06784bfb938355a5c9d3d19e7bbca2a66f2596c842c91d2c.gz",
+      "archiveBytes": 4214,
+      "archiveSha256": "3d7bf18e21efd474f4086df6088a6404144c964b6679b452b17f637d633f9968",
+      "bytes": 17814,
+      "sha256": "d61bc9cd9febf7cf06784bfb938355a5c9d3d19e7bbca2a66f2596c842c91d2c"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort311-36-tcp/identity-parity.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/ea80ea7189b6763969bbbca36ca084a6011b0883d9c6f1542249566cfe253ffd.gz",
+      "archiveBytes": 440,
+      "archiveSha256": "6e4f59d1b24dc6542854a4f034d973c5af5c4877367533fca737b0ffa2e6e6a3",
+      "bytes": 1233,
+      "sha256": "ea80ea7189b6763969bbbca36ca084a6011b0883d9c6f1542249566cfe253ffd"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort311-36-tcp/initial-workbench.png": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/a01b80b43dc7c908a208120f077cf7c2e1c1726a9876cd5f1f4c9f3d9b82cf21.gz",
+      "archiveBytes": 78911,
+      "archiveSha256": "22f49f4a9f89e6641b503a66a1668b8bf51d8303404acb5fb26e80d6da8be884",
+      "bytes": 82915,
+      "sha256": "a01b80b43dc7c908a208120f077cf7c2e1c1726a9876cd5f1f4c9f3d9b82cf21"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort311-36-tcp/initial.png": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/7cf256f7c8aada6ffd995d0b0578b7dea41d879c7f1a21cec1936a71577220e1.gz",
+      "archiveBytes": 12576,
+      "archiveSha256": "178ac2e144a03dbf1a6ced905bf9be2feafd217f5eb67c197be1367d6152a8a2",
+      "bytes": 14261,
+      "sha256": "7cf256f7c8aada6ffd995d0b0578b7dea41d879c7f1a21cec1936a71577220e1"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort311-36-tcp/inspector-sources.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/0c35972e21789f58e3dd2fd53d8fa9da2e050b8df57ee5a42015223491640278.gz",
+      "archiveBytes": 296,
+      "archiveSha256": "a59b47cacf050c70d80ad1b7cb5f158c08386088c9d41adfbe5c29f16bd198d1",
+      "bytes": 1342,
+      "sha256": "0c35972e21789f58e3dd2fd53d8fa9da2e050b8df57ee5a42015223491640278"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort311-36-tcp/installation.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/f97851d7d5442fafb6b0380eb1bdf7c14639006279839a23a6b848565d4387c8.gz",
+      "archiveBytes": 141173,
+      "archiveSha256": "343696010d14f119a66c2a02dc61fcd405a9e34845bca53d1eb68ed88508ebcf",
+      "bytes": 695414,
+      "sha256": "f97851d7d5442fafb6b0380eb1bdf7c14639006279839a23a6b848565d4387c8"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort311-36-tcp/kernel-info.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/c4b38d08827014b51c8ef664d82580f693c56c88a1bde43aff5c351b27b1aff6.gz",
+      "archiveBytes": 138,
+      "archiveSha256": "922a7433d65fe9587d949e22230024f91e4fb5f4d09aa61d17052bdcf940142d",
+      "bytes": 192,
+      "sha256": "c4b38d08827014b51c8ef664d82580f693c56c88a1bde43aff5c351b27b1aff6"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort311-36-tcp/kernel-info.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort311-36-tcp/mark-pixels.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/76f92ddc38a786f7981df3dd8df6664683f72cd9e231e1aec001650a6dc5be78.gz",
+      "archiveBytes": 214,
+      "archiveSha256": "ba07c8d62215a5f799c98f22f333b6d6f1ac70094df1addc7d97bdb69787649b",
+      "bytes": 504,
+      "sha256": "76f92ddc38a786f7981df3dd8df6664683f72cd9e231e1aec001650a6dc5be78"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort311-36-tcp/report.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/c9563ee2cfa8305292a24a2d82adeebcd49594e91a5d6506873d1599eacf0f80.gz",
+      "archiveBytes": 19869,
+      "archiveSha256": "f63fb173c176f7f7cc48106d8ac55a3a36e899a97aa07345af6e8c53dcdec76a",
+      "bytes": 327347,
+      "sha256": "c9563ee2cfa8305292a24a2d82adeebcd49594e91a5d6506873d1599eacf0f80"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort311-36-tcp/routed.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/a5ef0138f40cbe88fdfe5c752954aa6fdd1710e73e72b7b1d4b487787ab568c4.gz",
+      "archiveBytes": 2616,
+      "archiveSha256": "d438a90e79582815c181057da0a7bb0844fb870e61f6620e6177d3f5d144ac5d",
+      "bytes": 13724,
+      "sha256": "a5ef0138f40cbe88fdfe5c752954aa6fdd1710e73e72b7b1d4b487787ab568c4"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort311-36-tcp/run-result.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/1ad0994af91f8dd589dbbfabbc1ceeeaa5bf078f5225567a312dcac7c0fa7d7a.gz",
+      "archiveBytes": 521,
+      "archiveSha256": "7849a9dd51eb946a59be96c70cbb660d9699a8b797eaf75d13d1789fa0e8cf09",
+      "bytes": 1216,
+      "sha256": "1ad0994af91f8dd589dbbfabbc1ceeeaa5bf078f5225567a312dcac7c0fa7d7a"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort311-36-tcp/served-widget-assets.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/5e3c88fbc7dd9b5c4f28ecb561eb505785ad787db5a67f9a7daf03e9d11ee795.gz",
+      "archiveBytes": 301,
+      "archiveSha256": "098be3cf496d6aacc2e24b8c6752907b35abcf18577faefb8afca3057086a6f9",
+      "bytes": 649,
+      "sha256": "5e3c88fbc7dd9b5c4f28ecb561eb505785ad787db5a67f9a7daf03e9d11ee795"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort311-36-tcp/server-environment.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/15f6c2fd302e6710bbb21ab71e225844dacd89e2591fd134bdcbeb42407c3385.gz",
+      "archiveBytes": 208,
+      "archiveSha256": "83906ea7806346f9309fe16618fac1f99e60cfcd10ef3f5ee84b1c7bd893bc7d",
+      "bytes": 281,
+      "sha256": "15f6c2fd302e6710bbb21ab71e225844dacd89e2591fd134bdcbeb42407c3385"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort34/application.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/755de76f03c11c333442cfddf2596d8ff8042a88a7748ccb5a66372a359cd8d2.gz",
+      "archiveBytes": 175,
+      "archiveSha256": "f52a48a4f9bcc596edecfd48afe4eddedffdfd5c49c37ca1a1bb9e96ba843b61",
+      "bytes": 211,
+      "sha256": "755de76f03c11c333442cfddf2596d8ff8042a88a7748ccb5a66372a359cd8d2"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort34/attach.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/7062d9e1e4df23e9382e794983919c766e956830663fabc34b6577842798bdcc.gz",
+      "archiveBytes": 201,
+      "archiveSha256": "b36a44f9dd9b6d4f0483849d9d938a2b1c1f7022614526de7be9db5c40310767",
+      "bytes": 226,
+      "sha256": "7062d9e1e4df23e9382e794983919c766e956830663fabc34b6577842798bdcc"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort34/cleanup.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/2fa6c2f015213f373f9cb22b3a4f49fc0f4e44d95fbc932aa67491155e33dada.gz",
+      "archiveBytes": 129,
+      "archiveSha256": "497b1ba46eb1e5b9ee66b7e21fb91fc6e9f00e111c503908de254f0dec33c801",
+      "bytes": 298,
+      "sha256": "2fa6c2f015213f373f9cb22b3a4f49fc0f4e44d95fbc932aa67491155e33dada"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort34/run-result.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/447c226e95f33ed305a08ed20b8fe427910e45b187fe455297b365aa67186db9.gz",
+      "archiveBytes": 446,
+      "archiveSha256": "ceed870f7f634a0deb947626248491a5681c70f4d3ec78a1f901b7a148e92cd5",
+      "bytes": 1054,
+      "sha256": "447c226e95f33ed305a08ed20b8fe427910e45b187fe455297b365aa67186db9"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort35-tcp/attach.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/914408d29b65be405a7b7e5de46644065260cbc22c3f7ac77d29df4663801669.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "353ee798081a6eadd80724efce87173d86c6ffce24ebe09836111084cc59b046",
+      "bytes": 32,
+      "sha256": "914408d29b65be405a7b7e5de46644065260cbc22c3f7ac77d29df4663801669"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort35-tcp/cleanup.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/649b5405008ac4015fe2abaeb55fede94195f8135672c2911f89c18bff4a3ad4.gz",
+      "archiveBytes": 128,
+      "archiveSha256": "8517e8cb135a61fe87bd902783c8b6684c8933c4fdad95186f934d5a0982419f",
+      "bytes": 379,
+      "sha256": "649b5405008ac4015fe2abaeb55fede94195f8135672c2911f89c18bff4a3ad4"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort35-tcp/connected.png": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/eeab994e1051c3006f0cbf6d7dba5aaf1e4d1041c573b21dcb4284c26e5b6ef0.gz",
+      "archiveBytes": 20244,
+      "archiveSha256": "50718aa57b8bdb74392df45e80cc7c429ddbeb395049cd225c389b23c6f2f413",
+      "bytes": 21065,
+      "sha256": "eeab994e1051c3006f0cbf6d7dba5aaf1e4d1041c573b21dcb4284c26e5b6ef0"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort35-tcp/controller-complete.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "857e8dc6760f12d1b6ad15479d85e8145534f75f681ff8d45982c2d09cb947b6",
+      "bytes": 33,
+      "sha256": "b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort35-tcp/extension-state.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/d660659e32a80f5fdfebdc8db54f9cf7fd5de3af0edcebcb87ac2ff9a72bbcb5.gz",
+      "archiveBytes": 9317,
+      "archiveSha256": "a87f0abbe7f33b681a51c94216c1cf8d8ab7a55809357649380d68711e2ba45e",
+      "bytes": 81221,
+      "sha256": "d660659e32a80f5fdfebdc8db54f9cf7fd5de3af0edcebcb87ac2ff9a72bbcb5"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort35-tcp/final-workbench.png": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/091427fbe88ff44682f5b2d22453e6e7b4ab3986658b65292fda22f6991f001a.gz",
+      "archiveBytes": 69853,
+      "archiveSha256": "6faf9f235b8a021a606e15bc785671bb3b8dee9075ab487272418079eea23521",
+      "bytes": 74234,
+      "sha256": "091427fbe88ff44682f5b2d22453e6e7b4ab3986658b65292fda22f6991f001a"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort35-tcp/final.png": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/a4a22f2d8c3cb5a9054a5374b81e6d8936f7008382ac8afb16879058285f01b6.gz",
+      "archiveBytes": 8325,
+      "archiveSha256": "f7088f17f377f108ace2b03a9d98d8b66ec9da4414b1336700cdf5e08c2162f4",
+      "bytes": 9823,
+      "sha256": "a4a22f2d8c3cb5a9054a5374b81e6d8936f7008382ac8afb16879058285f01b6"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort35-tcp/geometry-diagnostic.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/103e04c94fc3863d70402d60a987237873ba1014ae5f85b4e4c019fe3a8aae41.gz",
+      "archiveBytes": 363,
+      "archiveSha256": "fcc747a7a48ced1c48d04a7af2458965e20c569199237a8f70c239dc51f5085c",
+      "bytes": 1167,
+      "sha256": "103e04c94fc3863d70402d60a987237873ba1014ae5f85b4e4c019fe3a8aae41"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort35-tcp/graph.ipynb": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/3253d7d7a2a5390d29e671bb9a1e1c5e065222ddeb0b501c04662c68691280e0.gz",
+      "archiveBytes": 6933,
+      "archiveSha256": "a82b1d4ead15201de73474e316bbc30a4c8908e51609a8afd732a3b1d414df4d",
+      "bytes": 38513,
+      "sha256": "3253d7d7a2a5390d29e671bb9a1e1c5e065222ddeb0b501c04662c68691280e0"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort35-tcp/identity-parity-input.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/d61bc9cd9febf7cf06784bfb938355a5c9d3d19e7bbca2a66f2596c842c91d2c.gz",
+      "archiveBytes": 4214,
+      "archiveSha256": "3d7bf18e21efd474f4086df6088a6404144c964b6679b452b17f637d633f9968",
+      "bytes": 17814,
+      "sha256": "d61bc9cd9febf7cf06784bfb938355a5c9d3d19e7bbca2a66f2596c842c91d2c"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort35-tcp/identity-parity.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/ea80ea7189b6763969bbbca36ca084a6011b0883d9c6f1542249566cfe253ffd.gz",
+      "archiveBytes": 440,
+      "archiveSha256": "6e4f59d1b24dc6542854a4f034d973c5af5c4877367533fca737b0ffa2e6e6a3",
+      "bytes": 1233,
+      "sha256": "ea80ea7189b6763969bbbca36ca084a6011b0883d9c6f1542249566cfe253ffd"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort35-tcp/initial-workbench.png": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/f4084ce896ad8be9fc3e03c20f0575fa811cac8b6b22fee121c874a784e28daf.gz",
+      "archiveBytes": 78613,
+      "archiveSha256": "ed08bb3bf87eede8f07c361ea1092fd94289ae11e7f51fa75ef6334ccdfff277",
+      "bytes": 82767,
+      "sha256": "f4084ce896ad8be9fc3e03c20f0575fa811cac8b6b22fee121c874a784e28daf"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort35-tcp/initial.png": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/7cf256f7c8aada6ffd995d0b0578b7dea41d879c7f1a21cec1936a71577220e1.gz",
+      "archiveBytes": 12576,
+      "archiveSha256": "178ac2e144a03dbf1a6ced905bf9be2feafd217f5eb67c197be1367d6152a8a2",
+      "bytes": 14261,
+      "sha256": "7cf256f7c8aada6ffd995d0b0578b7dea41d879c7f1a21cec1936a71577220e1"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort35-tcp/inspector-sources.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/a90fc0ea0e24fef80c4eda0f8bbbbf9141b2c55eb1c1c6bfc0bebfdde731980e.gz",
+      "archiveBytes": 296,
+      "archiveSha256": "ba4cb1d21bcad8ca49744abc93162b29ef29725324447cf6acb88b018be2c1f9",
+      "bytes": 1342,
+      "sha256": "a90fc0ea0e24fef80c4eda0f8bbbbf9141b2c55eb1c1c6bfc0bebfdde731980e"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort35-tcp/installation.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/f97851d7d5442fafb6b0380eb1bdf7c14639006279839a23a6b848565d4387c8.gz",
+      "archiveBytes": 141173,
+      "archiveSha256": "343696010d14f119a66c2a02dc61fcd405a9e34845bca53d1eb68ed88508ebcf",
+      "bytes": 695414,
+      "sha256": "f97851d7d5442fafb6b0380eb1bdf7c14639006279839a23a6b848565d4387c8"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort35-tcp/kernel-info.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/8db7cfc12cf13d3cc9108b782e98b1b21d045bc30b9693951ea2c1699defcdac.gz",
+      "archiveBytes": 138,
+      "archiveSha256": "8f57b2fd7f2217c876e0330d81c9dd14846a7c42b2b19ba6303fab06b2434653",
+      "bytes": 192,
+      "sha256": "8db7cfc12cf13d3cc9108b782e98b1b21d045bc30b9693951ea2c1699defcdac"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort35-tcp/kernel-info.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort35-tcp/mark-pixels.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/76f92ddc38a786f7981df3dd8df6664683f72cd9e231e1aec001650a6dc5be78.gz",
+      "archiveBytes": 214,
+      "archiveSha256": "ba07c8d62215a5f799c98f22f333b6d6f1ac70094df1addc7d97bdb69787649b",
+      "bytes": 504,
+      "sha256": "76f92ddc38a786f7981df3dd8df6664683f72cd9e231e1aec001650a6dc5be78"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort35-tcp/report.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/15116c0ae9319d9bda9ad90c3caa475cdbf2e7138788feff2057589d98ec069b.gz",
+      "archiveBytes": 19863,
+      "archiveSha256": "0fb1934a2eb41fcf987789dd381d442160a791901c9b3b557b9188935110f16f",
+      "bytes": 327365,
+      "sha256": "15116c0ae9319d9bda9ad90c3caa475cdbf2e7138788feff2057589d98ec069b"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort35-tcp/routed.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/a5ef0138f40cbe88fdfe5c752954aa6fdd1710e73e72b7b1d4b487787ab568c4.gz",
+      "archiveBytes": 2616,
+      "archiveSha256": "d438a90e79582815c181057da0a7bb0844fb870e61f6620e6177d3f5d144ac5d",
+      "bytes": 13724,
+      "sha256": "a5ef0138f40cbe88fdfe5c752954aa6fdd1710e73e72b7b1d4b487787ab568c4"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort35-tcp/run-result.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/a2b80d531a84c0c7bb4b2a6316719f746fbdb2146a301697a73846811119bca1.gz",
+      "archiveBytes": 520,
+      "archiveSha256": "068fd3b1093c9f0bc587e777cc62ac89a80f09c91b1c5b56760b31f075bd49ea",
+      "bytes": 1208,
+      "sha256": "a2b80d531a84c0c7bb4b2a6316719f746fbdb2146a301697a73846811119bca1"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort35-tcp/served-widget-assets.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/5e3c88fbc7dd9b5c4f28ecb561eb505785ad787db5a67f9a7daf03e9d11ee795.gz",
+      "archiveBytes": 301,
+      "archiveSha256": "098be3cf496d6aacc2e24b8c6752907b35abcf18577faefb8afca3057086a6f9",
+      "bytes": 649,
+      "sha256": "5e3c88fbc7dd9b5c4f28ecb561eb505785ad787db5a67f9a7daf03e9d11ee795"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/cohort35-tcp/server-environment.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/602787bb95b56602d712e9ddcdba30f46c0ef8805d281fd9a295e7e9610bff5c.gz",
+      "archiveBytes": 208,
+      "archiveSha256": "43cf7d28ac5eed65d0abb00af6d1093265e957466f5f36e53c9f05c5c29400ce",
+      "bytes": 281,
+      "sha256": "602787bb95b56602d712e9ddcdba30f46c0ef8805d281fd9a295e7e9610bff5c"
+    },
+    "target/task-tmp/vscode-jupyter-graph/seal-desktop-correction-evidence.py": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/8ea95a9d5146375dbde385eca2df6ed12a02882cf3d345915fb9847789802dcd.gz",
+      "archiveBytes": 2415,
+      "archiveSha256": "be88fd10c72797afaebcee4dfa0dbb480259591ad2f0567a6efeb5254ed2703d",
+      "bytes": 6629,
+      "sha256": "8ea95a9d5146375dbde385eca2df6ed12a02882cf3d345915fb9847789802dcd"
+    },
+    "target/task-tmp/vscode-jupyter-graph/seal-desktop-correction-fixtures.py": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/9e2fb35c3699295504beefc45f68a6a3a6b3b1588e803d89a10a7d48830d8812.gz",
+      "archiveBytes": 569,
+      "archiveSha256": "e308997d1b12c9222cf69049b589d6d8b938b38a23ad4ab13f258f58ff181532",
+      "bytes": 1016,
+      "sha256": "9e2fb35c3699295504beefc45f68a6a3a6b3b1588e803d89a10a7d48830d8812"
+    },
+    "target/task-tmp/vscode-jupyter-graph/seal-desktop-correction-sources.py": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/b31675f830b78a95cdd0b7a566400b4d8da0133a2331e470f7d4389830a6cb51.gz",
+      "archiveBytes": 1183,
+      "archiveSha256": "c4b5e6a07260decb542e1d627edf04ba28b1869454d8257ad5c90544b0ea682e",
+      "bytes": 2619,
+      "sha256": "b31675f830b78a95cdd0b7a566400b4d8da0133a2331e470f7d4389830a6cb51"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-cohort-helper-tests-final.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/415439e6d031f03405b897f3814e3d98a10f2d0097543dcf8e5ff6f3f03b6623.gz",
+      "archiveBytes": 66,
+      "archiveSha256": "73f18dc32ae0986d618f602c4f69af21efc93f46316a5669476dbdf62793fd43",
+      "bytes": 113,
+      "sha256": "415439e6d031f03405b897f3814e3d98a10f2d0097543dcf8e5ff6f3f03b6623"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-cohort-helper-tests.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/111e15a6c9faa125d224bd769e8f5b3a6d72cbe0dcfda306aeae43d5472df12b.gz",
+      "archiveBytes": 66,
+      "archiveSha256": "ad24407d036d90a85a88ce7462e05d459fa03e28571fab809cc4ea237f3f4590",
+      "bytes": 113,
+      "sha256": "111e15a6c9faa125d224bd769e8f5b3a6d72cbe0dcfda306aeae43d5472df12b"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-cohort-install-complete.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/c553025fd01ef0508e59df08f2fc9aa62665a889aed97839f6b199822b1d4ec1.gz",
+      "archiveBytes": 78,
+      "archiveSha256": "4522217019c05c8908709af597a574bf2cb457574813a2a938fdc66d6e94ad82",
+      "bytes": 66,
+      "sha256": "c553025fd01ef0508e59df08f2fc9aa62665a889aed97839f6b199822b1d4ec1"
+    },
+    "target/task-tmp/vscode-jupyter-graph/vscode-cohort-owned-ruff.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    }
+  },
+  "fixtureManifestSha256": "725698dc8190952af4eacf554f8684174fb10a4a732cd680fd24187240b4840d",
+  "parent": "0ea5338e7aefcd64aab51a7131aeac6ca4514669",
+  "parentEvidence": {
+    "archivesVerified": 146,
+    "path": "spec/performance/graph-vscode-notebook-2026-11-10/checks.json",
+    "sha256": "6f2f10efc11710f4eb11e0352fcc35d8508ab1712c13f2cf4f9cd780c1b85a5a"
+  },
+  "qualification": {
+    "actualPython311": {
+      "directory": "cohort311-36-tcp",
+      "display": "privateTCPXvfb",
+      "runner": 0,
+      "verifier": 0
+    },
+    "actualPython312": {
+      "directory": "cohort35-tcp",
+      "display": "privateTCPXvfb",
+      "runner": 0,
+      "verifier": 0
+    },
+    "adversarialInstalledCohort": {
+      "duplicate": "rejected",
+      "modifiedAppResources": "rejectedBeforeSpawn",
+      "spawnCalls": 0
+    },
+    "ci": "prior873 exactunchanged gate implementation verified; current83controls pass; no new full aggregate claim",
+    "coreCorpus": {
+      "deselected": 16,
+      "exit": 0,
+      "passed": 5,
+      "scope": "current/history successor and realGitLFCRLF"
+    },
+    "finalCorrectionReview": "pending",
+    "helperControls": {
+      "exit": 0,
+      "passed": 8
+    },
+    "hostedCIQueue": "pending",
+    "intentionalFailure": {
+      "application": 0,
+      "attachment": 1,
+      "directory": "cohort-failure37-tcp",
+      "failureVerifier": 0,
+      "runner": 1
+    },
+    "mandatoryHooks": {
+      "exit": 0
+    },
+    "ordinaryDisplay": "FAIL before UI; /tmpwriteerrno122, xdpyinfo1; unchanged hosted ordinary gate still required",
+    "parentNegative": {
+      "earlierEnumerationAttempt": "failed expected-message assertion due unspecified filesystem order; final covers both explicit orders",
+      "finalDuplicateAssertion": "fails DID NOT RAISE as expected"
+    },
+    "reportTests": {
+      "exit": 0,
+      "python311": 83,
+      "python312": 83
+    },
+    "ruffCheck": {
+      "exit": 0
+    },
+    "ruffFormatCheck": {
+      "exit": 0
+    }
+  },
+  "readmeSha256": "60e27b24ab832938082fa567713f705a464f6795f5bc19e9657324f5a51aca4c",
+  "runtime": {
+    "packages/xy-client/dist/index.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa.gz",
+      "archiveBytes": 247736,
+      "archiveSha256": "d1fcee9875cd320e48f3a05b6d3e268d4b67b16f152f54cc041c3cb14d2566cf",
+      "bytes": 864422,
+      "sha256": "447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/75e142e1c6066e2cca8055a49dcfc328abab7b847e12aebc8c9f8ce3eaa1580c.gz",
+      "archiveBytes": 247816,
+      "archiveSha256": "3160fae11e6cc52a41d6ed29c585dbb30e1b462a9592f9ae0da3bf0cd9806b7a",
+      "bytes": 864435,
+      "sha256": "75e142e1c6066e2cca8055a49dcfc328abab7b847e12aebc8c9f8ce3eaa1580c"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz",
+      "archiveBytes": 3838,
+      "archiveSha256": "dda8e6c4cec42d91f687b660d742d79dcc1a8c0d052ca6ca189c6acf095db2b4",
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8.gz",
+      "archiveBytes": 1043576,
+      "archiveSha256": "b09e635ab5663fabbb679592e2a8730413e322b541fd45d90105f73ca27c066c",
+      "bytes": 2536254,
+      "sha256": "fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "c4d9096b8df2ee31fc6c5e1a86cac0005b1406f5eee90de91d45fa72ba9f31f2",
+      "bytes": 226,
+      "sha256": "9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372.gz",
+      "archiveBytes": 781122,
+      "archiveSha256": "aad2d8c32a06b9155a6a2c466a64fc2df4effb1ec141722533cd30ecbf568413",
+      "bytes": 1886348,
+      "sha256": "1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372"
+    },
+    "python/xyg/static/index.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa.gz",
+      "archiveBytes": 247736,
+      "archiveSha256": "d1fcee9875cd320e48f3a05b6d3e268d4b67b16f152f54cc041c3cb14d2566cf",
+      "bytes": 864422,
+      "sha256": "447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa"
+    },
+    "python/xyg/static/standalone.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/75e142e1c6066e2cca8055a49dcfc328abab7b847e12aebc8c9f8ce3eaa1580c.gz",
+      "archiveBytes": 247816,
+      "archiveSha256": "3160fae11e6cc52a41d6ed29c585dbb30e1b462a9592f9ae0da3bf0cd9806b7a",
+      "bytes": 864435,
+      "sha256": "75e142e1c6066e2cca8055a49dcfc328abab7b847e12aebc8c9f8ce3eaa1580c"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8.gz",
+      "archiveBytes": 1043576,
+      "archiveSha256": "b09e635ab5663fabbb679592e2a8730413e322b541fd45d90105f73ca27c066c",
+      "bytes": 2536254,
+      "sha256": "fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "c4d9096b8df2ee31fc6c5e1a86cac0005b1406f5eee90de91d45fa72ba9f31f2",
+      "bytes": 226,
+      "sha256": "9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372.gz",
+      "archiveBytes": 781122,
+      "archiveSha256": "aad2d8c32a06b9155a6a2c466a64fc2df4effb1ec141722533cd30ecbf568413",
+      "bytes": 1886348,
+      "sha256": "1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372"
+    },
+    "target/release/libxyg_core.so": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/378a069c4f802bb97e6273333766a4afee99a626d4fc409f776f31d21968a4df.gz",
+      "archiveBytes": 2906222,
+      "archiveSha256": "e1a2c9c98f51d95d9ebaee58900a16680535d9747e5a7ec04e41a24cdbfba825",
+      "bytes": 6379784,
+      "sha256": "378a069c4f802bb97e6273333766a4afee99a626d4fc409f776f31d21968a4df"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/8eebf2a5621798d266fd9030caf04c20d0f89e2e17fb8137195ac2ddcaf4b6d2.gz",
+      "archiveBytes": 1253444,
+      "archiveSha256": "7f03900cf3918fae6592e2d4c54a9d3529ecba5af90d419262a45f778df96b0a",
+      "bytes": 4076094,
+      "sha256": "8eebf2a5621798d266fd9030caf04c20d0f89e2e17fb8137195ac2ddcaf4b6d2"
+    }
+  },
+  "runtimeRebuilt": false,
+  "schemaVersion": 1,
+  "scope": "Complete installed-app manifest and duplicate extension identity admission correction; no product/runtime changes"
+}

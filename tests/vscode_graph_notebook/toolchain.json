@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "platform": "linux-x64",
+  "application": {
+    "version": "1.103.2",
+    "commit": "6f17636121051a53c88d3e605c491d22af2ba755",
+    "url": "https://update.code.visualstudio.com/1.103.2/linux-x64/stable",
+    "bytes": 160672134,
+    "sha256": "be59af3e4da58f07439251b281dc66b6874fcc607e80d8f011a695a7737e7d02",
+    "executableSha256": "d1a85801f176b2cfdceee8618d54a56a159accaee42bef8cbaa8bdb707d96b93",
+    "executableBytes": 195299104,
+    "payloadEntries": 3192,
+    "payloadSha256": "2f08f8c3a814d03be19c7e2fb8b172f71b0c32343eec28f4c46ceed26be858e1"
+  },
+  "extensions": [
+    {
+      "id": "ms-toolsai.jupyter",
+      "version": "2025.7.0",
+      "platform": "linux-x64",
+      "url": "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/ms-toolsai/vsextensions/jupyter/2025.7.0/vspackage?targetPlatform=linux-x64",
+      "bytes": 7848795,
+      "sha256": "0ec7224edd0d3a491496db348dba06ccaeaaa9cb606c138f2fadc6a4f62e93e2",
+      "payloadFiles": 166,
+      "payloadSha256": "49fee8d08673c536430462040116f95b8c329ea3057021bf8299a0219b9c9190"
+    },
+    {
+      "id": "ms-toolsai.jupyter-keymap",
+      "version": "1.1.2",
+      "platform": null,
+      "url": "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/ms-toolsai/vsextensions/jupyter-keymap/1.1.2/vspackage",
+      "bytes": 80766,
+      "sha256": "f412f2059cd9d19e90434e504b114960d6666437393b7798902c5efd4b262b0b",
+      "payloadFiles": 9,
+      "payloadSha256": "cca9b4ee0502b2388caaa7b27160cb34768f2539000d14d07a8a6c566e1fd602"
+    },
+    {
+      "id": "ms-toolsai.jupyter-renderers",
+      "version": "1.3.0",
+      "platform": null,
+      "url": "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/ms-toolsai/vsextensions/jupyter-renderers/1.3.0/vspackage",
+      "bytes": 7723479,
+      "sha256": "181a87bd78a40a02c65bb5e6d3922ad71aacf23f47f64f5cf22012b008c0f3b2",
+      "payloadFiles": 41,
+      "payloadSha256": "9f6caad78dab56f249b2664cfd51edf84d13fa45cf64a38b4bad20aae713f1cc"
+    },
+    {
+      "id": "ms-toolsai.vscode-jupyter-cell-tags",
+      "version": "0.1.9",
+      "platform": null,
+      "url": "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/ms-toolsai/vsextensions/vscode-jupyter-cell-tags/0.1.9/vspackage",
+      "bytes": 180054,
+      "sha256": "5ce0db15b3abda4053cc573426d8e20d47020c15f51dde2e6a396297b9a1a8f6",
+      "payloadFiles": 29,
+      "payloadSha256": "dfb0dc3d3cf8befd20a167cabb7fd956a79e3c3b00266b381a78524fbaf63bce"
+    },
+    {
+      "id": "ms-toolsai.vscode-jupyter-slideshow",
+      "version": "0.1.6",
+      "platform": null,
+      "url": "https://marketplace.visualstudio.com/_apis/public/gallery/publishers/ms-toolsai/vsextensions/vscode-jupyter-slideshow/0.1.6/vspackage",
+      "bytes": 174428,
+      "sha256": "7e7b0caeb718773e81cd458c77da403901938e6b446d07a85581b6d155b10ac3",
+      "payloadFiles": 23,
+      "payloadSha256": "38ea59ab04dae8cd81321b209d884b36dc3303fd165dada8b5df713e1fe4fdda"
+    }
+  ]
+}

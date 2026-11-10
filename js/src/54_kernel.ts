@@ -878,7 +878,12 @@ Object.assign(ChartView.prototype, {
         this._tooltipAnchor.x = msg.row.x;
         this._tooltipAnchor.y = msg.row.y;
       }
-      const xy = this._lastHoverXY;
+      // Notebook hosts can move an output while the exact reply is in flight.
+      // Keyboard readouts follow the point; pointer readouts retain the actual
+      // pointer's viewport coordinates.
+      const xy = this._a11yKeyboardReadout
+        ? this._a11yClientPoint(this._hoverTarget) : this._lastHoverXY;
+      if (this._a11yKeyboardReadout) this._lastHoverXY = xy;
       // Exact values replace the visible approximate tooltip. A keyboard
       // readout already announced its position and approximate values, so do
       // not clobber that prefix or produce a second announcement per keypress.

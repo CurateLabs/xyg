@@ -274,6 +274,16 @@ re-dispatches with `exact: true` when the kernel's f64 pick reply lands, and
 on static/standalone charts `points[].row` comes from browser-resident data
 with no exact upgrade — the same honesty rule the LOD tiers follow.
 
+For a keyboard-owned readout, an exact upgrade and Enter/Space activation
+reproject the focused point using the current canvas rectangle. Ancestor
+translation, notebook output movement and page scrolling do not change its
+chart-root-relative cursor or canvas-relative activation position. A
+pointer-owned readout keeps the pointer's physical viewport position instead.
+This does not change pick-sequence invalidation or repeat the keyboard live
+announcement on an exact upgrade.
+Handled plot keys stop bubbling to the embedding host as well as preventing
+their browser default. Unhandled keys retain host propagation and focus travel.
+
 **The active flag is trustworthy.** `active: true` is always eventually
 followed by an `active: false` when the pointer leaves the chart, even when
 the browser skips the canvas boundary event (page scroll under a stationary

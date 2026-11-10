@@ -1,0 +1,375 @@
+{
+  "bindings": {
+    "current": 3428,
+    "historical": 1407,
+    "parents": 24,
+    "path": "spec/performance/keyboard-exact-reply-guard-2026-11-10/current-bindings.json",
+    "sha256": "ca4f714f00872acf54e7d6e103eadc4dbfeddc16317d23a9993fed5cafd68717"
+  },
+  "compiledInputs": {
+    "count": 324,
+    "parentExact": true,
+    "path": "spec/performance/current-large-graph-union-2026-11-09/compiled-inputs.json",
+    "sha256": "14467233a1f6878d137490b6ef6741766486b42b37b8ed16aa01e2065113899e"
+  },
+  "compiledInputsVerified": 324,
+  "evidence": {
+    "target/task-tmp/vscode-jupyter-graph/after-union-commit-pr1119.json": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/d91dd09b2db2f2a42fd2fbf5adade3d6a218cdfef806985707434044b3ae4468.gz",
+      "archiveBytes": 1098,
+      "archiveSha256": "51cfee7a20d309a12ee844821a01bc41eeccb5ecabd38339b42330aed3ab5af5",
+      "bytes": 6117,
+      "sha256": "d91dd09b2db2f2a42fd2fbf5adade3d6a218cdfef806985707434044b3ae4468"
+    },
+    "target/task-tmp/vscode-jupyter-graph/exact-reply-final-chromium.log": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/b57f285cb4a158a60c548724d6a114563eef9c3e9854e5bbc519a1174eaac049.gz",
+      "archiveBytes": 86,
+      "archiveSha256": "59cce6d49babb915481d4e32022b191208e9b4ae6b7d6d78f53792b624787e47",
+      "bytes": 73,
+      "sha256": "b57f285cb4a158a60c548724d6a114563eef9c3e9854e5bbc519a1174eaac049"
+    },
+    "target/task-tmp/vscode-jupyter-graph/exact-reply-final-negative-drop.log": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/bcd2700f0a0d83d73ab7344ddfb70b5171cf23990f669303f4b59244aa0e20f8.gz",
+      "archiveBytes": 307,
+      "archiveSha256": "13d945cfaf7c16ebbfafa7e4c8480a6da8ad0e682e4d72a72e6f9cd8c4c06409",
+      "bytes": 689,
+      "sha256": "bcd2700f0a0d83d73ab7344ddfb70b5171cf23990f669303f4b59244aa0e20f8"
+    },
+    "target/task-tmp/vscode-jupyter-graph/exact-reply-final-negative-drop.mjs": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/bacae20f2059ca4fbfd765e365c373cdf65a96859876ae7c4972f46a8bb218ca.gz",
+      "archiveBytes": 5646,
+      "archiveSha256": "b48f424f22c5012fe79e23ec5faca0e620c852ed5a12b22c71ecb521862773f5",
+      "bytes": 17600,
+      "sha256": "bacae20f2059ca4fbfd765e365c373cdf65a96859876ae7c4972f46a8bb218ca"
+    },
+    "target/task-tmp/vscode-jupyter-graph/exact-reply-guard-focused.log": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/1cd8eda3f7ee18c2ac156d2432472f63b067058abb27edc31e7c247174a80112.gz",
+      "archiveBytes": 87,
+      "archiveSha256": "0f96773c719d399e452d2a3a38d642b606710fbdda68b4f215872341684b9a8a",
+      "bytes": 205,
+      "sha256": "1cd8eda3f7ee18c2ac156d2432472f63b067058abb27edc31e7c247174a80112"
+    },
+    "target/task-tmp/vscode-jupyter-graph/exact-reply-guard-format.log": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/234bea158cd45b8f52f8cf23029bd920e91050b5f2b0a911add80089cf7c38b3.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "9d9023b3e7e869eb6c727441a8ae41e4ec754988bd7e7a43c9b8fe4932163bfb",
+      "bytes": 29,
+      "sha256": "234bea158cd45b8f52f8cf23029bd920e91050b5f2b0a911add80089cf7c38b3"
+    },
+    "target/task-tmp/vscode-jupyter-graph/exact-reply-guard-hooks.log": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/vscode-jupyter-graph/exact-reply-guard-qualification.json": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/4473ddb3dcca2a9acf4d9a6e16fb504591ba61f3cd3bec1a95982bfc6d1dcf4a.gz",
+      "archiveBytes": 300,
+      "archiveSha256": "5658a25e2d2177873e8fdafefda11da5d5143c0e5f6c2d2b6723bd91374f3abc",
+      "bytes": 803,
+      "sha256": "4473ddb3dcca2a9acf4d9a6e16fb504591ba61f3cd3bec1a95982bfc6d1dcf4a"
+    },
+    "target/task-tmp/vscode-jupyter-graph/exact-reply-guard-ruff.log": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/vscode-jupyter-graph/exact-reply-private-display-result.json": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/a500e8d5b887ad4dc39daa721c4cf46bb98a48772794cbfdbc0f612f722460cc.gz",
+      "archiveBytes": 214,
+      "archiveSha256": "4715f14b9243133a88bac015f51fbd054190157880058cbc5f045bc809dfbd14",
+      "bytes": 270,
+      "sha256": "a500e8d5b887ad4dc39daa721c4cf46bb98a48772794cbfdbc0f612f722460cc"
+    },
+    "target/task-tmp/vscode-jupyter-graph/exact-reply-private-display-verified.json": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/1efec105bfd1d6e865323f3a29073478f61c1eb33b4c5afcbb81e5f9993b21d7.gz",
+      "archiveBytes": 227,
+      "archiveSha256": "1e58136c097555c8c33423ad99f580304448cea45fb8dc644effbff28757b58b",
+      "bytes": 299,
+      "sha256": "1efec105bfd1d6e865323f3a29073478f61c1eb33b4c5afcbb81e5f9993b21d7"
+    },
+    "target/task-tmp/vscode-jupyter-graph/exact-reply-private-display.log": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/vscode-jupyter-graph/exact-reply-v2-chromium-firefox.log": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/054336f9c3c2b9031a5993bdb64eb559a9b6bb6bb0dafd5a52c4c21879e37828.gz",
+      "archiveBytes": 150,
+      "archiveSha256": "b8321eb51a4a4e69711d4babb3cd048a30603963f8e18a273890f24aa3a36fea",
+      "bytes": 193,
+      "sha256": "054336f9c3c2b9031a5993bdb64eb559a9b6bb6bb0dafd5a52c4c21879e37828"
+    },
+    "target/task-tmp/vscode-jupyter-graph/exact-reply-v2-negative-drop.log": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/22f79d3bf3499b0be8fec112a17968a45b17f619871d4c309396415b99f0b35c.gz",
+      "archiveBytes": 305,
+      "archiveSha256": "01365b4cdd070946ce3aed5b7a0e1a1655a2d59b34c486102bacd435a60212a7",
+      "bytes": 680,
+      "sha256": "22f79d3bf3499b0be8fec112a17968a45b17f619871d4c309396415b99f0b35c"
+    },
+    "target/task-tmp/vscode-jupyter-graph/exact-reply-v2-negative-drop.mjs": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/b4b2238f0c1e7994f0b3d8e5199cd0969339e9860cfdda00a8abf04dca4ee6b3.gz",
+      "archiveBytes": 5695,
+      "archiveSha256": "fb9c8e3459395b0b761e6d0c054a0ab3fe5e691c0819ddeb8f557ccbd5386078",
+      "bytes": 17686,
+      "sha256": "b4b2238f0c1e7994f0b3d8e5199cd0969339e9860cfdda00a8abf04dca4ee6b3"
+    },
+    "target/task-tmp/vscode-jupyter-graph/exact-reply-v2-negative-stale.log": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/ff765d9753894e0e76f15ee0b822103ed38f2bfd87346a8c302d99fe6c80995a.gz",
+      "archiveBytes": 305,
+      "archiveSha256": "d2c6cf173caec6ee3df75ea479c7782cfa4c45c29d6cbdb1ee8adcc6f394d76b",
+      "bytes": 683,
+      "sha256": "ff765d9753894e0e76f15ee0b822103ed38f2bfd87346a8c302d99fe6c80995a"
+    },
+    "target/task-tmp/vscode-jupyter-graph/exact-reply-v2-negative-stale.mjs": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/3067d365dd7bb183180a130e7d912e46abd09e9a89fb2f8ac622b305bc6465fb.gz",
+      "archiveBytes": 5678,
+      "archiveSha256": "681ead86674dec6c6248486037779713a30d0fc5ea9df512e771ddaabeaaff41",
+      "bytes": 17768,
+      "sha256": "3067d365dd7bb183180a130e7d912e46abd09e9a89fb2f8ac622b305bc6465fb"
+    },
+    "target/task-tmp/vscode-jupyter-graph/exact-reply-v2-negative-wrong-row.log": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/588fcc94ef75ff76ddb33348129eb73fca9be1c97047979cf7d2147b19449927.gz",
+      "archiveBytes": 308,
+      "archiveSha256": "5c6da910b9acded221789c4d23f3b7e370aee9ba2687d47ab6035ae703fca757",
+      "bytes": 695,
+      "sha256": "588fcc94ef75ff76ddb33348129eb73fca9be1c97047979cf7d2147b19449927"
+    },
+    "target/task-tmp/vscode-jupyter-graph/exact-reply-v2-negative-wrong-row.mjs": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/4af6f6808073a4c4434d8c848e3a8de31756caf2169a78a9233ad048e32aff31.gz",
+      "archiveBytes": 5684,
+      "archiveSha256": "6ebc9518532e055a890382a07c5fd363480e8203cee6b2ef4205c1a9756d4d1d",
+      "bytes": 17764,
+      "sha256": "4af6f6808073a4c4434d8c848e3a8de31756caf2169a78a9233ad048e32aff31"
+    },
+    "target/task-tmp/vscode-jupyter-graph/ignored-exact-parent-conformance.log": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/b57f285cb4a158a60c548724d6a114563eef9c3e9854e5bbc519a1174eaac049.gz",
+      "archiveBytes": 86,
+      "archiveSha256": "59cce6d49babb915481d4e32022b191208e9b4ae6b7d6d78f53792b624787e47",
+      "bytes": 73,
+      "sha256": "b57f285cb4a158a60c548724d6a114563eef9c3e9854e5bbc519a1174eaac049"
+    },
+    "target/task-tmp/vscode-jupyter-graph/ignored-exact-parent-conformance.mjs": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/f4c102e6335fdd78331aa0c0a09d5493a62c9471758c8250ffdf6d2ba9ab9ee7.gz",
+      "archiveBytes": 5527,
+      "archiveSha256": "8bac9e035bb487de03e1bbc8157cb02723e99bb9e8b0a00419687199a7b2e861",
+      "bytes": 17039,
+      "sha256": "f4c102e6335fdd78331aa0c0a09d5493a62c9471758c8250ffdf6d2ba9ab9ee7"
+    },
+    "target/task-tmp/vscode-jupyter-graph/ignored-exact-reply-control.json": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/cf286dfeebd98757552e77662c491db7c587f648e435d7fdb522263a6e98fa87.gz",
+      "archiveBytes": 300,
+      "archiveSha256": "e1046643d37f5274cf77d4349e09a5145d352bf78aeb9732153657ba9c873b50",
+      "bytes": 395,
+      "sha256": "cf286dfeebd98757552e77662c491db7c587f648e435d7fdb522263a6e98fa87"
+    },
+    "target/task-tmp/vscode-jupyter-graph/run-private-conformance-display.py": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/d2d04a63e1082737217527209b752e8f3aefb73a661488807b44c279d2632089.gz",
+      "archiveBytes": 1048,
+      "archiveSha256": "49dd6a3f7f60f9ad3e163fe0d794d8d7c4010d38e13940324a7590c5fc38dde3",
+      "bytes": 2008,
+      "sha256": "d2d04a63e1082737217527209b752e8f3aefb73a661488807b44c279d2632089"
+    },
+    "target/task-tmp/vscode-jupyter-graph/seal-exact-reply-guard-evidence.py": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/e18d29e8ea09387d76e598722d14d6080f9b53a600d4d3aa82ef8e40aa6b58dd.gz",
+      "archiveBytes": 2336,
+      "archiveSha256": "bba15ecec111c4647a0336a6047db5f0bbd6f21e973dbd2ae36742a779b0bbfe",
+      "bytes": 5859,
+      "sha256": "e18d29e8ea09387d76e598722d14d6080f9b53a600d4d3aa82ef8e40aa6b58dd"
+    },
+    "target/task-tmp/vscode-jupyter-graph/seal-exact-reply-guard-sources.py": {
+      "archive": "spec/performance/keyboard-exact-reply-guard-2026-11-10/evidence/90f3fd2fe7d35c760f8d4aea1c3ae411c1cfb8e94fe3ae13a88e7f45dd9ba6bd.gz",
+      "archiveBytes": 1166,
+      "archiveSha256": "e99a397dce6b376a9ac181a5f1b6e379859de76dc1227c9b5c7113de45472d26",
+      "bytes": 2566,
+      "sha256": "90f3fd2fe7d35c760f8d4aea1c3ae411c1cfb8e94fe3ae13a88e7f45dd9ba6bd"
+    }
+  },
+  "findingSha256": "3f2451ceca6df7c2bc8d4b7bc05d80bffc138f15bb330c48610ee4e7f8523790",
+  "parent": "0219c636b88816c5494bbab7007bb52d4b5b56a1",
+  "parentReceipt": {
+    "evidenceArchivesVerified": 30,
+    "path": "spec/performance/notebook-kernel-witness-2026-11-10/checks.json",
+    "sha256": "a811c55528a67385196d666639f42ab081c9303c830fa929e666947f5e05b45e"
+  },
+  "qualification": {
+    "browser": {
+      "drop": {
+        "exit": 1,
+        "expectedFailure": "new keyboard exact reply",
+        "log": "exact-reply-v2-negative-drop.log"
+      },
+      "parentDrop": {
+        "exit": 0,
+        "log": "ignored-exact-parent-conformance.log",
+        "meaning": "originalguardmissesignoredreply"
+      },
+      "positive": {
+        "engines": [
+          "chromium",
+          "firefox"
+        ],
+        "exit": 0,
+        "layoutDeltaPx": 0.1,
+        "litPixels": [
+          1212,
+          1209
+        ],
+        "litRatio": 0.998,
+        "log": "exact-reply-v2-chromium-firefox.log",
+        "rasterMae": 0.0
+      },
+      "stale": {
+        "exit": 1,
+        "expectedFailure": "new keyboard exact reply",
+        "log": "exact-reply-v2-negative-stale.log"
+      },
+      "wrong-row": {
+        "exit": 1,
+        "expectedFailure": "new keyboard exact reply",
+        "log": "exact-reply-v2-negative-wrong-row.log"
+      }
+    },
+    "controlsDerivedFromExactParentAndFinalHarness": true,
+    "finalIndependentReview": "pending",
+    "focused": {
+      "deselected": 13,
+      "exit": 0,
+      "passed": 83,
+      "scope": "75 generic notebook report controls plus8Core/provenance including actualGitLFCRLF"
+    },
+    "hooks": {
+      "exit": 0
+    },
+    "newHeadHostedCIQueue": "pending",
+    "parentHosted": "15SUCCESS/5SKIPPED including requiredRelease surfaces, before correction; inheritedP2 notqueue-ready",
+    "ruffCheck": {
+      "exit": 0
+    },
+    "ruffFormat": {
+      "exit": 0
+    },
+    "thread": "PRRT_kwDOTxX6Es61i6ld remainsunresolved untilreviewed correction ispublished"
+  },
+  "readmeSha256": "f3dde9e0367e6372b9be87bd509bb273afc6088da54dd1009d8df25b1f1fc8f5",
+  "remaining": [
+    "Finalcorrection and combineddesktopunion review",
+    "NewheadhostedWebKit/ordinarydisplay/CI andrequiredqueue",
+    "Whole1015/M4-M7 originalrequirements notcomplete"
+  ],
+  "runtime": {
+    "packages/xy-client/dist/index.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa.gz",
+      "archiveBytes": 247736,
+      "archiveSha256": "d1fcee9875cd320e48f3a05b6d3e268d4b67b16f152f54cc041c3cb14d2566cf",
+      "bytes": 864422,
+      "sha256": "447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/75e142e1c6066e2cca8055a49dcfc328abab7b847e12aebc8c9f8ce3eaa1580c.gz",
+      "archiveBytes": 247816,
+      "archiveSha256": "3160fae11e6cc52a41d6ed29c585dbb30e1b462a9592f9ae0da3bf0cd9806b7a",
+      "bytes": 864435,
+      "sha256": "75e142e1c6066e2cca8055a49dcfc328abab7b847e12aebc8c9f8ce3eaa1580c"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz",
+      "archiveBytes": 3838,
+      "archiveSha256": "dda8e6c4cec42d91f687b660d742d79dcc1a8c0d052ca6ca189c6acf095db2b4",
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8.gz",
+      "archiveBytes": 1043576,
+      "archiveSha256": "b09e635ab5663fabbb679592e2a8730413e322b541fd45d90105f73ca27c066c",
+      "bytes": 2536254,
+      "sha256": "fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "c4d9096b8df2ee31fc6c5e1a86cac0005b1406f5eee90de91d45fa72ba9f31f2",
+      "bytes": 226,
+      "sha256": "9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372.gz",
+      "archiveBytes": 781122,
+      "archiveSha256": "aad2d8c32a06b9155a6a2c466a64fc2df4effb1ec141722533cd30ecbf568413",
+      "bytes": 1886348,
+      "sha256": "1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372"
+    },
+    "python/xyg/static/index.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa.gz",
+      "archiveBytes": 247736,
+      "archiveSha256": "d1fcee9875cd320e48f3a05b6d3e268d4b67b16f152f54cc041c3cb14d2566cf",
+      "bytes": 864422,
+      "sha256": "447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa"
+    },
+    "python/xyg/static/standalone.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/75e142e1c6066e2cca8055a49dcfc328abab7b847e12aebc8c9f8ce3eaa1580c.gz",
+      "archiveBytes": 247816,
+      "archiveSha256": "3160fae11e6cc52a41d6ed29c585dbb30e1b462a9592f9ae0da3bf0cd9806b7a",
+      "bytes": 864435,
+      "sha256": "75e142e1c6066e2cca8055a49dcfc328abab7b847e12aebc8c9f8ce3eaa1580c"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8.gz",
+      "archiveBytes": 1043576,
+      "archiveSha256": "b09e635ab5663fabbb679592e2a8730413e322b541fd45d90105f73ca27c066c",
+      "bytes": 2536254,
+      "sha256": "fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "c4d9096b8df2ee31fc6c5e1a86cac0005b1406f5eee90de91d45fa72ba9f31f2",
+      "bytes": 226,
+      "sha256": "9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372.gz",
+      "archiveBytes": 781122,
+      "archiveSha256": "aad2d8c32a06b9155a6a2c466a64fc2df4effb1ec141722533cd30ecbf568413",
+      "bytes": 1886348,
+      "sha256": "1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372"
+    },
+    "target/release/libxyg_core.so": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/378a069c4f802bb97e6273333766a4afee99a626d4fc409f776f31d21968a4df.gz",
+      "archiveBytes": 2906222,
+      "archiveSha256": "e1a2c9c98f51d95d9ebaee58900a16680535d9747e5a7ec04e41a24cdbfba825",
+      "bytes": 6379784,
+      "sha256": "378a069c4f802bb97e6273333766a4afee99a626d4fc409f776f31d21968a4df"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/8eebf2a5621798d266fd9030caf04c20d0f89e2e17fb8137195ac2ddcaf4b6d2.gz",
+      "archiveBytes": 1253444,
+      "archiveSha256": "7f03900cf3918fae6592e2d4c54a9d3529ecba5af90d419262a45f778df96b0a",
+      "bytes": 4076094,
+      "sha256": "8eebf2a5621798d266fd9030caf04c20d0f89e2e17fb8137195ac2ddcaf4b6d2"
+    }
+  },
+  "runtimeRebuilt": false,
+  "schemaVersion": 1,
+  "scope": "Require a newly emitted exact canonical keyboard hover before host-movement cursor conformance; no product changes"
+}

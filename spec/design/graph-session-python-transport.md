@@ -437,8 +437,11 @@ or legacy receipt cannot satisfy the Notebook7 gate by changing only a label.
 Notebook7 lacks Lab's textual Idle status, and its initial execution indicator
 can say idle before a kernel is selected. Both applications must expose a named
 nonempty kernel and an idle execution indicator before first submission; Lab
-also retains its textual Idle check. Actual native output and subsequent kernel
-callbacks establish execution. This closes the observed premature-readiness
+also retains its textual Idle check. The harness retains the exact named-idle
+state returned by its readiness predicate; a later DOM read could observe a new
+busy transition. This evidence certifies admission at first readiness, not permanent
+kernel idleness. Busy or unselected predicates remain inadmissible. Actual native
+output and subsequent kernel callbacks establish execution. This closes the observed premature-readiness
 gap; the earlier unexecuted-cell attempt does not establish a general startup
 reliability fix. Existing output/interaction deadlines
 remain unchanged. Each bounded invocation retains the existing four-minute
@@ -451,8 +454,8 @@ also remains failed. The later actual applications pass without forcing clicks,
 replacing callbacks or disabling default notebook virtualization.
 
 [Qualification and immutable environment/captures](../performance/graph-notebook7-2026-11-10/README.md)
-cover the bounded source-checkout frontend path. VS Code Jupyter, the full
-notebook size ladder, graph-specific geometric edge policies, selected/annotated
+cover the bounded source-checkout frontend path. The later named VS Code cohort
+is specified below. The full notebook size ladder, graph-specific geometric edge policies, selected/annotated
 exports, complete accessibility, broader platforms and competitor acceptance
 remain open; #1015 and milestones 4–7 are not complete.
 
@@ -467,3 +470,79 @@ it. No page error is filtered and no notebook asset/plugin is patched or disable
 The passing stock Notebook 7.5.8 uses its compatible JupyterLab 4.5.11 dependencies
 in an isolated test environment; Lab 4.6.5 remains separately qualified. Broader
 Notebook7 version coverage remains open rather than being inferred from one pin.
+
+
+### VS Code Jupyter desktop qualification (2026-11-10)
+
+The unchanged ten-cell notebook also runs in the actual Linux x86_64 desktop
+application VS Code 1.103.2 (embedded Node 22.17.0), with Jupyter extension
+2025.7.0 and its pinned renderer/keymap/tag/slideshow dependencies. Python 3.11
+and 3.12 use the recorded Notebook 7.5.8/Lab 4.5.11 server environment with
+NbClassic 1.3.3 and anywidget 0.11.0. This is the desktop Jupyter notebook path;
+the earlier Node WebviewPanel proofs remain separate historical evidence.
+The named server-provider route uses the extension's public API without the
+Python extension. Other app/extension combinations and local-Python-extension
+kernel discovery require their own qualification.
+
+`scripts/install_vscode_graph_notebook.py` verifies complete official app/VSIX
+hashes and lengths, exact versions, and installed payload files. The stock
+installer's `package.json.__metadata` is excluded from the canonical payload
+hash; all other fields and files must match. Installation uses new private
+profiles and directories. HTTP gzip transport is decoded before checking the
+unchanged VSIX identity, with a bounded output length.
+`scripts/graph_vscode_notebook_smoke.py` rechecks those installed identities,
+starts an authenticated private server and opens the real notebook using public
+commands. It executes all original cell sources, with the same routed-identity
+order used by the Lab journey. Default notebook virtualization and isolated
+widget contexts remain enabled. Inputs are actual trusted keys/pointer/wheel;
+frame translation is measured and unscaled, unobscured canvas targets are
+required. Screenshot clips come from the actual workbench viewport.
+Read-only CDP inspection locates the cached ChartView modules and weakly binds
+both initial canvases and the later layered canvas to the exact built ESM.
+It adds no renderer, public debugging API, alternate picking oracle or prototype
+replacement. No timing or garbage-collection conclusion follows from inspection.
+
+The separate strict verifier requires the shared native-progress, kernel,
+UUID/segment/layer/row, GPU-mask, public Node parity, isolation and release
+assertions unchanged. It also binds successful application and attachment exits,
+normal GUI mode, all ten actual cell sources/executions, a concurrent cell
+finishing between initial and terminal paint, an idle disconnected Python
+kernel, installed assets, screenshots and sidecar files. A read-only standard
+`kernel_info_request` binds the running kernel's own Python version to the
+recorded server environment without executing code or adding a cell. A second screenshot after
+the fixture's existing connected-cluster view patch must contain mark pixels at
+all four connected canonical node centers. An independent linear projection uses
+accepted native positions and public view ranges; contrast is measured locally,
+so a legend-only image cannot qualify. The retained post-wheel terminal image
+can legitimately have no in-view nodes; its camera/position diagnostic records
+that case and does not count it as mark evidence. Erased marks and shifted
+projection negatives must fail. This is not a glyph-shape or whole-image AA
+oracle. The original error and
+direct-process/cookie cleanup are checked separately for the intentional failure
+case. Direct process records do not establish descendant/process-wide memory or
+resource accounting. Private tokens, X cookies and Jupyter runtime/profile files
+must never be uploaded with the explicit evidence allowlist.
+
+Observed renderer network records include allowlisted host bootstrap traffic,
+including a pinned RequireJS response. They do not certify offline operation or
+capture extension-host Node traffic. XYG's exact loaded client remains the same
+self-contained generated artifact. Unhandled page errors and unapproved observed
+requests fail; no error is filtered. The existing Release surfaces test job runs
+the pinned setup and actual desktop journey as bounded four-minute steps, with
+required-command mutation guards. Other notebook gates and deadlines remain.
+
+See [the source, environment, failures and captures receipt](../performance/graph-vscode-notebook-2026-11-10/README.md).
+This resolves the bounded named desktop frontend proof gap. Broader version and
+platform support, installed XYG distributions, box/lasso edge policies,
+derived/aggregate/compound routing, selected/annotated exports, the full notebook
+ladder and complete accessibility/performance/competitor acceptance remain open.
+No #1015 or milestone closure follows from this small-fixture qualification.
+
+The desktop cohort startup check also hashes all installed application resources
+and directories against the complete map derived from the official archive.
+It rejects duplicate extension IDs before building the ID map; a later valid
+copy cannot hide an earlier unverified directory. The strict report requires
+the same application map and exact extension ID/version list. This strengthens
+the admission witness; it does not change runtime rendering or kernel policy.
+The original review findings and correction evidence are retained in
+`spec/performance/graph-vscode-cohort-correction-2026-11-10/`.

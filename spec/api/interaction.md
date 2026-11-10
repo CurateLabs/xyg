@@ -405,6 +405,23 @@ The hover tooltip is anchored in data space, not at the cursor
 - Keyboard traversal can focus a point outside the current view; its readout
   keeps the edge-clamped placement (the anchor is dropped when its
   projection starts outside the plot rect).
+- Keyboard exact-value replies and activation resolve the focused point against
+  the current projection and canvas rectangle. Moving a notebook output or its
+  ancestor while a reply is pending must not shift the chart-root-relative
+  cursor or canvas-relative activation coordinates. Pointer-owned readouts
+  retain the actual pointer's viewport coordinates. The existing pick sequence
+  still rejects superseded replies, and exact upgrades do not repeat the
+  keyboard live-region announcement.
+- The required conformance witness records the pre-reply hover count and copies
+  its cursor. Before assessing cursor stability, it requires a new hover with
+  `exact: true` and the expected trace, row and canonical values. It compares
+  that fresh event's cursor. Ignored, stale or wrong-row replies cannot satisfy
+  the witness by retaining a previous approximate hover or live announcement.
+- Handled plot traversal, activation and readout-dismissal keys prevent the
+  browser default and stop propagation. An embedding notebook must not also
+  execute its cell-navigation/edit command for that key. Unhandled keys,
+  including Tab, retain normal host propagation; disabled activation does not
+  consume Enter/Space.
 
 ## 8. Unconditional behavior
 

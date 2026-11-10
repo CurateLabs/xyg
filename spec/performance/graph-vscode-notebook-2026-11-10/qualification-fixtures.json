@@ -1,0 +1,134 @@
+{
+  "normal": {
+    "installation.json": {
+      "sha256": "a44c47e8c43203ccf0b9580c5be964899955969f10fcc92d62121b4678b03e98",
+      "bytes": 33614,
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/a44c47e8c43203ccf0b9580c5be964899955969f10fcc92d62121b4678b03e98.gz",
+      "archiveSha256": "6083d37b745f3a057e789247634679a48555ee8b97ea148903349ac646f5f21a"
+    },
+    "report.json": {
+      "sha256": "84b75688b161fb29790db3ed2441f29931e10d1e8aa1314f2909cafad3054085",
+      "bytes": 326370,
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/84b75688b161fb29790db3ed2441f29931e10d1e8aa1314f2909cafad3054085.gz",
+      "archiveSha256": "f38d180ca6d88e46e51656d27b6dac98c1b2d194f3d042b6d05d30c5f76a1467"
+    },
+    "run-result.json": {
+      "sha256": "896ea335551184df63dd1276e58a4d5041d97867f361bac9008297bdea9d714f",
+      "bytes": 1196,
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/896ea335551184df63dd1276e58a4d5041d97867f361bac9008297bdea9d714f.gz",
+      "archiveSha256": "a3adba0d6a21703aae27e830cc9395aaf5be33a85753560dd29020590f140ac3"
+    },
+    "controller-complete.json": {
+      "sha256": "b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41",
+      "bytes": 33,
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41.gz",
+      "archiveSha256": "857e8dc6760f12d1b6ad15479d85e8145534f75f681ff8d45982c2d09cb947b6"
+    },
+    "cleanup.json": {
+      "sha256": "7b6e9c223b79dbd140ac485934337749da254e0fe253ea076e1aef053987e535",
+      "bytes": 296,
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/7b6e9c223b79dbd140ac485934337749da254e0fe253ea076e1aef053987e535.gz",
+      "archiveSha256": "3a5901b146c0a164fa9391a879ba2439188b8686460f79d4306b2ac4984ebba0"
+    },
+    "served-widget-assets.json": {
+      "sha256": "5e3c88fbc7dd9b5c4f28ecb561eb505785ad787db5a67f9a7daf03e9d11ee795",
+      "bytes": 649,
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/5e3c88fbc7dd9b5c4f28ecb561eb505785ad787db5a67f9a7daf03e9d11ee795.gz",
+      "archiveSha256": "098be3cf496d6aacc2e24b8c6752907b35abcf18577faefb8afca3057086a6f9"
+    },
+    "server-environment.json": {
+      "sha256": "602787bb95b56602d712e9ddcdba30f46c0ef8805d281fd9a295e7e9610bff5c",
+      "bytes": 281,
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/602787bb95b56602d712e9ddcdba30f46c0ef8805d281fd9a295e7e9610bff5c.gz",
+      "archiveSha256": "43cf7d28ac5eed65d0abb00af6d1093265e957466f5f36e53c9f05c5c29400ce"
+    },
+    "kernel-info.json": {
+      "sha256": "8db7cfc12cf13d3cc9108b782e98b1b21d045bc30b9693951ea2c1699defcdac",
+      "bytes": 192,
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/8db7cfc12cf13d3cc9108b782e98b1b21d045bc30b9693951ea2c1699defcdac.gz",
+      "archiveSha256": "8f57b2fd7f2217c876e0330d81c9dd14846a7c42b2b19ba6303fab06b2434653"
+    },
+    "inspector-sources.json": {
+      "sha256": "0077f2c7601e82b29befb857234e3c3738c8b66aa8eeb88b829df6b65a8bbec9",
+      "bytes": 1342,
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/0077f2c7601e82b29befb857234e3c3738c8b66aa8eeb88b829df6b65a8bbec9.gz",
+      "archiveSha256": "2c7a9bfbbc72cba39b9051f92e9f8fb347ba1edfe5d86d94febfa63fcc5d0c3e"
+    },
+    "graph.ipynb": {
+      "sha256": "7598ddb4b4d0d5f0a852d39003cc33000b2694ccc45ea1d391ad77e7ed778030",
+      "bytes": 38513,
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/7598ddb4b4d0d5f0a852d39003cc33000b2694ccc45ea1d391ad77e7ed778030.gz",
+      "archiveSha256": "a255b5404482b3b98da71d2707f41d48c21853a3170d6aa74e6e0f612e1866f8"
+    },
+    "identity-parity-input.json": {
+      "sha256": "d61bc9cd9febf7cf06784bfb938355a5c9d3d19e7bbca2a66f2596c842c91d2c",
+      "bytes": 17814,
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/d61bc9cd9febf7cf06784bfb938355a5c9d3d19e7bbca2a66f2596c842c91d2c.gz",
+      "archiveSha256": "3d7bf18e21efd474f4086df6088a6404144c964b6679b452b17f637d633f9968"
+    },
+    "initial.png": {
+      "sha256": "7cf256f7c8aada6ffd995d0b0578b7dea41d879c7f1a21cec1936a71577220e1",
+      "bytes": 14261,
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/7cf256f7c8aada6ffd995d0b0578b7dea41d879c7f1a21cec1936a71577220e1.gz",
+      "archiveSha256": "178ac2e144a03dbf1a6ced905bf9be2feafd217f5eb67c197be1367d6152a8a2"
+    },
+    "final.png": {
+      "sha256": "d12a160b9d514c82609fda76f202ed2188499648335a7c74ddc240abb2c0b103",
+      "bytes": 11185,
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/d12a160b9d514c82609fda76f202ed2188499648335a7c74ddc240abb2c0b103.gz",
+      "archiveSha256": "78023e8c646fffb68c5d168481f62ce8d580513c9f830f20093d7b5ab1c3f1be"
+    },
+    "connected.png": {
+      "sha256": "eeab994e1051c3006f0cbf6d7dba5aaf1e4d1041c573b21dcb4284c26e5b6ef0",
+      "bytes": 21065,
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/eeab994e1051c3006f0cbf6d7dba5aaf1e4d1041c573b21dcb4284c26e5b6ef0.gz",
+      "archiveSha256": "50718aa57b8bdb74392df45e80cc7c429ddbeb395049cd225c389b23c6f2f413"
+    },
+    "identity-parity.log": {
+      "sha256": "ea80ea7189b6763969bbbca36ca084a6011b0883d9c6f1542249566cfe253ffd",
+      "bytes": 1233,
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/ea80ea7189b6763969bbbca36ca084a6011b0883d9c6f1542249566cfe253ffd.gz",
+      "archiveSha256": "6e4f59d1b24dc6542854a4f034d973c5af5c4877367533fca737b0ffa2e6e6a3"
+    }
+  },
+  "failure": {
+    "failure.json": {
+      "sha256": "e08a158f5ba124d9e5c3098bba56f615ea7ca86a7bae8b60d469396c66a582fe",
+      "bytes": 62195,
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/e08a158f5ba124d9e5c3098bba56f615ea7ca86a7bae8b60d469396c66a582fe.gz",
+      "archiveSha256": "e5c12683436e3eaa7d4c5d935b408b6bf662e0c6e0d5d306a21640081641d5ce"
+    },
+    "run-result.json": {
+      "sha256": "49c2992cf3a8140436d4ceddf6576bcafa5bf76458eeb1ebf1968f24ab08424d",
+      "bytes": 1209,
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/49c2992cf3a8140436d4ceddf6576bcafa5bf76458eeb1ebf1968f24ab08424d.gz",
+      "archiveSha256": "d8afb4792ff20d2cd239e7fbfd8653aa8800e28480d72bbdbf46e19f4673be6c"
+    },
+    "controller-complete.json": {
+      "sha256": "f85703178f3d92d6ffe68081477ac6aef82371ba6a97652c82e22a517a680ab5",
+      "bytes": 180,
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/f85703178f3d92d6ffe68081477ac6aef82371ba6a97652c82e22a517a680ab5.gz",
+      "archiveSha256": "fedd2098615853ec234d3c6c8b7b96e6e6544fcf989ff5d6d7c763e75cf235bd"
+    },
+    "cleanup.json": {
+      "sha256": "f60414b1370abbe55a50b86497058ef1815acc235c21ab332deafb29f7c89f93",
+      "bytes": 379,
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/f60414b1370abbe55a50b86497058ef1815acc235c21ab332deafb29f7c89f93.gz",
+      "archiveSha256": "92f65024544d508b4fa22d31bd16a945aae18aa26d6aee58c1d51f0e2c793f62"
+    },
+    "extension-state.json": {
+      "sha256": "a8669c95fccccedfab0eb4017171e4b41e19429e79ab683b04c94e3a45875f07",
+      "bytes": 8982,
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/a8669c95fccccedfab0eb4017171e4b41e19429e79ab683b04c94e3a45875f07.gz",
+      "archiveSha256": "cb393e9c151aca0f2627261324d6b573be6abad0946c1a7215e2e04b538fc241"
+    },
+    "attach.log": {
+      "sha256": "25a263e82d9c70ca5bae892e2cade1a0074ac1993d3277e1f5f259250c264b17",
+      "bytes": 360,
+      "archive": "spec/performance/graph-vscode-notebook-2026-11-10/evidence/25a263e82d9c70ca5bae892e2cade1a0074ac1993d3277e1f5f259250c264b17.gz",
+      "archiveSha256": "fb2eb448ebf1a52e395dcfa57195130b13b37db876be4392aa7f050b3091cdd2"
+    }
+  },
+  "clientSha256": "447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa",
+  "nativeSha256": "378a069c4f802bb97e6273333766a4afee99a626d4fc409f776f31d21968a4df"
+}
