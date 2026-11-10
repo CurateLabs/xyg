@@ -1569,3 +1569,5 @@ spec/performance/graph-notebook-regions-2026-11-10/** text eol=lf
 spec/performance/graph-notebook-regions-2026-11-10/**/*.gz -text
 spec/performance/graph-notebook-region-history-2026-11-10/** text eol=lf
 spec/performance/graph-notebook-region-history-2026-11-10/**/*.gz -text
+spec/performance/graph-notebook-camera-owner-2026-11-10/** text eol=lf
+spec/performance/graph-notebook-camera-owner-2026-11-10/**/*.gz -text

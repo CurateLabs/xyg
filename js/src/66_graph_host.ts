@@ -51,10 +51,11 @@ export function renderGraphHost({ model, el, attachTicks }) {
       const to = direction === "back" ? view._historyFuture : view._historyPast;
       const target = from.at(-1), before = view._durableState();
       if (!target || view._validateStatePatch({ ranges: target.ranges })) return false;
+      const cameraOwner = view._viewWriteToken;
       const commitHistory = () => {
         // A later range write owns the camera, even if it did not record
         // history (for example a linked update). Never undo that newer write.
-        if (from.at(-1) !== target || JSON.stringify(view._durableState().ranges) !== JSON.stringify(before.ranges)) return false;
+        if (from.at(-1) !== target || view._viewWriteToken !== cameraOwner) return false;
         from.pop(); to.push(before);
         view._applyStatePatch({ ranges: target.ranges }, { source: "history", animate: true, history: false });
         view._updateHistoryButtons();

@@ -159,7 +159,12 @@ Back/Next move their stacks only after accepted navigation and do not start
 while another geometric selection is pending. The stored ranges also wait for
 predicate acceptance; refusal preserves the entire preceding camera/selection
 snapshot. An intervening range write or changed history target supersedes that
-navigation without rolling back the newer state. Opaque-row/ranges-only history
+navigation without rolling back the newer state. Pending navigation uses an
+opaque token from the common viewport writer to distinguish animated
+targets before their first frame and write sequences returning to the same
+coordinates. Explicit same-value axis writes also supersede pending navigation;
+an empty `ranges` merge-patch leaves camera ownership unchanged. The token is
+transient, bounded and never serialized. Opaque-row/ranges-only history
 keeps its existing synchronous, non-reselecting behavior. A combined API
 range/selection patch preserves its interaction ID through deferred acceptance,
 so the two facets create one undo entry. Targets with obsolete axis schemas

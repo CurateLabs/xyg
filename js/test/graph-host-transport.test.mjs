@@ -15,7 +15,7 @@ function fixture(saved) {
       this.spec = spec; this.comm = comm; this._graphs = []; this.gpuTraces = [];
       this.replies = []; this.swaps = 0;
       this._stateSelection = null; this._historyPast = []; this._historyFuture = [];
-      this.broadcasts = []; this._interactionSeq = 0;
+      this.broadcasts = []; this._interactionSeq = 0; this.seq = 0;
       this.axes = { x: { range: [0, 10] }, y: { range: [0, 10] } };
       this.view = this._copyView({}); this.view0 = this._copyView(this.view);
       this.unsubscribe = comm.onMessage(content => {
@@ -42,7 +42,7 @@ function fixture(saved) {
   const context = { ChartView, payloadBuffers: (_, buffers) => buffers, crypto: webcrypto,
     document: { createElement: () => (status = { setAttribute() {}, remove() {} }) },
     requestAnimationFrame: cb => { frames.set(++serial, cb); return serial; },
-    cancelAnimationFrame: id => frames.delete(id) };
+    cancelAnimationFrame: id => frames.delete(id), clearTimeout };
   vm.createContext(context);
   for (const name of ["53_interaction", "57_viewstate"]) {
     const methods = readFileSync(new URL(`../src/${name}.ts`, import.meta.url), "utf8").replace(/^import .*;$/mg, "");
@@ -59,6 +59,7 @@ function fixture(saved) {
   ChartView.prototype._axis = function (id) { return this.axes[id]; };
   ChartView.prototype._clampView = view => view;
   ChartView.prototype._prefersReducedMotion = () => true;
+  ChartView.prototype._now = () => 0;
   ChartView.prototype._broadcastLinkedSelection = function (selection) { this.broadcasts.push(selection); };
   vm.runInContext(stripTypeScriptTypes(source) + ";globalThis.render=renderGraphHost;", context);
   const model = { state: { spec: { instance: "test", graph_snapshot: saved }, buffers: [] }, sent: [],
@@ -297,6 +298,65 @@ test("a newer non-history range write supersedes pending navigation without roll
   accept(f, request, 1);
   assert.deepEqual(json(f.view._durableState()), newer); assert.equal(f.view.mask, 2);
   assert.deepEqual(json(f.view._historyPast), past); assert.deepEqual(json(f.view._historyFuture), future);
+  f.cleanup();
+});
+
+test("a newer animation owns the camera before its first frame", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  f.view._sendSelect([2, 0], [3, 1]); accept(f, f.model.sent.at(-1), 2);
+  f.view._applyStatePatch({ ranges: { x: [20, 30] } });
+  const past = json(f.view._historyPast), future = json(f.view._historyFuture);
+  f.view._historyBack(); const request = f.model.sent.at(-1);
+  f.view._prefersReducedMotion = () => false;
+  f.view._applyStatePatch({ ranges: { x: [40, 50] } }, { animate: true, history: false });
+  assert.deepEqual(json(f.view.view.ranges.x), [20, 30]);
+  const animation = f.view._viewAnim;
+  accept(f, request);
+  assert.equal(f.view._viewAnim, animation); assert.deepEqual(json(animation.target.ranges.x), [40, 50]);
+  assert.deepEqual(json(f.view._historyPast), past); assert.deepEqual(json(f.view._historyFuture), future);
+  assert.equal(f.view.mask, 2);
+  f.cleanup();
+});
+
+test("camera writes returning to the same coordinates still supersede pending navigation", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  f.view._sendSelect([2, 0], [3, 1]); accept(f, f.model.sent.at(-1));
+  f.view._applyStatePatch({ ranges: { x: [20, 30] } });
+  const past = json(f.view._historyPast), future = json(f.view._historyFuture);
+  f.view._historyBack(); const request = f.model.sent.at(-1);
+  f.view._applyStatePatch({ ranges: { x: [40, 50] } }, { history: false });
+  f.view._applyStatePatch({ ranges: { x: [20, 30] } }, { history: false });
+  accept(f, request);
+  assert.deepEqual(json(f.view.view.ranges.x), [20, 30]);
+  assert.deepEqual(json(f.view._historyPast), past); assert.deepEqual(json(f.view._historyFuture), future);
+  f.cleanup();
+});
+
+test("an explicit same-value camera write owns its facet while an empty patch leaves it alone", () => {
+  for (const empty of [false, true]) {
+    const f = fixture(); f.frame(1); f.paint();
+    f.view._sendSelect([2, 0], [3, 1]); accept(f, f.model.sent.at(-1));
+    f.view._applyStatePatch({ ranges: { x: [20, 30] } });
+    const count = f.view._historyPast.length;
+    f.view._historyBack(); const request = f.model.sent.at(-1);
+    f.view._applyStatePatch({ ranges: empty ? {} : { x: [20, 30] } }, { history: false });
+    accept(f, request);
+    assert.deepEqual(json(f.view.view.ranges.x), empty ? [0, 10] : [20, 30]);
+    assert.equal(f.view._historyPast.length, count - Number(empty));
+    f.cleanup();
+  }
+});
+
+test("an invalid camera patch does not supersede an admitted navigation", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  f.view._sendSelect([2, 0], [3, 1]); accept(f, f.model.sent.at(-1));
+  f.view._applyStatePatch({ ranges: { x: [20, 30] } });
+  const count = f.view._historyPast.length;
+  f.view._historyBack(); const request = f.model.sent.at(-1);
+  assert.equal(f.view._applyStatePatch({ ranges: { removed: [40, 50] } }), false);
+  accept(f, request);
+  assert.deepEqual(json(f.view.view.ranges.x), [0, 10]);
+  assert.equal(f.view._historyPast.length, count - 1);
   f.cleanup();
 });
 

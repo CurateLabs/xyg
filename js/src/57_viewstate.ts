@@ -129,7 +129,7 @@ Object.assign(ChartView.prototype, {
     // One interaction id for the whole patch, so a ranges+selection patch
     // coalesces into a single history entry.
     const interactionId = ++this._interactionSeq;
-    if (patch.ranges !== undefined) {
+    if (patch.ranges !== undefined && Object.keys(patch.ranges).length) {
       const ranges = Object.fromEntries(
         this._axisIds().map((axisId) => [axisId, [...this._axisRange(axisId)]])
       );

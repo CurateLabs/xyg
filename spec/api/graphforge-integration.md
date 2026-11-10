@@ -347,8 +347,9 @@ Duplicate/older replies cannot release another outstanding request or replace a
 newer API row selection. Accepted predicates are captured before Python callbacks
 can issue a reentrant API write. Back/Next are also acceptance-gated and refuse
 to start while a geometric selection is pending; a failed navigation leaves
-both history stacks and the accepted camera intact. A newer camera write
-supersedes pending navigation. Deferred acceptance retains the shared
+both history stacks and the accepted camera intact. A newer camera write,
+including an animated target or a return to identical coordinates, supersedes
+pending navigation. Deferred acceptance retains the shared
 interaction ID of a combined API range/selection patch, preserving one undo
 entry. Ordinary chart transports retain immediate
 selection mutation behavior.

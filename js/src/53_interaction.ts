@@ -1973,6 +1973,10 @@ Object.assign(ChartView.prototype, {
   _setView(next, opts: any = {}) {
     if (this._destroyed) return [];
     const target = this._clampView(this._viewFrom(next), { anchors: opts.anchors });
+    // A validated viewport write owns this facet before its first animation
+    // frame, even when it requests the current coordinates. Keep one opaque
+    // token, so a pending native history query cannot overwrite a newer write.
+    this._viewWriteToken = {};
     const changedAxes = this._axisIds().filter((axisId) => {
       const before = this._axisRange(axisId);
       const after = this._axisRange(axisId, target);
