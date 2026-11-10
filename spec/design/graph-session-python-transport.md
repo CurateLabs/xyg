@@ -265,8 +265,8 @@ rerender, cancellation, failure and the cross-loop regression. The bounded smoke
 and receipt verifier run in the existing CI `test` job under Release surfaces;
 no new required status is added.
 
-This does not close #1015/#35/#36/#108. Full kind/UUID/per-layer result-id/row
-GraphSession callback projection, UUID-origin selection, exact box/lasso UUID
+At the R2 checkpoint this did not close #1015/#35/#36/#108. Subsequent typed
+and routed identity qualification is specified below. Remaining exact box/lasso UUID
 sets, selected/annotated export parity, Notebook 7 and VS Code qualification,
 trusted routed-edge notebook pointer coverage and the required 1k/10k/100k/1M
 rendered ladder remain. The five-node property fixture and current composition
@@ -366,7 +366,7 @@ sessions even when application callbacks retain old Figure/Selection objects.
 Late compiler completion is discarded and its session finalizer releases it.
 UUID masks use ordinary selection_rows and are non-durable across remount;
 exact aggregate/compound highlight routing, graph-specific box/lasso edge policy,
-all browser pointer journeys, accessibility and the full ladder remain open.
+remaining browser/host pointer journeys, accessibility and the full ladder remain open.
 
 Focused tests and the public notebook proof are recorded in the
 [identity receipt](../performance/graph-notebook-identity-2026-11-06/README.md).
@@ -381,3 +381,39 @@ callback reports without request metadata cannot satisfy the new proof. This
 checks request identity and delivery cardinality, not complete geometric UUID
 sets or scale/frontend/export acceptance. The append-only correction and fresh
 capture are in [the report receipt](../performance/graph-notebook-identity-report-2026-11-06/README.md).
+
+### Routed notebook identity qualification (2026-11-09)
+
+The normal JupyterLab/IPython/anywidget journey additionally clicks all five
+persisted relationships of the property fixture, including both parallel
+relationships and its self-loop. Trusted pointer input targets the existing
+Figure/ChartView segments. The test reads accepted geometry only to locate a
+stroke; it does not call a picker to manufacture its expected identity. Kernel
+callbacks must match the fixture's canonical source UUIDs and the compiler's
+source/render membership. A second layered graph verifies the exact
+`notebook-rank` result ID, layer 0 and result row 0.
+
+The property fixture has a distant isolated node. The additional identity
+exercise uses the public Python `set_view` range patch to inspect its connected
+nodes; it does not claim that every subpixel parallel stroke is distinguishable
+at the full home extent. Unfinished-layout input and default presentation remain
+checked separately before that range patch. Targets avoid DOM controls through
+normal hit testing. No forced clicks, synthetic callback messages, picker
+replacement or new native/browser rendering path is used.
+
+Python UUID selection is checked both at the existing two-row delivery event
+and by reading the actual node/edge GPU selection buffers. Public Node
+`graphforgePick` replays each callback's trace/index against the exact binary
+composition and final canonical positions, using the same native artifact.
+Only the documented Node `resultId` / Python `result_id` spelling is normalized;
+UUIDs, kinds, composed indices, layer order and result rows must agree exactly.
+Both private notebook identity sessions must be released after widget closure.
+The required CI receipt verifier uses `--require-routed`; historical receipts
+retain their original explicitly admitted contract.
+
+This is bounded identity qualification, not full #1015/#35/#36 acceptance.
+Graph-specific box/lasso edge policies, derived/aggregate/compound routing,
+Notebook 7 and VS Code Jupyter, selected/annotated exports, full accessibility,
+and the required 1k/10k/100k/1M notebook ladder remain open. GPU masks establish
+selection delivery, not a whole-image antialiasing or export-pixel comparison.
+See [the append-only receipt](../performance/graph-notebook-routed-identity-2026-11-09/README.md).

@@ -2107,7 +2107,7 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         'export XYG_GRAPH_NOTEBOOK_REPORT="$RUNNER_TEMP/graph-notebook.json"',
         "node --test js/test/graph-host-transport.test.mjs",
         "node scripts/graph_notebook_progressive_smoke.mjs",
-        '.venv/bin/python scripts/verify_graph_notebook_report.py "$RUNNER_TEMP/graph-notebook.json"',
+        '.venv/bin/python scripts/verify_graph_notebook_report.py "$RUNNER_TEMP/graph-notebook.json" --require-routed',
     )
     _require_step_runs_exactly(
         errors,

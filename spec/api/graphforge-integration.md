@@ -332,3 +332,10 @@ for lifecycle, timeout, validation evidence and remaining #1015 requirements.
 `show(display="html")` and `to_html()` remain static/batch snapshots. Their
 browser output has no kernel return channel: selections do not invoke Python
 callbacks and native progressive work does not continue after export.
+
+The [routed notebook qualification](../design/graph-session-python-transport.md#routed-notebook-identity-qualification-2026-11-09)
+adds actual JupyterLab trusted parallel-edge and self-loop clicks, exact layered
+result provenance, delivered node/edge GPU UUID masks and public Node
+`graphforgePick` parity. It uses a public range patch to inspect the connected
+part of the small fixture. This does not establish notebook scale, other
+frontends, graph-specific geometric edge selection, or selected export parity.

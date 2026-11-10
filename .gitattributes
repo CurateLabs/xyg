@@ -1504,3 +1504,8 @@ tests/test_check_typing.py text eol=lf
 tests/test_framing.py text eol=lf
 spec/benchmarks/methodology.md text eol=lf
 spec/design/temporal-graph-frozen.md text eol=lf
+# Routed actual-notebook identity source and append-only provenance.
+scripts/graph_notebook_identity_parity.mjs text eol=lf
+spec/performance/graph-notebook-routed-identity-2026-11-09/** text eol=lf
+spec/performance/graph-notebook-routed-identity-2026-11-09/**/*.gz -text
+spec/performance/graph-notebook-routed-identity-2026-11-09/**/*.png -text
