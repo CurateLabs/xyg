@@ -2135,6 +2135,35 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     _require_step_runs_exactly(
         errors,
         jobs.get("test", ""),
+        "Notebook 7 graph regions",
+        "required actual Notebook7 graph region membership and refusal oracles",
+        'export XYG_GRAPH_JUPYTER="$RUNNER_TEMP/graph-notebook7-env/bin/jupyter-notebook"',
+        'export XYG_CHROMIUM="$(node -e "console.log(require(\'playwright\').chromium.executablePath())")"',
+        'export XYG_GRAPH_REGION_REPORT="$RUNNER_TEMP/graph-regions-notebook7-dpr1.json"',
+        "node scripts/graph_notebook_regions_smoke.mjs --frontend notebook7",
+        'XYG_GRAPH_REGION_DPR=2 XYG_GRAPH_REGION_REPORT="$RUNNER_TEMP/graph-regions-notebook7-dpr2.json" node scripts/graph_notebook_regions_smoke.mjs --frontend notebook7',
+    )
+    region_upload_name = "Retain graph notebook region evidence"
+    _require_step_contains(
+        errors,
+        jobs.get("test", ""),
+        region_upload_name,
+        "native graph region reports and screenshot retention",
+        "actions/upload-artifact@",
+        "${{ runner.temp }}/graph-regions*.json",
+        "target/xyg-graph-regions-*/*.png",
+        "target/xyg-graph-regions-*/*.json",
+        "target/xyg-graph-regions-*/regions.ipynb",
+        "if-no-files-found: error",
+    )
+    region_upload_if, region_upload_unsafe = _step_direct_key_values(
+        _named_step_blocks(jobs.get("test", "")).get(region_upload_name, ""), "if"
+    )
+    if region_upload_unsafe or region_upload_if != ["always()"]:
+        errors.append("CI native graph region evidence must upload on success and failure")
+    _require_step_runs_exactly(
+        errors,
+        jobs.get("test", ""),
         "VS Code notebook test cohort",
         "pinned actual VS Code notebook application and widget cohort",
         'uv pip install --python "$RUNNER_TEMP/graph-notebook7-env/bin/python" nbclassic==1.3.3 ipywidgets==8.1.9 widgetsnbextension==4.0.16 jupyterlab_widgets==3.0.17',

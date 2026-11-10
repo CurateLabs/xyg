@@ -383,6 +383,13 @@ leaving room for that mask within the portable vertex attribute limit. Edge
 membership still comes from Rust. A callback's canonical graph identity count
 can differ from the number of rendered segment rows in its masks.
 
+The same `scripts/graph_notebook_regions_smoke.mjs` journey runs actual
+JupyterLab by default and stock Notebook7 with `--frontend notebook7`, retaining
+the exact selection, raw-pixel, refusal and history oracles at both DPR1/2.
+Application name, version, namespace, route and loaded static assets distinguish
+the real frontend; sharing anywidget and ChartView does not substitute one
+frontend's evidence for the other.
+
 Aggregate/collapsed notebook presentation still needs
 full matching-publication qualification; the shared reducer itself expands
 published aggregate/compound membership. Browser/native parity, trusted region

@@ -1586,3 +1586,8 @@ spec/performance/graph-linked-mask-refresh-2026-11-10/**/*.gz -text
 spec/performance/graph-empty-clear-status-2026-11-10/*.md text eol=lf
 spec/performance/graph-empty-clear-status-2026-11-10/*.json text eol=lf
 spec/performance/graph-empty-clear-status-2026-11-10/**/*.gz -text
+
+# Notebook7 region proof preserves source, captures and raw evidence bytes.
+spec/performance/graph-notebook7-regions-2026-11-10/*.md text eol=lf
+spec/performance/graph-notebook7-regions-2026-11-10/*.json text eol=lf
+spec/performance/graph-notebook7-regions-2026-11-10/**/*.gz -text

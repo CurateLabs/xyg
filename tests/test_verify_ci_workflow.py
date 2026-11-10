@@ -5661,3 +5661,60 @@ def test_ci_frozen_export_oracle_requires_explicit_native_candidate(tmp_path: Pa
         "explicit native artifact for frozen native/WASM export oracles" in error
         for error in errors
     )
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "node scripts/graph_notebook_regions_smoke.mjs --frontend notebook7",
+        'XYG_GRAPH_REGION_DPR=2 XYG_GRAPH_REGION_REPORT="$RUNNER_TEMP/graph-regions-notebook7-dpr2.json" node scripts/graph_notebook_regions_smoke.mjs --frontend notebook7',
+    ],
+)
+@pytest.mark.parametrize(
+    "replacement",
+    ["# {command}", "echo {command}", "{command} || true", "if false; then {command}; fi"],
+)
+def test_ci_notebook7_region_oracles_cannot_be_masked(tmp_path, command, replacement):
+    source = verify_ci_workflow.DEFAULT_CI_WORKFLOW.read_text()
+    original = f"          {command}\n"
+    assert source.count(original) == 1
+    path = tmp_path / "ci.yml"
+    path.write_text(source.replace(original, f"          {replacement.format(command=command)}\n"))
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+    assert any("required actual Notebook7 graph region" in error for error in errors)
+
+
+@pytest.mark.parametrize("bypass", ["if: false", "continue-on-error: true"])
+def test_ci_notebook7_region_step_is_required(tmp_path, bypass):
+    source = verify_ci_workflow.DEFAULT_CI_WORKFLOW.read_text()
+    step = "      - name: Notebook 7 graph regions\n"
+    assert source.count(step) == 1
+    path = tmp_path / "ci.yml"
+    path.write_text(source.replace(step, step + f"        {bypass}\n"))
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+    assert any("required actual Notebook7 graph region" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("original", "replacement"),
+    [
+        ("            ${{ runner.temp }}/graph-regions*.json\n", ""),
+        ("            target/xyg-graph-regions-*/*.png\n", ""),
+        ("            target/xyg-graph-regions-*/*.json\n", ""),
+        ("            target/xyg-graph-regions-*/regions.ipynb\n", ""),
+        ("        if: always()\n", "        if: success()\n"),
+        ("          if-no-files-found: error\n", "          if-no-files-found: warn\n"),
+    ],
+)
+def test_ci_notebook_regions_retain_reports_and_captures_on_failure(
+    tmp_path, original, replacement
+):
+    source = verify_ci_workflow.DEFAULT_CI_WORKFLOW.read_text()
+    start = source.index("      - name: Retain graph notebook region evidence\n")
+    end = source.index("\n      - name:", start + 1)
+    block = source[start:end]
+    assert block.count(original) == 1
+    path = tmp_path / "ci.yml"
+    path.write_text(source[:start] + block.replace(original, replacement) + source[end:])
+    errors = verify_ci_workflow.validate_ci_workflow(path)
+    assert any("native graph region" in error for error in errors)

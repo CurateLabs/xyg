@@ -2223,6 +2223,16 @@ to the retained upstream shortcuts-registry exception; it receives no positive
 frontend qualification. Passing 7.5.8 is additional compatibility evidence, not
 a repair or waiver for 7.6.4 or all Notebook7 versions.
 
+The shared native graph region journey additionally supports
+`--frontend notebook7` with the same exact UUID sets, induced published edges,
+GPU masks, full accepted/refused RGBA and history assertions as JupyterLab.
+Frontend identity includes the actual application name, major version,
+namespace, route and loaded static assets. DPR1/2 use the existing pinned
+Notebook7 environment; changing the requested frontend never substitutes the
+JupyterLab route. This bounds the box/lasso proof to that cohort; aggregate,
+collapsed and categorical notebook matching, changed-LOD remapping, desktop
+region journeys and full accessibility remain open.
+
 
 ### Actual VS Code Jupyter desktop (2026-11-10)
 

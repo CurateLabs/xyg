@@ -247,6 +247,20 @@ merge queue rule, blanket size ladder or release compatibility policy is added.
 Local reproduction is in the
 [R2 receipt](../performance/graph-widget-progressive-r2-2026-11-06/README.md).
 
+`Notebook 7 graph regions` reuses the preceding pinned Notebook7 environment
+and runs `scripts/graph_notebook_regions_smoke.mjs --frontend notebook7` at
+DPR1 and DPR2. The shared harness verifies actual application configuration,
+Notebook7 routes and loaded static assets before any chart assertion. It retains
+the JupyterLab UUID, induced-edge, mask, complete RGBA, native-capacity refusal,
+history, pan/wheel, isolation and disposal oracles. Both runs are required in the
+existing aggregate; the workflow verifier rejects conditional, commented,
+echo-only or failure-masked execution. No new status or relaxed deadline is used.
+`Retain graph notebook region evidence` runs on success and failure and uploads
+region reports, input notebooks, PNGs and immediate pixel/failure JSON files.
+Jupyter private credentials and runtime subdirectories are excluded. Missing
+output is an error; the workflow validator protects all path patterns, fatal
+missing-file handling and the unconditional upload.
+
 
 The full source-dist `node scripts/wasm_foundation_smoke.mjs` command includes the
 bounded retained temporal presentation branch of

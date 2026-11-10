@@ -349,6 +349,27 @@ jobs:
           node scripts/graph_notebook_progressive_smoke.mjs --frontend notebook7
           .venv/bin/python scripts/verify_graph_notebook_report.py "$RUNNER_TEMP/graph-notebook7.json" --require-routed --frontend notebook7
 
+      - name: Notebook 7 graph regions
+        timeout-minutes: 4
+        run: |
+          export XYG_GRAPH_JUPYTER="$RUNNER_TEMP/graph-notebook7-env/bin/jupyter-notebook"
+          export XYG_CHROMIUM="$(node -e "console.log(require('playwright').chromium.executablePath())")"
+          export XYG_GRAPH_REGION_REPORT="$RUNNER_TEMP/graph-regions-notebook7-dpr1.json"
+          node scripts/graph_notebook_regions_smoke.mjs --frontend notebook7
+          XYG_GRAPH_REGION_DPR=2 XYG_GRAPH_REGION_REPORT="$RUNNER_TEMP/graph-regions-notebook7-dpr2.json" node scripts/graph_notebook_regions_smoke.mjs --frontend notebook7
+
+      - name: Retain graph notebook region evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: graph-notebook-regions
+          path: |
+            ${{ runner.temp }}/graph-regions*.json
+            target/xyg-graph-regions-*/*.png
+            target/xyg-graph-regions-*/*.json
+            target/xyg-graph-regions-*/regions.ipynb
+          if-no-files-found: error
+
       - name: VS Code notebook test cohort
         timeout-minutes: 4
         run: |

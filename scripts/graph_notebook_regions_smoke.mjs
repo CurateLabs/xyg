@@ -10,6 +10,10 @@ import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
 import {namedIdleKernel} from './graph_notebook_kernel_witness.mjs';
 
+const args=process.argv.slice(2);
+if(args.length!==0&&(args.length!==2||args[0]!=='--frontend'||!['jupyterlab','notebook7'].includes(args[1])))
+ throw Error('usage: graph_notebook_regions_smoke.mjs [--frontend jupyterlab|notebook7]');
+const frontendKind=args[1]??'jupyterlab';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const temp=await mkdtemp(join(root,'target/xyg-graph-regions-'));
 await cp(join(root,'tests/notebook_graph_regions.ipynb'),join(temp,'regions.ipynb'));
@@ -17,7 +21,7 @@ for(const name of ['runtime','config','data'])await mkdir(join(temp,name));
 const allocator=createServer();await new Promise(r=>allocator.listen(0,'127.0.0.1',r));
 const port=allocator.address().port;await new Promise(r=>allocator.close(r));
 const origin=`http://127.0.0.1:${port}`;
-const server=spawn(process.env.XYG_GRAPH_JUPYTER??join(root,'.venv/bin/jupyter-lab'),[
+const server=spawn(process.env.XYG_GRAPH_JUPYTER??join(root,frontendKind==='notebook7'?'.venv/bin/jupyter-notebook':'.venv/bin/jupyter-lab'),[
  '--no-browser','--ServerApp.ip=127.0.0.1',`--ServerApp.port=${port}`,`--ServerApp.root_dir=${temp}`,
  '--IdentityProvider.token=','--ServerApp.password=',
 ],{cwd:root,env:{...process.env,XYG_NATIVE_LIB:join(root,'target/release/libxyg_core.so'),
@@ -55,15 +59,21 @@ try{
   document.addEventListener('wheel',e=>{if(e.target instanceof HTMLCanvasElement)
    globalThis.__regionTrusted.push({kind:'wheel',trusted:e.isTrusted});},true);
  });
- await page.goto(origin+'/lab/tree/regions.ipynb');
- const frontend=await page.evaluate(()=>{
+ await page.goto(origin+(frontendKind==='notebook7'?'/notebooks/regions.ipynb':'/lab/tree/regions.ipynb'));
+ const frontend=await page.evaluate(kind=>{
   const config=JSON.parse(document.getElementById('jupyter-config-data')?.textContent||'{}');
-  return {name:config.appName,version:config.appVersion,namespace:config.appNamespace,route:location.pathname};
- });
- assert.equal(frontend.name,'JupyterLab');assert.equal(frontend.namespace,'lab');assert.equal(frontend.version?.split('.')[0],'4');
+  return {kind,name:config.appName,version:config.appVersion,namespace:config.appNamespace,
+   staticUrl:config.fullStaticUrl,route:location.pathname,
+   staticRequests:[...new Set(performance.getEntriesByType('resource').map(r=>new URL(r.name).pathname).filter(path=>path.startsWith('/static/')))].sort()};
+ },frontendKind);
+ const expectedApp=frontendKind==='notebook7'?['Jupyter Notebook','notebook','7','/static/notebook']:['JupyterLab','lab','4','/static/lab'];
+ assert.equal(frontend.name,expectedApp[0]);assert.equal(frontend.namespace,expectedApp[1]);
+ assert.equal(frontend.version?.split('.')[0],expectedApp[2]);assert.equal(frontend.staticUrl,expectedApp[3]);
+ assert.equal(frontend.route,frontendKind==='notebook7'?'/notebooks/regions.ipynb':'/lab/tree/regions.ipynb');
+ assert.ok(frontend.staticRequests.some(path=>path.startsWith(expectedApp[3]+'/')),'actual frontend assets must be loaded');
  await page.locator('.jp-Notebook .jp-Cell').first().waitFor({timeout:45000});
  const select=page.getByRole('button',{name:'Select'});if(await select.count())await select.click();
- const kernel=await namedIdleKernel(page,'jupyterlab');
+ const kernel=await namedIdleKernel(page,frontendKind);
  const cell=async(index)=>{await page.locator('.jp-Notebook .jp-Cell').nth(index).locator('.cm-content').click();await page.keyboard.press('Shift+Enter');};
  await cell(0);
  const surfaces=page.locator('.jp-OutputArea [data-graph-steps]'),surface=surfaces.first();
