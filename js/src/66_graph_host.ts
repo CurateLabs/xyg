@@ -45,6 +45,15 @@ export function renderGraphHost({ model, el, attachTicks }) {
     // Only this native graph host defers durable selection mutations. Other
     // chart transports retain their existing immediate mutation semantics.
     deferSelection: opts => ({ seq: ++selectionSequence, history: opts.history !== false, broadcast: opts.broadcast !== false, source: opts.source, interactionId: opts.interactionId, commitHistory: opts.commitHistory }),
+    supersedeSelection: () => {
+      // A local/linked write owns the facet without issuing a native query.
+      // Keep the outstanding correlation until its real reply releases it,
+      // but discard queued intents and masks belonging to the old predicate.
+      selectionBarrier = selectionSequence;
+      acceptedSelection = null; queuedSelection = null;
+      selection = null; selectedRows = null;
+      selectionUnavailable = false; status.textContent = layoutStatus;
+    },
     deferHistory: direction => {
       if (selectionPending !== null) return false;
       const from = direction === "back" ? view._historyPast : view._historyFuture;

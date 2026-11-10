@@ -1117,7 +1117,9 @@ Object.assign(ChartView.prototype, {
 
   _clearSelection(opts: any = {}) {
     if (this._filterDashboard) { void this._filterDashboard.clear(); return; }
-    const deferred = opts.dispatch !== false && this.comm?.deferSelection?.(opts);
+    const sendsClear = opts.dispatch !== false && this._interactionFlag("select", true);
+    const deferred = sendsClear && this.comm?.deferSelection?.(opts);
+    if (!sendsClear && opts.dispatch !== false) this.comm?.supersedeSelection?.();
     this._clearLassoOverlay();
     this._clearBoxOverlay();
     // Clearing a durable selection is itself a durable-state change; linked

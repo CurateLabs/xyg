@@ -13,7 +13,7 @@ function fixture(saved) {
   class ChartView {
     constructor(el, spec, payload, comm) {
       this.spec = spec; this.comm = comm; this._graphs = []; this.gpuTraces = [];
-      this.replies = []; this.swaps = 0;
+      this.replies = []; this.swaps = 0; this.bufferSelections = [];
       this._stateSelection = null; this._historyPast = []; this._historyFuture = [];
       this.broadcasts = []; this._interactionSeq = 0; this.seq = 0;
       this.axes = { x: { range: [0, 10] }, y: { range: [0, 10] } };
@@ -28,7 +28,7 @@ function fixture(saved) {
     _applyAppend({ spec }) { this.spec = spec; this.swaps++; }
     _graphMetaArray() { return null; }
     _restoreGraphLegendVisibility(state) { this.restoredVisibility = state; }
-    _applySelectionBuffers(content) { this.mask = content.total ?? 0; }
+    _applySelectionBuffers(content) { this.bufferSelections.push(content); this.mask = content.total ?? 0; }
     _clearLassoOverlay() {} _clearBoxOverlay() {} _renderBoxSelection() {} _renderLassoSelection() {}
     _interactionFlag() { return true; } _updateHistoryButtons() {} _dispatchChartEvent() {}
     _eventView() { return {}; }
@@ -40,6 +40,7 @@ function fixture(saved) {
     destroy() { this.unsubscribe(); this.destroyed = true; }
   }
   const context = { ChartView, payloadBuffers: (_, buffers) => buffers, crypto: webcrypto,
+    BroadcastChannel: class { postMessage() {} close() {} },
     document: { createElement: () => (status = { setAttribute() {}, remove() {} }) },
     requestAnimationFrame: cb => { frames.set(++serial, cb); return serial; },
     cancelAnimationFrame: id => frames.delete(id), clearTimeout };
@@ -53,9 +54,11 @@ function fixture(saved) {
   for (const name of ["_clearLassoOverlay", "_clearBoxOverlay", "_renderBoxSelection", "_renderLassoSelection", "_updateHistoryButtons", "_dispatchChartEvent", "_scheduleViewRequest", "_emitViewChange"]) ChartView.prototype[name] = () => {};
   const axes = readFileSync(new URL("../src/50_chartview.ts", import.meta.url), "utf8");
   const axisMethods = axes.slice(axes.indexOf("  _axisIds() {"), axes.indexOf("  _axisPolicy(name) {"))
-    + axes.slice(axes.indexOf("  _axisRange(axisId, view = this.view) {"), axes.indexOf("  // Stride-thin radial tick LABELS"));
+    + axes.slice(axes.indexOf("  _axisRange(axisId, view = this.view) {"), axes.indexOf("  // Stride-thin radial tick LABELS"))
+    + axes.slice(axes.indexOf("  _initLinkedCharts() {"), axes.indexOf("  _broadcastLinkedView(detail) {"));
   const AxisView = vm.runInContext(stripTypeScriptTypes(`(class { ${axisMethods} })`), context);
-  for (const name of ["_axisIds", "_copyView", "_viewFrom", "_axisRange"]) ChartView.prototype[name] = AxisView.prototype[name];
+  for (const name of ["_axisIds", "_copyView", "_viewFrom", "_axisRange", "_initLinkedCharts"]) ChartView.prototype[name] = AxisView.prototype[name];
+  ChartView.prototype._axisPolicy = () => ["x", "y"];
   ChartView.prototype._axis = function (id) { return this.axes[id]; };
   ChartView.prototype._clampView = view => view;
   ChartView.prototype._prefersReducedMotion = () => true;
@@ -543,4 +546,71 @@ test("segment dash packing preserves reversed-contour phase and exact f32 pairs"
   assert.equal(g._segmentDashOffsetBuf, buffer);
   assert.equal(g._segmentDashData.length, 2 * g.n);
   assert.equal(g._segmentDashDirBuf, undefined);
+});
+
+for (const api of ["clear", "patch"]) test(`disabled select ${api} clears durable state without a native request`, () => {
+  const f = fixture(); f.frame(1); f.paint();
+  f.view._sendSelect([2, 0], [3, 1]); accept(f, f.model.sent.at(-1), 3);
+  const sent = f.model.sent.length, past = f.view._historyPast.length;
+  f.view._interactionFlag = name => name !== "select";
+  if (api === "clear") f.view._clearSelection();
+  else f.view._applyStatePatch({ selection: null });
+  assert.equal(f.view._stateSelection, null);
+  assert.equal(f.view._lastBrush, null);
+  assert.equal(f.view._selectionCount, 0);
+  assert.equal(f.view._historyPast.length, past + 1);
+  assert.equal(f.model.sent.length, sent);
+  const buffers = f.view.bufferSelections.length;
+  f.frame(2); f.paint();
+  assert.equal(f.view._stateSelection, null);
+  assert.equal(f.view.bufferSelections.length, buffers, "no stale cached predicate buffers reapplied by refresh");
+  f.cleanup();
+});
+
+for (const selection of [predicate(8), { polygon: [[8, 0], [9, 0], [8, 1]] }, { clear: true }]) {
+  test(`new linked ${Object.keys(selection)[0]} owns pending history and refresh`, () => {
+    const f = fixture(); f.frame(1); f.paint();
+    f.view._sendSelect([2, 0], [3, 1]); accept(f, f.model.sent.at(-1), 3);
+    f.view._applyStatePatch({ ranges: { x: [20, 30] } });
+    f.view._historyBack(); const request = f.model.sent.at(-1);
+    f.view.interaction = { link_group: "test" }; f.view._initLinkedCharts();
+    f.view._linkChannel.onmessage({ data: { source: "peer", selection } });
+    const state = json(f.view._durableState()), past = json(f.view._historyPast), future = json(f.view._historyFuture), replies = f.view.replies.length;
+    assert.deepEqual(state.selection, selection.clear ? null : selection);
+    f.frame(2); assert.equal(f.view.swaps, 0, "native query still owns its correlated reply");
+    accept(f, request); f.paint();
+    assert.deepEqual(json(f.view._durableState()), state);
+    assert.deepEqual(json(f.view._historyPast), past); assert.deepEqual(json(f.view._historyFuture), future);
+    assert.equal(f.view.replies.length, replies, "obsolete accepted result is not republished");
+    assert.equal(f.view.swaps, 1, "exact old reply releases transport backpressure");
+    f.cleanup();
+  });
+}
+
+test("local disabled-select clear drops queued intents while retaining the actual pending query", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  f.view._sendSelect([2, 0], [3, 1]); const pending = f.model.sent.at(-1);
+  f.view._sendSelect([4, 0], [5, 1]); const sent = f.model.sent.length;
+  f.view._interactionFlag = name => name !== "select";
+  f.view._clearSelection(); const past = json(f.view._historyPast);
+  f.frame(2); assert.equal(f.view.swaps, 0);
+  accept(f, pending); f.paint();
+  assert.equal(f.view._stateSelection, null);
+  assert.deepEqual(json(f.view._historyPast), past);
+  assert.equal(f.model.sent.filter(msg => msg.type === "select").length, 1);
+  assert.equal(f.view.swaps, 1); assert.ok(f.model.sent.length >= sent);
+  f.cleanup();
+});
+
+test("disabled-select Back completes its own local clear and camera atomically", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  f.view._applyStatePatch({ ranges: { x: [20, 30] }, selection: predicate(2) }); accept(f, f.model.sent.at(-1));
+  f.view._interactionFlag = name => name !== "select";
+  const sent = f.model.sent.length;
+  assert.equal(f.view._historyBack(), true);
+  assert.equal(f.view._stateSelection, null);
+  assert.deepEqual(json(f.view.view.ranges.x), [0, 10]);
+  assert.equal(f.view._historyPast.length, 0); assert.equal(f.view._historyFuture.length, 1);
+  assert.equal(f.model.sent.length, sent);
+  f.cleanup();
 });

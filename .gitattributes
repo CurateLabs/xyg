@@ -1571,3 +1571,8 @@ spec/performance/graph-notebook-region-history-2026-11-10/** text eol=lf
 spec/performance/graph-notebook-region-history-2026-11-10/**/*.gz -text
 spec/performance/graph-notebook-camera-owner-2026-11-10/** text eol=lf
 spec/performance/graph-notebook-camera-owner-2026-11-10/**/*.gz -text
+
+# Selection ownership correction keeps predecessor and raw qualification bytes.
+spec/performance/graph-linked-selection-ownership-2026-11-10/*.md text eol=lf
+spec/performance/graph-linked-selection-ownership-2026-11-10/*.json text eol=lf
+spec/performance/graph-linked-selection-ownership-2026-11-10/**/*.gz -text

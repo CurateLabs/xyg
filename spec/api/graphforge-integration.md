@@ -354,6 +354,13 @@ interaction ID of a combined API range/selection patch, preserving one undo
 entry. Ordinary chart transports retain immediate
 selection mutation behavior.
 
+New linked range, polygon and clear selections own the selection facet over
+pending Back/Forward results. They discard obsolete queued intents and cached
+masks without fabricating completion of the outstanding native request. A clear
+suppressed by `interaction.select=false` finishes its local durable/history
+change; it does not wait for a request that was never sent. Older native replies
+only release their exact transport correlation and cannot restore old state.
+
 Each notebook graph payload includes an opaque `_graph_row_space` equality
 stamp over ordered node/edge identities, native node membership and edge CSR,
 trace partition, and canonical-to-shipped row maps. Coordinates and styles are

@@ -1637,9 +1637,11 @@ export class ChartView {
         // gesture would produce: hydrate the persisted overlay (so _drawNow
         // re-projects it) and drop the mutually-exclusive other overlay.
         if (selection.clear) {
+          this.comm?.supersedeSelection?.();
           this._clearSelection({ broadcast: false, dispatch: false });
         } else if (selection.polygon) {
           const polygon = selection.polygon.map((point) => [...point]);
+          this.comm?.supersedeSelection?.();
           this._clearBoxOverlay();
           this._stateSelection = { polygon: polygon.map((point) => [...point]) };
           this._lassoPolygon = polygon;
@@ -1647,6 +1649,7 @@ export class ChartView {
         } else if (selection.range) {
           const { x0, x1, y0, y1 } = selection.range;
           if ([x0, x1, y0, y1].every(Number.isFinite)) {
+            this.comm?.supersedeSelection?.();
             const mode = selection.range.mode === "x" || selection.range.mode === "y"
               ? selection.range.mode : "box";
             this._clearLassoOverlay();

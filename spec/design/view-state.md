@@ -155,6 +155,15 @@ the preceding accepted overlay/masks without pushing history or clearing redo.
 Superseded unpresented accepted results can coalesce; the bounded transport may
 present the last accepted result when a newer intent refuses. A newer explicit
 API row selection owns its facet over an older in-flight geometric reply.
+Linked range/polygon/clear applies share that ownership barrier even though
+they issue no native request. They invalidate queued predicates and cached
+selection buffers, while the actual outstanding query retains its correlation
+until its real reply releases transport backpressure. An obsolete reply cannot
+move history stacks, restore an older camera or selection, or republish masks.
+When the `select` interaction flag suppresses a clear request, API clearing
+completes locally instead of deferring forever: durable selection and brush
+become null, history follows its normal policy, and stale cached buffers are
+revoked. Internal accepted-result restoration remains non-broadcasting.
 Back/Next move their stacks only after accepted navigation and do not start
 while another geometric selection is pending. The stored ranges also wait for
 predicate acceptance; refusal preserves the entire preceding camera/selection
