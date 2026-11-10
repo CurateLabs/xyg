@@ -412,6 +412,11 @@ The hover tooltip is anchored in data space, not at the cursor
   retain the actual pointer's viewport coordinates. The existing pick sequence
   still rejects superseded replies, and exact upgrades do not repeat the
   keyboard live-region announcement.
+- The required conformance witness records the pre-reply hover count and copies
+  its cursor. Before assessing cursor stability, it requires a new hover with
+  `exact: true` and the expected trace, row and canonical values. It compares
+  that fresh event's cursor. Ignored, stale or wrong-row replies cannot satisfy
+  the witness by retaining a previous approximate hover or live announcement.
 - Handled plot traversal, activation and readout-dismissal keys prevent the
   browser default and stop propagation. An embedding notebook must not also
   execute its cell-navigation/edit command for that key. Unhandled keys,

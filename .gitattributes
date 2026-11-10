@@ -1546,3 +1546,11 @@ spec/performance/notebook-kernel-witness-2026-11-10/**/*.gz -text
 # Combined actual desktop and atomic kernel witness provenance.
 spec/performance/vscode-notebook-kernel-union-2026-11-10/** text eol=lf
 spec/performance/vscode-notebook-kernel-union-2026-11-10/**/*.gz -text
+
+# Exact-reply consumption conformance and append-only correction evidence.
+spec/performance/keyboard-exact-reply-guard-2026-11-10/** text eol=lf
+spec/performance/keyboard-exact-reply-guard-2026-11-10/**/*.gz -text
+
+# Final desktop and consumed-exact-reply integration evidence.
+spec/performance/desktop-exact-reply-union-2026-11-10/** text eol=lf
+spec/performance/desktop-exact-reply-union-2026-11-10/**/*.gz -text

@@ -12,7 +12,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 CURRENT_BINDINGS = Path(
-    "spec/performance/vscode-notebook-kernel-union-2026-11-10/current-bindings.json"
+    "spec/performance/desktop-exact-reply-union-2026-11-10/current-bindings.json"
 )
 
 
@@ -545,11 +545,52 @@ def test_desktop_kernel_union_preserves_both_complete_parent_histories():
         "spec/performance/notebook-kernel-witness-2026-11-10/current-bindings.json",
     }
     parents = [json.loads((ROOT / path).read_text()) for path in parent_paths]
-    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/vscode-notebook-kernel-union-2026-11-10/current-bindings.json"
+        ).read_text()
+    )
     expected = parent_paths.union(
         *(set(p["path"] for p in parent["parents"]) for parent in parents)
     )
     assert len(current["parents"]) == 26
+    assert {p["path"] for p in current["parents"]} == expected
+    for parent in parents:
+        assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+        assert current["manifestSha256"] == parent["manifestSha256"]
+        assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_exact_reply_guard_successor_preserves_complete_kernel_witness_history():
+    parent_path = "spec/performance/notebook-kernel-witness-2026-11-10/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/keyboard-exact-reply-guard-2026-11-10/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 24
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_desktop_exact_union_preserves_complete_reviewed_parent_histories():
+    parent_paths = {
+        "spec/performance/vscode-notebook-kernel-union-2026-11-10/current-bindings.json",
+        "spec/performance/keyboard-exact-reply-guard-2026-11-10/current-bindings.json",
+    }
+    parents = [json.loads((ROOT / path).read_text()) for path in parent_paths]
+    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    expected = parent_paths.union(
+        *(set(p["path"] for p in parent["parents"]) for parent in parents)
+    )
+    assert len(current["parents"]) == 28
     assert {p["path"] for p in current["parents"]} == expected
     for parent in parents:
         assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
