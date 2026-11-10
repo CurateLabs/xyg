@@ -1,0 +1,719 @@
+{
+  "compiledInputs": {
+    "count": 324,
+    "parentExact": true,
+    "path": "spec/performance/current-large-graph-union-2026-11-09/compiled-inputs.json",
+    "sha256": "14467233a1f6878d137490b6ef6741766486b42b37b8ed16aa01e2065113899e"
+  },
+  "evidence": {
+    "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-notebook-PsvyHG/final.png": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/de67b1bea47ecb08b3930cc0c90c7f68742f401afadde0e34744b3042711ba19.gz",
+      "archiveBytes": 5363,
+      "archiveSha256": "ab1ec17a29e7566b69f7c0a0cc9280f333dacdcefe81d4659e08663c64ba3d90",
+      "bytes": 6770,
+      "sha256": "de67b1bea47ecb08b3930cc0c90c7f68742f401afadde0e34744b3042711ba19"
+    },
+    "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-notebook-PsvyHG/graph.ipynb": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/8881292cf38571be35e3d84b1e4612e91b78c567a6029ac69404456ea5394fe2.gz",
+      "archiveBytes": 1969,
+      "archiveSha256": "8ee632e67c3868e76c23c3fb8199d018264f687b63cd8b835f69367e0cb728cd",
+      "bytes": 8522,
+      "sha256": "8881292cf38571be35e3d84b1e4612e91b78c567a6029ac69404456ea5394fe2"
+    },
+    "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-notebook-PsvyHG/identity-parity-input.json": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/b8c7fa95b68384b5264748d5543a90baa12f40c6e67ab000f01b5d0a0c992771.gz",
+      "archiveBytes": 4208,
+      "archiveSha256": "e16e3e8504219d355aa5bb6ef03bf393af98574ae73a0844d75cd9dc66c61727",
+      "bytes": 17374,
+      "sha256": "b8c7fa95b68384b5264748d5543a90baa12f40c6e67ab000f01b5d0a0c992771"
+    },
+    "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-notebook-PsvyHG/identity-parity.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/585346d405a978a43ff954e3370874e23d3a58f0c767509aeb575de0cf581959.gz",
+      "archiveBytes": 436,
+      "archiveSha256": "1e8a9daf9284a044e772c389337108a7edea7451507f98f6a11878fb23ca6dc5",
+      "bytes": 1116,
+      "sha256": "585346d405a978a43ff954e3370874e23d3a58f0c767509aeb575de0cf581959"
+    },
+    "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-notebook-PsvyHG/initial.png": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/4495fb6c24c71a0828a30bb0f84812f9e5c99cced1fbae6311e6c25a66503afb.gz",
+      "archiveBytes": 17904,
+      "archiveSha256": "57154ee0b1111bf996a9aa1f5bda0a26e75ef679f6571522f49df0d0edc35e79",
+      "bytes": 19141,
+      "sha256": "4495fb6c24c71a0828a30bb0f84812f9e5c99cced1fbae6311e6c25a66503afb"
+    },
+    "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-notebook-PsvyHG/routed.json": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/b32f5093fd03d0edf726c10671daec621feb5878ad17b3db96f1d68f6caff574.gz",
+      "archiveBytes": 2607,
+      "archiveSha256": "9eaea1d8c2a2e355b4072b7b0a33af26e9382f2225e5f520379fcf24915aa3a9",
+      "bytes": 13003,
+      "sha256": "b32f5093fd03d0edf726c10671daec621feb5878ad17b3db96f1d68f6caff574"
+    },
+    "/var/tmp/xyg-embedded-keyboard-audit/audit.json": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/f77a7029f79ea9e4655e6765f9522f1bbea3134ba2e59e49f790bfec6bdfb5fa.gz",
+      "archiveBytes": 1908,
+      "archiveSha256": "2ef58b12bfa3f3c9b57e035f38be8e62c9ec4c0974b2c5bb6485bd775d52cd77",
+      "bytes": 3972,
+      "sha256": "f77a7029f79ea9e4655e6765f9522f1bbea3134ba2e59e49f790bfec6bdfb5fa"
+    },
+    "/var/tmp/xyg-embedded-keyboard-audit/probe-result.json": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/a250eaf3fa29dc57d43d41e108a710418658c473f33d62f3dafed628d5ab6511.gz",
+      "archiveBytes": 240,
+      "archiveSha256": "c77d07e96e5bf373065215af1d7c3f13193eedfe9f6ea0d74d27cd67bb03749c",
+      "bytes": 361,
+      "sha256": "a250eaf3fa29dc57d43d41e108a710418658c473f33d62f3dafed628d5ab6511"
+    },
+    "/var/tmp/xyg-embedded-keyboard-audit/probe.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/ae87d165a19bce4f7cbf4729ba87ba12fec224614201ebb6a037b1ab3e156fbf.gz",
+      "archiveBytes": 227,
+      "archiveSha256": "fa07e7420bf44ced1280eb719d60e80a399928566d9d180760c6f81b00046293",
+      "bytes": 319,
+      "sha256": "ae87d165a19bce4f7cbf4729ba87ba12fec224614201ebb6a037b1ab3e156fbf"
+    },
+    "/var/tmp/xyg-embedded-keyboard-audit/probe.mjs": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/ef67e21557433faa64adca90fed08c12e5560939c1933ed2601ac2d427877305.gz",
+      "archiveBytes": 1786,
+      "archiveSha256": "bf90e7ac64f1e9c3229c0e8f0a970311e4c32b86ea02c28e8df716ac2a827e0d",
+      "bytes": 4530,
+      "sha256": "ef67e21557433faa64adca90fed08c12e5560939c1933ed2601ac2d427877305"
+    },
+    "target/task-tmp/vscode-jupyter-graph/activation-negative.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/015170fe28d956136c7e63bbc66ecccc7773e9fa6fba46694bd45201ca246494.gz",
+      "archiveBytes": 285,
+      "archiveSha256": "f5030a424f5a5049dfd7a42e2935798bf0db63a64822c3026d785c94a463d11a",
+      "bytes": 631,
+      "sha256": "015170fe28d956136c7e63bbc66ecccc7773e9fa6fba46694bd45201ca246494"
+    },
+    "target/task-tmp/vscode-jupyter-graph/activation-negative.mjs": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/d95da48f6f80783a05a4978ae8dd5fa753ca8413cec8d13785e56942018a1889.gz",
+      "archiveBytes": 5535,
+      "archiveSha256": "02503cb19dac8e2931f96a068283752af7b726336d77416c30ba7ba45d2ac53f",
+      "bytes": 17164,
+      "sha256": "d95da48f6f80783a05a4978ae8dd5fa753ca8413cec8d13785e56942018a1889"
+    },
+    "target/task-tmp/vscode-jupyter-graph/continuation-state.json": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/3979d0437a53a12cc1828ceeab9c8b777d5d1b500b80c028ece6a832b36dbfe1.gz",
+      "archiveBytes": 1740,
+      "archiveSha256": "fe859816d12db1d081fc7ff0d81f6968fdc07bedb8cbff0eb6ec37caf2addfbc",
+      "bytes": 3388,
+      "sha256": "3979d0437a53a12cc1828ceeab9c8b777d5d1b500b80c028ece6a832b36dbfe1"
+    },
+    "target/task-tmp/vscode-jupyter-graph/final-negatives.json": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/badf7c8463fe1599b9b80b38142096fe1e8006eadf1135f2c173741a641b27d2.gz",
+      "archiveBytes": 74,
+      "archiveSha256": "4149a087f8680922f21f01658218905ff08cbaa073a6bcc984b688cb4871fb0a",
+      "bytes": 96,
+      "sha256": "badf7c8463fe1599b9b80b38142096fe1e8006eadf1135f2c173741a641b27d2"
+    },
+    "target/task-tmp/vscode-jupyter-graph/final-parent-negative.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/c5c23b2596658534b203e13420ed555318adbfe1cd1b62e67875555fbc97614b.gz",
+      "archiveBytes": 316,
+      "archiveSha256": "be3970eef47b3a62d872784db33740ed24fbb43faf6c5f42780e9c15d604fd36",
+      "bytes": 703,
+      "sha256": "c5c23b2596658534b203e13420ed555318adbfe1cd1b62e67875555fbc97614b"
+    },
+    "target/task-tmp/vscode-jupyter-graph/final-parent-negative.mjs": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/d9c7d392a3a0e40c48b4d6cdcecbccbb0f6eee3cc72ad88f06dbce9b90d80203.gz",
+      "archiveBytes": 5528,
+      "archiveSha256": "3fa1b8637507302b3cb4d82d7a4133bbf74a7642fbed31565eaca41a4eed5837",
+      "bytes": 17150,
+      "sha256": "d9c7d392a3a0e40c48b4d6cdcecbccbb0f6eee3cc72ad88f06dbce9b90d80203"
+    },
+    "target/task-tmp/vscode-jupyter-graph/final-propagation-negative.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/30ce040326460d314cc78e12662972a1f8ea5d90d6d8c6f2c647f91b3001f846.gz",
+      "archiveBytes": 285,
+      "archiveSha256": "1d65da1bcfb9cb46e6f7e4a0eda18f08345019ee50ecc644edf4fea57b89dee7",
+      "bytes": 640,
+      "sha256": "30ce040326460d314cc78e12662972a1f8ea5d90d6d8c6f2c647f91b3001f846"
+    },
+    "target/task-tmp/vscode-jupyter-graph/final-propagation-negative.mjs": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/1d0a6497f8b03599bccee7cd9b334408e8b68261d9d0dc7c9abb159620af57c3.gz",
+      "archiveBytes": 5533,
+      "archiveSha256": "6eaeacb4dbddba1a2aeee93d1c52040fc746e3f1efc6e1bba11434500f43fcf8",
+      "bytes": 17160,
+      "sha256": "1d0a6497f8b03599bccee7cd9b334408e8b68261d9d0dc7c9abb159620af57c3"
+    },
+    "target/task-tmp/vscode-jupyter-graph/hover-browser-install.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/616f7302fa6cd9cc25a377e08e6b21f5dd133fab70444fc97fed3efad7056c5d.gz",
+      "archiveBytes": 1084,
+      "archiveSha256": "f05c4d95446cce53f2cc40f20419403b938e411b872235a1aa07da6149bb1f52",
+      "bytes": 8344,
+      "sha256": "616f7302fa6cd9cc25a377e08e6b21f5dd133fab70444fc97fed3efad7056c5d"
+    },
+    "target/task-tmp/vscode-jupyter-graph/hover-client-build.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f.gz",
+      "archiveBytes": 1056,
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "bytes": 5448,
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "target/task-tmp/vscode-jupyter-graph/hover-conformance-all-browsers.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/07ed135e59e24204a019d9b3de80a8ae1ab4c4448a19ecbee5aeb8292916bef2.gz",
+      "archiveBytes": 255,
+      "archiveSha256": "46980f220d3171c47b4df8fb61e247ea5b44b5430df349d9d338e5ce55e37d50",
+      "bytes": 483,
+      "sha256": "07ed135e59e24204a019d9b3de80a8ae1ab4c4448a19ecbee5aeb8292916bef2"
+    },
+    "target/task-tmp/vscode-jupyter-graph/hover-conformance-headful-all.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/ec68769c58cb85720d6bcb0038d18edc169b8bc434fa75d01f3862a27cb28ce0.gz",
+      "archiveBytes": 705,
+      "archiveSha256": "af55c996ca15074b263aee265affb72c3b8623def2a4721f6d7cb98628cfdfb8",
+      "bytes": 3463,
+      "sha256": "ec68769c58cb85720d6bcb0038d18edc169b8bc434fa75d01f3862a27cb28ce0"
+    },
+    "target/task-tmp/vscode-jupyter-graph/hover-dom-shift-baseline.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/a67e074f7c7af9b22d4a7b4b0d9eac4524f3567be3a70f987d1fac8013551f54.gz",
+      "archiveBytes": 421,
+      "archiveSha256": "a3c7de485737f92e57a77b8a6b9c42decc1416af56930398103b1008d1522590",
+      "bytes": 650,
+      "sha256": "a67e074f7c7af9b22d4a7b4b0d9eac4524f3567be3a70f987d1fac8013551f54"
+    },
+    "target/task-tmp/vscode-jupyter-graph/hover-dom-shift-corrected-full.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/d7b10145868e4aa10fa54929a0e9a6ef95a9bdf7c14fd26f7800e49a1a1953f3.gz",
+      "archiveBytes": 75,
+      "archiveSha256": "4363d8ee4fb242556efa148baa29a9bfac6503432bf40eaee0c33faa0c2d9822",
+      "bytes": 58,
+      "sha256": "d7b10145868e4aa10fa54929a0e9a6ef95a9bdf7c14fd26f7800e49a1a1953f3"
+    },
+    "target/task-tmp/vscode-jupyter-graph/hover-dom-shift-corrected-incomplete.json": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/00eeb96dc5ec157bfc713f90c594cf9884a90383627a9b6fab485d908e83db5a.gz",
+      "archiveBytes": 923,
+      "archiveSha256": "15ac624bbe3a2f886e0d6a3fbc507f7e525f57036e24ddb5129b9786339c0151",
+      "bytes": 4038,
+      "sha256": "00eeb96dc5ec157bfc713f90c594cf9884a90383627a9b6fab485d908e83db5a"
+    },
+    "target/task-tmp/vscode-jupyter-graph/hover-dom-shift-corrected.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/f81197584a85dbca3767f8fe5e115fe466e28171f16ebd04c511700dbcfcef33.gz",
+      "archiveBytes": 283,
+      "archiveSha256": "d1eb4d21a7bbaa555cdbb135a3d527fddcc2a7fea51e82b43b22f457e6dfb581",
+      "bytes": 499,
+      "sha256": "f81197584a85dbca3767f8fe5e115fe466e28171f16ebd04c511700dbcfcef33"
+    },
+    "target/task-tmp/vscode-jupyter-graph/hover-dom-shift-final-assertions-parent.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/a70f52632ca5224dd2ba014ff56d4c2d37f71301cdd03fc1ac245959fd540df1.gz",
+      "archiveBytes": 421,
+      "archiveSha256": "f56d8dc58a3be8431781eb46a865fdab69f71a39dee4ecb2306908505c532e22",
+      "bytes": 650,
+      "sha256": "a70f52632ca5224dd2ba014ff56d4c2d37f71301cdd03fc1ac245959fd540df1"
+    },
+    "target/task-tmp/vscode-jupyter-graph/hover-dom-shift-parent-result.json": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/0b8d32382793981398b1bdb580625dde07e7d223eb95b920abcd0be2853de79c.gz",
+      "archiveBytes": 925,
+      "archiveSha256": "99cdef7842c386474ddda19994a468af36a7f1a6e30fe3f676276b34d27dc151",
+      "bytes": 4001,
+      "sha256": "0b8d32382793981398b1bdb580625dde07e7d223eb95b920abcd0be2853de79c"
+    },
+    "target/task-tmp/vscode-jupyter-graph/hover-dom-shift.mjs": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/1d57a60a8d46183c61d09656ac90874a0ba8210d1625fdc74c00b09572339bb8.gz",
+      "archiveBytes": 1566,
+      "archiveSha256": "885e533cd783f564bfc81d3d4048f34d5c80b057ca927c3b0c9dc81ef7fc6665",
+      "bytes": 3352,
+      "sha256": "1d57a60a8d46183c61d09656ac90874a0ba8210d1625fdc74c00b09572339bb8"
+    },
+    "target/task-tmp/vscode-jupyter-graph/hover-key-activation-conformance.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/054336f9c3c2b9031a5993bdb64eb559a9b6bb6bb0dafd5a52c4c21879e37828.gz",
+      "archiveBytes": 150,
+      "archiveSha256": "b8321eb51a4a4e69711d4babb3cd048a30603963f8e18a273890f24aa3a36fea",
+      "bytes": 193,
+      "sha256": "054336f9c3c2b9031a5993bdb64eb559a9b6bb6bb0dafd5a52c4c21879e37828"
+    },
+    "target/task-tmp/vscode-jupyter-graph/hover-key-client-build.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f.gz",
+      "archiveBytes": 1056,
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "bytes": 5448,
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "target/task-tmp/vscode-jupyter-graph/hover-key-nearby-contracts.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/a7b8be68895de90a88aac19b822c2eb149a3325f738aa26b1aabd1efc19cd1a1.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "31c9e64bf3734a613c9cbfc0549d4787e6db71f7815dd220f811131b91e7e6dd",
+      "bytes": 99,
+      "sha256": "a7b8be68895de90a88aac19b822c2eb149a3325f738aa26b1aabd1efc19cd1a1"
+    },
+    "target/task-tmp/vscode-jupyter-graph/hover-key-wasm-assets.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef.gz",
+      "archiveBytes": 104,
+      "archiveSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730",
+      "bytes": 88,
+      "sha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef"
+    },
+    "target/task-tmp/vscode-jupyter-graph/keyboard-contracts-corrected.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/acb5c1a3fe79cbf66085f3b09eeb3fc6a061a74c039cbf2e23cb2cb4062ca0e7.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "2018ec5f88ea054be69d1e5f9dfd4437c2f4ee3e900bd50457feb0b3a504082c",
+      "bytes": 191,
+      "sha256": "acb5c1a3fe79cbf66085f3b09eeb3fc6a061a74c039cbf2e23cb2cb4062ca0e7"
+    },
+    "target/task-tmp/vscode-jupyter-graph/keyboard-contracts-final.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/30323f9103d071ad334504271a5cf5288057bcaf605d4dae47ef5c6577bffb54.gz",
+      "archiveBytes": 1361,
+      "archiveSha256": "d5fab9e24f85ed49b6d57edeca55cfcbe16077a43bb3057d2ab75beb1fa32193",
+      "bytes": 3908,
+      "sha256": "30323f9103d071ad334504271a5cf5288057bcaf605d4dae47ef5c6577bffb54"
+    },
+    "target/task-tmp/vscode-jupyter-graph/keyboard-format-final.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/234bea158cd45b8f52f8cf23029bd920e91050b5f2b0a911add80089cf7c38b3.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "9d9023b3e7e869eb6c727441a8ae41e4ec754988bd7e7a43c9b8fe4932163bfb",
+      "bytes": 29,
+      "sha256": "234bea158cd45b8f52f8cf23029bd920e91050b5f2b0a911add80089cf7c38b3"
+    },
+    "target/task-tmp/vscode-jupyter-graph/keyboard-foundation.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/db59fb2dacdbcdaad714f89ca318d53b3ae6dec3bbb6d3eddf2d1a8661de70a1.gz",
+      "archiveBytes": 4634,
+      "archiveSha256": "160697630c834dccc3f74ab50155373618fa0e3caa0d4e9014d5540fb7dcfdac",
+      "bytes": 15905,
+      "sha256": "db59fb2dacdbcdaad714f89ca318d53b3ae6dec3bbb6d3eddf2d1a8661de70a1"
+    },
+    "target/task-tmp/vscode-jupyter-graph/keyboard-hooks-corrected.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/vscode-jupyter-graph/keyboard-hooks.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/2acf4f4431a7e1132bc42e711946cc23337bf7d19f98e66183cdc5b87326ee51.gz",
+      "archiveBytes": 148,
+      "archiveSha256": "e17531fd3c6265786e641119c5a7d81b541975daee5c2e7434343789aebb8d61",
+      "bytes": 346,
+      "sha256": "2acf4f4431a7e1132bc42e711946cc23337bf7d19f98e66183cdc5b87326ee51"
+    },
+    "target/task-tmp/vscode-jupyter-graph/keyboard-ruff-final.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/vscode-jupyter-graph/keyboard-wasm-assets-final.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef.gz",
+      "archiveBytes": 104,
+      "archiveSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730",
+      "bytes": 88,
+      "sha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef"
+    },
+    "target/task-tmp/vscode-jupyter-graph/lab-current-configured-report.json": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/d18c94860ddb654d7840508e3b7498821046861adafae3d2ce59ab88c7d3b71f.gz",
+      "archiveBytes": 10305,
+      "archiveSha256": "2fb847c9c3e27579e151f0b319f14ece0651b88f6503af0c2381f37cad2f775e",
+      "bytes": 82003,
+      "sha256": "d18c94860ddb654d7840508e3b7498821046861adafae3d2ce59ab88c7d3b71f"
+    },
+    "target/task-tmp/vscode-jupyter-graph/lab-current-configured.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/a09d57d867170757cf3bab80a92f38e80ca8ca33d91a842ed786ccba9e3ff20e.gz",
+      "archiveBytes": 9052,
+      "archiveSha256": "28619ddaeefc9d41b375da4e21d61f93ece15de36fea97cbf64a878f6ab3e0f8",
+      "bytes": 51751,
+      "sha256": "a09d57d867170757cf3bab80a92f38e80ca8ca33d91a842ed786ccba9e3ff20e"
+    },
+    "target/task-tmp/vscode-jupyter-graph/lab-current-verifier.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/8a0083ab43cb0f83117637cfeef43d13eaa95c5dd16bd8b35d4cf08da8ffa754.gz",
+      "archiveBytes": 87,
+      "archiveSha256": "1b5876660f05201ed95aa742feaad51ce4a9b40450a89c0c792fafeb04096d14",
+      "bytes": 71,
+      "sha256": "8a0083ab43cb0f83117637cfeef43d13eaa95c5dd16bd8b35d4cf08da8ffa754"
+    },
+    "target/task-tmp/vscode-jupyter-graph/lab-current.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/edae39df57b532b5a981c29faa7e4cc439fffcb7c37e55fa0867a2cfea48f493.gz",
+      "archiveBytes": 457,
+      "archiveSha256": "2c712ceb8da947869b957fcb558a7f9214d3f4d7834e574ad4d500f84b071812",
+      "bytes": 1102,
+      "sha256": "edae39df57b532b5a981c29faa7e4cc439fffcb7c37e55fa0867a2cfea48f493"
+    },
+    "target/task-tmp/vscode-jupyter-graph/no-activation-rebase-standalone.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/f0db0c33b4ed7b0d4c5539077ec22b7bf9daefb705baba4608def7555a89b3cc.gz",
+      "archiveBytes": 247813,
+      "archiveSha256": "0796e78c877ce7dc4227c5c2acd8aff8462ee811d4c3eb06ffc41fdad883a7b4",
+      "bytes": 864428,
+      "sha256": "f0db0c33b4ed7b0d4c5539077ec22b7bf9daefb705baba4608def7555a89b3cc"
+    },
+    "target/task-tmp/vscode-jupyter-graph/parent-standalone.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/fcff6f0e27e304c03b07f3f9fcf752e77939d2a10f5665c41f78ca44557da6ab.gz",
+      "archiveBytes": 247726,
+      "archiveSha256": "2e06dc01f7f375b1ccb57a6a01d6cbda7b54d74357e3882e6f3c53fb4b43d199",
+      "bytes": 863971,
+      "sha256": "fcff6f0e27e304c03b07f3f9fcf752e77939d2a10f5665c41f78ca44557da6ab"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/attempt21/attach.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/914408d29b65be405a7b7e5de46644065260cbc22c3f7ac77d29df4663801669.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "8d33b1b2e7a8c1ee64b24b0643086b523d67c2d7eeaa0944c25e120678a8f8ca",
+      "bytes": 32,
+      "sha256": "914408d29b65be405a7b7e5de46644065260cbc22c3f7ac77d29df4663801669"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/attempt21/attach.mjs": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/a9b697939ffce5e536b0030aad821a313b31048d83c75d2117250729202eec66.gz",
+      "archiveBytes": 7563,
+      "archiveSha256": "6acab8be559e6c0ec030848dfc7e5383d830b4f6f84ac47ff41dad416350ed84",
+      "bytes": 25327,
+      "sha256": "a9b697939ffce5e536b0030aad821a313b31048d83c75d2117250729202eec66"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/attempt21/controller-complete.json": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "5f0cd0d2710d374834406e27544d4d61b63d35b39d43167cb464364dcad83e4b",
+      "bytes": 33,
+      "sha256": "b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/attempt21/extension/extension.cjs": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/85f1097bc6a4af5d0272f0d35a0691bd25c048a9cc1a8d5e5cbc672176a1ac50.gz",
+      "archiveBytes": 446,
+      "archiveSha256": "de62da1b0aa249f9073bd38062ee8795bee601cc0de44a96a3f25e6096bdc100",
+      "bytes": 855,
+      "sha256": "85f1097bc6a4af5d0272f0d35a0691bd25c048a9cc1a8d5e5cbc672176a1ac50"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/attempt21/extension/package.json": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/d3f451e3a0ee43822d3ca36ae6599e2ae9decf5cc7ead5bea2f98b17f1f4d034.gz",
+      "archiveBytes": 152,
+      "archiveSha256": "782325217c6e5032a5122dd6c6e2683d989ab700fa97890c92c9316c01c43470",
+      "bytes": 175,
+      "sha256": "d3f451e3a0ee43822d3ca36ae6599e2ae9decf5cc7ead5bea2f98b17f1f4d034"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/attempt21/extension/test.cjs": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/ce0193729d10223cf4a82db507df7ab54a5612c4c2a744caa9a30cfc4c798e23.gz",
+      "archiveBytes": 1443,
+      "archiveSha256": "74b8d4270999354c60a0a6df13d006482f4b42c9a868c1e014e794b696618ff2",
+      "bytes": 3616,
+      "sha256": "ce0193729d10223cf4a82db507df7ab54a5612c4c2a744caa9a30cfc4c798e23"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/attempt21/final-workbench.png": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/51bf29672c073c838f6b2aa6425b98df5127786bf65da1cc3c22862b159c73de.gz",
+      "archiveBytes": 69769,
+      "archiveSha256": "1d13fb7e38ee8deb024d40501cc70e8691ec78c06b4fd7db16c2ed4e0d6f24fc",
+      "bytes": 74136,
+      "sha256": "51bf29672c073c838f6b2aa6425b98df5127786bf65da1cc3c22862b159c73de"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/attempt21/final.png": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/6bbeb20394b25949d696ab5d5960cec1585ee88cd7d1e3b342ffec9e5907b5f1.gz",
+      "archiveBytes": 9053,
+      "archiveSha256": "544d22340a6260a6227db9468cc1e5e55ec0492fc1baad1dc2c4f4d29bfb8b77",
+      "bytes": 10557,
+      "sha256": "6bbeb20394b25949d696ab5d5960cec1585ee88cd7d1e3b342ffec9e5907b5f1"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/attempt21/identity-parity-input.json": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/b8c7fa95b68384b5264748d5543a90baa12f40c6e67ab000f01b5d0a0c992771.gz",
+      "archiveBytes": 4208,
+      "archiveSha256": "e16e3e8504219d355aa5bb6ef03bf393af98574ae73a0844d75cd9dc66c61727",
+      "bytes": 17374,
+      "sha256": "b8c7fa95b68384b5264748d5543a90baa12f40c6e67ab000f01b5d0a0c992771"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/attempt21/identity-parity.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/585346d405a978a43ff954e3370874e23d3a58f0c767509aeb575de0cf581959.gz",
+      "archiveBytes": 436,
+      "archiveSha256": "1e8a9daf9284a044e772c389337108a7edea7451507f98f6a11878fb23ca6dc5",
+      "bytes": 1116,
+      "sha256": "585346d405a978a43ff954e3370874e23d3a58f0c767509aeb575de0cf581959"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/attempt21/initial-workbench.png": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/938827f1c82cb1abb68172d84a3c097342bf707e37f399df6bf60434c8111fc4.gz",
+      "archiveBytes": 78214,
+      "archiveSha256": "1a511e02f82fe8ff6023cffe6c791302b8f7a0002c07b564caa91792cc92d23a",
+      "bytes": 82312,
+      "sha256": "938827f1c82cb1abb68172d84a3c097342bf707e37f399df6bf60434c8111fc4"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/attempt21/initial.png": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/763ac789d685c2f6fb99394e48919d845a7c7f99db828d53690ade7632947f50.gz",
+      "archiveBytes": 12411,
+      "archiveSha256": "d8468e7f4848dc7c580f90bfeafe8f894979aa3f03f335113ef7d4a1cee89cff",
+      "bytes": 14012,
+      "sha256": "763ac789d685c2f6fb99394e48919d845a7c7f99db828d53690ade7632947f50"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/attempt21/inspector-sources.json": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/046f9db4005fc6687c23b49ba7d3ea273fecdf46bd0df10f792e678d9e29dfd3.gz",
+      "archiveBytes": 260,
+      "archiveSha256": "6063f29a7d4a34725556127c2ab8a9e60655d751a4e6d75fa678387a39bce207",
+      "bytes": 538,
+      "sha256": "046f9db4005fc6687c23b49ba7d3ea273fecdf46bd0df10f792e678d9e29dfd3"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/attempt21/report.json": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/0246d2ec2caaed83c76210675f49a49ce74a571909cc9fc5110e1ee2e7a9d825.gz",
+      "archiveBytes": 18696,
+      "archiveSha256": "ac80b187d8af5425fef8bf0af6ed56d39c69020555533acfb9edc7bf1774cdfe",
+      "bytes": 299377,
+      "sha256": "0246d2ec2caaed83c76210675f49a49ce74a571909cc9fc5110e1ee2e7a9d825"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/attempt21/routed.json": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/b32f5093fd03d0edf726c10671daec621feb5878ad17b3db96f1d68f6caff574.gz",
+      "archiveBytes": 2607,
+      "archiveSha256": "9eaea1d8c2a2e355b4072b7b0a33af26e9382f2225e5f520379fcf24915aa3a9",
+      "bytes": 13003,
+      "sha256": "b32f5093fd03d0edf726c10671daec621feb5878ad17b3db96f1d68f6caff574"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/attempt21/run-result.json": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/3834fbe9cd896902b6d564bbe409dacb759119b7fef378ea78a7431a111a2f81.gz",
+      "archiveBytes": 341,
+      "archiveSha256": "33603bc4a3a2a8a16737774b6e4361ce29e3fd8d4b68ca2af59fc0c6354b83e8",
+      "bytes": 880,
+      "sha256": "3834fbe9cd896902b6d564bbe409dacb759119b7fef378ea78a7431a111a2f81"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/attempt21/run.py": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/1c5947708c989a1201b4004a849b65176a600bb0ad9cbc3d80ee9cdffeab3441.gz",
+      "archiveBytes": 2273,
+      "archiveSha256": "1c34bc2f1a5b84c91fdcdcd32f33c0e01d7fc73a3657b12317ae29244cd57fc1",
+      "bytes": 5263,
+      "sha256": "1c5947708c989a1201b4004a849b65176a600bb0ad9cbc3d80ee9cdffeab3441"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/attempt21/runner.log": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/7a86dad34a9e097693ba57db13ec1eff2a82dd883a4925b6d4b2b9f5202f6db4.gz",
+      "archiveBytes": 51,
+      "archiveSha256": "03f41f4a394e1ad527e3646e6e9428fa03f51bc20f049bbb47746bbccd61b09c",
+      "bytes": 37,
+      "sha256": "7a86dad34a9e097693ba57db13ec1eff2a82dd883a4925b6d4b2b9f5202f6db4"
+    },
+    "target/task-tmp/vscode-jupyter-graph/probe/attempt21/served-widget-assets.json": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/315a3fe7a4ca71d02dda32c108333a72f717fb6e1822999dc902c2a78f73529e.gz",
+      "archiveBytes": 301,
+      "archiveSha256": "1de8276c19e21a830b551748a216946151fdf9eb77deea6e6437d644b7ed7f1e",
+      "bytes": 649,
+      "sha256": "315a3fe7a4ca71d02dda32c108333a72f717fb6e1822999dc902c2a78f73529e"
+    },
+    "target/task-tmp/vscode-jupyter-graph/seal-evidence.py": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/315f2bf344ec42a3dd6b4c04709fce22e345365c1e2ce427d56aafe5ae771eb6.gz",
+      "archiveBytes": 1903,
+      "archiveSha256": "6397ecffc93ca41a8f0e7486967237d46848d29fbec2d6696355521ba2d7e58a",
+      "bytes": 5025,
+      "sha256": "315f2bf344ec42a3dd6b4c04709fce22e345365c1e2ce427d56aafe5ae771eb6"
+    },
+    "target/task-tmp/vscode-jupyter-graph/seal-sources.py": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/3873d5585f8533eb636230ee05ae9722c1cd8d143ce8d973a3a8e88238bb0d76.gz",
+      "archiveBytes": 1086,
+      "archiveSha256": "8d55b11ebcfcd00f5b3fab74fb804a6b5cffceda157e67134f336c2a06a55788",
+      "bytes": 2347,
+      "sha256": "3873d5585f8533eb636230ee05ae9722c1cd8d143ce8d973a3a8e88238bb0d76"
+    },
+    "target/task-tmp/vscode-jupyter-graph/translation-only-standalone.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/088b08ba515b34f3994959af55581e32d0106fedbd645ee0f071f3e3081104b6.gz",
+      "archiveBytes": 247812,
+      "archiveSha256": "7e645a33807a31d2bbe0d874427dde98c9786a353f5cf9e3f23b71ae4ec8f35b",
+      "bytes": 864369,
+      "sha256": "088b08ba515b34f3994959af55581e32d0106fedbd645ee0f071f3e3081104b6"
+    }
+  },
+  "parent": "15053cd5345373337d6070bd3902268c8fa8110f",
+  "qualification": {
+    "build": {
+      "command": "node js/build.mjs",
+      "exit": 0,
+      "log": "hover-key-client-build.log",
+      "scope": "native/WASM unchanged; normal client rebuild/typecheck"
+    },
+    "conformance": {
+      "command": "XY_CONFORMANCE_HEADFUL=1 LIBGL_ALWAYS_SOFTWARE=1 MOZ_WEBRENDER=1 WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1 xvfb-run --auto-servernum --server-args=\"-screen 0 1280x720x24\" node scripts/browser_conformance.mjs --browsers=chromium,firefox",
+      "exit": 0,
+      "log": "hover-key-activation-conformance.log",
+      "scope": "final second-movement activation assertion; Chromium/Firefox genuine WebGL/layout/semantics; no local WebKit credit"
+    },
+    "expandedBeforeLfPin": {
+      "exit": 1,
+      "failed": 1,
+      "log": "keyboard-contracts-final.log",
+      "passed": 78,
+      "scope": "new accessibility contract file needed LF pin; full run remains failed"
+    },
+    "expandedCorrected": {
+      "command": "TMPDIR=/var/tmp XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync pytest -q tests/test_accessibility_contract.py tests/test_view_state.py tests/test_channel.py tests/test_graphforge_contract_corpus.py",
+      "exit": 0,
+      "log": "keyboard-contracts-corrected.log",
+      "passed": 79,
+      "scope": "must be updated from actual terminal result"
+    },
+    "failureDisposition": "All failed setup, WebGL admission, missing WebKit system dependencies, parent controls, LF pin and formatting attempts remain distinct failed attempts. No blanket startup/Worker or browser-reliability repair.",
+    "foundation": {
+      "command": "XYG_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" TMPDIR=/var/tmp node scripts/wasm_foundation_smoke.mjs",
+      "exit": 0,
+      "log": "keyboard-foundation.log"
+    },
+    "lab": {
+      "command": "XYG_GRAPH_JUPYTER=\"$PWD/target/task-tmp/notebook7-qualification/venv/bin/jupyter-lab\" XYG_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome XYG_GRAPH_NOTEBOOK_REPORT=\"$PWD/target/task-tmp/vscode-jupyter-graph/lab-current-configured-report.json\" node scripts/graph_notebook_progressive_smoke.mjs",
+      "exit": 0,
+      "log": "lab-current-configured.log",
+      "verifierCommand": "uv run --no-sync python scripts/verify_graph_notebook_report.py target/task-tmp/vscode-jupyter-graph/lab-current-configured-report.json --require-routed --frontend jupyterlab",
+      "verifierExit": 0,
+      "verifierLog": "lab-current-verifier.log"
+    },
+    "mandatoryHooks": {
+      "command": "uv run --no-sync --with pre-commit pre-commit run --all-files",
+      "exit": 0,
+      "initialExit": 1,
+      "initialLog": "keyboard-hooks.log",
+      "log": "keyboard-hooks-corrected.log",
+      "scope": "initial formatter changed accessibility test; corrected source rebound"
+    },
+    "nearbyBeforeSuccessor": {
+      "command": "uv run --no-sync pytest -q tests/test_accessibility_contract.py tests/test_view_state.py tests/test_channel.py",
+      "exit": 0,
+      "log": "hover-key-nearby-contracts.log",
+      "passed": 60
+    },
+    "negativeControls": {
+      "activation-negative": 1,
+      "final-parent-negative": 1,
+      "final-propagation-negative": 1
+    },
+    "packagedAssets": {
+      "command": "uv run --no-sync python scripts/verify_wasm_assets.py",
+      "exit": 0,
+      "log": "keyboard-wasm-assets-final.log"
+    },
+    "privateActualVsCode": {
+      "applicationExit": 0,
+      "controllerComplete": true,
+      "formalFrontendQualification": false,
+      "harnessExit": 0,
+      "normalGuiMode": true,
+      "offline": false,
+      "prototype": "probe/attempt21",
+      "scope": "Supporting diagnosis only, unsupported frontend schema rejected; no all-host/installed-package qualification",
+      "strictCommonVerifierErrors": [
+        "actual notebook frontend evidence required"
+      ]
+    },
+    "ruffCheck": {
+      "command": "uv run --no-sync ruff check .",
+      "exit": 0,
+      "log": "keyboard-ruff-final.log"
+    },
+    "ruffFormatCheck": {
+      "command": "uv run --no-sync ruff format --check .",
+      "exit": 0,
+      "log": "keyboard-format-final.log"
+    },
+    "workingDiffIndependentAudit": {
+      "finalImmutableApproval": false,
+      "findings": "No P1/P2; activation second-movement test gap addressed before final conformance",
+      "path": "/var/tmp/xyg-embedded-keyboard-audit/audit.json",
+      "reviewer": "Independent Codex gpt-6.1-sol high child /root/embedded_keyboard_audit",
+      "sha256": "f77a7029f79ea9e4655e6765f9522f1bbea3134ba2e59e49f790bfec6bdfb5fa"
+    }
+  },
+  "readmeSha256": "e1d206c50515fcdbe3d81a68d3bfa0d4a82d150cddcff0c77b97e7c57826f579",
+  "rebuiltClientCopies": [
+    "packages/xy-client/dist/index.js",
+    "packages/xy-client/dist/standalone.js",
+    "python/xyg/static/index.js",
+    "python/xyg/static/standalone.js"
+  ],
+  "remaining": [
+    "Immutable final-diff independent review, actual-main freshness, new-head hosted gates and merge queue",
+    "Versioned VSCode Jupyter driver and strict frontend verifier; prototype is deliberately rejected by existing frontend verifier",
+    "WebKit local qualification unavailable because system libraries missing; hosted required browser check retained",
+    "All original #1015 and milestones4-7 acceptance remains open"
+  ],
+  "runtime": {
+    "packages/xy-client/dist/index.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa.gz",
+      "archiveBytes": 247736,
+      "archiveSha256": "d1fcee9875cd320e48f3a05b6d3e268d4b67b16f152f54cc041c3cb14d2566cf",
+      "bytes": 864422,
+      "sha256": "447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/75e142e1c6066e2cca8055a49dcfc328abab7b847e12aebc8c9f8ce3eaa1580c.gz",
+      "archiveBytes": 247816,
+      "archiveSha256": "3160fae11e6cc52a41d6ed29c585dbb30e1b462a9592f9ae0da3bf0cd9806b7a",
+      "bytes": 864435,
+      "sha256": "75e142e1c6066e2cca8055a49dcfc328abab7b847e12aebc8c9f8ce3eaa1580c"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz",
+      "archiveBytes": 3838,
+      "archiveSha256": "dda8e6c4cec42d91f687b660d742d79dcc1a8c0d052ca6ca189c6acf095db2b4",
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8.gz",
+      "archiveBytes": 1043576,
+      "archiveSha256": "b09e635ab5663fabbb679592e2a8730413e322b541fd45d90105f73ca27c066c",
+      "bytes": 2536254,
+      "sha256": "fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "c4d9096b8df2ee31fc6c5e1a86cac0005b1406f5eee90de91d45fa72ba9f31f2",
+      "bytes": 226,
+      "sha256": "9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372.gz",
+      "archiveBytes": 781122,
+      "archiveSha256": "aad2d8c32a06b9155a6a2c466a64fc2df4effb1ec141722533cd30ecbf568413",
+      "bytes": 1886348,
+      "sha256": "1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372"
+    },
+    "python/xyg/static/index.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa.gz",
+      "archiveBytes": 247736,
+      "archiveSha256": "d1fcee9875cd320e48f3a05b6d3e268d4b67b16f152f54cc041c3cb14d2566cf",
+      "bytes": 864422,
+      "sha256": "447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa"
+    },
+    "python/xyg/static/standalone.js": {
+      "archive": "spec/performance/embedded-keyboard-2026-11-10/evidence/75e142e1c6066e2cca8055a49dcfc328abab7b847e12aebc8c9f8ce3eaa1580c.gz",
+      "archiveBytes": 247816,
+      "archiveSha256": "3160fae11e6cc52a41d6ed29c585dbb30e1b462a9592f9ae0da3bf0cd9806b7a",
+      "bytes": 864435,
+      "sha256": "75e142e1c6066e2cca8055a49dcfc328abab7b847e12aebc8c9f8ce3eaa1580c"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8.gz",
+      "archiveBytes": 1043576,
+      "archiveSha256": "b09e635ab5663fabbb679592e2a8730413e322b541fd45d90105f73ca27c066c",
+      "bytes": 2536254,
+      "sha256": "fc8f12607e227b801222f3427a4fe157f022fa2e99a8f17695c2a4d2be0bfbf8"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "c4d9096b8df2ee31fc6c5e1a86cac0005b1406f5eee90de91d45fa72ba9f31f2",
+      "bytes": 226,
+      "sha256": "9ff18ded7b294a342907be55be89a484ad6f076aaa054d72ebdcf76225fc4026"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372.gz",
+      "archiveBytes": 781122,
+      "archiveSha256": "aad2d8c32a06b9155a6a2c466a64fc2df4effb1ec141722533cd30ecbf568413",
+      "bytes": 1886348,
+      "sha256": "1e2227e3a99fb820b00b3cd3062920085e761eac0e0907355754e55e7c28c372"
+    },
+    "target/release/libxyg_core.so": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/378a069c4f802bb97e6273333766a4afee99a626d4fc409f776f31d21968a4df.gz",
+      "archiveBytes": 2906222,
+      "archiveSha256": "e1a2c9c98f51d95d9ebaee58900a16680535d9747e5a7ec04e41a24cdbfba825",
+      "bytes": 6379784,
+      "sha256": "378a069c4f802bb97e6273333766a4afee99a626d4fc409f776f31d21968a4df"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/8eebf2a5621798d266fd9030caf04c20d0f89e2e17fb8137195ac2ddcaf4b6d2.gz",
+      "archiveBytes": 1253444,
+      "archiveSha256": "7f03900cf3918fae6592e2d4c54a9d3529ecba5af90d419262a45f778df96b0a",
+      "bytes": 4076094,
+      "sha256": "8eebf2a5621798d266fd9030caf04c20d0f89e2e17fb8137195ac2ddcaf4b6d2"
+    }
+  },
+  "schemaVersion": 1,
+  "scope": "Shared embedded keyboard correction only; VSCode normal-GUI prototype is diagnostic, not qualified frontend evidence",
+  "sourceBindings": {
+    "current": 3423,
+    "historical": 1396,
+    "parents": 22,
+    "path": "spec/performance/embedded-keyboard-2026-11-10/current-bindings.json",
+    "sha256": "bfd9a277c18f2ff91da49553b6191c65e1e234771b56dc1edb7f51d229e1c366"
+  }
+}

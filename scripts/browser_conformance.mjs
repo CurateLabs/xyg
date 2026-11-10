@@ -48,7 +48,7 @@ const spec = {
     { byte_offset: 0, len: 7, offset: 0, scale: 1, kind: "float" },
     { byte_offset: 28, len: 7, offset: 0, scale: 1, kind: "float" },
   ],
-  interaction: { hover: true },
+  interaction: { hover: true, click: true },
   backend: "none",
 };
 const values = [
@@ -139,7 +139,18 @@ async function probe(name) {
     window.xyConformanceView = window.xy.renderStandalone(
       document.getElementById("chart"), spec, buffer,
     );
-    window.xyConformanceView.comm = { send() {} };
+    window.xyConformanceMessages = [];
+    window.xyConformanceHovers = [];
+    window.xyConformanceClicks = [];
+    window.xyConformanceHostKeys = [];
+    window.addEventListener("keydown", (event) => window.xyConformanceHostKeys.push(event.key));
+    window.xyConformanceView.comm = { send(message) { window.xyConformanceMessages.push(message); } };
+    window.xyConformanceView.root.addEventListener("xy:hover", (event) => {
+      window.xyConformanceHovers.push(event.detail);
+    });
+    window.xyConformanceView.root.addEventListener("xy:click", (event) => {
+      window.xyConformanceClicks.push(event.detail);
+    });
     window.xyConformanceLeaves = 0;
     window.xyConformanceView.root.addEventListener("xy:leave", () => {
       window.xyConformanceLeaves += 1;
@@ -153,6 +164,14 @@ async function probe(name) {
   await page.evaluate(() => {
     const v = window.xyConformanceView;
     window.xyConformanceKeyboardLive = v.a11yLive.textContent;
+    const cursor = window.xyConformanceHovers.at(-1).cursor.px;
+    const root = v.root.getBoundingClientRect(), canvas = v.canvas.getBoundingClientRect();
+    window.xyConformanceExpectedScreen = [
+      cursor[0] - (canvas.left - root.left), cursor[1] - (canvas.top - root.top),
+    ];
+    // A host may move an output without resizing its canvas while the exact
+    // canonical-value response is pending. Its root-relative position stays.
+    document.getElementById("chart").style.transform = "translate(31px, 97px)";
     v._onKernelMsg({
       type: "pick_result",
       seq: v._pickSeq,
@@ -160,6 +179,8 @@ async function probe(name) {
     }, []);
     window.xyConformanceExactPreserved =
       v.a11yLive.textContent === window.xyConformanceKeyboardLive;
+    window.xyConformanceMovedCursorStable =
+      JSON.stringify(window.xyConformanceHovers.at(-1).cursor.px) === JSON.stringify(cursor);
     const index = v._a11yPointIndex;
     const live = v.a11yLive.textContent;
     v._viewAnim = {};
@@ -167,8 +188,40 @@ async function probe(name) {
     window.xyConformanceTransitionSuppressed =
       v._a11yPointIndex === index && v.a11yLive.textContent === live;
     v._viewAnim = null;
+    // Move again after the exact reply: activation must refresh independently
+    // rather than relying on coordinates cached by that response.
+    document.getElementById("chart").style.transform = "translate(42px, 115px)";
+  });
+  await page.keyboard.press("Enter");
+  await page.evaluate(() => {
+    const click = window.xyConformanceClicks.at(-1);
+    const message = window.xyConformanceMessages.filter((m) => m.type === "click").at(-1);
+    const expected = window.xyConformanceExpectedScreen;
+    window.xyConformanceMovedActivationStable = click?.trace === 0 && click.index === 1
+      && message?.trace === 0 && message.index === 1
+      && click.screen.x === expected[0] && click.screen.y === expected[1]
+      && message.screen.x === expected[0] && message.screen.y === expected[1];
+  });
+  const pointer = await page.evaluate(() => window.xyConformanceExpectedScreen);
+  await page.locator('[data-xy-slot="canvas"]').hover({ position: { x: pointer[0], y: pointer[1] } });
+  await page.waitForFunction(() => window.xyConformanceView._a11yKeyboardReadout === null
+    && window.xyConformanceView._hoverTarget?.index === 1);
+  await page.evaluate(() => {
+    const v = window.xyConformanceView;
+    const xy = { ...v._lastHoverXY };
+    // Pointer coordinates remain physical viewport coordinates; they must not
+    // be moved to the data point by the keyboard-only rebasing rule.
+    document.getElementById("chart").style.transform = "translate(49px, 132px)";
+    v._onKernelMsg({ type: "pick_result", seq: v._pickSeq,
+      row: { trace: 0, index: 1, x: -1.2, y: 1.4 } }, []);
+    const root = v.root.getBoundingClientRect(), cursor = window.xyConformanceHovers.at(-1).cursor.px;
+    window.xyConformancePointerViewportStable = v._lastHoverXY.clientX === xy.clientX
+      && v._lastHoverXY.clientY === xy.clientY
+      && cursor[0] === xy.clientX - root.left && cursor[1] === xy.clientY - root.top;
   });
   await page.keyboard.press("Escape");
+  await page.keyboard.press("q");
+  await page.keyboard.press("Tab");
   const result = await page.evaluate(() => {
     const v = window.xyConformanceView;
     const closedLive = v.a11yLive.textContent;
@@ -233,6 +286,13 @@ async function probe(name) {
         hoverId: v._hoverId,
         leaveCount: window.xyConformanceLeaves,
         exactPreserved: window.xyConformanceExactPreserved,
+        keyboardMovedCursorStable: window.xyConformanceMovedCursorStable,
+        keyboardMovedActivationStable: window.xyConformanceMovedActivationStable,
+        pointerViewportStable: window.xyConformancePointerViewportStable,
+        plotKeysStayLocal: !window.xyConformanceHostKeys.some((key) =>
+          ["Home", "ArrowRight", "Enter", "Escape"].includes(key)),
+        unhandledKeyBubbles: window.xyConformanceHostKeys.includes("q")
+          && window.xyConformanceHostKeys.includes("Tab") && document.activeElement !== v.canvas,
         transitionSuppressed: window.xyConformanceTransitionSuppressed,
         staleExactIgnored,
         toolbarRole: v._modebar.getAttribute("role"),
@@ -266,6 +326,10 @@ async function probe(name) {
   if (s.canvasRole !== "img" || s.canvasTabIndex !== 0) semanticFailures.push("focusable plot image");
   if (s.keyboardIndex !== 1 || !s.keyboardLive.startsWith("Point 2 of 7.")) semanticFailures.push("keyboard/live readout");
   if (!s.exactPreserved) semanticFailures.push("exact reply announcement");
+  if (!s.keyboardMovedCursorStable) semanticFailures.push("keyboard cursor after host movement");
+  if (!s.keyboardMovedActivationStable) semanticFailures.push("keyboard activation after host movement");
+  if (!s.pointerViewportStable) semanticFailures.push("physical pointer after host movement");
+  if (!s.plotKeysStayLocal || !s.unhandledKeyBubbles) semanticFailures.push("embedded host key ownership");
   if (!s.transitionSuppressed) semanticFailures.push("transition suppression");
   if (s.closedLive !== "Readout closed." || s.hoverId !== -1 || s.leaveCount !== 1) semanticFailures.push("Escape dismissal");
   if (!s.staleExactIgnored) semanticFailures.push("stale exact reply");

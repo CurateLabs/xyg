@@ -126,3 +126,7 @@ def test_cross_browser_probe_covers_all_engines_and_honest_metrics() -> None:
     assert "Browser text glyphs are" in probe
     assert "s.pressed.length !== 1" in probe
     assert 's.pressed.join() !== "Pan"' not in probe
+    assert "if (!s.keyboardMovedCursorStable)" in probe
+    assert "if (!s.keyboardMovedActivationStable)" in probe
+    assert "if (!s.pointerViewportStable)" in probe
+    assert "if (!s.plotKeysStayLocal || !s.unhandledKeyBubbles)" in probe

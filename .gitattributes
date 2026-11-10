@@ -1514,3 +1514,9 @@ spec/performance/graph-notebook7-2026-11-10/** text eol=lf
 spec/performance/graph-notebook7-2026-11-10/**/*.gz -text
 spec/performance/graph-notebook7-2026-11-10/**/*.png -text
 docs/integrations/graphforge.md text eol=lf
+
+# Embedded keyboard movement/key ownership successor evidence.
+tests/test_accessibility_contract.py text eol=lf
+spec/performance/embedded-keyboard-2026-11-10/** text eol=lf
+spec/performance/embedded-keyboard-2026-11-10/**/*.gz -text
+spec/performance/embedded-keyboard-2026-11-10/**/*.png -text
