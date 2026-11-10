@@ -62,7 +62,7 @@ def test_identity_admission_cannot_reject_existing_large_figure_frames(callbacks
 
 
 @pytest.mark.parametrize("count", [10_001, 40_000])
-def test_large_identity_selection_delivers_callback_reply_and_next_frame(count):
+def test_large_graph_region_refusal_preserves_frame_and_allows_next_frame(count):
     async def journey():
         composition = large_composition(count)
         selected, sent = [], []
@@ -73,21 +73,26 @@ def test_large_identity_selection_delivers_callback_reply_and_next_frame(count):
             await wait_for(lambda: bool(sent))
             assert sent[0]["type"] == "graph_frame"
             assert w._figure._graph_meta[0]["tier_name"] == "direct"
+            previous = w.view_state()
             message(w, "select", x0=-1e9, x1=1e9, y0=-1e9, y1=1e9)
-            assert len(selected[-1]) == count
-            assert sent[-1]["type"] == "selection" and sent[-1]["total"] == count
+            assert not selected
+            assert sent[-1]["type"] == "selection_refused"
+            assert sent[-1]["code"] == "XYG_GRAPH_SELECTION_RESOURCE_LIMIT"
+            assert w.view_state() == previous
             if count == 10_001:
-                assert [row["uuid"] for row in selected[-1].graphforge] == list(
-                    composition.nodes.uuid
-                )
-                assert not getattr(selected[-1], "graphforge_error", None)
                 adapter = w._figure._notebook_graph_identity
-                resolved = adapter.select(composition.nodes.uuid)
+                # Metadata can still be looked up in bounded batches. A
+                # complete selection intent must not bypass the native cap.
+                node = adapter.meta["node_trace"]
+                resolved = adapter.project({node: np.arange(count)})
+                assert [row["uuid"] for row in resolved] == list(composition.nodes.uuid)
                 rows = adapter.render_rows(resolved)
                 assert rows[adapter.meta["node_trace"]].tolist() == list(range(count))
-            else:
-                assert selected[-1].graphforge == []
-                assert selected[-1].graphforge_error == "XYG_GRAPH_IDENTITY_RESOURCE_LIMIT"
+                from xyg._graph_session import GraphSessionError, GraphSessionStatus
+
+                with pytest.raises(GraphSessionError) as error:
+                    adapter.select(composition.nodes.uuid)
+                assert error.value.status == GraphSessionStatus.SELECTION_TOO_LARGE
             old = w._revision
             message(w, "graph_painted")
             await wait_for(lambda: w._revision > old)

@@ -20,6 +20,12 @@ pub enum SelectionPolicy {
     NodesAndInducedEdges,
 }
 
+#[derive(Clone, Copy)]
+pub(super) enum RegionInput<'a> {
+    Polygon(&'a [[f64; 2]]),
+    Candidates(&'a [u8]),
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 enum Primitive {
     Node(usize),
@@ -624,60 +630,93 @@ impl GraphSession {
         mode: SelectMode,
         policy: SelectionPolicy,
     ) -> Result<OpOutcome, InteractionStatus> {
+        self.select_region(header, RegionInput::Polygon(points), mode, policy)
+    }
+
+    pub(super) fn select_region(
+        &mut self,
+        header: OpHeader,
+        input: RegionInput<'_>,
+        mode: SelectMode,
+        policy: SelectionPolicy,
+    ) -> Result<OpOutcome, InteractionStatus> {
         self.operate(header, |s, w| {
             let mut work = Work::default();
-            work.charge(points.len())?;
-            if points.len() < 3 || points.iter().flatten().any(|v| !v.is_finite()) {
-                return invalid();
-            }
-            let r = s.published().ok_or(InteractionStatus::Stale)?;
-            let b = points.iter().fold(
-                [
-                    f64::INFINITY,
-                    f64::INFINITY,
-                    f64::NEG_INFINITY,
-                    f64::NEG_INFINITY,
-                ],
-                |b, &p| union(b, point_bounds(p, 0.)),
-            );
             let mut nodes = BTreeSet::new();
             let mut edges = BTreeSet::new();
-            if r.pick.node_scan {
-                for (i, n) in r.paint.nodes.iter().enumerate() {
-                    work.charge(1 + points.len())?;
-                    if inside(n.center, points) {
-                        nodes.insert(i);
-                        if nodes.len() > MAX_GRAPH_PICK_CANDIDATES {
-                            return Err(InteractionStatus::Budget);
-                        }
+            let r = match input {
+                RegionInput::Polygon(points) => {
+                    work.charge(points.len())?;
+                    if points.len() < 3 || points.iter().flatten().any(|v| !v.is_finite()) {
+                        return invalid();
                     }
-                }
-            } else {
-                for p in r.pick.candidates(b, &mut work)? {
-                    work.charge(1)?;
-                    match p {
-                        Primitive::Node(i) => {
-                            work.charge(points.len())?;
-                            if inside(r.paint.nodes[i].center, points) {
+                    let r = s.published().ok_or(InteractionStatus::Stale)?;
+                    let b = points.iter().fold(
+                        [
+                            f64::INFINITY,
+                            f64::INFINITY,
+                            f64::NEG_INFINITY,
+                            f64::NEG_INFINITY,
+                        ],
+                        |b, &p| union(b, point_bounds(p, 0.)),
+                    );
+                    if r.pick.node_scan {
+                        for (i, n) in r.paint.nodes.iter().enumerate() {
+                            work.charge(1 + points.len())?;
+                            if inside(n.center, points) {
                                 nodes.insert(i);
                                 if nodes.len() > MAX_GRAPH_PICK_CANDIDATES {
                                     return Err(InteractionStatus::Budget);
                                 }
                             }
                         }
-                        Primitive::Piece(i)
-                            if !r.pick.degraded && policy == SelectionPolicy::Edges =>
-                        {
-                            let e = &r.paint.pieces[i];
-                            work.charge(points.len() * 4)?;
-                            if piece_region(e, points, &mut work)? {
-                                edges.insert(e.edge);
+                    } else {
+                        for p in r.pick.candidates(b, &mut work)? {
+                            work.charge(1)?;
+                            match p {
+                                Primitive::Node(i) => {
+                                    work.charge(points.len())?;
+                                    if inside(r.paint.nodes[i].center, points) {
+                                        nodes.insert(i);
+                                        if nodes.len() > MAX_GRAPH_PICK_CANDIDATES {
+                                            return Err(InteractionStatus::Budget);
+                                        }
+                                    }
+                                }
+                                Primitive::Piece(i)
+                                    if !r.pick.degraded && policy == SelectionPolicy::Edges =>
+                                {
+                                    let e = &r.paint.pieces[i];
+                                    work.charge(points.len() * 4)?;
+                                    if piece_region(e, points, &mut work)? {
+                                        edges.insert(e.edge);
+                                    }
+                                }
+                                _ => {}
                             }
                         }
-                        _ => {}
                     }
+                    r
                 }
-            }
+                RegionInput::Candidates(refs) => {
+                    if refs.len() % 4 != 0 {
+                        return invalid();
+                    }
+                    if refs.len() / 4 > MAX_GRAPH_SELECTION_REFS {
+                        return Err(InteractionStatus::SelectionTooLarge);
+                    }
+                    work.charge(refs.len() / 4)?;
+                    let r = s.published().ok_or(InteractionStatus::Stale)?;
+                    for bytes in refs.chunks_exact(4) {
+                        let index = u32::from_le_bytes(bytes.try_into().unwrap());
+                        if index as usize >= r.node_count() {
+                            return invalid();
+                        }
+                        nodes.insert(index as usize);
+                    }
+                    r
+                }
+            };
             let induced = policy == SelectionPolicy::NodesAndInducedEdges
                 || (r.pick.degraded && policy == SelectionPolicy::Edges);
             if induced {
@@ -722,14 +761,14 @@ impl GraphSession {
         if !bounds.iter().all(|v| v.is_finite()) || bounds[0] > bounds[2] || bounds[1] > bounds[3] {
             return invalid();
         }
-        self.lasso(
+        self.select_region(
             header,
-            &[
+            RegionInput::Polygon(&[
                 [bounds[0], bounds[1]],
                 [bounds[2], bounds[1]],
                 [bounds[2], bounds[3]],
                 [bounds[0], bounds[3]],
-            ],
+            ]),
             mode,
             policy,
         )

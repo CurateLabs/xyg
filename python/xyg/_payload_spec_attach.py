@@ -95,3 +95,6 @@ def attach_build_plan_fields(
         spec["graph"] = [
             wire_graph_meta(meta, pw) for meta in getattr(figure, "_graph_meta", None) or []
         ]
+        identity = getattr(figure, "_notebook_graph_identity", None)
+        if identity is not None:
+            spec["_graph_row_space"] = identity.row_space()

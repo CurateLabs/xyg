@@ -1559,3 +1559,11 @@ spec/performance/desktop-exact-reply-union-2026-11-10/**/*.gz -text
 tests/test_vscode_graph_notebook_cohort.py text eol=lf
 spec/performance/vscode-floor-collection-2026-11-10/** text eol=lf
 spec/performance/vscode-floor-collection-2026-11-10/**/*.gz -text
+
+# Native notebook graph-region regressions.
+python/xyg/_payload_spec_attach.py text eol=lf
+tests/test_graph_widget_regions.py text eol=lf
+tests/notebook_graph_regions.ipynb text eol=lf
+scripts/graph_notebook_regions_smoke.mjs text eol=lf
+spec/performance/graph-notebook-regions-2026-11-10/** text eol=lf
+spec/performance/graph-notebook-regions-2026-11-10/**/*.gz -text

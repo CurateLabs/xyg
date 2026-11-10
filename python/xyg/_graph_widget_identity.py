@@ -6,6 +6,7 @@ Source/render joins below copy the original compiler's Rust membership planes.
 
 from __future__ import annotations
 
+import hashlib
 import heapq
 import secrets
 import struct
@@ -70,14 +71,51 @@ class NotebookGraphIdentity:
         if self.session is not None:
             self.session.close()
 
-    def _request(self, operation, extra=()):
+    def row_space(self):
+        """Opaque transport equality stamp; every input is a compiler fact.
+
+        No coordinates, style decisions or host-derived edge membership enter
+        this stamp. It only prevents cached row masks crossing different
+        ordered source identities or native membership/route planes.
+        """
+        digest = hashlib.sha256(b"XYG notebook graph rows v1")
+        digest.update(struct.pack("<qq", self.meta["node_trace"], self.meta["edge_trace"]))
+        for values in (self.meta["ids"], self.meta.get("source_edge_ids", ())):
+            digest.update(struct.pack("<Q", len(values)))
+            for value in values:
+                if value is None:
+                    digest.update(b"\x00")
+                else:
+                    encoded = value.encode("utf-8")
+                    digest.update(b"\x01" + struct.pack("<Q", len(encoded)))
+                    digest.update(encoded)
+        edges = self.figure._graph_edge_identity[self.meta["edge_trace"]]
+        for values in (
+            self.meta["member_of"],
+            edges.render_edge_index,
+            edges.offsets,
+            edges.members,
+        ):
+            array = np.ascontiguousarray(values, dtype="<u8")
+            digest.update(struct.pack("<Q", array.size))
+            digest.update(memoryview(array).cast("B"))
+        for trace in (self.meta["node_trace"], self.meta["edge_trace"]):
+            values = self.figure.traces[trace].shipped_sel
+            digest.update(b"\x00" if values is None else b"\x01")
+            if values is not None:
+                array = np.ascontiguousarray(values, dtype="<u8")
+                digest.update(struct.pack("<Q", array.size))
+                digest.update(memoryview(array).cast("B"))
+        return digest.hexdigest()
+
+    def _request(self, operation, extra=(), *, policy=0):
         sequence = self.sequence
         self.sequence += 1
         return encode_container(
             "XYGI",
             [
                 ("header.u64", 0, D.U64, [self.instance, 0, sequence]),
-                ("header.u32", 0, D.U32, [self.revision, operation, 0, 0, 0, 0, 0, 0, 0]),
+                ("header.u32", 0, D.U32, [self.revision, operation, 0, policy, 0, 0, 0, 0, 0]),
                 *extra,
             ],
         )
@@ -153,13 +191,12 @@ class NotebookGraphIdentity:
         if not values:
             return []
         session = self.prepare()
-        batches = []
-        for start in range(0, len(values), _BATCH_SIZE):
-            data = b"".join(values[start : start + _BATCH_SIZE])
-            batches.append(
-                self._decode(session.interact(self._request(10, [("uuids.uuid", 0, D.UUID, data)])))
-            )
-        return self._merge(batches)
+        # This is one user intent, not metadata lookup: the native aggregate
+        # cap must admit the complete UUID set before any highlight is sent.
+        data = b"".join(values)
+        return self._merge(
+            [self._decode(session.interact(self._request(10, [("uuids.uuid", 0, D.UUID, data)])))]
+        )
 
     def source_rows(self, trace, index):
         m = self.meta
@@ -247,22 +284,82 @@ class NotebookGraphIdentity:
         refs = struct.pack("<II", len(records), len(pool)) + b"".join(records) + pool
         return self._decode(session.interact(self._request(11, [("refs.bytes", 0, D.BYTES, refs)])))
 
-    def render_rows(self, identities):
+    def select_region(self, indices, *, include_edges=True):
+        """Frame native scatter candidates against this exact Rust publication.
+
+        Comparing the existing compiler's positions and membership is admission,
+        not an alternative layout or a host implementation of induced edges.
+        """
+        meta = self.meta
+        node_ids, expected_nodes = meta["ids"], self.composition.nodes.uuid
+        if len(node_ids) != len(expected_nodes) or any(
+            actual != expected for actual, expected in zip(node_ids, expected_nodes, strict=True)
+        ):
+            raise ValueError("graph region source identities differ from displayed membership")
+        edge_ids = meta.get("source_edge_ids", ())
+        if len(edge_ids) != self.composition.edges.count or any(
+            expected is not None and actual != expected
+            for actual, expected in zip(edge_ids, self.composition.edges.uuid, strict=True)
+        ):
+            raise ValueError("graph region source identities differ from displayed membership")
+        session = self.prepare()
+        published = decode_container(session.render(self._request(21)), "XYGR")
+        self.revision = int(published["header.u32", 0][0])
+        trace = self.figure.traces[meta["node_trace"]]
+        edges = self.figure._graph_edge_identity[meta["edge_trace"]]
+        planes = {
+            "render.node_x.f64": trace.x.values,
+            "render.node_y.f64": trace.y.values,
+            "render.member_of.u64": meta["member_of"],
+            "render.edge_source.u64": meta["sources"],
+            "render.edge_target.u64": meta["targets"],
+            "render.edge_member_offsets.u64": edges.offsets,
+            "render.edge_members.u64": edges.members,
+        }
+        for name, expected in planes.items():
+            dtype = "<f8" if name.endswith("f64") else "<u8"
+            actual = np.asarray(published[name, 0], dtype=dtype)
+            wanted = np.asarray(expected, dtype=dtype)
+            if actual.shape != wanted.shape or actual.tobytes() != wanted.tobytes():
+                raise ValueError("graph region publication differs from displayed membership")
+        if include_edges:
+            extra = [("region.nodes.u32", 0, D.U32, indices)]
+        else:
+            records = [
+                struct.pack("<II16sIIQQII", 3, 0, bytes(16), int(index), self.revision, 0, 0, 0, 0)
+                for index in indices
+            ]
+            refs = struct.pack("<II", len(records), 0) + b"".join(records)
+            extra = [("refs.bytes", 0, D.BYTES, refs)]
+        result = session.interact(self._request(11, extra, policy=2 if include_edges else 0))
+        return self._merge([self._decode(result)])
+
+    def render_rows(self, identities, *, whole_groups=False):
         m = self.meta
-        if m["tier_name"] == "aggregate":
+        if m["tier_name"] == "aggregate" and not whole_groups:
             raise ValueError("UUID highlights require exact graph LOD")
         nodes = {row["index"] for row in identities if row["kind"] == "node"}
         edges = {row["index"] for row in identities if row["kind"] == "edge"}
         identity = self.figure._graph_edge_identity[m["edge_trace"]]
         selected_nodes = {m["member_of"][i] for i in nodes}
         self._index_node_rows()
-        if any(
-            render >= m["n_nodes"] or render in self._shared_node_rows for render in selected_nodes
+        if any(render >= m["n_nodes"] for render in selected_nodes) or (
+            not whole_groups and any(render in self._shared_node_rows for render in selected_nodes)
         ):
             raise ValueError("UUID highlights require individually rendered nodes")
+        if (
+            whole_groups
+            and {source for source, render in enumerate(m["member_of"]) if render in selected_nodes}
+            != nodes
+        ):
+            raise ValueError("graph region must contain complete published node membership")
         if any(
-            len(identity.members_of(int(render))) != 1
-            and edges.intersection(map(int, identity.members_of(int(render))))
+            edges.intersection(map(int, identity.members_of(int(render))))
+            and (
+                not set(map(int, identity.members_of(int(render)))) <= edges
+                if whole_groups
+                else len(identity.members_of(int(render))) != 1
+            )
             for render in identity.render_edge_index
         ):
             raise ValueError("UUID highlights require individually rendered edges")
@@ -272,8 +369,8 @@ class NotebookGraphIdentity:
                 [
                     i
                     for i, render in enumerate(identity.render_edge_index)
-                    if len(identity.members_of(int(render))) == 1
-                    and int(identity.members_of(int(render))[0]) in edges
+                    if len(identity.members_of(int(render)))
+                    and set(map(int, identity.members_of(int(render)))) <= edges
                 ],
                 dtype=np.uint64,
             ),

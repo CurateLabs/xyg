@@ -2155,8 +2155,15 @@ per-layer result_id/row without replacing the original graph renderer. The
 [receipt](../performance/graph-notebook-identity-2026-11-06/README.md) separates
 unit proofs for loops/parallel edges/layered provenance from actual small
 JupyterLab node-callback/UUID-selection delivery. Prior receipts remain historical.
-Full notebook frontend, exact geometric UUID sets, export and rendered size
-ladder acceptance for #1015/#36/#35 remains open.
+The [notebook region continuation](../performance/graph-notebook-regions-2026-11-10/README.md)
+adds exact box/lasso UUID sets and induced published edges on the native
+JupyterLab path, using the shared Rust reducer and ordinary selection-mask
+painter. Trusted DPR1/2 journeys cover parallel edges, a self-loop, capacity
+refusal/recovery, pan/wheel, and two-widget isolation. The new internal XYGI
+candidate plane has native/shipping-WASM complete-packet parity; this is not a
+new automatic direct-browser attachment. Full notebook frontend, changed-LOD
+selection remapping, exports and rendered size ladder acceptance for
+#1015/#36/#35 remain open.
 
 ## Ordinary linked filtering checkpoint (#112)
 

@@ -8,30 +8,49 @@ import test from "node:test";
 function fixture(saved) {
   const source = readFileSync(new URL("../src/66_graph_host.ts", import.meta.url), "utf8")
     .replace(/^import .*;$/mg, "").replace("export function", "function");
-  let view, serial = 0;
+  let view, status, serial = 0;
   const frames = new Map();
   class ChartView {
     constructor(el, spec, payload, comm) {
       this.spec = spec; this.comm = comm; this._graphs = []; this.gpuTraces = [];
       this.replies = []; this.swaps = 0;
+      this._stateSelection = null; this._historyPast = []; this._historyFuture = [];
+      this.broadcasts = []; this._interactionSeq = 0;
       this.unsubscribe = comm.onMessage(content => {
         this.replies.push(content);
         if (content.type === "selection") this.mask = content.total;
+        if (content.type === "selection_rows") this._applyRowsSelection(content, []);
       });
       view = this;
     }
     _applyAppend({ spec }) { this.spec = spec; this.swaps++; }
     _graphMetaArray() { return null; }
     _restoreGraphLegendVisibility(state) { this.restoredVisibility = state; }
-    _applySelectionBuffers(content) { this.mask = content.total; }
+    _applySelectionBuffers(content) { this.mask = content.total ?? 0; }
+    _clearLassoOverlay() {} _clearBoxOverlay() {} _renderBoxSelection() {} _renderLassoSelection() {}
+    _interactionFlag() { return true; } _updateHistoryButtons() {} _dispatchChartEvent() {}
+    _eventView() { return {}; }
+    _axisIds() { return []; } _setView() {}
+    _broadcastLinkedSelection(selection) { this.broadcasts.push(selection); }
+    _durableState() { return { v: 1, ranges: {}, selection: structuredClone(this._stateSelection) }; }
+    _validateStatePatch() { return null; }
     draw() {}
     destroy() { this.unsubscribe(); this.destroyed = true; }
   }
   const context = { ChartView, payloadBuffers: (_, buffers) => buffers, crypto: webcrypto,
-    document: { createElement: () => ({ setAttribute() {}, remove() {} }) },
+    document: { createElement: () => (status = { setAttribute() {}, remove() {} }) },
     requestAnimationFrame: cb => { frames.set(++serial, cb); return serial; },
     cancelAnimationFrame: id => frames.delete(id) };
   vm.createContext(context);
+  for (const name of ["53_interaction", "57_viewstate"]) {
+    const methods = readFileSync(new URL(`../src/${name}.ts`, import.meta.url), "utf8").replace(/^import .*;$/mg, "");
+    vm.runInContext(stripTypeScriptTypes(methods), context);
+  }
+  // Use the actual mutation/history methods; only browser drawing is stubbed.
+  for (const name of ["_clearLassoOverlay", "_clearBoxOverlay", "_renderBoxSelection", "_renderLassoSelection", "_updateHistoryButtons", "_dispatchChartEvent", "_setView"]) ChartView.prototype[name] = () => {};
+  ChartView.prototype._durableState = function () { return { v: 1, ranges: {}, selection: JSON.parse(JSON.stringify(this._stateSelection)) }; };
+  ChartView.prototype._validateStatePatch = () => null;
+  ChartView.prototype._broadcastLinkedSelection = function (selection) { this.broadcasts.push(selection); };
   vm.runInContext(stripTypeScriptTypes(source) + ";globalThis.render=renderGraphHost;", context);
   const model = { state: { spec: { instance: "test", graph_snapshot: saved }, buffers: [] }, sent: [],
     get(key) { return this.state[key]; }, set(state) { Object.assign(this.state, state); },
@@ -39,9 +58,9 @@ function fixture(saved) {
   const cleanup = context.render({ model, el: { dataset: {}, append() {} }, attachTicks() {} });
   const epoch = model.sent[0].graph_epoch;
   const deliver = content => model.handler({ graph_instance: "test", graph_epoch: epoch, ...content }, []);
-  return { model, cleanup, get view() { return view; }, deliver,
+  return { model, cleanup, get view() { return view; }, get status() { return status.textContent; }, deliver,
     paint() { for (const [id, cb] of frames) { frames.delete(id); cb(); } },
-    frame(revision, extra = {}) { deliver({ type: "graph_frame", graph_revision: revision, spec: { traces: [] }, step: revision, phase: "running", ...extra }); } };
+    frame(revision, extra = {}) { deliver({ type: "graph_frame", graph_revision: revision, spec: { traces: [], _graph_row_space: "a".repeat(64) }, step: revision, phase: "running", ...extra }); } };
 }
 
 test("selection clear holds a checkpoint until the exact clear reply", () => {
@@ -53,11 +72,196 @@ test("selection clear holds a checkpoint until the exact clear reply", () => {
   f.frame(2);
   assert.equal(f.view.swaps, 0);
   assert.equal(f.view.mask, 0);
-  f.deliver({ type: "selection", graph_revision: 1, traces: [], total: 0 });
+  f.deliver({ type: "selection", graph_revision: 1, seq: f.model.sent.at(-1).seq, selection: null, traces: [], total: 0 });
   assert.equal(f.view.swaps, 1);
   assert.equal(f.view.mask, 0);
   f.paint();
   assert.equal(f.model.sent.at(-1).graph_revision, 2);
+  f.cleanup();
+});
+
+const json = value => JSON.parse(JSON.stringify(value));
+const predicate = x => ({ range: { x0: x, x1: x + 1, y0: 0, y1: 1 } });
+function accept(f, request, total = 1) {
+  f.deliver({ type: "selection", graph_revision: 1, seq: request.seq,
+    selection_intent: request.selection_intent, selection: predicate(request.x0), traces: [{ id: 0 }], total });
+}
+test("accepted graph predicates commit history and linked geometry once", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  f.view._sendSelect([2, 0], [3, 1]); const request = f.model.sent.at(-1);
+  assert.equal(f.view._historyPast.length, 0); assert.equal(f.view.broadcasts.length, 0);
+  accept(f, request); accept(f, request);
+  assert.equal(f.view._historyPast.length, 1);
+  assert.deepEqual(json(f.view._stateSelection), predicate(2));
+  assert.deepEqual(json(f.view.broadcasts), [predicate(2)]);
+  f.cleanup();
+});
+test("older refusal cannot replace the latest accepted predicate", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  f.view._sendSelect([2, 0], [3, 1]); const a = f.model.sent.at(-1);
+  f.view._sendSelect([4, 0], [5, 1]);
+  f.deliver({ type: "selection_refused", graph_revision: 1, seq: a.seq, selection: null });
+  const b = f.model.sent.at(-1);
+  accept(f, b, 2);
+  f.deliver({ type: "selection_refused", graph_revision: 1, seq: a.seq, selection: null });
+  assert.deepEqual(json(f.view._stateSelection), predicate(4)); assert.equal(f.view.mask, 2);
+  assert.equal(f.view._historyPast.length, 1); assert.equal(f.view.broadcasts.length, 1);
+  f.cleanup();
+});
+test("latest refusal presents an accepted intermediate result with its own intent", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  f.view._sendSelect([2, 0], [3, 1], { history: false, broadcast: false }); const a = f.model.sent.at(-1);
+  f.view._sendSelect([4, 0], [5, 1]);
+  accept(f, a, 3); assert.equal(f.view.mask, undefined);
+  const b = f.model.sent.at(-1);
+  f.deliver({ type: "selection_refused", graph_revision: 1, seq: b.seq, selection: predicate(2) });
+  assert.deepEqual(json(f.view._stateSelection), predicate(2)); assert.equal(f.view.mask, 3);
+  assert.equal(f.view._historyPast.length, 0); assert.equal(f.view.broadcasts.length, 0);
+  f.cleanup();
+});
+test("newer server row selection owns the facet before a reentrant old reply", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  f.view._sendSelect([2, 0], [3, 1]); const request = f.model.sent.at(-1);
+  f.deliver({ type: "selection_rows", graph_revision: 1, traces: [{ id: 0 }], total: 7 });
+  accept(f, request);
+  assert.equal(f.view.replies.at(-1).type, "selection_rows");
+  assert.equal(f.view._historyPast.length, 0); assert.equal(f.view.broadcasts.length, 0);
+  f.cleanup();
+});
+test("duplicate replies cannot release a different outstanding selection", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  f.view._sendSelect([2, 0], [3, 1]); const a = f.model.sent.at(-1);
+  f.view._sendSelect([4, 0], [5, 1]);
+  f.frame(2); accept(f, a); accept(f, a);
+  const b = f.model.sent.at(-1);
+  assert.equal(f.view.swaps, 0);
+  accept(f, b); assert.equal(f.view.swaps, 1);
+  f.cleanup();
+});
+
+test("selection ingress retains one active and one latest queued intent", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  f.view._sendSelect([2, 0], [3, 1]); const a = f.model.sent.at(-1), sent = f.model.sent.length;
+  for (let i = 3; i < 1003; i++) f.view._sendSelect([i, 0], [i + 1, 1]);
+  assert.equal(f.model.sent.length, sent);
+  accept(f, a); const latest = f.model.sent.at(-1);
+  assert.equal(latest.x0, 1002); assert.equal(latest.seq, 1001);
+  accept(f, latest); assert.deepEqual(json(f.view._stateSelection), predicate(1002));
+  assert.equal(f.view._historyPast.length, 1);
+  f.cleanup();
+});
+
+test("synchronous brush callback owns a newer intent before outer dispatch", () => {
+  const f = fixture(); f.frame(1); f.paint(); let nested = false;
+  f.view._dispatchChartEvent = kind => { if (kind === "brush" && !nested) {
+    nested = true; f.view._sendSelect([4, 0], [5, 1]);
+  } };
+  const count = f.model.sent.length;
+  f.view._sendSelect([2, 0], [3, 1]);
+  assert.equal(f.model.sent.length, count + 1);
+  assert.equal(f.model.sent.at(-1).x0, 4);
+  accept(f, f.model.sent.at(-1));
+  assert.deepEqual(json(f.view._stateSelection), predicate(4));
+  f.cleanup();
+});
+
+test("disposal during brush dispatch prevents a later native command", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  f.view._dispatchChartEvent = kind => { if (kind === "brush") f.cleanup(); };
+  f.view._sendSelect([2, 0], [3, 1]);
+  assert.equal(f.model.sent.at(-1).type, "graph_dispose");
+  assert.ok(!f.model.sent.some(msg => msg.type === "select"));
+});
+
+test("disposal during accepted notification prevents a later linked broadcast", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  f.view.comm.onMessage(() => f.cleanup());
+  f.view._sendSelect([2, 0], [3, 1]); accept(f, f.model.sent.at(-1));
+  assert.equal(f.view.broadcasts.length, 0);
+  assert.equal(f.model.sent.at(-1).type, "graph_dispose");
+});
+test("ordinary non-graph transport keeps immediate selection history and broadcasts", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  delete f.view.comm.deferSelection;
+  f.view._sendSelect([2, 0], [3, 1]);
+  assert.deepEqual(json(f.view._stateSelection), predicate(2));
+  assert.equal(f.view._historyPast.length, 1); assert.equal(f.view.broadcasts.length, 1);
+  f.cleanup();
+});
+
+test("refused clear restores accepted masks and geometry without another history entry", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  f.view._sendSelect([2, 0], [3, 1]); accept(f, f.model.sent.at(-1), 2);
+  f.view._clearSelection(); const request = f.model.sent.at(-1);
+  f.deliver({ type: "selection_refused", graph_revision: 1, seq: request.seq, selection: predicate(2) });
+  assert.deepEqual(json(f.view._stateSelection), predicate(2)); assert.equal(f.view.mask, 2);
+  assert.equal(f.view._historyPast.length, 1); assert.equal(f.view.broadcasts.length, 1);
+  f.cleanup();
+});
+
+test("refused predicate preserves an accepted opaque row selection", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  f.deliver({ type: "selection_rows", graph_revision: 1, traces: [{ id: 0 }], total: 7 });
+  f.view._sendSelect([2, 0], [3, 1]); const request = f.model.sent.at(-1);
+  f.deliver({ type: "selection_refused", graph_revision: 1, seq: request.seq, selection: { rows: true } });
+  assert.deepEqual(json(f.view._stateSelection), { rows: true }); assert.equal(f.view.mask, 7);
+  assert.equal(f.view._historyPast.length, 0); assert.equal(f.view.broadcasts.length, 0);
+  f.cleanup();
+});
+
+test("refused history navigation preserves both stacks and the accepted selection", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  f.view._sendSelect([2, 0], [3, 1]); accept(f, f.model.sent.at(-1));
+  f.view._sendSelect([4, 0], [5, 1]); accept(f, f.model.sent.at(-1));
+  assert.equal(f.view._historyBack(), true); const request = f.model.sent.at(-1);
+  f.deliver({ type: "selection_refused", graph_revision: 1, seq: request.seq, selection: predicate(4) });
+  assert.equal(f.view._historyPast.length, 2); assert.equal(f.view._historyFuture.length, 0);
+  assert.deepEqual(json(f.view._stateSelection), predicate(4));
+  f.cleanup();
+});
+
+test("accepted graph history moves each stack once and stays idle while pending", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  f.view._sendSelect([2, 0], [3, 1]); accept(f, f.model.sent.at(-1));
+  f.view._sendSelect([4, 0], [5, 1]); accept(f, f.model.sent.at(-1));
+  assert.equal(f.view._historyBack(), true); const back = f.model.sent.at(-1);
+  assert.equal(f.view._historyBack(), false); assert.equal(f.view._historyPast.length, 2);
+  accept(f, back); accept(f, back);
+  assert.equal(f.view._historyPast.length, 1); assert.equal(f.view._historyFuture.length, 1);
+  assert.deepEqual(json(f.view._stateSelection), predicate(2));
+  assert.equal(f.view._historyForward(), true); accept(f, f.model.sent.at(-1));
+  assert.equal(f.view._historyPast.length, 2); assert.equal(f.view._historyFuture.length, 0);
+  assert.deepEqual(json(f.view._stateSelection), predicate(4));
+  f.cleanup();
+});
+
+test("accepted lasso and axis-range geometry retain their authored discriminator", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  const polygon = [[0, 0], [1, 0], [0, 1]];
+  f.view._sendSelectPolygon(polygon); let request = f.model.sent.at(-1);
+  f.deliver({ type: "selection", graph_revision: 1, seq: request.seq, selection: { polygon }, traces: [], total: 0 });
+  assert.deepEqual(json(f.view._stateSelection), { polygon });
+  f.view._sendSelect([2, 0], [3, 1], { mode: "x" }); request = f.model.sent.at(-1);
+  assert.equal(request.mode, "x");
+  const selection = { range: { ...predicate(2).range, mode: "x" } };
+  f.deliver({ type: "selection", graph_revision: 1, seq: request.seq, selection, traces: [], total: 0 });
+  assert.deepEqual(json(f.view._stateSelection), selection);
+  f.cleanup();
+});
+
+test("refused graph predicate does not enter history or linked state", () => {
+  const f = fixture(); f.frame(1); f.paint();
+  f.view._historyFuture.push({ selection: { range: { x0: 8, x1: 9, y0: 8, y1: 9 } } });
+  f.view._sendSelect([0, 0], [1, 1]);
+  const request = f.model.sent.at(-1);
+  f.deliver({ type: "selection_refused", graph_revision: 1, seq: request.seq, code: "XYG_GRAPH_SELECTION_RESOURCE_LIMIT", selection: null });
+  assert.equal(f.view._historyPast.length, 0);
+  assert.equal(f.view._historyFuture.length, 1);
+  assert.equal(f.view.broadcasts.length, 0);
+  assert.equal(f.view._stateSelection, null);
+  assert.equal(f.status, "Graph selection exceeds the resource limit");
+  f.view._sendSelect([2, 0], [3, 1]); accept(f, f.model.sent.at(-1));
+  assert.equal(f.status, "Laying out graph");
   f.cleanup();
 });
 
@@ -140,4 +344,42 @@ test("replacement frame restores its native legend metadata before paint ACK", (
   f.paint();
   assert.equal(f.model.sent.at(-1).type, "graph_painted");
   f.cleanup();
+});
+
+test("row masks survive identical compiler stamps and revoke on changed or missing stamps", () => {
+  for (const token of ["b".repeat(64), null, [], "invalid"]) {
+    const f = fixture(); f.frame(1); f.paint();
+    f.deliver({ type: "selection_rows", graph_revision: 1, traces: [{ id: 0 }], total: 7 });
+    f.frame(2); assert.equal(f.view.mask, 7);
+    f.frame(3, { spec: { traces: [], _graph_row_space: token } });
+    assert.equal(f.view.mask, 0); assert.equal(f.status, "Graph selection is unavailable for this picture");
+    f.cleanup();
+  }
+});
+
+test("segment dash packing preserves reversed-contour phase and exact f32 pairs", () => {
+  const source = readFileSync(new URL("../src/50_chartview.ts", import.meta.url), "utf8");
+  const start = source.indexOf("  _segmentDash(g, prog) {");
+  const method = source.slice(start, source.indexOf("  _drawMesh(g, xm, ym)", start));
+  const View = vm.runInNewContext(`(class { ${method} })`, { uniformOf: (_, __, name) => name });
+  const view = new View(), uniforms = {}; let bound;
+  view.gl = { ARRAY_BUFFER: 1, DYNAMIC_DRAW: 2,
+    bindBuffer: (_, buffer) => { bound = buffer; },
+    bufferData: (_, data) => { bound.values = Array.from(data); },
+    uniform1i: (name, value) => { uniforms[name] = value; },
+    uniform1f: (name, value) => { uniforms[name] = value; },
+    uniform1fv: (name, value) => { uniforms[name] = Array.from(value); } };
+  view.dpr = 2; view._polarGeometry = () => null;
+  const rows = [[[0, 0], [10.125, 0]], [[20.25, 0], [10.125, 0]], [[20.25, 0], [30.375, 0]]];
+  view._projectSegmentEndpoints = (_, __, index) => rows[index];
+  view._upload = values => ({ values: Array.from(values) });
+  const g = { n: 3, trace: { style: { dash: [2, 3] } }, _segmentCpu: {} };
+  assert.equal(view._segmentDash(g, {}), true);
+  assert.deepEqual(g._segmentDashOffsetBuf.values, [0, 1, 40.5, -1, 40.5, 1]);
+  assert.deepEqual(uniforms.u_dashArr, [4, 6, 0, 0, 0, 0, 0, 0]);
+  const buffer = g._segmentDashOffsetBuf;
+  rows[2][1] = [35.75, 0]; view._segmentDash(g, {});
+  assert.equal(g._segmentDashOffsetBuf, buffer);
+  assert.equal(g._segmentDashData.length, 2 * g.n);
+  assert.equal(g._segmentDashDirBuf, undefined);
 });

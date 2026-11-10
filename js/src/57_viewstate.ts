@@ -152,6 +152,7 @@ Object.assign(ChartView.prototype, {
         source,
         dispatch: opts.dispatch,
         broadcast: opts.broadcast,
+        commitHistory: opts.commitHistory,
       };
       if (sel === null) {
         this._clearSelection(selOpts);
@@ -191,6 +192,7 @@ Object.assign(ChartView.prototype, {
 
   _historyBack() {
     if (!this._historyEnabled() || !this._historyPast.length) return false;
+    if (this.comm?.deferHistory) return this.comm.deferHistory("back");
     const snapshot = this._historyPast.pop();
     this._historyFuture.push(this._durableState());
     this._historyApply(snapshot);
@@ -199,13 +201,14 @@ Object.assign(ChartView.prototype, {
 
   _historyForward() {
     if (!this._historyEnabled() || !this._historyFuture.length) return false;
+    if (this.comm?.deferHistory) return this.comm.deferHistory("forward");
     const snapshot = this._historyFuture.pop();
     this._historyPast.push(this._durableState());
     this._historyApply(snapshot);
     return true;
   },
 
-  _historyApply(snapshot) {
+  _historyApply(snapshot, opts: any = {}) {
     // A stored snapshot mentions everything, but a rows-selection snapshot
     // carries only the opaque marker — restore the geometry it can express
     // and leave the marker out (rows-selections are non-durable, §5.1).
@@ -213,7 +216,7 @@ Object.assign(ChartView.prototype, {
     if (!snapshot.selection || !snapshot.selection.rows) {
       patch.selection = snapshot.selection ?? null;
     }
-    this._applyStatePatch(patch, { source: "history", animate: true, history: false });
+    this._applyStatePatch(patch, { ...opts, source: "history", animate: true, history: false });
     this._historyLastInteractionId = null;
     this._updateHistoryButtons();
   },
@@ -240,7 +243,7 @@ Object.assign(ChartView.prototype, {
   // Kernel-resolved rows-selection (§5.1/§8): the same mask buffers the
   // selection reply ships, applied as a NON-durable selection — never in
   // history, reported in state only as the opaque marker.
-  _applyRowsSelection(msg, buffers) {
+  _applyRowsSelection(msg, buffers, opts: any = {}) {
     this._clearLassoOverlay();
     this._clearBoxOverlay();
     // A rows document replaces the whole selection. The message carries
@@ -259,7 +262,7 @@ Object.assign(ChartView.prototype, {
     this._stateSelection = { rows: true };
     this._selectionCount = msg.total || 0;
     this.draw();
-    if (this._interactionFlag("select", true)) {
+    if (opts.dispatch !== false && this._interactionFlag("select", true)) {
       this._dispatchChartEvent("select", {
         total: this._selectionCount,
         view: this._eventView("select"),

@@ -147,6 +147,19 @@ history works in notebooks and standalone HTML export identically.
   selection per PR #117.
 - **Capacity** is 64 entries, oldest evicted. Snapshots are a handful of
   floats; memory is not a concern, predictability is.
+
+Native notebook graphs admit geometric selection asynchronously through Rust.
+Their provisional overlay is not durable state: history and linked selection
+advance only when the accepted predicate is presented. Native refusal restores
+the preceding accepted overlay/masks without pushing history or clearing redo.
+Superseded unpresented accepted results can coalesce; the bounded transport may
+present the last accepted result when a newer intent refuses. A newer explicit
+API row selection owns its facet over an older in-flight geometric reply.
+Back/Next move their stacks only after accepted navigation and do not start
+while another geometric selection is pending. Cached row masks survive only
+an equal, valid compiler row-space stamp; changed membership or shipped-row
+mapping revokes those masks without guessing a replacement predicate.
+Ordinary transports retain the immediate mutation path described above.
 - **Surface.** Back and Next live at the top of the modebar zoom menu, enabled
   only when the corresponding stack side is non-empty. The menu stays open
   while either action is used. They remain subject to the existing modebar fit

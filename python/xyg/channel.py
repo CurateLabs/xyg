@@ -30,6 +30,7 @@ Contracts (moved verbatim from `FigureWidget._on_custom_msg`):
 
 from __future__ import annotations
 
+import copy
 import math
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -82,6 +83,15 @@ __all__ = [
 # (reply message, buffers to ship beside it — None when the reply has none).
 Reply = tuple[dict[str, Any], Optional[list[bytes]]]
 
+
+class _SelectionRefused(RuntimeError):
+    """A native selection resolver refused before applying the predicate."""
+
+    def __init__(self, code: str):
+        super().__init__(code)
+        self.code = code
+
+
 # Semantic selection events include bounded JSON projections. The
 # complete canonical Selection remains server-side and can be re-resolved.
 SELECTION_EVENT_ROW_LIMIT = 1000
@@ -110,14 +120,19 @@ _NO_CALLBACKS = ChannelCallbacks()
 
 def _selection_reply(
     fig: "Figure",
-    selected: dict[int, Any],
+    selected: dict[int, Any] | Selection,
     callbacks: ChannelCallbacks,
     brush: dict[str, Any],
     *,
     include_rows: bool = False,
     kind: Optional[str] = None,
     seq: Any = None,
+    include_predicate: bool = False,
 ) -> Reply:
+    # Freeze the accepted predicate before callbacks can issue a newer API write.
+    predicate = copy.deepcopy(fig._view_state_selection) if include_predicate else None
+    selection = selected if isinstance(selected, Selection) else Selection(fig, selected)
+    selected = selection.per_trace
     if callbacks.on_brush is not None:
         callbacks.on_brush(brush)
     traces = []
@@ -138,10 +153,12 @@ def _selection_reply(
         out.append(wire_idx.tobytes())
         total += len(idx)
     if callbacks.on_select is not None:
-        callbacks.on_select(Selection(fig, selected))
+        callbacks.on_select(selection)
     message: dict[str, Any] = {"type": "selection", "traces": traces, "total": total}
     if seq is not None:
         message["seq"] = seq
+    if include_predicate:
+        message["selection"] = predicate
     if include_rows:
         canonical_row_ids = []
         ids_remaining = SELECTION_EVENT_ID_LIMIT
@@ -205,6 +222,7 @@ def handle_message(
     content: Any,
     buffers: Optional[list[bytes]] = None,
     callbacks: ChannelCallbacks = _NO_CALLBACKS,
+    _selection_resolver: Optional[Callable[[dict[int, Any]], Selection]] = None,
 ) -> Optional[Reply]:
     """Dispatch one client message against a figure.
 
@@ -393,9 +411,21 @@ def handle_message(
                 y0,
                 y1,
             )
+            if _selection_resolver is not None:
+                sel = _selection_resolver(sel)
+        except _SelectionRefused as error:
+            return {
+                "type": "selection_refused",
+                "code": error.code,
+                "selection": copy.deepcopy(fig._view_state_selection),
+                **({"seq": content["seq"]} if content.get("seq") is not None else {}),
+            }, None
         except (KeyError, TypeError, ValueError):
             return None
-        fig._record_selection({"range": {"x0": x0, "x1": x1, "y0": y0, "y1": y1}})
+        range_doc: dict[str, Any] = {"x0": x0, "x1": x1, "y0": y0, "y1": y1}
+        if content.get("mode") in ("x", "y"):
+            range_doc["mode"] = content["mode"]
+        fig._record_selection({"range": range_doc})
         return _selection_reply(
             fig,
             sel,
@@ -404,12 +434,22 @@ def handle_message(
             include_rows=bool(content.get("include_rows")),
             kind="box",
             seq=content.get("seq"),
+            include_predicate=_selection_resolver is not None,
         )
     if kind == "select_polygon":
         try:
             points = content["points"]
             sel = fig.select_polygon(points)
             polygon = [[float(point[0]), float(point[1])] for point in points]
+            if _selection_resolver is not None:
+                sel = _selection_resolver(sel)
+        except _SelectionRefused as error:
+            return {
+                "type": "selection_refused",
+                "code": error.code,
+                "selection": copy.deepcopy(fig._view_state_selection),
+                **({"seq": content["seq"]} if content.get("seq") is not None else {}),
+            }, None
         except (IndexError, KeyError, TypeError, ValueError):
             return None
         fig._record_selection({"polygon": polygon})
@@ -421,12 +461,15 @@ def handle_message(
             include_rows=bool(content.get("include_rows")),
             kind="lasso",
             seq=content.get("seq"),
+            include_predicate=_selection_resolver is not None,
         )
     if kind == "select_clear":
         fig._record_selection(None)
         if callbacks.on_select is not None:
             callbacks.on_select(Selection(fig, {}))
         message: dict[str, Any] = {"type": "selection", "traces": [], "total": 0}
+        if _selection_resolver is not None:
+            message["selection"] = None
         if content.get("seq") is not None:
             message["seq"] = content["seq"]
         if content.get("include_rows"):

@@ -6529,15 +6529,7 @@ export class ChartView {
     gl.uniform1i(u("u_colorMode"), g.colorMode);
     const markOpacity = zoomStyle.opacity * opacityScale;
     gl.uniform1f(u("u_opacity"), markOpacity);
-    gl.uniform1f(u("u_selectedOpacity"), this._markStateNumber("selected", "opacity", 1));
-    gl.uniform1f(u("u_unselectedOpacity"), this._markStateNumber("unselected", "opacity", 0.12));
-    // Optional selected/unselected recolor (§34): .a=1 tints, .a=0 keeps native.
-    const stateColor = (loc, expr) => {
-      const c = expr ? parseColor(this.root, expr, [0, 0, 0, 1]) : null;
-      gl.uniform4f(loc, c ? c[0] : 0, c ? c[1] : 0, c ? c[2] : 0, c ? 1 : 0);
-    };
-    stateColor(u("u_selColor"), this._markStateValue("selected", "color"));
-    stateColor(u("u_unselColor"), this._markStateValue("unselected", "color"));
+    this._selectionUniforms(prog, g);
     const [r, gg, b, a] = g.color;
     gl.uniform4f(u("u_color"), r, gg, b, a);
     gl.uniform1i(u("u_symbol"), g.symbol || 0);
@@ -6551,7 +6543,6 @@ export class ChartView {
     gl.uniform4f(u("u_ptStroke"), sc ? sc[0] : 0, sc ? sc[1] : 0,
       sc ? sc[2] : 0, sc ? sc[3] : 0);
 
-    gl.uniform1i(u("u_selActive"), g.selActive ? 1 : 0);
     const colorOn = g.colorMode !== 0 && g.cBuf;
     const sizeOn = g.sizeMode === 1 && g.sBuf;
     const selOn = g.selActive && g.selBuf;
@@ -6912,6 +6903,20 @@ export class ChartView {
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, segments);
   }
 
+  _selectionUniforms(prog, g) {
+    const gl = this.gl, u = name => uniformOf(gl, prog, name);
+    gl.uniform1i(u("u_selActive"), g.selActive ? 1 : 0);
+    gl.uniform1f(u("u_selectedOpacity"), this._markStateNumber("selected", "opacity", 1));
+    gl.uniform1f(u("u_unselectedOpacity"), this._markStateNumber("unselected", "opacity", 0.12));
+    const stateColor = (state, name) => {
+      const expr = this._markStateValue(state, "color");
+      const color = expr ? parseColor(this.root, expr, [0, 0, 0, 1]) : null;
+      gl.uniform4f(u(name), color ? color[0] : 0, color ? color[1] : 0, color ? color[2] : 0, color ? 1 : 0);
+    };
+    stateColor("selected", "u_selColor");
+    stateColor("unselected", "u_unselColor");
+  }
+
   _drawSegments(g, xm, ym) {
     if (g.n < 1) return;
     const gl = this.gl;
@@ -6934,6 +6939,7 @@ export class ChartView {
     gl.uniform4f(u("u_color"), r, gg, b, a);
     gl.uniform1f(u("u_opacity"), this._strokeOpacity(g.trace.style) * (g._transitionOpacity ?? 1) * (g._legendDim ?? 1));
     gl.uniform1i(u("u_colorMode"), g.colorMode || 0);
+    this._selectionUniforms(prog, g);
     const dashed = this._segmentDash(g, prog);
     if (g.colorMode && g.lut) {
       gl.activeTexture(gl.TEXTURE0);
@@ -6948,6 +6954,7 @@ export class ChartView {
     const bindSegments = (div) => {
       const rgbaBuf = g.rgbaBuf;
       const styleBuf = g.styleBuf;
+      const selectionBuf = g.selActive ? g.selBuf : null;
       const layers = div === 3;
       this._bindVao(
         g,
@@ -6957,7 +6964,7 @@ export class ChartView {
           rgbaBuf ? rgbaBuf._fcId : 0,
           styleBuf ? styleBuf._fcId : 0,
           dashed ? g._segmentDashOffsetBuf._fcId : 0,
-          dashed ? g._segmentDashDirBuf._fcId : 0,
+          selectionBuf ? selectionBuf._fcId : 0,
           g.endsBuf ? g.endsBuf._fcId : 0,
           g.ends2Buf ? g.ends2Buf._fcId : 0,
           g.edgeLayoutBuf ? g.edgeLayoutBuf._fcId : 0,
@@ -6973,9 +6980,9 @@ export class ChartView {
           if (rgbaBuf) this._vaoAttr(ATTR_SLOTS.a_rgba, rgbaBuf, 0, div, 4, true);
           if (styleBuf) this._vaoAttr(ATTR_SLOTS.a_style, styleBuf, 0, div, 4);
           if (dashed) {
-            this._vaoAttr(ATTR_SLOTS.a_dash0, g._segmentDashOffsetBuf, 0, div);
-            this._vaoAttr(ATTR_SLOTS.a_dashDir, g._segmentDashDirBuf, 0, div);
+            this._vaoAttr(ATTR_SLOTS.a_segmentDash, g._segmentDashOffsetBuf, 0, div, 2);
           }
+          if (selectionBuf) this._vaoAttr(ATTR_SLOTS.a_segmentSel, selectionBuf, 0, div);
           if (g.endsBuf) this._vaoAttr(ATTR_SLOTS.a_ends, g.endsBuf, 0, div, 4);
           if (g.ends2Buf) this._vaoAttr(ATTR_SLOTS.a_ends2, g.ends2Buf, 0, div, 3);
           if (g.edgeLayoutBuf) this._vaoAttr(ATTR_SLOTS.a_edgeLayout, g.edgeLayoutBuf, 0, div, 4);
@@ -6987,6 +6994,7 @@ export class ChartView {
         }
       );
       if (!g.cBuf) gl.vertexAttrib1f(ATTR_SLOTS.a_cval, 0);
+      if (!selectionBuf) gl.vertexAttrib1f(ATTR_SLOTS.a_segmentSel, 0);
       if (!rgbaBuf) gl.vertexAttrib4f(ATTR_SLOTS.a_rgba, r, gg, b, a);
       if (!styleBuf) gl.vertexAttrib4f(ATTR_SLOTS.a_style, 1, -1, -1, -1);
       if (!g.endsBuf) gl.vertexAttrib4f(ATTR_SLOTS.a_ends, 0, 0, 0, 0);
@@ -7025,10 +7033,8 @@ export class ChartView {
       return false;
     }
     const n = g.n;
-    const offsets = g._segmentDashOffsets?.length === n
-      ? g._segmentDashOffsets : (g._segmentDashOffsets = new Float32Array(n));
-    const directions = g._segmentDashDirections?.length === n
-      ? g._segmentDashDirections : (g._segmentDashDirections = new Float32Array(n));
+    const data = g._segmentDashData?.length === 2 * n
+      ? g._segmentDashData : (g._segmentDashData = new Float32Array(2 * n));
     const k0 = new Array(n), k1 = new Array(n), lengths = new Float32Array(n);
     const adjacency = new Map();
     const add = (key, index) => {
@@ -7052,12 +7058,12 @@ export class ChartView {
         if (edge === undefined) break;
         visited[edge] = 1;
         if (k0[edge] === current) {
-          offsets[edge] = accumulated;
-          directions[edge] = 1;
+          data[2 * edge] = accumulated;
+          data[2 * edge + 1] = 1;
           current = k1[edge];
         } else {
-          offsets[edge] = accumulated + lengths[edge];
-          directions[edge] = -1;
+          data[2 * edge] = accumulated + lengths[edge];
+          data[2 * edge + 1] = -1;
           current = k0[edge];
         }
         accumulated += lengths[edge];
@@ -7071,8 +7077,7 @@ export class ChartView {
       gl.bufferData(gl.ARRAY_BUFFER, values, gl.DYNAMIC_DRAW);
       return buffer;
     };
-    g._segmentDashOffsetBuf = upload(g._segmentDashOffsetBuf, offsets);
-    g._segmentDashDirBuf = upload(g._segmentDashDirBuf, directions);
+    g._segmentDashOffsetBuf = upload(g._segmentDashOffsetBuf, data);
     const pattern = new Float32Array(8);
     const count = Math.min(dash.length, 8);
     let period = 0;

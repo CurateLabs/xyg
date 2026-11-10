@@ -793,6 +793,24 @@ frame advance; every interaction still requires the exact current stamp.
 Disclosure action values are 0 Toggle, 1 Collapse, 2 Expand; step/ring direction
 is action 1 or 0xffffffff. Mode is 0 Replace, 1 Add, 2 Toggle; policy is
 0 Nodes, 1 Edges, 2 NodesAndInducedEdges; plane is 0 Path, 1 Community, 2 External.
+For SelectRefs (operation 11), policy word 3 remains zero for the existing
+exact-reference operation and its `refs.bytes` payload. Policy 2 instead reads
+`region.nodes.u32`: render-node indices bound by the operation header's exact
+instance/publication stamp. It expands
+those nodes and their induced **published** edges through the same CSR reducer
+as lasso. This lets a host reuse another canonical Rust geometry kernel without
+implementing graph edge policy. Policy 1, missing/wrong-type candidate planes,
+and out-of-bounds indices are invalid. A missing/stale publication, excessive membership, work or
+output refuses atomically. Add/Toggle reduce the incoming candidate node set
+before applying the mode. The host must verify that its candidate row space is
+the exact published node/membership space; this operation cannot repair a
+different frame or a different LOD decision.
+The validated candidate section is borrowed as little-endian u32 bytes through
+this operation; no aligned host slice or duplicate candidate vector is required.
+The same wire parser borrows fixed-arity coordinate, camera, load-budget/seed
+and companion-page fields, preserving their exact dtype/count, finite-value,
+portable-overflow and capacity checks before owner lookup or mutation. This is
+an allocation change, not a request-schema or ABI-version change.
 `changed.refs.bytes` can contain up to 20,000 refs (the symmetric difference
 of two admitted selections); request ref lists remain capped at 10,000.
 

@@ -37,6 +37,9 @@ export const ATTR_SLOTS = {
   a_cval: 6, a_sval: 7, a_sel: 8, a_dval: 9,
   a_len0: 10, a_len1: 11,
   a_dash0: 10, a_dashDir: 11,
+  // Segments pack the existing dash offset/direction losslessly into one
+  // vec2, leaving slot 11 for selection within the portable input budget.
+  a_segmentDash: 10, a_segmentSel: 11,
   // Transition "previous-frame" positions and per-item style channels are
   // independent feature families that coexist in one program (point, bar), so
   // they must occupy disjoint slots. The style family is pinned to 12-15: it is
@@ -890,7 +893,7 @@ export const LINE_CAP_MODES = { butt: 0, round: 1, square: 2 };
 // the extra meta uniforms and the sampler on its per-frame draw path.
 export const SEGMENT_VS = `#version 300 es
 in float ax0; in float ay0; in float ax1; in float ay1; in float a_cval; in vec4 a_rgba; in vec4 a_style;
-in float a_dash0; in float a_dashDir;
+in vec2 a_segmentDash; in float a_segmentSel;
 in vec4 a_ends; in vec3 a_ends2; in vec4 a_edgeLayout;
 in vec4 a_haloRgba; in vec4 a_bodyRgba; in float a_edgeLayer;
 uniform vec2 u_xmap; uniform vec2 u_ymap; uniform vec2 u_res; uniform float u_width;
@@ -919,7 +922,7 @@ uniform int u_colorMode;
 uniform int u_instanceStyleCss; uniform float u_dpr;
 uniform vec2 u_x0meta; uniform vec2 u_x1meta; uniform vec2 u_y0meta; uniform vec2 u_y1meta;
 uniform int u_x0mode; uniform float u_x0constant; uniform int u_x1mode; uniform float u_x1constant; uniform int u_y0mode; uniform float u_y0constant; uniform int u_y1mode; uniform float u_y1constant;
-out float v_off; out float v_cval; out float v_dash; out vec4 v_rgba; out vec4 v_style;
+out float v_off; out float v_cval; out float v_dash; out vec4 v_rgba; out vec4 v_style; out float v_selected;
 out vec2 v_edgeDash; out float v_edgeDist;
 out vec2 v_cap;
 const vec2 corners[4] = vec2[4](vec2(0.,-1.), vec2(0.,1.), vec2(1.,-1.), vec2(1.,1.));
@@ -966,6 +969,7 @@ void xyEdgeHide() {
   v_edgeDash = vec2(0.0); v_edgeDist = 0.0; v_cap=vec2(0.0);
 }
 void main() {
+  v_selected = a_segmentSel;
   vec2 p0;
   vec2 p1;
   if (u_edgePass == 1 && u_edgeEnds == 0) { xyEdgeHide(); return; }
@@ -1087,7 +1091,7 @@ void main() {
   gl_Position = vec4(pos / u_res * 2.0 - 1.0, 0.0, 1.0);
   v_off = c.y * half_w;
   v_cval = u_colorMode == 2 ? (a_cval + 0.5) / 256.0 : a_cval;
-  v_dash = a_dash0 + c.x * len * a_dashDir;
+  v_dash = a_segmentDash.x + c.x * len * a_segmentDash.y;
   v_rgba = rgba; v_style = style;
   v_edgeDash = a_edgeLayout.xy * u_edgeDashScale;
   v_edgeDist = mix(pieceT0, pieceT1, c.x) * pieceLen;
@@ -1097,7 +1101,9 @@ export const SEGMENT_FS = `#version 300 es
 precision highp float; precision highp int;
 uniform vec4 u_color; uniform float u_width; uniform int u_colorMode; uniform sampler2D u_lut; uniform float u_opacity;
 uniform int u_dashCount; uniform float u_dashArr[8]; uniform float u_dashPeriod;
-in float v_off; in float v_cval; in float v_dash; in vec4 v_rgba; in vec4 v_style;
+in float v_off; in float v_cval; in float v_dash; in vec4 v_rgba; in vec4 v_style; in float v_selected;
+uniform int u_selActive; uniform float u_selectedOpacity; uniform float u_unselectedOpacity;
+uniform vec4 u_selColor; uniform vec4 u_unselColor;
 in vec2 v_edgeDash; in float v_edgeDist;
 in vec2 v_cap; uniform int u_instanceStyleCss;
 out vec4 outColor;
@@ -1110,6 +1116,11 @@ void main() {
   vec4 paint = u_colorMode == 3 ? v_rgba : (u_colorMode != 0 ? vec4(texture(u_lut, vec2(clamp(v_cval, 0.0, 1.0), 0.5)).rgb, 1.0) : u_color);
   vec3 rgb = paint.rgb;
   float paintAlpha = (v_style.y >= 0.0 ? v_style.y : paint.a) * v_style.x * u_opacity;
+  if (u_selActive == 1) {
+    vec4 stateColor = v_selected > 0.5 ? u_selColor : u_unselColor;
+    rgb = mix(rgb, stateColor.rgb, stateColor.a);
+    paintAlpha *= v_selected > 0.5 ? u_selectedOpacity : u_unselectedOpacity;
+  }
   float distance = u_instanceStyleCss == 1 ? length(vec2(v_off,max(-v_cap.x,v_cap.x-v_cap.y))) : abs(v_off);
   if (u_instanceStyleCss == 1 && v_cap.x >= 0.0 && v_cap.x <= v_cap.y) distance=abs(v_off);
   float alpha = (1.0 - smoothstep(half_w - 0.5, half_w + 0.5, distance)) * paintAlpha;

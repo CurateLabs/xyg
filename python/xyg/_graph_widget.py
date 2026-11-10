@@ -1,7 +1,7 @@
 """Progressive native layout feeding the ordinary notebook FigureWidget.
 
 Keep the existing declarative compiler, Rust geometry/membership kernels and
-channel callbacks. Only layout scheduling and revisioned frame delivery live here.
+channel callbacks. Layout scheduling, revisioned frame delivery and native selection framing live here.
 """
 
 from __future__ import annotations
@@ -14,11 +14,18 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from functools import partial
 
+from ._figure import Selection
 from ._graph_session import GraphSessionError, GraphSessionStatus
 from ._graph_widget_identity import NotebookGraphIdentity
-from .channel import handle_message
+from .channel import _SelectionRefused, handle_message
 from .graph_layout import GraphLayoutController
 from .widget import FigureWidget
+
+
+class _GraphSelection(Selection):
+    """Selection with the native graph identity projection already attached."""
+
+    graphforge: list[dict[str, object]]
 
 
 class GraphWidget(FigureWidget):
@@ -100,7 +107,7 @@ class GraphWidget(FigureWidget):
             try:
                 figure._notebook_graph_identity.prepare()
             except GraphSessionError as error:
-                if error.status != GraphSessionStatus.BUDGET:
+                if error.status not in (GraphSessionStatus.BUDGET, GraphSessionStatus.CAPACITY):
                     raise
         return figure, figure.build_payload_split()
 
@@ -269,6 +276,7 @@ class GraphWidget(FigureWidget):
             except GraphSessionError as error:
                 if error.status not in (
                     GraphSessionStatus.BUDGET,
+                    GraphSessionStatus.CAPACITY,
                     GraphSessionStatus.SELECTION_TOO_LARGE,
                 ):
                     raise
@@ -282,9 +290,10 @@ class GraphWidget(FigureWidget):
             callback(result)
 
         def selection_callback(selection):
-            selection.graphforge, error = project(selection.per_trace)
-            if error:
-                selection.graphforge_error = error
+            if not hasattr(selection, "graphforge"):
+                selection.graphforge, error = project(selection.per_trace)
+                if error:
+                    selection.graphforge_error = error
             callback = self._callbacks.on_select
             assert callback is not None
             callback(selection)
@@ -299,6 +308,33 @@ class GraphWidget(FigureWidget):
             else None,
             on_select=selection_callback if self._callbacks.on_select else None,
         )
+
+    @staticmethod
+    def _resolve_region(figure, selected):
+        adapter = figure._notebook_graph_identity
+        meta = adapter.meta
+        node_trace, edge_trace = meta["node_trace"], meta["edge_trace"]
+        edge = figure.traces[edge_trace]
+        if edge.hidden_categories:
+            raise _SelectionRefused("XYG_GRAPH_SELECTION_VISIBILITY_UNSUPPORTED")
+        try:
+            identities = adapter.select_region(
+                selected.get(node_trace, ()), include_edges=not edge.hidden
+            )
+            graph_rows = adapter.render_rows(identities, whole_groups=True)
+        except GraphSessionError as error:
+            if error.status in (
+                GraphSessionStatus.BUDGET,
+                GraphSessionStatus.CAPACITY,
+                GraphSessionStatus.SELECTION_TOO_LARGE,
+            ):
+                raise _SelectionRefused("XYG_GRAPH_SELECTION_RESOURCE_LIMIT") from None
+            raise _SelectionRefused("XYG_GRAPH_SELECTION_STALE") from None
+        except ValueError:
+            raise _SelectionRefused("XYG_GRAPH_SELECTION_PUBLICATION_UNSUPPORTED") from None
+        result = _GraphSelection(figure, {**selected, **graph_rows})
+        result.graphforge = identities
+        return result
 
     def set_view(self, *args, **kwargs):
         return self._host_call(super().set_view, *args, **kwargs)
@@ -425,7 +461,11 @@ class GraphWidget(FigureWidget):
             figure = self._figures[revision]
             before = self._state(figure)
             reply = handle_message(
-                figure, content, msg_buffers, callbacks=self._identity_callbacks(figure)
+                figure,
+                content,
+                msg_buffers,
+                callbacks=self._identity_callbacks(figure),
+                _selection_resolver=partial(self._resolve_region, figure),
             )
             after = self._state(figure)
             for field in before:
