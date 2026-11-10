@@ -23,9 +23,9 @@ import urllib.request
 from pathlib import Path
 
 if __package__:
-    from .install_vscode_graph_notebook import installed_payloads
+    from .install_vscode_graph_notebook import application_payload, installed_payloads
 else:
-    from install_vscode_graph_notebook import installed_payloads
+    from install_vscode_graph_notebook import application_payload, installed_payloads
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -72,6 +72,8 @@ def main():
         or Path(installation["extensions"]) != extensions
         or installed_payloads(lock, extensions, installation_dir / "downloads")
         != installation["payloads"]
+        or application_payload(lock["application"], code.parent)
+        != installation["applicationPayload"]
         or installation["applicationExecutable"]
         != {
             "bytes": code.stat().st_size,

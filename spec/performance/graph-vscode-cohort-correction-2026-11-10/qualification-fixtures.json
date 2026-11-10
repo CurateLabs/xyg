@@ -1,0 +1,134 @@
+{
+  "clientSha256": "447a695356a69b140b0ed7a00276c1df7df805c280736a6e61264626c7ba03fa",
+  "failure": {
+    "attach.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/4fefb50f0bd372b295b4ebb569331435e6ec934237822f590be168006e07a276.gz",
+      "archiveSha256": "9e90c9c34a1df3ecb15601c195527a6f5a292da8d7f55650bed5896ec2696ff5",
+      "bytes": 360,
+      "sha256": "4fefb50f0bd372b295b4ebb569331435e6ec934237822f590be168006e07a276"
+    },
+    "cleanup.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/f60414b1370abbe55a50b86497058ef1815acc235c21ab332deafb29f7c89f93.gz",
+      "archiveSha256": "92f65024544d508b4fa22d31bd16a945aae18aa26d6aee58c1d51f0e2c793f62",
+      "bytes": 379,
+      "sha256": "f60414b1370abbe55a50b86497058ef1815acc235c21ab332deafb29f7c89f93"
+    },
+    "controller-complete.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/116e2d2049e97afed624df8857881686d372dcc296f182fdf3b478e71cdbd226.gz",
+      "archiveSha256": "9eb5eb1653dfe7598d9b7b8d5573f2fb2b2fb210ad839b0c008e3cf295bf4734",
+      "bytes": 184,
+      "sha256": "116e2d2049e97afed624df8857881686d372dcc296f182fdf3b478e71cdbd226"
+    },
+    "extension-state.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/9d8f5cee534f4c875a9cc0f4c2bedb4094c997cd46d7a7c0c23ac7be5afab018.gz",
+      "archiveSha256": "de7d5d91bcb792c35545344082586909a2fa7c49d5ef358cac1f26daa4ec820b",
+      "bytes": 9562,
+      "sha256": "9d8f5cee534f4c875a9cc0f4c2bedb4094c997cd46d7a7c0c23ac7be5afab018"
+    },
+    "failure.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/cb389c233e664935b41434d4308ed8e9c0bec32bd0c8da23a58bc8007c5d5cdf.gz",
+      "archiveSha256": "c79a3c08aafdb53db5ca4800e4631394f7e6fb00b229df8debd427a8528803c7",
+      "bytes": 70800,
+      "sha256": "cb389c233e664935b41434d4308ed8e9c0bec32bd0c8da23a58bc8007c5d5cdf"
+    },
+    "run-result.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/01ed9c1f0caec1f792c2eee3899e5300491fe15198338b7ae0afbd1e2edf650b.gz",
+      "archiveSha256": "5b0474df8ed1cbf5663b7b112f3ac1cd7993a1281a67ec0af6bf3b5af00821a8",
+      "bytes": 1221,
+      "sha256": "01ed9c1f0caec1f792c2eee3899e5300491fe15198338b7ae0afbd1e2edf650b"
+    }
+  },
+  "nativeSha256": "378a069c4f802bb97e6273333766a4afee99a626d4fc409f776f31d21968a4df",
+  "normal": {
+    "cleanup.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/649b5405008ac4015fe2abaeb55fede94195f8135672c2911f89c18bff4a3ad4.gz",
+      "archiveSha256": "8517e8cb135a61fe87bd902783c8b6684c8933c4fdad95186f934d5a0982419f",
+      "bytes": 379,
+      "sha256": "649b5405008ac4015fe2abaeb55fede94195f8135672c2911f89c18bff4a3ad4"
+    },
+    "connected.png": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/eeab994e1051c3006f0cbf6d7dba5aaf1e4d1041c573b21dcb4284c26e5b6ef0.gz",
+      "archiveSha256": "50718aa57b8bdb74392df45e80cc7c429ddbeb395049cd225c389b23c6f2f413",
+      "bytes": 21065,
+      "sha256": "eeab994e1051c3006f0cbf6d7dba5aaf1e4d1041c573b21dcb4284c26e5b6ef0"
+    },
+    "controller-complete.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41.gz",
+      "archiveSha256": "857e8dc6760f12d1b6ad15479d85e8145534f75f681ff8d45982c2d09cb947b6",
+      "bytes": 33,
+      "sha256": "b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41"
+    },
+    "final.png": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/a4a22f2d8c3cb5a9054a5374b81e6d8936f7008382ac8afb16879058285f01b6.gz",
+      "archiveSha256": "f7088f17f377f108ace2b03a9d98d8b66ec9da4414b1336700cdf5e08c2162f4",
+      "bytes": 9823,
+      "sha256": "a4a22f2d8c3cb5a9054a5374b81e6d8936f7008382ac8afb16879058285f01b6"
+    },
+    "graph.ipynb": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/3253d7d7a2a5390d29e671bb9a1e1c5e065222ddeb0b501c04662c68691280e0.gz",
+      "archiveSha256": "a82b1d4ead15201de73474e316bbc30a4c8908e51609a8afd732a3b1d414df4d",
+      "bytes": 38513,
+      "sha256": "3253d7d7a2a5390d29e671bb9a1e1c5e065222ddeb0b501c04662c68691280e0"
+    },
+    "identity-parity-input.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/d61bc9cd9febf7cf06784bfb938355a5c9d3d19e7bbca2a66f2596c842c91d2c.gz",
+      "archiveSha256": "3d7bf18e21efd474f4086df6088a6404144c964b6679b452b17f637d633f9968",
+      "bytes": 17814,
+      "sha256": "d61bc9cd9febf7cf06784bfb938355a5c9d3d19e7bbca2a66f2596c842c91d2c"
+    },
+    "identity-parity.log": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/ea80ea7189b6763969bbbca36ca084a6011b0883d9c6f1542249566cfe253ffd.gz",
+      "archiveSha256": "6e4f59d1b24dc6542854a4f034d973c5af5c4877367533fca737b0ffa2e6e6a3",
+      "bytes": 1233,
+      "sha256": "ea80ea7189b6763969bbbca36ca084a6011b0883d9c6f1542249566cfe253ffd"
+    },
+    "initial.png": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/7cf256f7c8aada6ffd995d0b0578b7dea41d879c7f1a21cec1936a71577220e1.gz",
+      "archiveSha256": "178ac2e144a03dbf1a6ced905bf9be2feafd217f5eb67c197be1367d6152a8a2",
+      "bytes": 14261,
+      "sha256": "7cf256f7c8aada6ffd995d0b0578b7dea41d879c7f1a21cec1936a71577220e1"
+    },
+    "inspector-sources.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/a90fc0ea0e24fef80c4eda0f8bbbbf9141b2c55eb1c1c6bfc0bebfdde731980e.gz",
+      "archiveSha256": "ba4cb1d21bcad8ca49744abc93162b29ef29725324447cf6acb88b018be2c1f9",
+      "bytes": 1342,
+      "sha256": "a90fc0ea0e24fef80c4eda0f8bbbbf9141b2c55eb1c1c6bfc0bebfdde731980e"
+    },
+    "installation.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/f97851d7d5442fafb6b0380eb1bdf7c14639006279839a23a6b848565d4387c8.gz",
+      "archiveSha256": "343696010d14f119a66c2a02dc61fcd405a9e34845bca53d1eb68ed88508ebcf",
+      "bytes": 695414,
+      "sha256": "f97851d7d5442fafb6b0380eb1bdf7c14639006279839a23a6b848565d4387c8"
+    },
+    "kernel-info.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/8db7cfc12cf13d3cc9108b782e98b1b21d045bc30b9693951ea2c1699defcdac.gz",
+      "archiveSha256": "8f57b2fd7f2217c876e0330d81c9dd14846a7c42b2b19ba6303fab06b2434653",
+      "bytes": 192,
+      "sha256": "8db7cfc12cf13d3cc9108b782e98b1b21d045bc30b9693951ea2c1699defcdac"
+    },
+    "report.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/15116c0ae9319d9bda9ad90c3caa475cdbf2e7138788feff2057589d98ec069b.gz",
+      "archiveSha256": "0fb1934a2eb41fcf987789dd381d442160a791901c9b3b557b9188935110f16f",
+      "bytes": 327365,
+      "sha256": "15116c0ae9319d9bda9ad90c3caa475cdbf2e7138788feff2057589d98ec069b"
+    },
+    "run-result.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/a2b80d531a84c0c7bb4b2a6316719f746fbdb2146a301697a73846811119bca1.gz",
+      "archiveSha256": "068fd3b1093c9f0bc587e777cc62ac89a80f09c91b1c5b56760b31f075bd49ea",
+      "bytes": 1208,
+      "sha256": "a2b80d531a84c0c7bb4b2a6316719f746fbdb2146a301697a73846811119bca1"
+    },
+    "served-widget-assets.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/5e3c88fbc7dd9b5c4f28ecb561eb505785ad787db5a67f9a7daf03e9d11ee795.gz",
+      "archiveSha256": "098be3cf496d6aacc2e24b8c6752907b35abcf18577faefb8afca3057086a6f9",
+      "bytes": 649,
+      "sha256": "5e3c88fbc7dd9b5c4f28ecb561eb505785ad787db5a67f9a7daf03e9d11ee795"
+    },
+    "server-environment.json": {
+      "archive": "spec/performance/graph-vscode-cohort-correction-2026-11-10/evidence/602787bb95b56602d712e9ddcdba30f46c0ef8805d281fd9a295e7e9610bff5c.gz",
+      "archiveSha256": "43cf7d28ac5eed65d0abb00af6d1093265e957466f5f36e53c9f05c5c29400ce",
+      "bytes": 281,
+      "sha256": "602787bb95b56602d712e9ddcdba30f46c0ef8805d281fd9a295e7e9610bff5c"
+    }
+  }
+}

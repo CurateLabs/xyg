@@ -8,7 +8,9 @@
     "bytes": 160672134,
     "sha256": "be59af3e4da58f07439251b281dc66b6874fcc607e80d8f011a695a7737e7d02",
     "executableSha256": "d1a85801f176b2cfdceee8618d54a56a159accaee42bef8cbaa8bdb707d96b93",
-    "executableBytes": 195299104
+    "executableBytes": 195299104,
+    "payloadEntries": 3192,
+    "payloadSha256": "2f08f8c3a814d03be19c7e2fb8b172f71b0c32343eec28f4c46ceed26be858e1"
   },
   "extensions": [
     {

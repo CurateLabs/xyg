@@ -218,7 +218,22 @@ def verify(files, *, expected_client, expected_native, notebook_source):
             != sorted(expected_artifacts)
         ):
             errors.append("official pinned application and VSIX artifact identities required")
+        app_payload = installation["applicationPayload"]
+        if (
+            len(app_payload["entries"]) != lock["application"]["payloadEntries"]
+            or app_payload["entriesSha256"] != lock["application"]["payloadSha256"]
+            or _sha(
+                json.dumps(app_payload["entries"], sort_keys=True, separators=(",", ":")).encode()
+            )
+            != app_payload["entriesSha256"]
+        ):
+            errors.append("complete stock installed application payload required")
         expected_extensions = {row["id"]: row for row in lock["extensions"]}
+        if sorted(installation["installed"], key=lambda row: row["id"]) != sorted(
+            [{key: row[key] for key in ("id", "version")} for row in lock["extensions"]],
+            key=lambda row: row["id"],
+        ):
+            errors.append("exact installed extension identities required")
         if set(installation["payloads"]) != set(expected_extensions):
             errors.append("exact installed extension payload set required")
         for identifier, payload in installation["payloads"].items():

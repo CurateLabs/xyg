@@ -7,17 +7,24 @@ import gzip
 import hashlib
 import io
 import json
+import zipfile
 from pathlib import Path
 
 import pytest
 from PIL import Image, ImageDraw
 from scripts.graph_notebook_pixels import mark_witness
-from scripts.install_vscode_graph_notebook import checked_artifact
+from scripts.install_vscode_graph_notebook import (
+    application_payload,
+    checked_artifact,
+    installed_payloads,
+)
 from scripts.verify_ci_workflow import validate_workflow
 from scripts.verify_vscode_graph_notebook_report import verify, verify_failure
 
 ROOT = Path(__file__).resolve().parents[1]
-FIXTURES = ROOT / "spec/performance/graph-vscode-notebook-2026-11-10/qualification-fixtures.json"
+FIXTURES = (
+    ROOT / "spec/performance/graph-vscode-cohort-correction-2026-11-10/qualification-fixtures.json"
+)
 
 
 @pytest.fixture(scope="module")
@@ -130,6 +137,13 @@ def test_a_report_alone_or_missing_sidecar_cannot_qualify(recorded, filename):
         ("cleanup.json", ("owned", 0, "terminated"), False),
         ("installation.json", ("lockSha256",), "f" * 64),
         ("installation.json", ("payloads", "ms-toolsai.jupyter", "filesSha256"), "f" * 64),
+        ("installation.json", ("installed",), []),
+        (
+            "installation.json",
+            ("applicationPayload", "entries", "resources/app/out/main.js", "sha256"),
+            "f" * 64,
+        ),
+        ("installation.json", ("applicationPayload", "entriesSha256"), "f" * 64),
         ("served-widget-assets.json", (0, "installedBytesEqual"), False),
         ("server-environment.json", ("packages", "anywidget"), "0.0.0"),
         ("kernel-info.json", ("language_info", "version"), "3.10.0"),
@@ -269,3 +283,92 @@ def test_controls_and_legend_cannot_substitute_for_connected_mark_pixels(recorde
     positions["x"] = [value + (ranges["x"][1] - ranges["x"][0]) * 0.15 for value in positions["x"]]
     with pytest.raises(ValueError, match="missing rendered mark"):
         mark_witness(bundles["normal"]["connected.png"], positions, ranges)
+
+
+@pytest.mark.parametrize("good_last", [True, False])
+def test_duplicate_extension_ids_cannot_overwrite_an_unverified_directory(
+    tmp_path, monkeypatch, good_last
+):
+    extensions = tmp_path / "extensions"
+    downloads = tmp_path / "downloads"
+    extensions.mkdir()
+    downloads.mkdir()
+    manifest = json.dumps({"publisher": "test", "name": "pinned", "version": "1.0"}).encode()
+    bad = extensions / "first-unverified"
+    good = extensions / "later-verified"
+    bad.mkdir()
+    (bad / "package.json").write_bytes(manifest)
+    (bad / "unverified.js").write_text("throw Error('must not load')")
+    good.mkdir()
+    (good / "package.json").write_bytes(manifest)
+    (good / ".vsixmanifest").write_bytes(b"manifest")
+    archive = downloads / "test.pinned-1.0.vsix"
+    with zipfile.ZipFile(archive, "w") as file:
+        file.writestr("extension/package.json", manifest)
+        file.writestr("extension.vsixmanifest", b"manifest")
+    files = {
+        "package.json": hashlib.sha256(
+            json.dumps(json.loads(manifest), sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest(),
+        ".vsixmanifest": hashlib.sha256(b"manifest").hexdigest(),
+    }
+    row = {
+        "id": "test.pinned",
+        "version": "1.0",
+        "sha256": hashlib.sha256(archive.read_bytes()).hexdigest(),
+        "payloadFiles": 2,
+        "payloadSha256": hashlib.sha256(
+            json.dumps(files, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest(),
+    }
+    original_iterdir = Path.iterdir
+    monkeypatch.setattr(
+        Path,
+        "iterdir",
+        lambda path: (
+            iter((bad, good) if good_last else (good, bad))
+            if path == extensions
+            else original_iterdir(path)
+        ),
+    )
+    with pytest.raises(ValueError, match="duplicate installed extension ID"):
+        installed_payloads({"extensions": [row]}, extensions, downloads)
+
+
+@pytest.mark.parametrize(
+    "mutation", ["changed", "missing", "extra_file", "extra_directory", "execute", "link"]
+)
+def test_complete_application_payload_rejects_unpinned_resources(tmp_path, mutation):
+    root = tmp_path / "application"
+    resource = root / "resources/main.js"
+    resource.parent.mkdir(parents=True)
+    resource.write_bytes(b"original")
+    resource.chmod(0o644)
+    entries = {
+        "resources": {"kind": "directory"},
+        "resources/main.js": {
+            "kind": "file",
+            "bytes": 8,
+            "sha256": hashlib.sha256(b"original").hexdigest(),
+            "executable": False,
+        },
+    }
+    digest = hashlib.sha256(
+        json.dumps(entries, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    lock = {"payloadEntries": 2, "payloadSha256": digest}
+    assert application_payload(lock, root) == {"entries": entries, "entriesSha256": digest}
+    if mutation == "changed":
+        resource.write_bytes(b"modified")
+    elif mutation == "missing":
+        resource.unlink()
+    elif mutation == "extra_file":
+        (root / "extra").write_bytes(b"unverified")
+    elif mutation == "extra_directory":
+        (root / "extra").mkdir()
+    elif mutation == "execute":
+        resource.chmod(0o755)
+    else:
+        (root / "link").symlink_to(resource)
+    with pytest.raises(ValueError, match="installed application"):
+        application_payload(lock, root)

@@ -16,6 +16,7 @@ import json
 import os
 import platform
 import shutil
+import stat
 import subprocess
 import sys
 import tarfile
@@ -48,13 +49,46 @@ def checked_artifact(record, path, cache):
     return {"file": path.name, "bytes": path.stat().st_size, "sha256": digest}
 
 
+def application_payload(lock, code_root):
+    """Recheck all installed files and directories against the pinned archive map."""
+    entries = {}
+    for path in sorted(code_root.rglob("*")):
+        info = path.lstat()
+        name = path.relative_to(code_root).as_posix()
+        if stat.S_ISREG(info.st_mode):
+            with path.open("rb") as file:
+                digest = hashlib.file_digest(file, "sha256").hexdigest()
+            entries[name] = {
+                "kind": "file",
+                "bytes": info.st_size,
+                "sha256": digest,
+                "executable": bool(info.st_mode & 0o111),
+            }
+        elif stat.S_ISDIR(info.st_mode):
+            entries[name] = {"kind": "directory"}
+        else:
+            # This exact official archive has no links or special files.
+            raise ValueError("unexpected installed application entry: " + name)
+    digest = hashlib.sha256(
+        json.dumps(entries, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    if len(entries) != lock["payloadEntries"] or digest != lock["payloadSha256"]:
+        raise ValueError("installed application payload changed")
+    return {"entries": entries, "entriesSha256": digest}
+
+
 def installed_payloads(lock, extensions, downloads):
     payloads = {}
     installed = {}
     for directory in extensions.iterdir():
         if directory.is_dir():
+            if directory.is_symlink():
+                raise ValueError("linked installed extension directory")
             manifest = json.loads((directory / "package.json").read_text())
-            installed[manifest["publisher"] + "." + manifest["name"]] = directory
+            identifier = manifest["publisher"] + "." + manifest["name"]
+            if identifier in installed:
+                raise ValueError("duplicate installed extension ID: " + identifier)
+            installed[identifier] = directory
     if set(installed) != {row["id"] for row in lock["extensions"]}:
         raise ValueError("unexpected installed extension set")
     for row in lock["extensions"]:
@@ -135,6 +169,7 @@ def main():
     package = json.loads((code_root / "resources/app/package.json").read_text())
     if product["commit"] != app["commit"] or package["version"] != app["version"]:
         raise ValueError("installed desktop app version/commit mismatch")
+    app_payload = application_payload(app, code_root)
     env = {
         key: value
         for key, value in os.environ.items()
@@ -194,6 +229,7 @@ def main():
         extensions=str(extensions),
         installed=installed,
         payloads=installed_payloads(lock, extensions, downloads),
+        applicationPayload=app_payload,
         applicationExecutable={
             "bytes": code.stat().st_size,
             "sha256": hashlib.file_digest(code.open("rb"), "sha256").hexdigest(),

@@ -1531,3 +1531,8 @@ tests/vscode_graph_notebook/** text eol=lf
 spec/performance/graph-vscode-notebook-2026-11-10/** text eol=lf
 spec/performance/graph-vscode-notebook-2026-11-10/**/*.gz -text
 spec/performance/graph-vscode-notebook-2026-11-10/**/*.png -text
+
+# Complete installed desktop-cohort correction evidence.
+spec/performance/graph-vscode-cohort-correction-2026-11-10/** text eol=lf
+spec/performance/graph-vscode-cohort-correction-2026-11-10/**/*.gz -text
+spec/performance/graph-vscode-cohort-correction-2026-11-10/**/*.png -text

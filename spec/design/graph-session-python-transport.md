@@ -534,3 +534,12 @@ platform support, installed XYG distributions, box/lasso edge policies,
 derived/aggregate/compound routing, selected/annotated exports, the full notebook
 ladder and complete accessibility/performance/competitor acceptance remain open.
 No #1015 or milestone closure follows from this small-fixture qualification.
+
+The desktop cohort startup check also hashes all installed application resources
+and directories against the complete map derived from the official archive.
+It rejects duplicate extension IDs before building the ID map; a later valid
+copy cannot hide an earlier unverified directory. The strict report requires
+the same application map and exact extension ID/version list. This strengthens
+the admission witness; it does not change runtime rendering or kernel policy.
+The original review findings and correction evidence are retained in
+`spec/performance/graph-vscode-cohort-correction-2026-11-10/`.
