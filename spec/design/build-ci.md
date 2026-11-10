@@ -372,10 +372,21 @@ retains its four-minute ceiling; no status or merge-queue policy is added.
 The shared Lab/Notebook7/desktop region oracle covers UUIDs, induced edges,
 GPU masks, raw RGBA/refusal/history, trusted gestures and release. Desktop
 adapters preserve isolated direct WebGL and measured iframe input coordinates.
+Pan is a public toggle: the shared journey reads the canvas's exposed drag-mode
+attribute and activates Pan only when needed, then requires it to be active
+before sending the trusted drag. An already active tool must not be toggled off.
 The verifier additionally binds fresh repeated-cell orders, actual application,
 installed payloads, kernel, screenshot/pixel and process sidecars. `make check-ci`
 includes its adversarial artifact controls; required browser execution cannot
 be replaced by optional PNG unit-test admission.
+
+Both Notebook7 steps independently require the same launcher export. Mutation
+tests target the named job/step, require an actual edit and preserve the other
+step; a workflow-global uniqueness assertion is invalid for that shared command.
+`make check-ci` includes `test_graph_notebook_report.py` as well as the desktop
+report controls so these guards execute before publication. The original hosted
+failure and the controlled active-Pan failure remain evidence of failed runs;
+the latter does not identify the hosted timeout's precise starting tool state.
 
 `Retain desktop graph region evidence` runs on success and failure with fatal
 missing-output handling. Its explicit files and PNG/pixel patterns exclude the

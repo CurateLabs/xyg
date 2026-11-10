@@ -179,7 +179,11 @@ export async function runGraphNotebookRegions({root,temp,page,input=page,surface
  const lassoMasks=await checkMasks(lassoExpected),afterLasso=await picture('lasso',(await geometry()).points);
  // A real camera change must not turn the next predicate into source-row or
  // screen-space guesses: compare its new emitted f64 geometry independently.
- await hoverCanvas(canvas);await surface.getByRole('button',{name:'Pan',exact:true}).click();
+ await hoverCanvas(canvas);
+ // Pan is a toggle. A preceding selection/readiness transition may already
+ // have restored it; another click would disable the gesture under test.
+ if(await canvas.getAttribute('data-xy-dragmode')!=='pan')await surface.getByRole('button',{name:'Pan',exact:true}).click();
+ assert.equal(await canvas.getAttribute('data-xy-dragmode'),'pan','trusted pan requires the active public tool');
  g=await geometry();start=await page.evaluate(()=>globalThis.__regionEvents.length);
  await input.mouse.move(g.origin[0]+g.width*0.75,g.origin[1]+g.height*0.75);await input.mouse.down();
  await input.mouse.move(g.origin[0]+g.width*0.75+20,g.origin[1]+g.height*0.75-12,{steps:6});await input.mouse.up();

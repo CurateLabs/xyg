@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 from scripts.classify_release_surface import classify
-from scripts.verify_ci_workflow import validate_workflow
+from scripts.verify_ci_workflow import _job_blocks, _named_step_blocks, validate_workflow
 from scripts.verify_graph_notebook_report import ABI_VERSION, verify
 
 
@@ -411,10 +411,39 @@ def test_notebook7_report_cannot_relabel_another_frontend(field, value):
 )
 def test_notebook7_gate_cannot_skip_install_execution_or_real_frontend_verifier(tmp_path, command):
     workflow = Path(".github/workflows/ci.yml").read_text()
-    assert workflow.count(command) == 1
+    steps = _named_step_blocks(_job_blocks(workflow)["test"])
+    step = steps["Notebook 7 graph journey"]
+    regions = steps["Notebook 7 graph regions"]
+    assert step.count(command) == 1
+    replacement = step.replace("          " + command, "          echo missing-notebook7")
+    assert replacement != step
     broken = tmp_path / "ci.yml"
-    broken.write_text(workflow.replace("          " + command, "          echo missing-notebook7"))
+    broken.write_text(workflow.replace(step, replacement))
+    assert (
+        _named_step_blocks(_job_blocks(broken.read_text())["test"])["Notebook 7 graph regions"]
+        == regions
+    )
     assert any("Notebook7" in error for error in validate_workflow(broken))
+
+
+@pytest.mark.parametrize("step_name", ["Notebook 7 graph journey", "Notebook 7 graph regions"])
+def test_each_notebook7_step_requires_its_own_shared_launcher(tmp_path, step_name):
+    workflow = Path(".github/workflows/ci.yml").read_text()
+    steps = _named_step_blocks(_job_blocks(workflow)["test"])
+    command = 'export XYG_GRAPH_JUPYTER="$RUNNER_TEMP/graph-notebook7-env/bin/jupyter-notebook"'
+    assert all(
+        steps[name].count(command) == 1
+        for name in ("Notebook 7 graph journey", "Notebook 7 graph regions")
+    )
+    step = steps[step_name]
+    broken = tmp_path / "ci.yml"
+    broken.write_text(workflow.replace(step, step.replace(command, "echo missing-launcher")))
+    errors = validate_workflow(broken)
+    assert any(step_name in error for error in errors)
+    other = (
+        "Notebook 7 graph regions" if step_name.endswith("journey") else "Notebook 7 graph journey"
+    )
+    assert not any(other in error for error in errors)
 
 
 @pytest.mark.parametrize(

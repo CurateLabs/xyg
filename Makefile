@@ -111,7 +111,7 @@ check-import:
 # (injected-failure propagation, every applicability branch, WASM asset gate).
 check-ci:
 	$(PYTHON) scripts/verify_local.py --only ci_workflow
-	$(PYTHON) -m pytest -q tests/test_verify_ci_workflow.py tests/test_release_surface_gate.py tests/test_verify_wasm_assets.py tests/test_check_scheduled_evidence.py tests/test_wasm_feature_graph.py tests/test_vscode_graph_notebook_report.py tests/test_vscode_graph_notebook_cohort.py tests/test_vscode_graph_regions_report.py
+	$(PYTHON) -m pytest -q tests/test_verify_ci_workflow.py tests/test_release_surface_gate.py tests/test_verify_wasm_assets.py tests/test_check_scheduled_evidence.py tests/test_wasm_feature_graph.py tests/test_graph_notebook_report.py tests/test_vscode_graph_notebook_report.py tests/test_vscode_graph_notebook_cohort.py tests/test_vscode_graph_regions_report.py
 
 # Read-only: blocks readiness on unresolved scheduled-evidence or main-CI failures,
 # and compares the live ruleset/branch protection with the checked-in contract.

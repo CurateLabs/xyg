@@ -1598,3 +1598,8 @@ spec/performance/graph-vscode-regions-2026-11-10/*.json text eol=lf
 spec/performance/graph-vscode-regions-2026-11-10/**/*.gz -text
 scripts/verify_vscode_graph_regions_report.py text eol=lf
 tests/test_vscode_graph_regions_report.py text eol=lf
+
+# Hosted notebook correction preserves predecessor sources and failed runs.
+spec/performance/graph-notebook-ci-repair-2026-11-10/*.md text eol=lf
+spec/performance/graph-notebook-ci-repair-2026-11-10/*.json text eol=lf
+spec/performance/graph-notebook-ci-repair-2026-11-10/**/*.gz -text
