@@ -1526,3 +1526,7 @@ scripts/graph_notebook_kernel_witness.mjs text eol=lf
 js/test/graph-notebook-kernel-witness.test.mjs text eol=lf
 spec/performance/notebook-kernel-witness-2026-11-10/** text eol=lf
 spec/performance/notebook-kernel-witness-2026-11-10/**/*.gz -text
+
+# Exact-reply consumption conformance and append-only correction evidence.
+spec/performance/keyboard-exact-reply-guard-2026-11-10/** text eol=lf
+spec/performance/keyboard-exact-reply-guard-2026-11-10/**/*.gz -text

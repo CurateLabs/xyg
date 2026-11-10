@@ -164,7 +164,7 @@ async function probe(name) {
   await page.evaluate(() => {
     const v = window.xyConformanceView;
     window.xyConformanceKeyboardLive = v.a11yLive.textContent;
-    const cursor = window.xyConformanceHovers.at(-1).cursor.px;
+    const cursor = [...window.xyConformanceHovers.at(-1).cursor.px];
     const root = v.root.getBoundingClientRect(), canvas = v.canvas.getBoundingClientRect();
     window.xyConformanceExpectedScreen = [
       cursor[0] - (canvas.left - root.left), cursor[1] - (canvas.top - root.top),
@@ -172,15 +172,23 @@ async function probe(name) {
     // A host may move an output without resizing its canvas while the exact
     // canonical-value response is pending. Its root-relative position stays.
     document.getElementById("chart").style.transform = "translate(31px, 97px)";
+    const hoverCount = window.xyConformanceHovers.length;
     v._onKernelMsg({
       type: "pick_result",
       seq: v._pickSeq,
       row: { trace: 0, index: 1, x: -1.2, y: 1.4 },
     }, []);
+    // An unchanged approximate hover cannot prove that this reply was consumed.
+    const exactHover = window.xyConformanceHovers.slice(hoverCount).find((event) =>
+      event.exact === true && event.trace === 0 && event.index === 1
+      && event.row?.trace === 0 && event.row.index === 1
+      && event.row.x === -1.2 && event.row.y === 1.4);
+    window.xyConformanceKeyboardExactReplyReceived = Boolean(exactHover);
     window.xyConformanceExactPreserved =
       v.a11yLive.textContent === window.xyConformanceKeyboardLive;
     window.xyConformanceMovedCursorStable =
-      JSON.stringify(window.xyConformanceHovers.at(-1).cursor.px) === JSON.stringify(cursor);
+      Boolean(exactHover)
+      && JSON.stringify(exactHover.cursor?.px) === JSON.stringify(cursor);
     const index = v._a11yPointIndex;
     const live = v.a11yLive.textContent;
     v._viewAnim = {};
@@ -286,6 +294,7 @@ async function probe(name) {
         hoverId: v._hoverId,
         leaveCount: window.xyConformanceLeaves,
         exactPreserved: window.xyConformanceExactPreserved,
+        keyboardExactReplyReceived: window.xyConformanceKeyboardExactReplyReceived,
         keyboardMovedCursorStable: window.xyConformanceMovedCursorStable,
         keyboardMovedActivationStable: window.xyConformanceMovedActivationStable,
         pointerViewportStable: window.xyConformancePointerViewportStable,
@@ -326,6 +335,7 @@ async function probe(name) {
   if (s.canvasRole !== "img" || s.canvasTabIndex !== 0) semanticFailures.push("focusable plot image");
   if (s.keyboardIndex !== 1 || !s.keyboardLive.startsWith("Point 2 of 7.")) semanticFailures.push("keyboard/live readout");
   if (!s.exactPreserved) semanticFailures.push("exact reply announcement");
+  if (!s.keyboardExactReplyReceived) semanticFailures.push("new keyboard exact reply");
   if (!s.keyboardMovedCursorStable) semanticFailures.push("keyboard cursor after host movement");
   if (!s.keyboardMovedActivationStable) semanticFailures.push("keyboard activation after host movement");
   if (!s.pointerViewportStable) semanticFailures.push("physical pointer after host movement");

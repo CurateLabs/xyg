@@ -1,0 +1,9 @@
+{
+  "thread": "PRRT_kwDOTxX6Es61i6ld",
+  "url": "https://github.com/CurateLabs/xyg/pull/1119#discussion_r4520800771",
+  "reviewer": "greptile-apps",
+  "priority": "P2",
+  "finding": "Ignored keyboard exact reply can satisfy old cursor/live equality checks",
+  "confirmed": "Exact parent harness with keyboard reply injection omitted exits0",
+  "repair": "Require a newly emitted exact hover with expected row and canonical values before comparing its cursor"
+}
