@@ -171,6 +171,8 @@ kernel previews retain their scatter-only eligibility. A changed, missing or
 invalid stamp revokes the local mask and durable brush without history, request
 or broadcast and announces that the previous selection is unavailable. This
 does not resolve canonical UUIDs or remap across changed LOD/membership.
+An already-cleared selection retires its local claim before checking new row
+provenance; an empty selection stays available without a false failure alert.
 Back/Next move their stacks only after accepted navigation and do not start
 while another geometric selection is pending. The stored ranges also wait for
 predicate acceptance; refusal preserves the entire preceding camera/selection

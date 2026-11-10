@@ -83,6 +83,7 @@ export function renderGraphHost({ model, el, attachTicks }) {
   };
   function restoreLocalSelection() {
     if (!localSelection) return;
+    if (view._stateSelection == null) { localSelection = null; return; }
     // Rehydrate the existing local coordinate mask, never native edge/UUID
     // membership. Changed compiler row mappings require fresh qualification.
     if (sameRows(localSelection.rows, rowSpace())) {

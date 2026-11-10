@@ -670,3 +670,21 @@ for (const stamp of ["b".repeat(64), null, "invalid"]) {
     f.cleanup();
   });
 }
+
+for (const clear of ["linked", "disabled-api"]) {
+  test(`empty ${clear} clear stays available when compiler rows change`, () => {
+    const f = retainedAppendFixture();
+    f.view._linkChannel.onmessage({ data: { source: "peer", selection: { range: { x0: 7, x1: 10, y0: 0, y1: 2 } } } });
+    if (clear === "linked") f.view._linkChannel.onmessage({ data: { source: "peer", selection: { clear: true } } });
+    else { f.view._interactionFlag = name => name !== "select"; f.view._clearSelection(); }
+    const sent = f.model.sent.filter(msg => msg.type === "select" || msg.type === "select_clear").length;
+    for (const [index, stamp] of ["b".repeat(64), null, "invalid"].entries()) {
+      f.frame(index + 2, { spec: { ...f.spec, _graph_row_space: stamp } }); f.paint();
+      assert.equal(f.view._stateSelection, null);
+      assert.ok(f.view.gpuTraces.every(g => g.selActive === false));
+      assert.equal(f.status, "Laying out graph");
+    }
+    assert.equal(f.model.sent.filter(msg => msg.type === "select" || msg.type === "select_clear").length, sent);
+    f.cleanup();
+  });
+}

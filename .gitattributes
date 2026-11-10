@@ -1581,3 +1581,8 @@ spec/performance/graph-linked-selection-ownership-2026-11-10/**/*.gz -text
 spec/performance/graph-linked-mask-refresh-2026-11-10/*.md text eol=lf
 spec/performance/graph-linked-mask-refresh-2026-11-10/*.json text eol=lf
 spec/performance/graph-linked-mask-refresh-2026-11-10/**/*.gz -text
+
+# Empty-selection status correction retains immutable predecessor evidence.
+spec/performance/graph-empty-clear-status-2026-11-10/*.md text eol=lf
+spec/performance/graph-empty-clear-status-2026-11-10/*.json text eol=lf
+spec/performance/graph-empty-clear-status-2026-11-10/**/*.gz -text
