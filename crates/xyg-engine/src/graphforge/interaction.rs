@@ -323,8 +323,8 @@ impl GraphSession {
             .u64s("edge.target")
             .map_err(|_| InteractionStatus::Invalid)?;
         let edges = identity.edge_count();
-        let mut node_style = paint::SourceStyle::read(&doc, "node", n)?;
-        let mut edge_style = paint::SourceStyle::read(&doc, "edge", edges)?;
+        let mut node_style = paint::SourceStyle::read(&doc, false, n)?;
+        let mut edge_style = paint::SourceStyle::read(&doc, true, edges)?;
         let directed = match doc
             .optional_u8s("graph.directed")
             .map_err(|_| InteractionStatus::Invalid)?

@@ -806,6 +806,72 @@ test("10k document ingress reserves retry ownership separately from event text",
   } finally { pair.close(); }
 });
 
+test("complete 10k semantic composition admits native/WASM UUID and region transactions", async () => {
+  const { instance } = await WebAssembly.instantiate(fs.readFileSync(WASM), {});
+  const n=10000, m=2*n;
+  const ids=(count,kind)=>{const b=new Uint8Array(count*16),v=new DataView(b.buffer);for(let i=0;i<count;i++){b[i*16]=kind;b[i*16+6]=0x70;v.setBigUint64(i*16+8,BigInt(i),false);b[i*16+8]|=0x80;}return b;};
+  const nodes=ids(n,1),edges=ids(m,2),sources=new Uint8Array(m*16),targets=new Uint8Array(m*16);
+  for(let i=0;i<n;i++){
+    const chord=(7*i+3)%n;
+    for(const [j,target] of [[2*i,(i+1)%n],[2*i+1,chord===i?(chord+1)%n:chord]]){
+      sources.set(nodes.subarray(i*16,(i+1)*16),j*16);targets.set(nodes.subarray(target*16,(target+1)*16),j*16);
+    }
+  }
+  const document=composeGraphForgeRequest(encodeGraphForgeRequest({base:{nodeUuid:nodes,edgeUuid:edges,edgeSourceUuid:sources,edgeTargetUuid:targets,directed:false,generation:"01000000-0000-7000-8000-000000000001"}}));
+  const source=decodeContainer(document,"XYGF");
+  assert.equal(source.get("node.label#0").value.length,n);
+  assert.equal(source.get("edge.status#0").value.length,m);
+  assert.ok(source.has("legend.title#0")&&source.has("decision.code#0"),"full public semantic source is retained");
+  const data={document,load:[field("document.bytes","bytes",document),field("load.x.f64","f64",Array.from({length:n},(_,i)=>(i%200)*20)),field("load.y.f64","f64",Array.from({length:n},(_,i)=>Math.floor(i/200)*20))]};
+  // Check the independently owned WASM ingress before the paired helper's
+  // native-first OPEN, so neither host can hide the other's admission failure.
+  const probe=instance.exports.xyg_wasm_instance_new(384*1024*1024);
+  try{
+    assert.equal(wasmCall(instance.exports,probe,"xyg_wasm_graphforge_session_open",request(71011n,0n,1,0,19,data.load)).status,0);
+    assert.equal(instance.exports.xyg_wasm_graphforge_session_close(probe),0);
+  }finally{assert.equal(instance.exports.xyg_wasm_instance_dispose(probe),0);}
+  const pair=openPair(instance.exports,data,71011n,0n,384*1024*1024);
+  try{
+    const initial=pair.run(21,[field("camera.f64","f64",[1,1,0,0,5000,2000,1])]);
+    assert.equal(value(initial,"render.member_of.u64").length,n);
+    assert.equal(value(initial,"render.edge_members.u64").length,m);
+    const selected=pair.run(10,[field("uuids.uuid","uuid",new Uint8Array([...nodes.subarray(0,16),...edges.subarray(16,32)]))]);
+    assert.equal(value(selected,"selection.indices.u64").length,2);
+    const chosen=[0,1,100];
+    const region=pair.run(11,[field("region.nodes.u32","u32",chosen)],{3:2});
+    const inputSource=source.get("edge.source#0").value,inputTarget=source.get("edge.target#0").value;
+    const expectedEdges=[...inputSource].flatMap((s,i)=>chosen.includes(Number(s))&&chosen.includes(Number(inputTarget[i]))?[i]:[]);
+    const refsBytes=value(region,"selection.refs.bytes"),kinds=new DataView(refsBytes.buffer,refsBytes.byteOffset,refsBytes.byteLength);
+    assert.deepEqual([...value(region,"selection.indices.u64")].map((row,i)=>[kinds.getUint32(8+i*56,true),Number(row)]),[...chosen.map(i=>[0,i]),...expectedEdges.map(i=>[1,i])]);
+    pair.reject(11,[field("region.nodes.u32","u32",Array.from({length:n},(_,i)=>i))],-8,{3:2});
+    assert.deepEqual(value(pair.run(17),"selection.refs.bytes"),refsBytes,"oversized induced result preserves the accepted state");
+  }finally{pair.close();}
+});
+
+test("kind-qualified UUID bulk Toggle preserves legal result after an oversized intermediate", async () => {
+  const { instance } = await WebAssembly.instantiate(fs.readFileSync(WASM), {});
+  const n=6000,ids=new Uint8Array(n*16),v=new DataView(ids.buffer);
+  for(let i=0;i<n;i++)v.setUint32(i*16,i+1,true);
+  // A UUID may name both kinds, as in the smaller real-fixture case above.
+  const document=encodeContainer("XYGF",[
+    field("status","u32",[0]),field("kind","utf8","graph"),field("composition.version","u32",[2]),
+    field("node.uuid","uuid",ids),field("edge.uuid","uuid",ids),field("edge.derived","u8",Array(n).fill(0)),
+    field("edge.layer","u32",Array(n).fill(0xffffffff)),field("edge.order","i64",Array(n).fill(-1n)),field("edge.path","u64",Array(n).fill(0xffffffffffffffffn)),
+    field("edge.source","u64",Array.from({length:n},(_,i)=>BigInt(i))),field("edge.target","u64",Array.from({length:n},(_,i)=>BigInt((i+1)%n))),
+    field("node.label","texts",Array(n).fill("λ\n\\")),field("node.status","u8",Array(n).fill(1)),
+  ]);
+  const data={document,load:[field("document.bytes","bytes",document),field("load.x.f64","f64",Array.from({length:n},(_,i)=>(i%200)*20)),field("load.y.f64","f64",Array.from({length:n},(_,i)=>Math.floor(i/200)*20))]};
+  const pair=openPair(instance.exports,data,71012n,0n,384*1024*1024);
+  try{
+    assert.equal(value(pair.run(10,[field("uuids.uuid","uuid",ids.subarray(0,5000*16))]),"selection.indices.u64").length,10000);
+    const toggled=pair.run(10,[field("uuids.uuid","uuid",ids)],{2:2});
+    assert.equal(value(toggled,"selection.indices.u64").length,2000);
+    assert.ok([...value(toggled,"selection.indices.u64")].every(i=>i>=5000n));
+    pair.reject(10,[field("uuids.uuid","uuid",ids)],-8);
+    assert.deepEqual(value(pair.run(17),"selection.refs.bytes"),value(toggled,"selection.refs.bytes"));
+  }finally{pair.close();}
+});
+
 
 test("shared assertion-history retained renders preserve exact native/WASM bytes and UUID state", async () => {
   const history=JSON.parse(fs.readFileSync(path.join(ROOT,"tests/fixtures/temporal/assertion-history.json")));

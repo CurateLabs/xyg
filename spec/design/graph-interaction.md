@@ -1510,18 +1510,24 @@ has no focus/selection input. This does not close M4/#35/#36/#1015 or qualify
 100k/1M, reliable two-10k, latency, peak RAM/GPU, platforms, notebooks, exports or
 competitors. Historical pointer/camera receipts and their limitations remain.
 
-### Plain retained graph phase admission (default arena)
+### Persisted graph phase admission (default arena)
 
 The browser default remains **16 MiB** and the maximum/native default remains
-**384 MiB**. A closed, borrowed certificate recognizes neutral undirected,
-non-loop persisted sources. Names, index zero, primitive dtypes, counts,
-identity sentinel planes and successful current composition headers are checked.
-Labels, semantic styles, hierarchy, layers/results, generation and unknown
-sections use the general envelope. Certification changes ownership accounting,
+**384 MiB**. A borrowed certificate recognizes flat undirected, non-loop
+persisted sources. Index zero, consumed primitive dtypes/counts, identity sentinel
+planes and successful current composition headers are checked before owned
+decoding. It includes semantic class/epistemic/status/metric/flag planes, labels,
+and a single optional generation UUID. Hierarchy, `layer.*`, derived identity,
+nonzero indices and mismatched consumed schemas retain the general envelope.
+Other raw extension sections remain borrowed and survive byte-exactly in the
+complete retry cache; they do not acquire typed source ownership.
+Certification changes ownership accounting,
 not the source graph, layout, culling, LOD, pick ordering or opacity policy.
 Direct and Aggregate use the same Rust render kernel; eligibility does not
-branch on N, camera or fixture. Unsupported collapse/bulk/bound operations keep
-the general transaction plan.
+branch on N, camera or fixture. Unsupported collapse, highlight, pin/move,
+remote and bound operations keep the general transaction plan. UUID/reference
+selection and candidate-row region selection use the certified plan with the
+bulk-intermediate reservations below.
 
 Persistent source ownership is explicit:
 
@@ -1565,11 +1571,32 @@ length, including all padding and scalar sections. The construction maximum is
 
 Add fixed 98,304 metadata bytes, 4,096 for the default reducer reserve, OPEN
 acknowledgements and retry-record metadata, and the existing 1,024 per initially
-pinned identity. Foreign staging/owner capacities are added separately. Unknown
-or mismatched schemas retain general admission. No already borrowed typed data
+pinned identity. Semantic source construction adds:
+
+- 15 bytes per row on either side with any authored semantic style field,
+  including the implicit defaults for its other fields;
+- for either label plane, `4(N+M) * sizeof(String) + (N+M) * sizeof(&str)`
+  for header growth/overlap, temporary text references and synthesized empty
+  node labels, plus the validated combined UTF-8 pool bytes `T`;
+- 1,024 bytes per initially selected identity, covering simultaneous reducer
+  trees without changing the canonical selection cap;
+- `512 * max(section_count - 64, 0)` descriptor bytes, in addition to the
+  fixed allowance for the first 64 sections, covering both live document
+  containers and temporary span/vector growth.
+
+Every consumed style/label plane must have its canonical row count, and a
+present generation must contain exactly one UUID. TextList offsets partition
+the complete UTF-8 pool before String expansion. Foreign staging/owner
+capacities are added separately. No already borrowed typed data
 gets a document multiplier; all Rust-owned copies and the whole retry byte
 cache remain charged. Source result-string slots reserve once from the validated
 layer bound, compare exact strings, and retain the general document envelope.
+
+The style reader borrows its canonical node/edge field names and reuses status
+presence when deciding whether typed style storage is needed. After validation,
+an empty flag vector identifies the default path for a nonempty source, avoiding
+a redundant stored mode flag. Empty authored sources retain status presence and
+resolve to empty output, as do empty sources without authored styles.
 
 Later admission sums actual capacities once for retained source, mutable force,
 positions, publication and CSR, packets, encoded replies, and reducer/event
@@ -1580,6 +1607,29 @@ Before cloning, admission checks the **maximum** of disjoint force/query and
 render-kernel phases, including private candidate owners, borrowed staging and
 foreign output/owner capacities. General/UPDATE keeps the preceding whole-old +
 whole-new envelope and exact 3,526,207 refusal / 3,526,208 success/retry boundary.
+
+UUID/ref commands reserve up to `min(N+M, 2C)` intermediate kind-qualified
+identities (`C=10,000`), including combination/copy/delta work. One UUID may
+name both a node and an edge; an oversized intermediate Toggle may still
+produce a legal result. Admission must preserve that behavior. Candidate-row
+regions additionally reserve 128 bytes per candidate node (bounded by `C`) and
+per published edge for the node/induced-edge trees assembled before result-cap
+refusal. Semantic paint reserves 32 bytes per source row for 28-byte resolved
+styles and masked-u32 scratch. Heads remain part of their shaft pick primitive.
+
+The transaction has successive allocation gates: source/kernel, paint/index,
+then publication/serialization. Passing the first gate does not promise the
+later phases fit. Before cloning, semantic source admission additionally reserves
+`64B` bytes for escaped companion rows, joins/copies and focused summaries, where
+`B = min(T, 200L) + L` and `L` is the longest validated source label in bytes.
+The companion page contains at most 200 distinct source rows; the focused
+summary can repeat one label. This bound preserves the complete source pool
+without charging every source label as reply output. The checked reservation
+also covers builder growth and final/cached text copies. Before allocating a
+reply builder, two complete non-text serialization envelopes are reserved.
+Label bytes remain in the general fallback's `128T` reservation. A late refusal retains the accepted
+reply, revision, state, publication and retry sequence; retrying that same
+sequence with sufficient arena capacity remains valid.
 
 The owned render-kernel variant changes allocation ownership only: source edge
 pair storage reserves its source-bounded capacity once. The ordinary kernel

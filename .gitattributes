@@ -1603,3 +1603,8 @@ tests/test_vscode_graph_regions_report.py text eol=lf
 spec/performance/graph-notebook-ci-repair-2026-11-10/*.md text eol=lf
 spec/performance/graph-notebook-ci-repair-2026-11-10/*.json text eol=lf
 spec/performance/graph-notebook-ci-repair-2026-11-10/**/*.gz -text
+
+# Semantic graph admission retains exact predecessor sources and failed builds.
+spec/performance/graph-semantic-session-2026-11-10/*.md text eol=lf
+spec/performance/graph-semantic-session-2026-11-10/*.json text eol=lf
+spec/performance/graph-semantic-session-2026-11-10/**/*.gz -text

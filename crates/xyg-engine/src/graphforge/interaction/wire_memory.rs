@@ -1,5 +1,6 @@
-//! Narrow, source-certified plain graph accounting; all other documents retain
-//! the general envelope. No camera/fixture/host-dependent eligibility.
+//! Phase accounting for flat persisted sources, including semantic styles and
+//! labels. Hierarchy/derived sources retain the general envelope. No host,
+//! cardinality or camera-dependent certificate.
 use super::wire::{Container, Dtype, Request};
 use super::*;
 use crate::graph_interaction_state::HighlightPlane;
@@ -11,36 +12,32 @@ fn total(base: usize, parts: &[(usize, usize)]) -> Option<usize> {
     })
 }
 
+#[cfg_attr(target_arch = "wasm32", inline(never))]
+pub(super) fn label_bytes(s: &super::super::container::Section<'_>) -> Option<(usize, usize)> {
+    let head = s.count.checked_add(1)?.checked_mul(8)?;
+    let pool = s.payload.get(head..)?;
+    std::str::from_utf8(pool).ok()?;
+    let (mut previous, mut longest) = (0, 0);
+    for bytes in s.payload[..head].chunks_exact(8) {
+        let offset = u64::from_le_bytes(bytes.try_into().unwrap()) as usize;
+        longest = longest.max(offset.checked_sub(previous)?);
+        previous = offset;
+    }
+    Some((pool.len(), longest))
+}
+
 #[derive(Clone, Copy, Debug)]
 pub(super) struct Plain {
     pub(super) n: usize,
     pub(super) m: usize,
     pub(super) document: usize,
+    source_extra: usize,
+    text: usize,
+    label_max: usize,
 }
 impl Plain {
     pub fn recognize(bytes: &[u8]) -> Option<Self> {
         let c = Container::decode(bytes, crate::graphforge::container::DOCUMENT_MAGIC).ok()?;
-        for (name, index, _) in &c.sections {
-            if *index != 0
-                || !matches!(
-                    *name,
-                    "status"
-                        | "kind"
-                        | "composition.version"
-                        | "node.uuid"
-                        | "edge.uuid"
-                        | "edge.derived"
-                        | "edge.layer"
-                        | "edge.order"
-                        | "edge.path"
-                        | "edge.source"
-                        | "edge.target"
-                        | "graph.directed"
-                )
-            {
-                return None;
-            }
-        }
         if c.get("status", 0)?.dtype != Dtype::U32
             || c.get("status", 0)?.payload != [0, 0, 0, 0]
             || c.get("kind", 0)?.dtype != Dtype::Utf8
@@ -52,6 +49,95 @@ impl Plain {
         }
         let n = c.get("node.uuid", 0)?.count;
         let m = c.get("edge.uuid", 0)?.count;
+        // Container decoding borrows raw sections and validates TextList
+        // offsets as a partition of its pool. Only the fields below are
+        // expanded by GraphSession::create; all other raw bytes survive in
+        // the complete exact-retry record without typed expansion.
+        if c.get("base.generation", 0)
+            .is_some_and(|s| s.dtype != Dtype::Uuid || s.count != 1)
+        {
+            return None;
+        }
+        // The fixed owner covers <=64 section descriptors. Beyond that,
+        // account both live document containers, growing vectors and spans.
+        let mut text = 0usize;
+        let mut label_max = 0;
+        let mut selected = 0usize;
+        let mut labels = false;
+        let mut styled = [false; 2];
+        for (name, index, s) in &c.sections {
+            if *index != 0
+                || name.starts_with("layer.")
+                || matches!(*name, "node.parent" | "node.parent.valid")
+            {
+                return None;
+            }
+            let Some((side, field)) = name.split_once('.') else {
+                continue;
+            };
+            let (side, count) = match side {
+                "node" => (0, n),
+                "edge" => (1, m),
+                _ => continue,
+            };
+            let Some(&(_, dtype)) = [
+                ("class", Dtype::U8),
+                ("epistemic", Dtype::U8),
+                ("status", Dtype::U8),
+                ("metric", Dtype::F64),
+                ("flags", Dtype::U32),
+                ("label", Dtype::TextList),
+            ]
+            .iter()
+            .find(|(key, _)| *key == field) else {
+                continue;
+            };
+            if s.dtype != dtype || s.count != count {
+                return None;
+            }
+            if dtype == Dtype::TextList {
+                labels = true;
+                let (bytes, longest) = label_bytes(s)?;
+                text = text.checked_add(bytes)?;
+                label_max = label_max.max(longest);
+            } else {
+                styled[side] = true;
+                if dtype == Dtype::U32 {
+                    let count = s
+                        .payload
+                        .chunks_exact(4)
+                        .filter(|v| {
+                            u32::from_le_bytes((*v).try_into().unwrap())
+                                & crate::graph_style::FLAG_SELECTED
+                                != 0
+                        })
+                        .count();
+                    selected = selected.checked_add(count)?;
+                }
+            }
+        }
+        // Include header growth/overlap, synthesized empty node labels and
+        // the temporary &str vector, plus source styles, state and metadata.
+        let source_extra = total(
+            0,
+            &[
+                (c.sections.len().saturating_sub(64), 512),
+                (selected, 1024),
+                (
+                    (if styled[0] { n } else { 0usize }).checked_add(if styled[1] {
+                        m
+                    } else {
+                        0
+                    })?,
+                    15,
+                ),
+                (
+                    if labels { n.checked_add(m)? } else { 0 },
+                    4 * std::mem::size_of::<String>() + std::mem::size_of::<&str>(),
+                ),
+                (text, 1),
+            ],
+        )?;
         for (name, dtype, fill) in [
             ("edge.derived", Dtype::U8, 0),
             ("edge.layer", Dtype::U32, 255),
@@ -70,7 +156,6 @@ impl Plain {
         }
         if c.get("graph.directed", 0)
             .is_some_and(|s| s.dtype != Dtype::U8 || s.payload != [0])
-            || c.get("edge.derived", 0)?.payload.iter().any(|&v| v != 0)
         {
             return None;
         }
@@ -91,16 +176,20 @@ impl Plain {
             n,
             m,
             document: bytes.len(),
+            source_extra,
+            text,
+            label_max,
         })
     }
     pub fn general_charge(self, watermarks: usize) -> Option<usize> {
-        super::wire::WireSession::charge(self.document, self.n, self.m, watermarks, 0)?.checked_add(
-            self.n
-                .checked_add(self.m)?
-                .min(MAX_GRAPH_SELECTION_REFS)
-                .checked_mul(256)?
-                .checked_add(8192)?,
-        )
+        super::wire::WireSession::charge(self.document, self.n, self.m, watermarks, self.text)?
+            .checked_add(
+                self.n
+                    .checked_add(self.m)?
+                    .min(MAX_GRAPH_SELECTION_REFS)
+                    .checked_mul(256)?
+                    .checked_add(8192)?,
+            )
     }
     pub fn open_peak(self, request: &Request<'_>, length: usize) -> Option<usize> {
         // The preceding borrowed source certificate proves primitive widths.
@@ -141,7 +230,10 @@ impl Plain {
         )?;
         // 4096 covers the default reducer reserve, two OPEN acknowledgements
         // and retry-record metadata in addition to the ordinary fixed owner.
-        total(102_400, &[(decode.max(cache), 1), (pins, 1024)])
+        total(
+            102_400,
+            &[(decode.max(cache), 1), (pins, 1024), (self.source_extra, 1)],
+        )
     }
     #[cfg_attr(target_arch = "wasm32", inline(never))]
     pub fn retained(self, s: &GraphSession) -> Option<usize> {
@@ -206,31 +298,61 @@ impl Plain {
                         .checked_mul(std::mem::size_of::<NodePosition>())?,
                 )
         })?;
-        let mut bytes = state
-            .checked_mul(4)?
-            .checked_add(prior)?
-            .checked_add(
-                s.pending_outbound()
-                    .map_or(0, |e| e.refs.capacity())
-                    .checked_mul(std::mem::size_of::<ElementRef>())?,
-            )?
-            .checked_add(s.coordination.gate.len().checked_mul(128)?)?
-            .checked_add(if matches!(r.operation, 1 | 7) {
-                self.n
-                    .max(self.m)
+        let identities = if matches!(r.operation, 10 | 11) {
+            // One UUID may name both kinds. Preserve Toggle's existing
+            // ability to reduce a 2C delta to an admitted C result.
+            self.n
+                .checked_add(self.m)?
+                .min(2 * MAX_GRAPH_SELECTION_REFS)
+        } else if matches!(r.operation, 1 | 7) {
+            self.n.max(self.m).min(MAX_GRAPH_SELECTION_REFS)
+        } else {
+            0
+        };
+        // A companion page contains distinct source labels, plus one focused
+        // summary. Keep the source pool intact but reserve only this output's
+        // bounded label bytes; a million short labels need no million-label
+        // serialization reservation. Account escaped rows, joins and copies
+        // before allocating either paint or the reply builder.
+        let text = self
+            .text
+            .min(
+                self.label_max
+                    .saturating_mul(super::wire::MAX_COMPANION_ROWS as usize),
+            )
+            .checked_add(self.label_max)?;
+        let mut bytes = total(
+            prior,
+            &[
+                (state, 4),
+                (
+                    s.pending_outbound().map_or(0, |e| e.refs.capacity()),
+                    std::mem::size_of::<ElementRef>(),
+                ),
+                (s.coordination.gate.len(), 128),
+                (identities, 3 * 288 + 2 * std::mem::size_of::<ElementRef>()),
+                (s.collapsed.capacity(), 1),
+                (
+                    s.hover
+                        .nodes
+                        .capacity()
+                        .checked_add(s.hover.edges.capacity())?,
+                    std::mem::size_of::<usize>(),
+                ),
+                (text, 64),
+            ],
+        )?;
+        if r.operation == 11 && r.words[3] == 2 {
+            let p = s.published()?;
+            // Candidate rows and the complete induced-edge set are assembled
+            // before picked_set enforces the canonical selection cap.
+            bytes = bytes.checked_add(
+                p.node_count()
                     .min(MAX_GRAPH_SELECTION_REFS)
-                    .checked_mul(3 * 288 + 2 * std::mem::size_of::<ElementRef>())?
-            } else {
-                0
-            })?
-            .checked_add(s.collapsed.capacity())?
-            .checked_add(
-                s.hover
-                    .nodes
-                    .capacity()
-                    .checked_add(s.hover.edges.capacity())?
-                    .checked_mul(std::mem::size_of::<usize>())?,
+                    .checked_add(p.edge_count())?
+                    .checked_mul(128)?,
             )?;
+        }
         if s.positions.is_none() {
             // First progressive publication retains source positions, mutable
             // force planes, active/pin maps and nonuniform components.
@@ -330,7 +452,10 @@ impl Plain {
     pub fn applies(self, s: &GraphSession, r: &Request<'_>) -> bool {
         self.retains(s)
             && s.collapsed.iter().all(|&v| v == 0)
-            && matches!(r.operation, 0 | 1 | 4 | 5 | 6 | 7 | 8 | 15 | 17 | 21 | 22)
+            && matches!(
+                r.operation,
+                0 | 1 | 4 | 5 | 6 | 7 | 8 | 10 | 11 | 15 | 17 | 21 | 22
+            )
     }
 }
 
@@ -376,7 +501,8 @@ pub(super) fn paint_peak(p: &RenderOutput, n: usize, m: usize) -> Option<usize> 
     let styles = if p.tier == crate::graph::LodTier::Aggregate {
         0
     } else {
-        n.checked_add(m)?.checked_mul(28)?
+        // 28-byte resolved styles plus the masked u32 semantic flags scratch.
+        n.checked_add(m)?.checked_mul(32)?
     };
     let nodes = rn.checked_mul(2 * std::mem::size_of::<NodePaint>())?;
     let edges = re.checked_mul(2 * (28 + 32))?;

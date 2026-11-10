@@ -1961,14 +1961,14 @@ unchanged except the separately recorded co-owned temporal-job reservation
 correction. Complete output oracles and slower ABBA samples remain required;
 a size fit alone does not qualify final shipping or close milestones 4–7.
 
-### Current live-host and large-graph union qualification
+### Live-host and large-graph union qualification (historical checkpoint)
 
-The current [live-host/large-graph union](../performance/current-large-graph-union-2026-11-09/README.md)
+The [live-host/large-graph union checkpoint](../performance/current-large-graph-union-2026-11-09/README.md)
 combines the checked module factoring with controller-bound temporal Scenes,
 five issued geographic lanes and the hosted guard repairs. Fresh official
-native and WASM builds reproduce the factoring producer's artifacts. The
-single module is **1,886,348 raw /786,351 Node22 gzip6 bytes**, retains all 68
-functions and zero imports, and has **81 gzip bytes** under the unchanged cap.
+native and WASM builds reproduced the factoring producer's artifacts. That
+single module measured **1,886,348 raw /786,351 Node22 gzip6 bytes**, retained all 68
+functions and zero imports, and had **81 gzip bytes** under the unchanged cap.
 Earlier 47-byte and 27-byte measurements belong to their historical modules.
 The browser client is built from the complete union, not a parent client.
 
@@ -1983,3 +1983,18 @@ separate rendering from readback cost or establish a repair. No Direct/LOD
 threshold, wall deadline, work/memory cap, peer or assertion is relaxed.
 General responsiveness, reliability, shipping and milestone acceptance remain
 unproved beyond the individually recorded bounded checks.
+
+### Semantic graph source admission
+
+The [semantic session continuation](../performance/graph-semantic-session-2026-11-10/README.md)
+extends Rust's phase certificate to flat persisted semantic sources and exact
+UUID/candidate transactions. Source labels, style and metadata remain intact;
+hierarchy/layer/derived cases retain the general envelope. This does not change
+the native405/WASM38 interfaces, 68 exports, compiler/optimizer profile, renderer,
+runtime limits or 1,927,168 raw /786,432 gzip6 packaging caps. The continuation
+records its exact module separately; older checkpoint headroom is historical.
+Its official Node22 package measures **1,885,068 raw /786,429 gzip6 bytes**, with
+**3 gzip bytes** under the unchanged cap. All 68 function exports remain;
+this is a bounded size fit, not headroom for subsequent source changes.
+Failed package attempts establish no shipping acceptance. Matching final-source
+native/WASM qualification and the complete host/scale contract remain required.

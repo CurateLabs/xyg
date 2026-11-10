@@ -209,10 +209,11 @@ pub struct Request<'a> {
     pub group: u64,
     pub sequence: u64,
     pub operation: u32,
-    words: [u32; 9],
+    pub(super) words: [u32; 9],
     pub header: OpHeader,
     pub(super) container: Container<'a>,
 }
+pub(super) const MAX_COMPANION_ROWS: u32 = 200;
 impl<'a> Request<'a> {
     pub fn decode(bytes: &'a [u8]) -> Result<Self> {
         let c = gf(Container::decode(bytes, REQUEST_MAGIC))?;
@@ -429,7 +430,7 @@ impl<'a> Request<'a> {
         }
         let offset = u32_at(s.payload, 0);
         let count = u32_at(s.payload, 4);
-        if count == 0 || count > 200 {
+        if count == 0 || count > MAX_COMPANION_ROWS {
             return bad();
         }
         // A wire page must have the same meaning on native and wasm32.
@@ -737,15 +738,10 @@ impl WireSession {
                 if s.dtype != Dtype::TextList {
                     return bad();
                 }
-                // Validated monotonic offsets partition this entire UTF-8 pool.
-                let head = s
-                    .count
-                    .checked_add(1)
-                    .and_then(|v| v.checked_mul(8))
-                    .ok_or(InteractionStatus::Budget)?;
-                let pool = s.payload.get(head..).ok_or(InteractionStatus::Invalid)?;
-                std::str::from_utf8(pool).map_err(|_| InteractionStatus::Invalid)?;
-                pool.len()
+                // The certificate and fallback share borrowed text validation.
+                super::wire_memory::label_bytes(s)
+                    .ok_or(InteractionStatus::Invalid)?
+                    .0
             } else {
                 0
             };
@@ -757,10 +753,8 @@ impl WireSession {
             .ok_or(InteractionStatus::Budget)?;
         let mut projection = n
             .checked_add(m)
-            .ok_or(InteractionStatus::Budget)?
-            .min(MAX_GRAPH_SELECTION_REFS)
-            .checked_mul(256)
-            .and_then(|v| v.checked_add(8192))
+            .and_then(|n| n.min(MAX_GRAPH_SELECTION_REFS).checked_mul(256))
+            .and_then(|n| n.checked_add(8192))
             .ok_or(InteractionStatus::Budget)?;
         // Reserve all new tables/scratch BEFORE cloning the candidate. No
         // source-sized row Vec: each plane contributes at most the selection cap.
@@ -1937,20 +1931,7 @@ fn serialize(
                 }),
         };
         let label = s.source.labels.get(i).map(String::as_str).unwrap_or("");
-        let relation = match index {
-            ElementIndex::Node(n) => format!(
-                "{} relationships",
-                s.source
-                    .edge_source
-                    .iter()
-                    .zip(s.source.edge_target.iter())
-                    .filter(|(a, b)| **a == n as u64 || **b == n as u64)
-                    .count()
-            ),
-            ElementIndex::Edge(e) => {
-                format!("{} to {}", s.source.edge_source[e], s.source.edge_target[e])
-            }
-        };
+        let relation = relationship(s, index);
         rows.push(format!(
             "{kind}\t{}\t{}\t{}\t{}",
             escaped(&id),
@@ -2099,13 +2080,29 @@ fn focus_actions(b: &mut Builder, s: &GraphSession, state: &GraphInteractionStat
     b.u32s("focus.action.u32", 0, &facts);
     Ok(())
 }
+fn relationship(s: &GraphSession, index: ElementIndex) -> String {
+    match index {
+        ElementIndex::Node(n) => format!(
+            "{} relationships",
+            s.source
+                .edge_source
+                .iter()
+                .zip(s.source.edge_target.iter())
+                .filter(|(a, b)| **a == n as u64 || **b == n as u64)
+                .count()
+        ),
+        ElementIndex::Edge(e) => {
+            format!("{} to {}", s.source.edge_source[e], s.source.edge_target[e])
+        }
+    }
+}
 fn summary(s: &GraphSession, state: &GraphInteractionState, f: &ElementRef) -> Result<String> {
     let index = s
         .source
         .identity
         .resolve(f)
         .map_err(|_| InteractionStatus::Invalid)?;
-    let (mut kind, i, ordinal, mut selected, mut relationship) = match index {
+    let (mut kind, i, ordinal, mut selected) = match index {
         ElementIndex::Node(i) => (
             if s.source.parent.iter().any(|p| *p == i as u64) {
                 "Group"
@@ -2118,15 +2115,6 @@ fn summary(s: &GraphSession, state: &GraphInteractionState, f: &ElementRef) -> R
                 .selection()
                 .nodes
                 .contains(&s.source.identity.node_uuids()[i]),
-            format!(
-                "{} relationships",
-                s.source
-                    .edge_source
-                    .iter()
-                    .zip(s.source.edge_target.iter())
-                    .filter(|(a, b)| **a == i as u64 || **b == i as u64)
-                    .count()
-            ),
         ),
         ElementIndex::Edge(i) => (
             "Edge",
@@ -2140,9 +2128,9 @@ fn summary(s: &GraphSession, state: &GraphInteractionState, f: &ElementRef) -> R
                     .iter()
                     .any(|k| s.source.identity.resolve_derived_key(k) == Some(i)),
             },
-            format!("{} to {}", s.source.edge_source[i], s.source.edge_target[i]),
         ),
     };
+    let mut relationship = relationship(s, index);
     if let (ElementIndex::Node(node), Some(render)) = (index, s.published()) {
         let group = render.member_of[node];
         if group != NOT_RENDERED {
@@ -2277,10 +2265,11 @@ mod plain_memory_tests {
     #[test]
     fn complex_documents_and_large_mutations_keep_general_reservation() {
         for doc in [
-            document(1000, |b| b.texts("node.label", 0, &vec!["\n\\λ"; 1000])),
-            document(1000, |b| b.u8s("node.status", 0, &vec![1; 1000])),
             document(1000, |b| b.u32s("node.parent", 0, &vec![0; 1000])),
-            document(1000, |b| b.bytes("unknown", 0, &[0; 16])),
+            document(1000, |b| b.u8s("node.parent.valid", 0, &vec![0; 1000])),
+            document(1000, |b| b.bytes("layer.schema", 0, &[0; 16])),
+            document(1000, |b| b.u8s("node.status", 0, &[1])),
+            document(1000, |b| b.uuids("base.generation", 0, &[[1; 16]; 2])),
         ] {
             assert!(super::super::wire_memory::Plain::recognize(&doc).is_none());
             assert!(matches!(
@@ -2296,6 +2285,161 @@ mod plain_memory_tests {
             assert!(s.execute(&request(2, 0, op, None), 0, None).is_err());
             assert_eq!(s.reply(), prior);
         }
+    }
+    #[test]
+    fn empty_label_admission_does_not_bypass_offset_or_utf8_validation() {
+        let valid = document(2, |b| b.texts("node.label", 0, &["", ""]));
+        assert!(WireSession::open(&request(1, 0, OPEN, Some(&valid)), 16 << 20, 0).is_ok());
+        for (offsets, pool) in [
+            ([0u64, 1, 0], vec![]),
+            ([0, 0, 1], vec![255]),
+            ([0, 1, 2], "λ".as_bytes().to_vec()),
+        ] {
+            let mut payload: Vec<_> = offsets.into_iter().flat_map(u64::to_le_bytes).collect();
+            payload.extend(pool);
+            let doc = document(2, |b| b.push("node.label", 0, Dtype::TextList, 2, payload));
+            assert!(matches!(
+                WireSession::open(&request(1, 0, OPEN, Some(&doc)), 16 << 20, 0),
+                Err(InteractionStatus::Invalid)
+            ));
+        }
+    }
+    #[test]
+    fn semantic_labels_styles_and_raw_extensions_keep_complete_source_and_retry() {
+        let doc = document(1000, |b| {
+            b.texts("node.label", 0, &vec!["\n\\λ"; 1000]);
+            b.texts("edge.label", 0, &vec!["edge→"; 1000]);
+            b.u8s("node.status", 0, &vec![1; 1000]);
+            b.u8s("edge.class", 0, &vec![1; 1000]);
+            b.bytes("unknown", 0, &[23; 8192]);
+            b.uuids("base.generation", 0, &[[7; 16]]);
+        });
+        let open = request(1, 0, OPEN, Some(&doc));
+        let mut s = WireSession::open(&open, 16 << 20, 0).unwrap();
+        assert!(s.plain.is_some());
+        assert!(s.document.is_empty());
+        assert!(s.opening_matches(&open));
+        assert_eq!(s.opening.range(s.document_range.clone()), doc);
+        assert_eq!(s.session.source.labels[0], "\n\\λ");
+        assert_eq!(s.session.source.labels[1000], "edge→");
+        assert_eq!(s.session.source.generation, Some([7; 16]));
+        assert_eq!(s.session.source.node_style.flags.len(), 1000);
+        assert_eq!(
+            s.ownership_bytes().unwrap().into_iter().sum::<usize>(),
+            s.retained_budget()
+        );
+        let mut b = Builder::new(REQUEST_MAGIC);
+        b.extend_from(&Container::decode(&request(2, 0, 10, None), REQUEST_MAGIC).unwrap());
+        b.uuids("uuids.uuid", 0, &[s.session.identity().node_uuids()[0]]);
+        let command = b.finish();
+        let prior = s.reply().to_vec();
+        let peak = s.preflight_bytes(&command, 0).unwrap();
+        s.max_bytes = peak - 1;
+        assert_eq!(s.execute(&command, 0, None), Err(InteractionStatus::Budget));
+        assert_eq!(s.reply(), prior);
+        assert_eq!(s.session.render_revision, 0);
+        assert!(s.session.selection().unwrap().is_empty());
+        s.max_bytes = 16 << 20;
+        let accepted = s.execute(&command, 0, None).unwrap().to_vec();
+        assert_eq!(s.execute(&command, usize::MAX, None).unwrap(), accepted);
+        let c = Container::decode(&accepted, RESULT_MAGIC).unwrap();
+        assert!(c
+            .get("companion.text.utf8", 0)
+            .unwrap()
+            .as_utf8("companion.text.utf8")
+            .unwrap()
+            .contains("\\n\\\\λ"));
+        assert_eq!(s.session.source.labels[0], "\n\\λ");
+    }
+    #[test]
+    fn bounded_label_page_crosses_source_kinds_and_repeats_focused_label() {
+        let node_label = "node\t\\\nλ".repeat(600);
+        let edge_label = "edge\t\\\nλ".repeat(600);
+        let doc = document(1100, |b| {
+            b.texts("node.label", 0, &vec![node_label.as_str(); 1100]);
+            b.texts("edge.label", 0, &vec![edge_label.as_str(); 1100]);
+        });
+        let mut s = WireSession::open(&request(1, 0, OPEN, Some(&doc)), 384 << 20, 0).unwrap();
+        s.execute(&request(2, 0, RENDER, None), 0, None).unwrap();
+        let mut b = Builder::new(REQUEST_MAGIC);
+        b.extend_from(
+            &Container::decode(
+                &request(3, s.session.render_revision, 6, None),
+                REQUEST_MAGIC,
+            )
+            .unwrap(),
+        );
+        b.bytes(
+            "refs.bytes",
+            0,
+            &encode_refs(&[s.session.identity().node_ref(1050)]).unwrap(),
+        );
+        let focus = b.finish();
+        s.execute(&focus, 0, None).unwrap();
+        let mut b = Builder::new(REQUEST_MAGIC);
+        b.extend_from(
+            &Container::decode(
+                &request(4, s.session.render_revision, RENDER, None),
+                REQUEST_MAGIC,
+            )
+            .unwrap(),
+        );
+        b.u32s("companion.u32", 0, &[5, 200]);
+        let command = b.finish();
+        let prior = s.reply().to_vec();
+        let revision = s.session.render_revision;
+        s.max_bytes = s.preflight_bytes(&command, 0).unwrap() - 1;
+        assert_eq!(s.execute(&command, 0, None), Err(InteractionStatus::Budget));
+        assert_eq!(s.reply(), prior);
+        assert_eq!(s.session.render_revision, revision);
+        s.max_bytes = 384 << 20;
+        let accepted = s.execute(&command, 0, None).unwrap().to_vec();
+        let c = Container::decode(&accepted, RESULT_MAGIC).unwrap();
+        let rows = c
+            .get("companion.text.utf8", 0)
+            .unwrap()
+            .as_utf8("companion.text.utf8")
+            .unwrap();
+        assert_eq!(rows.lines().count(), 200);
+        assert_eq!(
+            rows.lines().filter(|r| r.starts_with("Node\t")).count(),
+            100
+        );
+        assert_eq!(
+            rows.lines().filter(|r| r.starts_with("Edge\t")).count(),
+            100
+        );
+        assert!(rows.contains(&escaped(&node_label)));
+        assert!(rows.contains(&escaped(&edge_label)));
+        assert!(c
+            .get("summary.text.utf8", 0)
+            .unwrap()
+            .as_utf8("summary.text.utf8")
+            .unwrap()
+            .contains(&node_label));
+        assert_eq!(s.execute(&command, usize::MAX, None).unwrap(), accepted);
+    }
+    #[test]
+    fn label_serialization_refuses_before_allocation_and_preserves_retry() {
+        let label = "\n\\λ".repeat(250_000);
+        let doc = document(2, |b| b.texts("edge.label", 0, &[label.as_str(), ""]));
+        let mut s = WireSession::open(&request(1, 0, OPEN, Some(&doc)), 16 << 20, 0).unwrap();
+        assert_eq!(s.session.source.labels[0], "");
+        assert_eq!(s.session.source.labels[2], label);
+        let command = request(2, 0, RENDER, None);
+        assert_eq!(
+            s.preflight_bytes(&command, 0),
+            Err(InteractionStatus::Budget)
+        );
+        let old = s.reply().to_vec();
+        assert_eq!(s.execute(&command, 0, None), Err(InteractionStatus::Budget));
+        assert_eq!(s.reply(), old);
+        assert_eq!(s.session.render_revision, 0);
+        assert!(s.session.published().is_none());
+        s.max_bytes = 384 << 20;
+        let accepted = s.execute(&command, 0, None).unwrap().to_vec();
+        assert_eq!(s.execute(&command, usize::MAX, None).unwrap(), accepted);
+        assert_eq!(s.session.source.labels[2], label);
     }
     #[test]
     fn authored_collapse_masks_keep_general_failure_atomic_admission() {
@@ -2407,11 +2551,10 @@ mod plain_memory_tests {
             WireSession::open(&b.finish(), 16 << 20, 0),
             Err(InteractionStatus::Budget)
         ));
-        let overflow = super::super::wire_memory::Plain {
-            n: usize::MAX,
-            m: 1,
-            document: 0,
-        };
+        let mut overflow = super::super::wire_memory::Plain::recognize(&doc).unwrap();
+        overflow.n = usize::MAX;
+        overflow.m = 1;
+        overflow.document = 0;
         assert!(overflow.kernel_peak(&s.session).is_none());
     }
     #[test]

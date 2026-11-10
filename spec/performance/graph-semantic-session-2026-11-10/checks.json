@@ -1,0 +1,1508 @@
+{
+  "acceptedMainSameTree": "54d7adbfca2fe4bb569b148a149a346ae5c384bd",
+  "base": "fe8d33cc7cc589235335302b084d1dcf0611efae",
+  "baselineRuntime": {
+    "libxyg_core.so": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/ae8dc056771abb1109381202b4143d81157ac0235555ad3d527a426a807bc4bb.gz",
+      "archiveBytes": 2905861,
+      "archiveSha256": "1e22d36c42e15f3afb52ab09cbddc6bec063217e8fa6a499569d0e4114348533",
+      "bytes": 6379944,
+      "sha256": "ae8dc056771abb1109381202b4143d81157ac0235555ad3d527a426a807bc4bb"
+    },
+    "xyg-wasm.wasm": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271.gz",
+      "archiveBytes": 781160,
+      "archiveSha256": "1788dfdad46ec12eb81712329e48375306fd9a47a994b0a030f9ebab236fd142",
+      "bytes": 1885379,
+      "sha256": "c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271"
+    }
+  },
+  "bindings": {
+    "path": "spec/performance/graph-semantic-session-2026-11-10/current-bindings.json",
+    "sha256": "a2400acdb58609a17ded5fb3261c78da9f306ddbc83dfb68809391d5a42de4dd"
+  },
+  "captures": {
+    "baseline-10k.json": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/578593c782923974f4f26566ad98594e0aa2449d4bc9e539cb0b2a530ededf49.gz",
+      "archiveBytes": 3373,
+      "archiveSha256": "ba5034e9a1aae9633db7b37e710ffde758909cd6ce8b5ebee6afe70df2804ef6",
+      "bytes": 16920,
+      "sha256": "578593c782923974f4f26566ad98594e0aa2449d4bc9e539cb0b2a530ededf49"
+    },
+    "baseline-10k.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/43f8875205f03d90be6b4f52de1cd2d2aa211da5d40faaf355e0534592d53212.gz",
+      "archiveBytes": 585,
+      "archiveSha256": "c6ecd2fb76c38ed4dca02a215da2645d7c8b7b196cfed9e7246d584cdf6ebdeb",
+      "bytes": 1052,
+      "sha256": "43f8875205f03d90be6b4f52de1cd2d2aa211da5d40faaf355e0534592d53212"
+    },
+    "earlierNotebookProbe": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/f050864d5aa465c46c8e3dc92411bb0971536686dabac4e36324ca8aec801dd7.gz",
+      "archiveBytes": 3613,
+      "archiveSha256": "a3da9fe3556ee9112f05e0270841f66bc10f2b28b0c990bb2742cf5b9f95e380",
+      "bytes": 9089,
+      "sha256": "f050864d5aa465c46c8e3dc92411bb0971536686dabac4e36324ca8aec801dd7"
+    },
+    "exactFinalNotebookProbe": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/729107c3b0190d441f90b8f35bad92acd1fc6321e6d2513a2df1566b5f47a972.gz",
+      "archiveBytes": 4032,
+      "archiveSha256": "301530f23a30a9c2ab0d5f38882b79d935fc4a521be1e9407bafc70b51e01f07",
+      "bytes": 10386,
+      "sha256": "729107c3b0190d441f90b8f35bad92acd1fc6321e6d2513a2df1566b5f47a972"
+    },
+    "final-native-10k": {
+      "graph.ipynb": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/c7df95c418fee8ee40b36d78ff5b69338afec8b7882c1b44e9f008749fcaf84c.gz",
+        "archiveBytes": 2074,
+        "archiveSha256": "193b04b76274e65ce7805552491e28f6e09512ef0f0877f8f55d909618c3f76b",
+        "bytes": 7542,
+        "sha256": "c7df95c418fee8ee40b36d78ff5b69338afec8b7882c1b44e9f008749fcaf84c"
+      },
+      "paint.png": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/e7604a207dabae97ceaca78f0e65f9d46909b25a30d6465aab7902484eebc9d0.gz",
+        "archiveBytes": 117836,
+        "archiveSha256": "8f784e14b5433f1d5b79afef9f7b70db6e65739712a922facefc49c26896da54",
+        "bytes": 117876,
+        "sha256": "e7604a207dabae97ceaca78f0e65f9d46909b25a30d6465aab7902484eebc9d0"
+      },
+      "report": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/4e42f0862a59b498bd15df50cc99f748e3a2a45ea289179108399560b3eb3080.gz",
+        "archiveBytes": 3259,
+        "archiveSha256": "21ca3ba77c3f5717f751af750884acdf32bb33de6cebd50707b3d07c5cce7287",
+        "bytes": 17600,
+        "sha256": "4e42f0862a59b498bd15df50cc99f748e3a2a45ea289179108399560b3eb3080"
+      }
+    },
+    "native-10k-factored": {
+      "graph.ipynb": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/c7df95c418fee8ee40b36d78ff5b69338afec8b7882c1b44e9f008749fcaf84c.gz",
+        "archiveBytes": 2074,
+        "archiveSha256": "193b04b76274e65ce7805552491e28f6e09512ef0f0877f8f55d909618c3f76b",
+        "bytes": 7542,
+        "sha256": "c7df95c418fee8ee40b36d78ff5b69338afec8b7882c1b44e9f008749fcaf84c"
+      },
+      "paint.png": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/e7604a207dabae97ceaca78f0e65f9d46909b25a30d6465aab7902484eebc9d0.gz",
+        "archiveBytes": 117836,
+        "archiveSha256": "8f784e14b5433f1d5b79afef9f7b70db6e65739712a922facefc49c26896da54",
+        "bytes": 117876,
+        "sha256": "e7604a207dabae97ceaca78f0e65f9d46909b25a30d6465aab7902484eebc9d0"
+      },
+      "report": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/5ab8532c671b3ad235cec11e9dce3e7f789cff2385da4d5aa912e6830e789358.gz",
+        "archiveBytes": 3119,
+        "archiveSha256": "d7789d02ad38995ff373d30c04cf6f2b99e65499ebab073492a0dd8d3016fbe4",
+        "bytes": 16674,
+        "sha256": "5ab8532c671b3ad235cec11e9dce3e7f789cff2385da4d5aa912e6830e789358"
+      }
+    },
+    "notebookInput": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/c7df95c418fee8ee40b36d78ff5b69338afec8b7882c1b44e9f008749fcaf84c.gz",
+      "archiveBytes": 2074,
+      "archiveSha256": "193b04b76274e65ce7805552491e28f6e09512ef0f0877f8f55d909618c3f76b",
+      "bytes": 7542,
+      "sha256": "c7df95c418fee8ee40b36d78ff5b69338afec8b7882c1b44e9f008749fcaf84c"
+    }
+  },
+  "compiledInputs": {
+    "changed": [
+      "crates/xyg-engine/src/graphforge/interaction.rs",
+      "crates/xyg-engine/src/graphforge/interaction/paint.rs",
+      "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs",
+      "crates/xyg-engine/src/graphforge/interaction/wire.rs",
+      "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs",
+      "crates/xyg-engine/tests/graph_session_memory.rs"
+    ],
+    "count": 324,
+    "path": "spec/performance/graph-semantic-session-2026-11-10/compiled-inputs.json",
+    "sha256": "f3b3dc7aa6157671a52d8a3e87253e022f44eaa9f141c19c6ee51a43611fa2b8"
+  },
+  "environment": {
+    "TMPDIR": "/var/tmp",
+    "chromium": "149.0.7827.55",
+    "jupyterlab": "4.6.5",
+    "node": "22.23.4",
+    "python": "3.12.15",
+    "rust": "1.96.0",
+    "testEnv": "Explicit XYG_NATIVE_LIB and checkout PYTHONPATH; uv --no-sync"
+  },
+  "evidence": {
+    "target/task-tmp/graph-notebook-scale/semantic-admission/abi-generation.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/eb8c840abbbfbbcc7b2fc02f6c1c2909f93ea1a5c8d5ab31aed178cc9a757485.gz",
+      "archiveBytes": 62,
+      "archiveSha256": "a91496309293e2723fe1760d8d62399e034736fca5a1687e6c9f2516cce87aba",
+      "bytes": 42,
+      "sha256": "eb8c840abbbfbbcc7b2fc02f6c1c2909f93ea1a5c8d5ab31aed178cc9a757485"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/accepted-main-fastforward-attempt.json": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/5fdfa26f80a4356e38a27aee69ebc788bb1c6654a01ff36b813bbcb4c5e13736.gz",
+      "archiveBytes": 336,
+      "archiveSha256": "aaa3421bd8a536776f8fde3929e3dcfe6ae850f5e6043ba7a2f6735f090ac276",
+      "bytes": 588,
+      "sha256": "5fdfa26f80a4356e38a27aee69ebc788bb1c6654a01ff36b813bbcb4c5e13736"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/baseline-flags-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/9f35f28e29a17a98ef628e8e70f04c0d22c76821c13963cc68044cad9869108a.gz",
+      "archiveBytes": 4978,
+      "archiveSha256": "54c72f4e8b7717089334943c47b6c1d384145f7f279c01b15f16da5a1a5dcc55",
+      "bytes": 20246,
+      "sha256": "9f35f28e29a17a98ef628e8e70f04c0d22c76821c13963cc68044cad9869108a"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/baseline-flags-ledger.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/a5d932d6d89241888e31feadb4acb2f1ac6265c217ca074187d9d6f601ef26f4.gz",
+      "archiveBytes": 1795,
+      "archiveSha256": "c9fd60da45294da9dac82ac3e815e4042b5e175b6cdcaf0e237b76db2f8c8483",
+      "bytes": 6545,
+      "sha256": "a5d932d6d89241888e31feadb4acb2f1ac6265c217ca074187d9d6f601ef26f4"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/baseline-ledger.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/c2669a1d46b2e603dcdec702771f3cbdb46e82799809931b4f859310492aa5a9.gz",
+      "archiveBytes": 733,
+      "archiveSha256": "142981b9804ed2a86bbc6bfefb8afd6950ba2312fc2afe118abd592f6470785e",
+      "bytes": 1900,
+      "sha256": "c2669a1d46b2e603dcdec702771f3cbdb46e82799809931b4f859310492aa5a9"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/baseline-native-derived-diagnostic-scoped.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/67ec0864fcba8b287dfb2c38690c340484a5b806374207f99f2b7cf79b4f6b31.gz",
+      "archiveBytes": 1333,
+      "archiveSha256": "ffaa4b42d4be22c2b92d8751ba4c0f1aac30c53c4b66775222038fd1f2ab2435",
+      "bytes": 3745,
+      "sha256": "67ec0864fcba8b287dfb2c38690c340484a5b806374207f99f2b7cf79b4f6b31"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/baseline-native-derived-diagnostic.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/38af6f90fee13aa5c3032a3a852411e3a710d801bf067eb618b0aa0470ec6b27.gz",
+      "archiveBytes": 1728,
+      "archiveSha256": "67bdbdbc2ff7422605ffed62e050501cf4718d6d957d78e93b70e9c6f8ee5226",
+      "bytes": 4959,
+      "sha256": "38af6f90fee13aa5c3032a3a852411e3a710d801bf067eb618b0aa0470ec6b27"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/baseline-native-shipping-parity.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/e57d17542de3a39695f15ec65fc2fc33aefdb6b83cbb7b53ff7c7e0107990383.gz",
+      "archiveBytes": 1335,
+      "archiveSha256": "d37feca430dfd35747b300b687596653c11961606ce0dc8eb8c0ae76ce812d6c",
+      "bytes": 3698,
+      "sha256": "e57d17542de3a39695f15ec65fc2fc33aefdb6b83cbb7b53ff7c7e0107990383"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/bounded-page-regression.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/815ef9f9c77aa661d15d041144bdf745a7380031cf4f51f177459fab79ab537f.gz",
+      "archiveBytes": 351,
+      "archiveSha256": "e0119a278cf25dc379890935283eb251ca79b8a79e22ea86c3356f74d19b05f4",
+      "bytes": 494,
+      "sha256": "815ef9f9c77aa661d15d041144bdf745a7380031cf4f51f177459fab79ab537f"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/cached-label-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/7d34cfb36d7c1c6f162cd252bc49bc56901285cb7eb3e68563fbaa9e022f3f40.gz",
+      "archiveBytes": 4970,
+      "archiveSha256": "f2008f2501ff52c7dbf46c82294b5b3e047046a0972e0313a779611579a48221",
+      "bytes": 20246,
+      "sha256": "7d34cfb36d7c1c6f162cd252bc49bc56901285cb7eb3e68563fbaa9e022f3f40"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/cached-label-ledger.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/bb2e0b51e2aa3b976bb5c2cc6759be191a893fd8d495cb65a1423bead6acc585.gz",
+      "archiveBytes": 1788,
+      "archiveSha256": "1f25bbfc353e32eac57b916ed320e97ccefb61dbefa99a21322fcbd6c3943bb9",
+      "bytes": 6545,
+      "sha256": "bb2e0b51e2aa3b976bb5c2cc6759be191a893fd8d495cb65a1423bead6acc585"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/checkCi.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/002f5e7e15aa81174ccec15e43fd68d00071ce87c8c0acdda2b82fc4562da59c.gz",
+      "archiveBytes": 476,
+      "archiveSha256": "9d812bfff3c1428d74417681e8b991bea3b8ca3214ac0a4db7952e2fc860f2de",
+      "bytes": 2318,
+      "sha256": "002f5e7e15aa81174ccec15e43fd68d00071ce87c8c0acdda2b82fc4562da59c"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/class-neutral-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/63fda1e19d85f60f6f6ad1357e86a9b0f7545b4d85183985fdce7bdc0ed786c0.gz",
+      "archiveBytes": 5010,
+      "archiveSha256": "884839b2dd2cbd124d167b1f06eda88d8819cf89f8e9b674d49e72964d07955f",
+      "bytes": 20376,
+      "sha256": "63fda1e19d85f60f6f6ad1357e86a9b0f7545b4d85183985fdce7bdc0ed786c0"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/class-neutral-ledger.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/5037315343f4c9d92e8abb881386bb8056d5a3f4333d7a1002bf47802e576842.gz",
+      "archiveBytes": 1794,
+      "archiveSha256": "3c65529f5aaf6a25c2d03aa25f37d14a5b39576c5eff3792f801603100e50ced",
+      "bytes": 6544,
+      "sha256": "5037315343f4c9d92e8abb881386bb8056d5a3f4333d7a1002bf47802e576842"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/clippy-cached-label.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/561b3871879ba057a69bb86ce4830b26a0505d70db35024e23a2f55869a40923.gz",
+      "archiveBytes": 180,
+      "archiveSha256": "b63c890bcc394a441bbd670e1a530ef55eec17c1eeb7d3dbb917b190b4388bf6",
+      "bytes": 347,
+      "sha256": "561b3871879ba057a69bb86ce4830b26a0505d70db35024e23a2f55869a40923"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/clippy-shared-relation.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/5fe8ae3ddb19e5a711b7c8beb05f0c55f421d029af29fa7dc9508ee8c84e264f.gz",
+      "archiveBytes": 210,
+      "archiveSha256": "8c1e2eb739d3ef2ca0a244319e0a6006075826a774b6699365138dd13d390731",
+      "bytes": 401,
+      "sha256": "5fe8ae3ddb19e5a711b7c8beb05f0c55f421d029af29fa7dc9508ee8c84e264f"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/clippy-shared-schema.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/e0bbc44f136b175e17e1eb19279ef750044420f457f7d63ce7b44aad54a4f298.gz",
+      "archiveBytes": 516,
+      "archiveSha256": "1f65298d4e63e3ab24f4fef3502c7f12e5a4fe0b5ea53c26bf1ee0825bb8bd11",
+      "bytes": 1043,
+      "sha256": "e0bbc44f136b175e17e1eb19279ef750044420f457f7d63ce7b44aad54a4f298"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/clippy-status-presence.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/a7c67ddc5f471e9941ffbd3ab05e49fab5be61f1f6bda36d79f13619f32f401c.gz",
+      "archiveBytes": 210,
+      "archiveSha256": "6e9add6086a899d3182b91a6758d8fd4d5683f033750f57b91909065a3a2da0d",
+      "bytes": 401,
+      "sha256": "a7c67ddc5f471e9941ffbd3ab05e49fab5be61f1f6bda36d79f13619f32f401c"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/coreInventory-first-parent-assertion.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/e59efca2496054d86bca54d3a469f0d7b23527e34f844be7e57e5b5be56146da.gz",
+      "archiveBytes": 557,
+      "archiveSha256": "df1422fef8a568d215e980c95ef1337b69dd54f2ecfffe3a86ecc7b03d85525a",
+      "bytes": 1133,
+      "sha256": "e59efca2496054d86bca54d3a469f0d7b23527e34f844be7e57e5b5be56146da"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/coreInventory.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/539d619e796afd162542b410024b45d80981d90997b156a0f373432deb5f7103.gz",
+      "archiveBytes": 64,
+      "archiveSha256": "67749a76dca705e40c6817af713957877db3a9c137bf75433a738d0da9bf258b",
+      "bytes": 111,
+      "sha256": "539d619e796afd162542b410024b45d80981d90997b156a0f373432deb5f7103"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/derived-neutral-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/938cc21c50758a11e484ab073c328f0520c693ccdad94871f921dfea259052f2.gz",
+      "archiveBytes": 5007,
+      "archiveSha256": "ce178087c163f8664532472789396be6ce1cc557bfcc2d12c56c9372b02da02e",
+      "bytes": 20377,
+      "sha256": "938cc21c50758a11e484ab073c328f0520c693ccdad94871f921dfea259052f2"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/derived-neutral-ledger.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/a67396abb54ebea5247a891c2dc0b546ae724546d8d6d63d4b64c125840e13c1.gz",
+      "archiveBytes": 1794,
+      "archiveSha256": "55bada4e6bfabd9a998aae0260bd4b1f30a550c2d34228301c778d4cf6e17978",
+      "bytes": 6544,
+      "sha256": "a67396abb54ebea5247a891c2dc0b546ae724546d8d6d63d4b64c125840e13c1"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/descriptor-ledger-fixed.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/9b423360433d70da7a642a3b75a16d2c9f2654744c5ed6bb9cb3dac1ec2ee2c6.gz",
+      "archiveBytes": 1795,
+      "archiveSha256": "655a92290c4c0438d568aa3bec450e0e07b2eff1a705f6d7cb9b1295e05d0149",
+      "bytes": 6544,
+      "sha256": "9b423360433d70da7a642a3b75a16d2c9f2654744c5ed6bb9cb3dac1ec2ee2c6"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/descriptor-ledger.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/91058f454057be42e9b1dfbefb4b53c63968e9e9b9faf406d8d276cd37ee713e.gz",
+      "archiveBytes": 516,
+      "archiveSha256": "6a9e7fa4d675919593e4cb35e487b59108f652188e470c615345f4435cd42a90",
+      "bytes": 1324,
+      "sha256": "91058f454057be42e9b1dfbefb4b53c63968e9e9b9faf406d8d276cd37ee713e"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/draft-audit-disposition.json": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/60ef965070dba9a6fca6a1696c8296ef9e501a4df1fa239157ae659670245692.gz",
+      "archiveBytes": 735,
+      "archiveSha256": "d2110bfd2f18a20b9840d870ca2a1aa66e77b224cffc47727579b972fb29fd8d",
+      "bytes": 1401,
+      "sha256": "60ef965070dba9a6fca6a1696c8296ef9e501a4df1fa239157ae659670245692"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/empty-label-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/3ab1b213e9a14bfb304fa95a17914715acd615817ad7ce5683616c5ae46621de.gz",
+      "archiveBytes": 4978,
+      "archiveSha256": "c422a86b1dbc117a1a8ec0569eed0570ffe2e121d63bca0932549cd9f6128ce8",
+      "bytes": 20246,
+      "sha256": "3ab1b213e9a14bfb304fa95a17914715acd615817ad7ce5683616c5ae46621de"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/empty-label-ledger.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/a42e9e216defb1abe563fee7f6a200520e3207434b0bd79c30c90c67d11102ce.gz",
+      "archiveBytes": 1794,
+      "archiveSha256": "588d17f4723af63cbfcd805aee7b861e03df6c99cc267052426c6d65ca82e3d6",
+      "bytes": 6544,
+      "sha256": "a42e9e216defb1abe563fee7f6a200520e3207434b0bd79c30c90c67d11102ce"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/environment.json": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b1ca40c79d222279dac0e3860e66bed6eee100beffa688d84c8bb5a6095f9ac9.gz",
+      "archiveBytes": 227,
+      "archiveSha256": "3dd7c93c97c5e948ff566025b5504b7e10c60be375e9e1e13e5b5e28029ee854",
+      "bytes": 481,
+      "sha256": "b1ca40c79d222279dac0e3860e66bed6eee100beffa688d84c8bb5a6095f9ac9"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/factored-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/cff33f61ca43f690d25115b95009b6e349be8d67dc7fbe4ae50dc0269e83d2b9.gz",
+      "archiveBytes": 4924,
+      "archiveSha256": "0f4175916a06da47c164a6c17942b3822de769d1e19be102dc2a9652657d4384",
+      "bytes": 19989,
+      "sha256": "cff33f61ca43f690d25115b95009b6e349be8d67dc7fbe4ae50dc0269e83d2b9"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/factored-ledger.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/d5454c7e47ffc67051c5cce4782b023fcc9eb80951e01a8815e12f9ac019686e.gz",
+      "archiveBytes": 1794,
+      "archiveSha256": "77a27c608867ec439537a9fbf15e01474cc1dc61b5c27efae304ad47e8be8467",
+      "bytes": 6544,
+      "sha256": "d5454c7e47ffc67051c5cce4782b023fcc9eb80951e01a8815e12f9ac019686e"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/factored-native.so": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/4b451f4b5ee8f84fb463b749a4abc0c605247fd89beed58e1e1d236c1d7588c9.gz",
+      "archiveBytes": 2907475,
+      "archiveSha256": "d4fa0aee6abaff5acfda8e853b59de7b07f067247a43afd0f6b4eb0b94b4eace",
+      "bytes": 6381704,
+      "sha256": "4b451f4b5ee8f84fb463b749a4abc0c605247fd89beed58e1e1d236c1d7588c9"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/final-abi-generation.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/eb8c840abbbfbbcc7b2fc02f6c1c2909f93ea1a5c8d5ab31aed178cc9a757485.gz",
+      "archiveBytes": 62,
+      "archiveSha256": "a91496309293e2723fe1760d8d62399e034736fca5a1687e6c9f2516cce87aba",
+      "bytes": 42,
+      "sha256": "eb8c840abbbfbbcc7b2fc02f6c1c2909f93ea1a5c8d5ab31aed178cc9a757485"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/final-abi-smoke.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "135de4fa46245b623c5d8acfa3e621c9374a4c0229b173222340fff45c526965",
+      "bytes": 52,
+      "sha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/final-assertions-parent-native.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/2bc123465a98224d2d5c5799f80c0d4a797f47aeab85c67b1a855edeff808983.gz",
+      "archiveBytes": 533,
+      "archiveSha256": "63f221cf30caf59623ef28f2ac275d4c462649941ef1a9f2fffde834de80b061",
+      "bytes": 1091,
+      "sha256": "2bc123465a98224d2d5c5799f80c0d4a797f47aeab85c67b1a855edeff808983"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/final-assertions-parent-wasm.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/599d1b7f1ffe1e8346e075956dcae9592cabed159943d3c05c128cd6af4237ad.gz",
+      "archiveBytes": 516,
+      "archiveSha256": "7b859d3c5253ce4067adda83753f1a99c0fcbe1616a2bcb0d1a2b8a83ed78596",
+      "bytes": 969,
+      "sha256": "599d1b7f1ffe1e8346e075956dcae9592cabed159943d3c05c128cd6af4237ad"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/final-assets.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef.gz",
+      "archiveBytes": 104,
+      "archiveSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730",
+      "bytes": 88,
+      "sha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/final-foundation.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b1b4559fa15e879df7618ae11d2e4aac66475e25aedf882c6bd1cf6bd1b166d2.gz",
+      "archiveBytes": 4630,
+      "archiveSha256": "b8148b953dc69e666f42a344ead7d9bafc088c29f3a9e8d4c5aefdd6ce849919",
+      "bytes": 15900,
+      "sha256": "b1b4559fa15e879df7618ae11d2e4aac66475e25aedf882c6bd1cf6bd1b166d2"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/final-gates-corrected-driver.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/7d94a145ac680123dc0b8ca571bc2f044969c622b3390a37d0e09a02c8131ef7.gz",
+      "archiveBytes": 44,
+      "archiveSha256": "85b6f2abfd9a64f736865449928fdf09a41e8d0a51c353cc20e42304279d236f",
+      "bytes": 26,
+      "sha256": "7d94a145ac680123dc0b8ca571bc2f044969c622b3390a37d0e09a02c8131ef7"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/final-module-exports.json": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/f86e540a06a81f0cc352fe972526313faf5e2ab18b44b144ff851cdc35482f9a.gz",
+      "archiveBytes": 567,
+      "archiveSha256": "b1ec0a7e54edb7b40896af2ad8582d33fd1fab0bf342496c8fc655a911218760",
+      "bytes": 2408,
+      "sha256": "f86e540a06a81f0cc352fe972526313faf5e2ab18b44b144ff851cdc35482f9a"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/final-native-10k.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/0961c30c276c72a8c023e4eb4830f6ee6f1695e3f6fe43caafb89551f5041e8a.gz",
+      "archiveBytes": 489,
+      "archiveSha256": "00c502e9742d9bd02ae7d96cd954c463e3b57887ab455b070cf0c486f1123ba0",
+      "bytes": 833,
+      "sha256": "0961c30c276c72a8c023e4eb4830f6ee6f1695e3f6fe43caafb89551f5041e8a"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/final-parent-controls.json": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/a579172c4f90d891461d91d2f92346a26fa6a8a19030402569237316409fc3ea.gz",
+      "archiveBytes": 410,
+      "archiveSha256": "f7d4a585b1478b12208377d22c94ed7b86447d0953dec1865a18e9728081594a",
+      "bytes": 1394,
+      "sha256": "a579172c4f90d891461d91d2f92346a26fa6a8a19030402569237316409fc3ea"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/fixed-fields-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/cc4ac1e793abd2bd57ea0d9ba9296a641878ce2e3fd10822d512a4987abb6c2d.gz",
+      "archiveBytes": 4959,
+      "archiveSha256": "b899b47a95fc8ca3169c8e629bb774575baad959610439f7239ff7d6b079d17b",
+      "bytes": 20119,
+      "sha256": "cc4ac1e793abd2bd57ea0d9ba9296a641878ce2e3fd10822d512a4987abb6c2d"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/fixed-prefix-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/3eb18cf34b45775f2d11cb374fd9ff610a3a97103603a318ed807fe6244ef531.gz",
+      "archiveBytes": 4980,
+      "archiveSha256": "78dd0d93fb59021b4c3b6ac4b8bb9a1a11470f07548342fd2063b53d178ababc",
+      "bytes": 20245,
+      "sha256": "3eb18cf34b45775f2d11cb374fd9ff610a3a97103603a318ed807fe6244ef531"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/fixed-prefix-ledger.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/2763aeb344f58de22469e65543954a9c471f273da75e1fb071db0abf7018eb3f.gz",
+      "archiveBytes": 1794,
+      "archiveSha256": "db4403f59af29b4950a9e9511536703002bc404085ae6a5d510c4ecf6ae24531",
+      "bytes": 6544,
+      "sha256": "2763aeb344f58de22469e65543954a9c471f273da75e1fb071db0abf7018eb3f"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/flags-prefix-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/a65be52ebf368e184fd983c15630beab03fd1a66241350d5c877e40bd182ae97.gz",
+      "archiveBytes": 4944,
+      "archiveSha256": "c1f3bc8272e257ea9606c197408a7a4d72dc9357cb0f52f04aeb94c24d97ffac",
+      "bytes": 20119,
+      "sha256": "a65be52ebf368e184fd983c15630beab03fd1a66241350d5c877e40bd182ae97"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/flags-prefix-ledger.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/26fbccf5398643183b128cb5bc1695b930f6d71c0d9bbfd0be7ac998afcff9dd.gz",
+      "archiveBytes": 1795,
+      "archiveSha256": "1c22ceb5dc6bf3f7a63acb80c6015a1ce8b8431073974e49eff49b261278ad8f",
+      "bytes": 6545,
+      "sha256": "26fbccf5398643183b128cb5bc1695b930f6d71c0d9bbfd0be7ac998afcff9dd"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/format.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/2305146935c9fe25db5e18851be249342eeff356e6bf3719de99de348f48588f.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "718ab5331a068b27c1f2ec5e2296f2890be15780bee47f3459d547ef88e9650d",
+      "bytes": 29,
+      "sha256": "2305146935c9fe25db5e18851be249342eeff356e6bf3719de99de348f48588f"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/header-borrow-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/377cb40a1472c605ed66cffc59ee9cd59e51ba75aca7a5c54c4f95f9837728e7.gz",
+      "archiveBytes": 4952,
+      "archiveSha256": "63a367d56d4ec3dbff488a847edb732c6a7b72f29678318f122725575bdcba1b",
+      "bytes": 20119,
+      "sha256": "377cb40a1472c605ed66cffc59ee9cd59e51ba75aca7a5c54c4f95f9837728e7"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/header-borrow-ledger.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/f123e612d0b8e13d8754fb3dc29271f0ad3d936f2e6043775908e80ce2ce1e58.gz",
+      "archiveBytes": 1794,
+      "archiveSha256": "8d40c33e4aa6cdfd6b63e45140e85de51d5e9bfdda00eaf8585097b24fb8c703",
+      "bytes": 6544,
+      "sha256": "f123e612d0b8e13d8754fb3dc29271f0ad3d936f2e6043775908e80ce2ce1e58"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/hook-driver-corrected.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/7ae9b193e8e0b4de6a5adc1e5a31ed4bbdd9439e30d808686ba3479accba674f.gz",
+      "archiveBytes": 41,
+      "archiveSha256": "ad85456eada74f4d032bcfa37085f0e5fd525ae7c202c649b1d8ff9052919957",
+      "bytes": 24,
+      "sha256": "7ae9b193e8e0b4de6a5adc1e5a31ed4bbdd9439e30d808686ba3479accba674f"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/hook-driver.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b7830ec8da467813f906e14e446198a34b90776d38ae0864a120c4291fed2a4c.gz",
+      "archiveBytes": 28,
+      "archiveSha256": "f6a214cd556cb2108787c6ba1bdc356732ea99fa71d1b6b6abf7d5a53dc02931",
+      "bytes": 8,
+      "sha256": "b7830ec8da467813f906e14e446198a34b90776d38ae0864a120c4291fed2a4c"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/hooks-first-formatting.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/76782819fcc613fb80bbe7e1eac7ec0db56380a591176bcf548f1aca4df7462c.gz",
+      "archiveBytes": 149,
+      "archiveSha256": "f4bea49dab541922ad03fbc65e777bca0a4ea27c416fae00d33809bd70fc61f7",
+      "bytes": 346,
+      "sha256": "76782819fcc613fb80bbe7e1eac7ec0db56380a591176bcf548f1aca4df7462c"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/hooks.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/interaction-suite.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/29d00df5cd6c2457b9f4ccb5c6a05237c902c1c14a267b88be1ef1784874351a.gz",
+      "archiveBytes": 4861,
+      "archiveSha256": "7b64c57e9f2f5bceb8242d7f3d79256b8b8d207123c44d1de1f3959934525f85",
+      "bytes": 19895,
+      "sha256": "29d00df5cd6c2457b9f4ccb5c6a05237c902c1c14a267b88be1ef1784874351a"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/issue1015-at-readiness.json": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/462cd3eb1663106c64ca366a6021e696d620bd980e88912ade148904cb864908.gz",
+      "archiveBytes": 2284,
+      "archiveSha256": "3afc07d03541f27069d018e3b971838204e7ebcc922834c209597855f10ee176",
+      "bytes": 5157,
+      "sha256": "462cd3eb1663106c64ca366a6021e696d620bd980e88912ade148904cb864908"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/ledger-captured-output-fixed.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/09f29c19f1ab70297d008b503daae8d363e50a787edf0d3a53eade1086441af7.gz",
+      "archiveBytes": 1794,
+      "archiveSha256": "5cff7868aa83f375ebfe72b7b2efe687f3682014598d74b19f06fec0f824cb22",
+      "bytes": 6544,
+      "sha256": "09f29c19f1ab70297d008b503daae8d363e50a787edf0d3a53eade1086441af7"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/ledger-first-fix.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/93c1dc4a85d0618e31a69606686681d4ccb98903ef371961079883957c221e0a.gz",
+      "archiveBytes": 322,
+      "archiveSha256": "af9d8436e3ee44417da7268824ca37c9e16c877121d30cfc4e407559966b5fe6",
+      "bytes": 492,
+      "sha256": "93c1dc4a85d0618e31a69606686681d4ccb98903ef371961079883957c221e0a"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/ledger-fixed-counts.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/d3f46df8975400f7209fd03e2e7104ada8dadb29c16197e2213f9bab33302fdc.gz",
+      "archiveBytes": 802,
+      "archiveSha256": "cb19ff1f81db72a2c2f1690a953853081fa929646235326aa51636061c102ae2",
+      "bytes": 2005,
+      "sha256": "d3f46df8975400f7209fd03e2e7104ada8dadb29c16197e2213f9bab33302fdc"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/ledger-resolved-paths.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/e399fee0515a224c338caf0d83e058b5eff41f4ab59cd775ccafe8d42c130f17.gz",
+      "archiveBytes": 1635,
+      "archiveSha256": "ae43bbf2defcf22132a300497746973c4e262767da79706da0d521adf12d2d2f",
+      "bytes": 5972,
+      "sha256": "e399fee0515a224c338caf0d83e058b5eff41f4ab59cd775ccafe8d42c130f17"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/ledger-staged-refusal.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/d319a2298332c6e7f586f14ed71dd83625f4eb0977671f66cdd968e98bec7b0e.gz",
+      "archiveBytes": 319,
+      "archiveSha256": "44b6da093de99c13dfb8d34479154292cdf9ec762cea4491db5ce289a92ef1fb",
+      "bytes": 617,
+      "sha256": "d319a2298332c6e7f586f14ed71dd83625f4eb0977671f66cdd968e98bec7b0e"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/local-label-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/63f370f375320e0d16c95b6b28b92dc622453636c44e9a2ea32f71dcf8a58f2c.gz",
+      "archiveBytes": 4994,
+      "archiveSha256": "98ee1e6c1a0c9cc2f276a6f44585f392c181da40e423c9ff017b1cf750995d33",
+      "bytes": 20246,
+      "sha256": "63f370f375320e0d16c95b6b28b92dc622453636c44e9a2ea32f71dcf8a58f2c"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/local-label-ledger.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/c4f7c8ca0312f2184e24bb61fe225760d037e94541b0f2c16bdc4d9a866dcfaf.gz",
+      "archiveBytes": 1794,
+      "archiveSha256": "e00445ccfbf47a92c5b9b30566599bbb6dd4c1a2e86836ed004f930d4bbbd927",
+      "bytes": 6544,
+      "sha256": "c4f7c8ca0312f2184e24bb61fe225760d037e94541b0f2c16bdc4d9a866dcfaf"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/minimal-label-stats-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/bea44dfcdc7cc56e6e66fe6827e978b68552c52f2814b6c0ad88a2490b898e13.gz",
+      "archiveBytes": 4981,
+      "archiveSha256": "cb7b76377003d69d4321f6d2565fd4ff121f084fd36b6f27fd6f4e5bdd9e43b2",
+      "bytes": 20246,
+      "sha256": "bea44dfcdc7cc56e6e66fe6827e978b68552c52f2814b6c0ad88a2490b898e13"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/minimal-label-stats-ledger.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/4376c6207dff0a6574b0a11d79700603ca66f612e23db6a16011b27f6e0d5c74.gz",
+      "archiveBytes": 1786,
+      "archiveSha256": "38143a4eb75be5463af85d6285a5e7615731c7ae2df1cce77432a5d53a7b7d3c",
+      "bytes": 6545,
+      "sha256": "4376c6207dff0a6574b0a11d79700603ca66f612e23db6a16011b27f6e0d5c74"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/native-10k-factored.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/536b53f841e62f02ac10f5f1f29ad792b30ac3e4147b85a57ac4080d453f8bcc.gz",
+      "archiveBytes": 492,
+      "archiveSha256": "54cb8789cde75cef96fffaefdfee85faa4c3bfda7b64a18bd1234e1472c9f2cb",
+      "bytes": 838,
+      "sha256": "536b53f841e62f02ac10f5f1f29ad792b30ac3e4147b85a57ac4080d453f8bcc"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/native-build-cached-label.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/c231c2a42804c308b218616f8c9f5aafc1fef30a1ae314a10c2d6eaa1f6670e9.gz",
+      "archiveBytes": 172,
+      "archiveSha256": "26efc124c6065204179f785e980607b642e871aa154b61f3486c22a517ef22b6",
+      "bytes": 337,
+      "sha256": "c231c2a42804c308b218616f8c9f5aafc1fef30a1ae314a10c2d6eaa1f6670e9"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/native-build-factored.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/a5e5e52f1f28d604c1e732c46a08923ac3c631cc3397389a7528923182911e64.gz",
+      "archiveBytes": 206,
+      "archiveSha256": "7f3763a3fd51ed7e852db1a896819f63189789b7643fed808e0c3d7673d44627",
+      "bytes": 391,
+      "sha256": "a5e5e52f1f28d604c1e732c46a08923ac3c631cc3397389a7528923182911e64"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/native-build-first.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/c9edad37adba0a0e92ad91b5d7dba04325c7b40cbd8ed9b3fe5abfd65b1ab8fa.gz",
+      "archiveBytes": 173,
+      "archiveSha256": "7d34f1ca9412ecd9df5e43d383ec09d25a3097ecf9f7faa8bed4a876cf77629f",
+      "bytes": 337,
+      "sha256": "c9edad37adba0a0e92ad91b5d7dba04325c7b40cbd8ed9b3fe5abfd65b1ab8fa"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/native-build-fixed-fields.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/29b21c01a1c26d6d63eeea0d638dcc9e9ca9625aa791c6254e126f0386f42ec5.gz",
+      "archiveBytes": 205,
+      "archiveSha256": "7cf1c6c707c49e7a4ad3dee03e4f7390753eed6aabccc2b2b14a47635ff96967",
+      "bytes": 391,
+      "sha256": "29b21c01a1c26d6d63eeea0d638dcc9e9ca9625aa791c6254e126f0386f42ec5"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/native-build-header-borrow.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/9915804700b0b8146733e4bfab971da772e1b4648732fd2387566071c4580089.gz",
+      "archiveBytes": 172,
+      "archiveSha256": "d9bfa007e39908eff89f7c59beeb50f90dfc7d175ac2962b9f2bad52b575eed7",
+      "bytes": 337,
+      "sha256": "9915804700b0b8146733e4bfab971da772e1b4648732fd2387566071c4580089"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/native-build-local-label.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/494ac6bee942575f1ae36c91f782375943ea4d887bab6c75683d0d42d6489806.gz",
+      "archiveBytes": 205,
+      "archiveSha256": "175adc55dc17a44c842cb432d9e17774a2108dd92d7aee6890fb50dfa31558ae",
+      "bytes": 391,
+      "sha256": "494ac6bee942575f1ae36c91f782375943ea4d887bab6c75683d0d42d6489806"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/native-build-scan.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/6f9c3e075f0421d7e6fe81e02a615010020a4cd861e6bae67c46a726f480bfce.gz",
+      "archiveBytes": 172,
+      "archiveSha256": "cbe078c12bd9936f1275a6f372ac9fec529673e2564bc07405aa21febf25ed55",
+      "bytes": 337,
+      "sha256": "6f9c3e075f0421d7e6fe81e02a615010020a4cd861e6bae67c46a726f480bfce"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/native-build-shared-relation.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b3b5f02079e20c24b1aebe2dcd733d8de7ddc4bb94ebf16436f02cf42afa9dd1.gz",
+      "archiveBytes": 172,
+      "archiveSha256": "3921b09a91b0d72c1f5f9fc1ac358b79bc424c71cbeb8dd6f69b96e797a8f0e7",
+      "bytes": 337,
+      "sha256": "b3b5f02079e20c24b1aebe2dcd733d8de7ddc4bb94ebf16436f02cf42afa9dd1"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/native-build-shared-schema.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/0f55ad0801532c6d70666f9e01d22a6b38e59a3db8e93ad218d00547f57c45b9.gz",
+      "archiveBytes": 205,
+      "archiveSha256": "36f96910e86cbd6a6c2b5c6e87734d1a315412ffbe34b0c02da18d1b50c68bcd",
+      "bytes": 391,
+      "sha256": "0f55ad0801532c6d70666f9e01d22a6b38e59a3db8e93ad218d00547f57c45b9"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/native-build-single-escape.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/c9edad37adba0a0e92ad91b5d7dba04325c7b40cbd8ed9b3fe5abfd65b1ab8fa.gz",
+      "archiveBytes": 173,
+      "archiveSha256": "7d34f1ca9412ecd9df5e43d383ec09d25a3097ecf9f7faa8bed4a876cf77629f",
+      "bytes": 337,
+      "sha256": "c9edad37adba0a0e92ad91b5d7dba04325c7b40cbd8ed9b3fe5abfd65b1ab8fa"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/native-build-status-presence.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b3b5f02079e20c24b1aebe2dcd733d8de7ddc4bb94ebf16436f02cf42afa9dd1.gz",
+      "archiveBytes": 172,
+      "archiveSha256": "3921b09a91b0d72c1f5f9fc1ac358b79bc424c71cbeb8dd6f69b96e797a8f0e7",
+      "bytes": 337,
+      "sha256": "b3b5f02079e20c24b1aebe2dcd733d8de7ddc4bb94ebf16436f02cf42afa9dd1"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/native-negative-test-source.mjs": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/cf8148e1bd062bf8474204b185ae023dbb3bf657b187684cc9a6a047fd515087.gz",
+      "archiveBytes": 14828,
+      "archiveSha256": "a92bbe0d6296ac09a06f83302c8798e70b2bc648e6bcf612c30497bcc2b7fab1",
+      "bytes": 61139,
+      "sha256": "cf8148e1bd062bf8474204b185ae023dbb3bf657b187684cc9a6a047fd515087"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/node-baseline-negative.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/44e94b451746876ce90480979ae478700f1f375f9d1a013327e474d5ba44a89c.gz",
+      "archiveBytes": 533,
+      "archiveSha256": "99cfe0846b5d08d99ddabea2f48fd6933e92a9f02fdbb7653a4b506c938b4602",
+      "bytes": 1091,
+      "sha256": "44e94b451746876ce90480979ae478700f1f375f9d1a013327e474d5ba44a89c"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/node-factored-diagnostic.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/f430a24c00f241f79777e0026c9ac98f2246c97165485a0df0733eeecd4f926c.gz",
+      "archiveBytes": 1433,
+      "archiveSha256": "02c082650f2424a5c47f726222848a6dd3456d763ccfc3c2d8c21b3d0bbaa669",
+      "bytes": 4209,
+      "sha256": "f430a24c00f241f79777e0026c9ac98f2246c97165485a0df0733eeecd4f926c"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/node-final-full.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b216776d5abce68cf068488ac6a29f7a6183517c243b9dfbffb37dd8116fba5a.gz",
+      "archiveBytes": 40614,
+      "archiveSha256": "7e16ed7afa812f5d690dce793e0d1e513ec5582f9efcca23c007ac2858343fbb",
+      "bytes": 241819,
+      "sha256": "b216776d5abce68cf068488ac6a29f7a6183517c243b9dfbffb37dd8116fba5a"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/node-final-wire.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/0f4d339e6d8ef23fa247307984d7d202ad833438c556c5ad8523af883ab96106.gz",
+      "archiveBytes": 1496,
+      "archiveSha256": "c800700f583ccb1416ac4b0082a50dc1757bfa8410fabe97155d25a226778b50",
+      "bytes": 4378,
+      "sha256": "0f4d339e6d8ef23fa247307984d7d202ad833438c556c5ad8523af883ab96106"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/node-scan-diagnostic.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/18be80a6d90de76917a6750ef871c1b57aa659ae2b07f823ffcd10e27a8967fc.gz",
+      "archiveBytes": 294,
+      "archiveSha256": "e791db72ef1acaddcdb041ec413cf4ed56b8ee6f77c6089c75d65b248175c546",
+      "bytes": 600,
+      "sha256": "18be80a6d90de76917a6750ef871c1b57aa659ae2b07f823ffcd10e27a8967fc"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/node-syntax.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/official-package.json": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/caf8f793e96e11d4b36a831cc8b9cfa3f4e3f224e0dae87844621b98b64326dd.gz",
+      "archiveBytes": 308,
+      "archiveSha256": "a341d9e8ec455b0e8c3da3d402456908f0cfcad670fb54589680f49eeda2739b",
+      "bytes": 418,
+      "sha256": "caf8f793e96e11d4b36a831cc8b9cfa3f4e3f224e0dae87844621b98b64326dd"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/original-projection-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/fcda1ec88760a2d7a5a448be017533ce98845616919d88935ca2380c29b101ad.gz",
+      "archiveBytes": 4953,
+      "archiveSha256": "cc65050f8ce35c87c988013e08f0d2335e419d16b8e7dd8129107cd7bb78dcee",
+      "bytes": 20119,
+      "sha256": "fcda1ec88760a2d7a5a448be017533ce98845616919d88935ca2380c29b101ad"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/original-projection-ledger.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/4c2f6fdc506079a0c74b55ec2ebc7631de24f2353da76dd7e93d2c21545e2be6.gz",
+      "archiveBytes": 1794,
+      "archiveSha256": "3d7d227ecbebaae8a7f3ad67c8f59c2a4dbe481518c3618fc5b5c7cf655a6e7e",
+      "bytes": 6544,
+      "sha256": "4c2f6fdc506079a0c74b55ec2ebc7631de24f2353da76dd7e93d2c21545e2be6"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/owned-label-stats-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/80aacb535ab96e602027484bbc8d134f328936cf097c61c8ab36084531b515da.gz",
+      "archiveBytes": 4977,
+      "archiveSha256": "092e369aab86a8a2deeed8b0f4102d565196722dd8c998763edd1f0dbde5ab6b",
+      "bytes": 20246,
+      "sha256": "80aacb535ab96e602027484bbc8d134f328936cf097c61c8ab36084531b515da"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/owned-label-stats-ledger.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/746f7e63b320b736814d21bd45980fc41595da4176025059eb802c8303e2b42e.gz",
+      "archiveBytes": 1793,
+      "archiveSha256": "c488f89aab80bcd1f3bf6c8ea6c0ba37448a3a99f6a95a56ca0cfbda088ce00e",
+      "bytes": 6545,
+      "sha256": "746f7e63b320b736814d21bd45980fc41595da4176025059eb802c8303e2b42e"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/page-bound-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/195f960b0fa097f7a9f6ce95ef2c4f4aca6d74e209e13bc5d86ca6acf57cef1c.gz",
+      "archiveBytes": 4927,
+      "archiveSha256": "75d580a805c1f71cfe54e63a7e0eac2a0ea3e8ff3b2693c7b985c48c01903d8b",
+      "bytes": 19990,
+      "sha256": "195f960b0fa097f7a9f6ce95ef2c4f4aca6d74e209e13bc5d86ca6acf57cef1c"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/page-bound-ledger.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/fdf816015739fc986fa64feb59bd30b501506d96846f83de304dbd000bfd4103.gz",
+      "archiveBytes": 1794,
+      "archiveSha256": "46da3ae2a498d1a61739377087bde7efcbbdc5d59097cec844d88ca3cf8b964d",
+      "bytes": 6544,
+      "sha256": "fdf816015739fc986fa64feb59bd30b501506d96846f83de304dbd000bfd4103"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/phase-tests-first.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/fbaf790502f82d1e6e70578025ddd97238ba81f6ed3e4b50e6fa0fd37a5920e0.gz",
+      "archiveBytes": 327,
+      "archiveSha256": "1dfdd5a6c1a938bdf29a14c61612fe94e1eebb9693707223e9175bf5d89bf5d5",
+      "bytes": 550,
+      "sha256": "fbaf790502f82d1e6e70578025ddd97238ba81f6ed3e4b50e6fa0fd37a5920e0"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/phase-tests-resolved-paths.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/ba2e86ddc3f63206a13b6c17e503808ba437574589b35b819983907fba11d20b.gz",
+      "archiveBytes": 684,
+      "archiveSha256": "581ed59de1b97c0d79e4d9e0e2fa7a69d8c94e08f61aaae3baac734a4a2ab9af",
+      "bytes": 1667,
+      "sha256": "ba2e86ddc3f63206a13b6c17e503808ba437574589b35b819983907fba11d20b"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/python-final-scoped.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/0b37521b26808c48765def603d772e42edcf6a6aeafb2a453fdee455bf9e504b.gz",
+      "archiveBytes": 61,
+      "archiveSha256": "88819433f8328f71adc6cd351aebb0dce55cd4cf59525e453d283f4f84673d16",
+      "bytes": 180,
+      "sha256": "0b37521b26808c48765def603d772e42edcf6a6aeafb2a453fdee455bf9e504b"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/python-native-scoped.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/1e45a40ebf955dbd5a7c45d0baec6bd7463e6b63d25999cdacf66e62af08fc13.gz",
+      "archiveBytes": 61,
+      "archiveSha256": "b10a13aa2c834d7c02466003593bebdccd5a20c0473551e53c30ee97f603e60a",
+      "bytes": 180,
+      "sha256": "1e45a40ebf955dbd5a7c45d0baec6bd7463e6b63d25999cdacf66e62af08fc13"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/ruff.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/runtime-seal.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/d2b8d4b5ebf656f096d57b8635a84f1f8f8e9568a779763ce0105d12951309be.gz",
+      "archiveBytes": 381,
+      "archiveSha256": "28c9cd5f28f802d2736182cc9c5c91a7f8b89b6a8e9440e5943879570c92d713",
+      "bytes": 523,
+      "sha256": "d2b8d4b5ebf656f096d57b8635a84f1f8f8e9568a779763ce0105d12951309be"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/scan-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b8bd67001081becb3af0a199bb0c3c8df35629b04687a08807f469e34bdfdabd.gz",
+      "archiveBytes": 4924,
+      "archiveSha256": "6786eaa7279e078a404cb6b72fbe2a312a2e7bd703ce9bc69f470d45dfb3d55a",
+      "bytes": 19990,
+      "sha256": "b8bd67001081becb3af0a199bb0c3c8df35629b04687a08807f469e34bdfdabd"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/scan-ledger.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/4da7a6fa30bfeaa25b534ef56ee1b0fa5558dd192594d7528fc7fe211f80b927.gz",
+      "archiveBytes": 1795,
+      "archiveSha256": "bb9ce40fa4d78fccbe1dd33c9c39525660027c9ca285585eef83ec9467951100",
+      "bytes": 6544,
+      "sha256": "4da7a6fa30bfeaa25b534ef56ee1b0fa5558dd192594d7528fc7fe211f80b927"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/scan-native.so": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/5e3e3c2bf6d795270de144a8d9e2e9f32b870509383bb785f0d456953252dcf8.gz",
+      "archiveBytes": 2907499,
+      "archiveSha256": "9b748826e607e6b4e1da66074d02f57da048d246fa6aa145f2fe9bca21048364",
+      "bytes": 6381464,
+      "sha256": "5e3e3c2bf6d795270de144a8d9e2e9f32b870509383bb785f0d456953252dcf8"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/schema-table-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/62439094a24cf586da5bf15b0173c75cbc84c184db5c14da74dacdecbe920031.gz",
+      "archiveBytes": 4960,
+      "archiveSha256": "0c33d48263ee42f2d0b0aeb548758f3babc4e2f975699d95d06912214baca93c",
+      "bytes": 20119,
+      "sha256": "62439094a24cf586da5bf15b0173c75cbc84c184db5c14da74dacdecbe920031"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/shared-bound-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/4fe688682ca467311259124ac4e810374770ef8c1a169f4a96d5c564fad361b6.gz",
+      "archiveBytes": 4923,
+      "archiveSha256": "065eac9db4a90863e0d677179baabdbba0397e60c13890d5750da8bbe4b71a91",
+      "bytes": 19990,
+      "sha256": "4fe688682ca467311259124ac4e810374770ef8c1a169f4a96d5c564fad361b6"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/shared-bound-ledger.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/6ad81bd637b5707c1a0cb0e1696d8e4f314b549f7f281ad9d8b90bb6c070da94.gz",
+      "archiveBytes": 1795,
+      "archiveSha256": "ad08f9d2b93f480928b65562d5f5b5c826fe926a9b942f9d5e203bd652d4ead2",
+      "bytes": 6544,
+      "sha256": "6ad81bd637b5707c1a0cb0e1696d8e4f314b549f7f281ad9d8b90bb6c070da94"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/shared-derived-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/6e795aa468af03e7fb8bec6f4e824515ce3497c88b30754708ade07b14bbb337.gz",
+      "archiveBytes": 5013,
+      "archiveSha256": "4573f20e4241c9ba1a5141c6d4a469d1f6ff5b518fedc0ecfef1d42e8cbb87de",
+      "bytes": 20377,
+      "sha256": "6e795aa468af03e7fb8bec6f4e824515ce3497c88b30754708ade07b14bbb337"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/shared-derived-ledger.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/8eddeb4a1d5cb3f926a56afde35237205df8b3dce0905780f92f00482ce2fee0.gz",
+      "archiveBytes": 1794,
+      "archiveSha256": "8d583340badb3509734a4ee19b4b224279f24b96a55729f1f068d48b2890e141",
+      "bytes": 6544,
+      "sha256": "8eddeb4a1d5cb3f926a56afde35237205df8b3dce0905780f92f00482ce2fee0"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/shared-outcome-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/14383f29d25019335103acce7de0844ab2a8e414d1aa82a39722b9cdc228bf5b.gz",
+      "archiveBytes": 4944,
+      "archiveSha256": "aed4cc1d0a5d3d9b8ba6943fe2fa86b59d3e4ff17530c23115174773489137ff",
+      "bytes": 20119,
+      "sha256": "14383f29d25019335103acce7de0844ab2a8e414d1aa82a39722b9cdc228bf5b"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/shared-outcome-ledger.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/f7f26bd82a93a15c296825ef5c012b04fc49f376f7d6f37396ab9c923fe28ebb.gz",
+      "archiveBytes": 1795,
+      "archiveSha256": "5c936c3c63b958897b3789a33b629968b38e0c7747afca7fc445bd4e1db038ee",
+      "bytes": 6545,
+      "sha256": "f7f26bd82a93a15c296825ef5c012b04fc49f376f7d6f37396ab9c923fe28ebb"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/shared-relation-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/64d065799e43fc4c43854802b6db98df4b6dffa47e39746c77e0d41bf53ed71e.gz",
+      "archiveBytes": 4953,
+      "archiveSha256": "e1a140fdb1d57ac3bcfa7a7f1e898eb5655e9f6b9e6e40dc4b36ac67854d1dad",
+      "bytes": 20119,
+      "sha256": "64d065799e43fc4c43854802b6db98df4b6dffa47e39746c77e0d41bf53ed71e"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/shared-relation-ledger.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/999c8f756f33fac0ef33cbd16b8a6b8df4f77a40d8fa800edf598181e6f0a5ee.gz",
+      "archiveBytes": 1794,
+      "archiveSha256": "ed97c7d026c927fbe6e6bcaeb095d3201d8ecab1ad32795eed8d179e61b6a5ac",
+      "bytes": 6544,
+      "sha256": "999c8f756f33fac0ef33cbd16b8a6b8df4f77a40d8fa800edf598181e6f0a5ee"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/shared-schema-interaction-fixed.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/febedeb728b41eef08fba0b55cfa31f0a476afed9a30392189384717e1ce47bc.gz",
+      "archiveBytes": 4953,
+      "archiveSha256": "26691b9b48b818bec487c0dbb40741215bde6b26818d8313936c31bfb90b5093",
+      "bytes": 20119,
+      "sha256": "febedeb728b41eef08fba0b55cfa31f0a476afed9a30392189384717e1ce47bc"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/shared-schema-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/e30306146493ffa825087ced940a140560608e562655d331b61ccbe86a37c823.gz",
+      "archiveBytes": 471,
+      "archiveSha256": "2ffdaf7081c1d9cbc6baa300fac530bdee1e0ab7c71372b220aa619e236721fd",
+      "bytes": 1068,
+      "sha256": "e30306146493ffa825087ced940a140560608e562655d331b61ccbe86a37c823"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/single-escape-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/16d9e1eae95b6aab74f9af513c304359b926b85b2e76807585217a8c11d54e70.gz",
+      "archiveBytes": 5048,
+      "archiveSha256": "9d94c17cd4bb8406778fc47b8f7839af82e36d17cbd99d091e329927c146fb1a",
+      "bytes": 20500,
+      "sha256": "16d9e1eae95b6aab74f9af513c304359b926b85b2e76807585217a8c11d54e70"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/single-escape-ledger.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/981ed5304a8e2871df91823d8bba216cce0985de4a024b4f0d28f8498fb154ee.gz",
+      "archiveBytes": 1794,
+      "archiveSha256": "478cc8e07269f8f2d7c56b0e7ea901470e88aa4a80f53e75a91f58e2ee8ea63b",
+      "bytes": 6544,
+      "sha256": "981ed5304a8e2871df91823d8bba216cce0985de4a024b4f0d28f8498fb154ee"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/source-seal.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b16fd6df115b3d62ab94e95bb7cece3722f6d0b5999f5c834ac5cdec46b0939f.gz",
+      "archiveBytes": 66,
+      "archiveSha256": "95dc403c960728bd2eae510d3c175f1b316e51bed59a00f1ec1991067f46df80",
+      "bytes": 53,
+      "sha256": "b16fd6df115b3d62ab94e95bb7cece3722f6d0b5999f5c834ac5cdec46b0939f"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/status-presence-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/a058246ecaf2712d7a49606960a9f3b1b9b693c37f1da628125b14efbdb1be09.gz",
+      "archiveBytes": 5013,
+      "archiveSha256": "ad3a2bba9899d91ca07c16b7927850bfe3397bc6009d8f63cb4d8f1063877e77",
+      "bytes": 20377,
+      "sha256": "a058246ecaf2712d7a49606960a9f3b1b9b693c37f1da628125b14efbdb1be09"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/status-presence-ledger.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/6984cf7b4ed43cd6a9c150a4b6b43e85cd2c9c318f269f97570ad84a4ff16247.gz",
+      "archiveBytes": 1794,
+      "archiveSha256": "19b9a7a8e40b804374c10e3d8939aecfe4f3fe015cd6bad5e7bcf8ea553016fd",
+      "bytes": 6544,
+      "sha256": "6984cf7b4ed43cd6a9c150a4b6b43e85cd2c9c318f269f97570ad84a4ff16247"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/validated-offset-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/6881a48bc31e049098b6ddd02b044713443f2c3d502aa8eb1075e437239f498f.gz",
+      "archiveBytes": 4953,
+      "archiveSha256": "3fe812f9e7c930a4ff6fc9db33a7b9d7d7439db2df5636f37c0ea981f27f9258",
+      "bytes": 20118,
+      "sha256": "6881a48bc31e049098b6ddd02b044713443f2c3d502aa8eb1075e437239f498f"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-baseline-negative.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/8a0eac223c383bbbbc6fc93998779bd3b006a565381598d0e92541385d06d42f.gz",
+      "archiveBytes": 517,
+      "archiveSha256": "a9dca6a701787d22f737d872b1e02b25a842a7fa51243b9be0bd87ffcd60671a",
+      "bytes": 969,
+      "sha256": "8a0eac223c383bbbbc6fc93998779bd3b006a565381598d0e92541385d06d42f"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-baseline-flags.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/29f5d67bdd1bd5da66985f61e95893dc2cb6454fefcf7175f4ef81a29f3e93d0.gz",
+      "archiveBytes": 1365,
+      "archiveSha256": "714454b7ee54d09d62721f76f6ce7e236c42f485c9bcdb79e7d44851e99468aa",
+      "bytes": 4570,
+      "sha256": "29f5d67bdd1bd5da66985f61e95893dc2cb6454fefcf7175f4ef81a29f3e93d0"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-cached-label.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b73727dcfa2b0ddc024a7fdb9330d02c2a94bdf60c739345daeb5131febe6e1d.gz",
+      "archiveBytes": 1366,
+      "archiveSha256": "6ea8c2aa2cb6a9711400cc97b486c36469a26615942a207ee2efb9a9274afb84",
+      "bytes": 4570,
+      "sha256": "b73727dcfa2b0ddc024a7fdb9330d02c2a94bdf60c739345daeb5131febe6e1d"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-class-neutral.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/803786e8186fdd1f0cd4bdefa87188cb619b11edd8544160766d1c182332aa61.gz",
+      "archiveBytes": 1366,
+      "archiveSha256": "207e66e803251f6cbff7cea8b36879d554f150fdb276721c229097950ec7e0ff",
+      "bytes": 4570,
+      "sha256": "803786e8186fdd1f0cd4bdefa87188cb619b11edd8544160766d1c182332aa61"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-derived-neutral.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/da58a271e7d94de921855ff73a176ab04e214879f93ebd9e3f1635ab31ade9b3.gz",
+      "archiveBytes": 1365,
+      "archiveSha256": "d37a38f357d7af43527a9eb952fd2d3f89dc50852ec358457b7cb11d038a019e",
+      "bytes": 4570,
+      "sha256": "da58a271e7d94de921855ff73a176ab04e214879f93ebd9e3f1635ab31ade9b3"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-empty-label.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/c0dae9ba51cfb3d26b98704de4643b9e3cc97c139cea8c2c87ed4e7352fba71a.gz",
+      "archiveBytes": 1365,
+      "archiveSha256": "6cf9bc1b7780d9b6e8ffff724a6e83a0400255b8cb67ceae681c41a9b3532014",
+      "bytes": 4570,
+      "sha256": "c0dae9ba51cfb3d26b98704de4643b9e3cc97c139cea8c2c87ed4e7352fba71a"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-factored.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/4776d25b2994ef58aabb9335c97818fa537ed36f8143aa7aa04eaeb80aecc027.gz",
+      "archiveBytes": 1366,
+      "archiveSha256": "69e9f7b141699142f7ddf5aedc6cacf630a87a9f7c2191cfb2cf4063a53cc322",
+      "bytes": 4570,
+      "sha256": "4776d25b2994ef58aabb9335c97818fa537ed36f8143aa7aa04eaeb80aecc027"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-first.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/f824fb9668f9b5471881c0fbfb6913ae179c2f14729b0e6025cf16ab4bb057af.gz",
+      "archiveBytes": 1367,
+      "archiveSha256": "6ec89876b37d1931f616fb4f22137dd1c14db52cc9875d28eca566fdc35732fb",
+      "bytes": 4570,
+      "sha256": "f824fb9668f9b5471881c0fbfb6913ae179c2f14729b0e6025cf16ab4bb057af"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-fixed-fields.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/babbe0eef024c7107b210b87a03353bbfd6008a5ec8403fc5a03a36598b2e18e.gz",
+      "archiveBytes": 1366,
+      "archiveSha256": "b8f09b23d41de8ae93b275e9a0aaf4acc887d1ae448a4e0dd08f03b87a33abd6",
+      "bytes": 4570,
+      "sha256": "babbe0eef024c7107b210b87a03353bbfd6008a5ec8403fc5a03a36598b2e18e"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-fixed-prefix.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/7f96df950a87e4f721e03e6e73430b91bd35e1201ffaa1775b62296326b31dcc.gz",
+      "archiveBytes": 1365,
+      "archiveSha256": "2962b1c38229ec94fe6f7e7ee03fe3a5858991c3ce505e93974492e5e12b3108",
+      "bytes": 4570,
+      "sha256": "7f96df950a87e4f721e03e6e73430b91bd35e1201ffaa1775b62296326b31dcc"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-flags-prefix.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/dcc0accb5069b98efc92ea312a04c6b488a42799cc66406b676f12d3c9d0415b.gz",
+      "archiveBytes": 1366,
+      "archiveSha256": "80e46fa608ca357d90f9bc95f7661d936dc0da2046666cb393dd4ad7d38f07bf",
+      "bytes": 4570,
+      "sha256": "dcc0accb5069b98efc92ea312a04c6b488a42799cc66406b676f12d3c9d0415b"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-header-borrow.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/714c032e8cb3a171e8b105c8289f29cc4724a28c11066c8766159833196075f6.gz",
+      "archiveBytes": 1367,
+      "archiveSha256": "3c5f6a5ee48424dd6ed44678838077046914f06290c958a00087665e1f546663",
+      "bytes": 4570,
+      "sha256": "714c032e8cb3a171e8b105c8289f29cc4724a28c11066c8766159833196075f6"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-local-label.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/32166257fd70661d2dc7717ef361251ee2215cb053ebc2b4356b50665130230a.gz",
+      "archiveBytes": 1366,
+      "archiveSha256": "3a5187ef41727fea9978d8748124ea464fdd4d1a7261d9319ad529ed78c0ac0c",
+      "bytes": 4570,
+      "sha256": "32166257fd70661d2dc7717ef361251ee2215cb053ebc2b4356b50665130230a"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-minimal-label-stats.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/f28c22f08788b5cce27dbdab43f5f59959aaa503f1e2e35a1524a3f86d3b3de7.gz",
+      "archiveBytes": 1365,
+      "archiveSha256": "6ea25af4574088ff3a45c5c00c475ce1e3e64188e55246074118e60ca0fcefae",
+      "bytes": 4570,
+      "sha256": "f28c22f08788b5cce27dbdab43f5f59959aaa503f1e2e35a1524a3f86d3b3de7"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-original-projection.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/40001ffb90af65b11c25f714ef25cd680d8ed97d331825ff7a376222c4463538.gz",
+      "archiveBytes": 1366,
+      "archiveSha256": "8e78eab6c59169ac37d2e1111f88f7bb871ca1510c1717441a35069835cf5c73",
+      "bytes": 4570,
+      "sha256": "40001ffb90af65b11c25f714ef25cd680d8ed97d331825ff7a376222c4463538"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-owned-label-stats.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/25393f300d0f66cd47b5f237408b6d424bc70f9060265ab7123eae4d45e603a6.gz",
+      "archiveBytes": 1365,
+      "archiveSha256": "99d2fd5d6cae4d43430f0e3239542f0d71eb18e0a9d6a8a2fe92d29fc31b59e3",
+      "bytes": 4570,
+      "sha256": "25393f300d0f66cd47b5f237408b6d424bc70f9060265ab7123eae4d45e603a6"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-page.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/666090b480c1d36addb82471b13acad75cdb29405db02aae25ff2d15d0cb3164.gz",
+      "archiveBytes": 1365,
+      "archiveSha256": "9d9b9fc8e8d4ab63e15c305818fbb69804f3b3a50332cb3800daea968dfc2f4f",
+      "bytes": 4570,
+      "sha256": "666090b480c1d36addb82471b13acad75cdb29405db02aae25ff2d15d0cb3164"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-scan.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/77f21e89f2cc7a694acbde5c464a5a147f93ced80833a3a7eee21446a92d84f7.gz",
+      "archiveBytes": 1366,
+      "archiveSha256": "b6ba44bbc4cee043c31460fa7d37f64d02b074da9604ac95854ff8e716e67737",
+      "bytes": 4570,
+      "sha256": "77f21e89f2cc7a694acbde5c464a5a147f93ced80833a3a7eee21446a92d84f7"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-schema-table.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/e5483e08be2bae136e3f7fb1ca77d4d5d8e3ab947e669f71eadaf7a694af3875.gz",
+      "archiveBytes": 1366,
+      "archiveSha256": "89762675f413365686b65e14b6602d18fad3d6b1b59f6bfe4be5db86c8127424",
+      "bytes": 4570,
+      "sha256": "e5483e08be2bae136e3f7fb1ca77d4d5d8e3ab947e669f71eadaf7a694af3875"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-shared-derived.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/53001269205de7a6b04dcbf8facc2c5cb574406c36ee50b026b47d8b34d37c7d.gz",
+      "archiveBytes": 1366,
+      "archiveSha256": "f58dcaca514e7d41893e53e47ba8cc5b7dd9256b2dad80a1c65424da34ffa4f6",
+      "bytes": 4570,
+      "sha256": "53001269205de7a6b04dcbf8facc2c5cb574406c36ee50b026b47d8b34d37c7d"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-shared-outcome.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/56f153d17473334c7cad4e3fdf91f516deb4e728ae60aa795800492004544c72.gz",
+      "archiveBytes": 1366,
+      "archiveSha256": "48b9cc8aee8ef69b876590518d626fee7fd2884b8e3d25bb5214710a626b2e9b",
+      "bytes": 4570,
+      "sha256": "56f153d17473334c7cad4e3fdf91f516deb4e728ae60aa795800492004544c72"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-shared-relation.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/53b4514883e28b2e6e593f9c92df3f02b3c125c0a35e1f993bc05e2c4df4110a.gz",
+      "archiveBytes": 1396,
+      "archiveSha256": "5b6a1e193244f67cd649a0b2e863380f9594b4f699719dd16068fa1cdf8d79eb",
+      "bytes": 4624,
+      "sha256": "53b4514883e28b2e6e593f9c92df3f02b3c125c0a35e1f993bc05e2c4df4110a"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-shared-schema.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/a9d5e7ab9d3b9ac0dc0cefd2658cd182586723a02919ba51f5e0fe01cc84cff4.gz",
+      "archiveBytes": 1365,
+      "archiveSha256": "84d26746786906b85ff31f4753db75861eca693c509fc3b43820043c74c8fcf3",
+      "bytes": 4570,
+      "sha256": "a9d5e7ab9d3b9ac0dc0cefd2658cd182586723a02919ba51f5e0fe01cc84cff4"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-shared.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/ba69dcb7cba6c5b4b3ff39a421f179907b0962429b4231fd9eb3062c670ba20f.gz",
+      "archiveBytes": 1366,
+      "archiveSha256": "9de6e2f52c53f3e0c0503dd6e6c346dd2dfa4665d11d74d7ff2e970bcbcc6203",
+      "bytes": 4570,
+      "sha256": "ba69dcb7cba6c5b4b3ff39a421f179907b0962429b4231fd9eb3062c670ba20f"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-single-escape.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/e7901e5a50680cc7dd7595255aefd10e119c96717f8f8673f23b3514d2f32385.gz",
+      "archiveBytes": 1365,
+      "archiveSha256": "83b1ba78fcc7fdb7f7d9307bda1c7c0bcf359f632952aade04a227e1d59225f2",
+      "bytes": 4570,
+      "sha256": "e7901e5a50680cc7dd7595255aefd10e119c96717f8f8673f23b3514d2f32385"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-status-presence.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/77eceea93d363d70ca8ac2c6997cd2dde5b3a570c916eb73072fe1dbeba49f37.gz",
+      "archiveBytes": 1205,
+      "archiveSha256": "90f529f9dde2ee6ed30b60e2daeb06ea8a9d60506da030f81e78e14b4bbd06ac",
+      "bytes": 4390,
+      "sha256": "77eceea93d363d70ca8ac2c6997cd2dde5b3a570c916eb73072fe1dbeba49f37"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-style-presence.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/bfbf3d2001d9f4260b86bcf9b1f8d87ef6e528ceaf77b6b5820116108f17a703.gz",
+      "archiveBytes": 1366,
+      "archiveSha256": "2c1fb6f6cd6cc3d828c3a1ed4c7a592896b3250a79a0d050a0287141da90a0cc",
+      "bytes": 4570,
+      "sha256": "bfbf3d2001d9f4260b86bcf9b1f8d87ef6e528ceaf77b6b5820116108f17a703"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-validated-offset.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/fa7b704705a7f1656d0555cd5d2eb1e303926601b6d25d5a92b6130ebf8706e0.gz",
+      "archiveBytes": 1367,
+      "archiveSha256": "e73092e4eb81084c829a7ad26b9ded8e57e7807acb084759e778f3df5ff3f273",
+      "bytes": 4570,
+      "sha256": "fa7b704705a7f1656d0555cd5d2eb1e303926601b6d25d5a92b6130ebf8706e0"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-whole-style.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/ed12b88a44d5fb18a319a35504af8b6aaba0c435094ee7ac15e050271b49fb4e.gz",
+      "archiveBytes": 1366,
+      "archiveSha256": "190e2fb166cbe5b8ab7831edcd9559e76d5f11410da2a925cdf7707e9c2d4782",
+      "bytes": 4570,
+      "sha256": "ed12b88a44d5fb18a319a35504af8b6aaba0c435094ee7ac15e050271b49fb4e"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/whole-style-interaction.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/859c7ef92f843844ddf23e52ff37ee1745755bdcdfcfa8a0f8c53438d1141641.gz",
+      "archiveBytes": 4973,
+      "archiveSha256": "c9e0cee354ab57c66061a3f993690ac51f9db3d997bb35410a861544badbc837",
+      "bytes": 20245,
+      "sha256": "859c7ef92f843844ddf23e52ff37ee1745755bdcdfcfa8a0f8c53438d1141641"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/whole-style-ledger.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/dbf10d13f8250645f213ef83a72c79b6fe7be12cf6216bb73aed640cfb1de195.gz",
+      "archiveBytes": 1794,
+      "archiveSha256": "607779992ef1a589348af59040dbb6ba04799b04dbd22a38b8d875e8bb758211",
+      "bytes": 6544,
+      "sha256": "dbf10d13f8250645f213ef83a72c79b6fe7be12cf6216bb73aed640cfb1de195"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/workspace-cached-label.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/1dc87369187519e63dfd8e4d966074b5ec0c0e5b26b6ea0d0fa18cb2796bd926.gz",
+      "archiveBytes": 41962,
+      "archiveSha256": "325602dd9f1ee695414d628ae39040ecc36d3204e186b9babefca01706054d25",
+      "bytes": 189707,
+      "sha256": "1dc87369187519e63dfd8e4d966074b5ec0c0e5b26b6ea0d0fa18cb2796bd926"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/workspace-shared-relation.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/2252f5fac7a22ff4c43845ce9183184d434fdb235403a61d176ecb1571fdccaa.gz",
+      "archiveBytes": 41873,
+      "archiveSha256": "4a1a637698e4ab76f87d7490982c762019835d47015090235aaf22fa257366fe",
+      "bytes": 189400,
+      "sha256": "2252f5fac7a22ff4c43845ce9183184d434fdb235403a61d176ecb1571fdccaa"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/workspace-shared-schema.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/d97b8e3a1f3203b41b5698e42c1f98b08de5a3f1f639c2062c61de1cd88bb7c6.gz",
+      "archiveBytes": 41888,
+      "archiveSha256": "7d142993d56a431aacd68837b1e827d41c6cb629b31ec4178fa3b2ba934b47c9",
+      "bytes": 189400,
+      "sha256": "d97b8e3a1f3203b41b5698e42c1f98b08de5a3f1f639c2062c61de1cd88bb7c6"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/workspace-status-presence.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/8b42f6c745508ff4d9610c3a93e489690cc690a42c16904efa836929ae9c9cbb.gz",
+      "archiveBytes": 42027,
+      "archiveSha256": "57a8ca8a0b0355d36dfd0a1f70df9ad1df221ccecf897f74198ad5e899ab4751",
+      "bytes": 190718,
+      "sha256": "8b42f6c745508ff4d9610c3a93e489690cc690a42c16904efa836929ae9c9cbb"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/workspace.log": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/85b96dd90cbba99c42a63c906baec2572d609f60962f67def0858b7ae5bab6b9.gz",
+      "archiveBytes": 39161,
+      "archiveSha256": "46175c30570ca2bd7bab31c1dbf2855bacab2fccfb586ef9f2e6abb263f67397",
+      "bytes": 177580,
+      "sha256": "85b96dd90cbba99c42a63c906baec2572d609f60962f67def0858b7ae5bab6b9"
+    }
+  },
+  "failedAttempts": [
+    "Original notebook 10k native identity OPEN Budget(-4); painting/concurrent kernel work alone were insufficient",
+    "Original native and original WASM new semantic regression each fail OPEN with -4",
+    "27 official over-cap package builds; log-only first attempt and rejected experiments receive no runtime/shipping credit",
+    "Initial allocation-ledger full workspace failure included libtest diagnostic capture growth; diagnostics now write to locked stdout, assertions unchanged",
+    "Strict Clippy int_plus_one failure corrected to equivalent peak < limit assertion",
+    "First hook run reformatted the current-binding path in a test; original failure retained and source seal refreshed",
+    "First Core/inventory run:69pass/1fail because historical notebook-CI test read the new39-parent binding but asserted38. Historical test now reads its exact receipt; added39-parent successor check",
+    "Baseline-native diagnostic filter failed to exclude full test names:13pass/1fail; corrected scoped command12pass",
+    "Private request words, borrowed Option label and extra formatter delimiter caused development compile/format failures; no passing credit",
+    "Two accepted-main --ff-only attempts exited128 because queue-squashed history diverged; dirty source unchanged",
+    "Earlier parent notebook/Worker/startup/timer failures remain historical and unresolved; no general reliability claim"
+  ],
+  "fresh": {
+    "abi": {
+      "command": "python3 scripts/abi_smoke.py",
+      "exit": 0,
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/final-abi-smoke.log",
+      "passed": 673
+    },
+    "abiGeneration": {
+      "command": "python3 scripts/gen_abi_manifest.py --check",
+      "exit": 0,
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/final-abi-generation.log"
+    },
+    "actualNotebook": {
+      "command": "XYG_GRAPH_JUPYTER=target/task-tmp/pr1121-ci-repair/lab465-env/bin/jupyter-lab XYG_NOTEBOOK_SCALE=10000 XYG_SCALE_REPORT=target/task-tmp/graph-notebook-scale/semantic-admission/final-native-10k.json node target/task-tmp/graph-notebook-scale/probe.mjs",
+      "exit": 0,
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/final-native-10k.log",
+      "scope": "JupyterLab4.6.5, default force300/chunk8/30s, 10k/20k plus1k/2k; GPU selection/peer/UUID/cleanup assertions"
+    },
+    "assets": {
+      "command": "python3 scripts/verify_wasm_assets.py",
+      "exit": 0,
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/final-assets.log"
+    },
+    "baselineNativeCurrentShipping": {
+      "command": "node --test --test-skip-pattern=\"public semantic|kind-qualified UUID\" packages/xy-node/test/graph-session-wire.test.mjs",
+      "exit": 0,
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/baseline-native-shipping-parity.log",
+      "passed": 12,
+      "scope": "Existing common wire cases only; explicit immutable baseline native and final shipping module"
+    },
+    "checkCi": {
+      "command": [
+        "make",
+        "check-ci",
+        "PYTHON=uv run --no-sync python"
+      ],
+      "elapsedSeconds": 650.3931002616882,
+      "exit": 0,
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/checkCi.log",
+      "passed": 1039
+    },
+    "clippy": {
+      "command": "cargo clippy --workspace --all-targets -- -D warnings",
+      "exit": 0,
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/clippy-status-presence.log"
+    },
+    "coreInventory": {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/test_graphforge_contract_corpus.py",
+        "tests/test_release_inventory.py",
+        "tests/test_verify_ownership.py"
+      ],
+      "elapsedSeconds": 511.999062538147,
+      "exit": 0,
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/coreInventory.log",
+      "passed": 71
+    },
+    "format": {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "elapsedSeconds": 0.07927322387695312,
+      "exit": 0,
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/format.log"
+    },
+    "foundation": {
+      "command": "node scripts/wasm_foundation_smoke.mjs",
+      "exit": 0,
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/final-foundation.log",
+      "scope": "Complete final-source shipping-module foundation; explicit native/Chromium/Node22/TMPDIR"
+    },
+    "hooks": {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "elapsedSeconds": 0.9354591369628906,
+      "exit": 0,
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/hooks.log"
+    },
+    "nativeBuild": {
+      "command": "cargo build --release",
+      "exit": 0,
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/native-build-status-presence.log"
+    },
+    "nodeDedicatedWire": {
+      "command": "node --test packages/xy-node/test/graph-session-wire.test.mjs js/test/graph-picked-golden-migration.test.mjs",
+      "exit": 0,
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/node-final-wire.log",
+      "passed": 15
+    },
+    "nodeDefault": {
+      "command": "npm test --prefix packages/xy-node",
+      "exit": 0,
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/node-final-full.log",
+      "passed": 1156,
+      "skipped": 2
+    },
+    "officialWasmBuild": {
+      "command": "npm run build:wasm",
+      "exit": 0,
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-status-presence.log"
+    },
+    "pythonFocused": {
+      "command": "uv run --no-sync pytest -q tests/test_graph_session_python_transport.py tests/test_graph_session_abi.py tests/test_graph_widget.py tests/test_graph_widget_regions.py",
+      "exit": 0,
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/python-final-scoped.log",
+      "passed": 90
+    },
+    "ruff": {
+      "command": [
+        "uv",
+        "run",
+        "--no-sync",
+        "ruff",
+        "check",
+        "."
+      ],
+      "elapsedSeconds": 0.4105815887451172,
+      "exit": 0,
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/ruff.log"
+    },
+    "rustWorkspace": {
+      "command": "cargo test --workspace",
+      "exit": 0,
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/workspace-status-presence.log",
+      "passed": 2045
+    }
+  },
+  "inheritance": "Older/native/diagnostic executions bind only their recorded source/artifact snapshots. Final-source fresh results are listed separately. All earlier receipt bytes remain unchanged.",
+  "package": {
+    "gzip6Node22": 786429,
+    "gzipCap": 786432,
+    "gzipHeadroom": 3,
+    "raw": 1885068,
+    "rawCap": 1927168,
+    "scope": "Official size measurement; final-source runtime checks are recorded in fresh. Delivery and full acceptance are separate gates.",
+    "sha256": "38cdae1f8514efc6c0df64ff0a5fb7fc67950bc756fb0e0ba434ab558e6f2fe1",
+    "sourceInputs": "target/task-tmp/graph-notebook-scale/semantic-admission/status-presence-producer-inputs.json"
+  },
+  "packageAttempts": {
+    "failed": 27,
+    "passed": 1,
+    "path": "spec/performance/graph-semantic-session-2026-11-10/package-attempts.json",
+    "scope": "All 28 official attempts preserved; failed optimized outputs not retained as shipping artifacts",
+    "sha256": "0f05dd95a7eba58aef45149857bb1a67a103229ac4c0ff45e5ef8fc91779970c"
+  },
+  "parentReceipt": {
+    "path": "spec/performance/graph-notebook-ci-repair-2026-11-10/checks.json",
+    "sha256": "c46314eb1d7c7b1b1ed5fe76d8256b0684fb9553bb734ee7f9929d7984c93296"
+  },
+  "readmeSha256": "b6ada586783de107b0e2c7a364944aa4371d3449cf2a3c33b72398434b7ae5c4",
+  "remaining": [
+    "Final independent diff review",
+    "Normal accepted-main integration after clean feature commit",
+    "Fresh hosted final-head checks and required merge queue",
+    "Original notebook ladder, cadence/first-paint and all frontend acceptance",
+    "Broader M4\u20137 issue, massive-scale, accessibility/export, global memory and competitor qualification"
+  ],
+  "runtime": {
+    "packages/xy-client/dist/index.js": {
+      "archive": "spec/performance/graph-empty-clear-status-2026-11-10/evidence/c58b8bb52e50454a195b49b5f8c6d29b7bde75bb5b375ded2c9feb28e18041c9.gz",
+      "archiveBytes": 248935,
+      "archiveSha256": "821445f77964393f3da5e51f3b096d30b4ad7bd422a689a24ff4237acc449903",
+      "bytes": 868475,
+      "parentExact": true,
+      "sha256": "c58b8bb52e50454a195b49b5f8c6d29b7bde75bb5b375ded2c9feb28e18041c9"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "archive": "spec/performance/graph-empty-clear-status-2026-11-10/evidence/7ecf33e4223414a7848c727037b212667d4a9d84d3f2a90c82faac2104fb66b7.gz",
+      "archiveBytes": 249005,
+      "archiveSha256": "022de8c0db7da674e5ecf32cd81a79e66c00179d14756d4d16d20c7ad9739526",
+      "bytes": 868488,
+      "parentExact": true,
+      "sha256": "7ecf33e4223414a7848c727037b212667d4a9d84d3f2a90c82faac2104fb66b7"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz",
+      "archiveBytes": 3838,
+      "archiveSha256": "dda8e6c4cec42d91f687b660d742d79dcc1a8c0d052ca6ca189c6acf095db2b4",
+      "bytes": 20933,
+      "parentExact": true,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "parentExact": true,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/32ece3421e512fe35335c868011a1db7aadcbd8add5b114aa1f472314edbb70d.gz",
+      "archiveBytes": 1042942,
+      "archiveSha256": "063c66b076835aee2a1e95b9c0fce8c013e79e8c9de88e578ecb20c720e9b2f9",
+      "bytes": 2534546,
+      "parentExact": false,
+      "sha256": "32ece3421e512fe35335c868011a1db7aadcbd8add5b114aa1f472314edbb70d"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/117ed8018bf3bb0a9f6cd011ca7f7a13a0b9d121a143410247cc3ee62a3b82ef.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "8611e8ce317cadd45cce28656ec582004d35aaecfbba0eaa98fc6199f1525c30",
+      "bytes": 226,
+      "parentExact": false,
+      "sha256": "117ed8018bf3bb0a9f6cd011ca7f7a13a0b9d121a143410247cc3ee62a3b82ef"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/38cdae1f8514efc6c0df64ff0a5fb7fc67950bc756fb0e0ba434ab558e6f2fe1.gz",
+      "archiveBytes": 781231,
+      "archiveSha256": "b1aec11c8153e0057dbe908497a069a476ae55bb6ddb5eba9df1439cd75b7457",
+      "bytes": 1885068,
+      "parentExact": false,
+      "sha256": "38cdae1f8514efc6c0df64ff0a5fb7fc67950bc756fb0e0ba434ab558e6f2fe1"
+    },
+    "python/xyg/static/index.js": {
+      "archive": "spec/performance/graph-empty-clear-status-2026-11-10/evidence/c58b8bb52e50454a195b49b5f8c6d29b7bde75bb5b375ded2c9feb28e18041c9.gz",
+      "archiveBytes": 248935,
+      "archiveSha256": "821445f77964393f3da5e51f3b096d30b4ad7bd422a689a24ff4237acc449903",
+      "bytes": 868475,
+      "parentExact": true,
+      "sha256": "c58b8bb52e50454a195b49b5f8c6d29b7bde75bb5b375ded2c9feb28e18041c9"
+    },
+    "python/xyg/static/standalone.js": {
+      "archive": "spec/performance/graph-empty-clear-status-2026-11-10/evidence/7ecf33e4223414a7848c727037b212667d4a9d84d3f2a90c82faac2104fb66b7.gz",
+      "archiveBytes": 249005,
+      "archiveSha256": "022de8c0db7da674e5ecf32cd81a79e66c00179d14756d4d16d20c7ad9739526",
+      "bytes": 868488,
+      "parentExact": true,
+      "sha256": "7ecf33e4223414a7848c727037b212667d4a9d84d3f2a90c82faac2104fb66b7"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "parentExact": true,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/32ece3421e512fe35335c868011a1db7aadcbd8add5b114aa1f472314edbb70d.gz",
+      "archiveBytes": 1042942,
+      "archiveSha256": "063c66b076835aee2a1e95b9c0fce8c013e79e8c9de88e578ecb20c720e9b2f9",
+      "bytes": 2534546,
+      "parentExact": false,
+      "sha256": "32ece3421e512fe35335c868011a1db7aadcbd8add5b114aa1f472314edbb70d"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/117ed8018bf3bb0a9f6cd011ca7f7a13a0b9d121a143410247cc3ee62a3b82ef.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "8611e8ce317cadd45cce28656ec582004d35aaecfbba0eaa98fc6199f1525c30",
+      "bytes": 226,
+      "parentExact": false,
+      "sha256": "117ed8018bf3bb0a9f6cd011ca7f7a13a0b9d121a143410247cc3ee62a3b82ef"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/38cdae1f8514efc6c0df64ff0a5fb7fc67950bc756fb0e0ba434ab558e6f2fe1.gz",
+      "archiveBytes": 781231,
+      "archiveSha256": "b1aec11c8153e0057dbe908497a069a476ae55bb6ddb5eba9df1439cd75b7457",
+      "bytes": 1885068,
+      "parentExact": false,
+      "sha256": "38cdae1f8514efc6c0df64ff0a5fb7fc67950bc756fb0e0ba434ab558e6f2fe1"
+    },
+    "target/release/libxyg_core.so": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/5b1ce0884406592cc2be758c8d218fc3a7615bbdb0db2cf2b0ab78dabad33348.gz",
+      "archiveBytes": 2906458,
+      "archiveSha256": "06b910c7cf152a7c87caa7428c76dde7bbf0df800bef6d0679b36fc19e2d391c",
+      "bytes": 6379016,
+      "parentExact": false,
+      "sha256": "5b1ce0884406592cc2be758c8d218fc3a7615bbdb0db2cf2b0ab78dabad33348"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/50d7226112e9011b546391efbccbdb167dfd67b9a02a11ebb3edc77b6e6f6884.gz",
+      "archiveBytes": 1253544,
+      "archiveSha256": "b9a2e9aa560bd378ace9025f374d90dedf0b0ec5f53a3326881953e30a115dc6",
+      "bytes": 4075335,
+      "parentExact": false,
+      "sha256": "50d7226112e9011b546391efbccbdb167dfd67b9a02a11ebb3edc77b6e6f6884"
+    }
+  },
+  "schemaVersion": 1,
+  "scope": "Source-certified semantic graph admission and exact native notebook identity/selection; bounded repair, not whole issue acceptance"
+}

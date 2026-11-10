@@ -1,11 +1,20 @@
 //! Requested-byte allocation ledger, isolated in its own test executable.
 use std::alloc::{GlobalAlloc, Layout, System};
+use std::io::Write;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering::SeqCst};
 static STATE_TAG: AtomicBool = AtomicBool::new(false);
 static STATE_MAX: AtomicUsize = AtomicUsize::new(0);
 use xyg_engine::graphforge::{container::Builder, interaction::wire::WireSession};
 static LIVE: AtomicUsize = AtomicUsize::new(0);
 static PEAK: AtomicUsize = AtomicUsize::new(0);
+// libtest's captured println buffer can grow during a measured interval and
+// outlive the graph owner. Write diagnostics directly so the allocation oracle
+// behaves identically under normal cargo test and --nocapture.
+macro_rules! report {
+    ($($args:tt)*) => {
+        writeln!(std::io::stdout().lock(), $($args)*).unwrap()
+    };
+}
 struct Counting;
 fn add(n: usize) {
     if STATE_TAG.load(SeqCst) {
@@ -58,11 +67,147 @@ fn request(seq: u64, rev: u32, op: u32, document: Option<&[u8]>) -> Vec<u8> {
 fn default_thousand_and_explicit_ten_thousand_allocation_ledger() {
     uuid_state_ledger();
     pick_tree_ledger();
+    semantic_notebook_ledger();
+    for sections in [1, 64, 512, 2000] {
+        ledger_with_extensions(2, false, sections);
+    }
     ledger(1000, false);
     ledger(1000, true);
     ledger(10000, false);
 }
+
+fn semantic_notebook_ledger() {
+    use xyg_engine::graphforge::{compose::compose_bytes, container::Container};
+    let n = 10_000;
+    let uuid = |kind: u8, i: usize| {
+        let mut id = [0; 16];
+        id[0] = kind;
+        id[6] = 0x70;
+        id[8..].copy_from_slice(&(i as u64).to_be_bytes());
+        id[8] |= 0x80;
+        id
+    };
+    let nodes: Vec<_> = (0..n).map(|i| uuid(1, i)).collect();
+    let edges: Vec<_> = (0..2 * n).map(|i| uuid(2, i)).collect();
+    let mut sources = Vec::with_capacity(2 * n);
+    let mut targets = Vec::with_capacity(2 * n);
+    for i in 0..n {
+        let chord = (7 * i + 3) % n;
+        sources.extend([nodes[i]; 2]);
+        targets.extend([
+            nodes[(i + 1) % n],
+            nodes[if chord == i { (chord + 1) % n } else { chord }],
+        ]);
+    }
+    let mut b = Builder::new(b"XYGQ");
+    b.uuids("base.node_uuid", 0, &nodes);
+    b.uuids("base.edge_uuid", 0, &edges);
+    b.uuids("base.edge_source_uuid", 0, &sources);
+    b.uuids("base.edge_target_uuid", 0, &targets);
+    b.uuids("base.generation", 0, &[uuid(3, 1)]);
+    b.u8s("base.directed", 0, &[0]);
+    // Exercise the real semantic composition, including labels, style planes,
+    // provenance, legend and decisions; no stripped plain-document substitute.
+    let document = compose_bytes(&b.finish()).unwrap();
+    let c = Container::decode(&document, b"XYGF").unwrap();
+    assert_eq!(c.get("node.label", 0).unwrap().count, n);
+    assert_eq!(c.get("edge.status", 0).unwrap().count, 2 * n);
+    let base = request(1, 0, 19, Some(&document));
+    let mut b = Builder::new(b"XYGI");
+    b.extend_from(&Container::decode(&base, b"XYGI").unwrap());
+    b.f64s(
+        "load.x.f64",
+        0,
+        &(0..n).map(|i| (i % 200) as f64 * 20.).collect::<Vec<_>>(),
+    );
+    b.f64s(
+        "load.y.f64",
+        0,
+        &(0..n).map(|i| (i / 200) as f64 * 20.).collect::<Vec<_>>(),
+    );
+    let open = b.finish();
+    let baseline = LIVE.load(SeqCst);
+    PEAK.store(baseline, SeqCst);
+    let arena = 384 << 20;
+    let mut s = WireSession::open(&open, arena, open.len()).unwrap();
+    assert!(LIVE.load(SeqCst) - baseline <= s.retained_budget());
+    assert!(PEAK.load(SeqCst) - baseline <= arena);
+    assert_eq!(
+        s.ownership_bytes().unwrap().into_iter().sum::<usize>(),
+        s.retained_budget()
+    );
+    report!(
+        "SEMANTIC_OPEN nodes={n} edges={} document={} retained={} live={} peak={}",
+        2 * n,
+        document.len(),
+        s.retained_budget(),
+        LIVE.load(SeqCst) - baseline,
+        PEAK.load(SeqCst) - baseline
+    );
+    let mut b = Builder::new(b"XYGI");
+    b.extend_from(&Container::decode(&request(2, 0, 10, None), b"XYGI").unwrap());
+    b.uuids("uuids.uuid", 0, &[nodes[0], edges[1]]);
+    let command = b.finish();
+    let admitted = s.preflight_bytes(&command, command.len()).unwrap();
+    // The first gate admits source/kernel work. Paint and serialization have
+    // subsequent gates against the same arena, before their own allocations.
+    // Exact first-gate admission is insufficient here: require late refusal
+    // within that arena, atomic state/reply, then same-sequence recovery.
+    let mut old_reply = [0u8; 1024];
+    let old_len = s.reply().len();
+    old_reply[..old_len].copy_from_slice(s.reply());
+    let old_work = s.session().work();
+    s.max_bytes = admitted;
+    PEAK.store(LIVE.load(SeqCst), SeqCst);
+    assert_eq!(
+        s.execute(&command, command.len(), None),
+        Err(xyg_engine::graphforge::interaction::InteractionStatus::Budget)
+    );
+    assert!(PEAK.load(SeqCst) - baseline <= admitted);
+    assert_eq!(s.reply(), &old_reply[..old_len]);
+    assert_eq!(s.session().render_revision(), 0);
+    assert_eq!(s.session().work(), old_work);
+    assert!(s.session().selection().unwrap().is_empty());
+    report!(
+        "SEMANTIC_LATE_REFUSAL arena={admitted} peak={}",
+        PEAK.load(SeqCst) - baseline
+    );
+    s.max_bytes = arena;
+    PEAK.store(LIVE.load(SeqCst), SeqCst);
+    s.execute(&command, command.len(), None).unwrap();
+    assert!(PEAK.load(SeqCst) - baseline <= arena);
+    assert!(LIVE.load(SeqCst) - baseline <= s.retained_budget() + command.len());
+    assert_eq!(s.session().identity().node_uuids(), nodes);
+    assert!(s
+        .session()
+        .identity()
+        .persisted_edge_uuids()
+        .eq(edges.iter().copied()));
+    assert_eq!(s.session().selection().unwrap().len(), 2);
+    let p = s.session().published().unwrap();
+    assert_eq!((p.node_count(), p.edge_count()), (n, 2 * n));
+    assert_eq!(
+        p.source_node_flags[0] & xyg_engine::graph_style::FLAG_SELECTED,
+        xyg_engine::graph_style::FLAG_SELECTED
+    );
+    assert_eq!(
+        p.source_edge_flags[1] & xyg_engine::graph_style::FLAG_SELECTED,
+        xyg_engine::graph_style::FLAG_SELECTED
+    );
+    report!(
+        "SEMANTIC_SELECT admitted={admitted} retained={} live={} peak={}",
+        s.retained_budget(),
+        LIVE.load(SeqCst) - baseline,
+        PEAK.load(SeqCst) - baseline
+    );
+    drop(s);
+    drop(command);
+    assert_eq!(LIVE.load(SeqCst), baseline);
+}
 fn ledger(n: usize, authored: bool) {
+    ledger_with_extensions(n, authored, 0);
+}
+fn ledger_with_extensions(n: usize, authored: bool, extensions: usize) {
     let ids = |offset: u32| {
         (0..n)
             .map(|i| {
@@ -93,6 +238,9 @@ fn ledger(n: usize, authored: bool) {
             .collect::<Vec<_>>(),
     );
     b.u8s("graph.directed", 0, &[0]);
+    for i in 0..extensions {
+        b.bytes(&format!("extension.{i}"), 0, &[23; 16]);
+    }
     let document = b.finish();
     let mut open = request(1, 0, 19, Some(&document));
     if authored {
@@ -121,13 +269,30 @@ fn ledger(n: usize, authored: bool) {
     }
     let baseline = LIVE.load(SeqCst);
     PEAK.store(baseline, SeqCst);
-    let mut session = WireSession::open(
-        &open,
-        if n == 1000 { 16 } else { 384 } * 1024 * 1024,
-        open.len(),
-    )
-    .unwrap();
-    println!(
+    let limit = if extensions == 0 {
+        (if n == 1000 { 16 } else { 384 }) * 1024 * 1024
+    } else {
+        assert_eq!(n, 2);
+        // Four UUIDs (64), two four-slot u32 indices (32), roots/masks (20),
+        // endpoints/ordinals (40), complete raw retry upper bound, and the
+        // descriptor allowance beyond the first64. Independent owner math.
+        let section_count =
+            xyg_engine::graphforge::container::Container::decode(&document, b"XYGF")
+                .unwrap()
+                .sections
+                .len();
+        102_400 + 96 + 60 + open.len() + section_count.saturating_sub(64) * 512
+    };
+    let external = if extensions == 0 { open.len() } else { 0 };
+    if extensions != 0 {
+        assert!(matches!(
+            WireSession::open(&open, limit - 1, external),
+            Err(xyg_engine::graphforge::interaction::InteractionStatus::Budget)
+        ));
+        assert!(PEAK.load(SeqCst) - baseline < limit);
+    }
+    let mut session = WireSession::open(&open, limit, external).unwrap();
+    report!(
         "OPEN document={} request={} retained_envelope={} live={} peak={}",
         document.len(),
         open.len(),
@@ -147,6 +312,17 @@ fn ledger(n: usize, authored: bool) {
         session.retained_budget()
     );
     assert!(LIVE.load(SeqCst) - baseline <= session.retained_budget());
+    if extensions != 0 {
+        assert!(PEAK.load(SeqCst) - baseline <= limit);
+        report!(
+            "DESCRIPTOR_OPEN sections={extensions} arena={limit} live={} peak={}",
+            LIVE.load(SeqCst) - baseline,
+            PEAK.load(SeqCst) - baseline
+        );
+        drop(session);
+        assert_eq!(LIVE.load(SeqCst), baseline);
+        return;
+    }
     let before_clone = LIVE.load(SeqCst);
     let candidate = session.session().clone();
     let clone_bytes = LIVE.load(SeqCst) - before_clone;
@@ -154,7 +330,7 @@ fn ledger(n: usize, authored: bool) {
     assert_eq!(candidate.identity().node_uuids(), node_ids);
     drop(candidate);
     assert_eq!(LIVE.load(SeqCst), before_clone);
-    println!("SOURCE_SHARED_CLONE n={n} authored={authored} requested={clone_bytes}");
+    report!("SOURCE_SHARED_CLONE n={n} authored={authored} requested={clone_bytes}");
     let mut render = request(2, 0, 21, None);
     if n == 1000 {
         let c = xyg_engine::graphforge::container::Container::decode(&render, b"XYGI").unwrap();
@@ -175,7 +351,7 @@ fn ledger(n: usize, authored: bool) {
         .unwrap()
         .as_u32("header.u32")
         .unwrap()[0];
-    println!(
+    report!(
         "RENDER output={} live={} peak={}",
         reply.len(),
         LIVE.load(SeqCst) - baseline,
@@ -190,7 +366,7 @@ fn ledger(n: usize, authored: bool) {
         );
         assert!(output_bytes <= 131072 + 208 * n + 336 * n);
         assert!(PEAK.load(SeqCst) - baseline < session.max_bytes);
-        println!(
+        report!(
             "AUTHORED full geometry output={} peak={}",
             output_bytes,
             PEAK.load(SeqCst) - baseline
@@ -210,7 +386,7 @@ fn ledger(n: usize, authored: bool) {
     assert_eq!(LIVE.load(SeqCst), candidate_baseline);
     let step = request(3, rev, 15, None);
     session.execute(&step, open.len(), None).unwrap();
-    println!(
+    report!(
         "STEP retained_envelope={} live={} peak={}",
         session.retained_budget(),
         LIVE.load(SeqCst) - baseline,
@@ -230,7 +406,7 @@ fn ledger(n: usize, authored: bool) {
             assert_eq!(session.session().positions().unwrap().0.len(), n);
             let p = session.session().published().unwrap();
             assert_eq!((p.node_count(), p.edge_count()), (n, n));
-            println!(
+            report!(
                 "PROGRESS seq={seq} live={} peak={} entries={} primitives={} degraded={}",
                 LIVE.load(SeqCst) - baseline,
                 PEAK.load(SeqCst) - baseline,
@@ -251,7 +427,7 @@ fn ledger(n: usize, authored: bool) {
         let pick = b.finish();
         session.execute(&pick, open.len(), None).unwrap();
         assert!(PEAK.load(SeqCst) - baseline < session.max_bytes);
-        println!(
+        report!(
             "CONVERGED_PICK n={n} live={} peak={}",
             LIVE.load(SeqCst) - baseline,
             PEAK.load(SeqCst) - baseline
@@ -273,7 +449,7 @@ fn ledger(n: usize, authored: bool) {
         );
         assert_eq!(session.session().identity().node_count(), n);
         assert_eq!(session.session().identity().edge_count(), n);
-        println!(
+        report!(
             "UPDATE failure/retry live={} peak={} retained={}",
             LIVE.load(SeqCst) - baseline,
             PEAK.load(SeqCst) - baseline,
@@ -300,7 +476,7 @@ fn ledger(n: usize, authored: bool) {
     }
     drop(retry);
     let p = session.session().published().unwrap();
-    println!(
+    report!(
         "PUBLICATION nodes={} edges={} grid_entries={} primitives={}",
         p.node_count(),
         p.edge_count(),
@@ -310,7 +486,7 @@ fn ledger(n: usize, authored: bool) {
     drop(session);
     drop(render);
     drop(step);
-    println!(
+    report!(
         "DISPOSE n={n} remaining_delta={}",
         LIVE.load(SeqCst) as isize - baseline as isize
     );
@@ -368,7 +544,7 @@ fn uuid_state_ledger() {
         }
         state.set_pinned(Default::default());
         assert!(LIVE.load(SeqCst) - baseline <= 8192);
-        println!("UUID_TREE n={n} references={} live={live} peak={peak} largest_node={largest} cleared={}",9*n,LIVE.load(SeqCst)-baseline);
+        report!("UUID_TREE n={n} references={} live={live} peak={peak} largest_node={largest} cleared={}",9*n,LIVE.load(SeqCst)-baseline);
         drop(state);
         drop(empty);
     }
@@ -387,6 +563,6 @@ fn pick_tree_ledger() {
         let largest = STATE_MAX.load(SeqCst);
         assert!(largest <= 160, "pick B-tree node width changed: {largest}");
         drop(copy);
-        println!("PICK_TREE n={n} largest_node={largest} query_width_bound=192");
+        report!("PICK_TREE n={n} largest_node={largest} query_width_bound=192");
     }
 }

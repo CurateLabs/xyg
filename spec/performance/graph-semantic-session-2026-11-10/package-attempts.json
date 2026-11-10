@@ -1,0 +1,1902 @@
+{
+  "attempts": [
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7.gz",
+          "archiveBytes": 10124,
+          "archiveSha256": "98edd28c67b59c4a245df0481dcc45dcf138a0b95053d2e54b006f5a2b58d735",
+          "bytes": 38074,
+          "sha256": "304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/paint.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/779c4b9ab58d175c37be5c003e6fb262b805212c30da607dd77741f705828557.gz",
+          "archiveBytes": 5978,
+          "archiveSha256": "0e73e1100abc751ff5cf58d5f21f66aac7201dd4a50eea6bb871145354e2b262",
+          "bytes": 23680,
+          "sha256": "779c4b9ab58d175c37be5c003e6fb262b805212c30da607dd77741f705828557"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d.gz",
+          "archiveBytes": 8458,
+          "archiveSha256": "36b69c04d5ba2699e30b995f80db6d682acc8293755045617d5fcdeae62b74a1",
+          "bytes": 42100,
+          "sha256": "b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/16e89e974cb3f76d578ad8b134b6887b4f6c39f7b853720fd67841738b094c12.gz",
+          "archiveBytes": 21862,
+          "archiveSha256": "90ea1f111be7e1eb156925abc9219722733462eb05122f2284a22166bd8d41c1",
+          "bytes": 100435,
+          "sha256": "16e89e974cb3f76d578ad8b134b6887b4f6c39f7b853720fd67841738b094c12"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/5ff08ecfd794100fbc305648eee455bff8b0197d708551e461295cace32aad8c.gz",
+          "archiveBytes": 5802,
+          "archiveSha256": "7bcddc4bc85963ef5b1d640d90962c2b1a2bb0c321488d16ec031266f209c76d",
+          "bytes": 21968,
+          "sha256": "5ff08ecfd794100fbc305648eee455bff8b0197d708551e461295cace32aad8c"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7.gz",
+          "archiveBytes": 5702,
+          "archiveSha256": "90aebcb60a3300184e65ff26064a805d5c8069265120b05643377ead2b92d94f",
+          "bytes": 21746,
+          "sha256": "12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4075364,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/baseline-flags-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "5aba9c8eb2b47a33e5d49fad8821a29b37aa21f1f88d66869199f27727c169eb"
+      },
+      "gzip6": 786447,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/e5aa0003fb60fbe100b91eec0b646bc73bd372f68b52ccf2652f548a3439a4c5.gz",
+        "archiveBytes": 15660,
+        "archiveSha256": "3135b19749b35e2d69b31748c392a636d9ff0e14e453d8584d129fbd3752abec",
+        "bytes": 37100,
+        "sha256": "e5aa0003fb60fbe100b91eec0b646bc73bd372f68b52ccf2652f548a3439a4c5"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-baseline-flags.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/29f5d67bdd1bd5da66985f61e95893dc2cb6454fefcf7175f4ef81a29f3e93d0.gz",
+        "archiveBytes": 1365,
+        "archiveSha256": "714454b7ee54d09d62721f76f6ce7e236c42f485c9bcdb79e7d44851e99468aa",
+        "bytes": 4570,
+        "sha256": "29f5d67bdd1bd5da66985f61e95893dc2cb6454fefcf7175f4ef81a29f3e93d0"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "baseline-flags"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/510f0f13ec0b9507a0769cb9d195f2870a50262d5e97dae8a413798c1a6a059e.gz",
+          "archiveBytes": 10263,
+          "archiveSha256": "d6e0aa93943be2b33c4df151500dfab652c58733ba7ff7eabb5ff88077924e1d",
+          "bytes": 38493,
+          "sha256": "510f0f13ec0b9507a0769cb9d195f2870a50262d5e97dae8a413798c1a6a059e"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/paint.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/8d35e43bdb36bfe7d7fb8eb3b6b6ab3a97bef1e5a9245488f625843493d35b50.gz",
+          "archiveBytes": 5985,
+          "archiveSha256": "016bb9a1db08b2a9f9471550074040a35d696ee00d80d2db156489b0c5900b1a",
+          "bytes": 23659,
+          "sha256": "8d35e43bdb36bfe7d7fb8eb3b6b6ab3a97bef1e5a9245488f625843493d35b50"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d.gz",
+          "archiveBytes": 8458,
+          "archiveSha256": "36b69c04d5ba2699e30b995f80db6d682acc8293755045617d5fcdeae62b74a1",
+          "bytes": 42100,
+          "sha256": "b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/16e89e974cb3f76d578ad8b134b6887b4f6c39f7b853720fd67841738b094c12.gz",
+          "archiveBytes": 21862,
+          "archiveSha256": "90ea1f111be7e1eb156925abc9219722733462eb05122f2284a22166bd8d41c1",
+          "bytes": 100435,
+          "sha256": "16e89e974cb3f76d578ad8b134b6887b4f6c39f7b853720fd67841738b094c12"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/32afc0d154eec3d27709655527b9632e3868f17fe0b6e09b6d9e2d1a059cf779.gz",
+          "archiveBytes": 5889,
+          "archiveSha256": "074e7ae0b84cf1514733cd032e2b039ab864aa001df2a20d94b1b31be3afcbae",
+          "bytes": 22162,
+          "sha256": "32afc0d154eec3d27709655527b9632e3868f17fe0b6e09b6d9e2d1a059cf779"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7.gz",
+          "archiveBytes": 5702,
+          "archiveSha256": "90aebcb60a3300184e65ff26064a805d5c8069265120b05643377ead2b92d94f",
+          "bytes": 21746,
+          "sha256": "12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4075475,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/cached-label-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "ed918e0a468012e5b89cd1f73f1a0f35d97b30bc8aa16e75f450d6ab03500381"
+      },
+      "gzip6": 786516,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/f2c98623097be78a01401f8ef69bda07e516838038fc3e81db0177689180142c.gz",
+        "archiveBytes": 15658,
+        "archiveSha256": "45f66f9c7b318ca1a9b7e3779f9284c6df5e5d311836ba947498db7a9295bfd7",
+        "bytes": 37100,
+        "sha256": "f2c98623097be78a01401f8ef69bda07e516838038fc3e81db0177689180142c"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-cached-label.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b73727dcfa2b0ddc024a7fdb9330d02c2a94bdf60c739345daeb5131febe6e1d.gz",
+        "archiveBytes": 1366,
+        "archiveSha256": "6ea8c2aa2cb6a9711400cc97b486c36469a26615942a207ee2efb9a9274afb84",
+        "bytes": 4570,
+        "sha256": "b73727dcfa2b0ddc024a7fdb9330d02c2a94bdf60c739345daeb5131febe6e1d"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "cached-label"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7.gz",
+          "archiveBytes": 10124,
+          "archiveSha256": "98edd28c67b59c4a245df0481dcc45dcf138a0b95053d2e54b006f5a2b58d735",
+          "bytes": 38074,
+          "sha256": "304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/paint.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/f975e08cfea71e9dfb9b957b2092e8182ddf01868b4c88ff9642878a005c3e50.gz",
+          "archiveBytes": 6249,
+          "archiveSha256": "557c0507f02e895ce16dd9d0f8387dc0b8389182c0033a14c11ef40915cc8825",
+          "bytes": 24643,
+          "sha256": "f975e08cfea71e9dfb9b957b2092e8182ddf01868b4c88ff9642878a005c3e50"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d.gz",
+          "archiveBytes": 8458,
+          "archiveSha256": "36b69c04d5ba2699e30b995f80db6d682acc8293755045617d5fcdeae62b74a1",
+          "bytes": 42100,
+          "sha256": "b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/5092dc8b1da2f5c5a1e31d8ac3e5b19e29d48f19e38691432a47d51a27aec9af.gz",
+          "archiveBytes": 21896,
+          "archiveSha256": "bd9202aa7adb7f102b6c1a0d581f541347f40c9e5ed48e6fd1e2919ba47a2e81",
+          "bytes": 100702,
+          "sha256": "5092dc8b1da2f5c5a1e31d8ac3e5b19e29d48f19e38691432a47d51a27aec9af"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/5ee56a3163fc40e72905d0424e2ca8172d6d1b9a3ad38f3f960c23d201ee54c4.gz",
+          "archiveBytes": 5732,
+          "archiveSha256": "59d51145b7e550cc1df28f49a46820d17aa293211f31e9dca963c20939e1a72e",
+          "bytes": 21775,
+          "sha256": "5ee56a3163fc40e72905d0424e2ca8172d6d1b9a3ad38f3f960c23d201ee54c4"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7.gz",
+          "archiveBytes": 5702,
+          "archiveSha256": "90aebcb60a3300184e65ff26064a805d5c8069265120b05643377ead2b92d94f",
+          "bytes": 21746,
+          "sha256": "12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4075218,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/class-neutral-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "fb2c052a29b6e4ba07b680d5252a1ff205840e48860097f9d9c6503e9fa24595"
+      },
+      "gzip6": 786466,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/39954df2066d42726fdb5a5c3dc8f50e1651fa4870e6a7fbb11975e12c49e697.gz",
+        "archiveBytes": 15662,
+        "archiveSha256": "44fab8d1f6ade67f4a7b93c51675ee378ad157c9595d54a9ab8240b7dda8cc98",
+        "bytes": 37100,
+        "sha256": "39954df2066d42726fdb5a5c3dc8f50e1651fa4870e6a7fbb11975e12c49e697"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-class-neutral.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/803786e8186fdd1f0cd4bdefa87188cb619b11edd8544160766d1c182332aa61.gz",
+        "archiveBytes": 1366,
+        "archiveSha256": "207e66e803251f6cbff7cea8b36879d554f150fdb276721c229097950ec7e0ff",
+        "bytes": 4570,
+        "sha256": "803786e8186fdd1f0cd4bdefa87188cb619b11edd8544160766d1c182332aa61"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "class-neutral"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7.gz",
+          "archiveBytes": 10124,
+          "archiveSha256": "98edd28c67b59c4a245df0481dcc45dcf138a0b95053d2e54b006f5a2b58d735",
+          "bytes": 38074,
+          "sha256": "304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/paint.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/1af6fb054ee815377a5b61a39b9473cf36a4169df78239a77d2a9eb1168240f6.gz",
+          "archiveBytes": 6248,
+          "archiveSha256": "cb8c7092ff5b9c07e70436df897c54a8a2dda94b5458070c2e8cf81d5d12183b",
+          "bytes": 24643,
+          "sha256": "1af6fb054ee815377a5b61a39b9473cf36a4169df78239a77d2a9eb1168240f6"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d.gz",
+          "archiveBytes": 8458,
+          "archiveSha256": "36b69c04d5ba2699e30b995f80db6d682acc8293755045617d5fcdeae62b74a1",
+          "bytes": 42100,
+          "sha256": "b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/5092dc8b1da2f5c5a1e31d8ac3e5b19e29d48f19e38691432a47d51a27aec9af.gz",
+          "archiveBytes": 21896,
+          "archiveSha256": "bd9202aa7adb7f102b6c1a0d581f541347f40c9e5ed48e6fd1e2919ba47a2e81",
+          "bytes": 100702,
+          "sha256": "5092dc8b1da2f5c5a1e31d8ac3e5b19e29d48f19e38691432a47d51a27aec9af"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/5ee56a3163fc40e72905d0424e2ca8172d6d1b9a3ad38f3f960c23d201ee54c4.gz",
+          "archiveBytes": 5732,
+          "archiveSha256": "59d51145b7e550cc1df28f49a46820d17aa293211f31e9dca963c20939e1a72e",
+          "bytes": 21775,
+          "sha256": "5ee56a3163fc40e72905d0424e2ca8172d6d1b9a3ad38f3f960c23d201ee54c4"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7.gz",
+          "archiveBytes": 5702,
+          "archiveSha256": "90aebcb60a3300184e65ff26064a805d5c8069265120b05643377ead2b92d94f",
+          "bytes": 21746,
+          "sha256": "12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4075209,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/derived-neutral-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "56978bba1c210363aae8fcd734134b8e1e62e264ad78a62cf6dbcb4f02125eb5"
+      },
+      "gzip6": 786449,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/38c381dad947e0c21d76077eed8913c1537a1a08f0673dfb1f386e6767daef1c.gz",
+        "archiveBytes": 15664,
+        "archiveSha256": "01adba3477c53a397d1ba4bbef140d959f72da0136d11b6e08aa21e0adcf0148",
+        "bytes": 37100,
+        "sha256": "38c381dad947e0c21d76077eed8913c1537a1a08f0673dfb1f386e6767daef1c"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-derived-neutral.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/da58a271e7d94de921855ff73a176ab04e214879f93ebd9e3f1635ab31ade9b3.gz",
+        "archiveBytes": 1365,
+        "archiveSha256": "d37a38f357d7af43527a9eb952fd2d3f89dc50852ec358457b7cb11d038a019e",
+        "bytes": 4570,
+        "sha256": "da58a271e7d94de921855ff73a176ab04e214879f93ebd9e3f1635ab31ade9b3"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "derived-neutral"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7.gz",
+          "archiveBytes": 10124,
+          "archiveSha256": "98edd28c67b59c4a245df0481dcc45dcf138a0b95053d2e54b006f5a2b58d735",
+          "bytes": 38074,
+          "sha256": "304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/paint.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/8d35e43bdb36bfe7d7fb8eb3b6b6ab3a97bef1e5a9245488f625843493d35b50.gz",
+          "archiveBytes": 5985,
+          "archiveSha256": "016bb9a1db08b2a9f9471550074040a35d696ee00d80d2db156489b0c5900b1a",
+          "bytes": 23659,
+          "sha256": "8d35e43bdb36bfe7d7fb8eb3b6b6ab3a97bef1e5a9245488f625843493d35b50"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d.gz",
+          "archiveBytes": 8458,
+          "archiveSha256": "36b69c04d5ba2699e30b995f80db6d682acc8293755045617d5fcdeae62b74a1",
+          "bytes": 42100,
+          "sha256": "b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/16e89e974cb3f76d578ad8b134b6887b4f6c39f7b853720fd67841738b094c12.gz",
+          "archiveBytes": 21862,
+          "archiveSha256": "90ea1f111be7e1eb156925abc9219722733462eb05122f2284a22166bd8d41c1",
+          "bytes": 100435,
+          "sha256": "16e89e974cb3f76d578ad8b134b6887b4f6c39f7b853720fd67841738b094c12"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/587167ff57886852e69acda14b571cfaf4e05a8bf9425ea4149ed4d67df91c35.gz",
+          "archiveBytes": 5901,
+          "archiveSha256": "5531625f7636805b285c9fb3a7604a7a5a8b18b792c0e0234e756675da0e7626",
+          "bytes": 22224,
+          "sha256": "587167ff57886852e69acda14b571cfaf4e05a8bf9425ea4149ed4d67df91c35"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7.gz",
+          "archiveBytes": 5702,
+          "archiveSha256": "90aebcb60a3300184e65ff26064a805d5c8069265120b05643377ead2b92d94f",
+          "bytes": 21746,
+          "sha256": "12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4075429,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/empty-label-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "1b8e769571d787989495b4c63f0ef595169e1e32990dd32755788d52ba581cc5"
+      },
+      "gzip6": 786475,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/d66b7b37b13f5b6deefb4566f0731e2c850b6f37f9fd0a5ade723bfbc37ab15d.gz",
+        "archiveBytes": 15658,
+        "archiveSha256": "be2d219a05ec48606cf8d5a935ed149dbf0d2dd5fd458ab28f5d805cd4714757",
+        "bytes": 37100,
+        "sha256": "d66b7b37b13f5b6deefb4566f0731e2c850b6f37f9fd0a5ade723bfbc37ab15d"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-empty-label.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/c0dae9ba51cfb3d26b98704de4643b9e3cc97c139cea8c2c87ed4e7352fba71a.gz",
+        "archiveBytes": 1365,
+        "archiveSha256": "6cf9bc1b7780d9b6e8ffff724a6e83a0400255b8cb67ceae681c41a9b3532014",
+        "bytes": 4570,
+        "sha256": "c0dae9ba51cfb3d26b98704de4643b9e3cc97c139cea8c2c87ed4e7352fba71a"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "empty-label"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b48ef7b741a9d89c08bf82c5a46a4edcf9298117d071245313377677e9f7f633.gz",
+          "archiveBytes": 21656,
+          "archiveSha256": "21c99ce2da6d4e9b30d0204a32b4cb3aab17541c175916f0e69d09dee3984145",
+          "bytes": 99807,
+          "sha256": "b48ef7b741a9d89c08bf82c5a46a4edcf9298117d071245313377677e9f7f633"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/e4803508e8a35d890919f816989cc2da7641bdc957eb8a4965b8f2c1a9341349.gz",
+          "archiveBytes": 5794,
+          "archiveSha256": "ef1b1e3d5641d31e2c5e838c3a54c76556fb70018f2fe997483c1c3edab5a6c5",
+          "bytes": 21909,
+          "sha256": "e4803508e8a35d890919f816989cc2da7641bdc957eb8a4965b8f2c1a9341349"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/713c24bfe57ee5884417102e946e1a3ede44882cd6eb5f5caa9705884caafae7.gz",
+          "archiveBytes": 5505,
+          "archiveSha256": "a61f10029ca6fc95827bbcea899f3e60891b26ce26fe2fffcb12d8abc5184a9c",
+          "bytes": 21408,
+          "sha256": "713c24bfe57ee5884417102e946e1a3ede44882cd6eb5f5caa9705884caafae7"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4076925,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/factored-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "307a27682b5c07eeeed839075b004fbac4c0332e410a425997398a835dda0fb8"
+      },
+      "gzip6": 786898,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/4c0992ecd19b25e02157bd1d88004cc8111fa2fdef5b93e60b0047dba7361cd5.gz",
+        "archiveBytes": 15657,
+        "archiveSha256": "0ec77564b5c245e37014ef2866bc2f1f32b1c2a4d7eadbaf33779e9a1bbd2295",
+        "bytes": 37100,
+        "sha256": "4c0992ecd19b25e02157bd1d88004cc8111fa2fdef5b93e60b0047dba7361cd5"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-factored.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/4776d25b2994ef58aabb9335c97818fa537ed36f8143aa7aa04eaeb80aecc027.gz",
+        "archiveBytes": 1366,
+        "archiveSha256": "69e9f7b141699142f7ddf5aedc6cacf630a87a9f7c2191cfb2cf4063a53cc322",
+        "bytes": 4570,
+        "sha256": "4776d25b2994ef58aabb9335c97818fa537ed36f8143aa7aa04eaeb80aecc027"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "factored"
+    },
+    {
+      "command": "npm run build:wasm",
+      "gzip6": 787044,
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-first.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/f824fb9668f9b5471881c0fbfb6913ae179c2f14729b0e6025cf16ab4bb057af.gz",
+        "archiveBytes": 1367,
+        "archiveSha256": "6ec89876b37d1931f616fb4f22137dd1c14db52cc9875d28eca566fdc35732fb",
+        "bytes": 4570,
+        "sha256": "f824fb9668f9b5471881c0fbfb6913ae179c2f14729b0e6025cf16ab4bb057af"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Log only; no complete source snapshot, no runtime acceptance credit",
+      "status": "FAILED",
+      "tag": "first"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7.gz",
+          "archiveBytes": 10124,
+          "archiveSha256": "98edd28c67b59c4a245df0481dcc45dcf138a0b95053d2e54b006f5a2b58d735",
+          "bytes": 38074,
+          "sha256": "304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/paint.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/779c4b9ab58d175c37be5c003e6fb262b805212c30da607dd77741f705828557.gz",
+          "archiveBytes": 5978,
+          "archiveSha256": "0e73e1100abc751ff5cf58d5f21f66aac7201dd4a50eea6bb871145354e2b262",
+          "bytes": 23680,
+          "sha256": "779c4b9ab58d175c37be5c003e6fb262b805212c30da607dd77741f705828557"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d.gz",
+          "archiveBytes": 8458,
+          "archiveSha256": "36b69c04d5ba2699e30b995f80db6d682acc8293755045617d5fcdeae62b74a1",
+          "bytes": 42100,
+          "sha256": "b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b48ef7b741a9d89c08bf82c5a46a4edcf9298117d071245313377677e9f7f633.gz",
+          "archiveBytes": 21656,
+          "archiveSha256": "21c99ce2da6d4e9b30d0204a32b4cb3aab17541c175916f0e69d09dee3984145",
+          "bytes": 99807,
+          "sha256": "b48ef7b741a9d89c08bf82c5a46a4edcf9298117d071245313377677e9f7f633"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/9d842a0922b7842602b9b68785dbc49164dbe502f109fc68a11275d8666ad235.gz",
+          "archiveBytes": 5809,
+          "archiveSha256": "15b122ed9e5b53182899f5b0a7d0b48e2b4b06300f912381a9a8701e36fe2b94",
+          "bytes": 22045,
+          "sha256": "9d842a0922b7842602b9b68785dbc49164dbe502f109fc68a11275d8666ad235"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/0dac5ceae9fcb0d791206d82a3c29bb986ddd473becc119a5ef34d1f7baf4693.gz",
+          "archiveBytes": 5701,
+          "archiveSha256": "aa52db1f25ab98b9bddd25ee5cb4caf7fa72a38789533102c7c2f5f9b289897c",
+          "bytes": 21751,
+          "sha256": "0dac5ceae9fcb0d791206d82a3c29bb986ddd473becc119a5ef34d1f7baf4693"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4076097,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/fixed-fields-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "f02ac681fdc3f8b5d2f0dd820901fac42cfe511a1a66a7bd967c46f734311c3e"
+      },
+      "gzip6": 786552,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/78bd8a636e309cf180f0f7277a6613dfee964df2a57fe451adf19aaff31c7628.gz",
+        "archiveBytes": 15661,
+        "archiveSha256": "d5ab968028d7ab00a0a195c7a01306e1e317a4ce076c00504fa89a0e4989c2ae",
+        "bytes": 37100,
+        "sha256": "78bd8a636e309cf180f0f7277a6613dfee964df2a57fe451adf19aaff31c7628"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-fixed-fields.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/babbe0eef024c7107b210b87a03353bbfd6008a5ec8403fc5a03a36598b2e18e.gz",
+        "archiveBytes": 1366,
+        "archiveSha256": "b8f09b23d41de8ae93b275e9a0aaf4acc887d1ae448a4e0dd08f03b87a33abd6",
+        "bytes": 4570,
+        "sha256": "babbe0eef024c7107b210b87a03353bbfd6008a5ec8403fc5a03a36598b2e18e"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "fixed-fields"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7.gz",
+          "archiveBytes": 10124,
+          "archiveSha256": "98edd28c67b59c4a245df0481dcc45dcf138a0b95053d2e54b006f5a2b58d735",
+          "bytes": 38074,
+          "sha256": "304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/paint.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/779c4b9ab58d175c37be5c003e6fb262b805212c30da607dd77741f705828557.gz",
+          "archiveBytes": 5978,
+          "archiveSha256": "0e73e1100abc751ff5cf58d5f21f66aac7201dd4a50eea6bb871145354e2b262",
+          "bytes": 23680,
+          "sha256": "779c4b9ab58d175c37be5c003e6fb262b805212c30da607dd77741f705828557"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d.gz",
+          "archiveBytes": 8458,
+          "archiveSha256": "36b69c04d5ba2699e30b995f80db6d682acc8293755045617d5fcdeae62b74a1",
+          "bytes": 42100,
+          "sha256": "b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/16e89e974cb3f76d578ad8b134b6887b4f6c39f7b853720fd67841738b094c12.gz",
+          "archiveBytes": 21862,
+          "archiveSha256": "90ea1f111be7e1eb156925abc9219722733462eb05122f2284a22166bd8d41c1",
+          "bytes": 100435,
+          "sha256": "16e89e974cb3f76d578ad8b134b6887b4f6c39f7b853720fd67841738b094c12"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/05a31a06e9c317cc7524eb27d3ab0cf0af2fd4a6a52a04c667eee1c63348a3ed.gz",
+          "archiveBytes": 5801,
+          "archiveSha256": "33c5b39057218da680bbd77c6239091d0490db102b1d67a9664996a6f2e13935",
+          "bytes": 21974,
+          "sha256": "05a31a06e9c317cc7524eb27d3ab0cf0af2fd4a6a52a04c667eee1c63348a3ed"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7.gz",
+          "archiveBytes": 5702,
+          "archiveSha256": "90aebcb60a3300184e65ff26064a805d5c8069265120b05643377ead2b92d94f",
+          "bytes": 21746,
+          "sha256": "12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4075382,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/fixed-prefix-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "0c76d94678b5a4f824fb93f5377614b4052f15557af8bc54c05a2d992da99b3a"
+      },
+      "gzip6": 786497,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/7b8647cea652fd79daffa7747c212bb027c2a6dff329ed5f335363599aa933df.gz",
+        "archiveBytes": 15661,
+        "archiveSha256": "72875e73b518c8951d22f38e93936cf7b5e18c7bf406c0f613e0a9353581764a",
+        "bytes": 37100,
+        "sha256": "7b8647cea652fd79daffa7747c212bb027c2a6dff329ed5f335363599aa933df"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-fixed-prefix.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/7f96df950a87e4f721e03e6e73430b91bd35e1201ffaa1775b62296326b31dcc.gz",
+        "archiveBytes": 1365,
+        "archiveSha256": "2962b1c38229ec94fe6f7e7ee03fe3a5858991c3ce505e93974492e5e12b3108",
+        "bytes": 4570,
+        "sha256": "7f96df950a87e4f721e03e6e73430b91bd35e1201ffaa1775b62296326b31dcc"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "fixed-prefix"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7.gz",
+          "archiveBytes": 10124,
+          "archiveSha256": "98edd28c67b59c4a245df0481dcc45dcf138a0b95053d2e54b006f5a2b58d735",
+          "bytes": 38074,
+          "sha256": "304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/paint.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/8d35e43bdb36bfe7d7fb8eb3b6b6ab3a97bef1e5a9245488f625843493d35b50.gz",
+          "archiveBytes": 5985,
+          "archiveSha256": "016bb9a1db08b2a9f9471550074040a35d696ee00d80d2db156489b0c5900b1a",
+          "bytes": 23659,
+          "sha256": "8d35e43bdb36bfe7d7fb8eb3b6b6ab3a97bef1e5a9245488f625843493d35b50"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d.gz",
+          "archiveBytes": 8458,
+          "archiveSha256": "36b69c04d5ba2699e30b995f80db6d682acc8293755045617d5fcdeae62b74a1",
+          "bytes": 42100,
+          "sha256": "b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b48ef7b741a9d89c08bf82c5a46a4edcf9298117d071245313377677e9f7f633.gz",
+          "archiveBytes": 21656,
+          "archiveSha256": "21c99ce2da6d4e9b30d0204a32b4cb3aab17541c175916f0e69d09dee3984145",
+          "bytes": 99807,
+          "sha256": "b48ef7b741a9d89c08bf82c5a46a4edcf9298117d071245313377677e9f7f633"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/0418089eb1985ca545fec2c9856241c0c34866c2bc5086692ef1fbbaa277a9de.gz",
+          "archiveBytes": 5813,
+          "archiveSha256": "99764495633781953c7580d3067c299c51ee7ddd2865cb7fa2a68c8184c5e14a",
+          "bytes": 22031,
+          "sha256": "0418089eb1985ca545fec2c9856241c0c34866c2bc5086692ef1fbbaa277a9de"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7.gz",
+          "archiveBytes": 5702,
+          "archiveSha256": "90aebcb60a3300184e65ff26064a805d5c8069265120b05643377ead2b92d94f",
+          "bytes": 21746,
+          "sha256": "12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4076155,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/flags-prefix-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "8443a60789d3c8dff7071630186b1947ed8fe057da71d08e59d91307c496d1dc"
+      },
+      "gzip6": 786523,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/453a39ef46ecfba33ed5d98fce0ed3672111ad03d756279e5f390170d1f9747c.gz",
+        "archiveBytes": 15658,
+        "archiveSha256": "5380e1f198081b2d78046cd9dabebcf1f47dd96c8c7a62e08a4d6b26caaf419e",
+        "bytes": 37100,
+        "sha256": "453a39ef46ecfba33ed5d98fce0ed3672111ad03d756279e5f390170d1f9747c"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-flags-prefix.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/dcc0accb5069b98efc92ea312a04c6b488a42799cc66406b676f12d3c9d0415b.gz",
+        "archiveBytes": 1366,
+        "archiveSha256": "80e46fa608ca357d90f9bc95f7661d936dc0da2046666cb393dd4ad7d38f07bf",
+        "bytes": 4570,
+        "sha256": "dcc0accb5069b98efc92ea312a04c6b488a42799cc66406b676f12d3c9d0415b"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "flags-prefix"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7.gz",
+          "archiveBytes": 10124,
+          "archiveSha256": "98edd28c67b59c4a245df0481dcc45dcf138a0b95053d2e54b006f5a2b58d735",
+          "bytes": 38074,
+          "sha256": "304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/paint.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/8d35e43bdb36bfe7d7fb8eb3b6b6ab3a97bef1e5a9245488f625843493d35b50.gz",
+          "archiveBytes": 5985,
+          "archiveSha256": "016bb9a1db08b2a9f9471550074040a35d696ee00d80d2db156489b0c5900b1a",
+          "bytes": 23659,
+          "sha256": "8d35e43bdb36bfe7d7fb8eb3b6b6ab3a97bef1e5a9245488f625843493d35b50"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d.gz",
+          "archiveBytes": 8458,
+          "archiveSha256": "36b69c04d5ba2699e30b995f80db6d682acc8293755045617d5fcdeae62b74a1",
+          "bytes": 42100,
+          "sha256": "b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/45d1eb1b24e13eb908766d5834de04fd9a77a0d0e6df29d4c0b8266c6c832cc4.gz",
+          "archiveBytes": 21653,
+          "archiveSha256": "372692106dcfea34611081929261572a1b27d88cff94e5bf8421ab6022183dc2",
+          "bytes": 99487,
+          "sha256": "45d1eb1b24e13eb908766d5834de04fd9a77a0d0e6df29d4c0b8266c6c832cc4"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/be33df550b39641eaa88c87308196fed322fd269a78c6ba579eb56bd17c5ad67.gz",
+          "archiveBytes": 5857,
+          "archiveSha256": "52cfa27a54f0468b5b77c18344dfc56deede70435266dabd4cb0a422c91e77ac",
+          "bytes": 22094,
+          "sha256": "be33df550b39641eaa88c87308196fed322fd269a78c6ba579eb56bd17c5ad67"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7.gz",
+          "archiveBytes": 5702,
+          "archiveSha256": "90aebcb60a3300184e65ff26064a805d5c8069265120b05643377ead2b92d94f",
+          "bytes": 21746,
+          "sha256": "12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4075701,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/header-borrow-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "68ef052f0cf304ffb413421259f2de9796f5f20f9fc737bbda32b27e0ca1d927"
+      },
+      "gzip6": 786642,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/736ae6aef7371ee8835ef6c84973fdfc89f407419b26143d499b652090642e3b.gz",
+        "archiveBytes": 15664,
+        "archiveSha256": "7004f7388a51c5263934fff10400adc29398ab228537b04c744f7158e4bdf0da",
+        "bytes": 37100,
+        "sha256": "736ae6aef7371ee8835ef6c84973fdfc89f407419b26143d499b652090642e3b"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-header-borrow.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/714c032e8cb3a171e8b105c8289f29cc4724a28c11066c8766159833196075f6.gz",
+        "archiveBytes": 1367,
+        "archiveSha256": "3c5f6a5ee48424dd6ed44678838077046914f06290c958a00087665e1f546663",
+        "bytes": 4570,
+        "sha256": "714c032e8cb3a171e8b105c8289f29cc4724a28c11066c8766159833196075f6"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "header-borrow"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7.gz",
+          "archiveBytes": 10124,
+          "archiveSha256": "98edd28c67b59c4a245df0481dcc45dcf138a0b95053d2e54b006f5a2b58d735",
+          "bytes": 38074,
+          "sha256": "304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/paint.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/779c4b9ab58d175c37be5c003e6fb262b805212c30da607dd77741f705828557.gz",
+          "archiveBytes": 5978,
+          "archiveSha256": "0e73e1100abc751ff5cf58d5f21f66aac7201dd4a50eea6bb871145354e2b262",
+          "bytes": 23680,
+          "sha256": "779c4b9ab58d175c37be5c003e6fb262b805212c30da607dd77741f705828557"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d.gz",
+          "archiveBytes": 8458,
+          "archiveSha256": "36b69c04d5ba2699e30b995f80db6d682acc8293755045617d5fcdeae62b74a1",
+          "bytes": 42100,
+          "sha256": "b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/5092dc8b1da2f5c5a1e31d8ac3e5b19e29d48f19e38691432a47d51a27aec9af.gz",
+          "archiveBytes": 21896,
+          "archiveSha256": "bd9202aa7adb7f102b6c1a0d581f541347f40c9e5ed48e6fd1e2919ba47a2e81",
+          "bytes": 100702,
+          "sha256": "5092dc8b1da2f5c5a1e31d8ac3e5b19e29d48f19e38691432a47d51a27aec9af"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/5ee56a3163fc40e72905d0424e2ca8172d6d1b9a3ad38f3f960c23d201ee54c4.gz",
+          "archiveBytes": 5732,
+          "archiveSha256": "59d51145b7e550cc1df28f49a46820d17aa293211f31e9dca963c20939e1a72e",
+          "bytes": 21775,
+          "sha256": "5ee56a3163fc40e72905d0424e2ca8172d6d1b9a3ad38f3f960c23d201ee54c4"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7.gz",
+          "archiveBytes": 5702,
+          "archiveSha256": "90aebcb60a3300184e65ff26064a805d5c8069265120b05643377ead2b92d94f",
+          "bytes": 21746,
+          "sha256": "12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4075216,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/local-label-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "8e70862b60d83c1a7b068e1f5533b33b062fbe5bfc7792d694ae1c5e793a3f32"
+      },
+      "gzip6": 786465,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/2cdbfd41da14c580ceace21a5795c180480e067847f4b4c2b9f85b3062b9c2f4.gz",
+        "archiveBytes": 15662,
+        "archiveSha256": "59dab7a3b945c02a3d1cc492da9cd9106319831c0fa62056ae421a1823d965af",
+        "bytes": 37100,
+        "sha256": "2cdbfd41da14c580ceace21a5795c180480e067847f4b4c2b9f85b3062b9c2f4"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-local-label.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/32166257fd70661d2dc7717ef361251ee2215cb053ebc2b4356b50665130230a.gz",
+        "archiveBytes": 1366,
+        "archiveSha256": "3a5187ef41727fea9978d8748124ea464fdd4d1a7261d9319ad529ed78c0ac0c",
+        "bytes": 4570,
+        "sha256": "32166257fd70661d2dc7717ef361251ee2215cb053ebc2b4356b50665130230a"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "local-label"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/6b6aef035b1cbcea48952425a28779b1b5870c25751fa3d421f0faab51c115ed.gz",
+          "archiveBytes": 10276,
+          "archiveSha256": "39cb6ced57638d796c7e05ce9290e55e489ae04ae6e3c2d2d9af50d729a5484b",
+          "bytes": 38640,
+          "sha256": "6b6aef035b1cbcea48952425a28779b1b5870c25751fa3d421f0faab51c115ed"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/paint.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/8d35e43bdb36bfe7d7fb8eb3b6b6ab3a97bef1e5a9245488f625843493d35b50.gz",
+          "archiveBytes": 5985,
+          "archiveSha256": "016bb9a1db08b2a9f9471550074040a35d696ee00d80d2db156489b0c5900b1a",
+          "bytes": 23659,
+          "sha256": "8d35e43bdb36bfe7d7fb8eb3b6b6ab3a97bef1e5a9245488f625843493d35b50"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d.gz",
+          "archiveBytes": 8458,
+          "archiveSha256": "36b69c04d5ba2699e30b995f80db6d682acc8293755045617d5fcdeae62b74a1",
+          "bytes": 42100,
+          "sha256": "b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/c7f24cd22b69360d7aa0c98c973379c3f2e25d17effd211e9b94909df26e0f61.gz",
+          "archiveBytes": 21856,
+          "archiveSha256": "0ef31bd621548990b5372b470a61fb5dae99b39cc7a08b480b0dd53e5165cbba",
+          "bytes": 100391,
+          "sha256": "c7f24cd22b69360d7aa0c98c973379c3f2e25d17effd211e9b94909df26e0f61"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/eafd9cb755efdabd303a5ffc317641b00dee5936686f68a4e5ccacc32e12570c.gz",
+          "archiveBytes": 5671,
+          "archiveSha256": "87e0d8788167eeca10a0184a63442d48bb8baab0816b98e6e1a4c14556ce7c03",
+          "bytes": 21486,
+          "sha256": "eafd9cb755efdabd303a5ffc317641b00dee5936686f68a4e5ccacc32e12570c"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7.gz",
+          "archiveBytes": 5702,
+          "archiveSha256": "90aebcb60a3300184e65ff26064a805d5c8069265120b05643377ead2b92d94f",
+          "bytes": 21746,
+          "sha256": "12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4075407,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/minimal-label-stats-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "d7dddeb2b56b91221405d1601df7eb99556b0ecd84aeda5b3e94b4dc504073cd"
+      },
+      "gzip6": 786575,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b367de2950576971b1589de91b3a78e10f9cee2e16531c96862ed507a415e95d.gz",
+        "archiveBytes": 15657,
+        "archiveSha256": "42c58e290a34ff3540a5e7bb9f092a6737565691e3bc5f2189f3f93433c80a6f",
+        "bytes": 37100,
+        "sha256": "b367de2950576971b1589de91b3a78e10f9cee2e16531c96862ed507a415e95d"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-minimal-label-stats.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/f28c22f08788b5cce27dbdab43f5f59959aaa503f1e2e35a1524a3f86d3b3de7.gz",
+        "archiveBytes": 1365,
+        "archiveSha256": "6ea25af4574088ff3a45c5c00c475ce1e3e64188e55246074118e60ca0fcefae",
+        "bytes": 4570,
+        "sha256": "f28c22f08788b5cce27dbdab43f5f59959aaa503f1e2e35a1524a3f86d3b3de7"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "minimal-label-stats"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7.gz",
+          "archiveBytes": 10124,
+          "archiveSha256": "98edd28c67b59c4a245df0481dcc45dcf138a0b95053d2e54b006f5a2b58d735",
+          "bytes": 38074,
+          "sha256": "304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/paint.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/8d35e43bdb36bfe7d7fb8eb3b6b6ab3a97bef1e5a9245488f625843493d35b50.gz",
+          "archiveBytes": 5985,
+          "archiveSha256": "016bb9a1db08b2a9f9471550074040a35d696ee00d80d2db156489b0c5900b1a",
+          "bytes": 23659,
+          "sha256": "8d35e43bdb36bfe7d7fb8eb3b6b6ab3a97bef1e5a9245488f625843493d35b50"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d.gz",
+          "archiveBytes": 8458,
+          "archiveSha256": "36b69c04d5ba2699e30b995f80db6d682acc8293755045617d5fcdeae62b74a1",
+          "bytes": 42100,
+          "sha256": "b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/2135063eea3cf3d3b44f118f754e5bc6c85eea2fa5a4a6ba9dad52ed9677aea6.gz",
+          "archiveBytes": 21667,
+          "archiveSha256": "54b98a729c575e3440ac3e14f4610b8b1ad3a4e18e68940e71326091b18a9e1a",
+          "bytes": 99598,
+          "sha256": "2135063eea3cf3d3b44f118f754e5bc6c85eea2fa5a4a6ba9dad52ed9677aea6"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/5ff08ecfd794100fbc305648eee455bff8b0197d708551e461295cace32aad8c.gz",
+          "archiveBytes": 5802,
+          "archiveSha256": "7bcddc4bc85963ef5b1d640d90962c2b1a2bb0c321488d16ec031266f209c76d",
+          "bytes": 21968,
+          "sha256": "5ff08ecfd794100fbc305648eee455bff8b0197d708551e461295cace32aad8c"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7.gz",
+          "archiveBytes": 5702,
+          "archiveSha256": "90aebcb60a3300184e65ff26064a805d5c8069265120b05643377ead2b92d94f",
+          "bytes": 21746,
+          "sha256": "12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4075405,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/original-projection-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "36e9581c9b348c8ef992bc940d594120a69905a3c456e4a82fb230b069b886be"
+      },
+      "gzip6": 786462,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/32cc58fa880c1fb6d6316ec9ba3dc15f037587dc70af86d73837c243438ce95f.gz",
+        "archiveBytes": 15659,
+        "archiveSha256": "926402e03d90a56cb0eddbb24debc736116d31c7c45a4fbf9b726c2687f57d5a",
+        "bytes": 37100,
+        "sha256": "32cc58fa880c1fb6d6316ec9ba3dc15f037587dc70af86d73837c243438ce95f"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-original-projection.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/40001ffb90af65b11c25f714ef25cd680d8ed97d331825ff7a376222c4463538.gz",
+        "archiveBytes": 1366,
+        "archiveSha256": "8e78eab6c59169ac37d2e1111f88f7bb871ca1510c1717441a35069835cf5c73",
+        "bytes": 4570,
+        "sha256": "40001ffb90af65b11c25f714ef25cd680d8ed97d331825ff7a376222c4463538"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "original-projection"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/a041e72595e521e1b37b421abd8b898c21d0f66a79ac0b6a1677eaa0c73b9350.gz",
+          "archiveBytes": 10305,
+          "archiveSha256": "da922aea2a8b9af850e970c18800f44ec716fcd9667dd4c9df68e8cd73918d25",
+          "bytes": 38752,
+          "sha256": "a041e72595e521e1b37b421abd8b898c21d0f66a79ac0b6a1677eaa0c73b9350"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/paint.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/8d35e43bdb36bfe7d7fb8eb3b6b6ab3a97bef1e5a9245488f625843493d35b50.gz",
+          "archiveBytes": 5985,
+          "archiveSha256": "016bb9a1db08b2a9f9471550074040a35d696ee00d80d2db156489b0c5900b1a",
+          "bytes": 23659,
+          "sha256": "8d35e43bdb36bfe7d7fb8eb3b6b6ab3a97bef1e5a9245488f625843493d35b50"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d.gz",
+          "archiveBytes": 8458,
+          "archiveSha256": "36b69c04d5ba2699e30b995f80db6d682acc8293755045617d5fcdeae62b74a1",
+          "bytes": 42100,
+          "sha256": "b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/a8f0dcf975f3fba171be5ddee0753892ba554b6e75af610bd09028a7935f5278.gz",
+          "archiveBytes": 21912,
+          "archiveSha256": "4c11a803390e0fbb476fe04158ba913707e968b0af4eb875c63406755d740c41",
+          "bytes": 100503,
+          "sha256": "a8f0dcf975f3fba171be5ddee0753892ba554b6e75af610bd09028a7935f5278"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/fc1d33b98fc94b31a5d4ce46997834ec3687d066b6a698a035703e8b3614891a.gz",
+          "archiveBytes": 5667,
+          "archiveSha256": "3b61bc238c979c0b34d14512617f636119241ab0f0be8830ec4aa7f352d51b02",
+          "bytes": 21523,
+          "sha256": "fc1d33b98fc94b31a5d4ce46997834ec3687d066b6a698a035703e8b3614891a"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7.gz",
+          "archiveBytes": 5702,
+          "archiveSha256": "90aebcb60a3300184e65ff26064a805d5c8069265120b05643377ead2b92d94f",
+          "bytes": 21746,
+          "sha256": "12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4075356,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/owned-label-stats-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "9c6dff73711059f5f9500b602bae186d856eac7aaea80e0c84b51e21810d8aca"
+      },
+      "gzip6": 786507,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/8ded29e814b077c6fbbb6021b908ccb9993971fa17bd706f34b51e93a5f2fa0d.gz",
+        "archiveBytes": 15660,
+        "archiveSha256": "24b86b2d094d7d1dbdcc332db6eb210c353b183ae21d99f21d9e54a9ca1bb16d",
+        "bytes": 37100,
+        "sha256": "8ded29e814b077c6fbbb6021b908ccb9993971fa17bd706f34b51e93a5f2fa0d"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-owned-label-stats.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/25393f300d0f66cd47b5f237408b6d424bc70f9060265ab7123eae4d45e603a6.gz",
+        "archiveBytes": 1365,
+        "archiveSha256": "99d2fd5d6cae4d43430f0e3239542f0d71eb18e0a9d6a8a2fe92d29fc31b59e3",
+        "bytes": 4570,
+        "sha256": "25393f300d0f66cd47b5f237408b6d424bc70f9060265ab7123eae4d45e603a6"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "owned-label-stats"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/72611ba8ef0cf2e137d3f8cbbd2954fc17c4c3754768832a2f5517c8334d7d54.gz",
+          "archiveBytes": 21343,
+          "archiveSha256": "0b90e88f0c1541e3ef8a52ad29fd967e6948efc1a4dc1523489621cc0bee2205",
+          "bytes": 97134,
+          "sha256": "72611ba8ef0cf2e137d3f8cbbd2954fc17c4c3754768832a2f5517c8334d7d54"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/5228b9a68d520a948220b5d799238d481116b6a24ba84e522db23e20e1f787b2.gz",
+          "archiveBytes": 5806,
+          "archiveSha256": "52f52c439390f96139b46cf87f4f73d4e742242bad3590fa03ec19105e2ba6b5",
+          "bytes": 22093,
+          "sha256": "5228b9a68d520a948220b5d799238d481116b6a24ba84e522db23e20e1f787b2"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/713c24bfe57ee5884417102e946e1a3ede44882cd6eb5f5caa9705884caafae7.gz",
+          "archiveBytes": 5505,
+          "archiveSha256": "a61f10029ca6fc95827bbcea899f3e60891b26ce26fe2fffcb12d8abc5184a9c",
+          "bytes": 21408,
+          "sha256": "713c24bfe57ee5884417102e946e1a3ede44882cd6eb5f5caa9705884caafae7"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4076969,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/page-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "cef767f8d3cecc4363f89bc2dee531a52954625ecbbe76483ef2d936be4df1b4"
+      },
+      "gzip6": 786911,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/90feb588d552aead8e983d5fdcb9bbcfec2cf1ed5b1f680e63ff933125a38aa9.gz",
+        "archiveBytes": 15658,
+        "archiveSha256": "ef7bb9832265e6d8ee008f3426b9bece08e8c03efa00d065696e136d48664c76",
+        "bytes": 37100,
+        "sha256": "90feb588d552aead8e983d5fdcb9bbcfec2cf1ed5b1f680e63ff933125a38aa9"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-page.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/666090b480c1d36addb82471b13acad75cdb29405db02aae25ff2d15d0cb3164.gz",
+        "archiveBytes": 1365,
+        "archiveSha256": "9d9b9fc8e8d4ab63e15c305818fbb69804f3b3a50332cb3800daea968dfc2f4f",
+        "bytes": 4570,
+        "sha256": "666090b480c1d36addb82471b13acad75cdb29405db02aae25ff2d15d0cb3164"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "page"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/aa9be5c25fe646c8977fb25d97312e0141400914771528e16380ea5887bbfec3.gz",
+          "archiveBytes": 21424,
+          "archiveSha256": "97153f476cd57d5e8ce2508433ab064130f955aa4c44b3cd6d46969c32a79a8f",
+          "bytes": 97656,
+          "sha256": "aa9be5c25fe646c8977fb25d97312e0141400914771528e16380ea5887bbfec3"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/127d90503ae9f252d5709ad009953d4ac463dafaaab11eb4b3fa6bf516a0b539.gz",
+          "archiveBytes": 5560,
+          "archiveSha256": "86ac3e07c91015e3c502a2b41e976e24e0323b0f3de75ba8799011d3fa08e9b5",
+          "bytes": 21174,
+          "sha256": "127d90503ae9f252d5709ad009953d4ac463dafaaab11eb4b3fa6bf516a0b539"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/713c24bfe57ee5884417102e946e1a3ede44882cd6eb5f5caa9705884caafae7.gz",
+          "archiveBytes": 5505,
+          "archiveSha256": "a61f10029ca6fc95827bbcea899f3e60891b26ce26fe2fffcb12d8abc5184a9c",
+          "bytes": 21408,
+          "sha256": "713c24bfe57ee5884417102e946e1a3ede44882cd6eb5f5caa9705884caafae7"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4076948,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/scan-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "d4c10b0ea12b314607e2d13b5ca76784d9a8b9755b47176cc7aef9c736117e8c"
+      },
+      "gzip6": 786977,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/dbe2a1aab3893a2bfd5315e5e7ce7c545218f92d8e627ecea5bd84e30822f6f8.gz",
+        "archiveBytes": 15656,
+        "archiveSha256": "c97210aacc1eb24c4b95efb6245a8a79500cd555d4ad9c39d448f8b21ef62b7d",
+        "bytes": 37100,
+        "sha256": "dbe2a1aab3893a2bfd5315e5e7ce7c545218f92d8e627ecea5bd84e30822f6f8"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-scan.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/77f21e89f2cc7a694acbde5c464a5a147f93ced80833a3a7eee21446a92d84f7.gz",
+        "archiveBytes": 1366,
+        "archiveSha256": "b6ba44bbc4cee043c31460fa7d37f64d02b074da9604ac95854ff8e716e67737",
+        "bytes": 4570,
+        "sha256": "77f21e89f2cc7a694acbde5c464a5a147f93ced80833a3a7eee21446a92d84f7"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "scan"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction/paint.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/88f9d4faaf582be0390d6d3f13fe90d83b88ae055a338c25aaba632c7ca8c1ad.gz",
+          "archiveBytes": 5860,
+          "archiveSha256": "063fb1880099ea5c45c6bddae990d9bc8c391f9516bc3323d8480f30c8926fa4",
+          "bytes": 23221,
+          "sha256": "88f9d4faaf582be0390d6d3f13fe90d83b88ae055a338c25aaba632c7ca8c1ad"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b48ef7b741a9d89c08bf82c5a46a4edcf9298117d071245313377677e9f7f633.gz",
+          "archiveBytes": 21656,
+          "archiveSha256": "21c99ce2da6d4e9b30d0204a32b4cb3aab17541c175916f0e69d09dee3984145",
+          "bytes": 99807,
+          "sha256": "b48ef7b741a9d89c08bf82c5a46a4edcf9298117d071245313377677e9f7f633"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/9d842a0922b7842602b9b68785dbc49164dbe502f109fc68a11275d8666ad235.gz",
+          "archiveBytes": 5809,
+          "archiveSha256": "15b122ed9e5b53182899f5b0a7d0b48e2b4b06300f912381a9a8701e36fe2b94",
+          "bytes": 22045,
+          "sha256": "9d842a0922b7842602b9b68785dbc49164dbe502f109fc68a11275d8666ad235"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/0dac5ceae9fcb0d791206d82a3c29bb986ddd473becc119a5ef34d1f7baf4693.gz",
+          "archiveBytes": 5701,
+          "archiveSha256": "aa52db1f25ab98b9bddd25ee5cb4caf7fa72a38789533102c7c2f5f9b289897c",
+          "bytes": 21751,
+          "sha256": "0dac5ceae9fcb0d791206d82a3c29bb986ddd473becc119a5ef34d1f7baf4693"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4076870,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/schema-table-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "c921cbeb25403d4dbd6ec96c3946c2c2470e7b36f1a5aee96e15c6f6124801cb"
+      },
+      "gzip6": 786713,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/5aa5ea72caf988e47812a6c14ee91de6ec4113a5201e8239912ea2def85e2749.gz",
+        "archiveBytes": 15664,
+        "archiveSha256": "1c9f7273ac578b20e861d0767d268a138b65d38314856d6d7be82a59fe8dac51",
+        "bytes": 37100,
+        "sha256": "5aa5ea72caf988e47812a6c14ee91de6ec4113a5201e8239912ea2def85e2749"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-schema-table.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/e5483e08be2bae136e3f7fb1ca77d4d5d8e3ab947e669f71eadaf7a694af3875.gz",
+        "archiveBytes": 1366,
+        "archiveSha256": "89762675f413365686b65e14b6602d18fad3d6b1b59f6bfe4be5db86c8127424",
+        "bytes": 4570,
+        "sha256": "e5483e08be2bae136e3f7fb1ca77d4d5d8e3ab947e669f71eadaf7a694af3875"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "schema-table"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7.gz",
+          "archiveBytes": 10124,
+          "archiveSha256": "98edd28c67b59c4a245df0481dcc45dcf138a0b95053d2e54b006f5a2b58d735",
+          "bytes": 38074,
+          "sha256": "304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/paint.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/1af6fb054ee815377a5b61a39b9473cf36a4169df78239a77d2a9eb1168240f6.gz",
+          "archiveBytes": 6248,
+          "archiveSha256": "cb8c7092ff5b9c07e70436df897c54a8a2dda94b5458070c2e8cf81d5d12183b",
+          "bytes": 24643,
+          "sha256": "1af6fb054ee815377a5b61a39b9473cf36a4169df78239a77d2a9eb1168240f6"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d.gz",
+          "archiveBytes": 8458,
+          "archiveSha256": "36b69c04d5ba2699e30b995f80db6d682acc8293755045617d5fcdeae62b74a1",
+          "bytes": 42100,
+          "sha256": "b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/16e89e974cb3f76d578ad8b134b6887b4f6c39f7b853720fd67841738b094c12.gz",
+          "archiveBytes": 21862,
+          "archiveSha256": "90ea1f111be7e1eb156925abc9219722733462eb05122f2284a22166bd8d41c1",
+          "bytes": 100435,
+          "sha256": "16e89e974cb3f76d578ad8b134b6887b4f6c39f7b853720fd67841738b094c12"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/5ff08ecfd794100fbc305648eee455bff8b0197d708551e461295cace32aad8c.gz",
+          "archiveBytes": 5802,
+          "archiveSha256": "7bcddc4bc85963ef5b1d640d90962c2b1a2bb0c321488d16ec031266f209c76d",
+          "bytes": 21968,
+          "sha256": "5ff08ecfd794100fbc305648eee455bff8b0197d708551e461295cace32aad8c"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7.gz",
+          "archiveBytes": 5702,
+          "archiveSha256": "90aebcb60a3300184e65ff26064a805d5c8069265120b05643377ead2b92d94f",
+          "bytes": 21746,
+          "sha256": "12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4075357,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/shared-derived-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "bd3da8e85f3a27f83da065c10bb00c397ca770d6eea7ce4a4bc35d0f55806478"
+      },
+      "gzip6": 786436,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/ad20452472b2cf5c5cc7c5be079c6a3236a50f3f126e9e7873dfb908ac6fb792.gz",
+        "archiveBytes": 15662,
+        "archiveSha256": "062ba6fd825a3110a44be83ea082ac9263584409557f1a47d377dc81006753a6",
+        "bytes": 37100,
+        "sha256": "ad20452472b2cf5c5cc7c5be079c6a3236a50f3f126e9e7873dfb908ac6fb792"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-shared-derived.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/53001269205de7a6b04dcbf8facc2c5cb574406c36ee50b026b47d8b34d37c7d.gz",
+        "archiveBytes": 1366,
+        "archiveSha256": "f58dcaca514e7d41893e53e47ba8cc5b7dd9256b2dad80a1c65424da34ffa4f6",
+        "bytes": 4570,
+        "sha256": "53001269205de7a6b04dcbf8facc2c5cb574406c36ee50b026b47d8b34d37c7d"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "shared-derived"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7.gz",
+          "archiveBytes": 10124,
+          "archiveSha256": "98edd28c67b59c4a245df0481dcc45dcf138a0b95053d2e54b006f5a2b58d735",
+          "bytes": 38074,
+          "sha256": "304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/paint.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/8d35e43bdb36bfe7d7fb8eb3b6b6ab3a97bef1e5a9245488f625843493d35b50.gz",
+          "archiveBytes": 5985,
+          "archiveSha256": "016bb9a1db08b2a9f9471550074040a35d696ee00d80d2db156489b0c5900b1a",
+          "bytes": 23659,
+          "sha256": "8d35e43bdb36bfe7d7fb8eb3b6b6ab3a97bef1e5a9245488f625843493d35b50"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d.gz",
+          "archiveBytes": 8458,
+          "archiveSha256": "36b69c04d5ba2699e30b995f80db6d682acc8293755045617d5fcdeae62b74a1",
+          "bytes": 42100,
+          "sha256": "b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/45d1eb1b24e13eb908766d5834de04fd9a77a0d0e6df29d4c0b8266c6c832cc4.gz",
+          "archiveBytes": 21653,
+          "archiveSha256": "372692106dcfea34611081929261572a1b27d88cff94e5bf8421ab6022183dc2",
+          "bytes": 99487,
+          "sha256": "45d1eb1b24e13eb908766d5834de04fd9a77a0d0e6df29d4c0b8266c6c832cc4"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/23ed0f30e6cc48d14424949a082d3c2473f4336055caefaa4b8e9a97dde3cb9e.gz",
+          "archiveBytes": 5834,
+          "archiveSha256": "9d1e47fdcf5090d594a8699fd5d942a43eb2e511b6b3290253feb57d9dceaa87",
+          "bytes": 21702,
+          "sha256": "23ed0f30e6cc48d14424949a082d3c2473f4336055caefaa4b8e9a97dde3cb9e"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7.gz",
+          "archiveBytes": 5702,
+          "archiveSha256": "90aebcb60a3300184e65ff26064a805d5c8069265120b05643377ead2b92d94f",
+          "bytes": 21746,
+          "sha256": "12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4075701,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/shared-outcome-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "52a97d1317f88a062ac4754f4bf3afb1a66bdf8f90dfc75bd178b2d4873f8c52"
+      },
+      "gzip6": 786487,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/582ebe68d17b6ddf14c2cc02a05ab071901e6d677db69158b96271ae4f3f35a3.gz",
+        "archiveBytes": 15665,
+        "archiveSha256": "b8464eb58039ac272a51d96c2d9a96c1a19ed40adfbf6e9c0a6c9dbe68199a48",
+        "bytes": 37100,
+        "sha256": "582ebe68d17b6ddf14c2cc02a05ab071901e6d677db69158b96271ae4f3f35a3"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-shared-outcome.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/56f153d17473334c7cad4e3fdf91f516deb4e728ae60aa795800492004544c72.gz",
+        "archiveBytes": 1366,
+        "archiveSha256": "48b9cc8aee8ef69b876590518d626fee7fd2884b8e3d25bb5214710a626b2e9b",
+        "bytes": 4570,
+        "sha256": "56f153d17473334c7cad4e3fdf91f516deb4e728ae60aa795800492004544c72"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "shared-outcome"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7.gz",
+          "archiveBytes": 10124,
+          "archiveSha256": "98edd28c67b59c4a245df0481dcc45dcf138a0b95053d2e54b006f5a2b58d735",
+          "bytes": 38074,
+          "sha256": "304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/paint.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/8d35e43bdb36bfe7d7fb8eb3b6b6ab3a97bef1e5a9245488f625843493d35b50.gz",
+          "archiveBytes": 5985,
+          "archiveSha256": "016bb9a1db08b2a9f9471550074040a35d696ee00d80d2db156489b0c5900b1a",
+          "bytes": 23659,
+          "sha256": "8d35e43bdb36bfe7d7fb8eb3b6b6ab3a97bef1e5a9245488f625843493d35b50"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d.gz",
+          "archiveBytes": 8458,
+          "archiveSha256": "36b69c04d5ba2699e30b995f80db6d682acc8293755045617d5fcdeae62b74a1",
+          "bytes": 42100,
+          "sha256": "b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/45d1eb1b24e13eb908766d5834de04fd9a77a0d0e6df29d4c0b8266c6c832cc4.gz",
+          "archiveBytes": 21653,
+          "archiveSha256": "372692106dcfea34611081929261572a1b27d88cff94e5bf8421ab6022183dc2",
+          "bytes": 99487,
+          "sha256": "45d1eb1b24e13eb908766d5834de04fd9a77a0d0e6df29d4c0b8266c6c832cc4"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/0418089eb1985ca545fec2c9856241c0c34866c2bc5086692ef1fbbaa277a9de.gz",
+          "archiveBytes": 5813,
+          "archiveSha256": "99764495633781953c7580d3067c299c51ee7ddd2865cb7fa2a68c8184c5e14a",
+          "bytes": 22031,
+          "sha256": "0418089eb1985ca545fec2c9856241c0c34866c2bc5086692ef1fbbaa277a9de"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7.gz",
+          "archiveBytes": 5702,
+          "archiveSha256": "90aebcb60a3300184e65ff26064a805d5c8069265120b05643377ead2b92d94f",
+          "bytes": 21746,
+          "sha256": "12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4075542,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/shared-relation-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "95df74483a6625d3610690634527bcf5df8df86568b6fd729748422ee30aa89c"
+      },
+      "gzip6": 786475,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/2b07471d8b0ba812ce457fcc69f700fb5024c4c8905825fc6d8bd6cec8519651.gz",
+        "archiveBytes": 15662,
+        "archiveSha256": "5874e01974e0ab34db3ba4a4a03a6f0ac19da9e3c46e8c1d496c2f6cd410f199",
+        "bytes": 37100,
+        "sha256": "2b07471d8b0ba812ce457fcc69f700fb5024c4c8905825fc6d8bd6cec8519651"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-shared-relation.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/53b4514883e28b2e6e593f9c92df3f02b3c125c0a35e1f993bc05e2c4df4110a.gz",
+        "archiveBytes": 1396,
+        "archiveSha256": "5b6a1e193244f67cd649a0b2e863380f9594b4f699719dd16068fa1cdf8d79eb",
+        "bytes": 4624,
+        "sha256": "53b4514883e28b2e6e593f9c92df3f02b3c125c0a35e1f993bc05e2c4df4110a"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "shared-relation"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7.gz",
+          "archiveBytes": 10124,
+          "archiveSha256": "98edd28c67b59c4a245df0481dcc45dcf138a0b95053d2e54b006f5a2b58d735",
+          "bytes": 38074,
+          "sha256": "304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/paint.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/7c022a236ae7e14d01e17bf2a14362253e9e87451526e16287f16324e4b47160.gz",
+          "archiveBytes": 5956,
+          "archiveSha256": "b5ecda86039c4101e0cefcf3777761080643bb023979ef7ba1ef46c9e1114bd2",
+          "bytes": 23659,
+          "sha256": "7c022a236ae7e14d01e17bf2a14362253e9e87451526e16287f16324e4b47160"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d.gz",
+          "archiveBytes": 8458,
+          "archiveSha256": "36b69c04d5ba2699e30b995f80db6d682acc8293755045617d5fcdeae62b74a1",
+          "bytes": 42100,
+          "sha256": "b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b48ef7b741a9d89c08bf82c5a46a4edcf9298117d071245313377677e9f7f633.gz",
+          "archiveBytes": 21656,
+          "archiveSha256": "21c99ce2da6d4e9b30d0204a32b4cb3aab17541c175916f0e69d09dee3984145",
+          "bytes": 99807,
+          "sha256": "b48ef7b741a9d89c08bf82c5a46a4edcf9298117d071245313377677e9f7f633"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/d17b77e34ff9c555ea4b0c0214c0730b7c272d89171a22089c6c5ededf2f0241.gz",
+          "archiveBytes": 5796,
+          "archiveSha256": "19622258226fe73ef25396c4f321f62f431f2f5692c9351289d4b56b2c93435a",
+          "bytes": 21901,
+          "sha256": "d17b77e34ff9c555ea4b0c0214c0730b7c272d89171a22089c6c5ededf2f0241"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/0dac5ceae9fcb0d791206d82a3c29bb986ddd473becc119a5ef34d1f7baf4693.gz",
+          "archiveBytes": 5701,
+          "archiveSha256": "aa52db1f25ab98b9bddd25ee5cb4caf7fa72a38789533102c7c2f5f9b289897c",
+          "bytes": 21751,
+          "sha256": "0dac5ceae9fcb0d791206d82a3c29bb986ddd473becc119a5ef34d1f7baf4693"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4076388,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/shared-schema-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "1e6f83e2a5be02521a57f6e2af132a01950bd9f9ba8c2e0efb6f2ed1a7d85a0d"
+      },
+      "gzip6": 786771,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/8d0c4e64ed23fb9ac1108a6027103beebf365185a199de71b37a74cfdae23e12.gz",
+        "archiveBytes": 15665,
+        "archiveSha256": "6c9e135bc98525dd0046a0364840f3ec6aa2f18cb05d7a806fe8c4defadf0b58",
+        "bytes": 37100,
+        "sha256": "8d0c4e64ed23fb9ac1108a6027103beebf365185a199de71b37a74cfdae23e12"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-shared-schema.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/a9d5e7ab9d3b9ac0dc0cefd2658cd182586723a02919ba51f5e0fe01cc84cff4.gz",
+        "archiveBytes": 1365,
+        "archiveSha256": "84d26746786906b85ff31f4753db75861eca693c509fc3b43820043c74c8fcf3",
+        "bytes": 4570,
+        "sha256": "a9d5e7ab9d3b9ac0dc0cefd2658cd182586723a02919ba51f5e0fe01cc84cff4"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "shared-schema"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/41c3543d3c8710d6b788f6b74ed84834fda61ad6775b0c6e0ceff37925eab890.gz",
+          "archiveBytes": 21385,
+          "archiveSha256": "baab9fa55c4107583f2bfa965520e03fd6904d91c71a83d85ed97fcb98c10ea7",
+          "bytes": 97345,
+          "sha256": "41c3543d3c8710d6b788f6b74ed84834fda61ad6775b0c6e0ceff37925eab890"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/a089b6eddcc0088f36a7914d7e9f57bd488aa51188104e169060ebc4e29d60a5.gz",
+          "archiveBytes": 5556,
+          "archiveSha256": "ff904b153dda371fff0902e4aa3d0ae80443ba1a594ec4c43361b85a10d2030c",
+          "bytes": 21231,
+          "sha256": "a089b6eddcc0088f36a7914d7e9f57bd488aa51188104e169060ebc4e29d60a5"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/713c24bfe57ee5884417102e946e1a3ede44882cd6eb5f5caa9705884caafae7.gz",
+          "archiveBytes": 5505,
+          "archiveSha256": "a61f10029ca6fc95827bbcea899f3e60891b26ce26fe2fffcb12d8abc5184a9c",
+          "bytes": 21408,
+          "sha256": "713c24bfe57ee5884417102e946e1a3ede44882cd6eb5f5caa9705884caafae7"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4076989,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/shared-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "ba0c465eafd12831d76c38cb652032c1dcceba6c6e9d0b205b3b4666aaed68a9"
+      },
+      "gzip6": 786969,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/8e3738204103f0d4df727916a83583fc681ada6e4ec227c0c4b7da7e91fc93a6.gz",
+        "archiveBytes": 15661,
+        "archiveSha256": "f57f7844e33a177513de4c31eee2a68dc0b1b64b4ab23043854b998cff0c9344",
+        "bytes": 37100,
+        "sha256": "8e3738204103f0d4df727916a83583fc681ada6e4ec227c0c4b7da7e91fc93a6"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-shared.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/ba69dcb7cba6c5b4b3ff39a421f179907b0962429b4231fd9eb3062c670ba20f.gz",
+        "archiveBytes": 1366,
+        "archiveSha256": "9de6e2f52c53f3e0c0503dd6e6c346dd2dfa4665d11d74d7ff2e970bcbcc6203",
+        "bytes": 4570,
+        "sha256": "ba69dcb7cba6c5b4b3ff39a421f179907b0962429b4231fd9eb3062c670ba20f"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "shared"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7.gz",
+          "archiveBytes": 10124,
+          "archiveSha256": "98edd28c67b59c4a245df0481dcc45dcf138a0b95053d2e54b006f5a2b58d735",
+          "bytes": 38074,
+          "sha256": "304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/paint.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/1af6fb054ee815377a5b61a39b9473cf36a4169df78239a77d2a9eb1168240f6.gz",
+          "archiveBytes": 6248,
+          "archiveSha256": "cb8c7092ff5b9c07e70436df897c54a8a2dda94b5458070c2e8cf81d5d12183b",
+          "bytes": 24643,
+          "sha256": "1af6fb054ee815377a5b61a39b9473cf36a4169df78239a77d2a9eb1168240f6"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d.gz",
+          "archiveBytes": 8458,
+          "archiveSha256": "36b69c04d5ba2699e30b995f80db6d682acc8293755045617d5fcdeae62b74a1",
+          "bytes": 42100,
+          "sha256": "b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/95528dde4bc7dcceb5bf327d095ee0741044e9436a5198b18965ae50bb69b79a.gz",
+          "archiveBytes": 22111,
+          "archiveSha256": "a6cd6d1b7439c990eac6032711f4f1e13058dfd24f4e5dc1f2df894bd9e8e526",
+          "bytes": 101139,
+          "sha256": "95528dde4bc7dcceb5bf327d095ee0741044e9436a5198b18965ae50bb69b79a"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/5ff08ecfd794100fbc305648eee455bff8b0197d708551e461295cace32aad8c.gz",
+          "archiveBytes": 5802,
+          "archiveSha256": "7bcddc4bc85963ef5b1d640d90962c2b1a2bb0c321488d16ec031266f209c76d",
+          "bytes": 21968,
+          "sha256": "5ff08ecfd794100fbc305648eee455bff8b0197d708551e461295cace32aad8c"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7.gz",
+          "archiveBytes": 5702,
+          "archiveSha256": "90aebcb60a3300184e65ff26064a805d5c8069265120b05643377ead2b92d94f",
+          "bytes": 21746,
+          "sha256": "12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4075910,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/single-escape-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "87e57db4623be53847d5be69afe6acee07fb9a5c5cc504607174aa58a7091b6d"
+      },
+      "gzip6": 786704,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/eec6f884a49e16bc6c29afb4747ee34333bd929d5f09b0b1b20a6285714361a5.gz",
+        "archiveBytes": 15665,
+        "archiveSha256": "2ebe216cc9878ef34a9013a18b9bbd9684a0e41ac28939c66f66ea7a7b0925c0",
+        "bytes": 37100,
+        "sha256": "eec6f884a49e16bc6c29afb4747ee34333bd929d5f09b0b1b20a6285714361a5"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-single-escape.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/e7901e5a50680cc7dd7595255aefd10e119c96717f8f8673f23b3514d2f32385.gz",
+        "archiveBytes": 1365,
+        "archiveSha256": "83b1ba78fcc7fdb7f7d9307bda1c7c0bcf359f632952aade04a227e1d59225f2",
+        "bytes": 4570,
+        "sha256": "e7901e5a50680cc7dd7595255aefd10e119c96717f8f8673f23b3514d2f32385"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "single-escape"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7.gz",
+          "archiveBytes": 10124,
+          "archiveSha256": "98edd28c67b59c4a245df0481dcc45dcf138a0b95053d2e54b006f5a2b58d735",
+          "bytes": 38074,
+          "sha256": "304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/paint.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/3243ff650749a1c6bf93d8d45ba50e8f7ef08e6cd8238b92f319de1fc8f40bcc.gz",
+          "archiveBytes": 6269,
+          "archiveSha256": "f0753a8b75b5cf466db41d521deac7f7e7a556650aa23961b328b847127e028b",
+          "bytes": 24771,
+          "sha256": "3243ff650749a1c6bf93d8d45ba50e8f7ef08e6cd8238b92f319de1fc8f40bcc"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d.gz",
+          "archiveBytes": 8458,
+          "archiveSha256": "36b69c04d5ba2699e30b995f80db6d682acc8293755045617d5fcdeae62b74a1",
+          "bytes": 42100,
+          "sha256": "b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/16e89e974cb3f76d578ad8b134b6887b4f6c39f7b853720fd67841738b094c12.gz",
+          "archiveBytes": 21862,
+          "archiveSha256": "90ea1f111be7e1eb156925abc9219722733462eb05122f2284a22166bd8d41c1",
+          "bytes": 100435,
+          "sha256": "16e89e974cb3f76d578ad8b134b6887b4f6c39f7b853720fd67841738b094c12"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/5ff08ecfd794100fbc305648eee455bff8b0197d708551e461295cace32aad8c.gz",
+          "archiveBytes": 5802,
+          "archiveSha256": "7bcddc4bc85963ef5b1d640d90962c2b1a2bb0c321488d16ec031266f209c76d",
+          "bytes": 21968,
+          "sha256": "5ff08ecfd794100fbc305648eee455bff8b0197d708551e461295cace32aad8c"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7.gz",
+          "archiveBytes": 5702,
+          "archiveSha256": "90aebcb60a3300184e65ff26064a805d5c8069265120b05643377ead2b92d94f",
+          "bytes": 21746,
+          "sha256": "12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7"
+        }
+      },
+      "command": "npm run build:wasm",
+      "gzip6": 786429,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/f3b3dc7aa6157671a52d8a3e87253e022f44eaa9f141c19c6ee51a43611fa2b8.gz",
+        "archiveBytes": 15660,
+        "archiveSha256": "13655b24a68e879425ce223543f879d00431c7a49241b8f09926586fe34b88c3",
+        "bytes": 37100,
+        "sha256": "f3b3dc7aa6157671a52d8a3e87253e022f44eaa9f141c19c6ee51a43611fa2b8"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-status-presence.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/77eceea93d363d70ca8ac2c6997cd2dde5b3a570c916eb73072fe1dbeba49f37.gz",
+        "archiveBytes": 1205,
+        "archiveSha256": "90f529f9dde2ee6ed30b60e2daeb06ea8a9d60506da030f81e78e14b4bbd06ac",
+        "bytes": 4390,
+        "sha256": "77eceea93d363d70ca8ac2c6997cd2dde5b3a570c916eb73072fe1dbeba49f37"
+      },
+      "shippingCredit": true,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "PASS",
+      "tag": "status-presence"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction/paint.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/88f9d4faaf582be0390d6d3f13fe90d83b88ae055a338c25aaba632c7ca8c1ad.gz",
+          "archiveBytes": 5860,
+          "archiveSha256": "063fb1880099ea5c45c6bddae990d9bc8c391f9516bc3323d8480f30c8926fa4",
+          "bytes": 23221,
+          "sha256": "88f9d4faaf582be0390d6d3f13fe90d83b88ae055a338c25aaba632c7ca8c1ad"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b48ef7b741a9d89c08bf82c5a46a4edcf9298117d071245313377677e9f7f633.gz",
+          "archiveBytes": 21656,
+          "archiveSha256": "21c99ce2da6d4e9b30d0204a32b4cb3aab17541c175916f0e69d09dee3984145",
+          "bytes": 99807,
+          "sha256": "b48ef7b741a9d89c08bf82c5a46a4edcf9298117d071245313377677e9f7f633"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/e4803508e8a35d890919f816989cc2da7641bdc957eb8a4965b8f2c1a9341349.gz",
+          "archiveBytes": 5794,
+          "archiveSha256": "ef1b1e3d5641d31e2c5e838c3a54c76556fb70018f2fe997483c1c3edab5a6c5",
+          "bytes": 21909,
+          "sha256": "e4803508e8a35d890919f816989cc2da7641bdc957eb8a4965b8f2c1a9341349"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/713c24bfe57ee5884417102e946e1a3ede44882cd6eb5f5caa9705884caafae7.gz",
+          "archiveBytes": 5505,
+          "archiveSha256": "a61f10029ca6fc95827bbcea899f3e60891b26ce26fe2fffcb12d8abc5184a9c",
+          "bytes": 21408,
+          "sha256": "713c24bfe57ee5884417102e946e1a3ede44882cd6eb5f5caa9705884caafae7"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4076761,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/style-presence-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "5edb1707c490ec57f75117fdf097d1ee4eb917134ae140670c149876ba17957f"
+      },
+      "gzip6": 786843,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/ab49fc7a64442d998a82d0db68f275decb3e35dffd7826377b2f2aa77013bfb1.gz",
+        "archiveBytes": 15661,
+        "archiveSha256": "a3bce10f72a7839b03b45ba65d6a45299533dfdee04d6790c7c7a62b149f355a",
+        "bytes": 37100,
+        "sha256": "ab49fc7a64442d998a82d0db68f275decb3e35dffd7826377b2f2aa77013bfb1"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-style-presence.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/bfbf3d2001d9f4260b86bcf9b1f8d87ef6e528ceaf77b6b5820116108f17a703.gz",
+        "archiveBytes": 1366,
+        "archiveSha256": "2c1fb6f6cd6cc3d828c3a1ed4c7a592896b3250a79a0d050a0287141da90a0cc",
+        "bytes": 4570,
+        "sha256": "bfbf3d2001d9f4260b86bcf9b1f8d87ef6e528ceaf77b6b5820116108f17a703"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "style-presence"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7.gz",
+          "archiveBytes": 10124,
+          "archiveSha256": "98edd28c67b59c4a245df0481dcc45dcf138a0b95053d2e54b006f5a2b58d735",
+          "bytes": 38074,
+          "sha256": "304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/paint.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/779c4b9ab58d175c37be5c003e6fb262b805212c30da607dd77741f705828557.gz",
+          "archiveBytes": 5978,
+          "archiveSha256": "0e73e1100abc751ff5cf58d5f21f66aac7201dd4a50eea6bb871145354e2b262",
+          "bytes": 23680,
+          "sha256": "779c4b9ab58d175c37be5c003e6fb262b805212c30da607dd77741f705828557"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d.gz",
+          "archiveBytes": 8458,
+          "archiveSha256": "36b69c04d5ba2699e30b995f80db6d682acc8293755045617d5fcdeae62b74a1",
+          "bytes": 42100,
+          "sha256": "b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b48ef7b741a9d89c08bf82c5a46a4edcf9298117d071245313377677e9f7f633.gz",
+          "archiveBytes": 21656,
+          "archiveSha256": "21c99ce2da6d4e9b30d0204a32b4cb3aab17541c175916f0e69d09dee3984145",
+          "bytes": 99807,
+          "sha256": "b48ef7b741a9d89c08bf82c5a46a4edcf9298117d071245313377677e9f7f633"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/507dda97f1e75a7b3331e0f829df395c8ed0eae314e735e0883a78d328c212db.gz",
+          "archiveBytes": 5924,
+          "archiveSha256": "e2f1b6c4012a1663fbb99729902cef2e4e00cc757c7727468a9798ab97434b5f",
+          "bytes": 22284,
+          "sha256": "507dda97f1e75a7b3331e0f829df395c8ed0eae314e735e0883a78d328c212db"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/0dac5ceae9fcb0d791206d82a3c29bb986ddd473becc119a5ef34d1f7baf4693.gz",
+          "archiveBytes": 5701,
+          "archiveSha256": "aa52db1f25ab98b9bddd25ee5cb4caf7fa72a38789533102c7c2f5f9b289897c",
+          "bytes": 21751,
+          "sha256": "0dac5ceae9fcb0d791206d82a3c29bb986ddd473becc119a5ef34d1f7baf4693"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4076274,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/validated-offset-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "48ecbf4ec246c7c48cc563caa07d16aa8cbee863db1130378ce0762ea58d8fb9"
+      },
+      "gzip6": 786661,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/0ec952c61d9ce01af0e10f01afebad38b93b0110829f4f6d79b0c95a469f7c47.gz",
+        "archiveBytes": 15661,
+        "archiveSha256": "d85c305ff425c8d283c4999e94f68974e8356919d3a39f996c121e99add473c8",
+        "bytes": 37100,
+        "sha256": "0ec952c61d9ce01af0e10f01afebad38b93b0110829f4f6d79b0c95a469f7c47"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-validated-offset.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/fa7b704705a7f1656d0555cd5d2eb1e303926601b6d25d5a92b6130ebf8706e0.gz",
+        "archiveBytes": 1367,
+        "archiveSha256": "e73092e4eb81084c829a7ad26b9ded8e57e7807acb084759e778f3df5ff3f273",
+        "bytes": 4570,
+        "sha256": "fa7b704705a7f1656d0555cd5d2eb1e303926601b6d25d5a92b6130ebf8706e0"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "validated-offset"
+    },
+    {
+      "changedSourceSnapshots": {
+        "crates/xyg-engine/src/graphforge/interaction.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7.gz",
+          "archiveBytes": 10124,
+          "archiveSha256": "98edd28c67b59c4a245df0481dcc45dcf138a0b95053d2e54b006f5a2b58d735",
+          "bytes": 38074,
+          "sha256": "304d1540242c4572f083d60df244f643386902c53e11474a93b9312a76e1b5e7"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/paint.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/8d35e43bdb36bfe7d7fb8eb3b6b6ab3a97bef1e5a9245488f625843493d35b50.gz",
+          "archiveBytes": 5985,
+          "archiveSha256": "016bb9a1db08b2a9f9471550074040a35d696ee00d80d2db156489b0c5900b1a",
+          "bytes": 23659,
+          "sha256": "8d35e43bdb36bfe7d7fb8eb3b6b6ab3a97bef1e5a9245488f625843493d35b50"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d.gz",
+          "archiveBytes": 8458,
+          "archiveSha256": "36b69c04d5ba2699e30b995f80db6d682acc8293755045617d5fcdeae62b74a1",
+          "bytes": 42100,
+          "sha256": "b6e44ac3b172dc94e8dfcb11247bf4a5d7ddc33362e66867e48af128c0b31c1d"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/2c4b3259ddb30a7145f925b810b0f569cffaaa19e1311d1940dc05f70372c633.gz",
+          "archiveBytes": 21864,
+          "archiveSha256": "b79ff613f33d05ab71ae663b685ab3fd1d372035a08746fdecd55cf1dc04f95b",
+          "bytes": 100384,
+          "sha256": "2c4b3259ddb30a7145f925b810b0f569cffaaa19e1311d1940dc05f70372c633"
+        },
+        "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/04316b0bc9446f961ec326ef2295355271c77ef23e36d7247e16a3ceea13a3a8.gz",
+          "archiveBytes": 5746,
+          "archiveSha256": "3fedc069c4a5e3e9a6c76474fc6428e4480c40453cfa97e645de0fc0baf984f9",
+          "bytes": 21754,
+          "sha256": "04316b0bc9446f961ec326ef2295355271c77ef23e36d7247e16a3ceea13a3a8"
+        },
+        "crates/xyg-engine/tests/graph_session_memory.rs": {
+          "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7.gz",
+          "archiveBytes": 5702,
+          "archiveSha256": "90aebcb60a3300184e65ff26064a805d5c8069265120b05643377ead2b92d94f",
+          "bytes": 21746,
+          "sha256": "12cb5f0cdc8adcb44a846b0e4312a60947b32bd9cd67f0deb5a550d9abb272e7"
+        }
+      },
+      "command": "npm run build:wasm",
+      "compilerModulePrivatePin": {
+        "bytes": 4075400,
+        "path": "target/task-tmp/graph-notebook-scale/semantic-admission/whole-style-compiler.wasm",
+        "scope": "Unoptimized failed-build diagnostic; not an archived shipping artifact",
+        "sha256": "8c5f04f0ee426a396e945837d60c687916fffd8fdf2d0d73a43c1844ef29fe0d"
+      },
+      "gzip6": 786468,
+      "inputCount": 324,
+      "inputs": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/07712ebe6ba98dd709400e39ed92713379397a0ae61e5f2358d7f70c6e4e4ee1.gz",
+        "archiveBytes": 15661,
+        "archiveSha256": "5f1eb9bc3bb8659d7d26ecb6f8164aea67b97bbbefb2d8a33adca49279fa1903",
+        "bytes": 37100,
+        "sha256": "07712ebe6ba98dd709400e39ed92713379397a0ae61e5f2358d7f70c6e4e4ee1"
+      },
+      "log": "target/task-tmp/graph-notebook-scale/semantic-admission/wasm-build-whole-style.log",
+      "logBinding": {
+        "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/ed12b88a44d5fb18a319a35504af8b6aaba0c435094ee7ac15e050271b49fb4e.gz",
+        "archiveBytes": 1366,
+        "archiveSha256": "190e2fb166cbe5b8ab7831edcd9559e76d5f11410da2a925cdf7707e9c2d4782",
+        "bytes": 4570,
+        "sha256": "ed12b88a44d5fb18a319a35504af8b6aaba0c435094ee7ac15e050271b49fb4e"
+      },
+      "shippingCredit": false,
+      "sourceScope": "Recorded source snapshots; failed attempts are not final-source or shipping qualification",
+      "status": "FAILED",
+      "tag": "whole-style"
+    }
+  ],
+  "cap": 786432,
+  "rawCap": 1927168
+}
