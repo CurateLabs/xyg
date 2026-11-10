@@ -383,6 +383,13 @@ leaving room for that mask within the portable vertex attribute limit. Edge
 membership still comes from Rust. A callback's canonical graph identity count
 can differ from the number of rendered segment rows in its masks.
 
+The same `scripts/graph_notebook_regions_smoke.mjs` journey runs actual
+JupyterLab by default and stock Notebook7 with `--frontend notebook7`, retaining
+the exact selection, raw-pixel, refusal and history oracles at both DPR1/2.
+Application name, version, namespace, route and loaded static assets distinguish
+the real frontend; sharing anywidget and ChartView does not substitute one
+frontend's evidence for the other.
+
 Aggregate/collapsed notebook presentation still needs
 full matching-publication qualification; the shared reducer itself expands
 published aggregate/compound membership. Browser/native parity, trusted region
@@ -415,3 +422,12 @@ remaining scale/geometric-selection/export/accessibility requirements stay open.
 Stock Notebook 7.6.4 remains unqualified by the strict browser-error gate because
 of the retained upstream shortcuts-registry failure. The passing 7.5.8 case does
 not imply support for every Notebook7 version or waive that failure.
+
+The named VS Code notebook cohort also runs the
+[shared geometric region proof](../design/graph-session-python-transport.md#shared-geometric-notebook-proof-and-desktop-adapter-2026-11-10).
+Box/lasso gestures return the same exact native UUID/result rows and induced
+published edges as Lab/Notebook7, with GPU-mask and actual-pixel checks,
+refusal/recovery, camera/history, isolation and cleanup. The desktop keeps its
+existing renderer defaults. Broader aggregate/categorical/changed-LOD matching,
+platform/version, installed distribution, accessibility and export criteria
+remain open.

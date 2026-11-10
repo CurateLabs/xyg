@@ -210,3 +210,81 @@ print("cohort imports; optional image tests skip; required verifier fails")
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert "required verifier fails" in result.stdout
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        'xvfb-run --auto-servernum --server-args="-screen 0 1280x900x24" .venv/bin/python scripts/graph_vscode_notebook_smoke.py --regions --code "$RUNNER_TEMP/graph-vscode-cohort/application/VSCode-linux-x64/code" --extensions "$RUNNER_TEMP/graph-vscode-cohort/extensions" --server-python "$RUNNER_TEMP/graph-notebook7-env/bin/python" --output "$RUNNER_TEMP/graph-vscode-regions"',
+        '.venv/bin/python scripts/verify_vscode_graph_regions_report.py "$RUNNER_TEMP/graph-vscode-regions"',
+    ],
+)
+@pytest.mark.parametrize(
+    "mask", ["# {command}", "echo {command}", "{command} || true", "if false; then {command}; fi"]
+)
+def test_actual_desktop_region_execution_and_verifier_cannot_be_masked(tmp_path, command, mask):
+    source = (ROOT / ".github/workflows/ci.yml").read_text()
+    original = "          " + command + "\n"
+    assert source.count(original) == 1
+    path = tmp_path / "ci.yml"
+    path.write_text(source.replace(original, "          " + mask.format(command=command) + "\n"))
+    assert any("required actual VS Code graph region" in error for error in validate_workflow(path))
+
+
+@pytest.mark.parametrize("bypass", ["if: false", "continue-on-error: true"])
+def test_actual_desktop_region_step_is_required(tmp_path, bypass):
+    source = (ROOT / ".github/workflows/ci.yml").read_text()
+    step = "      - name: VS Code Jupyter graph regions\n"
+    assert source.count(step) == 1
+    path = tmp_path / "ci.yml"
+    path.write_text(source.replace(step, step + "        " + bypass + "\n"))
+    assert any("required actual VS Code graph region" in error for error in validate_workflow(path))
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "*.png",
+        "*-pixels.json",
+        "report.json",
+        "graph.ipynb",
+        "run-result.json",
+        "controller-complete.json",
+        "cleanup.json",
+        "extension-state.json",
+        "installation.json",
+        "server-environment.json",
+        "kernel-info.json",
+        "served-widget-assets.json",
+        "inspector-sources.json",
+        "failure.json",
+        "failure-owner-cleanup.json",
+        "attach.log",
+    ],
+)
+def test_desktop_region_retention_requires_all_safe_witness_paths(tmp_path, name):
+    source = (ROOT / ".github/workflows/ci.yml").read_text()
+    line = "            ${{ runner.temp }}/graph-vscode-regions/" + name + "\n"
+    assert source.count(line) == 1
+    path = tmp_path / "ci.yml"
+    path.write_text(source.replace(line, ""))
+    assert any("desktop graph region evidence" in error for error in validate_workflow(path))
+
+
+@pytest.mark.parametrize(
+    ("before", "after"),
+    [
+        ("        if: always()\n", "        if: success()\n"),
+        ("          if-no-files-found: error\n", "          if-no-files-found: warn\n"),
+        ("        if: always()\n", "        if: always()\n        continue-on-error: true\n"),
+    ],
+)
+def test_desktop_region_retention_is_unconditional_and_fatal(tmp_path, before, after):
+    source = (ROOT / ".github/workflows/ci.yml").read_text()
+    start = source.index("      - name: Retain desktop graph region evidence\n")
+    end = source.index("      # Native tools own this coverage", start)
+    block = source[start:end]
+    assert block.count(before) == 1
+    path = tmp_path / "ci.yml"
+    path.write_text(source[:start] + block.replace(before, after) + source[end:])
+    assert any("desktop graph region evidence" in error for error in validate_workflow(path))

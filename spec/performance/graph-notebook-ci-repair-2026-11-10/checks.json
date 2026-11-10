@@ -1,0 +1,2187 @@
+{
+  "base": "12ece8fd2290ba09d8d11aaf294a7a18ad2412bd",
+  "bindings": {
+    "path": "spec/performance/graph-notebook-ci-repair-2026-11-10/current-bindings.json",
+    "sha256": "87bad6c0e4ff0902bc68c10e7aa16ac8eb89b203eb466f90515fefac595829b0"
+  },
+  "captures": {
+    "desktop": {
+      "before-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/1e45b7b25224bc35f33c95ceb7f686e1a33291c2ced0db32c938a118a837128d.gz",
+        "archiveBytes": 11166,
+        "archiveSha256": "7f79814c8d46c88780e81205adf2aa1b7c422e0fd24981d11d5c789f3d10cbe6",
+        "bytes": 14590,
+        "sha256": "1e45b7b25224bc35f33c95ceb7f686e1a33291c2ced0db32c938a118a837128d"
+      },
+      "before-edges-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/2ff5fb7fea58dd6cd2f34fd9166cc2840e318bac1b45a6386ec991ab44ca1b64.gz",
+        "archiveBytes": 489,
+        "archiveSha256": "a4dcc82939060da448f34e5a8f791f245118d11cf6dfcdc05fa5f03b7a213f54",
+        "bytes": 3518,
+        "sha256": "2ff5fb7fea58dd6cd2f34fd9166cc2840e318bac1b45a6386ec991ab44ca1b64"
+      },
+      "before-edges.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/f6701e398f62ee46dd3c9f28d534d33754fc5beb9d7218f7e7e7aa1369b50829.gz",
+        "archiveBytes": 20656,
+        "archiveSha256": "0c6c4bdef70404c74a217d0c2a4162ec404b317f295f4eff493abe36cb9e9ec9",
+        "bytes": 21540,
+        "sha256": "f6701e398f62ee46dd3c9f28d534d33754fc5beb9d7218f7e7e7aa1369b50829"
+      },
+      "before-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/1e45b7b25224bc35f33c95ceb7f686e1a33291c2ced0db32c938a118a837128d.gz",
+        "archiveBytes": 11166,
+        "archiveSha256": "7f79814c8d46c88780e81205adf2aa1b7c422e0fd24981d11d5c789f3d10cbe6",
+        "bytes": 14590,
+        "sha256": "1e45b7b25224bc35f33c95ceb7f686e1a33291c2ced0db32c938a118a837128d"
+      },
+      "before-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/9100eefa12bb8d38592a938f5e5607d078a590797da2936da617301bbf34a2a2.gz",
+        "archiveBytes": 393,
+        "archiveSha256": "87a93149e92e7e50ef74e861e497afa9babf546f8e69455ed5211063c6064403",
+        "bytes": 2203,
+        "sha256": "9100eefa12bb8d38592a938f5e5607d078a590797da2936da617301bbf34a2a2"
+      },
+      "before.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/f6701e398f62ee46dd3c9f28d534d33754fc5beb9d7218f7e7e7aa1369b50829.gz",
+        "archiveBytes": 20656,
+        "archiveSha256": "0c6c4bdef70404c74a217d0c2a4162ec404b317f295f4eff493abe36cb9e9ec9",
+        "bytes": 21540,
+        "sha256": "f6701e398f62ee46dd3c9f28d534d33754fc5beb9d7218f7e7e7aa1369b50829"
+      },
+      "box-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/a4610711e287f3a87e37b4e8b33467a362b6be490ad9017724cb6ecd43200d18.gz",
+        "archiveBytes": 10723,
+        "archiveSha256": "36bd458fcf243bc82ad14a6f862304114998b04ad775764564c9c280fd280ebe",
+        "bytes": 14451,
+        "sha256": "a4610711e287f3a87e37b4e8b33467a362b6be490ad9017724cb6ecd43200d18"
+      },
+      "box-edges-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/26c723e62a3b6698be165eb937f0dde198d0407e02991e240e293c19fd74b5d6.gz",
+        "archiveBytes": 512,
+        "archiveSha256": "4ffb7363796681d1afe9a410174113bc05d30f269b6fdb38ea0bbefc3ffe2209",
+        "bytes": 3498,
+        "sha256": "26c723e62a3b6698be165eb937f0dde198d0407e02991e240e293c19fd74b5d6"
+      },
+      "box-edges.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/996ac81239561fc91219d1c60b58f6e55cd32e83c9785f6210c452aee877cf14.gz",
+        "archiveBytes": 19576,
+        "archiveSha256": "b4588260457e2d3d8bf8c8027aa867ff0c56c3ae64c09bd12a759af038835ffa",
+        "bytes": 20416,
+        "sha256": "996ac81239561fc91219d1c60b58f6e55cd32e83c9785f6210c452aee877cf14"
+      },
+      "box-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/a4610711e287f3a87e37b4e8b33467a362b6be490ad9017724cb6ecd43200d18.gz",
+        "archiveBytes": 10723,
+        "archiveSha256": "36bd458fcf243bc82ad14a6f862304114998b04ad775764564c9c280fd280ebe",
+        "bytes": 14451,
+        "sha256": "a4610711e287f3a87e37b4e8b33467a362b6be490ad9017724cb6ecd43200d18"
+      },
+      "box-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/65eb72a47f891bf58bb6c031acae383977d11d26fdb621d67206b3070df7ab40.gz",
+        "archiveBytes": 402,
+        "archiveSha256": "750167d73543f0322f1862db9434c677cddce1c2c8baa0bc7db2f2c726fcede8",
+        "bytes": 2188,
+        "sha256": "65eb72a47f891bf58bb6c031acae383977d11d26fdb621d67206b3070df7ab40"
+      },
+      "box.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/def48ba9ab0dc321eb6693112e23f47dfb6c0a8527f5f611a13d70bcfb905ba9.gz",
+        "archiveBytes": 23033,
+        "archiveSha256": "9b0db37e3d35211ddb7a834d271a1b78f1bdddaa21e23c568eec6ed804d9d920",
+        "bytes": 23773,
+        "sha256": "def48ba9ab0dc321eb6693112e23f47dfb6c0a8527f5f611a13d70bcfb905ba9"
+      },
+      "capacity-before-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d.gz",
+        "archiveBytes": 10730,
+        "archiveSha256": "a5d9045594f82408fa670d2cef79a75ab733578c14023732507fa1aa2e1d5bd6",
+        "bytes": 14478,
+        "sha256": "fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d"
+      },
+      "capacity-before-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/40575dd7bd9b1ecfb9f34aaf8890474efead9127c9544f6f61b6cea9c0b53256.gz",
+        "archiveBytes": 398,
+        "archiveSha256": "b262518451ef3dba4c5b6339b4d6105b3746c046dba5d4ed98f61e4bdc467417",
+        "bytes": 2188,
+        "sha256": "40575dd7bd9b1ecfb9f34aaf8890474efead9127c9544f6f61b6cea9c0b53256"
+      },
+      "capacity-before.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/0ef371fb58b4ee09325a5152bc4bd91471982e6b5e81010f3dccf4333776c097.gz",
+        "archiveBytes": 19614,
+        "archiveSha256": "44725599057e7e0b922e3cf9fcaf0d6f1b588ebad7d4b8a3a0a92d981a18d7ab",
+        "bytes": 20428,
+        "sha256": "0ef371fb58b4ee09325a5152bc4bd91471982e6b5e81010f3dccf4333776c097"
+      },
+      "capacity-history-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d.gz",
+        "archiveBytes": 10730,
+        "archiveSha256": "a5d9045594f82408fa670d2cef79a75ab733578c14023732507fa1aa2e1d5bd6",
+        "bytes": 14478,
+        "sha256": "fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d"
+      },
+      "capacity-history-refused-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/40575dd7bd9b1ecfb9f34aaf8890474efead9127c9544f6f61b6cea9c0b53256.gz",
+        "archiveBytes": 398,
+        "archiveSha256": "b262518451ef3dba4c5b6339b4d6105b3746c046dba5d4ed98f61e4bdc467417",
+        "bytes": 2188,
+        "sha256": "40575dd7bd9b1ecfb9f34aaf8890474efead9127c9544f6f61b6cea9c0b53256"
+      },
+      "capacity-history-refused.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/0ef371fb58b4ee09325a5152bc4bd91471982e6b5e81010f3dccf4333776c097.gz",
+        "archiveBytes": 19614,
+        "archiveSha256": "44725599057e7e0b922e3cf9fcaf0d6f1b588ebad7d4b8a3a0a92d981a18d7ab",
+        "bytes": 20428,
+        "sha256": "0ef371fb58b4ee09325a5152bc4bd91471982e6b5e81010f3dccf4333776c097"
+      },
+      "capacity-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d.gz",
+        "archiveBytes": 10730,
+        "archiveSha256": "a5d9045594f82408fa670d2cef79a75ab733578c14023732507fa1aa2e1d5bd6",
+        "bytes": 14478,
+        "sha256": "fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d"
+      },
+      "capacity-refused-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/6dfa7d4013106d027c065dfded4776249a692e80fa2a1ec2be36663f2a955d27.gz",
+        "archiveBytes": 399,
+        "archiveSha256": "4370dea1bcc97f491239a1d28ec3923bf52a2e05d381f14f137c1cb85f8c0cac",
+        "bytes": 2188,
+        "sha256": "6dfa7d4013106d027c065dfded4776249a692e80fa2a1ec2be36663f2a955d27"
+      },
+      "capacity-refused.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/82ee3abe9e89ae07038a51ace79d8ac8794af48e34534a777f3d1acb003b87d9.gz",
+        "archiveBytes": 22106,
+        "archiveSha256": "4bd0aa54d16bdf1a9f224b828831d0679e5110f64aa0538abb836853537d4ab7",
+        "bytes": 22842,
+        "sha256": "82ee3abe9e89ae07038a51ace79d8ac8794af48e34534a777f3d1acb003b87d9"
+      },
+      "cleanup.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/649b5405008ac4015fe2abaeb55fede94195f8135672c2911f89c18bff4a3ad4.gz",
+        "archiveBytes": 128,
+        "archiveSha256": "4d5534efd4da50d8b9a26a4588a00417e77f298a6d99fe1bd47279db05bd857d",
+        "bytes": 379,
+        "sha256": "649b5405008ac4015fe2abaeb55fede94195f8135672c2911f89c18bff4a3ad4"
+      },
+      "controller-complete.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41.gz",
+        "archiveBytes": 49,
+        "archiveSha256": "5f0cd0d2710d374834406e27544d4d61b63d35b39d43167cb464364dcad83e4b",
+        "bytes": 33,
+        "sha256": "b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41"
+      },
+      "graph.ipynb": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/4edb38cc9e816666b0fcc76db3219dabb564525623df4e879a039712c270db42.gz",
+        "archiveBytes": 4675,
+        "archiveSha256": "eb3ec459dd1cff36d1a7c1bc0a99ef2887acdc6d907e1301af3c7c9889044a90",
+        "bytes": 18424,
+        "sha256": "4edb38cc9e816666b0fcc76db3219dabb564525623df4e879a039712c270db42"
+      },
+      "inspector-sources.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/a35bb2c8234592974620834f84ac353182267278df0825b90c57574fb53f0104.gz",
+        "archiveBytes": 260,
+        "archiveSha256": "2bb21b488f52f9ecff722d8bc529e466163c743c0521da08fad4a76885ac52fe",
+        "bytes": 538,
+        "sha256": "a35bb2c8234592974620834f84ac353182267278df0825b90c57574fb53f0104"
+      },
+      "installation.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/f97851d7d5442fafb6b0380eb1bdf7c14639006279839a23a6b848565d4387c8.gz",
+        "archiveBytes": 141173,
+        "archiveSha256": "c75b37c66cd077b35caca53e19f8283c3356ec1efe469639aae46a133d755958",
+        "bytes": 695414,
+        "sha256": "f97851d7d5442fafb6b0380eb1bdf7c14639006279839a23a6b848565d4387c8"
+      },
+      "kernel-info.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/c4b38d08827014b51c8ef664d82580f693c56c88a1bde43aff5c351b27b1aff6.gz",
+        "archiveBytes": 138,
+        "archiveSha256": "2feefeae39c62f32398c9e93d284b3d2ec7e7e6b8eb14cd67ecd418cde1e041b",
+        "bytes": 192,
+        "sha256": "c4b38d08827014b51c8ef664d82580f693c56c88a1bde43aff5c351b27b1aff6"
+      },
+      "lasso-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/1c1924f0a08e2b6ccd0c82261780bf17d38687893b1c3b36d9076a4a42a41d86.gz",
+        "archiveBytes": 11106,
+        "archiveSha256": "c63db41d757d528130eed1111c9b870addfcd7791a920c43dacef1a63ab0670d",
+        "bytes": 14738,
+        "sha256": "1c1924f0a08e2b6ccd0c82261780bf17d38687893b1c3b36d9076a4a42a41d86"
+      },
+      "lasso-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/4b65b903683c0eb1b4c84626bace5d882defa46576d2a23fcbe5a7cc9eeaaa36.gz",
+        "archiveBytes": 390,
+        "archiveSha256": "30417cf72350b9337bd5e33cf78d04078ba2d780e166943300a95ef257ba09fa",
+        "bytes": 2193,
+        "sha256": "4b65b903683c0eb1b4c84626bace5d882defa46576d2a23fcbe5a7cc9eeaaa36"
+      },
+      "lasso.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/60bc81e09e4fd6d36f761f45241e57fb552e522c1d44947bf7296ea3795532a8.gz",
+        "archiveBytes": 25786,
+        "archiveSha256": "605675529fc39e26a2891112dc8fda096bde0f0eccd04dca86ff8475e64d50e8",
+        "bytes": 26472,
+        "sha256": "60bc81e09e4fd6d36f761f45241e57fb552e522c1d44947bf7296ea3795532a8"
+      },
+      "report.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/6042794d1de556b7d9f923c122136c75c22da6597b439453218b4f4aea7a705d.gz",
+        "archiveBytes": 10835,
+        "archiveSha256": "3f511c1c66eb02e59336142b0bc5f2583dabfc9a122f9e1b2b37d3058d127800",
+        "bytes": 196127,
+        "sha256": "6042794d1de556b7d9f923c122136c75c22da6597b439453218b4f4aea7a705d"
+      },
+      "run-result.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/1261d1133c9a54b268664efc98f5b4889ce343e85c0461f05bc405aa1968593f.gz",
+        "archiveBytes": 628,
+        "archiveSha256": "ca3a1123e9c1b4d7b24c1dd51a50bddaa457014aa4dfec6c1c62cebd95a6e5e3",
+        "bytes": 1382,
+        "sha256": "1261d1133c9a54b268664efc98f5b4889ce343e85c0461f05bc405aa1968593f"
+      },
+      "served-widget-assets.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/5e3c88fbc7dd9b5c4f28ecb561eb505785ad787db5a67f9a7daf03e9d11ee795.gz",
+        "archiveBytes": 301,
+        "archiveSha256": "8d398fb0ad944d927a258bcca46bdc9d3f5e79a6116214fb20887acfa350a48a",
+        "bytes": 649,
+        "sha256": "5e3c88fbc7dd9b5c4f28ecb561eb505785ad787db5a67f9a7daf03e9d11ee795"
+      },
+      "server-environment.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/15f6c2fd302e6710bbb21ab71e225844dacd89e2591fd134bdcbeb42407c3385.gz",
+        "archiveBytes": 208,
+        "archiveSha256": "3213b914be15ef39d8027a2c42440626f61dfd30140fcf79adaf22d30de7175e",
+        "bytes": 281,
+        "sha256": "15f6c2fd302e6710bbb21ab71e225844dacd89e2591fd134bdcbeb42407c3385"
+      }
+    },
+    "hostedFailed": {
+      "before-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d.gz",
+        "archiveBytes": 14102,
+        "archiveSha256": "dc12a7e87d6f16007a5988a87d8911c56100f6665cd0a46c9bf908faf2969824",
+        "bytes": 16592,
+        "sha256": "50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d"
+      },
+      "before-edges-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/28dfc39f5cf9b23bc5e290af44efb11be456bfd10385676585427cbdbde3cf2a.gz",
+        "archiveBytes": 487,
+        "archiveSha256": "206c63fcab1843de8c92582af48251df6af07fb910ed8036b30da6194400f9c1",
+        "bytes": 3518,
+        "sha256": "28dfc39f5cf9b23bc5e290af44efb11be456bfd10385676585427cbdbde3cf2a"
+      },
+      "before-edges.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/8321b6bf65aa3cd324ab4e5ba183bba64dd23c0cb46c6a2023348ee13eb0210e.gz",
+        "archiveBytes": 21177,
+        "archiveSha256": "cd6c3f97e0a2d148a323ddd0cf5790bf057e84cde69df3708a5090e4f8b3e156",
+        "bytes": 21956,
+        "sha256": "8321b6bf65aa3cd324ab4e5ba183bba64dd23c0cb46c6a2023348ee13eb0210e"
+      },
+      "before-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d.gz",
+        "archiveBytes": 14102,
+        "archiveSha256": "dc12a7e87d6f16007a5988a87d8911c56100f6665cd0a46c9bf908faf2969824",
+        "bytes": 16592,
+        "sha256": "50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d"
+      },
+      "before-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/974e9f6d0fa6142f4fdda258bb05b72823d63154c28c2932104cceec40f73502.gz",
+        "archiveBytes": 395,
+        "archiveSha256": "e019ddbe8bd49b7e0ae779dd1efe3dd2b485a781d2c66eaa92b01c27cf43dd8a",
+        "bytes": 2203,
+        "sha256": "974e9f6d0fa6142f4fdda258bb05b72823d63154c28c2932104cceec40f73502"
+      },
+      "before.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/e5d8f83a65da7e715afcb66ca838a2369cf74b2f77bdabc78841d2003a0b978c.gz",
+        "archiveBytes": 20885,
+        "archiveSha256": "18b850ca469d79d1c2bc43251640e1dbcd28deb1ee0f734686d92e92a7ceed83",
+        "bytes": 21601,
+        "sha256": "e5d8f83a65da7e715afcb66ca838a2369cf74b2f77bdabc78841d2003a0b978c"
+      },
+      "box-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f.gz",
+        "archiveBytes": 13199,
+        "archiveSha256": "427c557ffd6fe9630fb583dac7eac30a6fa6b82c371e530567aac0cc380bfca3",
+        "bytes": 16176,
+        "sha256": "dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f"
+      },
+      "box-edges-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/3bce03930d90a80ddcdb1bc9385f5507b4fc339e3149cdd32cde7e43b8e6b240.gz",
+        "archiveBytes": 513,
+        "archiveSha256": "b348a2bdae9abff4ae6dff70a87c1463e641d0c2e651c28513ff7084dcd2e2a4",
+        "bytes": 3498,
+        "sha256": "3bce03930d90a80ddcdb1bc9385f5507b4fc339e3149cdd32cde7e43b8e6b240"
+      },
+      "box-edges.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/7ee8b8e5ab5b4b979b5d520ac08dbb984d272da0d9c3fa0489966fa4082ee63c.gz",
+        "archiveBytes": 20004,
+        "archiveSha256": "1f70167ea1114e979718917ad0e179dcfbbec3102c7a6ebb6d4090be8ecc16f9",
+        "bytes": 20764,
+        "sha256": "7ee8b8e5ab5b4b979b5d520ac08dbb984d272da0d9c3fa0489966fa4082ee63c"
+      },
+      "box-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f.gz",
+        "archiveBytes": 13199,
+        "archiveSha256": "427c557ffd6fe9630fb583dac7eac30a6fa6b82c371e530567aac0cc380bfca3",
+        "bytes": 16176,
+        "sha256": "dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f"
+      },
+      "box-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/72e3ed7a16b9a15461773a1079d31cdec0f09d08c34e83c3992621ad23038bbe.gz",
+        "archiveBytes": 404,
+        "archiveSha256": "d726b1c5d5e9eacef9c50f73db02e8e1b97eb4330a2d20ca65a878d56a151ca1",
+        "bytes": 2188,
+        "sha256": "72e3ed7a16b9a15461773a1079d31cdec0f09d08c34e83c3992621ad23038bbe"
+      },
+      "box.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/ee79ff9631d6dc5503fe737fb521abde861446cebcb7b0db449a8fa8ff81ea3a.gz",
+        "archiveBytes": 19653,
+        "archiveSha256": "13b4a84868b5875da521299971cac09f0138bc1cc35dd8eba843002e281b68ab",
+        "bytes": 20446,
+        "sha256": "ee79ff9631d6dc5503fe737fb521abde861446cebcb7b0db449a8fa8ff81ea3a"
+      },
+      "capacity-before-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "capacity-before-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/d01637a330f10e6c817437ee53f7288e39cf38546ee8c9a85e472349c0777351.gz",
+        "archiveBytes": 395,
+        "archiveSha256": "fe17525e54d6bdb9a62e8645109f624fbe6f43a8e87f4156c97853bfdbdbd1d0",
+        "bytes": 2188,
+        "sha256": "d01637a330f10e6c817437ee53f7288e39cf38546ee8c9a85e472349c0777351"
+      },
+      "capacity-before.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/7ef7449e747c9afc420605e52a249e913468c99c07ecdc25e4e9578259d49343.gz",
+        "archiveBytes": 19925,
+        "archiveSha256": "53534a4b9f453f8f4928c193a4958ae6c5e3b2d2f8d316042b1702ae65703eab",
+        "bytes": 20758,
+        "sha256": "7ef7449e747c9afc420605e52a249e913468c99c07ecdc25e4e9578259d49343"
+      },
+      "capacity-history-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "capacity-history-refused-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/8f2a4d67f1148eb7e4757a4019d50bebf755055d1214da4c307285f5c3dcadad.gz",
+        "archiveBytes": 397,
+        "archiveSha256": "1752928b790be60d493844d9828416dfa25b016f68f06e40327202e0f9cfc188",
+        "bytes": 2188,
+        "sha256": "8f2a4d67f1148eb7e4757a4019d50bebf755055d1214da4c307285f5c3dcadad"
+      },
+      "capacity-history-refused.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/b2afee6f037ee196c4279482f1982b3df6b2cd33503aae3291b681d966a3b304.gz",
+        "archiveBytes": 20231,
+        "archiveSha256": "3e4db42b834d89d949f5b864952b267279e5befbb82eaf99484b50519583eb94",
+        "bytes": 21066,
+        "sha256": "b2afee6f037ee196c4279482f1982b3df6b2cd33503aae3291b681d966a3b304"
+      },
+      "capacity-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "capacity-refused-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/4c0951acf1d53329f265b4dd4d2024449aaa92f133d96f583b4fadf473ce48ed.gz",
+        "archiveBytes": 396,
+        "archiveSha256": "4794e3bd951cff7ffa34268371a0f3788185807c763d99537da6f29d96db6a3f",
+        "bytes": 2188,
+        "sha256": "4c0951acf1d53329f265b4dd4d2024449aaa92f133d96f583b4fadf473ce48ed"
+      },
+      "capacity-refused.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/707dbdeb7522021210cac8785723bd6a069f6aac40141b601d6e8256199719e6.gz",
+        "archiveBytes": 18110,
+        "archiveSha256": "5a50d71e454eed814e7f68b9e931277cbafbd351c40406dc73273e4bc82b9b3b",
+        "bytes": 18960,
+        "sha256": "707dbdeb7522021210cac8785723bd6a069f6aac40141b601d6e8256199719e6"
+      },
+      "failure.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/479b3d4ff182a6f530d3ef20362aa626cdc531d26b37727568f0e2309bae0500.gz",
+        "archiveBytes": 12328,
+        "archiveSha256": "5cef012d978134223f92274b5543bba1101cfa7851a47bff12135569b95ce1ed",
+        "bytes": 51055,
+        "sha256": "479b3d4ff182a6f530d3ef20362aa626cdc531d26b37727568f0e2309bae0500"
+      },
+      "lasso-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/513b6d49016a5ca7b80eff9ae9828acd6a9ceefeb836664697fbd2c07d6090aa.gz",
+        "archiveBytes": 13986,
+        "archiveSha256": "4ca240262c17892db53f533fabfde65fbab1ff33a66f2cdadb4ef2b055b39186",
+        "bytes": 16720,
+        "sha256": "513b6d49016a5ca7b80eff9ae9828acd6a9ceefeb836664697fbd2c07d6090aa"
+      },
+      "lasso-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/125af19cea0cbdfb13e24e1758a17116038ded46acf2610d863114886119d43a.gz",
+        "archiveBytes": 396,
+        "archiveSha256": "9a1fbf299f52ac2bda608f29c924077a9e8d95ced6a026b640c5ce4eabb01cd5",
+        "bytes": 2193,
+        "sha256": "125af19cea0cbdfb13e24e1758a17116038ded46acf2610d863114886119d43a"
+      },
+      "lasso.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/7b4aecbf870b8108875d9b7a7d32b71cfe075174b9fff2cd0709e4c29933eb6e.gz",
+        "archiveBytes": 22794,
+        "archiveSha256": "7255811685891d4ef92847aae677d75721bafb2dee27da04d986dfb66c74b2ba",
+        "bytes": 23453,
+        "sha256": "7b4aecbf870b8108875d9b7a7d32b71cfe075174b9fff2cd0709e4c29933eb6e"
+      },
+      "regions.ipynb": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd.gz",
+        "archiveBytes": 1695,
+        "archiveSha256": "655dbbb990ffebf0a9427ba64505f4c430c754b21731850e0b1911c2021b021f",
+        "bytes": 5892,
+        "sha256": "8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd"
+      }
+    },
+    "jupyterlab-dpr1": {
+      "before-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d.gz",
+        "archiveBytes": 14102,
+        "archiveSha256": "dc12a7e87d6f16007a5988a87d8911c56100f6665cd0a46c9bf908faf2969824",
+        "bytes": 16592,
+        "sha256": "50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d"
+      },
+      "before-edges-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/f1431c987d47b977672ca3210fd042a709eae2d210f91edef3dfd4384c99f3f8.gz",
+        "archiveBytes": 485,
+        "archiveSha256": "2b2c184ee261171b635128c77204c84dc8cb40f23bc8f8de16e8efdc0f8e80be",
+        "bytes": 3518,
+        "sha256": "f1431c987d47b977672ca3210fd042a709eae2d210f91edef3dfd4384c99f3f8"
+      },
+      "before-edges.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/b846412b123a3406cd89c8ab0376726cb9049d85067a51d8a8962e820965eb26.gz",
+        "archiveBytes": 23725,
+        "archiveSha256": "c319047b595d8386f63a1a4453f353120184566e4a34289e4144dc44d92aac76",
+        "bytes": 24448,
+        "sha256": "b846412b123a3406cd89c8ab0376726cb9049d85067a51d8a8962e820965eb26"
+      },
+      "before-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d.gz",
+        "archiveBytes": 14102,
+        "archiveSha256": "dc12a7e87d6f16007a5988a87d8911c56100f6665cd0a46c9bf908faf2969824",
+        "bytes": 16592,
+        "sha256": "50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d"
+      },
+      "before-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/aaf9c177ef5518e025762b8351d506ab583b21ba31f5fcfb405005f66b756e4e.gz",
+        "archiveBytes": 394,
+        "archiveSha256": "fb3d55bd3b24a63b178e9a1b1877f3c40459df0366f7a70a7baa2f4651a72ebb",
+        "bytes": 2203,
+        "sha256": "aaf9c177ef5518e025762b8351d506ab583b21ba31f5fcfb405005f66b756e4e"
+      },
+      "before.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/3447f3ddcb4880ff36af5dfff72ff6735512ef00d565672a3fa00f94462d9d48.gz",
+        "archiveBytes": 23463,
+        "archiveSha256": "b06f9174b0549929a22346fb36d766fbdf7ac2f764ed0437743d38db00a8c18c",
+        "bytes": 24151,
+        "sha256": "3447f3ddcb4880ff36af5dfff72ff6735512ef00d565672a3fa00f94462d9d48"
+      },
+      "box-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f.gz",
+        "archiveBytes": 13199,
+        "archiveSha256": "427c557ffd6fe9630fb583dac7eac30a6fa6b82c371e530567aac0cc380bfca3",
+        "bytes": 16176,
+        "sha256": "dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f"
+      },
+      "box-edges-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/c12de2dd985dc03357d8b67e1d2d3cb8c8e3c32ead6cba5210d99ca4b7ed9851.gz",
+        "archiveBytes": 512,
+        "archiveSha256": "74f9219a2f4b5015d7282066b92260990255eda20afdbf1cadcf4af81c102842",
+        "bytes": 3498,
+        "sha256": "c12de2dd985dc03357d8b67e1d2d3cb8c8e3c32ead6cba5210d99ca4b7ed9851"
+      },
+      "box-edges.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/26602ab91e970327c7290e32dff9b3675bbf768984480e54aebdb2566006da8d.gz",
+        "archiveBytes": 22556,
+        "archiveSha256": "81d5309139919e9bc032362536f5bf17c602ea82bd47e5be95c78b975b3083ae",
+        "bytes": 23325,
+        "sha256": "26602ab91e970327c7290e32dff9b3675bbf768984480e54aebdb2566006da8d"
+      },
+      "box-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f.gz",
+        "archiveBytes": 13199,
+        "archiveSha256": "427c557ffd6fe9630fb583dac7eac30a6fa6b82c371e530567aac0cc380bfca3",
+        "bytes": 16176,
+        "sha256": "dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f"
+      },
+      "box-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/bd8542453ce630b5339288e62b0a8332bda4fefa78303aa173d3c300d82ef6a7.gz",
+        "archiveBytes": 403,
+        "archiveSha256": "5f09d172cf084218d1efc5536831cdd7b268fc83b4cc8ef49592cce13a266bf1",
+        "bytes": 2188,
+        "sha256": "bd8542453ce630b5339288e62b0a8332bda4fefa78303aa173d3c300d82ef6a7"
+      },
+      "box.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/9ca506494569d6a3444516ebc991a33aefd099b23e91cd64071fc696e672078f.gz",
+        "archiveBytes": 22108,
+        "archiveSha256": "280ccef053e251aa37672a994fe72cd392de2631277e8cb45142c1e93ac2cdb0",
+        "bytes": 22865,
+        "sha256": "9ca506494569d6a3444516ebc991a33aefd099b23e91cd64071fc696e672078f"
+      },
+      "capacity-before-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "capacity-before-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/ccd0bfdb2c3ddd7bafe94ec6e9d7889ce904ad875918a59866ebe88d5704dcea.gz",
+        "archiveBytes": 398,
+        "archiveSha256": "ff1a3ef451900ba4860415dc105545553cc7edfc4516104646ae8d299466b9a2",
+        "bytes": 2188,
+        "sha256": "ccd0bfdb2c3ddd7bafe94ec6e9d7889ce904ad875918a59866ebe88d5704dcea"
+      },
+      "capacity-before.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/750112b4a8ce65bc4dc6cddedd2c5b3abaa1effe3cb7b5ded8ad3fa9989f0730.gz",
+        "archiveBytes": 22514,
+        "archiveSha256": "dbe30b00bf39e605f04e48db470747ed9f07270c912191e8efbac2e67b35747f",
+        "bytes": 23290,
+        "sha256": "750112b4a8ce65bc4dc6cddedd2c5b3abaa1effe3cb7b5ded8ad3fa9989f0730"
+      },
+      "capacity-history-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "capacity-history-refused-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/367a4eb47e664c5dc642005acd1b83a5eaf81d7cde3de314857e320de3474322.gz",
+        "archiveBytes": 398,
+        "archiveSha256": "8953896f078723f538f31df44853944deed0d67d1ca30badaea54c343da87643",
+        "bytes": 2188,
+        "sha256": "367a4eb47e664c5dc642005acd1b83a5eaf81d7cde3de314857e320de3474322"
+      },
+      "capacity-history-refused.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/cb922c12a539422f179aa8b5bd28a18eaceadffffcbaa39e4a10ff1059da4f8e.gz",
+        "archiveBytes": 22571,
+        "archiveSha256": "b4e1c965bace5789ee3b7ab20003000f4a6bad3603b5afb232ed96a897130b1b",
+        "bytes": 23319,
+        "sha256": "cb922c12a539422f179aa8b5bd28a18eaceadffffcbaa39e4a10ff1059da4f8e"
+      },
+      "capacity-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "capacity-refused-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/96b4ffda92c7ff1f47b3afeb99541bba644aacbac06116f4d30858cbce9ed3d7.gz",
+        "archiveBytes": 396,
+        "archiveSha256": "86973f103f4da32287ccf3971ba47d2cc46f5c5439c13d19381d4ab23e7fad96",
+        "bytes": 2188,
+        "sha256": "96b4ffda92c7ff1f47b3afeb99541bba644aacbac06116f4d30858cbce9ed3d7"
+      },
+      "capacity-refused.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/a7666118bb3eff7f3994c2501f4df67fdce66bc87f7c77558afb0edc461a1a78.gz",
+        "archiveBytes": 20694,
+        "archiveSha256": "3380455fc787f6b62e1dc2bf081a45b9ba51d36c858dcf54a854c2815d681816",
+        "bytes": 21526,
+        "sha256": "a7666118bb3eff7f3994c2501f4df67fdce66bc87f7c77558afb0edc461a1a78"
+      },
+      "lasso-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/513b6d49016a5ca7b80eff9ae9828acd6a9ceefeb836664697fbd2c07d6090aa.gz",
+        "archiveBytes": 13986,
+        "archiveSha256": "4ca240262c17892db53f533fabfde65fbab1ff33a66f2cdadb4ef2b055b39186",
+        "bytes": 16720,
+        "sha256": "513b6d49016a5ca7b80eff9ae9828acd6a9ceefeb836664697fbd2c07d6090aa"
+      },
+      "lasso-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/cd39f7cfed847bb144a6f7e9019ea45c95df204d582ded1a2f3f6d1056c2ab6f.gz",
+        "archiveBytes": 394,
+        "archiveSha256": "189ffdf410985ab4f1934d05d7674432bdcb61d0417cc768eb598198e423b935",
+        "bytes": 2193,
+        "sha256": "cd39f7cfed847bb144a6f7e9019ea45c95df204d582ded1a2f3f6d1056c2ab6f"
+      },
+      "lasso.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/5313c77655051301c98ac157ab07a2a7ac310d198755f163738ba806ef2ce546.gz",
+        "archiveBytes": 24502,
+        "archiveSha256": "2506ad801bc5b89aafd31c5a6710359b00b9218219ba18c09f52237455a1f41f",
+        "bytes": 25175,
+        "sha256": "5313c77655051301c98ac157ab07a2a7ac310d198755f163738ba806ef2ce546"
+      },
+      "regions.ipynb": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd.gz",
+        "archiveBytes": 1695,
+        "archiveSha256": "655dbbb990ffebf0a9427ba64505f4c430c754b21731850e0b1911c2021b021f",
+        "bytes": 5892,
+        "sha256": "8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd"
+      },
+      "report.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/f507debd885a789df0cf7531a6e3a69f0a795ab7da7934ee77031ee87da4d657.gz",
+        "archiveBytes": 6610,
+        "archiveSha256": "35c5c9c6b4698efc2de8aece3e2cf85d88bdf205e804e863b361f6c0d9fce333",
+        "bytes": 85548,
+        "sha256": "f507debd885a789df0cf7531a6e3a69f0a795ab7da7934ee77031ee87da4d657"
+      }
+    },
+    "jupyterlab-dpr2": {
+      "before-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c.gz",
+        "archiveBytes": 30991,
+        "archiveSha256": "a1c60b150090a1ac67897881c1a0a44ca28df7507517e42983578b01277bd825",
+        "bytes": 43777,
+        "sha256": "950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c"
+      },
+      "before-edges-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/52c08f4bfb55d33f15337e4b598748db2e6ef65f1a93c9da000b7d497fd21dfc.gz",
+        "archiveBytes": 425,
+        "archiveSha256": "a23fc53bfabc4e9b6cceca77bd9a568a4a7c739c75b9b2a2743374c270967fb0",
+        "bytes": 3521,
+        "sha256": "52c08f4bfb55d33f15337e4b598748db2e6ef65f1a93c9da000b7d497fd21dfc"
+      },
+      "before-edges.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/9eb0dedac429ef92376bceac7ba8ffee44d1152a8fc87977b2c8d8a44495def4.gz",
+        "archiveBytes": 56890,
+        "archiveSha256": "4553a8ba46df03807e1e748e463c586dc3cf81cadb538f217c75a3f6d52a5f30",
+        "bytes": 60386,
+        "sha256": "9eb0dedac429ef92376bceac7ba8ffee44d1152a8fc87977b2c8d8a44495def4"
+      },
+      "before-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c.gz",
+        "archiveBytes": 30991,
+        "archiveSha256": "a1c60b150090a1ac67897881c1a0a44ca28df7507517e42983578b01277bd825",
+        "bytes": 43777,
+        "sha256": "950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c"
+      },
+      "before-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/145ee0cecdb78234d79b6833fc1cfe07da7773af56ecd12fb530e63cf103e2fa.gz",
+        "archiveBytes": 393,
+        "archiveSha256": "1fb7c57715fa3a828deebf01e6497abdbf73518ee1bdf33a862c1d4a9d074a8c",
+        "bytes": 2204,
+        "sha256": "145ee0cecdb78234d79b6833fc1cfe07da7773af56ecd12fb530e63cf103e2fa"
+      },
+      "before.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/c452213ad2cd61195b179af1f41ae99f736fc5e8654ae40ec3da274543c67412.gz",
+        "archiveBytes": 54471,
+        "archiveSha256": "846e06ce37ddf182d5d8fc36c993bd88fb782f2b95f7b6f53a3e0f27cce15fe7",
+        "bytes": 57973,
+        "sha256": "c452213ad2cd61195b179af1f41ae99f736fc5e8654ae40ec3da274543c67412"
+      },
+      "box-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d.gz",
+        "archiveBytes": 28480,
+        "archiveSha256": "eff9458fb453c519a73094f6822a72d8ea853a5b9d2bc973b525d700ca891b94",
+        "bytes": 43605,
+        "sha256": "43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d"
+      },
+      "box-edges-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/d715975b4347c79f9e446e4899f0d7d22aecadf862cb52b78f70cf395a2c18d0.gz",
+        "archiveBytes": 435,
+        "archiveSha256": "c3da0c1ed9aaed1a11b1ae291bbaaba1fa7bb82bf31785ef5cdbbf4617040fcf",
+        "bytes": 3501,
+        "sha256": "d715975b4347c79f9e446e4899f0d7d22aecadf862cb52b78f70cf395a2c18d0"
+      },
+      "box-edges.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/cc9c8ae35e63b787560742910d1eabaaa11e603f01d7d3f7d5577d1412a6f7ea.gz",
+        "archiveBytes": 54679,
+        "archiveSha256": "7eb9a6af3ea8979eb021eb60c69ce345cb32684899679e41b4d602f563b8d11a",
+        "bytes": 58629,
+        "sha256": "cc9c8ae35e63b787560742910d1eabaaa11e603f01d7d3f7d5577d1412a6f7ea"
+      },
+      "box-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d.gz",
+        "archiveBytes": 28480,
+        "archiveSha256": "eff9458fb453c519a73094f6822a72d8ea853a5b9d2bc973b525d700ca891b94",
+        "bytes": 43605,
+        "sha256": "43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d"
+      },
+      "box-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/3bc1a6748445f2b262f0f6364ba293e0a9c539903bea5f6ac0a52c7c0c0fc3aa.gz",
+        "archiveBytes": 402,
+        "archiveSha256": "7021698c160802e53e080849f0f993f174ddd41aeb42e4645af0062a6781b48b",
+        "bytes": 2189,
+        "sha256": "3bc1a6748445f2b262f0f6364ba293e0a9c539903bea5f6ac0a52c7c0c0fc3aa"
+      },
+      "box.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/60ba0bbdc87167f044f56eadbf6905ae54073e9ca052b68a541224207f0a0247.gz",
+        "archiveBytes": 54007,
+        "archiveSha256": "f9e9f689890962af5ac8d7f6f4a636f6028561a6ee9cf207cd7b75de58171813",
+        "bytes": 57959,
+        "sha256": "60ba0bbdc87167f044f56eadbf6905ae54073e9ca052b68a541224207f0a0247"
+      },
+      "capacity-before-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502.gz",
+        "archiveBytes": 29490,
+        "archiveSha256": "6b15c029d96c60fa028a87f1e72bf10579ed594bde3ab0875b84b9801054a560",
+        "bytes": 44131,
+        "sha256": "d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502"
+      },
+      "capacity-before-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/04d007da1dd8324601fb0abcc3a9d9d2e3cf0c3907f2a0de72c776cfd39b59ff.gz",
+        "archiveBytes": 397,
+        "archiveSha256": "fc54ea1c3848b134e85c55e5411c7d84a93cdd8bf15c5abb0ec7f347b21f67a4",
+        "bytes": 2189,
+        "sha256": "04d007da1dd8324601fb0abcc3a9d9d2e3cf0c3907f2a0de72c776cfd39b59ff"
+      },
+      "capacity-before.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/ac6371ae273a9a24fdfd2ee40716346aaceab5ed1720c79457892c6cc36df317.gz",
+        "archiveBytes": 54182,
+        "archiveSha256": "9735826f82a55d41d322eed7f51d2e9be919fa67fd316591e2c0dd00331dd5e4",
+        "bytes": 58022,
+        "sha256": "ac6371ae273a9a24fdfd2ee40716346aaceab5ed1720c79457892c6cc36df317"
+      },
+      "capacity-history-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502.gz",
+        "archiveBytes": 29490,
+        "archiveSha256": "6b15c029d96c60fa028a87f1e72bf10579ed594bde3ab0875b84b9801054a560",
+        "bytes": 44131,
+        "sha256": "d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502"
+      },
+      "capacity-history-refused-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/656239db67d39e3d20b9e6b5ba817e58ced7df95ed5ba828467f382f04afa3ae.gz",
+        "archiveBytes": 399,
+        "archiveSha256": "f1943db91fe58b4aba56deb150dbf3adf983786d318f8f2afe5560470260a971",
+        "bytes": 2189,
+        "sha256": "656239db67d39e3d20b9e6b5ba817e58ced7df95ed5ba828467f382f04afa3ae"
+      },
+      "capacity-history-refused.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/9e50517064ae827d0e5dc39bd93c661de7adbcacf9346fbaed1a4ba8c7554a43.gz",
+        "archiveBytes": 54141,
+        "archiveSha256": "1891e34ca1571a877ba6efa4eb1c98ac7e345e11803d8c98fefc583117b71eb5",
+        "bytes": 58127,
+        "sha256": "9e50517064ae827d0e5dc39bd93c661de7adbcacf9346fbaed1a4ba8c7554a43"
+      },
+      "capacity-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502.gz",
+        "archiveBytes": 29490,
+        "archiveSha256": "6b15c029d96c60fa028a87f1e72bf10579ed594bde3ab0875b84b9801054a560",
+        "bytes": 44131,
+        "sha256": "d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502"
+      },
+      "capacity-refused-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/6db3c343bbbdd98d7bb50ef981eba720e9848014e808b24cf8f7fdb2d5aa00eb.gz",
+        "archiveBytes": 397,
+        "archiveSha256": "9b33cca8c88feebc11333a91359e4db3385b6c78b31360821cf5c6be65f38bd6",
+        "bytes": 2189,
+        "sha256": "6db3c343bbbdd98d7bb50ef981eba720e9848014e808b24cf8f7fdb2d5aa00eb"
+      },
+      "capacity-refused.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/624b0bee63e3542c7fa4367a922815a5effb94cb5be0e8064d1424ae045335ea.gz",
+        "archiveBytes": 49802,
+        "archiveSha256": "da9bc0e0b830bcf817bcb86d93ee482ca8e7427af6d7c7c6d81ba6ef3643cc65",
+        "bytes": 53854,
+        "sha256": "624b0bee63e3542c7fa4367a922815a5effb94cb5be0e8064d1424ae045335ea"
+      },
+      "lasso-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/ba9db221026bc03b24778592e8f65a018b5e17e14e68a0159a36098e405a6abd.gz",
+        "archiveBytes": 29981,
+        "archiveSha256": "93436e7f361bc53b2f5bf3aba03c1d6071efbde587e5b812b98e46aeaaab6dcd",
+        "bytes": 44025,
+        "sha256": "ba9db221026bc03b24778592e8f65a018b5e17e14e68a0159a36098e405a6abd"
+      },
+      "lasso-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/444fe4c45fcc63f08081b0e420fe697b46e5bfe2871b078821a9229f0864e4af.gz",
+        "archiveBytes": 392,
+        "archiveSha256": "9a0e15445a402a35026b447ed18670e908ff85283cac2878dbc61ac14672e361",
+        "bytes": 2194,
+        "sha256": "444fe4c45fcc63f08081b0e420fe697b46e5bfe2871b078821a9229f0864e4af"
+      },
+      "lasso.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/1a680cecbb2f8d97176652da0d20651639659fdacbe05e5fded0449c08a53890.gz",
+        "archiveBytes": 59393,
+        "archiveSha256": "7d4f5262bf610b056920b715b1dc2a74b104b15b2554d63dede3a7a6782db412",
+        "bytes": 62682,
+        "sha256": "1a680cecbb2f8d97176652da0d20651639659fdacbe05e5fded0449c08a53890"
+      },
+      "regions.ipynb": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd.gz",
+        "archiveBytes": 1695,
+        "archiveSha256": "655dbbb990ffebf0a9427ba64505f4c430c754b21731850e0b1911c2021b021f",
+        "bytes": 5892,
+        "sha256": "8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd"
+      },
+      "report.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/3dbf74a7a8d61bd373965edf75a4f997550eb55ad5e2896e12fd8e2cb0b586f2.gz",
+        "archiveBytes": 6513,
+        "archiveSha256": "18e90ff9f1a995c62dceac03d78c53f852f65e5f7ac843489c699061a0b9cdb3",
+        "bytes": 85553,
+        "sha256": "3dbf74a7a8d61bd373965edf75a4f997550eb55ad5e2896e12fd8e2cb0b586f2"
+      }
+    },
+    "lab465-dpr1": {
+      "before-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d.gz",
+        "archiveBytes": 14102,
+        "archiveSha256": "dc12a7e87d6f16007a5988a87d8911c56100f6665cd0a46c9bf908faf2969824",
+        "bytes": 16592,
+        "sha256": "50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d"
+      },
+      "before-edges-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/f1431c987d47b977672ca3210fd042a709eae2d210f91edef3dfd4384c99f3f8.gz",
+        "archiveBytes": 485,
+        "archiveSha256": "2b2c184ee261171b635128c77204c84dc8cb40f23bc8f8de16e8efdc0f8e80be",
+        "bytes": 3518,
+        "sha256": "f1431c987d47b977672ca3210fd042a709eae2d210f91edef3dfd4384c99f3f8"
+      },
+      "before-edges.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/b846412b123a3406cd89c8ab0376726cb9049d85067a51d8a8962e820965eb26.gz",
+        "archiveBytes": 23725,
+        "archiveSha256": "c319047b595d8386f63a1a4453f353120184566e4a34289e4144dc44d92aac76",
+        "bytes": 24448,
+        "sha256": "b846412b123a3406cd89c8ab0376726cb9049d85067a51d8a8962e820965eb26"
+      },
+      "before-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d.gz",
+        "archiveBytes": 14102,
+        "archiveSha256": "dc12a7e87d6f16007a5988a87d8911c56100f6665cd0a46c9bf908faf2969824",
+        "bytes": 16592,
+        "sha256": "50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d"
+      },
+      "before-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/2f224263111879068ebee20de8e25731766d98b3a290c45b0f2deca7627dbacb.gz",
+        "archiveBytes": 395,
+        "archiveSha256": "f8d3b6ba2a06258776696d6b04685a5b4228045292485c8dea6f39da5b5b476b",
+        "bytes": 2203,
+        "sha256": "2f224263111879068ebee20de8e25731766d98b3a290c45b0f2deca7627dbacb"
+      },
+      "before.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/9590bee51d8da28cd77333b9d13c2bf903c536fc0a1f35dcf2f0b224e811e50e.gz",
+        "archiveBytes": 22648,
+        "archiveSha256": "13d6411c11722206e1440a878819449b86b772b844b2d442045924054417c3f8",
+        "bytes": 23351,
+        "sha256": "9590bee51d8da28cd77333b9d13c2bf903c536fc0a1f35dcf2f0b224e811e50e"
+      },
+      "box-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f.gz",
+        "archiveBytes": 13199,
+        "archiveSha256": "427c557ffd6fe9630fb583dac7eac30a6fa6b82c371e530567aac0cc380bfca3",
+        "bytes": 16176,
+        "sha256": "dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f"
+      },
+      "box-edges-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/c12de2dd985dc03357d8b67e1d2d3cb8c8e3c32ead6cba5210d99ca4b7ed9851.gz",
+        "archiveBytes": 512,
+        "archiveSha256": "74f9219a2f4b5015d7282066b92260990255eda20afdbf1cadcf4af81c102842",
+        "bytes": 3498,
+        "sha256": "c12de2dd985dc03357d8b67e1d2d3cb8c8e3c32ead6cba5210d99ca4b7ed9851"
+      },
+      "box-edges.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/26602ab91e970327c7290e32dff9b3675bbf768984480e54aebdb2566006da8d.gz",
+        "archiveBytes": 22556,
+        "archiveSha256": "81d5309139919e9bc032362536f5bf17c602ea82bd47e5be95c78b975b3083ae",
+        "bytes": 23325,
+        "sha256": "26602ab91e970327c7290e32dff9b3675bbf768984480e54aebdb2566006da8d"
+      },
+      "box-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f.gz",
+        "archiveBytes": 13199,
+        "archiveSha256": "427c557ffd6fe9630fb583dac7eac30a6fa6b82c371e530567aac0cc380bfca3",
+        "bytes": 16176,
+        "sha256": "dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f"
+      },
+      "box-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/e86a8d854abfe5f229b1825a2eb05fe2e822c0b6ca76aa88628229f0086b331e.gz",
+        "archiveBytes": 404,
+        "archiveSha256": "4bda815926af965295d678bf8df0a8d95d8754cdc36954405e40cf699771ad78",
+        "bytes": 2188,
+        "sha256": "e86a8d854abfe5f229b1825a2eb05fe2e822c0b6ca76aa88628229f0086b331e"
+      },
+      "box.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/a283f45994f632936809ed496ce5ec797e972d36f8e5db21c2e8fd9bf0b466d9.gz",
+        "archiveBytes": 21899,
+        "archiveSha256": "4bedb4c1763679804eed80b2c4d99c043cf229c1975bf8666ceeabf0c6a9997b",
+        "bytes": 22658,
+        "sha256": "a283f45994f632936809ed496ce5ec797e972d36f8e5db21c2e8fd9bf0b466d9"
+      },
+      "capacity-before-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "capacity-before-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/ccd0bfdb2c3ddd7bafe94ec6e9d7889ce904ad875918a59866ebe88d5704dcea.gz",
+        "archiveBytes": 398,
+        "archiveSha256": "ff1a3ef451900ba4860415dc105545553cc7edfc4516104646ae8d299466b9a2",
+        "bytes": 2188,
+        "sha256": "ccd0bfdb2c3ddd7bafe94ec6e9d7889ce904ad875918a59866ebe88d5704dcea"
+      },
+      "capacity-before.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/750112b4a8ce65bc4dc6cddedd2c5b3abaa1effe3cb7b5ded8ad3fa9989f0730.gz",
+        "archiveBytes": 22514,
+        "archiveSha256": "dbe30b00bf39e605f04e48db470747ed9f07270c912191e8efbac2e67b35747f",
+        "bytes": 23290,
+        "sha256": "750112b4a8ce65bc4dc6cddedd2c5b3abaa1effe3cb7b5ded8ad3fa9989f0730"
+      },
+      "capacity-history-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "capacity-history-refused-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/367a4eb47e664c5dc642005acd1b83a5eaf81d7cde3de314857e320de3474322.gz",
+        "archiveBytes": 398,
+        "archiveSha256": "8953896f078723f538f31df44853944deed0d67d1ca30badaea54c343da87643",
+        "bytes": 2188,
+        "sha256": "367a4eb47e664c5dc642005acd1b83a5eaf81d7cde3de314857e320de3474322"
+      },
+      "capacity-history-refused.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/cb922c12a539422f179aa8b5bd28a18eaceadffffcbaa39e4a10ff1059da4f8e.gz",
+        "archiveBytes": 22571,
+        "archiveSha256": "b4e1c965bace5789ee3b7ab20003000f4a6bad3603b5afb232ed96a897130b1b",
+        "bytes": 23319,
+        "sha256": "cb922c12a539422f179aa8b5bd28a18eaceadffffcbaa39e4a10ff1059da4f8e"
+      },
+      "capacity-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "capacity-refused-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/96b4ffda92c7ff1f47b3afeb99541bba644aacbac06116f4d30858cbce9ed3d7.gz",
+        "archiveBytes": 396,
+        "archiveSha256": "86973f103f4da32287ccf3971ba47d2cc46f5c5439c13d19381d4ab23e7fad96",
+        "bytes": 2188,
+        "sha256": "96b4ffda92c7ff1f47b3afeb99541bba644aacbac06116f4d30858cbce9ed3d7"
+      },
+      "capacity-refused.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/a7666118bb3eff7f3994c2501f4df67fdce66bc87f7c77558afb0edc461a1a78.gz",
+        "archiveBytes": 20694,
+        "archiveSha256": "3380455fc787f6b62e1dc2bf081a45b9ba51d36c858dcf54a854c2815d681816",
+        "bytes": 21526,
+        "sha256": "a7666118bb3eff7f3994c2501f4df67fdce66bc87f7c77558afb0edc461a1a78"
+      },
+      "lasso-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/513b6d49016a5ca7b80eff9ae9828acd6a9ceefeb836664697fbd2c07d6090aa.gz",
+        "archiveBytes": 13986,
+        "archiveSha256": "4ca240262c17892db53f533fabfde65fbab1ff33a66f2cdadb4ef2b055b39186",
+        "bytes": 16720,
+        "sha256": "513b6d49016a5ca7b80eff9ae9828acd6a9ceefeb836664697fbd2c07d6090aa"
+      },
+      "lasso-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/18bb238107ebad1ff79b0a47a8deff7c3ba05f093b968afcb30dfdea688a9e0d.gz",
+        "archiveBytes": 397,
+        "archiveSha256": "4bd080d107a1f71b5ae28f9993fce3a7eeb8b496a94d4a6415f0d2776a79026a",
+        "bytes": 2193,
+        "sha256": "18bb238107ebad1ff79b0a47a8deff7c3ba05f093b968afcb30dfdea688a9e0d"
+      },
+      "lasso.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/c457fdbaf6ec8defddaecb17c114b0dbf1b329a66dce0d1293ede733f7dc6350.gz",
+        "archiveBytes": 24958,
+        "archiveSha256": "3523186492429015f2f2dac6c890e0d240ed0c9905e1747754cb89d224132583",
+        "bytes": 25653,
+        "sha256": "c457fdbaf6ec8defddaecb17c114b0dbf1b329a66dce0d1293ede733f7dc6350"
+      },
+      "regions.ipynb": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd.gz",
+        "archiveBytes": 1695,
+        "archiveSha256": "655dbbb990ffebf0a9427ba64505f4c430c754b21731850e0b1911c2021b021f",
+        "bytes": 5892,
+        "sha256": "8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd"
+      },
+      "report.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/bb82f8eec98f21ddc07775b1e9c6b86841ae8b6527cbf90a2ee18ffedda143a7.gz",
+        "archiveBytes": 6458,
+        "archiveSha256": "8a6bed4c6fc0cb3052f89763bd4bf1f5450ab2ea30d38a8dc910f745f5db3787",
+        "bytes": 85289,
+        "sha256": "bb82f8eec98f21ddc07775b1e9c6b86841ae8b6527cbf90a2ee18ffedda143a7"
+      }
+    },
+    "lab465-dpr2": {
+      "before-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c.gz",
+        "archiveBytes": 30991,
+        "archiveSha256": "a1c60b150090a1ac67897881c1a0a44ca28df7507517e42983578b01277bd825",
+        "bytes": 43777,
+        "sha256": "950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c"
+      },
+      "before-edges-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/52c08f4bfb55d33f15337e4b598748db2e6ef65f1a93c9da000b7d497fd21dfc.gz",
+        "archiveBytes": 425,
+        "archiveSha256": "a23fc53bfabc4e9b6cceca77bd9a568a4a7c739c75b9b2a2743374c270967fb0",
+        "bytes": 3521,
+        "sha256": "52c08f4bfb55d33f15337e4b598748db2e6ef65f1a93c9da000b7d497fd21dfc"
+      },
+      "before-edges.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/9eb0dedac429ef92376bceac7ba8ffee44d1152a8fc87977b2c8d8a44495def4.gz",
+        "archiveBytes": 56890,
+        "archiveSha256": "4553a8ba46df03807e1e748e463c586dc3cf81cadb538f217c75a3f6d52a5f30",
+        "bytes": 60386,
+        "sha256": "9eb0dedac429ef92376bceac7ba8ffee44d1152a8fc87977b2c8d8a44495def4"
+      },
+      "before-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c.gz",
+        "archiveBytes": 30991,
+        "archiveSha256": "a1c60b150090a1ac67897881c1a0a44ca28df7507517e42983578b01277bd825",
+        "bytes": 43777,
+        "sha256": "950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c"
+      },
+      "before-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/2d6efc9e81f2af5bb3424fc141f4cc39c3196110370e1fb49ff7a30605061e6d.gz",
+        "archiveBytes": 391,
+        "archiveSha256": "9fdb12f75de0dee8047e3e3c2bc234f15c354a086a410d2bede85591aefe2e49",
+        "bytes": 2204,
+        "sha256": "2d6efc9e81f2af5bb3424fc141f4cc39c3196110370e1fb49ff7a30605061e6d"
+      },
+      "before.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/73ad8effb9d7925fc470b43c81368e3e4f28b7835567bc5fb686f3f7f2a9e322.gz",
+        "archiveBytes": 54666,
+        "archiveSha256": "2968b2b4ec36da61fef7138ec1e7a09dfdc92688bda412df3cef85b94d9fc0d9",
+        "bytes": 58124,
+        "sha256": "73ad8effb9d7925fc470b43c81368e3e4f28b7835567bc5fb686f3f7f2a9e322"
+      },
+      "box-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d.gz",
+        "archiveBytes": 28480,
+        "archiveSha256": "eff9458fb453c519a73094f6822a72d8ea853a5b9d2bc973b525d700ca891b94",
+        "bytes": 43605,
+        "sha256": "43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d"
+      },
+      "box-edges-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/d715975b4347c79f9e446e4899f0d7d22aecadf862cb52b78f70cf395a2c18d0.gz",
+        "archiveBytes": 435,
+        "archiveSha256": "c3da0c1ed9aaed1a11b1ae291bbaaba1fa7bb82bf31785ef5cdbbf4617040fcf",
+        "bytes": 3501,
+        "sha256": "d715975b4347c79f9e446e4899f0d7d22aecadf862cb52b78f70cf395a2c18d0"
+      },
+      "box-edges.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/cc9c8ae35e63b787560742910d1eabaaa11e603f01d7d3f7d5577d1412a6f7ea.gz",
+        "archiveBytes": 54679,
+        "archiveSha256": "7eb9a6af3ea8979eb021eb60c69ce345cb32684899679e41b4d602f563b8d11a",
+        "bytes": 58629,
+        "sha256": "cc9c8ae35e63b787560742910d1eabaaa11e603f01d7d3f7d5577d1412a6f7ea"
+      },
+      "box-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d.gz",
+        "archiveBytes": 28480,
+        "archiveSha256": "eff9458fb453c519a73094f6822a72d8ea853a5b9d2bc973b525d700ca891b94",
+        "bytes": 43605,
+        "sha256": "43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d"
+      },
+      "box-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/3bc1a6748445f2b262f0f6364ba293e0a9c539903bea5f6ac0a52c7c0c0fc3aa.gz",
+        "archiveBytes": 402,
+        "archiveSha256": "7021698c160802e53e080849f0f993f174ddd41aeb42e4645af0062a6781b48b",
+        "bytes": 2189,
+        "sha256": "3bc1a6748445f2b262f0f6364ba293e0a9c539903bea5f6ac0a52c7c0c0fc3aa"
+      },
+      "box.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/60ba0bbdc87167f044f56eadbf6905ae54073e9ca052b68a541224207f0a0247.gz",
+        "archiveBytes": 54007,
+        "archiveSha256": "f9e9f689890962af5ac8d7f6f4a636f6028561a6ee9cf207cd7b75de58171813",
+        "bytes": 57959,
+        "sha256": "60ba0bbdc87167f044f56eadbf6905ae54073e9ca052b68a541224207f0a0247"
+      },
+      "capacity-before-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502.gz",
+        "archiveBytes": 29490,
+        "archiveSha256": "6b15c029d96c60fa028a87f1e72bf10579ed594bde3ab0875b84b9801054a560",
+        "bytes": 44131,
+        "sha256": "d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502"
+      },
+      "capacity-before-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/8e0d3873f13235ad0624a00b034aa323323051e7ce409b549153ea29a23e8fb2.gz",
+        "archiveBytes": 397,
+        "archiveSha256": "78fb852632920fa608d39887de0e22ac63e805a8812692bb47039d1e23734680",
+        "bytes": 2189,
+        "sha256": "8e0d3873f13235ad0624a00b034aa323323051e7ce409b549153ea29a23e8fb2"
+      },
+      "capacity-before.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/2da773db788eaa31a0e75eaa6d76d95113d73c707966b49b0c9fa7024d85778f.gz",
+        "archiveBytes": 54939,
+        "archiveSha256": "774fa6ad46277889cea54a5b6ad47d6046f637fd5116c3eaf2dc56ecec984fc0",
+        "bytes": 58693,
+        "sha256": "2da773db788eaa31a0e75eaa6d76d95113d73c707966b49b0c9fa7024d85778f"
+      },
+      "capacity-history-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502.gz",
+        "archiveBytes": 29490,
+        "archiveSha256": "6b15c029d96c60fa028a87f1e72bf10579ed594bde3ab0875b84b9801054a560",
+        "bytes": 44131,
+        "sha256": "d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502"
+      },
+      "capacity-history-refused-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/8e0d3873f13235ad0624a00b034aa323323051e7ce409b549153ea29a23e8fb2.gz",
+        "archiveBytes": 397,
+        "archiveSha256": "78fb852632920fa608d39887de0e22ac63e805a8812692bb47039d1e23734680",
+        "bytes": 2189,
+        "sha256": "8e0d3873f13235ad0624a00b034aa323323051e7ce409b549153ea29a23e8fb2"
+      },
+      "capacity-history-refused.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/2da773db788eaa31a0e75eaa6d76d95113d73c707966b49b0c9fa7024d85778f.gz",
+        "archiveBytes": 54939,
+        "archiveSha256": "774fa6ad46277889cea54a5b6ad47d6046f637fd5116c3eaf2dc56ecec984fc0",
+        "bytes": 58693,
+        "sha256": "2da773db788eaa31a0e75eaa6d76d95113d73c707966b49b0c9fa7024d85778f"
+      },
+      "capacity-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502.gz",
+        "archiveBytes": 29490,
+        "archiveSha256": "6b15c029d96c60fa028a87f1e72bf10579ed594bde3ab0875b84b9801054a560",
+        "bytes": 44131,
+        "sha256": "d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502"
+      },
+      "capacity-refused-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/6db3c343bbbdd98d7bb50ef981eba720e9848014e808b24cf8f7fdb2d5aa00eb.gz",
+        "archiveBytes": 397,
+        "archiveSha256": "9b33cca8c88feebc11333a91359e4db3385b6c78b31360821cf5c6be65f38bd6",
+        "bytes": 2189,
+        "sha256": "6db3c343bbbdd98d7bb50ef981eba720e9848014e808b24cf8f7fdb2d5aa00eb"
+      },
+      "capacity-refused.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/624b0bee63e3542c7fa4367a922815a5effb94cb5be0e8064d1424ae045335ea.gz",
+        "archiveBytes": 49802,
+        "archiveSha256": "da9bc0e0b830bcf817bcb86d93ee482ca8e7427af6d7c7c6d81ba6ef3643cc65",
+        "bytes": 53854,
+        "sha256": "624b0bee63e3542c7fa4367a922815a5effb94cb5be0e8064d1424ae045335ea"
+      },
+      "lasso-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/ba9db221026bc03b24778592e8f65a018b5e17e14e68a0159a36098e405a6abd.gz",
+        "archiveBytes": 29981,
+        "archiveSha256": "93436e7f361bc53b2f5bf3aba03c1d6071efbde587e5b812b98e46aeaaab6dcd",
+        "bytes": 44025,
+        "sha256": "ba9db221026bc03b24778592e8f65a018b5e17e14e68a0159a36098e405a6abd"
+      },
+      "lasso-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/4d568fd5948b097bc568fe76218fe062c3f60fae3a31a86d38e040ee70ba5fe3.gz",
+        "archiveBytes": 393,
+        "archiveSha256": "7f1a3d1aceb57ada41dd43e3e861c28f009f94268be2d51da76426ef5d6a39d5",
+        "bytes": 2194,
+        "sha256": "4d568fd5948b097bc568fe76218fe062c3f60fae3a31a86d38e040ee70ba5fe3"
+      },
+      "lasso.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/2ebb9eb1cc77e29d68d07ad5fbc743e7e7163e9d5ba4663d4b6f4edc13ada87e.gz",
+        "archiveBytes": 59765,
+        "archiveSha256": "e299a5d826701531e9440a62ffd6228b5ea837f35378453922a40d41db7904ea",
+        "bytes": 63752,
+        "sha256": "2ebb9eb1cc77e29d68d07ad5fbc743e7e7163e9d5ba4663d4b6f4edc13ada87e"
+      },
+      "regions.ipynb": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd.gz",
+        "archiveBytes": 1695,
+        "archiveSha256": "655dbbb990ffebf0a9427ba64505f4c430c754b21731850e0b1911c2021b021f",
+        "bytes": 5892,
+        "sha256": "8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd"
+      },
+      "report.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/67ee8ddab89a4d7174a849e679d4699f5f3c6ee05f62e5b8e27c3f4a994e5d66.gz",
+        "archiveBytes": 6322,
+        "archiveSha256": "cad9f66e62b34fb2f245deed9d7181a74633c2962f8c4c21e2332b532946fa26",
+        "bytes": 85294,
+        "sha256": "67ee8ddab89a4d7174a849e679d4699f5f3c6ee05f62e5b8e27c3f4a994e5d66"
+      }
+    },
+    "notebook7-dpr1": {
+      "before-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d.gz",
+        "archiveBytes": 14102,
+        "archiveSha256": "dc12a7e87d6f16007a5988a87d8911c56100f6665cd0a46c9bf908faf2969824",
+        "bytes": 16592,
+        "sha256": "50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d"
+      },
+      "before-edges-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/9563d0dcb1b994727b559060518675c6a0902d04a00ca03fc07257c705e2bfba.gz",
+        "archiveBytes": 488,
+        "archiveSha256": "8e4a0e58413d4485588503715592dfec745489d16f587133526c4c338cc1ddde",
+        "bytes": 3518,
+        "sha256": "9563d0dcb1b994727b559060518675c6a0902d04a00ca03fc07257c705e2bfba"
+      },
+      "before-edges.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/339ec691c4730be3764663572559baadcddc948750e07c42cea0d8588c7f2246.gz",
+        "archiveBytes": 23973,
+        "archiveSha256": "2e5b11fd46ab785112cd3e3a73acc6c9a74c07a88efb62c29fb915c306e8c29e",
+        "bytes": 24730,
+        "sha256": "339ec691c4730be3764663572559baadcddc948750e07c42cea0d8588c7f2246"
+      },
+      "before-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d.gz",
+        "archiveBytes": 14102,
+        "archiveSha256": "dc12a7e87d6f16007a5988a87d8911c56100f6665cd0a46c9bf908faf2969824",
+        "bytes": 16592,
+        "sha256": "50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d"
+      },
+      "before-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/ae4ea9a96dc56d22abba48983e921c17632cfa89fa573226b2fe35c1996d8fb0.gz",
+        "archiveBytes": 395,
+        "archiveSha256": "7936e52be99611b9d9a670e54cc7e15f46843e03676aef1b7c7423b40b9b4a39",
+        "bytes": 2203,
+        "sha256": "ae4ea9a96dc56d22abba48983e921c17632cfa89fa573226b2fe35c1996d8fb0"
+      },
+      "before.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/92b00c31c68f2c1cec3ec6021fa9844e2e586d759aa80ebf8698c9ff8ca2a14e.gz",
+        "archiveBytes": 23488,
+        "archiveSha256": "6c0806363f506e4bd70e31d077618be9de86bfd87718829c04e3e3ab7b3cd678",
+        "bytes": 24170,
+        "sha256": "92b00c31c68f2c1cec3ec6021fa9844e2e586d759aa80ebf8698c9ff8ca2a14e"
+      },
+      "box-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f.gz",
+        "archiveBytes": 13199,
+        "archiveSha256": "427c557ffd6fe9630fb583dac7eac30a6fa6b82c371e530567aac0cc380bfca3",
+        "bytes": 16176,
+        "sha256": "dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f"
+      },
+      "box-edges-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/b8f1dad5ee09c56274413fe060e4e1c50ae2d2ac120abbf60685b3375f3a9e35.gz",
+        "archiveBytes": 513,
+        "archiveSha256": "7a388d0765c0dea9fdbb93e05abbbf866b1ebe8575b0979bdad304880acc134f",
+        "bytes": 3498,
+        "sha256": "b8f1dad5ee09c56274413fe060e4e1c50ae2d2ac120abbf60685b3375f3a9e35"
+      },
+      "box-edges.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/ecd94f30242f6b9ac5a35d46226a2c04a5248f6141fe4da3c86c62cfbc7acf83.gz",
+        "archiveBytes": 22887,
+        "archiveSha256": "a51cc8b03b37069cfd50507eff27757f413d050451f80f809e021358fcc1616b",
+        "bytes": 23602,
+        "sha256": "ecd94f30242f6b9ac5a35d46226a2c04a5248f6141fe4da3c86c62cfbc7acf83"
+      },
+      "box-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f.gz",
+        "archiveBytes": 13199,
+        "archiveSha256": "427c557ffd6fe9630fb583dac7eac30a6fa6b82c371e530567aac0cc380bfca3",
+        "bytes": 16176,
+        "sha256": "dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f"
+      },
+      "box-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/9b016f74545e70513fd38a6be1ee304c3c2c8b34590fd69735f524bfb74c255a.gz",
+        "archiveBytes": 403,
+        "archiveSha256": "6e7733d1f0b70b2f8142d3495e2d2b8a95866970ca8fe30aad919167ae6cf4ab",
+        "bytes": 2188,
+        "sha256": "9b016f74545e70513fd38a6be1ee304c3c2c8b34590fd69735f524bfb74c255a"
+      },
+      "box.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/4b97ba2388d4b715574e8b7c4006b86c4b060fffa325b199464fa6b8ab3c7702.gz",
+        "archiveBytes": 22244,
+        "archiveSha256": "fed8f14370a93fee07298fb981fc1dc48380788000439ddc3d45bfc503cc0450",
+        "bytes": 22963,
+        "sha256": "4b97ba2388d4b715574e8b7c4006b86c4b060fffa325b199464fa6b8ab3c7702"
+      },
+      "capacity-before-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "capacity-before-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/ab532091f1f84a13cae6734897184950195602a54e1667588a382db017eefcdb.gz",
+        "archiveBytes": 396,
+        "archiveSha256": "ddb958289a8cc6d146f988aec4836d21b514afd00d9f8a4e8aefc5f33e950453",
+        "bytes": 2188,
+        "sha256": "ab532091f1f84a13cae6734897184950195602a54e1667588a382db017eefcdb"
+      },
+      "capacity-before.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/4fa5187d38f94c26186dc50fcf255f0fe7be1f4869dc298a7a63a87644687a69.gz",
+        "archiveBytes": 22588,
+        "archiveSha256": "1a58123814515061a77576e8ee9b25001b1beb006e7de47f5d87999e233860e6",
+        "bytes": 23295,
+        "sha256": "4fa5187d38f94c26186dc50fcf255f0fe7be1f4869dc298a7a63a87644687a69"
+      },
+      "capacity-history-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "capacity-history-refused-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/2a83ac2b068ecd81182a0fb622584a6cd8fef1d9d94c3fc062e7d09e95efe8df.gz",
+        "archiveBytes": 397,
+        "archiveSha256": "1738e66415730e86bcac79e42f0bbb4a33c911624b02921c48f510ed643f3a95",
+        "bytes": 2188,
+        "sha256": "2a83ac2b068ecd81182a0fb622584a6cd8fef1d9d94c3fc062e7d09e95efe8df"
+      },
+      "capacity-history-refused.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/383c12dc85efd9dbacbff2e043db2064a511f195fbc81d0f1f379c9e3eec28c7.gz",
+        "archiveBytes": 22657,
+        "archiveSha256": "27c134a60015fc46564787c25b30212c3d814ecb286562ac82af27a3eaf0c817",
+        "bytes": 23442,
+        "sha256": "383c12dc85efd9dbacbff2e043db2064a511f195fbc81d0f1f379c9e3eec28c7"
+      },
+      "capacity-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "capacity-refused-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/bf9fd73ef9d4e4a880ae54b15d244eb9555af13cd49cece3d322699bc0484e47.gz",
+        "archiveBytes": 395,
+        "archiveSha256": "26517868fb4a0904cfbf897ee344963ff2f8802ee4f5f40a8d44587f783c4cb9",
+        "bytes": 2188,
+        "sha256": "bf9fd73ef9d4e4a880ae54b15d244eb9555af13cd49cece3d322699bc0484e47"
+      },
+      "capacity-refused.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/0184fa935c7cbc4a23d3e55e9944e292b0148ae23c2b48438798dad3ae795059.gz",
+        "archiveBytes": 21245,
+        "archiveSha256": "f4f7e80c35df94763a3aa52cbd4a2555f995b39ab9616d193814af5a844535bf",
+        "bytes": 21917,
+        "sha256": "0184fa935c7cbc4a23d3e55e9944e292b0148ae23c2b48438798dad3ae795059"
+      },
+      "lasso-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/513b6d49016a5ca7b80eff9ae9828acd6a9ceefeb836664697fbd2c07d6090aa.gz",
+        "archiveBytes": 13986,
+        "archiveSha256": "4ca240262c17892db53f533fabfde65fbab1ff33a66f2cdadb4ef2b055b39186",
+        "bytes": 16720,
+        "sha256": "513b6d49016a5ca7b80eff9ae9828acd6a9ceefeb836664697fbd2c07d6090aa"
+      },
+      "lasso-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/175e7db638ae50f33b255cc4e886a0c3ea7e931adc40543640f60d93412fd783.gz",
+        "archiveBytes": 394,
+        "archiveSha256": "804e7966e5c415456336e75d8ad23c4a92802196fe1a62fa787c886e0ad72d7c",
+        "bytes": 2193,
+        "sha256": "175e7db638ae50f33b255cc4e886a0c3ea7e931adc40543640f60d93412fd783"
+      },
+      "lasso.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/fb2269cd316f3174496142fd10f4a9466ce08c4b0a9886b5069b4142a022a8d4.gz",
+        "archiveBytes": 25754,
+        "archiveSha256": "10353592423d6f6a5a4a655a222aa86e020435946d8ab1689d3ed39608ef413b",
+        "bytes": 26413,
+        "sha256": "fb2269cd316f3174496142fd10f4a9466ce08c4b0a9886b5069b4142a022a8d4"
+      },
+      "regions.ipynb": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd.gz",
+        "archiveBytes": 1695,
+        "archiveSha256": "655dbbb990ffebf0a9427ba64505f4c430c754b21731850e0b1911c2021b021f",
+        "bytes": 5892,
+        "sha256": "8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd"
+      },
+      "report.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/c205383e57653cacc2d4d0e53c1f4bb8aba450d8ab64671d9419aa0b6df8adb6.gz",
+        "archiveBytes": 6736,
+        "archiveSha256": "11b4fb7a8ec71b753277d0364d3292679611dc60565fc5982ac5a459b2bb6d9b",
+        "bytes": 86137,
+        "sha256": "c205383e57653cacc2d4d0e53c1f4bb8aba450d8ab64671d9419aa0b6df8adb6"
+      }
+    },
+    "notebook7-dpr2": {
+      "before-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c.gz",
+        "archiveBytes": 30991,
+        "archiveSha256": "a1c60b150090a1ac67897881c1a0a44ca28df7507517e42983578b01277bd825",
+        "bytes": 43777,
+        "sha256": "950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c"
+      },
+      "before-edges-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/ea9f748c365dead1a8ab754ccdff4898a7d33210296ee398b2286428df48d95b.gz",
+        "archiveBytes": 424,
+        "archiveSha256": "600a729815b6a4ea69d65a6101e16289d1a62a63dd09c55e36f797a2b82126ba",
+        "bytes": 3521,
+        "sha256": "ea9f748c365dead1a8ab754ccdff4898a7d33210296ee398b2286428df48d95b"
+      },
+      "before-edges.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/7ac359965955b7a2dbc9eb49c20e5e2047c2d078809e801ce16157e1524786c5.gz",
+        "archiveBytes": 58008,
+        "archiveSha256": "fbb3261fe0f504d6a44b0451fda027ad0efadb599bae9515e5db336ff8f95b56",
+        "bytes": 61210,
+        "sha256": "7ac359965955b7a2dbc9eb49c20e5e2047c2d078809e801ce16157e1524786c5"
+      },
+      "before-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c.gz",
+        "archiveBytes": 30991,
+        "archiveSha256": "a1c60b150090a1ac67897881c1a0a44ca28df7507517e42983578b01277bd825",
+        "bytes": 43777,
+        "sha256": "950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c"
+      },
+      "before-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/70e884640af97aaacf0ebfc59b89f2dff18fcdc10b3141a6284d3256b16e873a.gz",
+        "archiveBytes": 393,
+        "archiveSha256": "fa540bc833ed398547fd8d904e333abdfbf148894fc44e4284a7e33c82499388",
+        "bytes": 2204,
+        "sha256": "70e884640af97aaacf0ebfc59b89f2dff18fcdc10b3141a6284d3256b16e873a"
+      },
+      "before.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/fec58e15f371c242cc3238d9daab21cd759050ddf63ac3444818c40a6b54f4d1.gz",
+        "archiveBytes": 57220,
+        "archiveSha256": "b9239b1f112fec7d163c9d4c06d311a180bdefcdb8623d2a0fe3f2d4dce81d3c",
+        "bytes": 60472,
+        "sha256": "fec58e15f371c242cc3238d9daab21cd759050ddf63ac3444818c40a6b54f4d1"
+      },
+      "box-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d.gz",
+        "archiveBytes": 28480,
+        "archiveSha256": "eff9458fb453c519a73094f6822a72d8ea853a5b9d2bc973b525d700ca891b94",
+        "bytes": 43605,
+        "sha256": "43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d"
+      },
+      "box-edges-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/a9f5c991e24a8ecef006c034c65f325cea94c50f125aabe7d4ed7d2bfed98905.gz",
+        "archiveBytes": 434,
+        "archiveSha256": "2c5f48132450640729b82d4f62ac8c8b7f306a4c369639003d18c125a8ff813c",
+        "bytes": 3501,
+        "sha256": "a9f5c991e24a8ecef006c034c65f325cea94c50f125aabe7d4ed7d2bfed98905"
+      },
+      "box-edges.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/a7254fba03243ddcc67876eb33617ee313b48a650dd047b8d7c5f34ae54c1561.gz",
+        "archiveBytes": 56270,
+        "archiveSha256": "8625cef5e7680730a8c791660c343b8afd412fc8d7ba61ef5b4b2edf245a0e18",
+        "bytes": 59914,
+        "sha256": "a7254fba03243ddcc67876eb33617ee313b48a650dd047b8d7c5f34ae54c1561"
+      },
+      "box-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d.gz",
+        "archiveBytes": 28480,
+        "archiveSha256": "eff9458fb453c519a73094f6822a72d8ea853a5b9d2bc973b525d700ca891b94",
+        "bytes": 43605,
+        "sha256": "43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d"
+      },
+      "box-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/c85bd9a989e7c6fbf23bd15e2ff6de1d157f70eeb2716e29be7c7c3fea4395a6.gz",
+        "archiveBytes": 404,
+        "archiveSha256": "2ac9e52d1c5edf2c80968078d4a9b84a04fe1e3c15a0d82c9da4e4848c1bcfd9",
+        "bytes": 2189,
+        "sha256": "c85bd9a989e7c6fbf23bd15e2ff6de1d157f70eeb2716e29be7c7c3fea4395a6"
+      },
+      "box.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/23afae81949f9de3004226b5a43c0d70fc042fe0ada4dfaf3f1ec19d6f8d8777.gz",
+        "archiveBytes": 55442,
+        "archiveSha256": "b97c644a11a00d36f4d16ad631f8a0fc9a5d4342b0bc99f3366b308d82cbdb7f",
+        "bytes": 59047,
+        "sha256": "23afae81949f9de3004226b5a43c0d70fc042fe0ada4dfaf3f1ec19d6f8d8777"
+      },
+      "capacity-before-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502.gz",
+        "archiveBytes": 29490,
+        "archiveSha256": "6b15c029d96c60fa028a87f1e72bf10579ed594bde3ab0875b84b9801054a560",
+        "bytes": 44131,
+        "sha256": "d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502"
+      },
+      "capacity-before-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/6941af367be3b1336bdc3e74d881673fc27a6de679e18d730894ab91bcba8dc7.gz",
+        "archiveBytes": 399,
+        "archiveSha256": "e6964602496b3f451096fa757d143d457beb92d5b1c7857d04451a4a11a8a6fd",
+        "bytes": 2189,
+        "sha256": "6941af367be3b1336bdc3e74d881673fc27a6de679e18d730894ab91bcba8dc7"
+      },
+      "capacity-before.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/f605bf23ae8766375616f38486a9a694c7c916cb9fdc8a2e7acddf36ddbf7875.gz",
+        "archiveBytes": 55296,
+        "archiveSha256": "f3f3d90457508747140cee18c1483eb7c4c03427d98b431c2719eeebccd8921b",
+        "bytes": 58962,
+        "sha256": "f605bf23ae8766375616f38486a9a694c7c916cb9fdc8a2e7acddf36ddbf7875"
+      },
+      "capacity-history-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502.gz",
+        "archiveBytes": 29490,
+        "archiveSha256": "6b15c029d96c60fa028a87f1e72bf10579ed594bde3ab0875b84b9801054a560",
+        "bytes": 44131,
+        "sha256": "d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502"
+      },
+      "capacity-history-refused-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/6941af367be3b1336bdc3e74d881673fc27a6de679e18d730894ab91bcba8dc7.gz",
+        "archiveBytes": 399,
+        "archiveSha256": "e6964602496b3f451096fa757d143d457beb92d5b1c7857d04451a4a11a8a6fd",
+        "bytes": 2189,
+        "sha256": "6941af367be3b1336bdc3e74d881673fc27a6de679e18d730894ab91bcba8dc7"
+      },
+      "capacity-history-refused.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/f605bf23ae8766375616f38486a9a694c7c916cb9fdc8a2e7acddf36ddbf7875.gz",
+        "archiveBytes": 55296,
+        "archiveSha256": "f3f3d90457508747140cee18c1483eb7c4c03427d98b431c2719eeebccd8921b",
+        "bytes": 58962,
+        "sha256": "f605bf23ae8766375616f38486a9a694c7c916cb9fdc8a2e7acddf36ddbf7875"
+      },
+      "capacity-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502.gz",
+        "archiveBytes": 29490,
+        "archiveSha256": "6b15c029d96c60fa028a87f1e72bf10579ed594bde3ab0875b84b9801054a560",
+        "bytes": 44131,
+        "sha256": "d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502"
+      },
+      "capacity-refused-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/b109eb14a91996ffc6c816c45ddb5cc0714334ec07d9ac8923b2c1a27653bd41.gz",
+        "archiveBytes": 398,
+        "archiveSha256": "0ae77a141729122bcdfcdf701b6c19dca571b260371ddcf503e85bdf888e1ac9",
+        "bytes": 2189,
+        "sha256": "b109eb14a91996ffc6c816c45ddb5cc0714334ec07d9ac8923b2c1a27653bd41"
+      },
+      "capacity-refused.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/464b9958a7f4e5da322ff53e7a726044b7b125776694d70ebf477bcdf81c2a1f.gz",
+        "archiveBytes": 50526,
+        "archiveSha256": "57fa23f9d52b59c659501af2f722b400cd04e0e71362fc7975e290be0d8ee94b",
+        "bytes": 54385,
+        "sha256": "464b9958a7f4e5da322ff53e7a726044b7b125776694d70ebf477bcdf81c2a1f"
+      },
+      "lasso-paint.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/ba9db221026bc03b24778592e8f65a018b5e17e14e68a0159a36098e405a6abd.gz",
+        "archiveBytes": 29981,
+        "archiveSha256": "93436e7f361bc53b2f5bf3aba03c1d6071efbde587e5b812b98e46aeaaab6dcd",
+        "bytes": 44025,
+        "sha256": "ba9db221026bc03b24778592e8f65a018b5e17e14e68a0159a36098e405a6abd"
+      },
+      "lasso-pixels.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/92e1729b76870af2d672be9e5c5e7a5ef8c92d17105d4f3aa0ba41b70fb570a2.gz",
+        "archiveBytes": 393,
+        "archiveSha256": "9f06ff5dff4e017ee3161167b4a0064520c2603c8e7bb31804583b2f5448a4d0",
+        "bytes": 2194,
+        "sha256": "92e1729b76870af2d672be9e5c5e7a5ef8c92d17105d4f3aa0ba41b70fb570a2"
+      },
+      "lasso.png": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/913ffc300d94586dc7a3f37d2bc3b57a6a1b17ac0dccb8ea622f6b4182a08c6b.gz",
+        "archiveBytes": 62349,
+        "archiveSha256": "0a03afc83d33017565c3694e20bed5e037b8365cb8058f52c62fb652f55169a4",
+        "bytes": 66193,
+        "sha256": "913ffc300d94586dc7a3f37d2bc3b57a6a1b17ac0dccb8ea622f6b4182a08c6b"
+      },
+      "regions.ipynb": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd.gz",
+        "archiveBytes": 1695,
+        "archiveSha256": "655dbbb990ffebf0a9427ba64505f4c430c754b21731850e0b1911c2021b021f",
+        "bytes": 5892,
+        "sha256": "8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd"
+      },
+      "report.json": {
+        "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/f99923bc7c08fab26a3528073660c837d1677132f85cfc4c0856e24a00016026.gz",
+        "archiveBytes": 6593,
+        "archiveSha256": "51532b0588c89a4644f36f9183cb261b532b7a9e0cd9a221b8db460653ad7ab8",
+        "bytes": 86154,
+        "sha256": "f99923bc7c08fab26a3528073660c837d1677132f85cfc4c0856e24a00016026"
+      }
+    }
+  },
+  "compiledInputs": {
+    "changed": [],
+    "count": 324,
+    "path": "spec/performance/graph-notebook-regions-2026-11-10/compiled-inputs.json",
+    "relativeTo": "12ece8fd2290ba09d8d11aaf294a7a18ad2412bd",
+    "sha256": "a0ca8b566fd0a7c6502d6f6cb5b2070ff148290a846d1e7189d8388d95061dca"
+  },
+  "evidence": {
+    "target/task-tmp/pr1121-ci-repair/assertion-preservation.json": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/3f14fb5f3b29dd07084d15fd3a37047f41011d91edd7918a2f9a4a920722fb6d.gz",
+      "archiveBytes": 226,
+      "archiveSha256": "24666717ba75013794fed7eb05ecf95f68c1108844da57b8c95d615c16a82e25",
+      "bytes": 300,
+      "sha256": "3f14fb5f3b29dd07084d15fd3a37047f41011d91edd7918a2f9a4a920722fb6d"
+    },
+    "target/task-tmp/pr1121-ci-repair/assertion-preservation.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/pr1121-ci-repair/browser-matrix-runner.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/pr1121-ci-repair/browser-matrix.json": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/bd823cf76f19125e87f9175a0bb2dec9f3f6f232be3ee35d3a34108265c13edf.gz",
+      "archiveBytes": 393,
+      "archiveSha256": "ff8d841f6b41e0f29feab94017554120d512adefa416ac370819170d2b00f6ad",
+      "bytes": 1828,
+      "sha256": "bd823cf76f19125e87f9175a0bb2dec9f3f6f232be3ee35d3a34108265c13edf"
+    },
+    "target/task-tmp/pr1121-ci-repair/check-ci.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/019d8b741f920c040267d2dcd69d618a08c92aa08f6288bd9e64e291c01c0daa.gz",
+      "archiveBytes": 473,
+      "archiveSha256": "c1cb03f97708877d24d222c804268a4c2eca4c38405aa05a1af92ac25c38e208",
+      "bytes": 2304,
+      "sha256": "019d8b741f920c040267d2dcd69d618a08c92aa08f6288bd9e64e291c01c0daa"
+    },
+    "target/task-tmp/pr1121-ci-repair/core-inventory.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/74aaefc8992fd81f8646f235d28f0729ab79edc1bdc8bf8c8c429a1d765908f3.gz",
+      "archiveBytes": 64,
+      "archiveSha256": "52d156687666e728d0463edad9dcf1adc5fdd90f890668d428a5d464ba8d5175",
+      "bytes": 111,
+      "sha256": "74aaefc8992fd81f8646f235d28f0729ab79edc1bdc8bf8c8c429a1d765908f3"
+    },
+    "target/task-tmp/pr1121-ci-repair/correction-scope.json": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/47b59bd355b6b4f81018e9985db4612419c2536beca43eeac1c4aa5c2a3dd5e5.gz",
+      "archiveBytes": 551,
+      "archiveSha256": "bfa501625dcb2272406fc98cf0f04225026a6cacaab9c7fe5940b7c6878836eb",
+      "bytes": 948,
+      "sha256": "47b59bd355b6b4f81018e9985db4612419c2536beca43eeac1c4aa5c2a3dd5e5"
+    },
+    "target/task-tmp/pr1121-ci-repair/desktop-corrected-verifier.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/910346b8769233f593afaf76cdd389deb35240d7c5a6a5c7238c9786def0df82.gz",
+      "archiveBytes": 78,
+      "archiveSha256": "4cef964625521bd0aa2ae9c735a804c679456ddb15f697eeb861de36f8786616",
+      "bytes": 59,
+      "sha256": "910346b8769233f593afaf76cdd389deb35240d7c5a6a5c7238c9786def0df82"
+    },
+    "target/task-tmp/pr1121-ci-repair/desktop-corrected.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0.gz",
+      "archiveBytes": 85,
+      "archiveSha256": "a688876b9fdeb2185a00304848bf5019b0c035fdb46e9514817fd783be391ea4",
+      "bytes": 71,
+      "sha256": "26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0"
+    },
+    "target/task-tmp/pr1121-ci-repair/desktop.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/450c8bb9ae5bcb7dfb1769bc990e3f6ca7495d523acb00300e58fae2f74bc80c.gz",
+      "archiveBytes": 246,
+      "archiveSha256": "9f52b571548510fbbc38cfec96bd15811ca1fe67f2ebbcdb66eb1f4077ee5007",
+      "bytes": 434,
+      "sha256": "450c8bb9ae5bcb7dfb1769bc990e3f6ca7495d523acb00300e58fae2f74bc80c"
+    },
+    "target/task-tmp/pr1121-ci-repair/final-source-core.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/37e950a91058004103dc642ae819c2a72b60e7da0dc6396ce73c587818f06c4c.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "cbbe2d9eccaa553202edf3b015c5e309ffc352d39e0e0d632f7b6ce22243c8df",
+      "bytes": 99,
+      "sha256": "37e950a91058004103dc642ae819c2a72b60e7da0dc6396ce73c587818f06c4c"
+    },
+    "target/task-tmp/pr1121-ci-repair/fixed-gate-v2.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/5b9506a4e84063139b58d95c0fbe4c1ac54a321eba61322351c4661e1a8fc9a0.gz",
+      "archiveBytes": 66,
+      "archiveSha256": "8836c191bd2a6e628f7b1cd86c3284534f4c6cb5de5234ff440baf268dee5096",
+      "bytes": 113,
+      "sha256": "5b9506a4e84063139b58d95c0fbe4c1ac54a321eba61322351c4661e1a8fc9a0"
+    },
+    "target/task-tmp/pr1121-ci-repair/fixed-gate.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/eae907992404db0ae07e4e1723f4ad3f80ddfdf60736cec6575b8738d4b87f50.gz",
+      "archiveBytes": 807,
+      "archiveSha256": "8e430b690b2fd5a4b125bd726ddb5da89ffaf3a3fc6af054a0234df0c3c7383b",
+      "bytes": 8887,
+      "sha256": "eae907992404db0ae07e4e1723f4ad3f80ddfdf60736cec6575b8738d4b87f50"
+    },
+    "target/task-tmp/pr1121-ci-repair/fixed-pan-preset-driver.mjs": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/9696972665a4bb8e7c9618a16c5dfe79ab1c0ef18d2804e8033c4f461403e06a.gz",
+      "archiveBytes": 2648,
+      "archiveSha256": "aff027c0f5cb749abafa14a1444911f1ce2077f7d8860bfd93e5f1f0fb224faf",
+      "bytes": 6292,
+      "sha256": "9696972665a4bb8e7c9618a16c5dfe79ab1c0ef18d2804e8033c4f461403e06a"
+    },
+    "target/task-tmp/pr1121-ci-repair/fixed-pan-preset-journey.mjs": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/a53435df2c1a5683a9286b1de482cd5a30b8cdc9eeffe40e15322755b54c0046.gz",
+      "archiveBytes": 6275,
+      "archiveSha256": "57d6f4a051bf5de09094bf4b00e6b5a630eca94a9cf7457dff36d066910980d0",
+      "bytes": 20539,
+      "sha256": "a53435df2c1a5683a9286b1de482cd5a30b8cdc9eeffe40e15322755b54c0046"
+    },
+    "target/task-tmp/pr1121-ci-repair/fixed-pan-preset.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/bd01da7622618578eeb968427bd929f3d0d9ac7351f8bb4dce08aaedf3bf55c5.gz",
+      "archiveBytes": 178,
+      "archiveSha256": "5d5e6d6c707125a43afd15cd40c2b0bec1a122076de7d3cfd4106092c1b2dcba",
+      "bytes": 194,
+      "sha256": "bd01da7622618578eeb968427bd929f3d0d9ac7351f8bb4dce08aaedf3bf55c5"
+    },
+    "target/task-tmp/pr1121-ci-repair/format.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/2305146935c9fe25db5e18851be249342eeff356e6bf3719de99de348f48588f.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "718ab5331a068b27c1f2ec5e2296f2890be15780bee47f3459d547ef88e9650d",
+      "bytes": 29,
+      "sha256": "2305146935c9fe25db5e18851be249342eeff356e6bf3719de99de348f48588f"
+    },
+    "target/task-tmp/pr1121-ci-repair/hooks.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/pr1121-ci-repair/jupyterlab-dpr1.json": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/f507debd885a789df0cf7531a6e3a69f0a795ab7da7934ee77031ee87da4d657.gz",
+      "archiveBytes": 6610,
+      "archiveSha256": "35c5c9c6b4698efc2de8aece3e2cf85d88bdf205e804e863b361f6c0d9fce333",
+      "bytes": 85548,
+      "sha256": "f507debd885a789df0cf7531a6e3a69f0a795ab7da7934ee77031ee87da4d657"
+    },
+    "target/task-tmp/pr1121-ci-repair/jupyterlab-dpr1.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/dcd6b3eb7a7768dec415628d209c39be4f693a4dcea587a0e7a92e746f6f3c08.gz",
+      "archiveBytes": 141,
+      "archiveSha256": "6363bab82607c414ed06ff247a196348fb6592828ee64d6660d387a81bb31691",
+      "bytes": 141,
+      "sha256": "dcd6b3eb7a7768dec415628d209c39be4f693a4dcea587a0e7a92e746f6f3c08"
+    },
+    "target/task-tmp/pr1121-ci-repair/jupyterlab-dpr2.json": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/3dbf74a7a8d61bd373965edf75a4f997550eb55ad5e2896e12fd8e2cb0b586f2.gz",
+      "archiveBytes": 6513,
+      "archiveSha256": "18e90ff9f1a995c62dceac03d78c53f852f65e5f7ac843489c699061a0b9cdb3",
+      "bytes": 85553,
+      "sha256": "3dbf74a7a8d61bd373965edf75a4f997550eb55ad5e2896e12fd8e2cb0b586f2"
+    },
+    "target/task-tmp/pr1121-ci-repair/jupyterlab-dpr2.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/0a7ecb4ad3cbb71c5e3fbae7d5ae2bc378c0f3ae768dc340fcab0787ddc6cec2.gz",
+      "archiveBytes": 142,
+      "archiveSha256": "2c325bf8b75bbedddae82bca124eb3119ad4315938e44db3e9b8913de7d8f7e4",
+      "bytes": 141,
+      "sha256": "0a7ecb4ad3cbb71c5e3fbae7d5ae2bc378c0f3ae768dc340fcab0787ddc6cec2"
+    },
+    "target/task-tmp/pr1121-ci-repair/lab465-create.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/3981fd2586ffb9e2415bf8f8d3099da27a6d0ca196f586b591f4de0d21c951d3.gz",
+      "archiveBytes": 156,
+      "archiveSha256": "1b9ed34f090cdfeb76165c416d70d68aceb56cc5310f6c13d9b66cedf1d4daec",
+      "bytes": 211,
+      "sha256": "3981fd2586ffb9e2415bf8f8d3099da27a6d0ca196f586b591f4de0d21c951d3"
+    },
+    "target/task-tmp/pr1121-ci-repair/lab465-dpr1.json": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/bb82f8eec98f21ddc07775b1e9c6b86841ae8b6527cbf90a2ee18ffedda143a7.gz",
+      "archiveBytes": 6458,
+      "archiveSha256": "8a6bed4c6fc0cb3052f89763bd4bf1f5450ab2ea30d38a8dc910f745f5db3787",
+      "bytes": 85289,
+      "sha256": "bb82f8eec98f21ddc07775b1e9c6b86841ae8b6527cbf90a2ee18ffedda143a7"
+    },
+    "target/task-tmp/pr1121-ci-repair/lab465-dpr1.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/235c5134ba20b2546b2358408730d3e81cfde15ae789cbd5aa628d5fedcd6aac.gz",
+      "archiveBytes": 141,
+      "archiveSha256": "bab34f0936d307461616e765b6be3e3fb65e06da9d3666e9ac275f93a40b6379",
+      "bytes": 141,
+      "sha256": "235c5134ba20b2546b2358408730d3e81cfde15ae789cbd5aa628d5fedcd6aac"
+    },
+    "target/task-tmp/pr1121-ci-repair/lab465-dpr2.json": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/67ee8ddab89a4d7174a849e679d4699f5f3c6ee05f62e5b8e27c3f4a994e5d66.gz",
+      "archiveBytes": 6322,
+      "archiveSha256": "cad9f66e62b34fb2f245deed9d7181a74633c2962f8c4c21e2332b532946fa26",
+      "bytes": 85294,
+      "sha256": "67ee8ddab89a4d7174a849e679d4699f5f3c6ee05f62e5b8e27c3f4a994e5d66"
+    },
+    "target/task-tmp/pr1121-ci-repair/lab465-dpr2.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/1fec9805850d332eade61e3c1a002c5f6819dc6abaeaea6255d32eaa008ddb6e.gz",
+      "archiveBytes": 143,
+      "archiveSha256": "cab333e6a9145c89070245e72db4f5de9676dcc4a55381dd3eb365ae1409e7cb",
+      "bytes": 141,
+      "sha256": "1fec9805850d332eade61e3c1a002c5f6819dc6abaeaea6255d32eaa008ddb6e"
+    },
+    "target/task-tmp/pr1121-ci-repair/lab465-install.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/bab09d20f88875d13087d9ede56d0d8bf05fd85fa3155d7814ffe81ef2d740c9.gz",
+      "archiveBytes": 1080,
+      "archiveSha256": "23a69c800064a367e0fddfe6c3bdf1b976904ac8be87fbc3398e7d2b4247930e",
+      "bytes": 2328,
+      "sha256": "bab09d20f88875d13087d9ede56d0d8bf05fd85fa3155d7814ffe81ef2d740c9"
+    },
+    "target/task-tmp/pr1121-ci-repair/notebook7-dpr1.json": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/c205383e57653cacc2d4d0e53c1f4bb8aba450d8ab64671d9419aa0b6df8adb6.gz",
+      "archiveBytes": 6736,
+      "archiveSha256": "11b4fb7a8ec71b753277d0364d3292679611dc60565fc5982ac5a459b2bb6d9b",
+      "bytes": 86137,
+      "sha256": "c205383e57653cacc2d4d0e53c1f4bb8aba450d8ab64671d9419aa0b6df8adb6"
+    },
+    "target/task-tmp/pr1121-ci-repair/notebook7-dpr1.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/f6ef82f8ecd27ee239809d88aaad0bac8c112d10fd744dca9824856a23ec9098.gz",
+      "archiveBytes": 142,
+      "archiveSha256": "7552b967a933c2b1867b3677b0763064c53e7c52b276428a94d0b7c2fb761004",
+      "bytes": 141,
+      "sha256": "f6ef82f8ecd27ee239809d88aaad0bac8c112d10fd744dca9824856a23ec9098"
+    },
+    "target/task-tmp/pr1121-ci-repair/notebook7-dpr2.json": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/f99923bc7c08fab26a3528073660c837d1677132f85cfc4c0856e24a00016026.gz",
+      "archiveBytes": 6593,
+      "archiveSha256": "51532b0588c89a4644f36f9183cb261b532b7a9e0cd9a221b8db460653ad7ab8",
+      "bytes": 86154,
+      "sha256": "f99923bc7c08fab26a3528073660c837d1677132f85cfc4c0856e24a00016026"
+    },
+    "target/task-tmp/pr1121-ci-repair/notebook7-dpr2.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/ad579e2c385693a625246e111b4f9d814b55d7f6f9dbace766230db6f50b6f8b.gz",
+      "archiveBytes": 144,
+      "archiveSha256": "471b9e1a524503874d9f8f179861923611e926adc93daae944e24e514c8a28ea",
+      "bytes": 141,
+      "sha256": "ad579e2c385693a625246e111b4f9d814b55d7f6f9dbace766230db6f50b6f8b"
+    },
+    "target/task-tmp/pr1121-ci-repair/parent-borrowed-lab-regions.json": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/c2c7960b9eb2c6c4b934259ec959ef0962d6417096666ca40df813c85cf6c7a4.gz",
+      "archiveBytes": 6604,
+      "archiveSha256": "21f57a01989b043d235fd0c5608412bf9675a3e1d1921e3ea0d8d7a66a8975f0",
+      "bytes": 85548,
+      "sha256": "c2c7960b9eb2c6c4b934259ec959ef0962d6417096666ca40df813c85cf6c7a4"
+    },
+    "target/task-tmp/pr1121-ci-repair/parent-borrowed-lab-regions.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/05f7b624dc1ce8d7c0bc1101e5176e66a090792211905cab9610ca2a532116cf.gz",
+      "archiveBytes": 144,
+      "archiveSha256": "0bca41e368a95077d8efaaf6d650453fa74aa02e1185ec2e184609409734b9d9",
+      "bytes": 141,
+      "sha256": "05f7b624dc1ce8d7c0bc1101e5176e66a090792211905cab9610ca2a532116cf"
+    },
+    "target/task-tmp/pr1121-ci-repair/parent-gate.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/bce277c4a56ec557de123f8b093896dd01a239288e83ac8ac9a0ff00f31641b5.gz",
+      "archiveBytes": 849,
+      "archiveSha256": "865dde2ab0cb94e24ddd95b8c14e50ed1cb352d44839f71250975365a5b0954b",
+      "bytes": 2292,
+      "sha256": "bce277c4a56ec557de123f8b093896dd01a239288e83ac8ac9a0ff00f31641b5"
+    },
+    "target/task-tmp/pr1121-ci-repair/parent-lab-regions.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/3538a6ce23fdd2a7c61b1f4e886d023297c44bf66456af7690e322a69c0078a3.gz",
+      "archiveBytes": 429,
+      "archiveSha256": "6bdf641193134aa5b57a20493549a65f54edd21413f75b3dad16b7d951584834",
+      "bytes": 845,
+      "sha256": "3538a6ce23fdd2a7c61b1f4e886d023297c44bf66456af7690e322a69c0078a3"
+    },
+    "target/task-tmp/pr1121-ci-repair/parent-pan-preset-driver.mjs": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/8db1e7b3d0710e70b3f3ed8ca3a4041925b8a9e218666d83c8ab963b45fe3401.gz",
+      "archiveBytes": 2648,
+      "archiveSha256": "4c71df9a7f669485215b1be2bcd41da37e91379f8816f45f6fcc74a38f57789d",
+      "bytes": 6293,
+      "sha256": "8db1e7b3d0710e70b3f3ed8ca3a4041925b8a9e218666d83c8ab963b45fe3401"
+    },
+    "target/task-tmp/pr1121-ci-repair/parent-pan-preset-journey.mjs": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/10bfefc034d4c4beb33c9f446f97939e8fb8c55ff8546c1426b2c324975ed058.gz",
+      "archiveBytes": 6189,
+      "archiveSha256": "d59fd1c3ff70eff469d55b1cf948003776de7ecfda507b33cebf3f4436a244b4",
+      "bytes": 20357,
+      "sha256": "10bfefc034d4c4beb33c9f446f97939e8fb8c55ff8546c1426b2c324975ed058"
+    },
+    "target/task-tmp/pr1121-ci-repair/parent-pan-preset.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/2f32774cae55f9a2d056bc2781f9e7138687b0dd6af05bd918095b7b030e8976.gz",
+      "archiveBytes": 353,
+      "archiveSha256": "b0fd0bfe0587b0c5d23ee24678169c65a30621fc7090489014b81c820100f97d",
+      "bytes": 555,
+      "sha256": "2f32774cae55f9a2d056bc2781f9e7138687b0dd6af05bd918095b7b030e8976"
+    },
+    "target/task-tmp/pr1121-ci-repair/preserve-assertions.mjs": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/18e63f06a115d77aa50b5d960425aea5f66bd23da8a2b10b118390763056a18c.gz",
+      "archiveBytes": 607,
+      "archiveSha256": "e980ce194eb0253a344b9810200ce0e407a719ff6a4fcd3d19a6b00b9837f0fd",
+      "bytes": 1093,
+      "sha256": "18e63f06a115d77aa50b5d960425aea5f66bd23da8a2b10b118390763056a18c"
+    },
+    "target/task-tmp/pr1121-ci-repair/py311-disposition.json": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/8181b80d51d5e2f9fdce797fd01f718b3ff5cf2ab8aa87fc0c7323cbbf0f0d32.gz",
+      "archiveBytes": 229,
+      "archiveSha256": "e97abb45870d092498abb6e99fecdd5be8be70acf9b7ab168c22b4bd872af12b",
+      "bytes": 284,
+      "sha256": "8181b80d51d5e2f9fdce797fd01f718b3ff5cf2ab8aa87fc0c7323cbbf0f0d32"
+    },
+    "target/task-tmp/pr1121-ci-repair/report-controls-py311.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/f27a3cc7bc53bd8052733b11c5b47b6cddd56c379ba76d0321171340e33227fb.gz",
+      "archiveBytes": 63,
+      "archiveSha256": "c9bd803389d8a9688ae4fcc09944b5626d9f5af770d30482cf90d9a6b53d5a69",
+      "bytes": 181,
+      "sha256": "f27a3cc7bc53bd8052733b11c5b47b6cddd56c379ba76d0321171340e33227fb"
+    },
+    "target/task-tmp/pr1121-ci-repair/report-controls.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/e5fe9209de4a36d41c3f98742e56f8382ebd84d61f6e4e704d0d1f0c3ec0501c.gz",
+      "archiveBytes": 63,
+      "archiveSha256": "5664f0dbb4b7947b7448eddfc2be658ccf1be040eded446f72a78a136f2ef774",
+      "bytes": 181,
+      "sha256": "e5fe9209de4a36d41c3f98742e56f8382ebd84d61f6e4e704d0d1f0c3ec0501c"
+    },
+    "target/task-tmp/pr1121-ci-repair/ruff.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/pr1121-ci-repair/run-matrix.py": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/53081d5cae7f5d16b37ff57d7bdbb802cc279984fa476aa0b07b4306be10fa7d.gz",
+      "archiveBytes": 866,
+      "archiveSha256": "25e2810ba9d93c7ba5e8c4eeba431b0c499058734dfb35b2ca19dd54455efbe9",
+      "bytes": 2181,
+      "sha256": "53081d5cae7f5d16b37ff57d7bdbb802cc279984fa476aa0b07b4306be10fa7d"
+    },
+    "target/task-tmp/pr1121-ci-repair/seal-evidence.py": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/8d68d490781bcc4f0159adb56d0e066b7d8d579499da4f2ed3f044ca7bc64659.gz",
+      "archiveBytes": 3068,
+      "archiveSha256": "7e3e95c90dc37837af279416866c1a096d469a6a1b25e54ab4def95dd6a89167",
+      "bytes": 7882,
+      "sha256": "8d68d490781bcc4f0159adb56d0e066b7d8d579499da4f2ed3f044ca7bc64659"
+    },
+    "target/task-tmp/pr1121-ci-repair/seal-sources.py": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/af25a55544260a2c75fca905e48ac11823f371b07ae174e447996be2af66f8ba.gz",
+      "archiveBytes": 1177,
+      "archiveSha256": "f3d332aaee64f19b49f5ed5358338542ac634c25a73b78203b1281eb17c6f041",
+      "bytes": 2769,
+      "sha256": "af25a55544260a2c75fca905e48ac11823f371b07ae174e447996be2af66f8ba"
+    },
+    "target/task-tmp/pr1121-ci-repair/source-seal.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/9b90eef708b2627f4905a6da5b2da77ff5f0a1993d3875cbedf5e41760190144.gz",
+      "archiveBytes": 64,
+      "archiveSha256": "039f9d8739c582a4da499dc80e74e0c090379e8467e36af8063e7d4448169d19",
+      "bytes": 53,
+      "sha256": "9b90eef708b2627f4905a6da5b2da77ff5f0a1993d3875cbedf5e41760190144"
+    },
+    "target/task-tmp/vscode-regions/canonical/hosted-42861637902-failed.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/fc7c26ea06ef0cfff051a7c58d7412363bcc6e8ed56bf7936d319e49e448c1f2.gz",
+      "archiveBytes": 7524,
+      "archiveSha256": "e60a0276b229010c2026db6bcf88241b4f8b57abebe9f970335d7b1f3e0e2cad",
+      "bytes": 56159,
+      "sha256": "fc7c26ea06ef0cfff051a7c58d7412363bcc6e8ed56bf7936d319e49e448c1f2"
+    },
+    "target/task-tmp/vscode-regions/canonical/hosted-main-annotations.json": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/9fcc7e9c46abb3e0424524127ef7af8e6b072b9007c330ac86986dd04bbd1592.gz",
+      "archiveBytes": 532,
+      "archiveSha256": "4e5eab344cea676e419e20e7d828d7c28fc6479740f2d0ae60f34be0b9854886",
+      "bytes": 2408,
+      "sha256": "9fcc7e9c46abb3e0424524127ef7af8e6b072b9007c330ac86986dd04bbd1592"
+    },
+    "target/task-tmp/vscode-regions/canonical/hosted-main-full.log": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/32933752fbb515a2ed06d62ecbddc68ee8cf0f5fd85f9f907838bd08190c690c.gz",
+      "archiveBytes": 145082,
+      "archiveSha256": "9b59faae874c054d9ea81f7e8103ff2a377c91c77ace4681c4e67e2e9885c0d5",
+      "bytes": 737887,
+      "sha256": "32933752fbb515a2ed06d62ecbddc68ee8cf0f5fd85f9f907838bd08190c690c"
+    },
+    "target/task-tmp/vscode-regions/canonical/hosted-main-job.json": {
+      "archive": "spec/performance/graph-notebook-ci-repair-2026-11-10/evidence/d8f932c9478e0ddf61a6c8d27c67085c8acc4638e617e30269c4b709fcae3338.gz",
+      "archiveBytes": 2527,
+      "archiveSha256": "0197bbd2d6770f8c306a0567fa2ac1bded76aa98673957e5a9aa2e4cae09775a",
+      "bytes": 15556,
+      "sha256": "d8f932c9478e0ddf61a6c8d27c67085c8acc4638e617e30269c4b709fcae3338"
+    }
+  },
+  "failedAttempts": [
+    {
+      "cause": "installed TypeScript7 package exposes version metadata rather than legacy ScriptTarget parser API; no source change; literal assertion-line and complete diff preservation checks succeeded instead",
+      "exit": 1,
+      "scope": "optional assertion AST audit"
+    },
+    {
+      "cause": "global duplicate-command assertion reproduced; exact hosted initial pan state not recorded",
+      "main": "pan wait timed out; dependent producers skipped and their strict uploads failed",
+      "python311": "8618 passed,367 skipped,84 xfailed,1 failed",
+      "scope": "hosted run42861637902",
+      "status": "FAILED"
+    },
+    {
+      "exit": 1,
+      "failed": 1,
+      "log": "target/task-tmp/pr1121-ci-repair/parent-gate.log",
+      "passed": 4,
+      "scope": "exact parent local mutation assertion"
+    },
+    {
+      "exit": 1,
+      "failed": 5,
+      "log": "target/task-tmp/pr1121-ci-repair/fixed-gate.log",
+      "passed": 0,
+      "scope": "initial correction passed whole workflow to job-scoped parser; corrected to select test job"
+    },
+    {
+      "exit": 1,
+      "log": "target/task-tmp/pr1121-ci-repair/parent-pan-preset.log",
+      "scope": "controlled parent public active-Pan toggles to none and wait times out"
+    },
+    {
+      "exit": 1,
+      "log": "target/task-tmp/pr1121-ci-repair/parent-lab-regions.log",
+      "scope": "local setup: omitted installed server path, executable absent before frontend start"
+    },
+    {
+      "exit": 1,
+      "log": "target/task-tmp/pr1121-ci-repair/desktop.log",
+      "scope": "local setup: omitted DISPLAY/explicit TCP Xvfb before application start"
+    }
+  ],
+  "fresh": {
+    "activePanControl": {
+      "exit": 0,
+      "log": "target/task-tmp/pr1121-ci-repair/fixed-pan-preset.log",
+      "variant": "one inserted trusted public Pan activation immediately before unchanged journey Pan code"
+    },
+    "actualDesktop": {
+      "display": "explicit private TCP Xvfb",
+      "exit": 0,
+      "log": "target/task-tmp/pr1121-ci-repair/desktop-corrected.log",
+      "node": "22.23.4",
+      "verifierLog": "target/task-tmp/pr1121-ci-repair/desktop-corrected-verifier.log"
+    },
+    "checkCi": {
+      "exit": 0,
+      "log": "target/task-tmp/pr1121-ci-repair/check-ci.log",
+      "passed": 1039
+    },
+    "coreInventory": {
+      "exit": 0,
+      "log": "target/task-tmp/pr1121-ci-repair/core-inventory.log",
+      "passed": 61
+    },
+    "finalSourceCore": {
+      "exit": 0,
+      "log": "target/task-tmp/pr1121-ci-repair/final-source-core.log",
+      "passed": 3
+    },
+    "format": {
+      "exit": 0,
+      "log": "target/task-tmp/pr1121-ci-repair/format.log"
+    },
+    "fourFrontendDprCases": {
+      "exit": 0,
+      "results": [
+        {
+          "command": [
+            "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin/node",
+            "scripts/graph_notebook_regions_smoke.mjs",
+            "--frontend",
+            "jupyterlab"
+          ],
+          "exit": 0,
+          "name": "jupyterlab-dpr1"
+        },
+        {
+          "command": [
+            "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin/node",
+            "scripts/graph_notebook_regions_smoke.mjs",
+            "--frontend",
+            "jupyterlab"
+          ],
+          "exit": 0,
+          "name": "jupyterlab-dpr2"
+        },
+        {
+          "command": [
+            "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin/node",
+            "scripts/graph_notebook_regions_smoke.mjs",
+            "--frontend",
+            "notebook7"
+          ],
+          "exit": 0,
+          "name": "notebook7-dpr1"
+        },
+        {
+          "command": [
+            "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/node-v22.23.4-linux-x64/bin/node",
+            "scripts/graph_notebook_regions_smoke.mjs",
+            "--frontend",
+            "notebook7"
+          ],
+          "exit": 0,
+          "name": "notebook7-dpr2"
+        }
+      ],
+      "serverCohort": "JupyterLab4.5.11 / Notebook7.5.8"
+    },
+    "hooks": {
+      "exit": 0,
+      "log": "target/task-tmp/pr1121-ci-repair/hooks.log"
+    },
+    "hostedVersionLab465DprCases": {
+      "exit": 0,
+      "logs": [
+        "target/task-tmp/pr1121-ci-repair/lab465-dpr1.log",
+        "target/task-tmp/pr1121-ci-repair/lab465-dpr2.log"
+      ],
+      "serverCohort": "JupyterLab4.6.5 in separate Python3.12.15 environment; setup logs pinned"
+    },
+    "python311WorkflowAndReportControls": {
+      "exit": 0,
+      "log": "target/task-tmp/pr1121-ci-repair/report-controls-py311.log",
+      "passed": 109
+    },
+    "ruff": {
+      "exit": 0,
+      "log": "target/task-tmp/pr1121-ci-repair/ruff.log"
+    },
+    "workflowAndReportControls": {
+      "exit": 0,
+      "log": "target/task-tmp/pr1121-ci-repair/report-controls.log",
+      "passed": 109
+    }
+  },
+  "inheritance": "Reviewed parent product behavior only over exact runtime/compiled source identities; existing historical receipts are preserved. This correction requires new final-diff review.",
+  "nativeWasmOrClientRebuilt": false,
+  "package": {
+    "gzip6": 786379,
+    "gzip6Cap": 786432,
+    "gzip6Headroom": 53,
+    "raw": 1885379,
+    "rawCap": 1927168,
+    "sha256": "c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271"
+  },
+  "parentReceipt": {
+    "path": "spec/performance/graph-vscode-regions-2026-11-10/checks.json",
+    "sha256": "edd50c543fb20d32b66da98688b8820c8cf98025db3f1f0144527ec7b30b1e53"
+  },
+  "readmeSha256": "7628fabc35e0097211918cae881216cf23254a72535d0b53e1dc8bf151f25ffb",
+  "remaining": [
+    "Fresh final-head hosted checks and merge queue; local actual Lab4.6.5 is qualified separately",
+    "Hosted pan timeout initial tool state remains unknown; no general reliability fix certified",
+    "Large semantic notebook admission and original full issue/milestone acceptance remain open"
+  ],
+  "runtime": {
+    "packages/xy-client/dist/index.js": {
+      "archive": "spec/performance/graph-empty-clear-status-2026-11-10/evidence/c58b8bb52e50454a195b49b5f8c6d29b7bde75bb5b375ded2c9feb28e18041c9.gz",
+      "archiveBytes": 248935,
+      "archiveSha256": "821445f77964393f3da5e51f3b096d30b4ad7bd422a689a24ff4237acc449903",
+      "bytes": 868475,
+      "sha256": "c58b8bb52e50454a195b49b5f8c6d29b7bde75bb5b375ded2c9feb28e18041c9"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "archive": "spec/performance/graph-empty-clear-status-2026-11-10/evidence/7ecf33e4223414a7848c727037b212667d4a9d84d3f2a90c82faac2104fb66b7.gz",
+      "archiveBytes": 249005,
+      "archiveSha256": "022de8c0db7da674e5ecf32cd81a79e66c00179d14756d4d16d20c7ad9739526",
+      "bytes": 868488,
+      "sha256": "7ecf33e4223414a7848c727037b212667d4a9d84d3f2a90c82faac2104fb66b7"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz",
+      "archiveBytes": 3838,
+      "archiveSha256": "dda8e6c4cec42d91f687b660d742d79dcc1a8c0d052ca6ca189c6acf095db2b4",
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/70302dd988dd7ea4bbf25b4b2f57cac0c85d7c8d2d207499a585db0a672a29b5.gz",
+      "archiveBytes": 1043256,
+      "archiveSha256": "8208c789c89c7893c1ed21ddb8b9526c8d555b83926e0c623badd5a886318695",
+      "bytes": 2534962,
+      "sha256": "70302dd988dd7ea4bbf25b4b2f57cac0c85d7c8d2d207499a585db0a672a29b5"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/3a216a6158fa8aca0844fcdf2e3c1bafa6d3b1dc29f1734dea8da3c18609abab.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "e0c290ee70a86c99e2a250eb56162c30cb89e78a3189610e8199fd154f555765",
+      "bytes": 226,
+      "sha256": "3a216a6158fa8aca0844fcdf2e3c1bafa6d3b1dc29f1734dea8da3c18609abab"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271.gz",
+      "archiveBytes": 781160,
+      "archiveSha256": "1788dfdad46ec12eb81712329e48375306fd9a47a994b0a030f9ebab236fd142",
+      "bytes": 1885379,
+      "sha256": "c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271"
+    },
+    "python/xyg/static/index.js": {
+      "archive": "spec/performance/graph-empty-clear-status-2026-11-10/evidence/c58b8bb52e50454a195b49b5f8c6d29b7bde75bb5b375ded2c9feb28e18041c9.gz",
+      "archiveBytes": 248935,
+      "archiveSha256": "821445f77964393f3da5e51f3b096d30b4ad7bd422a689a24ff4237acc449903",
+      "bytes": 868475,
+      "sha256": "c58b8bb52e50454a195b49b5f8c6d29b7bde75bb5b375ded2c9feb28e18041c9"
+    },
+    "python/xyg/static/standalone.js": {
+      "archive": "spec/performance/graph-empty-clear-status-2026-11-10/evidence/7ecf33e4223414a7848c727037b212667d4a9d84d3f2a90c82faac2104fb66b7.gz",
+      "archiveBytes": 249005,
+      "archiveSha256": "022de8c0db7da674e5ecf32cd81a79e66c00179d14756d4d16d20c7ad9739526",
+      "bytes": 868488,
+      "sha256": "7ecf33e4223414a7848c727037b212667d4a9d84d3f2a90c82faac2104fb66b7"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/70302dd988dd7ea4bbf25b4b2f57cac0c85d7c8d2d207499a585db0a672a29b5.gz",
+      "archiveBytes": 1043256,
+      "archiveSha256": "8208c789c89c7893c1ed21ddb8b9526c8d555b83926e0c623badd5a886318695",
+      "bytes": 2534962,
+      "sha256": "70302dd988dd7ea4bbf25b4b2f57cac0c85d7c8d2d207499a585db0a672a29b5"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/3a216a6158fa8aca0844fcdf2e3c1bafa6d3b1dc29f1734dea8da3c18609abab.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "e0c290ee70a86c99e2a250eb56162c30cb89e78a3189610e8199fd154f555765",
+      "bytes": 226,
+      "sha256": "3a216a6158fa8aca0844fcdf2e3c1bafa6d3b1dc29f1734dea8da3c18609abab"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271.gz",
+      "archiveBytes": 781160,
+      "archiveSha256": "1788dfdad46ec12eb81712329e48375306fd9a47a994b0a030f9ebab236fd142",
+      "bytes": 1885379,
+      "sha256": "c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271"
+    },
+    "target/release/libxyg_core.so": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/ae8dc056771abb1109381202b4143d81157ac0235555ad3d527a426a807bc4bb.gz",
+      "archiveBytes": 2905861,
+      "archiveSha256": "1e22d36c42e15f3afb52ab09cbddc6bec063217e8fa6a499569d0e4114348533",
+      "bytes": 6379944,
+      "sha256": "ae8dc056771abb1109381202b4143d81157ac0235555ad3d527a426a807bc4bb"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d8c7089327b8828b99e98c6e78510676a6703f40628a64f5c714f4edec96da4f.gz",
+      "archiveBytes": 1253247,
+      "archiveSha256": "b6f6c9bc953c17356b0da2ce132395d8e5a3e65f11b9e50aeff2cc581e51741c",
+      "bytes": 4075069,
+      "sha256": "d8c7089327b8828b99e98c6e78510676a6703f40628a64f5c714f4edec96da4f"
+    }
+  },
+  "schemaVersion": 1,
+  "scope": "Named-step workflow mutations, make check-ci discovery and shared real-browser Pan-toggle precondition; no runtime/build/policy changes"
+}

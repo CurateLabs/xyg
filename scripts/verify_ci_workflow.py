@@ -2135,6 +2135,35 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     _require_step_runs_exactly(
         errors,
         jobs.get("test", ""),
+        "Notebook 7 graph regions",
+        "required actual Notebook7 graph region membership and refusal oracles",
+        'export XYG_GRAPH_JUPYTER="$RUNNER_TEMP/graph-notebook7-env/bin/jupyter-notebook"',
+        'export XYG_CHROMIUM="$(node -e "console.log(require(\'playwright\').chromium.executablePath())")"',
+        'export XYG_GRAPH_REGION_REPORT="$RUNNER_TEMP/graph-regions-notebook7-dpr1.json"',
+        "node scripts/graph_notebook_regions_smoke.mjs --frontend notebook7",
+        'XYG_GRAPH_REGION_DPR=2 XYG_GRAPH_REGION_REPORT="$RUNNER_TEMP/graph-regions-notebook7-dpr2.json" node scripts/graph_notebook_regions_smoke.mjs --frontend notebook7',
+    )
+    region_upload_name = "Retain graph notebook region evidence"
+    _require_step_contains(
+        errors,
+        jobs.get("test", ""),
+        region_upload_name,
+        "native graph region reports and screenshot retention",
+        "actions/upload-artifact@",
+        "${{ runner.temp }}/graph-regions*.json",
+        "target/xyg-graph-regions-*/*.png",
+        "target/xyg-graph-regions-*/*.json",
+        "target/xyg-graph-regions-*/regions.ipynb",
+        "if-no-files-found: error",
+    )
+    region_upload_if, region_upload_unsafe = _step_direct_key_values(
+        _named_step_blocks(jobs.get("test", "")).get(region_upload_name, ""), "if"
+    )
+    if region_upload_unsafe or region_upload_if != ["always()"]:
+        errors.append("CI native graph region evidence must upload on success and failure")
+    _require_step_runs_exactly(
+        errors,
+        jobs.get("test", ""),
         "VS Code notebook test cohort",
         "pinned actual VS Code notebook application and widget cohort",
         'uv pip install --python "$RUNNER_TEMP/graph-notebook7-env/bin/python" nbclassic==1.3.3 ipywidgets==8.1.9 widgetsnbextension==4.0.16 jupyterlab_widgets==3.0.17',
@@ -2149,6 +2178,45 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         'xvfb-run --auto-servernum --server-args="-screen 0 1280x900x24" .venv/bin/python scripts/graph_vscode_notebook_smoke.py --code "$RUNNER_TEMP/graph-vscode-cohort/application/VSCode-linux-x64/code" --extensions "$RUNNER_TEMP/graph-vscode-cohort/extensions" --server-python "$RUNNER_TEMP/graph-notebook7-env/bin/python" --output "$RUNNER_TEMP/graph-vscode"',
         '.venv/bin/python scripts/verify_vscode_graph_notebook_report.py "$RUNNER_TEMP/graph-vscode"',
     )
+    _require_step_runs_exactly(
+        errors,
+        jobs.get("test", ""),
+        "VS Code Jupyter graph regions",
+        "required actual VS Code graph region oracles and verifier",
+        'export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"',
+        'xvfb-run --auto-servernum --server-args="-screen 0 1280x900x24" .venv/bin/python scripts/graph_vscode_notebook_smoke.py --regions --code "$RUNNER_TEMP/graph-vscode-cohort/application/VSCode-linux-x64/code" --extensions "$RUNNER_TEMP/graph-vscode-cohort/extensions" --server-python "$RUNNER_TEMP/graph-notebook7-env/bin/python" --output "$RUNNER_TEMP/graph-vscode-regions"',
+        '.venv/bin/python scripts/verify_vscode_graph_regions_report.py "$RUNNER_TEMP/graph-vscode-regions"',
+    )
+    desktop_upload = "Retain desktop graph region evidence"
+    _require_step_contains(
+        errors,
+        jobs.get("test", ""),
+        desktop_upload,
+        "desktop graph region evidence retention",
+        "actions/upload-artifact@",
+        "if-no-files-found: error",
+        "${{ runner.temp }}/graph-vscode-regions/*.png",
+        "${{ runner.temp }}/graph-vscode-regions/*-pixels.json",
+        "${{ runner.temp }}/graph-vscode-regions/report.json",
+        "${{ runner.temp }}/graph-vscode-regions/graph.ipynb",
+        "${{ runner.temp }}/graph-vscode-regions/run-result.json",
+        "${{ runner.temp }}/graph-vscode-regions/controller-complete.json",
+        "${{ runner.temp }}/graph-vscode-regions/cleanup.json",
+        "${{ runner.temp }}/graph-vscode-regions/extension-state.json",
+        "${{ runner.temp }}/graph-vscode-regions/installation.json",
+        "${{ runner.temp }}/graph-vscode-regions/server-environment.json",
+        "${{ runner.temp }}/graph-vscode-regions/kernel-info.json",
+        "${{ runner.temp }}/graph-vscode-regions/served-widget-assets.json",
+        "${{ runner.temp }}/graph-vscode-regions/inspector-sources.json",
+        "${{ runner.temp }}/graph-vscode-regions/failure.json",
+        "${{ runner.temp }}/graph-vscode-regions/failure-owner-cleanup.json",
+        "${{ runner.temp }}/graph-vscode-regions/attach.log",
+    )
+    desktop_step = _named_step_blocks(jobs.get("test", "")).get(desktop_upload, "")
+    condition, unsafe = _step_direct_key_values(desktop_step, "if")
+    continued, continued_unsafe = _step_direct_key_values(desktop_step, "continue-on-error")
+    if unsafe or condition != ["always()"] or continued_unsafe or continued not in ([], ["false"]):
+        errors.append("CI desktop graph region evidence must retain fatal success/failure upload")
     vscode_journey = "VS Code Jupyter graph journey"
     for prerequisite in (
         "Build native core",

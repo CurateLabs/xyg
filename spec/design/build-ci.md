@@ -247,6 +247,20 @@ merge queue rule, blanket size ladder or release compatibility policy is added.
 Local reproduction is in the
 [R2 receipt](../performance/graph-widget-progressive-r2-2026-11-06/README.md).
 
+`Notebook 7 graph regions` reuses the preceding pinned Notebook7 environment
+and runs `scripts/graph_notebook_regions_smoke.mjs --frontend notebook7` at
+DPR1 and DPR2. The shared harness verifies actual application configuration,
+Notebook7 routes and loaded static assets before any chart assertion. It retains
+the JupyterLab UUID, induced-edge, mask, complete RGBA, native-capacity refusal,
+history, pan/wheel, isolation and disposal oracles. Both runs are required in the
+existing aggregate; the workflow verifier rejects conditional, commented,
+echo-only or failure-masked execution. No new status or relaxed deadline is used.
+`Retain graph notebook region evidence` runs on success and failure and uploads
+region reports, input notebooks, PNGs and immediate pixel/failure JSON files.
+Jupyter private credentials and runtime subdirectories are excluded. Missing
+output is an error; the workflow validator protects all path patterns, fatal
+missing-file handling and the unconditional upload.
+
 
 The full source-dist `node scripts/wasm_foundation_smoke.mjs` command includes the
 bounded retained temporal presentation branch of
@@ -345,3 +359,38 @@ files and credentials must not be uploaded; its receipt enumerates the allowed
 source, version, report, capture and log artifacts explicitly. The test-only
 named cohort, observed bootstrap-network scope and remaining #1015 acceptance
 are defined in the desktop section of `graph-session-python-transport.md`.
+
+### Desktop geometric graph regions (2026-11-10)
+
+`VS Code Jupyter graph regions` reuses the existing pinned desktop/server cohort
+and invokes `graph_vscode_notebook_smoke.py --regions`, followed by the strict
+`verify_vscode_graph_regions_report.py`. Both commands and native selection are
+required in the existing test/Release surfaces aggregate. The normal ten-cell
+progressive desktop command/verifier remain unchanged and required. The step
+retains its four-minute ceiling; no status or merge-queue policy is added.
+
+The shared Lab/Notebook7/desktop region oracle covers UUIDs, induced edges,
+GPU masks, raw RGBA/refusal/history, trusted gestures and release. Desktop
+adapters preserve isolated direct WebGL and measured iframe input coordinates.
+Pan is a public toggle: the shared journey reads the canvas's exposed drag-mode
+attribute and activates Pan only when needed, then requires it to be active
+before sending the trusted drag. An already active tool must not be toggled off.
+The verifier additionally binds fresh repeated-cell orders, actual application,
+installed payloads, kernel, screenshot/pixel and process sidecars. `make check-ci`
+includes its adversarial artifact controls; required browser execution cannot
+be replaced by optional PNG unit-test admission.
+
+Both Notebook7 steps independently require the same launcher export. Mutation
+tests target the named job/step, require an actual edit and preserve the other
+step; a workflow-global uniqueness assertion is invalid for that shared command.
+`make check-ci` includes `test_graph_notebook_report.py` as well as the desktop
+report controls so these guards execute before publication. The original hosted
+failure and the controlled active-Pan failure remain evidence of failed runs;
+the latter does not identify the hosted timeout's precise starting tool state.
+
+`Retain desktop graph region evidence` runs on success and failure with fatal
+missing-output handling. Its explicit files and PNG/pixel patterns exclude the
+Jupyter runtime/profile directories and credentials. Missing paths, conditional
+or continued upload, masked execution and removed verifier must fail the workflow
+validator. The bounded source-checkout proof does not qualify broader notebook
+versions/platforms, massive-scale performance, exports or accessibility.

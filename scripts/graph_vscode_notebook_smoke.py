@@ -45,6 +45,9 @@ def main():
     parser.add_argument("--fixture", type=Path, default=ROOT / "tests/vscode_graph_notebook")
     parser.add_argument("--node", type=Path, default=Path(shutil.which("node") or "node"))
     parser.add_argument("--tcp-xvfb", action="store_true")
+    parser.add_argument(
+        "--regions", action="store_true", help="Run the shared box/lasso region journey"
+    )
     parser.add_argument("--fail-after-cell", choices=(1,), type=int)
     args = parser.parse_args()
     code, extensions, python, node, fixture = (
@@ -103,6 +106,9 @@ def main():
             row["version"] for row in lock["extensions"] if row["id"] == "ms-toolsai.jupyter"
         ),
     )
+    env.pop("XYG_VSCODE_GRAPH_REGIONS", None)
+    if args.regions:
+        env["XYG_VSCODE_GRAPH_REGIONS"] = "1"
     env.pop("XYG_VSCODE_FAIL_AFTER_CELL", None)
     if args.fail_after_cell is not None:
         env["XYG_VSCODE_FAIL_AFTER_CELL"] = str(args.fail_after_cell)
@@ -116,7 +122,12 @@ def main():
         path = out / directory
         path.mkdir()
         env[key] = str(path)
-    shutil.copyfile(ROOT / "tests/notebook_graph_progressive.ipynb", out / "graph.ipynb")
+    notebook_source = ROOT / (
+        "tests/notebook_graph_regions.ipynb"
+        if args.regions
+        else "tests/notebook_graph_progressive.ipynb"
+    )
+    shutil.copyfile(notebook_source, out / "graph.ipynb")
     user = out / "user/User"
     user.mkdir(parents=True)
     settings = {
@@ -313,6 +324,11 @@ def main():
             "attachmentExit": attachment_exit,
             "applicationExit": app_exit,
             "intentionalFailureAfterCell": args.fail_after_cell,
+            "regionsJourney": args.regions,
+            "notebookSource": {
+                "path": str(notebook_source.relative_to(ROOT)),
+                "sha256": hashlib.sha256(notebook_source.read_bytes()).hexdigest(),
+            },
             "serverKernels": kernels,
             "expectedVersions": {
                 "vscode": lock["application"]["version"],
