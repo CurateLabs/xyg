@@ -2107,7 +2107,20 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
         'export XYG_GRAPH_NOTEBOOK_REPORT="$RUNNER_TEMP/graph-notebook.json"',
         "node --test js/test/graph-host-transport.test.mjs",
         "node scripts/graph_notebook_progressive_smoke.mjs",
-        '.venv/bin/python scripts/verify_graph_notebook_report.py "$RUNNER_TEMP/graph-notebook.json"',
+        '.venv/bin/python scripts/verify_graph_notebook_report.py "$RUNNER_TEMP/graph-notebook.json" --require-routed --frontend jupyterlab',
+    )
+    _require_step_runs_exactly(
+        errors,
+        jobs.get("test", ""),
+        "Notebook 7 graph journey",
+        "bounded actual Notebook7 graph identity and native progress",
+        'uv venv --python .venv/bin/python "$RUNNER_TEMP/graph-notebook7-env"',
+        'uv pip install --python "$RUNNER_TEMP/graph-notebook7-env/bin/python" notebook==7.5.8 jupyterlab==4.5.11 ipykernel==7.4.0 anywidget==0.11.0 numpy==2.4.6 pillow==13.0.0 pytest==9.2.0',
+        'export XYG_GRAPH_JUPYTER="$RUNNER_TEMP/graph-notebook7-env/bin/jupyter-notebook"',
+        'export XYG_CHROMIUM="$(node -e "console.log(require(\'playwright\').chromium.executablePath())")"',
+        'export XYG_GRAPH_NOTEBOOK_REPORT="$RUNNER_TEMP/graph-notebook7.json"',
+        "node scripts/graph_notebook_progressive_smoke.mjs --frontend notebook7",
+        '.venv/bin/python scripts/verify_graph_notebook_report.py "$RUNNER_TEMP/graph-notebook7.json" --require-routed --frontend notebook7',
     )
     _require_step_runs_exactly(
         errors,

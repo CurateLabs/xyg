@@ -2200,3 +2200,17 @@ existing renderer, with exact accepted-frame source identity and cancellation.
 The installed Jupyter/anywidget and public Node binary HTTP journeys, lifecycle
 contract, required CI discovery and remaining issue-wide acceptance are specified
 in [the local native viewport contract](chunked-native-viewport.md).
+
+### Actual Notebook7 graph frontend (2026-11-10)
+
+The [shared graph notebook journey](graph-session-python-transport.md#notebook7-frontend-qualification-2026-11-10)
+now runs against actual JupyterLab 4.6.5 and Notebook 7.5.8. Both use the same
+native FigureWidget/ChartView path and exact kernel identity, GPU UUID mask,
+progress, isolation, cleanup and Node parity assertions. Their real application
+configuration, route and static assets are verified separately. This resolves
+the bounded Notebook7 frontend proof gap; VS Code Jupyter, full notebook scale,
+geometric edge policies, exports and complete accessibility remain unqualified.
+Stock Notebook 7.6.4 separately fails the strict browser-error requirement due
+to the retained upstream shortcuts-registry exception; it receives no positive
+frontend qualification. Passing 7.5.8 is additional compatibility evidence, not
+a repair or waiver for 7.6.4 or all Notebook7 versions.

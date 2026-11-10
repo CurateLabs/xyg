@@ -265,8 +265,8 @@ rerender, cancellation, failure and the cross-loop regression. The bounded smoke
 and receipt verifier run in the existing CI `test` job under Release surfaces;
 no new required status is added.
 
-This does not close #1015/#35/#36/#108. Full kind/UUID/per-layer result-id/row
-GraphSession callback projection, UUID-origin selection, exact box/lasso UUID
+At the R2 checkpoint this did not close #1015/#35/#36/#108. Subsequent typed
+and routed identity qualification is specified below. Remaining exact box/lasso UUID
 sets, selected/annotated export parity, Notebook 7 and VS Code qualification,
 trusted routed-edge notebook pointer coverage and the required 1k/10k/100k/1M
 rendered ladder remain. The five-node property fixture and current composition
@@ -366,7 +366,7 @@ sessions even when application callbacks retain old Figure/Selection objects.
 Late compiler completion is discarded and its session finalizer releases it.
 UUID masks use ordinary selection_rows and are non-durable across remount;
 exact aggregate/compound highlight routing, graph-specific box/lasso edge policy,
-all browser pointer journeys, accessibility and the full ladder remain open.
+remaining browser/host pointer journeys, accessibility and the full ladder remain open.
 
 Focused tests and the public notebook proof are recorded in the
 [identity receipt](../performance/graph-notebook-identity-2026-11-06/README.md).
@@ -381,3 +381,89 @@ callback reports without request metadata cannot satisfy the new proof. This
 checks request identity and delivery cardinality, not complete geometric UUID
 sets or scale/frontend/export acceptance. The append-only correction and fresh
 capture are in [the report receipt](../performance/graph-notebook-identity-report-2026-11-06/README.md).
+
+### Routed notebook identity qualification (2026-11-09)
+
+The normal JupyterLab/IPython/anywidget journey additionally clicks all five
+persisted relationships of the property fixture, including both parallel
+relationships and its self-loop. Trusted pointer input targets the existing
+Figure/ChartView segments. The test reads accepted geometry only to locate a
+stroke; it does not call a picker to manufacture its expected identity. Kernel
+callbacks must match the fixture's canonical source UUIDs and the compiler's
+source/render membership. A second layered graph verifies the exact
+`notebook-rank` result ID, layer 0 and result row 0.
+
+The property fixture has a distant isolated node. The additional identity
+exercise uses the public Python `set_view` range patch to inspect its connected
+nodes; it does not claim that every subpixel parallel stroke is distinguishable
+at the full home extent. Unfinished-layout input and default presentation remain
+checked separately before that range patch. Targets avoid DOM controls through
+normal hit testing. No forced clicks, synthetic callback messages, picker
+replacement or new native/browser rendering path is used.
+
+Python UUID selection is checked both at the existing two-row delivery event
+and by reading the actual node/edge GPU selection buffers. Public Node
+`graphforgePick` replays each callback's trace/index against the exact binary
+composition and final canonical positions, using the same native artifact.
+Only the documented Node `resultId` / Python `result_id` spelling is normalized;
+UUIDs, kinds, composed indices, layer order and result rows must agree exactly.
+Both private notebook identity sessions must be released after widget closure.
+The required CI receipt verifier uses `--require-routed`; historical receipts
+retain their original explicitly admitted contract.
+
+This is bounded identity qualification, not full #1015/#35/#36 acceptance.
+Graph-specific box/lasso edge policies, derived/aggregate/compound routing,
+VS Code Jupyter, selected/annotated exports, full accessibility,
+and the required 1k/10k/100k/1M notebook ladder remain open. GPU masks establish
+selection delivery, not a whole-image antialiasing or export-pixel comparison.
+See [the append-only receipt](../performance/graph-notebook-routed-identity-2026-11-09/README.md).
+
+### Notebook7 frontend qualification (2026-11-10)
+
+The same public fixture and strict routed-identity harness run in actual
+JupyterLab 4.6.5 and Notebook 7.5.8, with ipykernel 7.4.0 and anywidget
+0.11.0 in the recorded environment. `--frontend notebook7` launches the Notebook
+application and opens `/notebooks/graph.ipynb`; the existing default opens the
+Lab application and `/lab/tree/graph.ipynb`. Both retain every native progress,
+trusted input, exact callback/UUID mask, layered provenance, Node parity,
+isolation and cleanup assertion from the routed identity qualification above.
+There is no second widget, renderer, notebook adapter or layout path.
+
+The harness reads the real frontend page configuration and observed static
+resource URLs. Application name, namespace, semantic major version, route and
+static namespace must all match the requested frontend. CI invokes the receipt
+verifier with the explicit expected frontend and `--require-routed`. A Lab page
+or legacy receipt cannot satisfy the Notebook7 gate by changing only a label.
+Notebook7 lacks Lab's textual Idle status, and its initial execution indicator
+can say idle before a kernel is selected. Both applications must expose a named
+nonempty kernel and an idle execution indicator before first submission; Lab
+also retains its textual Idle check. Actual native output and subsequent kernel
+callbacks establish execution. This closes the observed premature-readiness
+gap; the earlier unexecuted-cell attempt does not establish a general startup
+reliability fix. Existing output/interaction deadlines
+remain unchanged. Each bounded invocation retains the existing four-minute
+step ceiling and runs in the existing Release surfaces `test` job.
+
+The first isolated setup lacked pytest, which the repository fixture helper
+imports; that failed execution and its diagnostic remain recorded. It is not a
+product failure or a successful Notebook7 journey. The earlier Idle-label wait
+also remains failed. The later actual applications pass without forcing clicks,
+replacing callbacks or disabling default notebook virtualization.
+
+[Qualification and immutable environment/captures](../performance/graph-notebook7-2026-11-10/README.md)
+cover the bounded source-checkout frontend path. VS Code Jupyter, the full
+notebook size ladder, graph-specific geometric edge policies, selected/annotated
+exports, complete accessibility, broader platforms and competitor acceptance
+remain open; #1015 and milestones 4–7 are not complete.
+
+Notebook 7.6.4 remains **unqualified** by this receipt. Its real widget journey
+returns the expected identities and masks, but the strict verifier rejects an
+unhandled exception in the stock notebook's bundled shortcuts settings registry.
+The captured stack/offset identifies the shortcuts plugin's own missing registry
+entry; the triggering event is document-manager loading. This matches the open
+[upstream Notebook issue 7862](https://github.com/jupyter/notebook/issues/7862).
+The actual failing report is retained, and a normal regression continues to reject
+it. No page error is filtered and no notebook asset/plugin is patched or disabled.
+The passing stock Notebook 7.5.8 uses its compatible JupyterLab 4.5.11 dependencies
+in an isolated test environment; Lab 4.6.5 remains separately qualified. Broader
+Notebook7 version coverage remains open rather than being inferred from one pin.

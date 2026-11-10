@@ -61,8 +61,11 @@ with computed CSS capture, shared Rust PNG and offline ChartView paint. Full #45
 scale/aggregate/accessibility acceptance remain open.
 
 Python notebooks expose a bounded [typed graph identity/UUID highlight slice](../design/graph-session-python-transport.md#notebook-typed-identity-slice-2026-11-06).
-Its focused Rust provenance and small JupyterLab journey evidence does not
-qualify all frontends, exact geometric UUID sets, exports or scale budgets.
+Actual JupyterLab 4.6.5 and Notebook 7.5.8 share the bounded
+[routed identity journey](../design/graph-session-python-transport.md#notebook7-frontend-qualification-2026-11-10),
+including parallel/self-loop picks, layered rows and delivered GPU UUID masks.
+Stock Notebook 7.6.4 remains unqualified because of its retained upstream shortcuts-registry exception.
+VS Code Jupyter, exact geometric UUID sets, exports and scale budgets remain open.
 
 Named-colorbar numeric-domain admission has a separate
 [capability comparison and reproducible Matplotlib evidence](../benchmarks/named-colorbar-888/README.md).
