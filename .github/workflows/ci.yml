@@ -330,6 +330,14 @@ jobs:
           node scripts/graph_notebook_progressive_smoke.mjs
           .venv/bin/python scripts/verify_graph_notebook_report.py "$RUNNER_TEMP/graph-notebook.json" --require-routed --frontend jupyterlab
 
+      - name: Native graph notebook regions
+        timeout-minutes: 4
+        run: |
+          export XYG_CHROMIUM="$(node -e "console.log(require('playwright').chromium.executablePath())")"
+          export XYG_GRAPH_REGION_REPORT="$RUNNER_TEMP/graph-regions-dpr1.json"
+          node scripts/graph_notebook_regions_smoke.mjs
+          XYG_GRAPH_REGION_DPR=2 XYG_GRAPH_REGION_REPORT="$RUNNER_TEMP/graph-regions-dpr2.json" node scripts/graph_notebook_regions_smoke.mjs
+
       - name: Notebook 7 graph journey
         timeout-minutes: 4
         run: |

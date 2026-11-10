@@ -230,8 +230,8 @@ impl<'a> Request<'a> {
         used[0] = true;
         used[1] = true;
         for i in match operation {
-            1 | 7 | 10 | 11 => &[2][..],
-            2 | 3 => &[2, 3],
+            1 | 7 | 10 => &[2][..],
+            2 | 3 | 11 => &[2, 3],
             0 | 5 | 8 => &[5],
             9 | 13 => &[5],
             12 => &[2, 4],
@@ -244,6 +244,7 @@ impl<'a> Request<'a> {
         if w.iter().enumerate().any(|(i, v)| !used[i] && *v != 0)
             || (used[2] && w[2] > 2)
             || (used[3] && w[3] > 2)
+            || (operation == 11 && w[3] == 1)
             || (used[4] && w[4] > 2)
             || (matches!(operation, 5 | 8) && w[5] != 1 && w[5] != u32::MAX)
             || (operation == 9 && w[5] > 2)
@@ -266,6 +267,7 @@ impl<'a> Request<'a> {
                 "refs.bytes" if matches!(operation, 6 | 9 | 11 | 12 | 13 | 14) => {
                     Some(Dtype::Bytes)
                 }
+                "region.nodes.u32" if operation == 11 && w[3] == 2 => Some(Dtype::U32),
                 "uuids.uuid" if operation == 10 => Some(Dtype::Uuid),
                 "remote.bytes" if operation == 16 => Some(Dtype::Bytes),
                 "companion.u32" if matches!(operation, 17 | RENDER) => Some(Dtype::U32),
@@ -306,11 +308,16 @@ impl<'a> Request<'a> {
             container: c,
         };
         // Validate all optional payloads before any retry or owner lookup.
+        let mut reference_count = 0;
         if let Some(s) = r.container.get("refs.bytes", 0) {
             refs_impl(s.payload, false)?;
-            if u32_at(s.payload, 0) as usize > MAX_GRAPH_SELECTION_REFS {
-                return Err(InteractionStatus::SelectionTooLarge);
-            }
+            reference_count = u32_at(s.payload, 0) as usize;
+        }
+        if let Some(s) = r.container.get("region.nodes.u32", 0) {
+            reference_count = reference_count.max(s.count);
+        }
+        if reference_count > MAX_GRAPH_SELECTION_REFS {
+            return Err(InteractionStatus::SelectionTooLarge);
         }
         if let Some(s) = r.container.get("remote.bytes", 0) {
             validate_event(s.payload)?;
@@ -346,22 +353,20 @@ impl<'a> Request<'a> {
             .container
             .get("load.budgets.u64", 0)
             .map(|s| {
-                let v = gf(s.as_u64("load.budgets.u64"))?;
-                if v.len() != 2 {
+                if s.count != 2 {
                     return bad();
                 }
-                Ok((v[0], v[1]))
+                Ok((u64_at(s.payload, 0), u64_at(s.payload, 8)))
             })
             .transpose()?;
         let seed = self
             .container
             .get("load.seed.u64", 0)
             .map(|s| {
-                let v = gf(s.as_u64("load.seed.u64"))?;
-                if v.len() != 1 {
+                if s.count != 1 {
                     return bad();
                 }
-                Ok(v[0])
+                Ok(u64_at(s.payload, 0))
             })
             .transpose()?
             .unwrap_or(0);
@@ -422,30 +427,33 @@ impl<'a> Request<'a> {
         if s.count != 2 {
             return bad();
         }
-        let v = gf(s.as_u32("companion.u32"))?;
-        if v.len() != 2 || v[1] == 0 || v[1] > 200 {
+        let offset = u32_at(s.payload, 0);
+        let count = u32_at(s.payload, 4);
+        if count == 0 || count > 200 {
             return bad();
         }
         // A wire page must have the same meaning on native and wasm32.
-        v[0].checked_mul(v[1]).ok_or(InteractionStatus::Invalid)?;
-        Ok((v[0] as usize, v[1] as usize))
+        offset
+            .checked_mul(count)
+            .ok_or(InteractionStatus::Invalid)?;
+        Ok((offset as usize, count as usize))
     }
     fn camera(&self) -> Result<Option<Camera>> {
         let Some(s) = self.container.get("camera.f64", 0) else {
             return Ok(None);
         };
-        let v = gf(s.as_f64("camera.f64"))?;
-        if v.len() != 7 {
+        if s.count != 7 {
             return bad();
         }
+        let v = |at| f64::from_bits(u64_at(s.payload, at));
         let c = Camera {
-            scale_x: v[0],
-            scale_y: v[1],
-            offset_x: v[2],
-            offset_y: v[3],
-            viewport_width: v[4],
-            viewport_height: v[5],
-            dpr: v[6],
+            scale_x: v(0),
+            scale_y: v(8),
+            offset_x: v(16),
+            offset_y: v(24),
+            viewport_width: v(32),
+            viewport_height: v(40),
+            dpr: v(48),
         };
         c.validate()?;
         Ok(Some(c))
@@ -1451,14 +1459,19 @@ fn apply(s: &mut GraphSession, r: &Request<'_>) -> Result<OpOutcome> {
         1 => SelectionPolicy::Edges,
         _ => SelectionPolicy::NodesAndInducedEdges,
     };
-    let coordinates =
-        || -> Result<Vec<f64>> { gf(r.section("coordinates.f64")?.as_f64("coordinates.f64")) };
+    // Request::decode already verified dtype, count, byte extent and finite
+    // coordinates. Borrow that canonical plane instead of allocating an f64
+    // vector before copying it again into a point, box or polygon.
+    let coordinates = || r.section("coordinates.f64");
     let pair = || -> Result<(f64, f64)> {
         let v = coordinates()?;
-        if v.len() != 2 {
+        if v.count != 2 {
             return bad();
         }
-        Ok((v[0], v[1]))
+        Ok((
+            f64::from_bits(u64_at(v.payload, 0)),
+            f64::from_bits(u64_at(v.payload, 8)),
+        ))
     };
     let one = || -> Result<ElementRef> {
         let v = r.refs()?;
@@ -1479,18 +1492,23 @@ fn apply(s: &mut GraphSession, r: &Request<'_>) -> Result<OpOutcome> {
         }
         2 => {
             let v = coordinates()?;
-            if v.len() != 4 {
+            if v.count != 4 {
                 return bad();
             }
-            s.brush(h, [v[0], v[1], v[2], v[3]], mode, policy)
+            let bounds = [0, 8, 16, 24].map(|at| f64::from_bits(u64_at(v.payload, at)));
+            s.brush(h, bounds, mode, policy)
         }
         3 => {
             let v = coordinates()?;
-            if v.len() % 2 != 0 || v.len() > MAX_GRAPH_INTERACTION_WORK as usize {
+            if v.count % 2 != 0 || v.count > MAX_GRAPH_INTERACTION_WORK as usize {
                 return bad();
             }
-            let p: Vec<_> = v.chunks_exact(2).map(|v| [v[0], v[1]]).collect();
-            s.lasso(h, &p, mode, policy)
+            let p: Vec<_> = v
+                .payload
+                .chunks_exact(16)
+                .map(|p| [f64::from_bits(u64_at(p, 0)), f64::from_bits(u64_at(p, 8))])
+                .collect();
+            s.select_region(h, super::pick::RegionInput::Polygon(&p), mode, policy)
         }
         4 => s.clear(h),
         5 => s.focus_step(h, r.words[5] as i32),
@@ -1517,7 +1535,14 @@ fn apply(s: &mut GraphSession, r: &Request<'_>) -> Result<OpOutcome> {
             &gf(r.section("uuids.uuid")?.as_uuids("uuids.uuid"))?,
             mode,
         ),
-        11 => s.select_refs(h, &r.refs()?, mode),
+        11 => {
+            if r.words[3] == 2 {
+                let nodes = r.section("region.nodes.u32")?.payload;
+                s.select_region(h, super::pick::RegionInput::Candidates(nodes), mode, policy)
+            } else {
+                s.select_refs(h, &r.refs()?, mode)
+            }
+        }
         12 => s.set_highlight(
             h,
             match r.words[4] {

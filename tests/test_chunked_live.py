@@ -234,9 +234,16 @@ def test_public_widget_browser_gesture(tmp_path, host):
                     ),
                 )
                 disabled = True
+                held_paint_acks = []
+                paint_ack_ready = asyncio.Event()
+                hold_paint_ack = True
 
                 def forward(msg):
                     if disabled and msg.get("type") == "view_change":
+                        return None
+                    if hold_paint_ack and msg.get("type") == "chunked_painted":
+                        held_paint_acks.append(msg)
+                        paint_ack_ready.set()
                         return None
                     return widget._on_custom_msg(widget, msg, [])
 
@@ -317,11 +324,29 @@ def test_public_widget_browser_gesture(tmp_path, host):
                 await page.mouse.wheel(0, -250)
                 await page.wait_for_function("window.frames.length>0")
                 assert not errors, errors
+                await asyncio.wait_for(paint_ack_ready.wait(), timeout=10)
+                frames, views = await page.evaluate("[window.frames,window.views]")
+                frame = str(frames[-1]["frame"])
+                assert any(str(msg["frame"]) == frame for msg in held_paint_acks)
+                if process is None:
+                    assert list(widget.source_row_ids) == list(
+                        widget._chunked_binding.initial_figure._chunked_row_ids
+                    ), "browser paint alone must not commit the native source owner"
+                else:
+                    assert not hasattr(widget, "source_row_ids")
+                hold_paint_ack = False
+                for msg in held_paint_acks:
+                    widget._on_custom_msg(widget, msg, [])
                 for _ in range(100):
-                    if hasattr(widget, "source_row_ids"):
+                    if (
+                        hasattr(widget, "source_provenance")
+                        and str(widget.source_provenance["generation"]) == frame
+                    ):
                         break
                     await asyncio.sleep(0.01)
-                frames, views = await page.evaluate("[window.frames,window.views]")
+                assert str(widget.source_provenance["generation"]) == frame, (
+                    "the exact painted frame must receive its real native commit ACK"
+                )
                 ranges = frames[-1]["view"]["ranges"]
                 assert ranges == views[-1]["ranges"]
                 expected = [

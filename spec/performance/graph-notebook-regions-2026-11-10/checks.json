@@ -1,0 +1,2404 @@
+{
+  "base": "f75d25606b0b0272579483eb3d2acdfcb1fd0479",
+  "bindings": {
+    "current": 3457,
+    "historical": 1494,
+    "parents": 30,
+    "path": "spec/performance/graph-notebook-regions-2026-11-10/current-bindings.json",
+    "sha256": "048e9bbda59e6cf8a357509909b0cf691281c7f82fcc8ecb66f27d8f8fb9b6f4"
+  },
+  "captures": {
+    "region-reviewed-notebook-dpr1.json": {
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-b2AW4F/before-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d.gz",
+        "archiveBytes": 14102,
+        "archiveSha256": "dc12a7e87d6f16007a5988a87d8911c56100f6665cd0a46c9bf908faf2969824",
+        "bytes": 16592,
+        "sha256": "50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-b2AW4F/before-edges.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/b846412b123a3406cd89c8ab0376726cb9049d85067a51d8a8962e820965eb26.gz",
+        "archiveBytes": 23725,
+        "archiveSha256": "c319047b595d8386f63a1a4453f353120184566e4a34289e4144dc44d92aac76",
+        "bytes": 24448,
+        "sha256": "b846412b123a3406cd89c8ab0376726cb9049d85067a51d8a8962e820965eb26"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-b2AW4F/before-paint.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d.gz",
+        "archiveBytes": 14102,
+        "archiveSha256": "dc12a7e87d6f16007a5988a87d8911c56100f6665cd0a46c9bf908faf2969824",
+        "bytes": 16592,
+        "sha256": "50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-b2AW4F/before.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/8372802e8874929ba6d8d53143017338172ed1a1debce7f1f984bf1268b80666.gz",
+        "archiveBytes": 22585,
+        "archiveSha256": "fffd310f2caedc191192cba0b919bef899b5929ab17df96674a7a2bf93ca60ac",
+        "bytes": 23324,
+        "sha256": "8372802e8874929ba6d8d53143017338172ed1a1debce7f1f984bf1268b80666"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-b2AW4F/box-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f.gz",
+        "archiveBytes": 13199,
+        "archiveSha256": "427c557ffd6fe9630fb583dac7eac30a6fa6b82c371e530567aac0cc380bfca3",
+        "bytes": 16176,
+        "sha256": "dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-b2AW4F/box-edges.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/26602ab91e970327c7290e32dff9b3675bbf768984480e54aebdb2566006da8d.gz",
+        "archiveBytes": 22556,
+        "archiveSha256": "81d5309139919e9bc032362536f5bf17c602ea82bd47e5be95c78b975b3083ae",
+        "bytes": 23325,
+        "sha256": "26602ab91e970327c7290e32dff9b3675bbf768984480e54aebdb2566006da8d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-b2AW4F/box-paint.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f.gz",
+        "archiveBytes": 13199,
+        "archiveSha256": "427c557ffd6fe9630fb583dac7eac30a6fa6b82c371e530567aac0cc380bfca3",
+        "bytes": 16176,
+        "sha256": "dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-b2AW4F/box.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/9ca506494569d6a3444516ebc991a33aefd099b23e91cd64071fc696e672078f.gz",
+        "archiveBytes": 22108,
+        "archiveSha256": "280ccef053e251aa37672a994fe72cd392de2631277e8cb45142c1e93ac2cdb0",
+        "bytes": 22865,
+        "sha256": "9ca506494569d6a3444516ebc991a33aefd099b23e91cd64071fc696e672078f"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-b2AW4F/capacity-before-paint.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-b2AW4F/capacity-before.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/750112b4a8ce65bc4dc6cddedd2c5b3abaa1effe3cb7b5ded8ad3fa9989f0730.gz",
+        "archiveBytes": 22514,
+        "archiveSha256": "dbe30b00bf39e605f04e48db470747ed9f07270c912191e8efbac2e67b35747f",
+        "bytes": 23290,
+        "sha256": "750112b4a8ce65bc4dc6cddedd2c5b3abaa1effe3cb7b5ded8ad3fa9989f0730"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-b2AW4F/capacity-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-b2AW4F/capacity-refused.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/03080ab9e3999efef3f3d014ae5802ec42b1e1671933b59f170a7b3b86e86360.gz",
+        "archiveBytes": 20094,
+        "archiveSha256": "d081d84b4e4be448c6b2b4d39431ff97a53f07465c5e7373c2e6b1d758358911",
+        "bytes": 21013,
+        "sha256": "03080ab9e3999efef3f3d014ae5802ec42b1e1671933b59f170a7b3b86e86360"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-b2AW4F/lasso-paint.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/513b6d49016a5ca7b80eff9ae9828acd6a9ceefeb836664697fbd2c07d6090aa.gz",
+        "archiveBytes": 13986,
+        "archiveSha256": "4ca240262c17892db53f533fabfde65fbab1ff33a66f2cdadb4ef2b055b39186",
+        "bytes": 16720,
+        "sha256": "513b6d49016a5ca7b80eff9ae9828acd6a9ceefeb836664697fbd2c07d6090aa"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-b2AW4F/lasso.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c457fdbaf6ec8defddaecb17c114b0dbf1b329a66dce0d1293ede733f7dc6350.gz",
+        "archiveBytes": 24958,
+        "archiveSha256": "3523186492429015f2f2dac6c890e0d240ed0c9905e1747754cb89d224132583",
+        "bytes": 25653,
+        "sha256": "c457fdbaf6ec8defddaecb17c114b0dbf1b329a66dce0d1293ede733f7dc6350"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-b2AW4F/regions.ipynb": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd.gz",
+        "archiveBytes": 1695,
+        "archiveSha256": "655dbbb990ffebf0a9427ba64505f4c430c754b21731850e0b1911c2021b021f",
+        "bytes": 5892,
+        "sha256": "8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-b2AW4F/report.json": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/f0de5159c07a1eabaaf9390de4da05d5b5d83ff1df9b1deff90ecdde9c17101f.gz",
+        "archiveBytes": 5121,
+        "archiveSha256": "47ad57d867a7ff0cafde16102069cfd2c7bd94bd774e0cfecde4e32ff38d73c0",
+        "bytes": 73099,
+        "sha256": "f0de5159c07a1eabaaf9390de4da05d5b5d83ff1df9b1deff90ecdde9c17101f"
+      }
+    },
+    "region-reviewed-notebook-dpr2.json": {
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-ZJ6hTk/before-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c.gz",
+        "archiveBytes": 30991,
+        "archiveSha256": "a1c60b150090a1ac67897881c1a0a44ca28df7507517e42983578b01277bd825",
+        "bytes": 43777,
+        "sha256": "950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-ZJ6hTk/before-edges.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/9eb0dedac429ef92376bceac7ba8ffee44d1152a8fc87977b2c8d8a44495def4.gz",
+        "archiveBytes": 56890,
+        "archiveSha256": "4553a8ba46df03807e1e748e463c586dc3cf81cadb538f217c75a3f6d52a5f30",
+        "bytes": 60386,
+        "sha256": "9eb0dedac429ef92376bceac7ba8ffee44d1152a8fc87977b2c8d8a44495def4"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-ZJ6hTk/before-paint.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c.gz",
+        "archiveBytes": 30991,
+        "archiveSha256": "a1c60b150090a1ac67897881c1a0a44ca28df7507517e42983578b01277bd825",
+        "bytes": 43777,
+        "sha256": "950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-ZJ6hTk/before.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/208fa56707cff14864910afd8442941af8517f0d77f051d457dc95f7a42c567c.gz",
+        "archiveBytes": 55590,
+        "archiveSha256": "8c96bb3ff7dd1b554cc207cc4541062a152d469fafad4e153d289167058d0df5",
+        "bytes": 59072,
+        "sha256": "208fa56707cff14864910afd8442941af8517f0d77f051d457dc95f7a42c567c"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-ZJ6hTk/box-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d.gz",
+        "archiveBytes": 28480,
+        "archiveSha256": "eff9458fb453c519a73094f6822a72d8ea853a5b9d2bc973b525d700ca891b94",
+        "bytes": 43605,
+        "sha256": "43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-ZJ6hTk/box-edges.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/cc9c8ae35e63b787560742910d1eabaaa11e603f01d7d3f7d5577d1412a6f7ea.gz",
+        "archiveBytes": 54679,
+        "archiveSha256": "7eb9a6af3ea8979eb021eb60c69ce345cb32684899679e41b4d602f563b8d11a",
+        "bytes": 58629,
+        "sha256": "cc9c8ae35e63b787560742910d1eabaaa11e603f01d7d3f7d5577d1412a6f7ea"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-ZJ6hTk/box-paint.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d.gz",
+        "archiveBytes": 28480,
+        "archiveSha256": "eff9458fb453c519a73094f6822a72d8ea853a5b9d2bc973b525d700ca891b94",
+        "bytes": 43605,
+        "sha256": "43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-ZJ6hTk/box.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/0ef40a3accc3b9f6d67311961dd62e599b5b064cdaf41f8900c23c12739b8cea.gz",
+        "archiveBytes": 53694,
+        "archiveSha256": "76d8c06da2843c2cb370f3a2d4bee62234ece82e3a5ae1b4f01985d7d0d03c78",
+        "bytes": 57696,
+        "sha256": "0ef40a3accc3b9f6d67311961dd62e599b5b064cdaf41f8900c23c12739b8cea"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-ZJ6hTk/capacity-before-paint.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502.gz",
+        "archiveBytes": 29490,
+        "archiveSha256": "6b15c029d96c60fa028a87f1e72bf10579ed594bde3ab0875b84b9801054a560",
+        "bytes": 44131,
+        "sha256": "d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-ZJ6hTk/capacity-before.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/ac6371ae273a9a24fdfd2ee40716346aaceab5ed1720c79457892c6cc36df317.gz",
+        "archiveBytes": 54182,
+        "archiveSha256": "9735826f82a55d41d322eed7f51d2e9be919fa67fd316591e2c0dd00331dd5e4",
+        "bytes": 58022,
+        "sha256": "ac6371ae273a9a24fdfd2ee40716346aaceab5ed1720c79457892c6cc36df317"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-ZJ6hTk/capacity-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502.gz",
+        "archiveBytes": 29490,
+        "archiveSha256": "6b15c029d96c60fa028a87f1e72bf10579ed594bde3ab0875b84b9801054a560",
+        "bytes": 44131,
+        "sha256": "d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-ZJ6hTk/capacity-refused.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/dd06d53a66348cfb1324eb532d5bbfc7c1543c15956303a3995b0e489511e05f.gz",
+        "archiveBytes": 48381,
+        "archiveSha256": "5ec7223a689693efd67b5246319ae7cc9d76e1d46b5a243f78515e517efe002b",
+        "bytes": 52563,
+        "sha256": "dd06d53a66348cfb1324eb532d5bbfc7c1543c15956303a3995b0e489511e05f"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-ZJ6hTk/lasso-paint.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/ba9db221026bc03b24778592e8f65a018b5e17e14e68a0159a36098e405a6abd.gz",
+        "archiveBytes": 29981,
+        "archiveSha256": "93436e7f361bc53b2f5bf3aba03c1d6071efbde587e5b812b98e46aeaaab6dcd",
+        "bytes": 44025,
+        "sha256": "ba9db221026bc03b24778592e8f65a018b5e17e14e68a0159a36098e405a6abd"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-ZJ6hTk/lasso.png": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/2ebb9eb1cc77e29d68d07ad5fbc743e7e7163e9d5ba4663d4b6f4edc13ada87e.gz",
+        "archiveBytes": 59765,
+        "archiveSha256": "e299a5d826701531e9440a62ffd6228b5ea837f35378453922a40d41db7904ea",
+        "bytes": 63752,
+        "sha256": "2ebb9eb1cc77e29d68d07ad5fbc743e7e7163e9d5ba4663d4b6f4edc13ada87e"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-ZJ6hTk/regions.ipynb": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd.gz",
+        "archiveBytes": 1695,
+        "archiveSha256": "655dbbb990ffebf0a9427ba64505f4c430c754b21731850e0b1911c2021b021f",
+        "bytes": 5892,
+        "sha256": "8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-ZJ6hTk/report.json": {
+        "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/a24477722159aae840f0585a3e95b3103a87f208e4be94e2e8ec5c3f2a3ba78b.gz",
+        "archiveBytes": 5021,
+        "archiveSha256": "09f9139a2b7ccf5de2baa9b459b741f1dfa807bc722d54905ae768aec4ac434c",
+        "bytes": 73109,
+        "sha256": "a24477722159aae840f0585a3e95b3103a87f208e4be94e2e8ec5c3f2a3ba78b"
+      }
+    }
+  },
+  "compiledInputs": {
+    "changed": [
+      "crates/xyg-engine/src/graphforge/interaction/pick.rs",
+      "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs",
+      "crates/xyg-engine/src/graphforge/interaction/tests/wire.rs",
+      "crates/xyg-engine/src/graphforge/interaction/wire.rs"
+    ],
+    "count": 324,
+    "path": "spec/performance/graph-notebook-regions-2026-11-10/compiled-inputs.json",
+    "sha256": "a0ca8b566fd0a7c6502d6f6cb5b2070ff148290a846d1e7189d8388d95061dca"
+  },
+  "delivery": {
+    "hostedCI": "pending",
+    "independentFinalReview": "pending",
+    "mergeQueue": "required"
+  },
+  "evidence": {
+    "target/task-tmp/graph-geometric-notebook/build-qualification.py": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/f5383f082e1e64600b118083984c59d37527c9e9fabdaf2ac06b936ad3fda9ad.gz",
+      "archiveBytes": 2926,
+      "archiveSha256": "6bd671c333b9fe389403bd6a4f013f40ae9f785ad07cb17a770ce474590ede53",
+      "bytes": 8237,
+      "sha256": "f5383f082e1e64600b118083984c59d37527c9e9fabdaf2ac06b936ad3fda9ad"
+    },
+    "target/task-tmp/graph-geometric-notebook/continuation-live-state.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/1c1fd437caf0b0d44676942c0383c4d65311db783d08df2509e7fd95e8e0affb.gz",
+      "archiveBytes": 752,
+      "archiveSha256": "88fc0c15ec920218d1887fa3f9ce8b92dbdf65e07790f0eec48e2b67b5ce837d",
+      "bytes": 1311,
+      "sha256": "1c1fd437caf0b0d44676942c0383c4d65311db783d08df2509e7fd95e8e0affb"
+    },
+    "target/task-tmp/graph-geometric-notebook/format-build-discarded.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d86ba4d9137af27b147f92a0b369ad76cbb569f405b72c7f84b13363b13fd948.gz",
+      "archiveBytes": 244,
+      "archiveSha256": "fd2f25bcacd3e41aadff5c40e559a5e444116d6ed5763affd72c3559710b3ac6",
+      "bytes": 358,
+      "sha256": "d86ba4d9137af27b147f92a0b369ad76cbb569f405b72c7f84b13363b13fd948"
+    },
+    "target/task-tmp/graph-geometric-notebook/format-restored-unrelated.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d2b7a244eb4ffcfc7aa17c1cd91b2dcca97d3233d259506abac1149df2950e9c.gz",
+      "archiveBytes": 895,
+      "archiveSha256": "1f5572d4b5e8ef5c275fce556006ddc2427dd657507333e9eeeacdf46179d692",
+      "bytes": 5471,
+      "sha256": "d2b7a244eb4ffcfc7aa17c1cd91b2dcca97d3233d259506abac1149df2950e9c"
+    },
+    "target/task-tmp/graph-geometric-notebook/history-before-control.mjs": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d16a0057472e9bf80f551b9cd6dd029a1ea6740adf50882627b5e26db2643324.gz",
+      "archiveBytes": 4536,
+      "archiveSha256": "eff04ddb6826ea2b1066a058be055e52852c2521c29f120d3dc4b20ec1b874ef",
+      "bytes": 17519,
+      "sha256": "d16a0057472e9bf80f551b9cd6dd029a1ea6740adf50882627b5e26db2643324"
+    },
+    "target/task-tmp/graph-geometric-notebook/history-before.ts": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/27396f8fa7b97f36adc285a658cea25dbcccedfd0bc4e1ac96996c1392dca227.gz",
+      "archiveBytes": 7395,
+      "archiveSha256": "9b56a12c275e78f213581c32c4fe30d305cc2487513128fc8b205037bb5f816d",
+      "bytes": 24936,
+      "sha256": "27396f8fa7b97f36adc285a658cea25dbcccedfd0bc4e1ac96996c1392dca227"
+    },
+    "target/task-tmp/graph-geometric-notebook/issue1015-current.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/feaf07fba0711279285df93a6d036c2df2a1788a2ba1a7dbe15b9d92dc39f18c.gz",
+      "archiveBytes": 2248,
+      "archiveSha256": "143009663fb1b355f7c8ed8df451402b57555fb59b39f304905dbcac93e8cfdc",
+      "bytes": 5103,
+      "sha256": "feaf07fba0711279285df93a6d036c2df2a1788a2ba1a7dbe15b9d92dc39f18c"
+    },
+    "target/task-tmp/graph-geometric-notebook/native-region-build.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/a23c6f13049ed19efef84b1524e85308dec890bbbc814d00094146f16d636e58.gz",
+      "archiveBytes": 172,
+      "archiveSha256": "293c5fd9c469fa2f8cddc4f661f27a4e9bcce303e5216155eee1705d8eb65ce1",
+      "bytes": 337,
+      "sha256": "a23c6f13049ed19efef84b1524e85308dec890bbbc814d00094146f16d636e58"
+    },
+    "target/task-tmp/graph-geometric-notebook/next-slice-audit.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/43fa6d4dc97b0e4824881818ecc032b60542d01f9e07e90403f465a78b009dd6.gz",
+      "archiveBytes": 886,
+      "archiveSha256": "cd29f0cbc6b62c562d6846095c3b50dccf29ece5ba02befdd36050434ba11e6c",
+      "bytes": 1610,
+      "sha256": "43fa6d4dc97b0e4824881818ecc032b60542d01f9e07e90403f465a78b009dd6"
+    },
+    "target/task-tmp/graph-geometric-notebook/notebook-before-format.ipynb": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d8bc39575e4cc546789ba51ec31b3d0720f5f74d3172a98902b5f04ee67d62e6.gz",
+      "archiveBytes": 1604,
+      "archiveSha256": "ab4a41cdae8ebd81c0ace681ce1c0542d43bb4d3a5289d7a1643dbf2d97782f7",
+      "bytes": 4843,
+      "sha256": "d8bc39575e4cc546789ba51ec31b3d0720f5f74d3172a98902b5f04ee67d62e6"
+    },
+    "target/task-tmp/graph-geometric-notebook/original-region-regression.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/98d14d5c97935c34a8b2e980f600d7557978e518e5ba48b22573a5dc9aad484f.gz",
+      "archiveBytes": 734,
+      "archiveSha256": "c03348aaa2aa3c403494b7144fb019209abbe5cec371bb21287d88f86066b96e",
+      "bytes": 2174,
+      "sha256": "98d14d5c97935c34a8b2e980f600d7557978e518e5ba48b22573a5dc9aad484f"
+    },
+    "target/task-tmp/graph-geometric-notebook/probe-native-region-corrected.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/f227abb59e31f874d0dc3f7e43b8ff97dbb5c270bc23d564560cf16f1689e194.gz",
+      "archiveBytes": 720,
+      "archiveSha256": "ae9d361f1dc55f9384e4ec332e6ef080ec5416f80497bcc5631ca3c8234da5df",
+      "bytes": 2371,
+      "sha256": "f227abb59e31f874d0dc3f7e43b8ff97dbb5c270bc23d564560cf16f1689e194"
+    },
+    "target/task-tmp/graph-geometric-notebook/probe-native-region-final.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/27e91018b27db4f1efb8e007da90184f495da00fe9d49b62da3bee31c877264d.gz",
+      "archiveBytes": 358,
+      "archiveSha256": "4b14f7f5bcc488d6757b803328456c0829fd08660e12dd00332644ca1b2085ca",
+      "bytes": 1248,
+      "sha256": "27e91018b27db4f1efb8e007da90184f495da00fe9d49b62da3bee31c877264d"
+    },
+    "target/task-tmp/graph-geometric-notebook/probe-native-region.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/68ec85c5aa1252806240dca71b3356e24bf3e18d96c5584bf72d434f48011d14.gz",
+      "archiveBytes": 734,
+      "archiveSha256": "e07520169a56234790b1594c09e112a4b0a30c7dccb40230615319d91cad2c8d",
+      "bytes": 2030,
+      "sha256": "68ec85c5aa1252806240dca71b3356e24bf3e18d96c5584bf72d434f48011d14"
+    },
+    "target/task-tmp/graph-geometric-notebook/probe-native-region.py": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/6fc4e9d3d005bbc6a4d5935155620cb6dcb12d6eef73e6aa9a0c8ef7094513f8.gz",
+      "archiveBytes": 638,
+      "archiveSha256": "5218fdc9ec93df17e6f11bd8625ea4d6b7ce3b94b02d5dff34ba14499a6af888",
+      "bytes": 1145,
+      "sha256": "6fc4e9d3d005bbc6a4d5935155620cb6dcb12d6eef73e6aa9a0c8ef7094513f8"
+    },
+    "target/task-tmp/graph-geometric-notebook/qualification.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/46f229d8da24ed000ab049b6f037f50ad4b27feb2ac8aa3faa614da57f20ad9b.gz",
+      "archiveBytes": 2679,
+      "archiveSha256": "000b25b652f41831059ccdfa95d94a764246347aa58b3add83736b98bac43d52",
+      "bytes": 15097,
+      "sha256": "46f229d8da24ed000ab049b6f037f50ad4b27feb2ac8aa3faa614da57f20ad9b"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-abi-generated.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/eb8c840abbbfbbcc7b2fc02f6c1c2909f93ea1a5c8d5ab31aed178cc9a757485.gz",
+      "archiveBytes": 62,
+      "archiveSha256": "a91496309293e2723fe1760d8d62399e034736fca5a1687e6c9f2516cce87aba",
+      "bytes": 42,
+      "sha256": "eb8c840abbbfbbcc7b2fc02f6c1c2909f93ea1a5c8d5ab31aed178cc9a757485"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-abi-smoke.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "135de4fa46245b623c5d8acfa3e621c9374a4c0229b173222340fff45c526965",
+      "bytes": 52,
+      "sha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-aggregate-isolated.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/54f7b2912ee02f696687d957be49af3b0cdc7063cef005493f880fa8788d89e3.gz",
+      "archiveBytes": 155,
+      "archiveSha256": "d42c5aaa937bf905ee13f229e6ac4db20fbb98091ec37e896d4fece24932f845",
+      "bytes": 177,
+      "sha256": "54f7b2912ee02f696687d957be49af3b0cdc7063cef005493f880fa8788d89e3"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-assets.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef.gz",
+      "archiveBytes": 104,
+      "archiveSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730",
+      "bytes": 88,
+      "sha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-borrowed-camera-rust.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/f864f6ba23f5c15af04ef0bd447943f81683535c343cfe78f491b3bfd7089ca1.gz",
+      "archiveBytes": 5002,
+      "archiveSha256": "1f5b09f57eecbecf8d84ce061771ee11a0c16828a8bce705b8971fd9a56921e6",
+      "bytes": 20378,
+      "sha256": "f864f6ba23f5c15af04ef0bd447943f81683535c343cfe78f491b3bfd7089ca1"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-borrowed-camera-wasm.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/ae3d102e1982f06bb922ce60702aa78967671d13d8dee4bf68067dee79ed9390.gz",
+      "archiveBytes": 1366,
+      "archiveSha256": "e1be3dad409ef1c3cc87b7bb64c6a90bf442ab4cda581d4a4353380f0c05d161",
+      "bytes": 4570,
+      "sha256": "ae3d102e1982f06bb922ce60702aa78967671d13d8dee4bf68067dee79ed9390"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-borrowed-camera.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/fdb7842beef89b89e7313974a4f0446541b29355ca6895fed42e533910d6e23b.gz",
+      "archiveBytes": 246,
+      "archiveSha256": "f0ab7f913f595da9015754acf2577d21fbf76b58951df735a28593b6cef375ef",
+      "bytes": 313,
+      "sha256": "fdb7842beef89b89e7313974a4f0446541b29355ca6895fed42e533910d6e23b"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-borrowed-camera.patch": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/f5346e741c234fcd5deabba526ae07dcc640d236640b630e1d9ea9c7f65aab08.gz",
+      "archiveBytes": 30439,
+      "archiveSha256": "0b2a964b6046f24ad47f1b4db46343e56f3875d8b725955d454feeea5cf8efc3",
+      "bytes": 115496,
+      "sha256": "f5346e741c234fcd5deabba526ae07dcc640d236640b630e1d9ea9c7f65aab08"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-borrowed-coordinates-native.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/6ac3bdf7d58b4a3a5ea0c869453af7d4d672d1714e72e5f98ac5826ea119fe55.gz",
+      "archiveBytes": 161,
+      "archiveSha256": "7f7ccbbec9bdf9216bd89411a09a0418580cb9a1db592fa7db8daa46682446fc",
+      "bytes": 247,
+      "sha256": "6ac3bdf7d58b4a3a5ea0c869453af7d4d672d1714e72e5f98ac5826ea119fe55"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-borrowed-coordinates-python.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/efe95dfb6ed1e73ac1fd33015eea02a7dbebdae131885d17a1ec1392cb4f5379.gz",
+      "archiveBytes": 61,
+      "archiveSha256": "e4a2b76de268ccdd515ec40396fa0113de49ae6c91cbf84ccbfd0bc94accf0b7",
+      "bytes": 179,
+      "sha256": "efe95dfb6ed1e73ac1fd33015eea02a7dbebdae131885d17a1ec1392cb4f5379"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-borrowed-coordinates-rust.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/74356dce812ca40aadd300dd84d58cf38d1d978dbed503caf44b0fb13a39653c.gz",
+      "archiveBytes": 5004,
+      "archiveSha256": "090e22c7c2751551361697a51c6ba3d667ccc03f1b1f0aa4402ba7661b6a2f1d",
+      "bytes": 20379,
+      "sha256": "74356dce812ca40aadd300dd84d58cf38d1d978dbed503caf44b0fb13a39653c"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-borrowed-coordinates-wasm.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/ada69cc83039b2e5fbb194706fa3ede7192661d465613834bc2ad22a2d0f09eb.gz",
+      "archiveBytes": 1396,
+      "archiveSha256": "20cb33db5d9cb9b236b93f0336785cb9bd2034e27342694f44e67fd920801bf8",
+      "bytes": 4624,
+      "sha256": "ada69cc83039b2e5fbb194706fa3ede7192661d465613834bc2ad22a2d0f09eb"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-borrowed-coordinates.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/594dbe3933c5a306e43b7d3fd2ccd53a446b9998701962f5762148ec7aa071a0.gz",
+      "archiveBytes": 259,
+      "archiveSha256": "043a901b2f2570fcaf730175bc648f78613e79ce1ed7977ac546df81e322fb18",
+      "bytes": 327,
+      "sha256": "594dbe3933c5a306e43b7d3fd2ccd53a446b9998701962f5762148ec7aa071a0"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-borrowed-coordinates.patch": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/ecbfac197e7e1af004aff93bffed71969851f32ee5a3f8f596362c7f8f1f23f7.gz",
+      "archiveBytes": 25117,
+      "archiveSha256": "d8028362df947b1c9da120cdc8e8cc87359902cea953e84fe69a78d2f139b67e",
+      "bytes": 92516,
+      "sha256": "ecbfac197e7e1af004aff93bffed71969851f32ee5a3f8f596362c7f8f1f23f7"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-borrowed-fixed-planes-native.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/132ebadfeb1b89c52554128fcaf01b85edc5f9b690b5dba6efefb5713c21b410.gz",
+      "archiveBytes": 161,
+      "archiveSha256": "3455dd3dc96081feb1f91da9875126ed3adeef0819a7f6578ea3b6a07bd64222",
+      "bytes": 247,
+      "sha256": "132ebadfeb1b89c52554128fcaf01b85edc5f9b690b5dba6efefb5713c21b410"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-borrowed-fixed-planes-rust.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/8efffc886dd832a944120b895c973cfad230c189a181e26cc1bab28bcecc0dcd.gz",
+      "archiveBytes": 5008,
+      "archiveSha256": "35b21dd2399a8209a26ad370762eb146d5d1c27b5fdbb0bf426d86845b257391",
+      "bytes": 20378,
+      "sha256": "8efffc886dd832a944120b895c973cfad230c189a181e26cc1bab28bcecc0dcd"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-borrowed-fixed-planes-wasm.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/77eceea93d363d70ca8ac2c6997cd2dde5b3a570c916eb73072fe1dbeba49f37.gz",
+      "archiveBytes": 1205,
+      "archiveSha256": "90f529f9dde2ee6ed30b60e2daeb06ea8a9d60506da030f81e78e14b4bbd06ac",
+      "bytes": 4390,
+      "sha256": "77eceea93d363d70ca8ac2c6997cd2dde5b3a570c916eb73072fe1dbeba49f37"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-borrowed-plane-native.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/132ebadfeb1b89c52554128fcaf01b85edc5f9b690b5dba6efefb5713c21b410.gz",
+      "archiveBytes": 161,
+      "archiveSha256": "3455dd3dc96081feb1f91da9875126ed3adeef0819a7f6578ea3b6a07bd64222",
+      "bytes": 247,
+      "sha256": "132ebadfeb1b89c52554128fcaf01b85edc5f9b690b5dba6efefb5713c21b410"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-borrowed-plane-python.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/30f5236ec6c2512d4c3c7dabf9f3172f37193f5de1ef4f1cde3f95f3c29fa8ad.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "357c606feaced399913a43f4bcdfd51bc98bb44a89a85dd023e2fb70a4058d65",
+      "bytes": 99,
+      "sha256": "30f5236ec6c2512d4c3c7dabf9f3172f37193f5de1ef4f1cde3f95f3c29fa8ad"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-borrowed-plane-rust.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d55daaf9f49d799dcfb5f698af02bfc84ea7ba6171c7780b35c145e279db4121.gz",
+      "archiveBytes": 5007,
+      "archiveSha256": "fdeacbead4b0f080e115f012ceb7c740dd6dd54cd9c80e3c62f6a52707eec021",
+      "bytes": 20379,
+      "sha256": "d55daaf9f49d799dcfb5f698af02bfc84ea7ba6171c7780b35c145e279db4121"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-borrowed-plane-wasm.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/4536423297e864fc98b1faea3e7930db7db13bb73c5e65cc34f468a53dd6bc94.gz",
+      "archiveBytes": 1367,
+      "archiveSha256": "1fcf785a47766f9737c763db14d5daf097a005c4ed716bd2574d862612578b7f",
+      "bytes": 4570,
+      "sha256": "4536423297e864fc98b1faea3e7930db7db13bb73c5e65cc34f468a53dd6bc94"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-borrowed-plane.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/aad896a6519002596aaae514fc1582d127ad3bc7d6be85c4ba0435411ac45ff1.gz",
+      "archiveBytes": 241,
+      "archiveSha256": "72b9e371d25dcf99890f5db249ea191c7bdd3c146e17139b2e6e22766d9a37a6",
+      "bytes": 307,
+      "sha256": "aad896a6519002596aaae514fc1582d127ad3bc7d6be85c4ba0435411ac45ff1"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-borrowed-plane.patch": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/92f660c04a8d21ce4607d7abdba890001e63c9d7df33979fb2bfef975d2f9df4.gz",
+      "archiveBytes": 19795,
+      "archiveSha256": "0604e0162fcc2858a6ba7f2dff580dbf3c6ccd28675701ec738d4d119e3aba30",
+      "bytes": 72449,
+      "sha256": "92f660c04a8d21ce4607d7abdba890001e63c9d7df33979fb2bfef975d2f9df4"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-bounded-client-build.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f.gz",
+      "archiveBytes": 1056,
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "bytes": 5448,
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-bounded-deferred-history.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/a3f281565c2f527d7d86aa9cdb1d267f4a9b4f8867245bd5d4f8d6af3cc72b7a.gz",
+      "archiveBytes": 1080,
+      "archiveSha256": "98ebdbb297d8057de0e8642da9750dbbe321ef98b3bc35cef2fc3d7482a0a3ee",
+      "bytes": 3732,
+      "sha256": "a3f281565c2f527d7d86aa9cdb1d267f4a9b4f8867245bd5d4f8d6af3cc72b7a"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-capability-check.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/42b8d4d87753f9103ac02d0b33f9a3c6f6e68193684dd88198095d247c8e7392.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "b767dcba961ec36088a4508e2fc578c781b10bfd553f305c9afc72fb495506b6",
+      "bytes": 29,
+      "sha256": "42b8d4d87753f9103ac02d0b33f9a3c6f6e68193684dd88198095d247c8e7392"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-capability-generated.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/b17e0095fa5976539d4384127f8f3a4f70d4b5a7e46db7b1444c42ed0a1a30dd.gz",
+      "archiveBytes": 78,
+      "archiveSha256": "dd8fc0b9124b5f226585d6eba95490f8f5d7fea73b7288c246a1725cdb154aeb",
+      "bytes": 71,
+      "sha256": "b17e0095fa5976539d4384127f8f3a4f70d4b5a7e46db7b1444c42ed0a1a30dd"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-capacity-dpr1.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/e94d6c1a13475633b45438a2f0fa7ab6ec0e8a35c180d170427d19a2a55ac3bc.gz",
+      "archiveBytes": 4766,
+      "archiveSha256": "0d3d023090d0bfeca14b087bb7d3b3fa033bce9c23d138e6266c20bbfeb3dd87",
+      "bytes": 57823,
+      "sha256": "e94d6c1a13475633b45438a2f0fa7ab6ec0e8a35c180d170427d19a2a55ac3bc"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-capacity-dpr1.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/6920bd61dc0e07107faa42997d2665f6fd02cf424ce90815d2d27c64802f5e8c.gz",
+      "archiveBytes": 142,
+      "archiveSha256": "096f704d13f0d4bdd85fc16d58717a8257b0f7026f2cb4909d5a549c4229dcec",
+      "bytes": 141,
+      "sha256": "6920bd61dc0e07107faa42997d2665f6fd02cf424ce90815d2d27c64802f5e8c"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-check-ci.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/f6a2371c791235d2429acd66e1096337046531efadcd0bfa2dac1643734baf22.gz",
+      "archiveBytes": 458,
+      "archiveSha256": "fe0a1a9d293ac2c3ccd73b0a288ae0b0dd9c1595ca49d0135758c4a7d7dc01f1",
+      "bytes": 2065,
+      "sha256": "f6a2371c791235d2429acd66e1096337046531efadcd0bfa2dac1643734baf22"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-ci-workflow.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/3d29b3df27ab04aa2eff268a14a0b1d0df03e4c53b766cae333c85eb9191ae26.gz",
+      "archiveBytes": 182,
+      "archiveSha256": "f97a7ddf802e55a37796b01161e00a0cf2c51f697c856c676e34316dc9c37163",
+      "bytes": 567,
+      "sha256": "3d29b3df27ab04aa2eff268a14a0b1d0df03e4c53b766cae333c85eb9191ae26"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-client-build.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f.gz",
+      "archiveBytes": 1056,
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "bytes": 5448,
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-common-transaction-rust.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c97aadc1dbc22a855f2973eb7a5a08257eab96f5351882ecd6670b5c071c9586.gz",
+      "archiveBytes": 4995,
+      "archiveSha256": "243953149b63e66e4b22e102cf4ba3116c239d45b1a101c768878545749b7fa4",
+      "bytes": 20378,
+      "sha256": "c97aadc1dbc22a855f2973eb7a5a08257eab96f5351882ecd6670b5c071c9586"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-common-transaction-wasm.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/152d78ec4014312cf55f7eb14cf118c03c61f7a6b138ed7455199a8e46b6d7aa.gz",
+      "archiveBytes": 1367,
+      "archiveSha256": "3f9aee0336de134f0397d5338f5a5e22585e4b092c537e854c1b38898e429147",
+      "bytes": 4570,
+      "sha256": "152d78ec4014312cf55f7eb14cf118c03c61f7a6b138ed7455199a8e46b6d7aa"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-common-transaction.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/8d887e57cab3f9c44d7eed25b005b7f0b9eb58b9c1571fac11295cc41f0c1477.gz",
+      "archiveBytes": 303,
+      "archiveSha256": "e928ccc8f9755e9d42903b89291297f03c8296dff687fc950b7d3a906969ba0b",
+      "bytes": 431,
+      "sha256": "8d887e57cab3f9c44d7eed25b005b7f0b9eb58b9c1571fac11295cc41f0c1477"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-common-transaction.patch": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/cea506c64b445301867b9da57ce1c9cce77e52fc45adc52d32870505cbccaee3.gz",
+      "archiveBytes": 11781,
+      "archiveSha256": "b42366c5eb8093d6ada9d725d5f4967bc0f0b15b7fb5c0179777ae49abbf7a4a",
+      "bytes": 40209,
+      "sha256": "cea506c64b445301867b9da57ce1c9cce77e52fc45adc52d32870505cbccaee3"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-core-final.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/0fad7b0a827ae409528e59ed9c92823e7fc588eb36b84bfa2ab97730e187f67a.gz",
+      "archiveBytes": 64,
+      "archiveSha256": "af1d84e73264e3acd1824c823b71d9ed3e24fa2e0041b92ebc2802157e0f79ea",
+      "bytes": 111,
+      "sha256": "0fad7b0a827ae409528e59ed9c92823e7fc588eb36b84bfa2ab97730e187f67a"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-core-inventory-corrected.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c400825ff737f2a69f0e90abe08f0128d20c977b2f2b9df5dc4b40f17e8858d4.gz",
+      "archiveBytes": 3611,
+      "archiveSha256": "5e4f1fbfd240fc5f14ea8bd90242fa5d5a78245e06edfb37070ded836edb7115",
+      "bytes": 61330,
+      "sha256": "c400825ff737f2a69f0e90abe08f0128d20c977b2f2b9df5dc4b40f17e8858d4"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-core-inventory-sealed.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/9007eb5cc223bfff1011b058f62ef7d0144131973110bd938626d955afa45974.gz",
+      "archiveBytes": 2370,
+      "archiveSha256": "885ba44124d48b57345991ae691486840bcf83d232a9c43e1dba64a1cee2e099",
+      "bytes": 14042,
+      "sha256": "9007eb5cc223bfff1011b058f62ef7d0144131973110bd938626d955afa45974"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-core-inventory.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/59f9df99f3184352932837cf8631c58832ae568af33c0bad8fcc93f3cbe99435.gz",
+      "archiveBytes": 104,
+      "archiveSha256": "0a00347115b3797bad3e22da0b639ec16edb57fcada089ccf46a71cd3309e1a4",
+      "bytes": 96,
+      "sha256": "59f9df99f3184352932837cf8631c58832ae568af33c0bad8fcc93f3cbe99435"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-crlf-diagnostic.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/abf31a93c8285af35c5a6c3b4e0dfce5db0b689657712a2697b0e6550e7b7d3f.gz",
+      "archiveBytes": 1346,
+      "archiveSha256": "1f09886d29450e7ba1892f11114e539eed445c8acf301c76926e0c6150662c93",
+      "bytes": 3805,
+      "sha256": "abf31a93c8285af35c5a6c3b4e0dfce5db0b689657712a2697b0e6550e7b7d3f"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-current-source-check-corrected.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/70211483dfd2e5cd2e64a895b775c66fdb5dd664a051c6e4c97344ef1f5334eb.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "e03268b6720563f2020809185bb9e90b67750299731ba160345a8d22dc37578f",
+      "bytes": 98,
+      "sha256": "70211483dfd2e5cd2e64a895b775c66fdb5dd664a051c6e4c97344ef1f5334eb"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-current-source-check.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d38cd1d11a3544c09727e2ea492697ca4b42cc424f7e891c548f87e737a94085.gz",
+      "archiveBytes": 194,
+      "archiveSha256": "f84d1abbd50369d8290de57f98415e2ba362e19e745ee2f45b6962de8cffb9f1",
+      "bytes": 248,
+      "sha256": "d38cd1d11a3544c09727e2ea492697ca4b42cc424f7e891c548f87e737a94085"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-deferred-client-build.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f.gz",
+      "archiveBytes": 1056,
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "bytes": 5448,
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-deferred-history-expanded.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/cfe163ef34592dce257a18e100ac4b456c5a95df784b79f4e021d73ef5a38359.gz",
+      "archiveBytes": 927,
+      "archiveSha256": "8357221d3048ab34e9cfee47a9771ec0b7016f10f27ae65430ca73f7386946de",
+      "bytes": 3076,
+      "sha256": "cfe163ef34592dce257a18e100ac4b456c5a95df784b79f4e021d73ef5a38359"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-deferred-history-final.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/8bf213c4bd2bc04c93e38af94f60c0b597bd308199d4b06e1e4adc1d3bd361d7.gz",
+      "archiveBytes": 1030,
+      "archiveSha256": "d25049b533375ec924462d88005fb797c329b6a2d0c1082ec92a3f8229fdf9b7",
+      "bytes": 3531,
+      "sha256": "8bf213c4bd2bc04c93e38af94f60c0b597bd308199d4b06e1e4adc1d3bd361d7"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-deferred-history-first.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/1c0e436df8f6c60712ed6ae0dafcf038dcdcb2287457238bdcb0f6509fdcf56a.gz",
+      "archiveBytes": 967,
+      "archiveSha256": "71b53ac919c1ea1d9806bb09a54bd143403003b28b703d54cd111ee557e83ba3",
+      "bytes": 2500,
+      "sha256": "1c0e436df8f6c60712ed6ae0dafcf038dcdcb2287457238bdcb0f6509fdcf56a"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-deferred-native-build.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/3922e170055b428c989853279d38c99defb71f87a06ae67a72c84dff06fdacdd.gz",
+      "archiveBytes": 204,
+      "archiveSha256": "876da76afd1d450ce4d9b82bf6b63fa116e31349a856e07555e498beb16f3576",
+      "bytes": 391,
+      "sha256": "3922e170055b428c989853279d38c99defb71f87a06ae67a72c84dff06fdacdd"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-deferred-python-first.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/5376a9ea3e327d1e2b189ec5adfb44b5102e7c6829b456ddf512a7d376b5c27c.gz",
+      "archiveBytes": 622,
+      "archiveSha256": "146df577db184866f5e09dd018a978c97db6759ed0fbcf7f0293b9306b0f0212",
+      "bytes": 1589,
+      "sha256": "5376a9ea3e327d1e2b189ec5adfb44b5102e7c6829b456ddf512a7d376b5c27c"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-direct-transaction-rust.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/f23c639242dd980f098e668c896a93869f27250edc9646cac26a708731d89f89.gz",
+      "archiveBytes": 5003,
+      "archiveSha256": "85ac186f7a2dab33f1a7ce3f74f4b15d64011e86a677ecd663047f97a3797b15",
+      "bytes": 20378,
+      "sha256": "f23c639242dd980f098e668c896a93869f27250edc9646cac26a708731d89f89"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-direct-transaction-wasm.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/ace41e5dea43c56e9a873981ca753a6627926605552cfcc5e090fa0c4396f27b.gz",
+      "archiveBytes": 1365,
+      "archiveSha256": "1d061bb1154fd0c84d18e8ffa9e5556047bc18233bdb2afdd932622598c13ebe",
+      "bytes": 4570,
+      "sha256": "ace41e5dea43c56e9a873981ca753a6627926605552cfcc5e090fa0c4396f27b"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-direct-transaction.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/503a20459027877ec07fce207d96e13f613567c460e62b00bff566137c03970d.gz",
+      "archiveBytes": 310,
+      "archiveSha256": "bcc2e8124f89494272be4dc986d50bedbd8e62e95738d2119e2abb04e140e013",
+      "bytes": 437,
+      "sha256": "503a20459027877ec07fce207d96e13f613567c460e62b00bff566137c03970d"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-direct-transaction.patch": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/b5fa7b353681f92eccaef9693b887edb49a7a4208481d93db5113a1b9c624eb6.gz",
+      "archiveBytes": 11811,
+      "archiveSha256": "c9336bcb67e1c5c4d499619de6d2cebf53e0a89ec627002885d88306e435d674",
+      "bytes": 40124,
+      "sha256": "b5fa7b353681f92eccaef9693b887edb49a7a4208481d93db5113a1b9c624eb6"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-edge-mask-client-build.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f.gz",
+      "archiveBytes": 1056,
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "bytes": 5448,
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-edge-mask-corrected.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/50d6e97095f2f078438c70f29edc438cf8f0f02cc52a8cfff58167ac099ec1da.gz",
+      "archiveBytes": 142,
+      "archiveSha256": "5359f61bf0d0c354ca31a0dfa33194b5c13bc5d85d18394acdbb7a71b7f17fda",
+      "bytes": 141,
+      "sha256": "50d6e97095f2f078438c70f29edc438cf8f0f02cc52a8cfff58167ac099ec1da"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-edge-mask-original.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/8b8ca55dbcb1e630b17a06f7cba6f7065f1e1221d574e2973ada96f4d20f8387.gz",
+      "archiveBytes": 301,
+      "archiveSha256": "588209772814dc96dc8eadecb556541e25facd8e3b13fe84e8f443b4b86e589e",
+      "bytes": 385,
+      "sha256": "8b8ca55dbcb1e630b17a06f7cba6f7065f1e1221d574e2973ada96f4d20f8387"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-environment.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/63549e131a4e381c4f436ca9a0b1f40926e6c64e5113ec4f244468c93655fada.gz",
+      "archiveBytes": 353,
+      "archiveSha256": "fcec6bbdbb37c079fb55a5d264772722becbc689ee8b932fa66c23481e6ea48a",
+      "bytes": 508,
+      "sha256": "63549e131a4e381c4f436ca9a0b1f40926e6c64e5113ec4f244468c93655fada"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-expanded-python.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/3fac8e469faa198ef465e6b924eaed4da37965466b687ae566d6a2a1b3aadc70.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "07236dc818ff1361e2aebe073f3ee8e35a6e100485f15e0ad54cb18d94497acb",
+      "bytes": 99,
+      "sha256": "3fac8e469faa198ef465e6b924eaed4da37965466b687ae566d6a2a1b3aadc70"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-final-client-build.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f.gz",
+      "archiveBytes": 1056,
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "bytes": 5448,
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-final-focused-node.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/bf86324d8f6eb11d56bdf65043bbc6998008ca666f675f8d4a3a200dee3d0d2f.gz",
+      "archiveBytes": 2528,
+      "archiveSha256": "f23c57bd327c79d701735b86133414db59d5532e4000ce3869589c3805aca18b",
+      "bytes": 8977,
+      "sha256": "bf86324d8f6eb11d56bdf65043bbc6998008ca666f675f8d4a3a200dee3d0d2f"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-final-focused-python-corrected.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/420829ac6110adb37029c144be506f6b6d0f3a6be1f6cb375d16dc8ee3f0d38e.gz",
+      "archiveBytes": 70,
+      "archiveSha256": "ae17c4630653d4e69b4e6b35862ef6ef0df8d1a3da0a591f309a80b554df493c",
+      "bytes": 261,
+      "sha256": "420829ac6110adb37029c144be506f6b6d0f3a6be1f6cb375d16dc8ee3f0d38e"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-final-focused-python.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/b5895005b14153d8a60ffe00a481da1a30e65fe9d0d36005a8b945e1cd2b1f02.gz",
+      "archiveBytes": 102,
+      "archiveSha256": "73df19dd742f1af286bffcd90d7245c7d390cc8ef6c6105820e2bb50c84b4734",
+      "bytes": 91,
+      "sha256": "b5895005b14153d8a60ffe00a481da1a30e65fe9d0d36005a8b945e1cd2b1f02"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-final-foundation.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/567de087af306b79d744158c6bdd3eda52ea2a0488dbecb69c5a3cacacd69192.gz",
+      "archiveBytes": 3165,
+      "archiveSha256": "8602144bbd1490a9d8c1d0d1440df5e3b4399b534aa4411e2c3701a3ebb38cf3",
+      "bytes": 12257,
+      "sha256": "567de087af306b79d744158c6bdd3eda52ea2a0488dbecb69c5a3cacacd69192"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-final-graph-capability.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/f186cc0292877c156eeedbe99875754bdf2da207fca2032e59851e5771c601c8.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "b7d66cdd08f5375308793e6d889343fce9bb5887851fb8ca67f630d9c2be8255",
+      "bytes": 99,
+      "sha256": "f186cc0292877c156eeedbe99875754bdf2da207fca2032e59851e5771c601c8"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-final-metadata-python.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/a6fa2187d723fce9298ce7a94e62697bbfd4e8499b6df77c5daf739663bf2667.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "fa7f944d65a867108e7d1f1def5c21270c3111d3e3091300122cffde33254bc5",
+      "bytes": 99,
+      "sha256": "a6fa2187d723fce9298ce7a94e62697bbfd4e8499b6df77c5daf739663bf2667"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-final-notebook-dpr1.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/bcaf1528f0a9cb765f0c83a4a19fcd739c54ebfe9aedb11f834ad0ba176e978b.gz",
+      "archiveBytes": 5123,
+      "archiveSha256": "b7b7bb06842d9698b8240b651f9dd8e14c11ec9124ea88fe3ac1783d54a4f325",
+      "bytes": 73099,
+      "sha256": "bcaf1528f0a9cb765f0c83a4a19fcd739c54ebfe9aedb11f834ad0ba176e978b"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-final-notebook-dpr1.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/0655b87974c456bfd0aadf58e33afd3a000da017027dff15e0ae7f901f694fc7.gz",
+      "archiveBytes": 142,
+      "archiveSha256": "43f30cbe49353bb13fe84c03a5ff5aa2e391f0dd115c0977fae445424e4ea29b",
+      "bytes": 141,
+      "sha256": "0655b87974c456bfd0aadf58e33afd3a000da017027dff15e0ae7f901f694fc7"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-final-notebook-dpr2.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/9a225d2e86948ebd1b4f5ac72234c96f31ae4041566064a7cdb0934947f7d473.gz",
+      "archiveBytes": 5020,
+      "archiveSha256": "ba4be8de8370531d92bbe30fcb642dba3dd6033e7e60f63deab7e547ea1045a1",
+      "bytes": 73106,
+      "sha256": "9a225d2e86948ebd1b4f5ac72234c96f31ae4041566064a7cdb0934947f7d473"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-final-notebook-dpr2.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d6bef3d0e141ab204bcdd4ef3355c41d698df02a1bb3345afa57557c00dc0f3b.gz",
+      "archiveBytes": 142,
+      "archiveSha256": "09be1ef0c2c5b22e0ad249ec70500d480b2acdd346f254550630a90f5d316833",
+      "bytes": 141,
+      "sha256": "d6bef3d0e141ab204bcdd4ef3355c41d698df02a1bb3345afa57557c00dc0f3b"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-final-package.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d5a7ed6ddf82e93777c24d1041899e10525e1f8974db5d8c7a4ae4cdcaf8204d.gz",
+      "archiveBytes": 201,
+      "archiveSha256": "563cc9e3668fad336427bc3073208f88a4323513b29551b1c2975d6fcabc5846",
+      "bytes": 493,
+      "sha256": "d5a7ed6ddf82e93777c24d1041899e10525e1f8974db5d8c7a4ae4cdcaf8204d"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-final-packaged.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d5a7ed6ddf82e93777c24d1041899e10525e1f8974db5d8c7a4ae4cdcaf8204d.gz",
+      "archiveBytes": 201,
+      "archiveSha256": "563cc9e3668fad336427bc3073208f88a4323513b29551b1c2975d6fcabc5846",
+      "bytes": 493,
+      "sha256": "d5a7ed6ddf82e93777c24d1041899e10525e1f8974db5d8c7a4ae4cdcaf8204d"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-final-python.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/b6e601d2a03c225b4344c1c8fe17d214ffcaabde01182f92a26671f4c44bb0d9.gz",
+      "archiveBytes": 69,
+      "archiveSha256": "52c3b0e0de4a43dec0e382cc710121f6e6162bd9313bfb3a8a54c0c12c522baa",
+      "bytes": 261,
+      "sha256": "b6e601d2a03c225b4344c1c8fe17d214ffcaabde01182f92a26671f4c44bb0d9"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-final-python311.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/4c18747fc625756f76f570bf6486add82d2e7911cb0850d3d4fcd667b75edf61.gz",
+      "archiveBytes": 61,
+      "archiveSha256": "7287e904b2a4630b678b510a0cecd0b665173f1151c69d0b74b571ca598265e5",
+      "bytes": 179,
+      "sha256": "4c18747fc625756f76f570bf6486add82d2e7911cb0850d3d4fcd667b75edf61"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-final-ruff-check.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-final-ruff-format.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/127ebb8c6685712ecc74c244dc0e19ad295f928ac7d0522c2809f39a024ce543.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "131a6ca95f69fab672e22b8e10e6145e37549999675f5109b8dfa04e0797b6b0",
+      "bytes": 29,
+      "sha256": "127ebb8c6685712ecc74c244dc0e19ad295f928ac7d0522c2809f39a024ce543"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-final-source-binding-check.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/e7f5ddf39882fca9bfd30eace7c79941312057b3e98c822faa22cd56dd293527.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "1a6e2b7c64ff91be36a0f02ed2c32dd889bc755949d79fba54cd30e25c9d8072",
+      "bytes": 98,
+      "sha256": "e7f5ddf39882fca9bfd30eace7c79941312057b3e98c822faa22cd56dd293527"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-final-typed-selection.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/1053e02e385a41b13392a7156d123e2e273f81264263a481edfb57a26838c086.gz",
+      "archiveBytes": 61,
+      "archiveSha256": "dcdc0863591a04fb594fa9234298a61dc95c3115e0a77b482fa9d1dc00e7cdba",
+      "bytes": 179,
+      "sha256": "1053e02e385a41b13392a7156d123e2e273f81264263a481edfb57a26838c086"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-final-typed-selection311.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/f62fc6abd4b4c9fa75964e3b0963ae8e04d7e16fdb5484effa7f23476b4cedb7.gz",
+      "archiveBytes": 62,
+      "archiveSha256": "2ae60e0558f47cfbd8563ddb50fd9a4856921f4908ab7ca2c68bce42ddfae79e",
+      "bytes": 180,
+      "sha256": "f62fc6abd4b4c9fa75964e3b0963ae8e04d7e16fdb5484effa7f23476b4cedb7"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-final-typing.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-final-wire-transport.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/db35bd0edeaa584e6f17ba01b9de6a3edf9ec139baf8c842eeee74e9dcb3fc4e.gz",
+      "archiveBytes": 2474,
+      "archiveSha256": "bf9db765cce4dae94285ded5bc9fb5efa87954c0ba67b0a05317291c312e5f59",
+      "bytes": 8731,
+      "sha256": "db35bd0edeaa584e6f17ba01b9de6a3edf9ec139baf8c842eeee74e9dcb3fc4e"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-first-python.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/6c44c4cba9c76c4e88a6086d56f30b5f563a338288c05bcd1d992764eb398c60.gz",
+      "archiveBytes": 1145,
+      "archiveSha256": "b793cd85da72142396b63da7fd26dd703f0fd2bf61856a4d1cbe443131a276b9",
+      "bytes": 7469,
+      "sha256": "6c44c4cba9c76c4e88a6086d56f30b5f563a338288c05bcd1d992764eb398c60"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-folded-native-build.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/a23c6f13049ed19efef84b1524e85308dec890bbbc814d00094146f16d636e58.gz",
+      "archiveBytes": 172,
+      "archiveSha256": "293c5fd9c469fa2f8cddc4f661f27a4e9bcce303e5216155eee1705d8eb65ce1",
+      "bytes": 337,
+      "sha256": "a23c6f13049ed19efef84b1524e85308dec890bbbc814d00094146f16d636e58"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-folded-rust-tests.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/aa6c54063761a5551313e3078be5bfc83e8ca1dcda4fa6df1e6b106bb0b02143.gz",
+      "archiveBytes": 5002,
+      "archiveSha256": "fdf007e5cc163bc5689e18968d73d802c2fad756093fe79b7e15e8ccdbdc4caa",
+      "bytes": 20378,
+      "sha256": "aa6c54063761a5551313e3078be5bfc83e8ca1dcda4fa6df1e6b106bb0b02143"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-folded-validation.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/596c5d2bfc3b266a1aa87aea7d2e6aef2e7b7df354e8f9bab4b7ba2504c8a026.gz",
+      "archiveBytes": 305,
+      "archiveSha256": "666b1f76cfe1237d7925ced1d0f87a61aaafaaa6e2ff4ff8b7e1b759992d282c",
+      "bytes": 433,
+      "sha256": "596c5d2bfc3b266a1aa87aea7d2e6aef2e7b7df354e8f9bab4b7ba2504c8a026"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-folded-validation.patch": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/eaf37ae100da1a8138fcac3abbf5910da0b3f97c003032de41d8d22b5b5a5b0a.gz",
+      "archiveBytes": 11836,
+      "archiveSha256": "98a3d1236a813b9f5b66ad43e7d3f6ef1b3032f4a455320dc8073a68b02648e2",
+      "bytes": 38276,
+      "sha256": "eaf37ae100da1a8138fcac3abbf5910da0b3f97c003032de41d8d22b5b5a5b0a"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-folded-wasm-package.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/8d131267d38983c03460d27b8cf5d7e182146bad2240f25c9be73abf2c398d81.gz",
+      "archiveBytes": 1365,
+      "archiveSha256": "e9b19fa0268f9c2255d3ae3f58e5b62bd63053e3f80d0097e59ff0c022ff6a06",
+      "bytes": 4570,
+      "sha256": "8d131267d38983c03460d27b8cf5d7e182146bad2240f25c9be73abf2c398d81"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-force-inline-dispatch-wasm.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/e144ac0867e8a6915d5b70749a5801a31f508bb8d801dd7c95cae7bca7a31e15.gz",
+      "archiveBytes": 1367,
+      "archiveSha256": "ddbef8f7333f1dc91caf59d25d324f4221c86d2d38cf59f0f9a285bf8c7534e4",
+      "bytes": 4570,
+      "sha256": "e144ac0867e8a6915d5b70749a5801a31f508bb8d801dd7c95cae7bca7a31e15"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-force-inline-dispatch.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/992fb66261623864a0a22b410a87711e7f3375118ce4158adc57c3b94559ad66.gz",
+      "archiveBytes": 234,
+      "archiveSha256": "de95244860f32e50f8642de5915d198e800932d753b10a031814424f99fda7aa",
+      "bytes": 298,
+      "sha256": "992fb66261623864a0a22b410a87711e7f3375118ce4158adc57c3b94559ad66"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-force-inline-dispatch.patch": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d07f65c608fab3ef9eb6e82b4b234d9c9e5065395b4b0d7109cd30c52cefe26b.gz",
+      "archiveBytes": 24683,
+      "archiveSha256": "06f31c30fcb5f2f7f366fe1d2e1c7fb2d7412412d3b1080c5bc25577667b360f",
+      "bytes": 90839,
+      "sha256": "d07f65c608fab3ef9eb6e82b4b234d9c9e5065395b4b0d7109cd30c52cefe26b"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-formatted-scoped-wasm.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/8bb449687c0d47188fc3f9767a3a545b17d2ad7630aa4f39019141d895df9a48.gz",
+      "archiveBytes": 1366,
+      "archiveSha256": "2dbc30344cead9ba08c485df41ba2cbf00973b890cce66bbfc24b110b7a22435",
+      "bytes": 4570,
+      "sha256": "8bb449687c0d47188fc3f9767a3a545b17d2ad7630aa4f39019141d895df9a48"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-formatted-scoped.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/1061cd7f5aff12a1a614d05d0d9160df9ace56d53acf875a4f3835e757cb202d.gz",
+      "archiveBytes": 250,
+      "archiveSha256": "6a487d81f7b7ac68cbf9756c6ffef9c209b25723696696d077144ec388627cd3",
+      "bytes": 323,
+      "sha256": "1061cd7f5aff12a1a614d05d0d9160df9ace56d53acf875a4f3835e757cb202d"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-formatted-scoped.patch": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/cb4e08bf2576baaaec04929e870e00720b1a8dc94b5f371e7b179a02e0fd31f3.gz",
+      "archiveBytes": 28589,
+      "archiveSha256": "ee273d2757f43f63e57be194bd11bac3f0be2ad5da326a1e732afe3172446d0c",
+      "bytes": 107410,
+      "sha256": "cb4e08bf2576baaaec04929e870e00720b1a8dc94b5f371e7b179a02e0fd31f3"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-formatted-wasm.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/167292157506c4235cde7b73b01d5428746653aaeb86c135bb4c0e80121b2a7c.gz",
+      "archiveBytes": 1095,
+      "archiveSha256": "2bd3762e964f27233db30845643547f22eb79c3377e7df1724c773061764e9a9",
+      "bytes": 3897,
+      "sha256": "167292157506c4235cde7b73b01d5428746653aaeb86c135bb4c0e80121b2a7c"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-foundation-quiet.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/6be2b2dd7b439ea6d3d7a087ab478bc421728a199d125088cf1d346bd238f8bd.gz",
+      "archiveBytes": 4631,
+      "archiveSha256": "9c65c0039f828620ef081481b22484a70914c30410b55acda0bac9dfd568fcb9",
+      "bytes": 15904,
+      "sha256": "6be2b2dd7b439ea6d3d7a087ab478bc421728a199d125088cf1d346bd238f8bd"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-foundation-rerun.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/9a6030932c09d5972954d2ccdc9181ff10845524d56584fedef8d4e8e4597322.gz",
+      "archiveBytes": 3349,
+      "archiveSha256": "5e4e5de1bdccba96c9bddf79c8326fc11fa5c61f2d8ba54c139b59422f526fd3",
+      "bytes": 13127,
+      "sha256": "9a6030932c09d5972954d2ccdc9181ff10845524d56584fedef8d4e8e4597322"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-frozen-isolated.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/7d3bcf3d8e8ecd64daa761976c52e49083908806a016644aa22e12d490222c5e.gz",
+      "archiveBytes": 260,
+      "archiveSha256": "7c4b4b6dd2a14de0f9424c4b299d8dcdb55ad98e9097b7c6478d0bf19659d8ef",
+      "bytes": 858,
+      "sha256": "7d3bcf3d8e8ecd64daa761976c52e49083908806a016644aa22e12d490222c5e"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-full-node.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/5e0cecbfc8fabb037c59ff80013a500c9f4ff5741492adf4fa3eb088b9d910de.gz",
+      "archiveBytes": 40665,
+      "archiveSha256": "7dfe63b5b7af258d852d8383aba90b1fe5ad88c00fcff5838089f700bcbc0a90",
+      "bytes": 241872,
+      "sha256": "5e0cecbfc8fabb037c59ff80013a500c9f4ff5741492adf4fa3eb088b9d910de"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-held-reference-native.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/6f9c3e075f0421d7e6fe81e02a615010020a4cd861e6bae67c46a726f480bfce.gz",
+      "archiveBytes": 172,
+      "archiveSha256": "cbe078c12bd9936f1275a6f372ac9fec529673e2564bc07405aa21febf25ed55",
+      "bytes": 337,
+      "sha256": "6f9c3e075f0421d7e6fe81e02a615010020a4cd861e6bae67c46a726f480bfce"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-held-reference-python.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/190f0bd6c7433e58c7631db5a606843a882edc15510d9005fa0bab0978672a07.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "7aa8293a670d837912574a9bc9d5564a552bf3c57c8d7e250c1215f6e7cb6acc",
+      "bytes": 99,
+      "sha256": "190f0bd6c7433e58c7631db5a606843a882edc15510d9005fa0bab0978672a07"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-held-reference-rust.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d630a036891e889220e4afdad2aaa8b4e6a93d9730585ba2bec7e41fbe21cfb9.gz",
+      "archiveBytes": 5005,
+      "archiveSha256": "164195a8cf84ecbfde459584006cf1ba77cf4eae1b0122f0ce59fc9b8a410bd9",
+      "bytes": 20378,
+      "sha256": "d630a036891e889220e4afdad2aaa8b4e6a93d9730585ba2bec7e41fbe21cfb9"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-held-reference-wasm.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/05aa237e1925558405cb2ecd650db1299035faeab595355578d7be5091454b56.gz",
+      "archiveBytes": 1367,
+      "archiveSha256": "7de808d9f9483cc5154d7ff14885e254cfbb9406247c20e064c0da8a8aaf79ab",
+      "bytes": 4570,
+      "sha256": "05aa237e1925558405cb2ecd650db1299035faeab595355578d7be5091454b56"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-held-reference.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/8fede8c1458ffe44e678f0f7b593f8e04564d2949f0efe76b01a8625da137d80.gz",
+      "archiveBytes": 333,
+      "archiveSha256": "70e960e28cf5535b9a6a2e95d5437663ad0f28f8a74b198eee7af996d5329975",
+      "bytes": 463,
+      "sha256": "8fede8c1458ffe44e678f0f7b593f8e04564d2949f0efe76b01a8625da137d80"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-held-reference.patch": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/6f98e569b594c90d8aa5f2d9e4db42913dc4f30c68f85b14fe60bcc0f1ede348.gz",
+      "archiveBytes": 12430,
+      "archiveSha256": "af83550958e0d3f8c58d761cbe0815160a6a2cb44b489afedc4b69e49db2440e",
+      "bytes": 43197,
+      "sha256": "6f98e569b594c90d8aa5f2d9e4db42913dc4f30c68f85b14fe60bcc0f1ede348"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-history-roundtrip.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/b0bdeac486b396d415503c0542aa30b39c417d217600e30058b0e47cfc63115d.gz",
+      "archiveBytes": 1222,
+      "archiveSha256": "93302e73195c039a1681ade347f60f213fe278d66b67ea8e7a34dbbb29c513c5",
+      "bytes": 4390,
+      "sha256": "b0bdeac486b396d415503c0542aa30b39c417d217600e30058b0e47cfc63115d"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-hooks.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-index-buffer-admitted-native.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/132ebadfeb1b89c52554128fcaf01b85edc5f9b690b5dba6efefb5713c21b410.gz",
+      "archiveBytes": 161,
+      "archiveSha256": "3455dd3dc96081feb1f91da9875126ed3adeef0819a7f6578ea3b6a07bd64222",
+      "bytes": 247,
+      "sha256": "132ebadfeb1b89c52554128fcaf01b85edc5f9b690b5dba6efefb5713c21b410"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-index-buffer-admitted-rust-final.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/b56c9f0777513f94e67ab5e601923cf367c77812a36b26baf6df2fe80f36bd3a.gz",
+      "archiveBytes": 5009,
+      "archiveSha256": "2cf520e965c809ac5fb0c83ba89271158323425dfd6788396c158e12c6a767bb",
+      "bytes": 20378,
+      "sha256": "b56c9f0777513f94e67ab5e601923cf367c77812a36b26baf6df2fe80f36bd3a"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-index-buffer-admitted-rust.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/27d7db21650e9ff39f701f32cd9533ba29fea6f868446411b08b1cec51626d7d.gz",
+      "archiveBytes": 620,
+      "archiveSha256": "a565839257b82f204da03ea55011967d90717b035dd398be93d53802c5a0be77",
+      "bytes": 1213,
+      "sha256": "27d7db21650e9ff39f701f32cd9533ba29fea6f868446411b08b1cec51626d7d"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-index-buffer-admitted-wasm.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/0ce5d76b35e7177898ee508cce9afe1746c387b1b901cc96f62dce48fbd2466f.gz",
+      "archiveBytes": 1398,
+      "archiveSha256": "3441a3bae3c9197552d00ec9f35cd0040a1d2a0e7afc6fa0e6af61cde2c59d4c",
+      "bytes": 4624,
+      "sha256": "0ce5d76b35e7177898ee508cce9afe1746c387b1b901cc96f62dce48fbd2466f"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-index-buffer-admitted.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/cd3eecbcc1ad89a67c9d2ae34c77a48771ed38e66fef05376809f7e6c36b9c41.gz",
+      "archiveBytes": 221,
+      "archiveSha256": "ae6a46dece2a4ebcf9ecbf31a6a95cd44e6a94d55ed5f7b5fcca389590287cc2",
+      "bytes": 280,
+      "sha256": "cd3eecbcc1ad89a67c9d2ae34c77a48771ed38e66fef05376809f7e6c36b9c41"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-index-buffer-admitted.patch": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/3312699f3a12f9bd2541b993d03aae0edbec5496931ae7acd3d063795678bcab.gz",
+      "archiveBytes": 19724,
+      "archiveSha256": "8492a3f76dcd6f9947a4b7faa1e4497d2a714609b356b84944f5a335b7ae4a1f",
+      "bytes": 72245,
+      "sha256": "3312699f3a12f9bd2541b993d03aae0edbec5496931ae7acd3d063795678bcab"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-index-buffer-native.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/8c861cbfc3bb2e7466e7392a8c54ea65718585976f51f9a56f200e186d19ff06.gz",
+      "archiveBytes": 205,
+      "archiveSha256": "72f93cefa36363d127ad929caaea17fa4811be950e0a088c85ba58bcff691fee",
+      "bytes": 391,
+      "sha256": "8c861cbfc3bb2e7466e7392a8c54ea65718585976f51f9a56f200e186d19ff06"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-index-buffer-python.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/cb5c7be6855fee0035167918017e37d263979d04af4091caf9a80bd03ae684f8.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "f7890c327bd38b2bd2f84959b8394427ce7f28b66989bbe8a62bbf002b502a98",
+      "bytes": 99,
+      "sha256": "cb5c7be6855fee0035167918017e37d263979d04af4091caf9a80bd03ae684f8"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-index-buffer-rust-corrected.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c7089c934af336cdba96ac624a43d6cc4761b4a17d9460456af5b56b42758e94.gz",
+      "archiveBytes": 5121,
+      "archiveSha256": "6dcd07904729c84b3c82ea13719dca8111eb487c2591beede27141aa52e61c1e",
+      "bytes": 20376,
+      "sha256": "c7089c934af336cdba96ac624a43d6cc4761b4a17d9460456af5b56b42758e94"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-index-buffer-rust.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/720a2e60f63bc0efbf864faa74165ccd260be2e2130329bb42f5b40d03d55579.gz",
+      "archiveBytes": 745,
+      "archiveSha256": "a3b0107c9a17cd9aa8fb3fb2fe3e2d1f29b787c8232afdbd9d7c264ad5fcefc3",
+      "bytes": 1794,
+      "sha256": "720a2e60f63bc0efbf864faa74165ccd260be2e2130329bb42f5b40d03d55579"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-index-buffer-wasm.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/0c619107a051eb19a86834d709d9434254298f8a393a2322e3dd1fc6a30ea98e.gz",
+      "archiveBytes": 1367,
+      "archiveSha256": "51efedf21576d1a84e908715ad6c37e1a2295ece77d4679aa9054209c4eb3747",
+      "bytes": 4570,
+      "sha256": "0c619107a051eb19a86834d709d9434254298f8a393a2322e3dd1fc6a30ea98e"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-inline-dispatch-wasm.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d147ef3cddc56095b1de0f94766e29ceee381ecded88b59b7ec8e8a2a2d4a3fc.gz",
+      "archiveBytes": 1366,
+      "archiveSha256": "49c8574d48e07e12e99fb4236f87b7e5cdbc55d9fd664a34ee355460bf29f792",
+      "bytes": 4570,
+      "sha256": "d147ef3cddc56095b1de0f94766e29ceee381ecded88b59b7ec8e8a2a2d4a3fc"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-inline-dispatch.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/9d3401e588400844903664644c659d0efdd2eb70fcd83d79bc8f13e63062e0b0.gz",
+      "archiveBytes": 237,
+      "archiveSha256": "2bf54f11c144db3e769ce08078e178af8d91bbf3c8e29f01eafe3a632a9088fb",
+      "bytes": 305,
+      "sha256": "9d3401e588400844903664644c659d0efdd2eb70fcd83d79bc8f13e63062e0b0"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-inline-dispatch.patch": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c3545d028309e4709f69fdeba610ba23fd9327a67b1e3f3e092b09931cddf89b.gz",
+      "archiveBytes": 24357,
+      "archiveSha256": "b24132d3b51993e07e82ff24e6792e42365f6b7a4558463b5447d1f43c79ab0b",
+      "bytes": 88999,
+      "sha256": "c3545d028309e4709f69fdeba610ba23fd9327a67b1e3f3e092b09931cddf89b"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-inline-integer-guard-rust.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/282795b3e5bc4892707eccf61b72d11c617bd3d034637554b7a9ebb770c80bf3.gz",
+      "archiveBytes": 4992,
+      "archiveSha256": "26f1e1cfc2e53ee5a67d6e48731ffa08dd0b7a001cb60b44140d95ef8be378f1",
+      "bytes": 20378,
+      "sha256": "282795b3e5bc4892707eccf61b72d11c617bd3d034637554b7a9ebb770c80bf3"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-inline-integer-guard-wasm.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/8c9962ede31b05063d4f8093c626eb371ff3a4646d931433eb250d79d19d776b.gz",
+      "archiveBytes": 1365,
+      "archiveSha256": "d50e7b80687ec875481e01dbb200255eaccaf0492f63887a2ee48372ca1db74f",
+      "bytes": 4570,
+      "sha256": "8c9962ede31b05063d4f8093c626eb371ff3a4646d931433eb250d79d19d776b"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-inline-integer-guard.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/be79d3bc88021f730b9cd2ea2af202c551e590e5f39ce7e18faa032e933e5c77.gz",
+      "archiveBytes": 248,
+      "archiveSha256": "5c092a9ca132cb662b46fd63ef2e231ac15536f6ebfa4bb5e3b36d283300cb96",
+      "bytes": 317,
+      "sha256": "be79d3bc88021f730b9cd2ea2af202c551e590e5f39ce7e18faa032e933e5c77"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-inline-integer-guard.patch": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/35247cc367c1f88cce70bf8e452aea260d43f6747157c314b503f0e7890e3dad.gz",
+      "archiveBytes": 17731,
+      "archiveSha256": "e488f34f35fd4bc40ecba3a9de051d83c038464f1197c7d36faf9f0fd71d8a50",
+      "bytes": 65260,
+      "sha256": "35247cc367c1f88cce70bf8e452aea260d43f6747157c314b503f0e7890e3dad"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-inline-validator-rust.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/fe1f932707462326dad5ae6fc9e208554741a20091d76f0d4187430cea3cf8ba.gz",
+      "archiveBytes": 4993,
+      "archiveSha256": "f5a2d4874ea674bd2434b994e5749e738f20f21ace41a2664ec0225dd80a3cfd",
+      "bytes": 20378,
+      "sha256": "fe1f932707462326dad5ae6fc9e208554741a20091d76f0d4187430cea3cf8ba"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-inline-validator-wasm.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/8c9962ede31b05063d4f8093c626eb371ff3a4646d931433eb250d79d19d776b.gz",
+      "archiveBytes": 1365,
+      "archiveSha256": "d50e7b80687ec875481e01dbb200255eaccaf0492f63887a2ee48372ca1db74f",
+      "bytes": 4570,
+      "sha256": "8c9962ede31b05063d4f8093c626eb371ff3a4646d931433eb250d79d19d776b"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-inline-validator.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/23346ce502db1f869d6775b42e6c70c10b4cd071473fd2ea2a6c9031f003a279.gz",
+      "archiveBytes": 318,
+      "archiveSha256": "cb253ebb706b1b6a5b2b3217a834b5059b2713be44f863e0be3564780241f302",
+      "bytes": 447,
+      "sha256": "23346ce502db1f869d6775b42e6c70c10b4cd071473fd2ea2a6c9031f003a279"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-inline-validator.patch": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/38a62609f1cedc22c824a8757ca50988cbe46fdd4bad2ea2318f75569ffac9e6.gz",
+      "archiveBytes": 12584,
+      "archiveSha256": "7e113c9abba143e3b26c2a881c7dc56c798d3716a032a5be1609628deeb61912",
+      "bytes": 43931,
+      "sha256": "38a62609f1cedc22c824a8757ca50988cbe46fdd4bad2ea2318f75569ffac9e6"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-inline-wire-reader-wasm.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d9c9e49c1308af6390a4012eee07668c56f9362272b60c37cb224a1f344cc597.gz",
+      "archiveBytes": 1366,
+      "archiveSha256": "191f76eb1d29ebeccac43498a1cc2f5c8c67c34dd839cfc707755b7f76ec4a7d",
+      "bytes": 4570,
+      "sha256": "d9c9e49c1308af6390a4012eee07668c56f9362272b60c37cb224a1f344cc597"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-inline-wire-reader.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/7be9bffee5ff7284ff54768f2822f618b3cd45b9a8a78e947a049dcb41b4924c.gz",
+      "archiveBytes": 226,
+      "archiveSha256": "9e629f82a39884d43b086d2a7c8b2d8f743b71201a9320317bb0149ca37ce646",
+      "bytes": 287,
+      "sha256": "7be9bffee5ff7284ff54768f2822f618b3cd45b9a8a78e947a049dcb41b4924c"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-inline-wire-reader.patch": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/eec0a7ea2d65aebbdcba73355b5e4bbcc31c50bcad2d9f88b4779ccbe9eebec8.gz",
+      "archiveBytes": 29620,
+      "archiveSha256": "af9bac9d62862b8ffd3ad4f0cf80f25af70818ed596a4b629a1bcd5cdf346b8a",
+      "bytes": 111513,
+      "sha256": "eec0a7ea2d65aebbdcba73355b5e4bbcc31c50bcad2d9f88b4779ccbe9eebec8"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-inline-work-guard-wasm.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/f8ea0f8b970efd7929cf4199cdc4d7463954c940a1c764bb7e7fce1d40f49df3.gz",
+      "archiveBytes": 1365,
+      "archiveSha256": "6e0630039a8f3d5dac0173cfa4950dcafe413b8566694b6d2fc553d4fb431ff0",
+      "bytes": 4570,
+      "sha256": "f8ea0f8b970efd7929cf4199cdc4d7463954c940a1c764bb7e7fce1d40f49df3"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-inline-work-guard.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/73edf6e66f12db35ea7f76f8be5353bae9661ac90c782d86a0d1c9454cca12cf.gz",
+      "archiveBytes": 238,
+      "archiveSha256": "041629880484eb68fefb10f06f5f81e047d54cbf6e3db2da98b900e1f94037b2",
+      "bytes": 306,
+      "sha256": "73edf6e66f12db35ea7f76f8be5353bae9661ac90c782d86a0d1c9454cca12cf"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-inline-work-guard.patch": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/760cd1a6c28e7ca2e989daf2e0f8f115ea6216e30f83e24b560e54b9e580992f.gz",
+      "archiveBytes": 18096,
+      "archiveSha256": "dbaceff59577cb1ca9c056aee4ecbceaf41819dcf434f59437cabbf858af1f2b",
+      "bytes": 67266,
+      "sha256": "760cd1a6c28e7ca2e989daf2e0f8f115ea6216e30f83e24b560e54b9e580992f"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-inplace-node-set-wasm.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/1d354ad44c5451c76087e7d1edf84f86123653a01b478c75ba8bf5e40fc9c9c5.gz",
+      "archiveBytes": 1366,
+      "archiveSha256": "071a94421395829803f71c3ff44d8c80e52685fc0511ba32fa2d31d138b5a400",
+      "bytes": 4570,
+      "sha256": "1d354ad44c5451c76087e7d1edf84f86123653a01b478c75ba8bf5e40fc9c9c5"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-inplace-node-set.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d455721017f2c2f5775ec91413ea6646493c2770b40794513495a354dec1aadb.gz",
+      "archiveBytes": 247,
+      "archiveSha256": "dfce8d984ff5d52d50b2340fb4704d63b44eab6297b60048db26e7f9a38edf73",
+      "bytes": 314,
+      "sha256": "d455721017f2c2f5775ec91413ea6646493c2770b40794513495a354dec1aadb"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-inplace-node-set.patch": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/a8c4304a08bc97b84c259da226e7bd99f540e4b05b07ec3c081fc4e1c2616a3b.gz",
+      "archiveBytes": 18128,
+      "archiveSha256": "5522ae8f38a15f90f586d89aecfacf371511f5a2d9fe0b1393dc23bbeeb6942b",
+      "bytes": 67680,
+      "sha256": "a8c4304a08bc97b84c259da226e7bd99f540e4b05b07ec3c081fc4e1c2616a3b"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-inventory-direct-corrected.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/e788cfdec5c8896e774454bb7208484839d5a8e081d4f28f67a988d65b9e7f45.gz",
+      "archiveBytes": 161,
+      "archiveSha256": "067379f8fc1815e1918abb22b185edb44c8688e21eb6c767cba5f29e6952a894",
+      "bytes": 201,
+      "sha256": "e788cfdec5c8896e774454bb7208484839d5a8e081d4f28f67a988d65b9e7f45"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-inventory-direct.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/bbc40db866aff2551678cbffcdc3ab7fa68d8e66b630ccb2f3ae2f145f36f8bc.gz",
+      "archiveBytes": 153,
+      "archiveSha256": "a40dd448794ed5ff11cd5b191eef8e241c9a8335caeb675dab12dfa5e435b555",
+      "bytes": 195,
+      "sha256": "bbc40db866aff2551678cbffcdc3ab7fa68d8e66b630ccb2f3ae2f145f36f8bc"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-live-main.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/db1a327465e553f6c21e29157dadd4ddb15f57bd1f361077c46f4a57e2037995.gz",
+      "archiveBytes": 104,
+      "archiveSha256": "461379316de8507484aea8f9d39def42767b8eaf0c06ba2affb6732f28a76785",
+      "bytes": 101,
+      "sha256": "db1a327465e553f6c21e29157dadd4ddb15f57bd1f361077c46f4a57e2037995"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-local-intents-history-corrected-fixture.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/5b38dc0b4a8bfa4da268d805aeeb60b20dfde63c33433a9aa250df6b6b3536db.gz",
+      "archiveBytes": 1169,
+      "archiveSha256": "61d51e4fc579b9e7e2944ed2dba2ef28cc5b354486980723dcce92fb4420bebb",
+      "bytes": 4170,
+      "sha256": "5b38dc0b4a8bfa4da268d805aeeb60b20dfde63c33433a9aa250df6b6b3536db"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-local-intents-history.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/50408dca7f0f258d5f11e8f1822da80c90abdf0d89b9605f8493034d34f25e87.gz",
+      "archiveBytes": 1548,
+      "archiveSha256": "6ec6be6db206b9063deffbdb533a03bfe4ec81a8c8565c0fd8f3aba23a514ef6",
+      "bytes": 5071,
+      "sha256": "50408dca7f0f258d5f11e8f1822da80c90abdf0d89b9605f8493034d34f25e87"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-local-selection-final.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/5dfe4e830f08a1b814aebc5d49b5b9d1fc978691bb6e21bf05730fe380e3f892.gz",
+      "archiveBytes": 1240,
+      "archiveSha256": "a4bf95cec7f81157901c265d161b249358714b997bea8c6755638d2242f92155",
+      "bytes": 4576,
+      "sha256": "5dfe4e830f08a1b814aebc5d49b5b9d1fc978691bb6e21bf05730fe380e3f892"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-native-admission-client.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f.gz",
+      "archiveBytes": 1056,
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "bytes": 5448,
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-node-diagnostic-wasm.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/8a290e5d7cdbacc9f7796a6aafb3b8836e969de62878c39ecd584dd6d341f3de.gz",
+      "archiveBytes": 217,
+      "archiveSha256": "3568e3f5dfed793cfdc27e50e887801866adc5a4a286f24736644d45d285fdf5",
+      "bytes": 343,
+      "sha256": "8a290e5d7cdbacc9f7796a6aafb3b8836e969de62878c39ecd584dd6d341f3de"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-notebook-dpr1-configured.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/5b175ce8893ef1795aa3c7a8af91243ce6d12819d94a053d62f2eda0d20b5269.gz",
+      "archiveBytes": 343,
+      "archiveSha256": "7c5a511ac5e0acebc887db7596c5898a34be82d3d08feb478a7352de4cac93dd",
+      "bytes": 637,
+      "sha256": "5b175ce8893ef1795aa3c7a8af91243ce6d12819d94a053d62f2eda0d20b5269"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-notebook-dpr1-paint-oracle.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/e29a5b84c35e9ada85709f1b87839562ebdfca1ef9e37c8a4f257e38174781a8.gz",
+      "archiveBytes": 297,
+      "archiveSha256": "ae02b27949a6826998bdad0173fb5b7c3e8e62a440b1dbae0b4cfd5d1106f2db",
+      "bytes": 380,
+      "sha256": "e29a5b84c35e9ada85709f1b87839562ebdfca1ef9e37c8a4f257e38174781a8"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-notebook-dpr1-projector-corrected.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/5193af06921f30bb6cb01022bccecf9191ab648539ec57a94ac6a53287c8e87c.gz",
+      "archiveBytes": 299,
+      "archiveSha256": "7a83adaa0c6edd0b0885ce426618166b5b5b3c4c199487140e24cb2f0c05a880",
+      "bytes": 387,
+      "sha256": "5193af06921f30bb6cb01022bccecf9191ab648539ec57a94ac6a53287c8e87c"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-notebook-dpr1-rgba-oracle.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/4893ec984edb764e53cb4af882ea49c2e49d91edeec11259cb2a9bd493cfe00c.gz",
+      "archiveBytes": 401,
+      "archiveSha256": "74bfefc3e7b590503fea1570c315a1403f4b97128f764173614e75558b35331b",
+      "bytes": 697,
+      "sha256": "4893ec984edb764e53cb4af882ea49c2e49d91edeec11259cb2a9bd493cfe00c"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-notebook-dpr1.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/3bf244efffc65aadb4ab4377c1dbe8064aba517820d56715bef11e362026b52d.gz",
+      "archiveBytes": 4069,
+      "archiveSha256": "2dd96c868ff488a94cbc51a1ba40755c9f513f98fdd74b9305fd511f6b1c20e7",
+      "bytes": 44969,
+      "sha256": "3bf244efffc65aadb4ab4377c1dbe8064aba517820d56715bef11e362026b52d"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-notebook-dpr1.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/190b60923246e50aab44af3f16b66edcca43ce6ec1014efdd7e41e7f267aba8d.gz",
+      "archiveBytes": 455,
+      "archiveSha256": "b45430ecd2f580e927b097a9488a3a9fcd5c99788f5447bb58ab345278c5cc3d",
+      "bytes": 1101,
+      "sha256": "190b60923246e50aab44af3f16b66edcca43ce6ec1014efdd7e41e7f267aba8d"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-notebook-dpr2.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/4e6af4f306f05391039060f243b6c77c1b15892aa1d3ad1e2d0ffa7dacc6af86.gz",
+      "archiveBytes": 3966,
+      "archiveSha256": "2cd7e717193ce12a30056e12ba4c5c88850fb59a9c3d793b1d1ae830602cb6db",
+      "bytes": 44978,
+      "sha256": "4e6af4f306f05391039060f243b6c77c1b15892aa1d3ad1e2d0ffa7dacc6af86"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-notebook-dpr2.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/51aca5efdbdc9361faba7de85f9b8038865a3b84f92ccb56c459799ad86b6e3e.gz",
+      "archiveBytes": 142,
+      "archiveSha256": "e676d5477efbb07d1c28f8925a3c4e7e907644bcf436a5b2b7dac351ae352a5d",
+      "bytes": 141,
+      "sha256": "51aca5efdbdc9361faba7de85f9b8038865a3b84f92ccb56c459799ad86b6e3e"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-notebook-format-identity.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/efde66f61c967deaea88209681937127440844dc42788a4fe7802679eb3be4a4.gz",
+      "archiveBytes": 223,
+      "archiveSha256": "03c3e4b675d87621085b4c801223b0bab55f7d7ca18c89addc545ee0ced13ad9",
+      "bytes": 290,
+      "sha256": "efde66f61c967deaea88209681937127440844dc42788a4fe7802679eb3be4a4"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-notebook-import-format.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/6f4e3c8cb6a43f32a8b47add0b65207f17bd814c84308623b3720ad789c0d769.gz",
+      "archiveBytes": 59,
+      "archiveSha256": "9d277452151f7eb25eedc0ed3a50ae8d880c1be165118e070ba7eaa1f4b5e7ac",
+      "bytes": 39,
+      "sha256": "6f4e3c8cb6a43f32a8b47add0b65207f17bd814c84308623b3720ad789c0d769"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-ownership.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/0346e5f863fff39baa6bacf31bdd7e62ebabb22240cb4ec08961be24846b7cc2.gz",
+      "archiveBytes": 78,
+      "archiveSha256": "a461797709c0b3c0ce4732e70319592f0cfac298bfee6b3cb6c6ef10d932c553",
+      "bytes": 60,
+      "sha256": "0346e5f863fff39baa6bacf31bdd7e62ebabb22240cb4ec08961be24846b7cc2"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-parent-protection.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/4a4710612cec4ac834c684a35113cafae8ba19a358054d1143ff60c81c6d3c11.gz",
+      "archiveBytes": 828008,
+      "archiveSha256": "aaff5ff8ac5d301e564f6d3a567504e2002eed27716c3ec255277c8f5d00edab",
+      "bytes": 5063950,
+      "sha256": "4a4710612cec4ac834c684a35113cafae8ba19a358054d1143ff60c81c6d3c11"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-precommit-final.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-python-corrected.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/3b2a9019c60664a7420f76f35805545f8509f01b471fdb0f9c285f78caa8472c.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "ec66dca56fa5d194b077fb9ca95ee0b4e02932f5844f3f45c1a5434157592f3d",
+      "bytes": 99,
+      "sha256": "3b2a9019c60664a7420f76f35805545f8509f01b471fdb0f9c285f78caa8472c"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-qualification-final.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/b691637197aa94acee47e71bd9802fa83447b674122d693dbcb4c506d2d356b5.gz",
+      "archiveBytes": 60,
+      "archiveSha256": "db3fd1d5bd36bab1c57a4a396978be0eba949d8d1db11a374c1fd984e2d25eb3",
+      "bytes": 44,
+      "sha256": "b691637197aa94acee47e71bd9802fa83447b674122d693dbcb4c506d2d356b5"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-qualification.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/9732e62b01c800d2b2f64e0f76da953ca1c152d42e66f2f10e80d91dde24e0bf.gz",
+      "archiveBytes": 60,
+      "archiveSha256": "7946f5f443985c50ae723da1413e7c76cd89ff2d4109ef84361425dd8cd0f0bf",
+      "bytes": 44,
+      "sha256": "9732e62b01c800d2b2f64e0f76da953ca1c152d42e66f2f10e80d91dde24e0bf"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-readiness-issue1015.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/52d88d94fade3670ca5c49340a14f6b503e83a9099a82cdd0c71404be0014009.gz",
+      "archiveBytes": 2940,
+      "archiveSha256": "9123d205c3f882f8c5eea7872e95edafb9311b47ec6d652e02776398dcc4f185",
+      "bytes": 6578,
+      "sha256": "52d88d94fade3670ca5c49340a14f6b503e83a9099a82cdd0c71404be0014009"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-reentrant-intent-disposal.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/6bc2e6131e40f9a5fe6eebda8dff8d451e9a022a3cd1910290127cc5a08e5a25.gz",
+      "archiveBytes": 1373,
+      "archiveSha256": "44c446fb03dd46a40e71d3acd70bbaaedbcd0bf3ba11305a15e265332a1fd00d",
+      "bytes": 5198,
+      "sha256": "6bc2e6131e40f9a5fe6eebda8dff8d451e9a022a3cd1910290127cc5a08e5a25"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-refusal-history-original-corrected-fixture.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/838f330a9e6622c6a481822400cf89153f0dec991fbf8bbb7334c3022a7c36ab.gz",
+      "archiveBytes": 1005,
+      "archiveSha256": "46a9b38d853969cc233ff28e5ac43d07c1127fcc04590b112fa7dd32a02a91ce",
+      "bytes": 2637,
+      "sha256": "838f330a9e6622c6a481822400cf89153f0dec991fbf8bbb7334c3022a7c36ab"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-refusal-history-original.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/f52f10cbe65ed492596cd7e384b7a68e97c1b21f2bce71be468069152f3dde3a.gz",
+      "archiveBytes": 995,
+      "archiveSha256": "fffb70e63e610206a713949e6e43f77bac03e1383e744ccd8c60eac9d97da156",
+      "bytes": 2608,
+      "sha256": "f52f10cbe65ed492596cd7e384b7a68e97c1b21f2bce71be468069152f3dde3a"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-refused-navigation-original.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d39d136369050adb0fe2a47577a6b04ebb61d4bf16b8539e11015ff507f32f32.gz",
+      "archiveBytes": 1531,
+      "archiveSha256": "f0775779ce25008fd174af7ba44e918f6c958d8503fcebefc329ba20c8252412",
+      "bytes": 5068,
+      "sha256": "d39d136369050adb0fe2a47577a6b04ebb61d4bf16b8539e11015ff507f32f32"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-refused-navigation-real-before.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/7afb607348b6925461a6c87f4bb97783700ced01cb7beaf37eef4e9f64ec0f5b.gz",
+      "archiveBytes": 1528,
+      "archiveSha256": "845214f4cbb1824a2937d6f593feec3e2631492a95df382fa627c55adaac0fac",
+      "bytes": 5050,
+      "sha256": "7afb607348b6925461a6c87f4bb97783700ced01cb7beaf37eef4e9f64ec0f5b"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-reviewed-notebook-dpr1.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/f0de5159c07a1eabaaf9390de4da05d5b5d83ff1df9b1deff90ecdde9c17101f.gz",
+      "archiveBytes": 5121,
+      "archiveSha256": "47ad57d867a7ff0cafde16102069cfd2c7bd94bd774e0cfecde4e32ff38d73c0",
+      "bytes": 73099,
+      "sha256": "f0de5159c07a1eabaaf9390de4da05d5b5d83ff1df9b1deff90ecdde9c17101f"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-reviewed-notebook-dpr1.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/a2e023e1ef6d8ecb75eb17efc782058e08f6ea391565f8a00dd13bd47749b679.gz",
+      "archiveBytes": 143,
+      "archiveSha256": "b0faf4c2d6f12e0b5572521b3d6680140536c701b8014dffe179c17f1f36eec4",
+      "bytes": 141,
+      "sha256": "a2e023e1ef6d8ecb75eb17efc782058e08f6ea391565f8a00dd13bd47749b679"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-reviewed-notebook-dpr2.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/a24477722159aae840f0585a3e95b3103a87f208e4be94e2e8ec5c3f2a3ba78b.gz",
+      "archiveBytes": 5021,
+      "archiveSha256": "09f9139a2b7ccf5de2baa9b459b741f1dfa807bc722d54905ae768aec4ac434c",
+      "bytes": 73109,
+      "sha256": "a24477722159aae840f0585a3e95b3103a87f208e4be94e2e8ec5c3f2a3ba78b"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-reviewed-notebook-dpr2.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/bb35c4ceedb3bf92ab6e9cf20ae8e1d3a28fea03cd78cddcf0e4c9fc9db4b900.gz",
+      "archiveBytes": 142,
+      "archiveSha256": "d61d6d983088ef1c2a4561a9d048ee35a0ba16db3a4f7e121b30bf6458a5b098",
+      "bytes": 141,
+      "sha256": "bb35c4ceedb3bf92ab6e9cf20ae8e1d3a28fea03cd78cddcf0e4c9fc9db4b900"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-row-cache-real-before.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/a6c6c2565a3c23c8ed916cd143fdd3f8514a64c28f993f2de1ba28f16ebe40a9.gz",
+      "archiveBytes": 668,
+      "archiveSha256": "9dd95f4750976c159f23de1e74e2103828d03cc6060a8cc30d1cf60a72adc530",
+      "bytes": 1296,
+      "sha256": "a6c6c2565a3c23c8ed916cd143fdd3f8514a64c28f993f2de1ba28f16ebe40a9"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-row-refusal-client.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f.gz",
+      "archiveBytes": 1056,
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "bytes": 5448,
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-row-refusal-history.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/92d88c22432cd3cb7554336e448691c326eccdc24fda41f417f90d6e177e04d9.gz",
+      "archiveBytes": 1251,
+      "archiveSha256": "11dc719f141a2387acae3cb1c0c461c27377c909d0581de2483ccff385d552b3",
+      "bytes": 4582,
+      "sha256": "92d88c22432cd3cb7554336e448691c326eccdc24fda41f417f90d6e177e04d9"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-row-space-client-build.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f.gz",
+      "archiveBytes": 1056,
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "bytes": 5448,
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-row-space-python-corrected.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/5174f8199417d71992107c2d0f3287b0673ff62272771e0b01eccacf35fbab12.gz",
+      "archiveBytes": 61,
+      "archiveSha256": "8c19105d6473d1f9b0e41e56c2f66a7be70d9c9f793362ead8c3f633ddb20243",
+      "bytes": 179,
+      "sha256": "5174f8199417d71992107c2d0f3287b0673ff62272771e0b01eccacf35fbab12"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-row-space-python.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/64febf5ed7e46b38ecf9c650287299d6eaffeb49a08bd10d17a5afb6a4d856ee.gz",
+      "archiveBytes": 2086,
+      "archiveSha256": "96c4d26cba1684766a2836bc08ea3d191555ac97a46d1d3d431203e8fc885772",
+      "bytes": 12687,
+      "sha256": "64febf5ed7e46b38ecf9c650287299d6eaffeb49a08bd10d17a5afb6a4d856ee"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-row-space-transport.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/54514ab06fbf673577ead1cf9568d4fbe7e1c12600afece2db60ba43f2a4cc3f.gz",
+      "archiveBytes": 1434,
+      "archiveSha256": "80958a7276c7895749048081d5386c494021e20a9d526fd88e3f450eedac5299",
+      "bytes": 5436,
+      "sha256": "54514ab06fbf673577ead1cf9568d4fbe7e1c12600afece2db60ba43f2a4cc3f"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-row-subset-python.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/91a354aad74ac50a474ab85a06d70a408dbac77707c300c6932744429644513e.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "a096ffac66394fbc3ead50d0344e63c0daf3f9f80549f2af045d1a3b8fef0eda",
+      "bytes": 99,
+      "sha256": "91a354aad74ac50a474ab85a06d70a408dbac77707c300c6932744429644513e"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-row-subset-transport.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/017980383be562c6f4feb398f8d58e38eb89c786a90749574f9a78f423c40c54.gz",
+      "archiveBytes": 1440,
+      "archiveSha256": "85314b4ff29df3aabbeeda4de1c418f1d9e9ad30c02b469e0ef9c80dca20c95c",
+      "bytes": 5441,
+      "sha256": "017980383be562c6f4feb398f8d58e38eb89c786a90749574f9a78f423c40c54"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-ruff-check-first.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/cc6d13a2f88b7291f1b5a654b981d2eae2d67f5a73ab982833ebfa548cbfa4bc.gz",
+      "archiveBytes": 593,
+      "archiveSha256": "df3cb1b76c73faa7050fb2e4dbaba3a5ffc4cde1a92fedfea328b74982e8f0fa",
+      "bytes": 2363,
+      "sha256": "cc6d13a2f88b7291f1b5a654b981d2eae2d67f5a73ab982833ebfa548cbfa4bc"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-ruff-check.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-ruff-format-first.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/3ec583a3843b4377268aa561ca6527c1994def85f54694c3fa96185356109df5.gz",
+      "archiveBytes": 134,
+      "archiveSha256": "e13b1dff27b2a4a830e4c010063fcfc067045e40aecef663e61f93fba5d2f555",
+      "bytes": 167,
+      "sha256": "3ec583a3843b4377268aa561ca6527c1994def85f54694c3fa96185356109df5"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-ruff-format.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/127ebb8c6685712ecc74c244dc0e19ad295f928ac7d0522c2809f39a024ce543.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "131a6ca95f69fab672e22b8e10e6145e37549999675f5109b8dfa04e0797b6b0",
+      "bytes": 29,
+      "sha256": "127ebb8c6685712ecc74c244dc0e19ad295f928ac7d0522c2809f39a024ce543"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-seal-sources-final.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/97fd0f673904e34ab772647df8f9ba4828256ab3667d93b7710b59aeb0ba799f.gz",
+      "archiveBytes": 66,
+      "archiveSha256": "0e31f1005edb4cb800f3a195cc34e1cb860197329def494ccb4aafb796da725c",
+      "bytes": 53,
+      "sha256": "97fd0f673904e34ab772647df8f9ba4828256ab3667d93b7710b59aeb0ba799f"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-seal-sources-frozen.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/051414d54b28a4acf1367b5eccc5b173d3113cf27c3096e7469bcecfff7e6ad7.gz",
+      "archiveBytes": 66,
+      "archiveSha256": "f01b16a183442b798b6d1c9b56329f0030568837aaeb326ffa6d174d6275be7c",
+      "bytes": 53,
+      "sha256": "051414d54b28a4acf1367b5eccc5b173d3113cf27c3096e7469bcecfff7e6ad7"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-seal-sources.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/97fd0f673904e34ab772647df8f9ba4828256ab3667d93b7710b59aeb0ba799f.gz",
+      "archiveBytes": 66,
+      "archiveSha256": "0e31f1005edb4cb800f3a195cc34e1cb860197329def494ccb4aafb796da725c",
+      "bytes": 53,
+      "sha256": "97fd0f673904e34ab772647df8f9ba4828256ab3667d93b7710b59aeb0ba799f"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-sealed-notebook-dpr1.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c7a1be5ef58270658ecb55160d9ae07e76b4437fc4a1b7a2a95904912ee99b8f.gz",
+      "archiveBytes": 5123,
+      "archiveSha256": "5a6323692715e94dd51f269e00ed6982cd39161ffbc14e05270fcee538c7dc51",
+      "bytes": 73099,
+      "sha256": "c7a1be5ef58270658ecb55160d9ae07e76b4437fc4a1b7a2a95904912ee99b8f"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-sealed-notebook-dpr1.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c0cc8745c25262189033cf40dc9456bee4c458f6d47d8112f568690f6ccec56b.gz",
+      "archiveBytes": 142,
+      "archiveSha256": "54b24f044de5a66bb1a4c503656ca3f4b10a0c01e876743cc6fda2990e93a38e",
+      "bytes": 141,
+      "sha256": "c0cc8745c25262189033cf40dc9456bee4c458f6d47d8112f568690f6ccec56b"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-sealed-notebook-dpr2.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/910ea459d775bce982ce6d7c3c12bd2f5afa19f62736aa2a3ec4fab7481d1df7.gz",
+      "archiveBytes": 5020,
+      "archiveSha256": "cbb8339253195bd721648e67d4b90231f67ed5d1ba69cf44e25f1d0ead2b4be3",
+      "bytes": 73109,
+      "sha256": "910ea459d775bce982ce6d7c3c12bd2f5afa19f62736aa2a3ec4fab7481d1df7"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-sealed-notebook-dpr2.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/1d9c6adfaafde36bb35148c026c3077b72ffe422519f5646f46233d98813a6a5.gz",
+      "archiveBytes": 143,
+      "archiveSha256": "f17cac36ccd57204f26ac683be4416fc30d2d5f5fbcd3603ab8e687350400add",
+      "bytes": 141,
+      "sha256": "1d9c6adfaafde36bb35148c026c3077b72ffe422519f5646f46233d98813a6a5"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-shader-budget.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/587d56a051582a5266a9d4aa76d9db6225789ee2cff3fd7fb7a940f03bbc9af6.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "3e59a080441704b52669b949b49edb9892c49d5fec5a168ea821e0c75ef779e4",
+      "bytes": 99,
+      "sha256": "587d56a051582a5266a9d4aa76d9db6225789ee2cff3fd7fb7a940f03bbc9af6"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-shared-count-native.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/53873f67c08046a191c258c2ea2970066093cb67e17c13cc3d153d043917fae9.gz",
+      "archiveBytes": 192,
+      "archiveSha256": "17fc51a3b3527d808b1a110f7c6feb1405dbf6d670a7884d8a8f4a0392a5b434",
+      "bytes": 301,
+      "sha256": "53873f67c08046a191c258c2ea2970066093cb67e17c13cc3d153d043917fae9"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-shared-count-rust.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/f593aa3895e1472cf8e7dae5cd65b0fae534f91b455aeed33054f032fb07a3ab.gz",
+      "archiveBytes": 5007,
+      "archiveSha256": "adf048272fc7d1a7848dfcef4100a53b4b8be26ae068ed5a67274c900c019559",
+      "bytes": 20379,
+      "sha256": "f593aa3895e1472cf8e7dae5cd65b0fae534f91b455aeed33054f032fb07a3ab"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-shared-count-wasm.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/010a10c783becedfdc63fefbdc1e529d2808132a4031e30787b40ac802c1a34e.gz",
+      "archiveBytes": 1366,
+      "archiveSha256": "7dafa223ce2bc4bbce3da2fda7ab87e443cda64b9a53271e84536d555ab2cc32",
+      "bytes": 4570,
+      "sha256": "010a10c783becedfdc63fefbdc1e529d2808132a4031e30787b40ac802c1a34e"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-shared-count.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/7a63f8651c06c7c31dd5808f076db843790bdf76aea80ce24381e8cff15df2b2.gz",
+      "archiveBytes": 242,
+      "archiveSha256": "054c9cbd8081cb1d39b8e846882fdfe71d5ffcc5ff71e6c2c60c89a1d93e9569",
+      "bytes": 307,
+      "sha256": "7a63f8651c06c7c31dd5808f076db843790bdf76aea80ce24381e8cff15df2b2"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-shared-count.patch": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/8e339bf3d169c71cac81ea5fce4f1c66fc98a27ecc2401265a04407a393731f8.gz",
+      "archiveBytes": 29867,
+      "archiveSha256": "d9484818b8519cfe4d84b73616086094e92ddc80bb444cae9c3f9653a99371a1",
+      "bytes": 113210,
+      "sha256": "8e339bf3d169c71cac81ea5fce4f1c66fc98a27ecc2401265a04407a393731f8"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-shared-transaction-wasm.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c06e864d4c94b1368c5467d6355cccacf73ee0df2068a2f2cff50018d22a8af5.gz",
+      "archiveBytes": 1367,
+      "archiveSha256": "20bc6004755500ce414031dd2de57916b6fa4e3e4c41ff8c11498f9bb15b769c",
+      "bytes": 4570,
+      "sha256": "c06e864d4c94b1368c5467d6355cccacf73ee0df2068a2f2cff50018d22a8af5"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-shared-wrapper.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/572f95b433fafbda5cba89f504bacec8dd804d2b1fa5b033ab5326f176db1af8.gz",
+      "archiveBytes": 302,
+      "archiveSha256": "a01deb1096fb5c61d4bf4ef79ac5b6dc862a52fad4403a7548ddd9599d369dbd",
+      "bytes": 424,
+      "sha256": "572f95b433fafbda5cba89f504bacec8dd804d2b1fa5b033ab5326f176db1af8"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-shared-wrapper.patch": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/34724232434f88d8cd49bcd0ba30659cc7718832d470da6e163126a16224fa12.gz",
+      "archiveBytes": 9674,
+      "archiveSha256": "9bbd8a89e28f8c303e2c6d05afb649cda1c1c4e948f50cb42c78e12862b592ec",
+      "bytes": 31896,
+      "sha256": "34724232434f88d8cd49bcd0ba30659cc7718832d470da6e163126a16224fa12"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-single-dispatch-native.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/132ebadfeb1b89c52554128fcaf01b85edc5f9b690b5dba6efefb5713c21b410.gz",
+      "archiveBytes": 161,
+      "archiveSha256": "3455dd3dc96081feb1f91da9875126ed3adeef0819a7f6578ea3b6a07bd64222",
+      "bytes": 247,
+      "sha256": "132ebadfeb1b89c52554128fcaf01b85edc5f9b690b5dba6efefb5713c21b410"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-single-dispatch-rust.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/f9d690dad12f2f4e3246d91219e975fa6c26b2974be1493ae9ca0f858a46a97f.gz",
+      "archiveBytes": 5008,
+      "archiveSha256": "194a085b47f44ce51b2030c88840086cbfd5354f1f37fa64e533aca8b6d4b8d9",
+      "bytes": 20379,
+      "sha256": "f9d690dad12f2f4e3246d91219e975fa6c26b2974be1493ae9ca0f858a46a97f"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-single-dispatch-wasm.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/a60cfe6b279cce946190a102265877136894614e0fdf918d5c0058fc066df5bc.gz",
+      "archiveBytes": 1397,
+      "archiveSha256": "3e73b916ce37061c493dc89093f102f1bdabaadb8a76748f605da7d2e1f610b8",
+      "bytes": 4624,
+      "sha256": "a60cfe6b279cce946190a102265877136894614e0fdf918d5c0058fc066df5bc"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-single-dispatch.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d7a1c0a0887379e82bcef7e5825212a833c60278f000fff86e65114151f6e1f6.gz",
+      "archiveBytes": 250,
+      "archiveSha256": "3985d623ec546b4aca7131224bf690a0771cced3274ced7b74b518f549e0fb97",
+      "bytes": 322,
+      "sha256": "d7a1c0a0887379e82bcef7e5825212a833c60278f000fff86e65114151f6e1f6"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-single-dispatch.patch": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/00b291b06bbae9638d89371ab4b262fbe625c6895ecd067aa6357421e808ec97.gz",
+      "archiveBytes": 23161,
+      "archiveSha256": "468613b12bee95f1e4dff570424663171e95acdba9f455c4f1dc4355ada274db",
+      "bytes": 83763,
+      "sha256": "00b291b06bbae9638d89371ab4b262fbe625c6895ecd067aa6357421e808ec97"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-source-format.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/96a977f329ec3c59092d40e041a019b49dcf03ca04055e177aa0ccb8c27234df.gz",
+      "archiveBytes": 40,
+      "archiveSha256": "10d1f29fbf0f4ce6d2d3aca6a94ab91faf21c712b389879848ed269bd3c77d6f",
+      "bytes": 20,
+      "sha256": "96a977f329ec3c59092d40e041a019b49dcf03ca04055e177aa0ccb8c27234df"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-streamed-rust.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/54231662f59b76fc2ea1cd4da0befd858b01d6cc4685a5de9ff0b23fc60268e3.gz",
+      "archiveBytes": 5006,
+      "archiveSha256": "18ae6ea963276268f798e206527697fd8547a8ce70e484262e1401d6a4fc15f5",
+      "bytes": 20378,
+      "sha256": "54231662f59b76fc2ea1cd4da0befd858b01d6cc4685a5de9ff0b23fc60268e3"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-streamed-wasm.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/6571a183924de7ad0d33b1e456d09f012a8a83daa99e4f67d624ebbaaaf7b22f.gz",
+      "archiveBytes": 1367,
+      "archiveSha256": "316c5e869762e76fa1084a2d12e40c1506c71041a9b0821da56955b0f0dcc548",
+      "bytes": 4570,
+      "sha256": "6571a183924de7ad0d33b1e456d09f012a8a83daa99e4f67d624ebbaaaf7b22f"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-streamed.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/f4a54960d8621f7be4fb0ebfb9d30f9eed1dacd98ac8995445573b9f6ac4e757.gz",
+      "archiveBytes": 310,
+      "archiveSha256": "f75d245be78bb6045de0d180b36fa35eb636f089757c3ef60da3f0c6bbe21070",
+      "bytes": 436,
+      "sha256": "f4a54960d8621f7be4fb0ebfb9d30f9eed1dacd98ac8995445573b9f6ac4e757"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-streamed.patch": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/30cdd94ffbbb45c1604f39472fb53e65a4326a847375f0ad303be6b9a84af3e1.gz",
+      "archiveBytes": 11981,
+      "archiveSha256": "e710832853f2cd5b82dc77b6cfff22efaa8bbeb5987d2f85a62ab82e43529c3f",
+      "bytes": 41211,
+      "sha256": "30cdd94ffbbb45c1604f39472fb53e65a4326a847375f0ad303be6b9a84af3e1"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-transactional-history-client.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f.gz",
+      "archiveBytes": 1056,
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "bytes": 5448,
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-transport-and-dash.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/a35efdeeed70bd6e7567d74cbf9e3645aafc7e1a667f9f28d46c645d83425047.gz",
+      "archiveBytes": 1135,
+      "archiveSha256": "b3c6feab71257b856e50223276d499b93cf30a872c9483b09ee9e58b5ed0aef4",
+      "bytes": 3947,
+      "sha256": "a35efdeeed70bd6e7567d74cbf9e3645aafc7e1a667f9f28d46c645d83425047"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-typing-corrected.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-typing.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/ecfb03cd738dc15823232af1eecff2c4049c857d2734055865260c18dadd8ffb.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "07b30652518d2645c2d9e7b01f65f8f274a84df1ad5d308b6f2c81d2b070033c",
+      "bytes": 227,
+      "sha256": "ecfb03cd738dc15823232af1eecff2c4049c857d2734055865260c18dadd8ffb"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-unshared-transaction.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/23d27e004812979d4e0c2ac23d2871989aba444bbce3b455bd3291f17acb3e7d.gz",
+      "archiveBytes": 295,
+      "archiveSha256": "839ea64bbf2ab187a02c8b10cc318102cc0f1809c191556826f7b632b1d7a722",
+      "bytes": 406,
+      "sha256": "23d27e004812979d4e0c2ac23d2871989aba444bbce3b455bd3291f17acb3e7d"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-unshared-transaction.patch": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/de034129b8dfbd3fbb713e6acb174bb5234bd5b1f6bc98804ebf8603e142b60e.gz",
+      "archiveBytes": 9398,
+      "archiveSha256": "e252a0a8a46c2956e54dfa5677e48fbf2f433a3aafc1803ce2b1ec3dba812522",
+      "bytes": 30657,
+      "sha256": "de034129b8dfbd3fbb713e6acb174bb5234bd5b1f6bc98804ebf8603e142b60e"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-wasm-package-disk.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/76a393eaf2e7c775a1d73bac24830da5e89572c944a74a1ab3b92ac11d86801d.gz",
+      "archiveBytes": 367,
+      "archiveSha256": "2f4dee829df41d1c4fd7c3129ca65dc45dcffa7554abd95ec8a8b8ade21e1cb5",
+      "bytes": 673,
+      "sha256": "76a393eaf2e7c775a1d73bac24830da5e89572c944a74a1ab3b92ac11d86801d"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-wasm-package.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/5dc6ae37ef346f48a6744c2e66a27b1c79aa68f1eee9463c90c09de12014139b.gz",
+      "archiveBytes": 1388,
+      "archiveSha256": "e124f4f2fed05831a7d3a1dc869417a9c5c790f54346ab8ec9650b0d7a3e684c",
+      "bytes": 4555,
+      "sha256": "5dc6ae37ef346f48a6744c2e66a27b1c79aa68f1eee9463c90c09de12014139b"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-workspace.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/ad9a6149aaaba9835c99d6ced31ab2ebcc3446f97c879a057aee568ce508e75f.gz",
+      "archiveBytes": 40196,
+      "archiveSha256": "20d952491ea190acb9d5176c0d7af7c9acdc627ba87997eb2e4fdafe8ad8998e",
+      "bytes": 182915,
+      "sha256": "ad9a6149aaaba9835c99d6ced31ab2ebcc3446f97c879a057aee568ce508e75f"
+    },
+    "target/task-tmp/graph-geometric-notebook/row-cache-before-control.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/60afbd35a05efafd9a133bdc39e8ed82b62d723e34ac21bb2d507ade0dafc317.gz",
+      "archiveBytes": 260,
+      "archiveSha256": "0c1f9c7516157acf879829cd7e6d96239b530aa32b8fcd5963491638a9cc2222",
+      "bytes": 344,
+      "sha256": "60afbd35a05efafd9a133bdc39e8ed82b62d723e34ac21bb2d507ade0dafc317"
+    },
+    "target/task-tmp/graph-geometric-notebook/row-cache-before-control.mjs": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/f9cf16a8705329236ff10a07d3c4d33a2b0ded4fe92f40fc218a3ebdc1f19a2e.gz",
+      "archiveBytes": 5164,
+      "archiveSha256": "fd1b91f2fd98d1cca385f9a56d7a9f14a074aa99d7154748bde892feb9d9bef3",
+      "bytes": 21049,
+      "sha256": "f9cf16a8705329236ff10a07d3c4d33a2b0ded4fe92f40fc218a3ebdc1f19a2e"
+    },
+    "target/task-tmp/graph-geometric-notebook/row-cache-before.patch": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/3ed7d1aacf70d4aaa932d80affbe7d178a07c116686e14e95baba678df9cb772.gz",
+      "archiveBytes": 3355,
+      "archiveSha256": "d22da9fa2d94bbd0ad4e5109b09cb7cbf532c301353719a18bde05643c373e02",
+      "bytes": 11334,
+      "sha256": "3ed7d1aacf70d4aaa932d80affbe7d178a07c116686e14e95baba678df9cb772"
+    },
+    "target/task-tmp/graph-geometric-notebook/row-cache-before/js/src/66_graph_host.ts": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/723a10eb6315e86137306d141389bcdc2774446393b7c4b41ae6e3aa28b48d16.gz",
+      "archiveBytes": 3925,
+      "archiveSha256": "4bc44fa645792a3aec82f6da8f2eba732f5e6f1eb0facb1c02925201a3becba4",
+      "bytes": 12793,
+      "sha256": "723a10eb6315e86137306d141389bcdc2774446393b7c4b41ae6e3aa28b48d16"
+    },
+    "target/task-tmp/graph-geometric-notebook/rust-region-initial.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/bd42493d90357ea05182e2fb149c1f1a64c7b1b6aea535f30a39372f89422bcc.gz",
+      "archiveBytes": 4944,
+      "archiveSha256": "143021d847ba9f43f8296577a8fcc2b5ae8e66c8520d83577f97b5305a9cb5aa",
+      "bytes": 20037,
+      "sha256": "bd42493d90357ea05182e2fb149c1f1a64c7b1b6aea535f30a39372f89422bcc"
+    },
+    "target/task-tmp/graph-geometric-notebook/rust-region-new-tests.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d5d79c7533970cee38be63bbf647287b546abb6d1b9bb88cb75745e3b17dd660.gz",
+      "archiveBytes": 494,
+      "archiveSha256": "0cc4ed5181f74c11b69112865392ce69999d40c5a9e19e565966b925ff952147",
+      "bytes": 1253,
+      "sha256": "d5d79c7533970cee38be63bbf647287b546abb6d1b9bb88cb75745e3b17dd660"
+    },
+    "target/task-tmp/graph-geometric-notebook/rust-region-wire-test.log": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/1571abaf322b0644e811d75b62b73de11d4f3a732d9874e60a866bfffa5ff7f2.gz",
+      "archiveBytes": 401,
+      "archiveSha256": "5aa50a1a5c6f94547d80c5f3dc8b07245e73a585e973cb5ffd5e238fbe617a67",
+      "bytes": 1032,
+      "sha256": "1571abaf322b0644e811d75b62b73de11d4f3a732d9874e60a866bfffa5ff7f2"
+    },
+    "target/task-tmp/graph-geometric-notebook/seal-region-evidence.py": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d92f8744deae48941bfabf93e16970434509ff6c48d705b399dba136badd219b.gz",
+      "archiveBytes": 2159,
+      "archiveSha256": "7befdb73a93fad7072452e1b4562c0de0963a21f6cfe315e909ca46a192095df",
+      "bytes": 5632,
+      "sha256": "d92f8744deae48941bfabf93e16970434509ff6c48d705b399dba136badd219b"
+    },
+    "target/task-tmp/graph-geometric-notebook/seal-region-sources.py": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/b557d9056a0f825c631d031b72f8c2a3ac309e9a560294ec9fdb18de47fd0df5.gz",
+      "archiveBytes": 1167,
+      "archiveSha256": "fef574868242deb4b4fd05e3b6291f481f86b1578771f31bdb1170f61e36006f",
+      "bytes": 2741,
+      "sha256": "b557d9056a0f825c631d031b72f8c2a3ac309e9a560294ec9fdb18de47fd0df5"
+    },
+    "target/task-tmp/graph-geometric-notebook/selection-typing-disposition.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/93f1ede563bda2a504ef58b59563aec66fd3df8460ac2f64610d69c8f9264fd2.gz",
+      "archiveBytes": 291,
+      "archiveSha256": "bcf226d01b817f429f5c77452b7884a674bdba9146583eb9a577a8a8a8022993",
+      "bytes": 423,
+      "sha256": "93f1ede563bda2a504ef58b59563aec66fd3df8460ac2f64610d69c8f9264fd2"
+    },
+    "target/task-tmp/graph-geometric-notebook/share-region-transaction.py": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/5a322001750237915a45edeb56eaa72059ad5e66cb2afc8d92711b31162cd8df.gz",
+      "archiveBytes": 1668,
+      "archiveSha256": "5ef5438ece05db1745e706fd8e67461f4a7c6f3cdccd03e676ad04ce451b4a17",
+      "bytes": 4858,
+      "sha256": "5a322001750237915a45edeb56eaa72059ad5e66cb2afc8d92711b31162cd8df"
+    },
+    "target/xyg-graph-regions-0a8jmr/failure.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/b30ea56462e25b17382f9a5a062c0cd19f93467c3d99984bf2e08d6d13b76605.gz",
+      "archiveBytes": 5419,
+      "archiveSha256": "f9df76acff5f9893ffb10bd5127d4f516a9551f6dd07fda444966588d0a16462",
+      "bytes": 18439,
+      "sha256": "b30ea56462e25b17382f9a5a062c0cd19f93467c3d99984bf2e08d6d13b76605"
+    },
+    "target/xyg-graph-regions-4fni3l/failure.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/f0a3a54c366fc29a46b1d73d1a863307278f6365dade741061883132045b98c5.gz",
+      "archiveBytes": 5420,
+      "archiveSha256": "216e273b5753d511f5d47ac5525ab272a28191b9d8a93b8a3f044eaf2611842c",
+      "bytes": 18441,
+      "sha256": "f0a3a54c366fc29a46b1d73d1a863307278f6365dade741061883132045b98c5"
+    },
+    "target/xyg-graph-regions-DCbXo3/failure.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/5d238829cd0d9402c876a71c9bfc603b9d62cfa47ca49075763b3f101b937210.gz",
+      "archiveBytes": 4934,
+      "archiveSha256": "3c0a92b62bce6791cae36483c112453c8215cc34173e057e5c4e43b238671231",
+      "bytes": 15418,
+      "sha256": "5d238829cd0d9402c876a71c9bfc603b9d62cfa47ca49075763b3f101b937210"
+    },
+    "target/xyg-graph-regions-SpatIt/failure.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/7f15a0ab2d2be9d12882d625a1a16bfd503ba383090b8d9b8a8c94217e9818bd.gz",
+      "archiveBytes": 5477,
+      "archiveSha256": "67ce2fd2062c90950fdc26331037aa78dae67ebd0f601d133ac4c34f54d9ae12",
+      "bytes": 18566,
+      "sha256": "7f15a0ab2d2be9d12882d625a1a16bfd503ba383090b8d9b8a8c94217e9818bd"
+    },
+    "target/xyg-graph-regions-kMO8Su/failure.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/71da54a3b5b13c83a63e5b028c68e727917a9d3a94c0bc9feafe4635b3d15de4.gz",
+      "archiveBytes": 5489,
+      "archiveSha256": "48213b50f2ab078e67d77221c4dee2bce37634d151da4d009c5c7c7ede4b9cf3",
+      "bytes": 22885,
+      "sha256": "71da54a3b5b13c83a63e5b028c68e727917a9d3a94c0bc9feafe4635b3d15de4"
+    }
+  },
+  "package": {
+    "gzip6": 786379,
+    "gzip6Cap": 786432,
+    "gzip6Headroom": 53,
+    "raw": 1885379,
+    "rawCap": 1927168,
+    "sha256": "c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271"
+  },
+  "parentReceipt": {
+    "path": "spec/performance/vscode-floor-collection-2026-11-10/checks.json",
+    "sha256": "974356fcdafc92715dfadf879a96b7665240fdd50a0079cc302a53437d727b73"
+  },
+  "qualification": {
+    "developmentEvidence": "All other archived exploratory logs/patches are retained without final-pass credit; over-cap variants are not shipping qualification",
+    "environment": "region-environment.json",
+    "failedAttempts": [
+      {
+        "exit": 1,
+        "log": "region-final-foundation.log",
+        "result": "Graph GPU context unavailable in frozen child; unresolved"
+      },
+      {
+        "exit": 1,
+        "log": "region-foundation-rerun.log",
+        "result": "Graph GPU context unavailable in aggregate child; unresolved; frozen child passed"
+      },
+      {
+        "exit": 1,
+        "log": "region-core-inventory-corrected.log",
+        "result": "22 failed/31 passed: attempted before successor sealing completed; no pass credit"
+      },
+      {
+        "exit": 1,
+        "log": "region-core-inventory-sealed.log",
+        "result": "5 failed/48 passed: missing LF pin and live source/receipt updates; corrected final gate53 passed"
+      },
+      {
+        "exit": 1,
+        "log": "region-crlf-diagnostic.log",
+        "result": "new payload-stamp file lacked LF pin; corrected"
+      },
+      {
+        "exit": 4,
+        "log": "region-final-focused-python.log",
+        "result": "incorrect test filename; no tests"
+      },
+      {
+        "exit": 4,
+        "log": "region-core-inventory.log",
+        "result": "incorrect inventory filename; no tests"
+      },
+      {
+        "exit": 4,
+        "log": "region-current-source-check.log",
+        "result": "incorrect test selector; no tests"
+      },
+      {
+        "exit": 2,
+        "log": "region-inventory-direct.log",
+        "result": "incorrect verifier script filename; no verification"
+      },
+      {
+        "exit": 1,
+        "log": "region-typing.log",
+        "result": "undeclared dynamic identity attribute; private enriched Selection type added"
+      },
+      {
+        "exit": 1,
+        "log": "region-ruff-check-first.log",
+        "result": "new notebook imports needed formatting; corrected and both notebooks re-executed"
+      },
+      {
+        "exit": 1,
+        "log": "region-ruff-format-first.log",
+        "result": "new notebook and corpus test needed formatting; corrected"
+      },
+      {
+        "exit": 1,
+        "log": "region-row-space-python.log",
+        "result": "absent optional source_edge_ids caused4 failures/69 passes; corrected"
+      },
+      {
+        "exit": 143,
+        "log": "region-formatted-wasm.log",
+        "result": "discarded unrelated workspace-formatting build; all unrelated files restored; no qualification"
+      }
+    ],
+    "fresh": {
+      "abi": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" python3 scripts/abi_smoke.py",
+        "exit": 0,
+        "log": "target/task-tmp/graph-geometric-notebook/region-abi-smoke.log",
+        "passed": 673
+      },
+      "aggregateIsolated": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" XYG_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome target/task-tmp/node-v22.23.4-linux-x64/bin/node scripts/temporal_graph_aggregate_smoke.mjs",
+        "exit": 0,
+        "log": "target/task-tmp/graph-geometric-notebook/region-aggregate-isolated.log"
+      },
+      "assets": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync python scripts/verify_wasm_assets.py",
+        "exit": 0,
+        "log": "target/task-tmp/graph-geometric-notebook/region-assets.log"
+      },
+      "checkCi": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" PATH=\"$HOME/.cargo/bin:$PWD/target/task-tmp/node-v22.23.4-linux-x64/bin:$PATH\" uv run --no-sync make check-ci",
+        "exit": 0,
+        "log": "target/task-tmp/graph-geometric-notebook/region-check-ci.log",
+        "passed": 885
+      },
+      "clientBuild": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" target/task-tmp/node-v22.23.4-linux-x64/bin/node js/build.mjs",
+        "exit": 0,
+        "log": "target/task-tmp/graph-geometric-notebook/region-final-client-build.log"
+      },
+      "coreInventory": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync pytest -q tests/test_graphforge_contract_corpus.py tests/test_release_inventory.py",
+        "exit": 0,
+        "followup": "final metadata-only attachment source hash rechecked by finalCurrentBindings; complete parent history unchanged",
+        "log": "target/task-tmp/graph-geometric-notebook/region-core-final.log",
+        "passed": 53
+      },
+      "finalCurrentBindings": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync pytest -q tests/test_graphforge_contract_corpus.py::test_rc7_artifact_provenance_and_every_generated_ipc_are_bound",
+        "exit": 0,
+        "log": "target/task-tmp/graph-geometric-notebook/region-final-source-binding-check.log",
+        "passed": 1
+      },
+      "finalPackage": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" target/task-tmp/node-v22.23.4-linux-x64/bin/node js/package-wasm.mjs",
+        "exit": 0,
+        "log": "target/task-tmp/graph-geometric-notebook/region-final-packaged.log"
+      },
+      "finalPython311": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" VIRTUAL_ENV=\"$PWD/target/task-tmp/vscode-jupyter-graph/server-venv\" PYTHONPATH=\"$PWD/python:$PWD/tests\" uv run --active --no-sync pytest -q tests/test_graph_widget.py tests/test_graph_widget_regions.py tests/test_channel.py",
+        "exit": 0,
+        "log": "target/task-tmp/graph-geometric-notebook/region-final-typed-selection311.log",
+        "passed": 74
+      },
+      "finalPython312": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync pytest -q tests/test_graph_widget.py tests/test_graph_widget_regions.py tests/test_channel.py",
+        "exit": 0,
+        "log": "target/task-tmp/graph-geometric-notebook/region-final-typed-selection.log",
+        "passed": 74
+      },
+      "focusedNode": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" target/task-tmp/node-v22.23.4-linux-x64/bin/node --test packages/xy-node/test/graph-session-wire.test.mjs js/test/graph-host-transport.test.mjs",
+        "exit": 0,
+        "log": "target/task-tmp/graph-geometric-notebook/region-final-focused-node.log",
+        "passed": 36
+      },
+      "focusedPython": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync pytest -q tests/test_graph_widget.py tests/test_graph_widget_regions.py tests/test_channel.py tests/test_shader_attribute_budget.py tests/test_trace_buffer_lifecycle.py tests/test_graph_notebook_report.py",
+        "exit": 0,
+        "followup": "final typed Selection extension rechecked by finalPython312/311 and both notebook captures",
+        "log": "target/task-tmp/graph-geometric-notebook/region-final-focused-python-corrected.log",
+        "passed": 167
+      },
+      "foundation": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" XYG_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome target/task-tmp/node-v22.23.4-linux-x64/bin/node scripts/wasm_foundation_smoke.mjs",
+        "exit": 0,
+        "log": "target/task-tmp/graph-geometric-notebook/region-foundation-quiet.log",
+        "qualification": "complete source-dist command; two earlier full-command failures retained; no reliability repair claimed"
+      },
+      "frozenIsolated": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" XYG_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome target/task-tmp/node-v22.23.4-linux-x64/bin/node scripts/temporal_graph_frozen_smoke.mjs",
+        "exit": 0,
+        "log": "target/task-tmp/graph-geometric-notebook/region-frozen-isolated.log"
+      },
+      "fullHooks": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync --with pre-commit pre-commit run --all-files",
+        "exit": 0,
+        "log": "target/task-tmp/graph-geometric-notebook/region-precommit-final.log"
+      },
+      "fullNode": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" PATH=\"$PWD/target/task-tmp/node-v22.23.4-linux-x64/bin:$PATH\" npm test --prefix packages/xy-node",
+        "exit": 0,
+        "log": "target/task-tmp/graph-geometric-notebook/region-full-node.log",
+        "passed": 1156,
+        "skipped": 2
+      },
+      "inventory": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync python scripts/check_release_inventory.py",
+        "exit": 0,
+        "log": "target/task-tmp/graph-geometric-notebook/region-inventory-direct-corrected.log"
+      },
+      "nativeBuild": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" cargo build --release",
+        "exit": 0,
+        "log": "target/task-tmp/graph-geometric-notebook/region-borrowed-fixed-planes-native.log"
+      },
+      "notebookDpr1": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" XYG_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome XYG_GRAPH_JUPYTER=\"$PWD/target/task-tmp/vscode-jupyter-graph/server-venv/bin/jupyter-lab\" XYG_GRAPH_REGION_DPR=1 XYG_GRAPH_REGION_REPORT=\"$PWD/target/task-tmp/graph-geometric-notebook/region-reviewed-notebook-dpr1.json\" target/task-tmp/node-v22.23.4-linux-x64/bin/node scripts/graph_notebook_regions_smoke.mjs",
+        "dpr": 1,
+        "exit": 0,
+        "log": "target/task-tmp/graph-geometric-notebook/region-reviewed-notebook-dpr1.log",
+        "report": "target/task-tmp/graph-geometric-notebook/region-reviewed-notebook-dpr1.json"
+      },
+      "notebookDpr2": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" XYG_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome XYG_GRAPH_JUPYTER=\"$PWD/target/task-tmp/vscode-jupyter-graph/server-venv/bin/jupyter-lab\" XYG_GRAPH_REGION_DPR=2 XYG_GRAPH_REGION_REPORT=\"$PWD/target/task-tmp/graph-geometric-notebook/region-reviewed-notebook-dpr2.json\" target/task-tmp/node-v22.23.4-linux-x64/bin/node scripts/graph_notebook_regions_smoke.mjs",
+        "dpr": 2,
+        "exit": 0,
+        "log": "target/task-tmp/graph-geometric-notebook/region-reviewed-notebook-dpr2.log",
+        "report": "target/task-tmp/graph-geometric-notebook/region-reviewed-notebook-dpr2.json"
+      },
+      "ownership": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync python scripts/verify_ownership.py",
+        "exit": 0,
+        "log": "target/task-tmp/graph-geometric-notebook/region-ownership.log"
+      },
+      "ruffCheck": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync ruff check .",
+        "exit": 0,
+        "log": "target/task-tmp/graph-geometric-notebook/region-final-ruff-check.log"
+      },
+      "ruffFormat": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync ruff format --check .",
+        "exit": 0,
+        "log": "target/task-tmp/graph-geometric-notebook/region-final-ruff-format.log"
+      },
+      "typing": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync ty check",
+        "exit": 0,
+        "log": "target/task-tmp/graph-geometric-notebook/region-final-typing.log"
+      },
+      "wasmBuild": {
+        "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" PATH=\"$HOME/.cargo/bin:$PWD/target/task-tmp/node-v22.23.4-linux-x64/bin:$PATH\" npm run build:wasm",
+        "exit": 0,
+        "log": "target/task-tmp/graph-geometric-notebook/region-borrowed-fixed-planes-wasm.log"
+      },
+      "workspace": {
+        "command": "TMPDIR=/var/tmp cargo test --workspace",
+        "exit": 0,
+        "log": "target/task-tmp/graph-geometric-notebook/region-workspace.log",
+        "resultSummaries": [
+          "test result: ok. 68 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.60s",
+          "test result: ok. 1889 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 111.91s",
+          "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+          "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+          "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.03s",
+          "test result: ok. 77 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.24s",
+          "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+          "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+          "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+          "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+          "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+          "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+          "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+          "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s",
+          "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+          "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s",
+          "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s"
+        ]
+      }
+    },
+    "hostedCIQueue": "pending",
+    "independentFinalReview": "pending",
+    "inherited": "accepted-main parent scopes inherit only over source/artifact equality; no whole-issue or milestone acceptance",
+    "negativeControls": [
+      {
+        "exit": 1,
+        "log": "region-refusal-history-original-corrected-fixture.log",
+        "result": "parent durable history/redo mutation rejected"
+      },
+      {
+        "exit": 1,
+        "log": "region-refused-navigation-real-before.log",
+        "result": "exact parent Back/Next implementation rejected by final assertions"
+      },
+      {
+        "exit": 1,
+        "log": "region-row-cache-real-before.log",
+        "result": "reconstructed hash-bound prior row cache rejected by actual stamp regression"
+      },
+      {
+        "exit": 1,
+        "log": "region-edge-mask-original.log",
+        "result": "old painter failed unselected shaft alpha; original generated client binary not archived, source/log-only negative"
+      }
+    ]
+  },
+  "readmeSha256": "50dcfc139bd32b0786ef22bf29a983c00d255cf89877ae41fd8c60f9008e3884",
+  "remaining": [
+    "Whole1015 and milestones4-7 remain open",
+    "changed-LOD/aggregate/categorical-edge notebook regions",
+    "massive/all-host/accessibility/export/latency/competitor/global-memory qualification"
+  ],
+  "runtime": {
+    "packages/xy-client/dist/index.js": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c721df054d77868f7566ccc7c31ebd654486108f6bf6002fee086f6d74a646d3.gz",
+      "archiveBytes": 248646,
+      "archiveSha256": "b6eac3037afedded3f6113fa8c12863b893c7432124e4a28dc1358e1c7202c3c",
+      "bytes": 867517,
+      "sha256": "c721df054d77868f7566ccc7c31ebd654486108f6bf6002fee086f6d74a646d3"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c1db0e9b7713dd69d223544a6fdfb2b37260bd23a730e4708f9896d620ea6677.gz",
+      "archiveBytes": 248719,
+      "archiveSha256": "014a8db930b6bf791396f9dc1c4492c901e1211e5102dc8c5050236e22a46083",
+      "bytes": 867530,
+      "sha256": "c1db0e9b7713dd69d223544a6fdfb2b37260bd23a730e4708f9896d620ea6677"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz",
+      "archiveBytes": 3838,
+      "archiveSha256": "dda8e6c4cec42d91f687b660d742d79dcc1a8c0d052ca6ca189c6acf095db2b4",
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/70302dd988dd7ea4bbf25b4b2f57cac0c85d7c8d2d207499a585db0a672a29b5.gz",
+      "archiveBytes": 1043256,
+      "archiveSha256": "8208c789c89c7893c1ed21ddb8b9526c8d555b83926e0c623badd5a886318695",
+      "bytes": 2534962,
+      "sha256": "70302dd988dd7ea4bbf25b4b2f57cac0c85d7c8d2d207499a585db0a672a29b5"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/3a216a6158fa8aca0844fcdf2e3c1bafa6d3b1dc29f1734dea8da3c18609abab.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "e0c290ee70a86c99e2a250eb56162c30cb89e78a3189610e8199fd154f555765",
+      "bytes": 226,
+      "sha256": "3a216a6158fa8aca0844fcdf2e3c1bafa6d3b1dc29f1734dea8da3c18609abab"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271.gz",
+      "archiveBytes": 781160,
+      "archiveSha256": "1788dfdad46ec12eb81712329e48375306fd9a47a994b0a030f9ebab236fd142",
+      "bytes": 1885379,
+      "sha256": "c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271"
+    },
+    "python/xyg/static/index.js": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c721df054d77868f7566ccc7c31ebd654486108f6bf6002fee086f6d74a646d3.gz",
+      "archiveBytes": 248646,
+      "archiveSha256": "b6eac3037afedded3f6113fa8c12863b893c7432124e4a28dc1358e1c7202c3c",
+      "bytes": 867517,
+      "sha256": "c721df054d77868f7566ccc7c31ebd654486108f6bf6002fee086f6d74a646d3"
+    },
+    "python/xyg/static/standalone.js": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c1db0e9b7713dd69d223544a6fdfb2b37260bd23a730e4708f9896d620ea6677.gz",
+      "archiveBytes": 248719,
+      "archiveSha256": "014a8db930b6bf791396f9dc1c4492c901e1211e5102dc8c5050236e22a46083",
+      "bytes": 867530,
+      "sha256": "c1db0e9b7713dd69d223544a6fdfb2b37260bd23a730e4708f9896d620ea6677"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/70302dd988dd7ea4bbf25b4b2f57cac0c85d7c8d2d207499a585db0a672a29b5.gz",
+      "archiveBytes": 1043256,
+      "archiveSha256": "8208c789c89c7893c1ed21ddb8b9526c8d555b83926e0c623badd5a886318695",
+      "bytes": 2534962,
+      "sha256": "70302dd988dd7ea4bbf25b4b2f57cac0c85d7c8d2d207499a585db0a672a29b5"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/3a216a6158fa8aca0844fcdf2e3c1bafa6d3b1dc29f1734dea8da3c18609abab.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "e0c290ee70a86c99e2a250eb56162c30cb89e78a3189610e8199fd154f555765",
+      "bytes": 226,
+      "sha256": "3a216a6158fa8aca0844fcdf2e3c1bafa6d3b1dc29f1734dea8da3c18609abab"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271.gz",
+      "archiveBytes": 781160,
+      "archiveSha256": "1788dfdad46ec12eb81712329e48375306fd9a47a994b0a030f9ebab236fd142",
+      "bytes": 1885379,
+      "sha256": "c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271"
+    },
+    "target/release/libxyg_core.so": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/ae8dc056771abb1109381202b4143d81157ac0235555ad3d527a426a807bc4bb.gz",
+      "archiveBytes": 2905861,
+      "archiveSha256": "1e22d36c42e15f3afb52ab09cbddc6bec063217e8fa6a499569d0e4114348533",
+      "bytes": 6379944,
+      "sha256": "ae8dc056771abb1109381202b4143d81157ac0235555ad3d527a426a807bc4bb"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d8c7089327b8828b99e98c6e78510676a6703f40628a64f5c714f4edec96da4f.gz",
+      "archiveBytes": 1253247,
+      "archiveSha256": "b6f6c9bc953c17356b0da2ce132395d8e5a3e65f11b9e50aeff2cc581e51741c",
+      "bytes": 4075069,
+      "sha256": "d8c7089327b8828b99e98c6e78510676a6703f40628a64f5c714f4edec96da4f"
+    }
+  },
+  "schemaVersion": 1,
+  "scope": "Bounded native notebook graph geometric identity and induced published edges"
+}

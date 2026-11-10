@@ -11,7 +11,9 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-CURRENT_BINDINGS = Path("spec/performance/vscode-floor-collection-2026-11-10/current-bindings.json")
+CURRENT_BINDINGS = Path(
+    "spec/performance/graph-empty-clear-status-2026-11-10/current-bindings.json"
+)
 
 
 def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> None:
@@ -604,8 +606,119 @@ def test_desktop_exact_union_preserves_complete_reviewed_parent_histories():
 def test_desktop_floor_successor_preserves_complete_reviewed_parent_history():
     parent_path = "spec/performance/desktop-exact-reply-union-2026-11-10/current-bindings.json"
     parent = json.loads((ROOT / parent_path).read_text())
-    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/vscode-floor-collection-2026-11-10/current-bindings.json"
+        ).read_text()
+    )
     assert len(current["parents"]) == 29
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_notebook_regions_successor_preserves_complete_reviewed_parent_history():
+    parent_path = "spec/performance/vscode-floor-collection-2026-11-10/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/graph-notebook-regions-2026-11-10/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 30
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_notebook_region_history_preserves_the_complete_candidate_and_review_chain():
+    parent_path = "spec/performance/graph-notebook-regions-2026-11-10/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/graph-notebook-region-history-2026-11-10/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 31
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_notebook_camera_owner_preserves_the_complete_candidate_and_review_chain():
+    parent_path = "spec/performance/graph-notebook-region-history-2026-11-10/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/graph-notebook-camera-owner-2026-11-10/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 32
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_linked_selection_owner_preserves_the_complete_candidate_and_review_chain():
+    parent_path = "spec/performance/graph-notebook-camera-owner-2026-11-10/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT
+            / "spec/performance/graph-linked-selection-ownership-2026-11-10/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 33
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_linked_mask_refresh_preserves_the_complete_candidate_and_review_chain():
+    parent_path = (
+        "spec/performance/graph-linked-selection-ownership-2026-11-10/current-bindings.json"
+    )
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/graph-linked-mask-refresh-2026-11-10/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 34
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_empty_clear_status_preserves_the_complete_candidate_and_review_chain():
+    parent_path = "spec/performance/graph-linked-mask-refresh-2026-11-10/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    assert len(current["parents"]) == 35
     assert {p["path"] for p in current["parents"]} == {parent_path}.union(
         p["path"] for p in parent["parents"]
     )

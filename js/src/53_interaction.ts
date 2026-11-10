@@ -924,8 +924,9 @@ Object.assign(ChartView.prototype, {
     const x0 = Math.min(d0[0], d1[0]), x1 = Math.max(d0[0], d1[0]);
     const y0 = Math.min(d0[1], d1[1]), y1 = Math.max(d0[1], d1[1]);
     const range = { x0, x1, y0, y1 };
+    const deferred = opts.dispatch !== false && this.comm?.deferSelection?.(opts);
     // Geometric selections are durable: push like a range change (§4).
-    this._historyRecord({
+    if (!deferred) this._historyRecord({
       source: opts.source,
       interactionId: opts.interactionId,
       history: opts.history,
@@ -940,17 +941,17 @@ Object.assign(ChartView.prototype, {
     // box keeps the bare {x0,x1,y0,y1}); the same document feeds durable state
     // and the link-group broadcast so peers re-project the identical overlay.
     const rangeDoc = mode === "box" ? { ...range } : { ...range, mode };
-    this._stateSelection = { range: rangeDoc };
+    if (!deferred) this._stateSelection = { range: rangeDoc };
     // Data-space brush geometry survives drill swaps (§34): a re-drill ships a
     // new subset whose mask indices are unknown until the kernel replies, but
     // the brush itself stays authoritative — 45_lod re-derives a provisional
     // mask from it so the highlight never blinks out on pan/zoom.
-    this._lastBrush = { mode: "box", x0, x1, y0, y1 };
-    if (opts.broadcast !== false) this._broadcastLinkedSelection({ range: rangeDoc });
+    if (!deferred) this._lastBrush = { mode: "box", x0, x1, y0, y1 };
+    if (!deferred && opts.broadcast !== false) this._broadcastLinkedSelection({ range: rangeDoc });
     if (opts.dispatch !== false) {
       this._dispatchChartEvent("brush", { range, view: this._eventView("brush") });
       if (this.comm) {
-        this.comm.send({ type: "select", x0, x1, y0, y1 });
+        this.comm.send({ type: "select", x0, x1, y0, y1, ...(mode === "box" ? {} : { mode }) }, [], deferred);
       } else {
         this._selectLocal(x0, x1, y0, y1); // standalone: compute from resident f32
       }
@@ -961,16 +962,17 @@ Object.assign(ChartView.prototype, {
     if (!Array.isArray(points) || points.length < 3) return;
     const polygon = points.map((point) => [point[0], point[1]]);
     if (!polygon.every((point) => point.every(Number.isFinite))) return;
+    const deferred = opts.dispatch !== false && this.comm?.deferSelection?.(opts);
     this._clearBoxOverlay(); // a lasso replaces any rectangular selection
-    this._historyRecord({
+    if (!deferred) this._historyRecord({
       source: opts.source,
       interactionId: opts.interactionId,
       history: opts.history,
     });
-    this._stateSelection = { polygon: polygon.map((point) => [...point]) };
+    if (!deferred) this._stateSelection = { polygon: polygon.map((point) => [...point]) };
     this._lassoPolygon = polygon;
-    this._lastBrush = { mode: "poly", points: polygon }; // see _sendSelect
-    if (opts.broadcast !== false) this._broadcastLinkedSelection({ polygon });
+    if (!deferred) this._lastBrush = { mode: "poly", points: polygon }; // see _sendSelect
+    if (!deferred && opts.broadcast !== false) this._broadcastLinkedSelection({ polygon });
     this._renderLassoSelection();
     if (opts.dispatch !== false) {
       this._dispatchChartEvent("brush", {
@@ -978,7 +980,7 @@ Object.assign(ChartView.prototype, {
         view: this._eventView("brush"),
       });
       if (this.comm) {
-        this.comm.send({ type: "select_polygon", points: polygon });
+        this.comm.send({ type: "select_polygon", points: polygon }, [], deferred);
       } else {
         this._selectLocalPolygon(polygon);
       }
@@ -987,8 +989,8 @@ Object.assign(ChartView.prototype, {
 
   // Republish/context hydration retains durable geometry on the view. Fill
   // rebuilt trace masks from resident CPU columns without replaying a gesture.
-  // Kernel previews use their scatter-only selection universe; standalone
-  // restoration uses the same eligible marks as its original local gesture.
+  // Kernel previews use their scatter-only selection universe; explicitly
+  // local linked/standalone restoration keeps the original gesture's marks.
   // An unavailable or lost GL context skips the preview.
   _restoreSelectionLocalMask(selection, opts: any = {}) {
     if (opts.localMask !== true || this._glLost || !this.gl
@@ -1003,7 +1005,7 @@ Object.assign(ChartView.prototype, {
         Math.max(x0, x1),
         Math.min(y0, y1),
         Math.max(y0, y1),
-        { dispatch: false, localMask: this.comm != null },
+        { dispatch: false, localMask: this.comm != null && opts.kernelPreview !== false },
       );
       return true;
     }
@@ -1014,7 +1016,7 @@ Object.assign(ChartView.prototype, {
         return false;
       }
       const polygon = selection.polygon.map((point) => [point[0], point[1]]);
-      this._selectLocalPolygon(polygon, { dispatch: false, localMask: this.comm != null });
+      this._selectLocalPolygon(polygon, { dispatch: false, localMask: this.comm != null && opts.kernelPreview !== false });
       return true;
     }
     return false;
@@ -1115,11 +1117,14 @@ Object.assign(ChartView.prototype, {
 
   _clearSelection(opts: any = {}) {
     if (this._filterDashboard) { void this._filterDashboard.clear(); return; }
+    const sendsClear = opts.dispatch !== false && this._interactionFlag("select", true);
+    const deferred = sendsClear && this.comm?.deferSelection?.(opts);
+    if (!sendsClear && opts.dispatch !== false) this.comm?.supersedeSelection?.();
     this._clearLassoOverlay();
     this._clearBoxOverlay();
     // Clearing a durable selection is itself a durable-state change; linked
     // applies (dispatch: false) and no-op clears push nothing.
-    if (opts.dispatch !== false && this._stateSelection !== null
+    if (!deferred && opts.dispatch !== false && this._stateSelection !== null
         && this._stateSelection !== undefined) {
       this._historyRecord({
         source: opts.source,
@@ -1127,18 +1132,18 @@ Object.assign(ChartView.prototype, {
         history: opts.history,
       });
     }
-    this._stateSelection = null;
+    if (!deferred) this._stateSelection = null;
     for (const g of this.gpuTraces) {
       g.selActive = false;
       if (g.drill) g.drill.selActive = false;
     }
     this._selectionCount = 0;
-    this._lastBrush = null;
-    if (opts.broadcast !== false) this._broadcastLinkedSelection({ clear: true });
+    if (!deferred) this._lastBrush = null;
+    if (!deferred && opts.broadcast !== false) this._broadcastLinkedSelection({ clear: true });
     if (opts.dispatch !== false) {
       if (this._interactionFlag("select", true)) {
-        if (this.comm) this.comm.send({ type: "select_clear" });
-        this._dispatchChartEvent("select", { total: 0, view: this._eventView("select_clear") });
+        if (this.comm) this.comm.send({ type: "select_clear" }, [], deferred);
+        if (!deferred) this._dispatchChartEvent("select", { total: 0, view: this._eventView("select_clear") });
       }
     }
   },
@@ -1970,6 +1975,10 @@ Object.assign(ChartView.prototype, {
   _setView(next, opts: any = {}) {
     if (this._destroyed) return [];
     const target = this._clampView(this._viewFrom(next), { anchors: opts.anchors });
+    // A validated viewport write owns this facet before its first animation
+    // frame, even when it requests the current coordinates. Keep one opaque
+    // token, so a pending native history query cannot overwrite a newer write.
+    this._viewWriteToken = {};
     const changedAxes = this._axisIds().filter((axisId) => {
       const before = this._axisRange(axisId);
       const after = this._axisRange(axisId, target);

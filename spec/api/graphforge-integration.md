@@ -309,10 +309,11 @@ cannot admit typed metadata, the callback still runs with its ordinary row or
 full Selection and reports `graphforge=[]` plus
 `graphforge_error="XYG_GRAPH_IDENTITY_RESOURCE_LIMIT"`. This does not stop view
 replies or progressive layout and does not mean no graph identities were
-selected. Large admitted selections resolve in bounded native batches. UUID
-commands that exceed the identity envelope fail before applying a highlight;
-ordinary row/geometric selection and rendering remain available. Full typed
-identity coverage at scale is still required before #1015 closes.
+selected. Metadata lookups resolve in bounded native batches. A UUID selection
+is one native intent: it cannot bypass the combined node/edge selection cap by
+splitting into smaller mutations. Rendering and ordinary explicit row masks
+remain available when identity admission refuses. Full typed identity coverage
+at scale is still required before #1015 closes.
 
 `widget.select(uuids=[node_uuid, relationship_uuid])` resolves through Rust
 SelectUuids and sends the ordinary binary row masks. Unknown UUIDs are unmatched;
@@ -321,9 +322,71 @@ with other selection arguments. Commands wait for their frame's paint ACK.
 Individual highlights require individually rendered source identities; Aggregate
 LOD and compound/merged render identities refuse rather than highlight unrelated
 entities. Row highlights retain the ordinary non-durable selection contract;
-resubmit UUIDs after remount. Generic box/lasso geometry still uses the ordinary
-selection policy: exact graph-specific edge-intersection/induced-edge policy is
-not established by this slice. See the
+resubmit UUIDs after remount. Box/lasso node candidates come from the existing
+Rust scatter selector for that exact displayed figure, including its ordinary
+legend predicate. Before applying graph policy, the native adapter compares
+positions, node membership, edge endpoints and complete edge CSR with its
+frame-bound session publication. Header-stamped render-node indices then use the
+same Rust NodesAndInducedEdges reducer as lasso; Python does not infer edges or
+run another layout. Other composed scatter traces retain their ordinary
+selection semantics. Exact candidate/CSR matching is admission, not permission
+to substitute another frame or LOD.
+
+A native cap/work refusal, unmatched publication, or currently unsupported
+categorical edge visibility rejects the entire geometric selection. No partial
+mask or `on_select`/`on_brush` callback is published. The client restores the
+previous accepted geometry and masks without echoing a new request, announces
+the refusal, and releases pending progressive-frame backpressure. The predicate
+cache remains unchanged. Native graph gestures defer durable history and linked
+broadcast until acceptance; a refusal neither pushes history nor erases redo.
+Per-mount selection sequences pair replies with pending intents. Ingress keeps
+one active operation and one latest queued intent, coalescing superseded queued
+brushes. Only the latest intent is presented; one bounded accepted result can
+survive a newer refusal.
+Duplicate/older replies cannot release another outstanding request or replace a
+newer API row selection. Accepted predicates are captured before Python callbacks
+can issue a reentrant API write. Back/Next are also acceptance-gated and refuse
+to start while a geometric selection is pending; a failed navigation leaves
+both history stacks and the accepted camera intact. A newer camera write,
+including an animated target or a return to identical coordinates, supersedes
+pending navigation. Deferred acceptance retains the shared
+interaction ID of a combined API range/selection patch, preserving one undo
+entry. Ordinary chart transports retain immediate
+selection mutation behavior.
+
+New linked range, polygon and clear selections own the selection facet over
+pending Back/Forward results. They discard obsolete queued intents and cached
+masks without fabricating completion of the outstanding native request. A clear
+suppressed by `interaction.select=false` finishes its local durable/history
+change; it does not wait for a request that was never sent. Older native replies
+only release their exact transport correlation and cannot restore old state.
+When that reply releases a waiting same-row publication, local linked masks
+are rebuilt using the existing local coordinate renderer and the original
+gesture's mark eligibility. No native UUID/induced-edge lookup is repeated in
+JavaScript. Changed or absent row-space provenance revokes the local predicate
+and masks with the unavailable status, rather than remapping unqualified rows.
+
+Each notebook graph payload includes an opaque `_graph_row_space` equality
+stamp over ordered node/edge identities, native node membership and edge CSR,
+trace partition, and canonical-to-shipped row maps. Coordinates and styles are
+excluded, so a translation or style-only refresh can reuse accepted masks.
+The browser compares the stamp; it never resolves identities from it. Missing,
+invalid or changed stamps revoke cached row masks and report that the previous
+selection is unavailable for the new picture. This does not remap selection
+across changed LOD or source membership. Ordinary payload refreshes use the same
+compiler stamp, rather than browser access to host-only identity fields.
+
+Segment shafts, semantic layers and heads consume the ordinary selected-row
+mask, with the same selected/unselected opacity and color uniforms as points.
+The existing dash phase/direction values share a lossless two-float attribute,
+leaving room for that mask within the portable vertex attribute limit. Edge
+membership still comes from Rust. A callback's canonical graph identity count
+can differ from the number of rendered segment rows in its masks.
+
+Aggregate/collapsed notebook presentation still needs
+full matching-publication qualification; the shared reducer itself expands
+published aggregate/compound membership. Browser/native parity, trusted region
+journeys and package fit must qualify this continuation before delivery. See the
 [bounded notebook identity receipt](../performance/graph-notebook-identity-2026-11-06/README.md).
 Instance, mount epoch and exact picture revision prevent cross-widget and stale
 snapshot application. See the [notebook transport contract](../design/graph-session-python-transport.md#public-notebook-scheduling-through-the-existing-figure-channel-r2-2026-11-06)

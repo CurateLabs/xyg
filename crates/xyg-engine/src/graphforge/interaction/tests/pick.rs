@@ -1136,3 +1136,147 @@ fn canonical_outline_shapes_keep_finite_occlusion_and_directed_heads_valid() {
         }
     }
 }
+
+// Typed test convenience only; the shipping decoder borrows the canonical
+// little-endian u32 plane without allocating a duplicate candidate vector.
+impl GraphSession {
+    fn select_rendered_nodes(
+        &mut self,
+        header: OpHeader,
+        nodes: &[u32],
+        mode: SelectMode,
+    ) -> Result<OpOutcome, InteractionStatus> {
+        let bytes: Vec<_> = nodes.iter().flat_map(|index| index.to_le_bytes()).collect();
+        self.select_region(
+            header,
+            super::super::pick::RegionInput::Candidates(&bytes),
+            mode,
+            SelectionPolicy::NodesAndInducedEdges,
+        )
+    }
+}
+
+#[test]
+fn published_node_candidates_share_induced_policy_and_keep_modes_atomic() {
+    let doc = handmade_ends(
+        COMPOSITION_VERSION,
+        &[id(1), id(2), id(3), id(4)],
+        &(11..16).map(|i| E::Persisted(id(i))).collect::<Vec<_>>(),
+        &[],
+        None,
+        Some(&[(0, 1), (0, 1), (1, 1), (1, 2), (2, 3)]),
+    );
+    let mut s = loaded(&doc, &[0., 10., 20., 30.], &[0.; 4]);
+    s.render(None).unwrap();
+    s.select_rendered_nodes(header(&s, 1), &[0], SelectMode::Replace)
+        .unwrap();
+    s.select_rendered_nodes(header(&s, 2), &[1], SelectMode::Add)
+        .unwrap();
+    assert_eq!(
+        s.selection().unwrap(),
+        [
+            ElementRef::Node(id(1)),
+            ElementRef::Node(id(2)),
+            ElementRef::Edge(id(13)),
+        ],
+        "Add reduces incoming candidates, not the union with earlier selection"
+    );
+    s.select_rendered_nodes(header(&s, 3), &[0, 1], SelectMode::Replace)
+        .unwrap();
+    assert_eq!(
+        s.selection().unwrap(),
+        [
+            ElementRef::Node(id(1)),
+            ElementRef::Node(id(2)),
+            ElementRef::Edge(id(11)),
+            ElementRef::Edge(id(12)),
+            ElementRef::Edge(id(13)),
+        ],
+        "parallel edges and loop are induced; crossing edges are excluded"
+    );
+    let selected = s.selection().unwrap();
+    let h = header(&s, 4);
+    assert_eq!(
+        s.select_rendered_nodes(h, &[u32::MAX], SelectMode::Replace),
+        Err(InteractionStatus::Invalid)
+    );
+    assert_eq!(
+        s.select_rendered_nodes(
+            OpHeader {
+                stamp: Stamp {
+                    render_revision: 0,
+                    ..h.stamp
+                },
+                ..h
+            },
+            &[0],
+            SelectMode::Replace
+        ),
+        Err(InteractionStatus::Stale)
+    );
+    assert_eq!(
+        s.select_rendered_nodes(
+            h,
+            &vec![0; MAX_GRAPH_SELECTION_REFS + 1],
+            SelectMode::Replace
+        ),
+        Err(InteractionStatus::SelectionTooLarge)
+    );
+    assert_eq!(s.selection().unwrap(), selected);
+    s.select_rendered_nodes(h, &[0, 1], SelectMode::Toggle)
+        .unwrap();
+    assert!(
+        s.selection().unwrap().is_empty(),
+        "refusals do not consume the operation"
+    );
+}
+
+#[test]
+fn published_node_candidates_expand_only_current_render_membership() {
+    let doc = handmade_ends(
+        COMPOSITION_VERSION,
+        &[id(1), id(2), id(3)],
+        &[
+            E::Persisted(id(11)),
+            E::Persisted(id(12)),
+            E::Persisted(id(13)),
+        ],
+        &[],
+        None,
+        Some(&[(0, 1), (1, 2), (0, 2)]),
+    );
+    for budgets in [(3, 3), (3, 1), (1, 3)] {
+        let load = SessionLoad {
+            budgets: Some(budgets),
+            ..at(&[0., 10., 20.], &[0.; 3])
+        };
+        let mut expected = GraphSession::create(&doc, load.clone(), 7).unwrap();
+        let mut actual = GraphSession::create(&doc, load, 7).unwrap();
+        let r = actual.render(None).unwrap().clone();
+        expected.render(None).unwrap();
+        let refs: Vec<_> = (0..r.node_count() as u32).collect();
+        expected
+            .brush(
+                header(&expected, 1),
+                [-100., -100., 100., 100.],
+                SelectMode::Replace,
+                SelectionPolicy::NodesAndInducedEdges,
+            )
+            .unwrap();
+        actual
+            .select_rendered_nodes(header(&actual, 1), &refs, SelectMode::Replace)
+            .unwrap();
+        assert_eq!(actual.selection().unwrap(), expected.selection().unwrap());
+        if budgets == (3, 1) {
+            assert_eq!(
+                actual
+                    .selection()
+                    .unwrap()
+                    .iter()
+                    .filter(|r| matches!(r, ElementRef::Edge(_)))
+                    .count(),
+                1
+            );
+        }
+    }
+}

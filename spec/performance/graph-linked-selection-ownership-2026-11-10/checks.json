@@ -1,0 +1,971 @@
+{
+  "base": "e3301faef96d95e18c4593ceec82236faf3c43f3",
+  "bindings": {
+    "current": 3460,
+    "historical": 1522,
+    "parents": 33,
+    "path": "spec/performance/graph-linked-selection-ownership-2026-11-10/current-bindings.json",
+    "sha256": "53f8ad585fd93f3da28dfb012ac79739d62421dcab0070ec41f9446c8a0cfa34"
+  },
+  "captures": {
+    "target/task-tmp/graph-selection-ownership/notebook-dpr1.json": {
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/before-edges-paint.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d.gz",
+        "archiveBytes": 14102,
+        "archiveSha256": "dc12a7e87d6f16007a5988a87d8911c56100f6665cd0a46c9bf908faf2969824",
+        "bytes": 16592,
+        "sha256": "50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/before-edges-pixels.json": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/f1431c987d47b977672ca3210fd042a709eae2d210f91edef3dfd4384c99f3f8.gz",
+        "archiveBytes": 485,
+        "archiveSha256": "2b2c184ee261171b635128c77204c84dc8cb40f23bc8f8de16e8efdc0f8e80be",
+        "bytes": 3518,
+        "sha256": "f1431c987d47b977672ca3210fd042a709eae2d210f91edef3dfd4384c99f3f8"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/before-edges.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/b846412b123a3406cd89c8ab0376726cb9049d85067a51d8a8962e820965eb26.gz",
+        "archiveBytes": 23725,
+        "archiveSha256": "c319047b595d8386f63a1a4453f353120184566e4a34289e4144dc44d92aac76",
+        "bytes": 24448,
+        "sha256": "b846412b123a3406cd89c8ab0376726cb9049d85067a51d8a8962e820965eb26"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/before-paint.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d.gz",
+        "archiveBytes": 14102,
+        "archiveSha256": "dc12a7e87d6f16007a5988a87d8911c56100f6665cd0a46c9bf908faf2969824",
+        "bytes": 16592,
+        "sha256": "50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/before-pixels.json": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/2f224263111879068ebee20de8e25731766d98b3a290c45b0f2deca7627dbacb.gz",
+        "archiveBytes": 395,
+        "archiveSha256": "f8d3b6ba2a06258776696d6b04685a5b4228045292485c8dea6f39da5b5b476b",
+        "bytes": 2203,
+        "sha256": "2f224263111879068ebee20de8e25731766d98b3a290c45b0f2deca7627dbacb"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/before.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/9590bee51d8da28cd77333b9d13c2bf903c536fc0a1f35dcf2f0b224e811e50e.gz",
+        "archiveBytes": 22648,
+        "archiveSha256": "13d6411c11722206e1440a878819449b86b772b844b2d442045924054417c3f8",
+        "bytes": 23351,
+        "sha256": "9590bee51d8da28cd77333b9d13c2bf903c536fc0a1f35dcf2f0b224e811e50e"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/box-edges-paint.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f.gz",
+        "archiveBytes": 13199,
+        "archiveSha256": "427c557ffd6fe9630fb583dac7eac30a6fa6b82c371e530567aac0cc380bfca3",
+        "bytes": 16176,
+        "sha256": "dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/box-edges-pixels.json": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/c12de2dd985dc03357d8b67e1d2d3cb8c8e3c32ead6cba5210d99ca4b7ed9851.gz",
+        "archiveBytes": 512,
+        "archiveSha256": "74f9219a2f4b5015d7282066b92260990255eda20afdbf1cadcf4af81c102842",
+        "bytes": 3498,
+        "sha256": "c12de2dd985dc03357d8b67e1d2d3cb8c8e3c32ead6cba5210d99ca4b7ed9851"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/box-edges.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/26602ab91e970327c7290e32dff9b3675bbf768984480e54aebdb2566006da8d.gz",
+        "archiveBytes": 22556,
+        "archiveSha256": "81d5309139919e9bc032362536f5bf17c602ea82bd47e5be95c78b975b3083ae",
+        "bytes": 23325,
+        "sha256": "26602ab91e970327c7290e32dff9b3675bbf768984480e54aebdb2566006da8d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/box-paint.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f.gz",
+        "archiveBytes": 13199,
+        "archiveSha256": "427c557ffd6fe9630fb583dac7eac30a6fa6b82c371e530567aac0cc380bfca3",
+        "bytes": 16176,
+        "sha256": "dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/box-pixels.json": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/e86a8d854abfe5f229b1825a2eb05fe2e822c0b6ca76aa88628229f0086b331e.gz",
+        "archiveBytes": 404,
+        "archiveSha256": "4bda815926af965295d678bf8df0a8d95d8754cdc36954405e40cf699771ad78",
+        "bytes": 2188,
+        "sha256": "e86a8d854abfe5f229b1825a2eb05fe2e822c0b6ca76aa88628229f0086b331e"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/box.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/a283f45994f632936809ed496ce5ec797e972d36f8e5db21c2e8fd9bf0b466d9.gz",
+        "archiveBytes": 21899,
+        "archiveSha256": "4bedb4c1763679804eed80b2c4d99c043cf229c1975bf8666ceeabf0c6a9997b",
+        "bytes": 22658,
+        "sha256": "a283f45994f632936809ed496ce5ec797e972d36f8e5db21c2e8fd9bf0b466d9"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/capacity-before-paint.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/capacity-before-pixels.json": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/0413a905e1c59dec4c9f89b63a7f54196f972961f963a512f4a79f9b6addc6dc.gz",
+        "archiveBytes": 396,
+        "archiveSha256": "2701b5f71d394ef3a6c6ff24f5e6b1c0fe90720caa9cd23e201f80fe93e33020",
+        "bytes": 2188,
+        "sha256": "0413a905e1c59dec4c9f89b63a7f54196f972961f963a512f4a79f9b6addc6dc"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/capacity-before.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/c3df94183842062f4720e23a2d1b686d54ebc0a462aa3e1b9647217b26da5817.gz",
+        "archiveBytes": 22333,
+        "archiveSha256": "7cafa474c3fe416263d511924502c2f12158528b41182163023801b873e347d5",
+        "bytes": 23101,
+        "sha256": "c3df94183842062f4720e23a2d1b686d54ebc0a462aa3e1b9647217b26da5817"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/capacity-history-refused-paint.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/capacity-history-refused-pixels.json": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/367a4eb47e664c5dc642005acd1b83a5eaf81d7cde3de314857e320de3474322.gz",
+        "archiveBytes": 398,
+        "archiveSha256": "8953896f078723f538f31df44853944deed0d67d1ca30badaea54c343da87643",
+        "bytes": 2188,
+        "sha256": "367a4eb47e664c5dc642005acd1b83a5eaf81d7cde3de314857e320de3474322"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/capacity-history-refused.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/cb922c12a539422f179aa8b5bd28a18eaceadffffcbaa39e4a10ff1059da4f8e.gz",
+        "archiveBytes": 22571,
+        "archiveSha256": "b4e1c965bace5789ee3b7ab20003000f4a6bad3603b5afb232ed96a897130b1b",
+        "bytes": 23319,
+        "sha256": "cb922c12a539422f179aa8b5bd28a18eaceadffffcbaa39e4a10ff1059da4f8e"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/capacity-refused-paint.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/capacity-refused-pixels.json": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/96b4ffda92c7ff1f47b3afeb99541bba644aacbac06116f4d30858cbce9ed3d7.gz",
+        "archiveBytes": 396,
+        "archiveSha256": "86973f103f4da32287ccf3971ba47d2cc46f5c5439c13d19381d4ab23e7fad96",
+        "bytes": 2188,
+        "sha256": "96b4ffda92c7ff1f47b3afeb99541bba644aacbac06116f4d30858cbce9ed3d7"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/capacity-refused.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/a7666118bb3eff7f3994c2501f4df67fdce66bc87f7c77558afb0edc461a1a78.gz",
+        "archiveBytes": 20694,
+        "archiveSha256": "3380455fc787f6b62e1dc2bf081a45b9ba51d36c858dcf54a854c2815d681816",
+        "bytes": 21526,
+        "sha256": "a7666118bb3eff7f3994c2501f4df67fdce66bc87f7c77558afb0edc461a1a78"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/lasso-paint.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/513b6d49016a5ca7b80eff9ae9828acd6a9ceefeb836664697fbd2c07d6090aa.gz",
+        "archiveBytes": 13986,
+        "archiveSha256": "4ca240262c17892db53f533fabfde65fbab1ff33a66f2cdadb4ef2b055b39186",
+        "bytes": 16720,
+        "sha256": "513b6d49016a5ca7b80eff9ae9828acd6a9ceefeb836664697fbd2c07d6090aa"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/lasso-pixels.json": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/cd39f7cfed847bb144a6f7e9019ea45c95df204d582ded1a2f3f6d1056c2ab6f.gz",
+        "archiveBytes": 394,
+        "archiveSha256": "189ffdf410985ab4f1934d05d7674432bdcb61d0417cc768eb598198e423b935",
+        "bytes": 2193,
+        "sha256": "cd39f7cfed847bb144a6f7e9019ea45c95df204d582ded1a2f3f6d1056c2ab6f"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/lasso.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/5313c77655051301c98ac157ab07a2a7ac310d198755f163738ba806ef2ce546.gz",
+        "archiveBytes": 24502,
+        "archiveSha256": "2506ad801bc5b89aafd31c5a6710359b00b9218219ba18c09f52237455a1f41f",
+        "bytes": 25175,
+        "sha256": "5313c77655051301c98ac157ab07a2a7ac310d198755f163738ba806ef2ce546"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-Afo5i0/regions.ipynb": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd.gz",
+        "archiveBytes": 1695,
+        "archiveSha256": "655dbbb990ffebf0a9427ba64505f4c430c754b21731850e0b1911c2021b021f",
+        "bytes": 5892,
+        "sha256": "8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd"
+      },
+      "target/task-tmp/graph-selection-ownership/notebook-dpr1.json": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/9dcd0cce6391bf75161f2451cd951e8213b13f21d1c22cec2f3f0667573cb86f.gz",
+        "archiveBytes": 5818,
+        "archiveSha256": "d6ecdf983607e872124d866c396443d3a735cb4f6ae80c143ccb0a0be578d4ab",
+        "bytes": 83408,
+        "sha256": "9dcd0cce6391bf75161f2451cd951e8213b13f21d1c22cec2f3f0667573cb86f"
+      }
+    },
+    "target/task-tmp/graph-selection-ownership/notebook-dpr2.json": {
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/before-edges-paint.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c.gz",
+        "archiveBytes": 30991,
+        "archiveSha256": "a1c60b150090a1ac67897881c1a0a44ca28df7507517e42983578b01277bd825",
+        "bytes": 43777,
+        "sha256": "950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/before-edges-pixels.json": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/52c08f4bfb55d33f15337e4b598748db2e6ef65f1a93c9da000b7d497fd21dfc.gz",
+        "archiveBytes": 425,
+        "archiveSha256": "a23fc53bfabc4e9b6cceca77bd9a568a4a7c739c75b9b2a2743374c270967fb0",
+        "bytes": 3521,
+        "sha256": "52c08f4bfb55d33f15337e4b598748db2e6ef65f1a93c9da000b7d497fd21dfc"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/before-edges.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/9eb0dedac429ef92376bceac7ba8ffee44d1152a8fc87977b2c8d8a44495def4.gz",
+        "archiveBytes": 56890,
+        "archiveSha256": "4553a8ba46df03807e1e748e463c586dc3cf81cadb538f217c75a3f6d52a5f30",
+        "bytes": 60386,
+        "sha256": "9eb0dedac429ef92376bceac7ba8ffee44d1152a8fc87977b2c8d8a44495def4"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/before-paint.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c.gz",
+        "archiveBytes": 30991,
+        "archiveSha256": "a1c60b150090a1ac67897881c1a0a44ca28df7507517e42983578b01277bd825",
+        "bytes": 43777,
+        "sha256": "950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/before-pixels.json": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/dd3ba0f225538a041c6a0471b27fd396302587f0f39411fe6fd4ef380feecfb1.gz",
+        "archiveBytes": 390,
+        "archiveSha256": "27ea6aee523b29f58cc1272b573ea5c3924f339a8b0c17f23d0118e8c2dfe80c",
+        "bytes": 2204,
+        "sha256": "dd3ba0f225538a041c6a0471b27fd396302587f0f39411fe6fd4ef380feecfb1"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/before.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/fa385a5c6286a5d234f907408915e5e93acb21c10d3beba97fe248e29d3f264b.gz",
+        "archiveBytes": 54453,
+        "archiveSha256": "2db1b24781263d31d5cfea02a468d584abca5f298f0f16dd15225beefa5ded3a",
+        "bytes": 57943,
+        "sha256": "fa385a5c6286a5d234f907408915e5e93acb21c10d3beba97fe248e29d3f264b"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/box-edges-paint.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d.gz",
+        "archiveBytes": 28480,
+        "archiveSha256": "eff9458fb453c519a73094f6822a72d8ea853a5b9d2bc973b525d700ca891b94",
+        "bytes": 43605,
+        "sha256": "43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/box-edges-pixels.json": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/d715975b4347c79f9e446e4899f0d7d22aecadf862cb52b78f70cf395a2c18d0.gz",
+        "archiveBytes": 435,
+        "archiveSha256": "c3da0c1ed9aaed1a11b1ae291bbaaba1fa7bb82bf31785ef5cdbbf4617040fcf",
+        "bytes": 3501,
+        "sha256": "d715975b4347c79f9e446e4899f0d7d22aecadf862cb52b78f70cf395a2c18d0"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/box-edges.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/cc9c8ae35e63b787560742910d1eabaaa11e603f01d7d3f7d5577d1412a6f7ea.gz",
+        "archiveBytes": 54679,
+        "archiveSha256": "7eb9a6af3ea8979eb021eb60c69ce345cb32684899679e41b4d602f563b8d11a",
+        "bytes": 58629,
+        "sha256": "cc9c8ae35e63b787560742910d1eabaaa11e603f01d7d3f7d5577d1412a6f7ea"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/box-paint.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d.gz",
+        "archiveBytes": 28480,
+        "archiveSha256": "eff9458fb453c519a73094f6822a72d8ea853a5b9d2bc973b525d700ca891b94",
+        "bytes": 43605,
+        "sha256": "43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/box-pixels.json": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/de2f49abf333809ccb445812a4d5d21c7f9af74946a0c7c49c4de6f25a2477a0.gz",
+        "archiveBytes": 405,
+        "archiveSha256": "8a0ab7b4bc0fbb7ba38b00dfdec643fca800e22f9ef6f645b95acb539cfbe728",
+        "bytes": 2189,
+        "sha256": "de2f49abf333809ccb445812a4d5d21c7f9af74946a0c7c49c4de6f25a2477a0"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/box.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/0ef40a3accc3b9f6d67311961dd62e599b5b064cdaf41f8900c23c12739b8cea.gz",
+        "archiveBytes": 53694,
+        "archiveSha256": "76d8c06da2843c2cb370f3a2d4bee62234ece82e3a5ae1b4f01985d7d0d03c78",
+        "bytes": 57696,
+        "sha256": "0ef40a3accc3b9f6d67311961dd62e599b5b064cdaf41f8900c23c12739b8cea"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/capacity-before-paint.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502.gz",
+        "archiveBytes": 29490,
+        "archiveSha256": "6b15c029d96c60fa028a87f1e72bf10579ed594bde3ab0875b84b9801054a560",
+        "bytes": 44131,
+        "sha256": "d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/capacity-before-pixels.json": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/04d007da1dd8324601fb0abcc3a9d9d2e3cf0c3907f2a0de72c776cfd39b59ff.gz",
+        "archiveBytes": 397,
+        "archiveSha256": "fc54ea1c3848b134e85c55e5411c7d84a93cdd8bf15c5abb0ec7f347b21f67a4",
+        "bytes": 2189,
+        "sha256": "04d007da1dd8324601fb0abcc3a9d9d2e3cf0c3907f2a0de72c776cfd39b59ff"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/capacity-before.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/ac6371ae273a9a24fdfd2ee40716346aaceab5ed1720c79457892c6cc36df317.gz",
+        "archiveBytes": 54182,
+        "archiveSha256": "9735826f82a55d41d322eed7f51d2e9be919fa67fd316591e2c0dd00331dd5e4",
+        "bytes": 58022,
+        "sha256": "ac6371ae273a9a24fdfd2ee40716346aaceab5ed1720c79457892c6cc36df317"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/capacity-history-refused-paint.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502.gz",
+        "archiveBytes": 29490,
+        "archiveSha256": "6b15c029d96c60fa028a87f1e72bf10579ed594bde3ab0875b84b9801054a560",
+        "bytes": 44131,
+        "sha256": "d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/capacity-history-refused-pixels.json": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/8e0d3873f13235ad0624a00b034aa323323051e7ce409b549153ea29a23e8fb2.gz",
+        "archiveBytes": 397,
+        "archiveSha256": "78fb852632920fa608d39887de0e22ac63e805a8812692bb47039d1e23734680",
+        "bytes": 2189,
+        "sha256": "8e0d3873f13235ad0624a00b034aa323323051e7ce409b549153ea29a23e8fb2"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/capacity-history-refused.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/2da773db788eaa31a0e75eaa6d76d95113d73c707966b49b0c9fa7024d85778f.gz",
+        "archiveBytes": 54939,
+        "archiveSha256": "774fa6ad46277889cea54a5b6ad47d6046f637fd5116c3eaf2dc56ecec984fc0",
+        "bytes": 58693,
+        "sha256": "2da773db788eaa31a0e75eaa6d76d95113d73c707966b49b0c9fa7024d85778f"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/capacity-refused-paint.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502.gz",
+        "archiveBytes": 29490,
+        "archiveSha256": "6b15c029d96c60fa028a87f1e72bf10579ed594bde3ab0875b84b9801054a560",
+        "bytes": 44131,
+        "sha256": "d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/capacity-refused-pixels.json": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/6db3c343bbbdd98d7bb50ef981eba720e9848014e808b24cf8f7fdb2d5aa00eb.gz",
+        "archiveBytes": 397,
+        "archiveSha256": "9b33cca8c88feebc11333a91359e4db3385b6c78b31360821cf5c6be65f38bd6",
+        "bytes": 2189,
+        "sha256": "6db3c343bbbdd98d7bb50ef981eba720e9848014e808b24cf8f7fdb2d5aa00eb"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/capacity-refused.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/624b0bee63e3542c7fa4367a922815a5effb94cb5be0e8064d1424ae045335ea.gz",
+        "archiveBytes": 49802,
+        "archiveSha256": "da9bc0e0b830bcf817bcb86d93ee482ca8e7427af6d7c7c6d81ba6ef3643cc65",
+        "bytes": 53854,
+        "sha256": "624b0bee63e3542c7fa4367a922815a5effb94cb5be0e8064d1424ae045335ea"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/lasso-paint.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/ba9db221026bc03b24778592e8f65a018b5e17e14e68a0159a36098e405a6abd.gz",
+        "archiveBytes": 29981,
+        "archiveSha256": "93436e7f361bc53b2f5bf3aba03c1d6071efbde587e5b812b98e46aeaaab6dcd",
+        "bytes": 44025,
+        "sha256": "ba9db221026bc03b24778592e8f65a018b5e17e14e68a0159a36098e405a6abd"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/lasso-pixels.json": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/444fe4c45fcc63f08081b0e420fe697b46e5bfe2871b078821a9229f0864e4af.gz",
+        "archiveBytes": 392,
+        "archiveSha256": "9a0e15445a402a35026b447ed18670e908ff85283cac2878dbc61ac14672e361",
+        "bytes": 2194,
+        "sha256": "444fe4c45fcc63f08081b0e420fe697b46e5bfe2871b078821a9229f0864e4af"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/lasso.png": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/1a680cecbb2f8d97176652da0d20651639659fdacbe05e5fded0449c08a53890.gz",
+        "archiveBytes": 59393,
+        "archiveSha256": "7d4f5262bf610b056920b715b1dc2a74b104b15b2554d63dede3a7a6782db412",
+        "bytes": 62682,
+        "sha256": "1a680cecbb2f8d97176652da0d20651639659fdacbe05e5fded0449c08a53890"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-nQmdm1/regions.ipynb": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd.gz",
+        "archiveBytes": 1695,
+        "archiveSha256": "655dbbb990ffebf0a9427ba64505f4c430c754b21731850e0b1911c2021b021f",
+        "bytes": 5892,
+        "sha256": "8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd"
+      },
+      "target/task-tmp/graph-selection-ownership/notebook-dpr2.json": {
+        "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/ca933b33dce8353177faf69e0e5ab78e5020c5b77552c94dc3961cf8bbeb5225.gz",
+        "archiveBytes": 5722,
+        "archiveSha256": "7f1509eb0fcd20d8ecae4908c632849f64d330214e35edd9b4ecff246dc79e4c",
+        "bytes": 83413,
+        "sha256": "ca933b33dce8353177faf69e0e5ab78e5020c5b77552c94dc3961cf8bbeb5225"
+      }
+    }
+  },
+  "changedRuntime": [
+    "packages/xy-client/dist/index.js",
+    "packages/xy-client/dist/standalone.js",
+    "python/xyg/static/index.js",
+    "python/xyg/static/standalone.js"
+  ],
+  "compiledInputs": {
+    "changed": [
+      "crates/xyg-engine/src/graphforge/interaction/pick.rs",
+      "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs",
+      "crates/xyg-engine/src/graphforge/interaction/tests/wire.rs",
+      "crates/xyg-engine/src/graphforge/interaction/wire.rs"
+    ],
+    "count": 324,
+    "path": "spec/performance/graph-notebook-regions-2026-11-10/compiled-inputs.json",
+    "sha256": "a0ca8b566fd0a7c6502d6f6cb5b2070ff148290a846d1e7189d8388d95061dca"
+  },
+  "compiledInputsUnchanged": 324,
+  "delivery": {
+    "hostedCI": "pending",
+    "independentCorrectionReview": "pending",
+    "mergeQueue": "required"
+  },
+  "evidence": {
+    "target/task-tmp/graph-selection-ownership/build.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f.gz",
+      "archiveBytes": 1056,
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "bytes": 5448,
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "target/task-tmp/graph-selection-ownership/core-final.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/d5e25e10bf6c225de4288e0e7fe382cc339161bd1008ba72a83a9f756c09ae76.gz",
+      "archiveBytes": 53,
+      "archiveSha256": "bf9b8ca0b447e73ca2799a96f28a0b9e815a2962721cf32ad21d3f437e662c29",
+      "bytes": 100,
+      "sha256": "d5e25e10bf6c225de4288e0e7fe382cc339161bd1008ba72a83a9f756c09ae76"
+    },
+    "target/task-tmp/graph-selection-ownership/core.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/6b7c1eee965eae35369e7f01aa8148c6493f0c8d91a2322090be3a56a24c6905.gz",
+      "archiveBytes": 62,
+      "archiveSha256": "348e294a0db836b241d7be0678bd4a6ec6157913521b957d62519630a52cd77c",
+      "bytes": 110,
+      "sha256": "6b7c1eee965eae35369e7f01aa8148c6493f0c8d91a2322090be3a56a24c6905"
+    },
+    "target/task-tmp/graph-selection-ownership/corrected-regressions.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/7bbf4f64fb1a0b82e1bbe3631edfac4e86f7b0e7f4eea61818ef737d0eaac425.gz",
+      "archiveBytes": 2734,
+      "archiveSha256": "787f191e5cf44c5e4d1c00ad818065ca724163feea1b3efd07c9493019d7010b",
+      "bytes": 10473,
+      "sha256": "7bbf4f64fb1a0b82e1bbe3631edfac4e86f7b0e7f4eea61818ef737d0eaac425"
+    },
+    "target/task-tmp/graph-selection-ownership/final-regressions.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/5e3f3f9ce6150c182c948736ac30acb211d9588873a66318030a833bd1675c7c.gz",
+      "archiveBytes": 3232,
+      "archiveSha256": "b4fff9c50565c8b3d8129c1492bdffa8770ebbc85a8e85ffc0c828bc552e79c5",
+      "bytes": 12791,
+      "sha256": "5e3f3f9ce6150c182c948736ac30acb211d9588873a66318030a833bd1675c7c"
+    },
+    "target/task-tmp/graph-selection-ownership/format-final.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/127ebb8c6685712ecc74c244dc0e19ad295f928ac7d0522c2809f39a024ce543.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "131a6ca95f69fab672e22b8e10e6145e37549999675f5109b8dfa04e0797b6b0",
+      "bytes": 29,
+      "sha256": "127ebb8c6685712ecc74c244dc0e19ad295f928ac7d0522c2809f39a024ce543"
+    },
+    "target/task-tmp/graph-selection-ownership/format.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/127ebb8c6685712ecc74c244dc0e19ad295f928ac7d0522c2809f39a024ce543.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "131a6ca95f69fab672e22b8e10e6145e37549999675f5109b8dfa04e0797b6b0",
+      "bytes": 29,
+      "sha256": "127ebb8c6685712ecc74c244dc0e19ad295f928ac7d0522c2809f39a024ce543"
+    },
+    "target/task-tmp/graph-selection-ownership/foundation.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/90c015331f469e920936463aa22a3a5234c9a5fd88572e5cc41956014b7fe095.gz",
+      "archiveBytes": 3154,
+      "archiveSha256": "7c8dcaded22c7d39e28ca406fa330cd3c29e961ef8382e25fc27365aec2f6b1d",
+      "bytes": 12254,
+      "sha256": "90c015331f469e920936463aa22a3a5234c9a5fd88572e5cc41956014b7fe095"
+    },
+    "target/task-tmp/graph-selection-ownership/full-node.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/745ecab666f7a72d41476ee14221a25ea14e33add91be92f1367a453701db9d4.gz",
+      "archiveBytes": 40617,
+      "archiveSha256": "f2ce6f683f9c21038cb38f8a8c0629f97b1c34b096849f36373762b0f942db28",
+      "bytes": 241865,
+      "sha256": "745ecab666f7a72d41476ee14221a25ea14e33add91be92f1367a453701db9d4"
+    },
+    "target/task-tmp/graph-selection-ownership/gates.json": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/ffa24e9ada7c31adba2a5e10c7aae133b0c58d1f3619450107898cbbf7a88f4a.gz",
+      "archiveBytes": 729,
+      "archiveSha256": "bc4467576d4fc9b2337a5ec61feaf9fae5765bef5983b6a195fe0322900e8e26",
+      "bytes": 3604,
+      "sha256": "ffa24e9ada7c31adba2a5e10c7aae133b0c58d1f3619450107898cbbf7a88f4a"
+    },
+    "target/task-tmp/graph-selection-ownership/gates.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/graph-selection-ownership/greptile-findings.json": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/adccb09fbf0210c006bcb95575654cfd65be6d458b44c587b6141a6ffd525afa.gz",
+      "archiveBytes": 749,
+      "archiveSha256": "37e8ee1f30318f89534604c048c18d2eeca420568ed93dd7addf45c634f781f5",
+      "bytes": 1530,
+      "sha256": "adccb09fbf0210c006bcb95575654cfd65be6d458b44c587b6141a6ffd525afa"
+    },
+    "target/task-tmp/graph-selection-ownership/hooks-final.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/graph-selection-ownership/hooks.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/graph-selection-ownership/hosted-python-failed-corrected.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/f066b18268e30757e667598bbcc354df0fbf40419a0e415265cab52146542435.gz",
+      "archiveBytes": 57450,
+      "archiveSha256": "4780c56d90e2375d89c70b70027f726a2261255d99e4f668596d1e5eda6aab75",
+      "bytes": 864658,
+      "sha256": "f066b18268e30757e667598bbcc354df0fbf40419a0e415265cab52146542435"
+    },
+    "target/task-tmp/graph-selection-ownership/hosted-python-failed.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/graph-selection-ownership/hosted-python311-failed-corrected.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/0b31870e8bf1a7f09f8b2c49ef209eb38976362a8c5cd9237d32b2c065e53fb3.gz",
+      "archiveBytes": 5302,
+      "archiveSha256": "1229468ab39c1edc3ef328a7c263d739f4f1e1b79333ac689cf5812fa239b593",
+      "bytes": 38432,
+      "sha256": "0b31870e8bf1a7f09f8b2c49ef209eb38976362a8c5cd9237d32b2c065e53fb3"
+    },
+    "target/task-tmp/graph-selection-ownership/hosted-python311-failed.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/graph-selection-ownership/hosted-repair-complete.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/0581a37c78b56d47915ca77534bd0dbb9c00a69b3c8ec488ec24f1dc6ba85117.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "4a2ec5c0ebe0bc97fae8cca3419df6c20f1b16b29b303de250855b1ca3b12f7f",
+      "bytes": 99,
+      "sha256": "0581a37c78b56d47915ca77534bd0dbb9c00a69b3c8ec488ec24f1dc6ba85117"
+    },
+    "target/task-tmp/graph-selection-ownership/hosted-repair-focused.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/fe531c650c97456715d288e18196a2c338b680bf8084df458e9a5e0c74034c85.gz",
+      "archiveBytes": 985,
+      "archiveSha256": "9dc1fd15a62e129e6d8af992264dce0ea7a5efc6764e9b23ec4c0d4d059ab028",
+      "bytes": 2928,
+      "sha256": "fe531c650c97456715d288e18196a2c338b680bf8084df458e9a5e0c74034c85"
+    },
+    "target/task-tmp/graph-selection-ownership/notebook-dpr1.json": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/9dcd0cce6391bf75161f2451cd951e8213b13f21d1c22cec2f3f0667573cb86f.gz",
+      "archiveBytes": 5818,
+      "archiveSha256": "d6ecdf983607e872124d866c396443d3a735cb4f6ae80c143ccb0a0be578d4ab",
+      "bytes": 83408,
+      "sha256": "9dcd0cce6391bf75161f2451cd951e8213b13f21d1c22cec2f3f0667573cb86f"
+    },
+    "target/task-tmp/graph-selection-ownership/notebook-dpr1.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/692d748449a9a2d4fdb5b8a4db71fc6c4a02471515b265087a13f26e0b8414ad.gz",
+      "archiveBytes": 141,
+      "archiveSha256": "776795104f097f8fa378cfb000412edc2034d41974b40664dc4cd5a33e30cfa5",
+      "bytes": 141,
+      "sha256": "692d748449a9a2d4fdb5b8a4db71fc6c4a02471515b265087a13f26e0b8414ad"
+    },
+    "target/task-tmp/graph-selection-ownership/notebook-dpr2.json": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/ca933b33dce8353177faf69e0e5ab78e5020c5b77552c94dc3961cf8bbeb5225.gz",
+      "archiveBytes": 5722,
+      "archiveSha256": "7f1509eb0fcd20d8ecae4908c632849f64d330214e35edd9b4ecff246dc79e4c",
+      "bytes": 83413,
+      "sha256": "ca933b33dce8353177faf69e0e5ab78e5020c5b77552c94dc3961cf8bbeb5225"
+    },
+    "target/task-tmp/graph-selection-ownership/notebook-dpr2.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/b7df6610cda519835eb05552fa26b87a5070bc1320bade0e0e381efd041bb6bd.gz",
+      "archiveBytes": 141,
+      "archiveSha256": "fc3d5b710036cc6c914754eeea9b24dd87e99e7cfcece1b515ca6098c07cbce2",
+      "bytes": 141,
+      "sha256": "b7df6610cda519835eb05552fa26b87a5070bc1320bade0e0e381efd041bb6bd"
+    },
+    "target/task-tmp/graph-selection-ownership/original-regressions.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/37a35bcf2941addb62578b0c51ca883ef0f7fa270d6a628a5f643b58dd818e2a.gz",
+      "archiveBytes": 2807,
+      "archiveSha256": "93f8e32741d673743aaf55fba70a661c7c9a643537ee6d649ae360d118c364a8",
+      "bytes": 15684,
+      "sha256": "37a35bcf2941addb62578b0c51ca883ef0f7fa270d6a628a5f643b58dd818e2a"
+    },
+    "target/task-tmp/graph-selection-ownership/parent-control/binding.json": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/cba6e9f045da52f25007f46838c9e6011f755460d8f8f109f7ff63a8f72b23c7.gz",
+      "archiveBytes": 382,
+      "archiveSha256": "6e6adec08312caafd0b4c3dfd9841c8131cccf2e8fb6b2f1ee771e3bdb622798",
+      "bytes": 591,
+      "sha256": "cba6e9f045da52f25007f46838c9e6011f755460d8f8f109f7ff63a8f72b23c7"
+    },
+    "target/task-tmp/graph-selection-ownership/parent-control/js/src/50_chartview.ts": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/72a7fa6dfdf9d3fad2635f46b425e584de640bdb92c751ea898e586b728fb6a6.gz",
+      "archiveBytes": 118880,
+      "archiveSha256": "8acde2436d95b628d0c40436d7a8507c52ff752a128eec5e8c443ac7c772b62e",
+      "bytes": 435367,
+      "sha256": "72a7fa6dfdf9d3fad2635f46b425e584de640bdb92c751ea898e586b728fb6a6"
+    },
+    "target/task-tmp/graph-selection-ownership/parent-control/js/src/53_interaction.ts": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/511f2ab8f44d551ebd47f5b06c26513ed8c3ccd317c45ea9c53c5dc98460e9df.gz",
+      "archiveBytes": 31131,
+      "archiveSha256": "9fce5a1f5b125f6ba6a37481abea38dd916c95518c4616b32bfac94808900347",
+      "bytes": 122247,
+      "sha256": "511f2ab8f44d551ebd47f5b06c26513ed8c3ccd317c45ea9c53c5dc98460e9df"
+    },
+    "target/task-tmp/graph-selection-ownership/parent-control/js/src/57_viewstate.ts": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/e97ca4fc8b29d22607acb26007e7045c26a6af5b8b12d412be4cb9d9094e7b9b.gz",
+      "archiveBytes": 7465,
+      "archiveSha256": "8bf61e45dbd31d57ecd51890e40e373455e2b14e719f165b4a47e8eda048d09b",
+      "bytes": 25230,
+      "sha256": "e97ca4fc8b29d22607acb26007e7045c26a6af5b8b12d412be4cb9d9094e7b9b"
+    },
+    "target/task-tmp/graph-selection-ownership/parent-control/js/src/66_graph_host.ts": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/11a7cc4f1d1a5aaf7270b7639372af22c455e0b668e09eaa686e3c3b5a29cfa1.gz",
+      "archiveBytes": 4150,
+      "archiveSha256": "f3ee9cd883fe3db55e4267d4a16889876f9f0656f9171c1efdba31aed2a4dfd3",
+      "bytes": 13804,
+      "sha256": "11a7cc4f1d1a5aaf7270b7639372af22c455e0b668e09eaa686e3c3b5a29cfa1"
+    },
+    "target/task-tmp/graph-selection-ownership/parent-control/js/test/graph-host-transport.test.mjs": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/f603ccfedd0813f2492f31f6299a0a0ffeeb20b57892d466b4767261646daca0.gz",
+      "archiveBytes": 6916,
+      "archiveSha256": "e323592b6120a892fe3c0cc6d7b5557f8498d262c42dfeaa3291548b6c74921d",
+      "bytes": 33803,
+      "sha256": "f603ccfedd0813f2492f31f6299a0a0ffeeb20b57892d466b4767261646daca0"
+    },
+    "target/task-tmp/graph-selection-ownership/parent-negative.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/480dbb606c1338618fccef6a98cf1e3112a22616b6f14a5d6573539d7daf09cf.gz",
+      "archiveBytes": 3009,
+      "archiveSha256": "51d17f33b73b26a0940fa68024317461c19dbaa302e7267e11546128dd202562",
+      "bytes": 18773,
+      "sha256": "480dbb606c1338618fccef6a98cf1e3112a22616b6f14a5d6573539d7daf09cf"
+    },
+    "target/task-tmp/graph-selection-ownership/prior-independent-review.json": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/64e8b2f6291456ae088bb2c8d6fe8a9eb8099d97436b6e00fc7bff697c3bf690.gz",
+      "archiveBytes": 3353,
+      "archiveSha256": "c603da1d491e57c7e0cc3120a13637aea38525000879325c8b5bc21fcbadc8c5",
+      "bytes": 7066,
+      "sha256": "64e8b2f6291456ae088bb2c8d6fe8a9eb8099d97436b6e00fc7bff697c3bf690"
+    },
+    "target/task-tmp/graph-selection-ownership/python311-repair-core.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/477a47f818b4ba0b5c199e5cb29a8177ec7adb8b581a45947d06c97e837a716e.gz",
+      "archiveBytes": 67,
+      "archiveSha256": "6670cdbd9cba087c2ffbf2fa2a024c42a5d068a3cfc1338eb4aa6c5e69835072",
+      "bytes": 110,
+      "sha256": "477a47f818b4ba0b5c199e5cb29a8177ec7adb8b581a45947d06c97e837a716e"
+    },
+    "target/task-tmp/graph-selection-ownership/python311-repair.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/4e351cb53335b9e31b7902ce3f09f5d5180bb32427106184ac9d763552124e43.gz",
+      "archiveBytes": 608,
+      "archiveSha256": "da3e4340c814155fb1327e1123e119a669a634b260c7fc7f397cd0a3f4af61ee",
+      "bytes": 2301,
+      "sha256": "4e351cb53335b9e31b7902ce3f09f5d5180bb32427106184ac9d763552124e43"
+    },
+    "target/task-tmp/graph-selection-ownership/ruff-final.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/graph-selection-ownership/ruff.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/graph-selection-ownership/run-gates.py": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/c53f478df00803ab44498e02df526ebbbfa86e704db3818e614f1462dd307854.gz",
+      "archiveBytes": 841,
+      "archiveSha256": "00e4e86a21176caa31fc1c2eb5b0b817ac4c1b02a064ef4832910de09e53ca10",
+      "bytes": 1477,
+      "sha256": "c53f478df00803ab44498e02df526ebbbfa86e704db3818e614f1462dd307854"
+    },
+    "target/task-tmp/graph-selection-ownership/seal-evidence.py": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/fb9b6718abd4a3648b860655b2266b2ecbaeac3c497528832915ebdc41d015e0.gz",
+      "archiveBytes": 3805,
+      "archiveSha256": "5f79efe0d26bb857da242735f27d5480244cbe7e2b749c9e87be8cdc39c2c51a",
+      "bytes": 9399,
+      "sha256": "fb9b6718abd4a3648b860655b2266b2ecbaeac3c497528832915ebdc41d015e0"
+    },
+    "target/task-tmp/graph-selection-ownership/seal-sources-final.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/b9e6756b85eec367419621decf5f739fd826d6683b103815989b6ee2f4f95783.gz",
+      "archiveBytes": 66,
+      "archiveSha256": "770f96addf7628844762469db3cf2603cad21cc06a327edc2cdd92d284505d7a",
+      "bytes": 53,
+      "sha256": "b9e6756b85eec367419621decf5f739fd826d6683b103815989b6ee2f4f95783"
+    },
+    "target/task-tmp/graph-selection-ownership/seal-sources.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/a717dacd31dcd4fbc1e3d9ae1475ded58aa17e8a9a48870fbc9aadca20a39204.gz",
+      "archiveBytes": 65,
+      "archiveSha256": "3b0fb46593475f8153ba33e601aa8a3c111fe8e2cd21606027be54b2f2922b8f",
+      "bytes": 53,
+      "sha256": "a717dacd31dcd4fbc1e3d9ae1475ded58aa17e8a9a48870fbc9aadca20a39204"
+    },
+    "target/task-tmp/graph-selection-ownership/seal-sources.py": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/0508ea003166ff019cb1ae400c50ddf5fbca0b7067d4defa035c94b59a8c6519.gz",
+      "archiveBytes": 1152,
+      "archiveSha256": "8d6e57a4233b1d15c2c2cb3316421c87be5464b0fe5eb908cb8462b3095cd25d",
+      "bytes": 2737,
+      "sha256": "0508ea003166ff019cb1ae400c50ddf5fbca0b7067d4defa035c94b59a8c6519"
+    },
+    "target/task-tmp/graph-selection-ownership/security-guard-negatives.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/70fd901f4bf29d8f52cb12617343637c224516ef9464621645ec8ee7a4ce9404.gz",
+      "archiveBytes": 144,
+      "archiveSha256": "1312613abbd1a3771771c273eda1ef3e63e7c45c1d28dd6277b184f22f7da666",
+      "bytes": 182,
+      "sha256": "70fd901f4bf29d8f52cb12617343637c224516ef9464621645ec8ee7a4ce9404"
+    },
+    "target/task-tmp/graph-selection-ownership/ty.log": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    }
+  },
+  "externalReviewFindings": {
+    "comments": [
+      4525661812,
+      4525661830
+    ],
+    "disposition": "Both reproduced and corrected; final independent re-review pending",
+    "pr": "https://github.com/CurateLabs/xyg/pull/1120",
+    "record": "target/task-tmp/graph-selection-ownership/greptile-findings.json"
+  },
+  "failedAttempts": [
+    {
+      "exit": 1,
+      "log": "target/task-tmp/graph-selection-ownership/corrected-regressions.log",
+      "scope": "Native wire setup omitted XYG_NATIVE_LIB;40 transport passed but no wire credit; final explicit-library invocation54 passed"
+    },
+    {
+      "exit": 1,
+      "log": "target/task-tmp/graph-selection-ownership/python311-repair.log",
+      "scope": "Borrowed3.11 environment lacks optional Playwright;51pass2browser setup failures. No install/sync or browser credit; final3.11 core run51pass2explicit skips"
+    },
+    {
+      "exit": 1,
+      "log": "target/task-tmp/graph-selection-ownership/hosted-repair-focused.log",
+      "scope": "Initial marker correction exposed second stale count-only gate; 2 browser cases passed, 1 old marker count failed; final53 pass preserves both distinct guards"
+    },
+    {
+      "exit": 1,
+      "log": "target/task-tmp/graph-selection-ownership/hosted-python311-failed-corrected.log",
+      "scope": "Original hosted job129869787261 failed the stale select_clear source marker; no full hosted success claimed"
+    },
+    {
+      "exit": 1,
+      "log": "target/task-tmp/graph-selection-ownership/hosted-python-failed-corrected.log",
+      "scope": "Original hosted job129869787273 failed premature host-row oracle before paint ACK; downstream retention also failed; original run remains failed"
+    },
+    {
+      "exit": 1,
+      "log": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/graph-selection-ownership/foundation.log",
+      "scope": "Current full foundation FAILED; see exact log; prior context-loss failures and accepted-main/parent controls retained, no reliability repair claim"
+    }
+  ],
+  "fresh": {
+    "clientBuild": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" target/task-tmp/node-v22.23.4-linux-x64/bin/node js/build.mjs",
+      "exit": 0,
+      "log": "target/task-tmp/graph-selection-ownership/build.log"
+    },
+    "coreInventory": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync pytest -q tests/test_graphforge_contract_corpus.py::test_hash_bound_core_evidence_survives_windows_checkout tests/test_graphforge_contract_corpus.py::test_rc7_artifact_provenance_and_every_generated_ipc_are_bound tests/test_graphforge_contract_corpus.py::test_linked_selection_owner_preserves_the_complete_candidate_and_review_chain tests/test_release_inventory.py",
+      "exit": 0,
+      "log": "target/task-tmp/graph-selection-ownership/core-final.log",
+      "passed": 29
+    },
+    "format": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync ruff format --check .",
+      "exit": 0,
+      "log": "target/task-tmp/graph-selection-ownership/format-final.log"
+    },
+    "fullNode": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" PATH=\"$PWD/target/task-tmp/node-v22.23.4-linux-x64/bin:$PATH\" npm test --prefix packages/xy-node",
+      "exit": 0,
+      "log": "target/task-tmp/graph-selection-ownership/full-node.log",
+      "passed": 1156,
+      "skipped": 2
+    },
+    "hooks": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync --with pre-commit pre-commit run --all-files",
+      "exit": 0,
+      "log": "target/task-tmp/graph-selection-ownership/hooks-final.log"
+    },
+    "hostedRepairPython311": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" VIRTUAL_ENV=\"$PWD/target/task-tmp/vscode-jupyter-graph/server-venv\" PYTHONPATH=\"$PWD/python\" XYG_TEST_CHROMIUM= XY_REQUIRE_BROWSER=0 uv run --active --no-sync pytest -q tests/test_chunked_live.py tests/test_static_client_security.py",
+      "exit": 0,
+      "log": "target/task-tmp/graph-selection-ownership/python311-repair-core.log",
+      "passed": 51,
+      "scope": "Actual3.11 core/source guards; browser cases skip without optional Playwright; no3.11 browser credit",
+      "skipped": 2
+    },
+    "hostedRepairPython312": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" XYG_TEST_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome XY_REQUIRE_BROWSER=1 XYG_NODE=\"$PWD/target/task-tmp/node-v22.23.4-linux-x64/bin/node\" uv run --no-sync pytest -q tests/test_chunked_live.py tests/test_static_client_security.py",
+      "exit": 0,
+      "log": "target/task-tmp/graph-selection-ownership/hosted-repair-complete.log",
+      "passed": 53
+    },
+    "notebookDpr1": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" XYG_GRAPH_REGION_DPR=1 XYG_GRAPH_REGION_REPORT=\"$PWD/target/task-tmp/graph-selection-ownership/notebook-dpr1.json\" XYG_GRAPH_JUPYTER=\"$PWD/target/task-tmp/vscode-jupyter-graph/server-venv/bin/jupyter-lab\" XYG_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome target/task-tmp/node-v22.23.4-linux-x64/bin/node scripts/graph_notebook_regions_smoke.mjs",
+      "exit": 0,
+      "log": "target/task-tmp/graph-selection-ownership/notebook-dpr1.log"
+    },
+    "notebookDpr2": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" XYG_GRAPH_REGION_DPR=2 XYG_GRAPH_REGION_REPORT=\"$PWD/target/task-tmp/graph-selection-ownership/notebook-dpr2.json\" XYG_GRAPH_JUPYTER=\"$PWD/target/task-tmp/vscode-jupyter-graph/server-venv/bin/jupyter-lab\" XYG_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome target/task-tmp/node-v22.23.4-linux-x64/bin/node scripts/graph_notebook_regions_smoke.mjs",
+      "exit": 0,
+      "log": "target/task-tmp/graph-selection-ownership/notebook-dpr2.log"
+    },
+    "ruff": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync ruff check .",
+      "exit": 0,
+      "log": "target/task-tmp/graph-selection-ownership/ruff-final.log"
+    },
+    "securityGateNegatives": {
+      "command": "See archived qualification script/log: both distinct source gate removal mutations reject",
+      "exit": 0,
+      "log": "target/task-tmp/graph-selection-ownership/security-guard-negatives.log"
+    },
+    "transportAndWire": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" target/task-tmp/node-v22.23.4-linux-x64/bin/node --test js/test/graph-host-transport.test.mjs packages/xy-node/test/graph-session-wire.test.mjs",
+      "exit": 0,
+      "log": "target/task-tmp/graph-selection-ownership/final-regressions.log",
+      "passed": 54
+    },
+    "typing": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync ty check",
+      "exit": 0,
+      "log": "target/task-tmp/graph-selection-ownership/ty.log"
+    }
+  },
+  "inherited": "Earlier Rust/ABI/Python/CI qualification only over verified unchanged identities; full foundation old failures remain failures. No broad all-host or reliability acceptance follows.",
+  "nativeAndWasmRebuilt": false,
+  "negativeControls": [
+    {
+      "exit": 1,
+      "failed": 7,
+      "log": "target/task-tmp/graph-selection-ownership/parent-negative.log",
+      "passed": 35,
+      "scope": "Final42 transport assertions against four exact Git-parent production sources"
+    }
+  ],
+  "package": {
+    "gzip6": 786379,
+    "gzip6Cap": 786432,
+    "gzip6Headroom": 53,
+    "raw": 1885379,
+    "rawCap": 1927168,
+    "sha256": "c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271"
+  },
+  "parentReceipt": {
+    "path": "spec/performance/graph-notebook-camera-owner-2026-11-10/checks.json",
+    "sha256": "f901f770f42bb2126c05c3522baef928bf0973afe6b9f50fa5872af607e80bb8"
+  },
+  "priorIndependentReview": {
+    "record": "target/task-tmp/graph-selection-ownership/prior-independent-review.json",
+    "sha256": "64e8b2f6291456ae088bb2c8d6fe8a9eb8099d97436b6e00fc7bff697c3bf690"
+  },
+  "readmeSha256": "9658bbb4d61e93c116742a6d57c52b059d695643d5056d41b77fbb73f550bad2",
+  "remaining": [
+    "Whole1015 and milestones4-7 remain open",
+    "changed-LOD/aggregate/categorical-edge notebook regions",
+    "massive/all-host/accessibility/export/latency/competitor/global-memory qualification"
+  ],
+  "runtime": {
+    "packages/xy-client/dist/index.js": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/bf802493d4aca63fc4ce8f1e3308395cabdf17e6a30c87c47d01c8f69dbfd09b.gz",
+      "archiveBytes": 248814,
+      "archiveSha256": "b90fcf9287c6b67a3c66d62bf52a8b45dbf6e0cb9eacf76f40b2c596c2ca96a4",
+      "bytes": 868091,
+      "sha256": "bf802493d4aca63fc4ce8f1e3308395cabdf17e6a30c87c47d01c8f69dbfd09b"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/9ecb9ae5d85564d3648c473f116d3e750576743226d352369cadaa56904956a0.gz",
+      "archiveBytes": 248886,
+      "archiveSha256": "832220ccee5fa8adc877df95ca47f91fb0d4e6454dc9b18655aaa255dd1a3f40",
+      "bytes": 868104,
+      "sha256": "9ecb9ae5d85564d3648c473f116d3e750576743226d352369cadaa56904956a0"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz",
+      "archiveBytes": 3838,
+      "archiveSha256": "dda8e6c4cec42d91f687b660d742d79dcc1a8c0d052ca6ca189c6acf095db2b4",
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/70302dd988dd7ea4bbf25b4b2f57cac0c85d7c8d2d207499a585db0a672a29b5.gz",
+      "archiveBytes": 1043256,
+      "archiveSha256": "8208c789c89c7893c1ed21ddb8b9526c8d555b83926e0c623badd5a886318695",
+      "bytes": 2534962,
+      "sha256": "70302dd988dd7ea4bbf25b4b2f57cac0c85d7c8d2d207499a585db0a672a29b5"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/3a216a6158fa8aca0844fcdf2e3c1bafa6d3b1dc29f1734dea8da3c18609abab.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "e0c290ee70a86c99e2a250eb56162c30cb89e78a3189610e8199fd154f555765",
+      "bytes": 226,
+      "sha256": "3a216a6158fa8aca0844fcdf2e3c1bafa6d3b1dc29f1734dea8da3c18609abab"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271.gz",
+      "archiveBytes": 781160,
+      "archiveSha256": "1788dfdad46ec12eb81712329e48375306fd9a47a994b0a030f9ebab236fd142",
+      "bytes": 1885379,
+      "sha256": "c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271"
+    },
+    "python/xyg/static/index.js": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/bf802493d4aca63fc4ce8f1e3308395cabdf17e6a30c87c47d01c8f69dbfd09b.gz",
+      "archiveBytes": 248814,
+      "archiveSha256": "b90fcf9287c6b67a3c66d62bf52a8b45dbf6e0cb9eacf76f40b2c596c2ca96a4",
+      "bytes": 868091,
+      "sha256": "bf802493d4aca63fc4ce8f1e3308395cabdf17e6a30c87c47d01c8f69dbfd09b"
+    },
+    "python/xyg/static/standalone.js": {
+      "archive": "spec/performance/graph-linked-selection-ownership-2026-11-10/evidence/9ecb9ae5d85564d3648c473f116d3e750576743226d352369cadaa56904956a0.gz",
+      "archiveBytes": 248886,
+      "archiveSha256": "832220ccee5fa8adc877df95ca47f91fb0d4e6454dc9b18655aaa255dd1a3f40",
+      "bytes": 868104,
+      "sha256": "9ecb9ae5d85564d3648c473f116d3e750576743226d352369cadaa56904956a0"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/70302dd988dd7ea4bbf25b4b2f57cac0c85d7c8d2d207499a585db0a672a29b5.gz",
+      "archiveBytes": 1043256,
+      "archiveSha256": "8208c789c89c7893c1ed21ddb8b9526c8d555b83926e0c623badd5a886318695",
+      "bytes": 2534962,
+      "sha256": "70302dd988dd7ea4bbf25b4b2f57cac0c85d7c8d2d207499a585db0a672a29b5"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/3a216a6158fa8aca0844fcdf2e3c1bafa6d3b1dc29f1734dea8da3c18609abab.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "e0c290ee70a86c99e2a250eb56162c30cb89e78a3189610e8199fd154f555765",
+      "bytes": 226,
+      "sha256": "3a216a6158fa8aca0844fcdf2e3c1bafa6d3b1dc29f1734dea8da3c18609abab"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271.gz",
+      "archiveBytes": 781160,
+      "archiveSha256": "1788dfdad46ec12eb81712329e48375306fd9a47a994b0a030f9ebab236fd142",
+      "bytes": 1885379,
+      "sha256": "c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271"
+    },
+    "target/release/libxyg_core.so": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/ae8dc056771abb1109381202b4143d81157ac0235555ad3d527a426a807bc4bb.gz",
+      "archiveBytes": 2905861,
+      "archiveSha256": "1e22d36c42e15f3afb52ab09cbddc6bec063217e8fa6a499569d0e4114348533",
+      "bytes": 6379944,
+      "sha256": "ae8dc056771abb1109381202b4143d81157ac0235555ad3d527a426a807bc4bb"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d8c7089327b8828b99e98c6e78510676a6703f40628a64f5c714f4edec96da4f.gz",
+      "archiveBytes": 1253247,
+      "archiveSha256": "b6f6c9bc953c17356b0da2ce132395d8e5a3e65f11b9e50aeff2cc581e51741c",
+      "bytes": 4075069,
+      "sha256": "d8c7089327b8828b99e98c6e78510676a6703f40628a64f5c714f4edec96da4f"
+    }
+  },
+  "schemaVersion": 1,
+  "scope": "Two Greptile P1 corrections: disabled-select clear and linked selection ownership over older native history"
+}

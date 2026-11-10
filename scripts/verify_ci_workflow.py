@@ -2112,6 +2112,16 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     _require_step_runs_exactly(
         errors,
         jobs.get("test", ""),
+        "Native graph notebook regions",
+        "required native graph membership, refusal and pixel oracles",
+        'export XYG_CHROMIUM="$(node -e "console.log(require(\'playwright\').chromium.executablePath())")"',
+        'export XYG_GRAPH_REGION_REPORT="$RUNNER_TEMP/graph-regions-dpr1.json"',
+        "node scripts/graph_notebook_regions_smoke.mjs",
+        'XYG_GRAPH_REGION_DPR=2 XYG_GRAPH_REGION_REPORT="$RUNNER_TEMP/graph-regions-dpr2.json" node scripts/graph_notebook_regions_smoke.mjs',
+    )
+    _require_step_runs_exactly(
+        errors,
+        jobs.get("test", ""),
         "Notebook 7 graph journey",
         "bounded actual Notebook7 graph identity and native progress",
         'uv venv --python .venv/bin/python "$RUNNER_TEMP/graph-notebook7-env"',
@@ -2175,6 +2185,15 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     )
     graph_step = "GraphForge native/WASM equivalence"
     step_order = list(test_steps)
+    if (
+        "Native graph notebook regions" not in step_order
+        or "Progressive graph notebook journey" not in step_order
+        or step_order.index("Native graph notebook regions")
+        <= step_order.index("Progressive graph notebook journey")
+    ):
+        errors.append(
+            "CI Native graph notebook regions must follow the pinned Jupyter installation"
+        )
     for prerequisite in ("Build native core", "Build JS client", "Install package + dev deps"):
         notebook_step = "Progressive graph notebook journey"
         if (

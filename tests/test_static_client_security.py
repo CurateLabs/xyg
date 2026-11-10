@@ -452,7 +452,8 @@ def test_client_interaction_event_payload_contract_is_stable() -> None:
         "range: { x0, x1, y0, y1 },",
         'view: this._eventView("select"),',
         'if (this._interactionFlag("select", true)) {',
-        'if (this.comm) this.comm.send({ type: "select_clear" });',
+        'if (opts.dispatch !== false && this._interactionFlag("select", true)) {',
+        'if (this.comm) this.comm.send({ type: "select_clear" }, [], deferred);',
         'this._dispatchChartEvent("select", { total: 0, view: this._eventView("select_clear") });',
         'this._dispatchChartEvent("view_change", detail);',
         'this.comm.send({ type: "view_change", ...detail });',
@@ -461,9 +462,6 @@ def test_client_interaction_event_payload_contract_is_stable() -> None:
     for path, text in CLIENT_FILES:
         for marker in required:
             assert marker in text, f"{path} changed interaction event payload marker {marker!r}"
-        assert text.count('if (this._interactionFlag("select", true)) {') >= 2, (
-            f"{path} must gate both selection clear and kernel selection events"
-        )
 
 
 def test_client_exposes_first_class_mark_state_styling() -> None:

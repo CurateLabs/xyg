@@ -317,6 +317,92 @@ function openPair(x, data, instance, group, budget = 128 * 1024 * 1024) {
   };
 }
 
+test("native/WASM canonical node candidates share published induced-edge selection", async () => {
+  const { instance } = await WebAssembly.instantiate(fs.readFileSync(WASM), {});
+  const pair = openPair(instance.exports, fixture(), 5401n, 0n);
+  try {
+    const rendered = decodeContainer(pair.run(21), "XYGR");
+    const get = name => rendered.get(`${name}#0`).value;
+    const source = get("render.edge_source.u64"), target = get("render.edge_target.u64");
+    const nodeOffsets = get("render.node_member_offsets.u64"), nodes = get("render.node_members.u64");
+    const edgeOffsets = get("render.edge_member_offsets.u64"), edges = get("render.edge_members.u64");
+    const count = get("render.node_x.f64").length, revision = get("header.u32")[0];
+    for (const candidates of [[0], [0, 1], [1, 2], [0, 0, 1], Array.from({ length: count }, (_, i) => i), []]) {
+      const chosen = new Set(candidates), expected = [];
+      for (const i of chosen) for (let j = Number(nodeOffsets[i]); j < Number(nodeOffsets[i + 1]); j++) expected.push(`0:${nodes[j]}`);
+      for (let i = 0; i < source.length; i++) if (chosen.has(Number(source[i])) && chosen.has(Number(target[i]))) {
+        for (let j = Number(edgeOffsets[i]); j < Number(edgeOffsets[i + 1]); j++) expected.push(`1:${edges[j]}`);
+      }
+      const reply = decodeContainer(pair.run(11, [field("region.nodes.u32", "u32", candidates)], { 3: 2 }), "XYGR");
+      const identities = reply.get("selection.refs.bytes#0").value, indices = reply.get("selection.indices.u64#0").value;
+      const view = new DataView(identities.buffer, identities.byteOffset, identities.byteLength);
+      const actual = Array.from(indices, (index, i) => `${Math.min(1, view.getUint32(8 + i * 56, true))}:${index}`);
+      assert.deepEqual(actual.sort(), [...new Set(expected)].sort(), "independent published-CSR induced-edge oracle");
+    }
+    pair.reject(11, [field("region.nodes.u32", "u32", [count])], -3, { 3: 2 });
+    pair.reject(11, [field("region.nodes.u32", "u32", Array(10001).fill(0))], -8, { 3: 2 });
+    pair.reject(11, [field("region.nodes.u32", "f64", [0])], -3, { 3: 2 });
+    pair.reject(11, [field("region.nodes.u32", "u32", [0])], -1, { 0: revision - 1, 3: 2 });
+    pair.reject(11, [field("refs.bytes", "bytes", refs([{ kind: 3, index: 0, revision }]))], -3, { 3: 2 });
+    pair.run(11, [field("region.nodes.u32", "u32", [0, 1])], { 3: 2 });
+  } finally { pair.close(); }
+});
+
+test("borrowed geometric and camera planes keep strict lengths and finite-value refusal", async () => {
+  const { instance } = await WebAssembly.instantiate(fs.readFileSync(WASM), {});
+  const pair = openPair(instance.exports, fixture(), 5402n, 0n);
+  try {
+    const initial = pair.run(21), revision = value(initial, "header.u32")[0];
+    for (const camera of [[], [1, 1, 0, 0, 640, 320], [1, 1, 0, 0, 640, 320, 1, 0],
+      [NaN, 1, 0, 0, 640, 320, 1], [1, 1, Infinity, 0, 640, 320, 1], [1, 1, 0, 0, 640, 320, 0]]) {
+      const bytes = request(pair.instance, pair.group, 3, revision, 21, [field("camera.f64", "f64", camera)]);
+      const nativeResult = nativeCall(native.xyGraphforgeSessionRender, pair.handle, bytes, 64);
+      assert.equal(nativeResult.status, -3); assert.ok(nativeResult.output.every(v => v === 0xa5));
+      assert.equal(wasmCall(instance.exports, pair.wasm, "xyg_wasm_graphforge_session_render", bytes).status, -3);
+    }
+    pair.run(21, [field("camera.f64", "f64", [1, 1, -0, 0, 640, 320, 2])]);
+    for (const [operation, values] of [[0, [0]], [1, [0, 0, 0]], [2, [0, 0]], [3, [0, 0, 1]],
+      [3, [0, 0]], [0, [NaN, 0]], [2, [0, 0, 1, Infinity]]]) {
+      pair.reject(operation, [field("coordinates.f64", "f64", values)], -3);
+    }
+    pair.run(3, [field("coordinates.f64", "f64", [-100, -100, 100, -100, 100, 100, -100, 100])], { 3: 2 });
+  } finally { pair.close(); }
+});
+
+test("fixed-arity load and companion planes refuse malformed extents without ownership", async () => {
+  const { instance } = await WebAssembly.instantiate(fs.readFileSync(WASM), {}), x = instance.exports;
+  const data = fixture(), identity = 5403n, wasm = x.xyg_wasm_instance_new(16 * 1024 * 1024);
+  assert.ok(wasm > 0);
+  const handle = new BigUint64Array(1); let nativeLive = false, wasmLive = false;
+  try {
+    for (const invalid of [field("load.budgets.u64", "u64", []), field("load.budgets.u64", "u64", [1n]),
+      field("load.budgets.u64", "u64", [1n, 2n, 3n]), field("load.seed.u64", "u64", []),
+      field("load.seed.u64", "u64", [1n, 2n]), field("load.seed.u64", "f64", [1])]) {
+      const bytes = request(identity, 0n, 1, 0, 19, [...data.load, invalid]);
+      handle[0] = 0xdeadbeefn;
+      assert.equal(native.xyGraphforgeSessionCreate(ptr(data.document), BigInt(data.document.length), ptr(bytes), BigInt(bytes.length), identity, 0n, native.pointer(handle, "uint64_t *")), -3);
+      assert.equal(handle[0], 0n);
+      assert.equal(wasmCall(x, wasm, "xyg_wasm_graphforge_session_open", bytes).status, -3);
+    }
+    const bytes = request(identity, 0n, 1, 0, 19, data.load);
+    assert.equal(native.xyGraphforgeSessionCreate(ptr(data.document), BigInt(data.document.length), ptr(bytes), BigInt(bytes.length), identity, 0n, native.pointer(handle, "uint64_t *")), 0); nativeLive = true;
+    assert.equal(wasmCall(x, wasm, "xyg_wasm_graphforge_session_open", bytes).status, 0); wasmLive = true;
+    for (const values of [[], [0], [0, 1, 2], [0, 0], [0, 201], [0xffffffff, 2]]) {
+      const bad = request(identity, 0n, 2, 0, 17, [field("companion.u32", "u32", values)]);
+      assert.equal(nativeCall(native.xyGraphforgeSessionInteract, handle[0], bad, 0).status, -3);
+      assert.equal(wasmCall(x, wasm, "xyg_wasm_graphforge_session_interact", bad).status, -3);
+    }
+    const page = request(identity, 0n, 2, 0, 17, [field("companion.u32", "u32", [0, 200])]);
+    const complete = nativeComplete(native.xyGraphforgeSessionInteract, handle[0], page);
+    const wasmResult = wasmCall(x, wasm, "xyg_wasm_graphforge_session_interact", page);
+    assert.equal(wasmResult.status, 0); equalBytes(wasmResult.output, complete, "companion exact native/WASM recovery");
+  } finally {
+    if (nativeLive) assert.equal(native.xyGraphforgeSessionDestroy(handle[0]), 0);
+    if (wasmLive) assert.equal(x.xyg_wasm_graphforge_session_close(wasm), 0);
+    assert.equal(x.xyg_wasm_instance_dispose(wasm), 0);
+  }
+});
+
 test("actual native ABI and real WASM replay one GraphSession byte contract", async (t) => {
   const module = fs.readFileSync(WASM); // Missing artifact is a failure, never a skip.
   const { instance } = await WebAssembly.instantiate(module, {});

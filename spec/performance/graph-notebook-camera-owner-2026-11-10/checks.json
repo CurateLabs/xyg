@@ -1,0 +1,854 @@
+{
+  "base": "55e4d1f7cfd9aed0db77b57fcead26284b43edcd",
+  "bindings": {
+    "current": 3459,
+    "historical": 1511,
+    "parents": 32,
+    "path": "spec/performance/graph-notebook-camera-owner-2026-11-10/current-bindings.json",
+    "sha256": "5137e92bc198199a3954bc9b9126f281cb0ad4feb91ba9d81e38eda856c2c123"
+  },
+  "captures": {
+    "target/task-tmp/graph-geometric-notebook/region-camera-owner-dpr1.json": {
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/before-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d.gz",
+        "archiveBytes": 14102,
+        "archiveSha256": "dc12a7e87d6f16007a5988a87d8911c56100f6665cd0a46c9bf908faf2969824",
+        "bytes": 16592,
+        "sha256": "50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/before-edges-pixels.json": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/f1431c987d47b977672ca3210fd042a709eae2d210f91edef3dfd4384c99f3f8.gz",
+        "archiveBytes": 485,
+        "archiveSha256": "2b2c184ee261171b635128c77204c84dc8cb40f23bc8f8de16e8efdc0f8e80be",
+        "bytes": 3518,
+        "sha256": "f1431c987d47b977672ca3210fd042a709eae2d210f91edef3dfd4384c99f3f8"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/before-edges.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/b846412b123a3406cd89c8ab0376726cb9049d85067a51d8a8962e820965eb26.gz",
+        "archiveBytes": 23725,
+        "archiveSha256": "c319047b595d8386f63a1a4453f353120184566e4a34289e4144dc44d92aac76",
+        "bytes": 24448,
+        "sha256": "b846412b123a3406cd89c8ab0376726cb9049d85067a51d8a8962e820965eb26"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/before-paint.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d.gz",
+        "archiveBytes": 14102,
+        "archiveSha256": "dc12a7e87d6f16007a5988a87d8911c56100f6665cd0a46c9bf908faf2969824",
+        "bytes": 16592,
+        "sha256": "50666be68a313cd83bb3cc57fcdbf358e314ddaf878b650cf2466234c490904d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/before-pixels.json": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/7d05a163291fad200c17795e729f5298855fca50ce3a367b6e2248c1c3b21064.gz",
+        "archiveBytes": 393,
+        "archiveSha256": "ffcc6b7d99f631a4ae75f0fcd26fc1d4050619209ef19c83ab4f0fd63a294347",
+        "bytes": 2203,
+        "sha256": "7d05a163291fad200c17795e729f5298855fca50ce3a367b6e2248c1c3b21064"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/before.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/8372802e8874929ba6d8d53143017338172ed1a1debce7f1f984bf1268b80666.gz",
+        "archiveBytes": 22585,
+        "archiveSha256": "fffd310f2caedc191192cba0b919bef899b5929ab17df96674a7a2bf93ca60ac",
+        "bytes": 23324,
+        "sha256": "8372802e8874929ba6d8d53143017338172ed1a1debce7f1f984bf1268b80666"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/box-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f.gz",
+        "archiveBytes": 13199,
+        "archiveSha256": "427c557ffd6fe9630fb583dac7eac30a6fa6b82c371e530567aac0cc380bfca3",
+        "bytes": 16176,
+        "sha256": "dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/box-edges-pixels.json": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/c12de2dd985dc03357d8b67e1d2d3cb8c8e3c32ead6cba5210d99ca4b7ed9851.gz",
+        "archiveBytes": 512,
+        "archiveSha256": "74f9219a2f4b5015d7282066b92260990255eda20afdbf1cadcf4af81c102842",
+        "bytes": 3498,
+        "sha256": "c12de2dd985dc03357d8b67e1d2d3cb8c8e3c32ead6cba5210d99ca4b7ed9851"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/box-edges.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/26602ab91e970327c7290e32dff9b3675bbf768984480e54aebdb2566006da8d.gz",
+        "archiveBytes": 22556,
+        "archiveSha256": "81d5309139919e9bc032362536f5bf17c602ea82bd47e5be95c78b975b3083ae",
+        "bytes": 23325,
+        "sha256": "26602ab91e970327c7290e32dff9b3675bbf768984480e54aebdb2566006da8d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/box-paint.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f.gz",
+        "archiveBytes": 13199,
+        "archiveSha256": "427c557ffd6fe9630fb583dac7eac30a6fa6b82c371e530567aac0cc380bfca3",
+        "bytes": 16176,
+        "sha256": "dfefc0935d1f00e395c30929c7ebcea97376ff1c225707e73034e2dc3de6fc1f"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/box-pixels.json": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/bdce50c4cdbd4a8d869884bba7a23c062f9d92f93d0e1fdc805d0f37066bff48.gz",
+        "archiveBytes": 403,
+        "archiveSha256": "602db78e333866ada783e0253d63e8f46481958178127d012df44278fb0f52b1",
+        "bytes": 2188,
+        "sha256": "bdce50c4cdbd4a8d869884bba7a23c062f9d92f93d0e1fdc805d0f37066bff48"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/box.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/a64f63c9e031a2e919c663688a0f49de9bda221739056e12139b4f57f92e109b.gz",
+        "archiveBytes": 22290,
+        "archiveSha256": "3f0d137bd540214465f50f0e82ed71ab423df4eb47381dc9d2c471fac105bed6",
+        "bytes": 23055,
+        "sha256": "a64f63c9e031a2e919c663688a0f49de9bda221739056e12139b4f57f92e109b"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/capacity-before-paint.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/capacity-before-pixels.json": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/0413a905e1c59dec4c9f89b63a7f54196f972961f963a512f4a79f9b6addc6dc.gz",
+        "archiveBytes": 396,
+        "archiveSha256": "2701b5f71d394ef3a6c6ff24f5e6b1c0fe90720caa9cd23e201f80fe93e33020",
+        "bytes": 2188,
+        "sha256": "0413a905e1c59dec4c9f89b63a7f54196f972961f963a512f4a79f9b6addc6dc"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/capacity-before.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/c3df94183842062f4720e23a2d1b686d54ebc0a462aa3e1b9647217b26da5817.gz",
+        "archiveBytes": 22333,
+        "archiveSha256": "7cafa474c3fe416263d511924502c2f12158528b41182163023801b873e347d5",
+        "bytes": 23101,
+        "sha256": "c3df94183842062f4720e23a2d1b686d54ebc0a462aa3e1b9647217b26da5817"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/capacity-history-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/capacity-history-refused-pixels.json": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/367a4eb47e664c5dc642005acd1b83a5eaf81d7cde3de314857e320de3474322.gz",
+        "archiveBytes": 398,
+        "archiveSha256": "8953896f078723f538f31df44853944deed0d67d1ca30badaea54c343da87643",
+        "bytes": 2188,
+        "sha256": "367a4eb47e664c5dc642005acd1b83a5eaf81d7cde3de314857e320de3474322"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/capacity-history-refused.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/cb922c12a539422f179aa8b5bd28a18eaceadffffcbaa39e4a10ff1059da4f8e.gz",
+        "archiveBytes": 22571,
+        "archiveSha256": "b4e1c965bace5789ee3b7ab20003000f4a6bad3603b5afb232ed96a897130b1b",
+        "bytes": 23319,
+        "sha256": "cb922c12a539422f179aa8b5bd28a18eaceadffffcbaa39e4a10ff1059da4f8e"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/capacity-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d.gz",
+        "archiveBytes": 13692,
+        "archiveSha256": "3ca1d1a563bcf6ed3314591ff9caa58088329e5bf62d860f713d4a0e39ee9176",
+        "bytes": 16616,
+        "sha256": "68b478a2bac0fca95953e6095203760f026f976a9307e631f00552d89989328d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/capacity-refused-pixels.json": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/9eaa8fcf68af26bb278a1234e35e5143f2dc5f8dbc8d81d901a0cb533b83beaa.gz",
+        "archiveBytes": 397,
+        "archiveSha256": "11ae0ad8c3fef806498e6c63ead6a334c140a0b62044c03f54b519636392b546",
+        "bytes": 2188,
+        "sha256": "9eaa8fcf68af26bb278a1234e35e5143f2dc5f8dbc8d81d901a0cb533b83beaa"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/capacity-refused.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/99ec8adc2b42b1286e09d4455c129dbc07a79311901871bb38f5b69cd932f3ab.gz",
+        "archiveBytes": 19199,
+        "archiveSha256": "f128ef4cf035bc20480c1a2277df9d3415785e11403e4c34764ebd184a4b22bb",
+        "bytes": 20164,
+        "sha256": "99ec8adc2b42b1286e09d4455c129dbc07a79311901871bb38f5b69cd932f3ab"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/lasso-paint.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/513b6d49016a5ca7b80eff9ae9828acd6a9ceefeb836664697fbd2c07d6090aa.gz",
+        "archiveBytes": 13986,
+        "archiveSha256": "4ca240262c17892db53f533fabfde65fbab1ff33a66f2cdadb4ef2b055b39186",
+        "bytes": 16720,
+        "sha256": "513b6d49016a5ca7b80eff9ae9828acd6a9ceefeb836664697fbd2c07d6090aa"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/lasso-pixels.json": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/18bb238107ebad1ff79b0a47a8deff7c3ba05f093b968afcb30dfdea688a9e0d.gz",
+        "archiveBytes": 397,
+        "archiveSha256": "4bd080d107a1f71b5ae28f9993fce3a7eeb8b496a94d4a6415f0d2776a79026a",
+        "bytes": 2193,
+        "sha256": "18bb238107ebad1ff79b0a47a8deff7c3ba05f093b968afcb30dfdea688a9e0d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/lasso.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/c457fdbaf6ec8defddaecb17c114b0dbf1b329a66dce0d1293ede733f7dc6350.gz",
+        "archiveBytes": 24958,
+        "archiveSha256": "3523186492429015f2f2dac6c890e0d240ed0c9905e1747754cb89d224132583",
+        "bytes": 25653,
+        "sha256": "c457fdbaf6ec8defddaecb17c114b0dbf1b329a66dce0d1293ede733f7dc6350"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-uuGFPN/regions.ipynb": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd.gz",
+        "archiveBytes": 1695,
+        "archiveSha256": "655dbbb990ffebf0a9427ba64505f4c430c754b21731850e0b1911c2021b021f",
+        "bytes": 5892,
+        "sha256": "8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd"
+      },
+      "target/task-tmp/graph-geometric-notebook/region-camera-owner-dpr1.json": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/e9dbadb1cdcd07598d717fbf6e390754fa1da83f84b36fd39652fe410dcb11d0.gz",
+        "archiveBytes": 5824,
+        "archiveSha256": "651ede2b469a5c8d334fa0a881dbbb3e629dd4453f8e51eced10e2477e6cac36",
+        "bytes": 83408,
+        "sha256": "e9dbadb1cdcd07598d717fbf6e390754fa1da83f84b36fd39652fe410dcb11d0"
+      }
+    },
+    "target/task-tmp/graph-geometric-notebook/region-camera-owner-dpr2.json": {
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/before-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c.gz",
+        "archiveBytes": 30991,
+        "archiveSha256": "a1c60b150090a1ac67897881c1a0a44ca28df7507517e42983578b01277bd825",
+        "bytes": 43777,
+        "sha256": "950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/before-edges-pixels.json": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/52c08f4bfb55d33f15337e4b598748db2e6ef65f1a93c9da000b7d497fd21dfc.gz",
+        "archiveBytes": 425,
+        "archiveSha256": "a23fc53bfabc4e9b6cceca77bd9a568a4a7c739c75b9b2a2743374c270967fb0",
+        "bytes": 3521,
+        "sha256": "52c08f4bfb55d33f15337e4b598748db2e6ef65f1a93c9da000b7d497fd21dfc"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/before-edges.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/9eb0dedac429ef92376bceac7ba8ffee44d1152a8fc87977b2c8d8a44495def4.gz",
+        "archiveBytes": 56890,
+        "archiveSha256": "4553a8ba46df03807e1e748e463c586dc3cf81cadb538f217c75a3f6d52a5f30",
+        "bytes": 60386,
+        "sha256": "9eb0dedac429ef92376bceac7ba8ffee44d1152a8fc87977b2c8d8a44495def4"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/before-paint.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c.gz",
+        "archiveBytes": 30991,
+        "archiveSha256": "a1c60b150090a1ac67897881c1a0a44ca28df7507517e42983578b01277bd825",
+        "bytes": 43777,
+        "sha256": "950de4fb5bbb7285cb9a22f7f2b54951810a0c69984bafa09a82b742f3092f7c"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/before-pixels.json": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/145ee0cecdb78234d79b6833fc1cfe07da7773af56ecd12fb530e63cf103e2fa.gz",
+        "archiveBytes": 393,
+        "archiveSha256": "1fb7c57715fa3a828deebf01e6497abdbf73518ee1bdf33a862c1d4a9d074a8c",
+        "bytes": 2204,
+        "sha256": "145ee0cecdb78234d79b6833fc1cfe07da7773af56ecd12fb530e63cf103e2fa"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/before.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/c452213ad2cd61195b179af1f41ae99f736fc5e8654ae40ec3da274543c67412.gz",
+        "archiveBytes": 54471,
+        "archiveSha256": "846e06ce37ddf182d5d8fc36c993bd88fb782f2b95f7b6f53a3e0f27cce15fe7",
+        "bytes": 57973,
+        "sha256": "c452213ad2cd61195b179af1f41ae99f736fc5e8654ae40ec3da274543c67412"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/box-edges-paint.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d.gz",
+        "archiveBytes": 28480,
+        "archiveSha256": "eff9458fb453c519a73094f6822a72d8ea853a5b9d2bc973b525d700ca891b94",
+        "bytes": 43605,
+        "sha256": "43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/box-edges-pixels.json": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/d715975b4347c79f9e446e4899f0d7d22aecadf862cb52b78f70cf395a2c18d0.gz",
+        "archiveBytes": 435,
+        "archiveSha256": "c3da0c1ed9aaed1a11b1ae291bbaaba1fa7bb82bf31785ef5cdbbf4617040fcf",
+        "bytes": 3501,
+        "sha256": "d715975b4347c79f9e446e4899f0d7d22aecadf862cb52b78f70cf395a2c18d0"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/box-edges.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/cc9c8ae35e63b787560742910d1eabaaa11e603f01d7d3f7d5577d1412a6f7ea.gz",
+        "archiveBytes": 54679,
+        "archiveSha256": "7eb9a6af3ea8979eb021eb60c69ce345cb32684899679e41b4d602f563b8d11a",
+        "bytes": 58629,
+        "sha256": "cc9c8ae35e63b787560742910d1eabaaa11e603f01d7d3f7d5577d1412a6f7ea"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/box-paint.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d.gz",
+        "archiveBytes": 28480,
+        "archiveSha256": "eff9458fb453c519a73094f6822a72d8ea853a5b9d2bc973b525d700ca891b94",
+        "bytes": 43605,
+        "sha256": "43765ad666bfc16cf8ebe831275f3d7ad2c60134e7ea2b818716bb003330c74d"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/box-pixels.json": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/de2f49abf333809ccb445812a4d5d21c7f9af74946a0c7c49c4de6f25a2477a0.gz",
+        "archiveBytes": 405,
+        "archiveSha256": "8a0ab7b4bc0fbb7ba38b00dfdec643fca800e22f9ef6f645b95acb539cfbe728",
+        "bytes": 2189,
+        "sha256": "de2f49abf333809ccb445812a4d5d21c7f9af74946a0c7c49c4de6f25a2477a0"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/box.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/0ef40a3accc3b9f6d67311961dd62e599b5b064cdaf41f8900c23c12739b8cea.gz",
+        "archiveBytes": 53694,
+        "archiveSha256": "76d8c06da2843c2cb370f3a2d4bee62234ece82e3a5ae1b4f01985d7d0d03c78",
+        "bytes": 57696,
+        "sha256": "0ef40a3accc3b9f6d67311961dd62e599b5b064cdaf41f8900c23c12739b8cea"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/capacity-before-paint.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502.gz",
+        "archiveBytes": 29490,
+        "archiveSha256": "6b15c029d96c60fa028a87f1e72bf10579ed594bde3ab0875b84b9801054a560",
+        "bytes": 44131,
+        "sha256": "d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/capacity-before-pixels.json": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/656239db67d39e3d20b9e6b5ba817e58ced7df95ed5ba828467f382f04afa3ae.gz",
+        "archiveBytes": 399,
+        "archiveSha256": "f1943db91fe58b4aba56deb150dbf3adf983786d318f8f2afe5560470260a971",
+        "bytes": 2189,
+        "sha256": "656239db67d39e3d20b9e6b5ba817e58ced7df95ed5ba828467f382f04afa3ae"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/capacity-before.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/9e50517064ae827d0e5dc39bd93c661de7adbcacf9346fbaed1a4ba8c7554a43.gz",
+        "archiveBytes": 54141,
+        "archiveSha256": "1891e34ca1571a877ba6efa4eb1c98ac7e345e11803d8c98fefc583117b71eb5",
+        "bytes": 58127,
+        "sha256": "9e50517064ae827d0e5dc39bd93c661de7adbcacf9346fbaed1a4ba8c7554a43"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/capacity-history-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502.gz",
+        "archiveBytes": 29490,
+        "archiveSha256": "6b15c029d96c60fa028a87f1e72bf10579ed594bde3ab0875b84b9801054a560",
+        "bytes": 44131,
+        "sha256": "d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/capacity-history-refused-pixels.json": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/8e0d3873f13235ad0624a00b034aa323323051e7ce409b549153ea29a23e8fb2.gz",
+        "archiveBytes": 397,
+        "archiveSha256": "78fb852632920fa608d39887de0e22ac63e805a8812692bb47039d1e23734680",
+        "bytes": 2189,
+        "sha256": "8e0d3873f13235ad0624a00b034aa323323051e7ce409b549153ea29a23e8fb2"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/capacity-history-refused.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/2da773db788eaa31a0e75eaa6d76d95113d73c707966b49b0c9fa7024d85778f.gz",
+        "archiveBytes": 54939,
+        "archiveSha256": "774fa6ad46277889cea54a5b6ad47d6046f637fd5116c3eaf2dc56ecec984fc0",
+        "bytes": 58693,
+        "sha256": "2da773db788eaa31a0e75eaa6d76d95113d73c707966b49b0c9fa7024d85778f"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/capacity-refused-paint.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502.gz",
+        "archiveBytes": 29490,
+        "archiveSha256": "6b15c029d96c60fa028a87f1e72bf10579ed594bde3ab0875b84b9801054a560",
+        "bytes": 44131,
+        "sha256": "d9723c72ad79f4835eca33c850030c34ef736638f93f275d5ea70ce5ad81d502"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/capacity-refused-pixels.json": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/6db3c343bbbdd98d7bb50ef981eba720e9848014e808b24cf8f7fdb2d5aa00eb.gz",
+        "archiveBytes": 397,
+        "archiveSha256": "9b33cca8c88feebc11333a91359e4db3385b6c78b31360821cf5c6be65f38bd6",
+        "bytes": 2189,
+        "sha256": "6db3c343bbbdd98d7bb50ef981eba720e9848014e808b24cf8f7fdb2d5aa00eb"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/capacity-refused.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/624b0bee63e3542c7fa4367a922815a5effb94cb5be0e8064d1424ae045335ea.gz",
+        "archiveBytes": 49802,
+        "archiveSha256": "da9bc0e0b830bcf817bcb86d93ee482ca8e7427af6d7c7c6d81ba6ef3643cc65",
+        "bytes": 53854,
+        "sha256": "624b0bee63e3542c7fa4367a922815a5effb94cb5be0e8064d1424ae045335ea"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/lasso-paint.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/ba9db221026bc03b24778592e8f65a018b5e17e14e68a0159a36098e405a6abd.gz",
+        "archiveBytes": 29981,
+        "archiveSha256": "93436e7f361bc53b2f5bf3aba03c1d6071efbde587e5b812b98e46aeaaab6dcd",
+        "bytes": 44025,
+        "sha256": "ba9db221026bc03b24778592e8f65a018b5e17e14e68a0159a36098e405a6abd"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/lasso-pixels.json": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/444fe4c45fcc63f08081b0e420fe697b46e5bfe2871b078821a9229f0864e4af.gz",
+        "archiveBytes": 392,
+        "archiveSha256": "9a0e15445a402a35026b447ed18670e908ff85283cac2878dbc61ac14672e361",
+        "bytes": 2194,
+        "sha256": "444fe4c45fcc63f08081b0e420fe697b46e5bfe2871b078821a9229f0864e4af"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/lasso.png": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/1a680cecbb2f8d97176652da0d20651639659fdacbe05e5fded0449c08a53890.gz",
+        "archiveBytes": 59393,
+        "archiveSha256": "7d4f5262bf610b056920b715b1dc2a74b104b15b2554d63dede3a7a6782db412",
+        "bytes": 62682,
+        "sha256": "1a680cecbb2f8d97176652da0d20651639659fdacbe05e5fded0449c08a53890"
+      },
+      "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/xyg-graph-regions-8qQnPX/regions.ipynb": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd.gz",
+        "archiveBytes": 1695,
+        "archiveSha256": "655dbbb990ffebf0a9427ba64505f4c430c754b21731850e0b1911c2021b021f",
+        "bytes": 5892,
+        "sha256": "8ff74375b98b6a222b6894dd21424a39ec3f4c24148b2f619a7060ea9dc0d0bd"
+      },
+      "target/task-tmp/graph-geometric-notebook/region-camera-owner-dpr2.json": {
+        "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/747dcd572e42ac6e993bba11951a52f96c756475ce5d98432e906a4e753d82f5.gz",
+        "archiveBytes": 5724,
+        "archiveSha256": "8c32864bf833c7bdf26c910afb7dc7090734d20b701a8dfd85d03156fc6d8c4c",
+        "bytes": 83413,
+        "sha256": "747dcd572e42ac6e993bba11951a52f96c756475ce5d98432e906a4e753d82f5"
+      }
+    }
+  },
+  "changedRuntime": [
+    "packages/xy-client/dist/index.js",
+    "packages/xy-client/dist/standalone.js",
+    "python/xyg/static/index.js",
+    "python/xyg/static/standalone.js"
+  ],
+  "compiledInputs": {
+    "changed": [
+      "crates/xyg-engine/src/graphforge/interaction/pick.rs",
+      "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs",
+      "crates/xyg-engine/src/graphforge/interaction/tests/wire.rs",
+      "crates/xyg-engine/src/graphforge/interaction/wire.rs"
+    ],
+    "count": 324,
+    "path": "spec/performance/graph-notebook-regions-2026-11-10/compiled-inputs.json",
+    "sha256": "a0ca8b566fd0a7c6502d6f6cb5b2070ff148290a846d1e7189d8388d95061dca"
+  },
+  "compiledInputsUnchanged": 324,
+  "delivery": {
+    "hostedCI": "pending",
+    "independentCorrectionReview": "pending",
+    "mergeQueue": "required"
+  },
+  "evidence": {
+    "target/task-tmp/graph-geometric-notebook/camera-before-control/binding.json": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/a978d837714c859af8c37e06daff9707b4478425239febf39fb13d10f94a9677.gz",
+      "archiveBytes": 375,
+      "archiveSha256": "4cc9303c75716ea16f50789c3df928ee3ba3e4d0e3d3f58c954027c8a8aaeb01",
+      "bytes": 571,
+      "sha256": "a978d837714c859af8c37e06daff9707b4478425239febf39fb13d10f94a9677"
+    },
+    "target/task-tmp/graph-geometric-notebook/camera-before-control/js/src/50_chartview.ts": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/72a7fa6dfdf9d3fad2635f46b425e584de640bdb92c751ea898e586b728fb6a6.gz",
+      "archiveBytes": 118880,
+      "archiveSha256": "8acde2436d95b628d0c40436d7a8507c52ff752a128eec5e8c443ac7c772b62e",
+      "bytes": 435367,
+      "sha256": "72a7fa6dfdf9d3fad2635f46b425e584de640bdb92c751ea898e586b728fb6a6"
+    },
+    "target/task-tmp/graph-geometric-notebook/camera-before-control/js/src/53_interaction.ts": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/5483b83679b9f82b7534a43821963e974fdf49366745f29c399e145cc338fe3a.gz",
+      "archiveBytes": 31032,
+      "archiveSha256": "1ac85517972cf459041a4a2f2a77d43d167bd79b892433a4bda53cc39af7d787",
+      "bytes": 121982,
+      "sha256": "5483b83679b9f82b7534a43821963e974fdf49366745f29c399e145cc338fe3a"
+    },
+    "target/task-tmp/graph-geometric-notebook/camera-before-control/js/src/57_viewstate.ts": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/0c2af5908b601e3f09d7ef905fb1133d87fdc88214e2dcec661f8329eb6346bc.gz",
+      "archiveBytes": 7454,
+      "archiveSha256": "f103b6869bd9e7353369bfe7ac421d5129532e7e2cd46495323fff135b171c8a",
+      "bytes": 25194,
+      "sha256": "0c2af5908b601e3f09d7ef905fb1133d87fdc88214e2dcec661f8329eb6346bc"
+    },
+    "target/task-tmp/graph-geometric-notebook/camera-before-control/js/src/66_graph_host.ts": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/87d50b6f21d216a0398f05f899b01680887e0f12af026595e1a29e565e6ad958.gz",
+      "archiveBytes": 4136,
+      "archiveSha256": "a9aff0a78ea70f69f482786b3fbb3dbea40c2e6471b24a5c7589381280e66487",
+      "bytes": 13797,
+      "sha256": "87d50b6f21d216a0398f05f899b01680887e0f12af026595e1a29e565e6ad958"
+    },
+    "target/task-tmp/graph-geometric-notebook/camera-before-control/js/test/graph-host-transport.test.mjs": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/e4d37a5f5bd86abebc5fbfb48e9a2e4f66cff0b28f0fad3445c71012fbce3a8c.gz",
+      "archiveBytes": 6223,
+      "archiveSha256": "1d27be5690f7fb77030767b1247d47e46435d2ae6415c987d33c066b4f932636",
+      "bytes": 29805,
+      "sha256": "e4d37a5f5bd86abebc5fbfb48e9a2e4f66cff0b28f0fad3445c71012fbce3a8c"
+    },
+    "target/task-tmp/graph-geometric-notebook/camera-before-control/package.json": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/1239d4d885dcad42201a27ed9324f8f0f760b78700d8db9ced39a511cffe7eae.gz",
+      "archiveBytes": 38,
+      "archiveSha256": "2d42bd87b173dc76232d12dd18c386e7612e066c2739580812b6056376765e93",
+      "bytes": 18,
+      "sha256": "1239d4d885dcad42201a27ed9324f8f0f760b78700d8db9ced39a511cffe7eae"
+    },
+    "target/task-tmp/graph-geometric-notebook/camera-review-r2/export/js/test/graph-host-review-adversarial.test.mjs": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/fded557b198d475690bd75abcda410dda8bb4ef4b140070e30abc325826e41f1.gz",
+      "archiveBytes": 6026,
+      "archiveSha256": "967f4bf41d880c144a539bc0ba8dfd54122a0de50364f7a8d4c8b8926748a594",
+      "bytes": 28550,
+      "sha256": "fded557b198d475690bd75abcda410dda8bb4ef4b140070e30abc325826e41f1"
+    },
+    "target/task-tmp/graph-geometric-notebook/camera-review-r2/independent-correction-review.json": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/21fe49268fef812bef4d08d1edcc800aff31ebfa24c8ba12ce16e6f3157e0690.gz",
+      "archiveBytes": 2809,
+      "archiveSha256": "ca4d6b2e0769478d90cd4ad4bc7ff4440545cf4676b64f0cf3c56f8645cecdf1",
+      "bytes": 5940,
+      "sha256": "21fe49268fef812bef4d08d1edcc800aff31ebfa24c8ba12ce16e6f3157e0690"
+    },
+    "target/task-tmp/graph-geometric-notebook/camera-review-r2/transport-adversarial.log": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/9fdff2938689a6b72bfd357275d80f0df518c07d1110ce52ad7e850e79e56573.gz",
+      "archiveBytes": 2257,
+      "archiveSha256": "918479cb42b3cc9465be838f6a584fdd036e04be4da6ecb8edcb4869e2be0a44",
+      "bytes": 9308,
+      "sha256": "9fdff2938689a6b72bfd357275d80f0df518c07d1110ce52ad7e850e79e56573"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-camera-owner-build.log": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f.gz",
+      "archiveBytes": 1056,
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "bytes": 5448,
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-camera-owner-core.log": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/d6e8cd7ee9ae0256052553c4891c70ffb5ac7e357c01e3b6711f484d260aace6.gz",
+      "archiveBytes": 53,
+      "archiveSha256": "ab370faea15ccaa06e3712b3b0ca439ee48414d03d22c621e387d61d51e323a2",
+      "bytes": 100,
+      "sha256": "d6e8cd7ee9ae0256052553c4891c70ffb5ac7e357c01e3b6711f484d260aace6"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-camera-owner-corrected.log": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/e13db206b505d2f3d3209c2b674fd1ca07c15dc5871b82821f24e08c33e79014.gz",
+      "archiveBytes": 1883,
+      "archiveSha256": "29d9f56b90f6512bb879a5ed111ec8bbeeb48ca070b04833dd444600df0aa3e2",
+      "bytes": 7660,
+      "sha256": "e13db206b505d2f3d3209c2b674fd1ca07c15dc5871b82821f24e08c33e79014"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-camera-owner-dpr1.json": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/e9dbadb1cdcd07598d717fbf6e390754fa1da83f84b36fd39652fe410dcb11d0.gz",
+      "archiveBytes": 5824,
+      "archiveSha256": "651ede2b469a5c8d334fa0a881dbbb3e629dd4453f8e51eced10e2477e6cac36",
+      "bytes": 83408,
+      "sha256": "e9dbadb1cdcd07598d717fbf6e390754fa1da83f84b36fd39652fe410dcb11d0"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-camera-owner-dpr1.log": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/89908d7353b7e1e348564db62059be6bb9981038f5460169b61685b9ec43dd1b.gz",
+      "archiveBytes": 142,
+      "archiveSha256": "7e820fb1107de08960adb30565bef8f7e491daaddbc3aff49d502005ce056811",
+      "bytes": 141,
+      "sha256": "89908d7353b7e1e348564db62059be6bb9981038f5460169b61685b9ec43dd1b"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-camera-owner-dpr2.json": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/747dcd572e42ac6e993bba11951a52f96c756475ce5d98432e906a4e753d82f5.gz",
+      "archiveBytes": 5724,
+      "archiveSha256": "8c32864bf833c7bdf26c910afb7dc7090734d20b701a8dfd85d03156fc6d8c4c",
+      "bytes": 83413,
+      "sha256": "747dcd572e42ac6e993bba11951a52f96c756475ce5d98432e906a4e753d82f5"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-camera-owner-dpr2.log": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/9b339238f9a7ecaa93fff9611ea397dd417dc5d4f118fffe7e0abbb5e006cdab.gz",
+      "archiveBytes": 143,
+      "archiveSha256": "1c6bcce1a403f52650235f9263241d3b4b7b7ab5b81a70295c792a8b2b54342d",
+      "bytes": 141,
+      "sha256": "9b339238f9a7ecaa93fff9611ea397dd417dc5d4f118fffe7e0abbb5e006cdab"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-camera-owner-final-node-complete.log": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/8a20c61732f8582e5a33ef4d10f6625bfa058bfbc3c4dc2ef69f8860db523f00.gz",
+      "archiveBytes": 3002,
+      "archiveSha256": "f1df9cb96a1d8b4fd144b363b78a4109c2ca1ad3a4c0ce5a37aa13a31a99c673",
+      "bytes": 11391,
+      "sha256": "8a20c61732f8582e5a33ef4d10f6625bfa058bfbc3c4dc2ef69f8860db523f00"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-camera-owner-final-node.log": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/5b2c41a9ff64c7371275194afcc27a6eced09d09511dc9875ad44246bdba0ef7.gz",
+      "archiveBytes": 2995,
+      "archiveSha256": "88000152fd62122456d813349d286ddf5d475ce08f71b173a51c39f16080df6b",
+      "bytes": 11389,
+      "sha256": "5b2c41a9ff64c7371275194afcc27a6eced09d09511dc9875ad44246bdba0ef7"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-camera-owner-format.log": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/127ebb8c6685712ecc74c244dc0e19ad295f928ac7d0522c2809f39a024ce543.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "131a6ca95f69fab672e22b8e10e6145e37549999675f5109b8dfa04e0797b6b0",
+      "bytes": 29,
+      "sha256": "127ebb8c6685712ecc74c244dc0e19ad295f928ac7d0522c2809f39a024ce543"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-camera-owner-foundation.log": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/0f403e868c32a313918cd4bd987f612411fbbb9cc9b9f12e7298888c94864511.gz",
+      "archiveBytes": 352,
+      "archiveSha256": "b6dc76a4818f5227f58cb707d6ba0e16a2bf08ccbd955898c99fc5ac94e16933",
+      "bytes": 640,
+      "sha256": "0f403e868c32a313918cd4bd987f612411fbbb9cc9b9f12e7298888c94864511"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-camera-owner-full-node.log": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/1d1e0837cb3bea4b53271bb333084bb4eb441cdcf5afdb10519591a588bdc256.gz",
+      "archiveBytes": 40650,
+      "archiveSha256": "7519c78857bb462807564bf10e5d7a7bc6d45bb914ba70ae5e51b2a3797059c8",
+      "bytes": 241827,
+      "sha256": "1d1e0837cb3bea4b53271bb333084bb4eb441cdcf5afdb10519591a588bdc256"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-camera-owner-gates.json": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/076046b30a0b61e028f45ba047f743ec2e9ce66addc653e5dfb8dd4959b0e411.gz",
+      "archiveBytes": 341,
+      "archiveSha256": "cef168325c2dd5a61c60c54d712c8f064116b6bbc1c52be71c40519eacb62cd5",
+      "bytes": 571,
+      "sha256": "076046b30a0b61e028f45ba047f743ec2e9ce66addc653e5dfb8dd4959b0e411"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-camera-owner-gates.log": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-camera-owner-gates.py": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/708f52902e77032bd97eb8070e94a8ef73229a0be02442c8c69bb3fa022dd5eb.gz",
+      "archiveBytes": 659,
+      "archiveSha256": "f15087ff48e01b76a3b851c3f59f581fa7e64c2b6959a17491d984452d426407",
+      "bytes": 1134,
+      "sha256": "708f52902e77032bd97eb8070e94a8ef73229a0be02442c8c69bb3fa022dd5eb"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-camera-owner-hooks.log": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-camera-owner-original.log": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/3ca764b729ea15fe812836fcf268b47059009333dc7d361b0f8b84f4d64c4743.gz",
+      "archiveBytes": 2334,
+      "archiveSha256": "5541ab6293ffecd20cb8669d77898fb2fa3c54a3696dcd25b6837e012059cddd",
+      "bytes": 10466,
+      "sha256": "3ca764b729ea15fe812836fcf268b47059009333dc7d361b0f8b84f4d64c4743"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-camera-owner-parent-negative.log": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/444eb93b036886b69d3f2c2cae81ae0531c564bf2c4b647e3d071a2f5c4b012c.gz",
+      "archiveBytes": 2416,
+      "archiveSha256": "666740fb6e01de35598d23343ccdf0bdfc896ccb1b4afe716778d679fbbc302d",
+      "bytes": 11044,
+      "sha256": "444eb93b036886b69d3f2c2cae81ae0531c564bf2c4b647e3d071a2f5c4b012c"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-camera-owner-ruff.log": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-camera-owner-seal-sources.log": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/5b4e6e56afd850727430712bbc57058577f0c19985051c1eb0957ea1c32ac72b.gz",
+      "archiveBytes": 66,
+      "archiveSha256": "ba04f52f576659e1f2cdd485ecfb6cb79eded1c096d32e1f64136efabf45e9a4",
+      "bytes": 53,
+      "sha256": "5b4e6e56afd850727430712bbc57058577f0c19985051c1eb0957ea1c32ac72b"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-camera-owner-source-format.log": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/413a709001976657cb743636fd34e48fc41d8d302d665460d3f874b3313da127.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "2283aea2b330488a006d79106f5f562181af4f1fab820fd23ed7f19cf203d3f9",
+      "bytes": 19,
+      "sha256": "413a709001976657cb743636fd34e48fc41d8d302d665460d3f874b3313da127"
+    },
+    "target/task-tmp/graph-geometric-notebook/region-camera-owner-ty.log": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/graph-geometric-notebook/seal-camera-evidence.py": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/5deac48398be35fc5afea938b056dcd103e63d848422a037942ed649dc5e2513.gz",
+      "archiveBytes": 3096,
+      "archiveSha256": "9be564ae3dd7346ac3c68d0f6764304c9366e7fc44b3648c9ee5a50d1e220616",
+      "bytes": 7419,
+      "sha256": "5deac48398be35fc5afea938b056dcd103e63d848422a037942ed649dc5e2513"
+    },
+    "target/task-tmp/graph-geometric-notebook/seal-camera-sources.py": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/1c6907426ce24d475d35cfed1b8a9ac68c3c9a7f73100ec96a56de3d36d55e54.gz",
+      "archiveBytes": 1158,
+      "archiveSha256": "ae98579e1ae6cb8abe6ffcc5cd5f9dacff4d9f9cce97806210766614b2901f5f",
+      "bytes": 2756,
+      "sha256": "1c6907426ce24d475d35cfed1b8a9ac68c3c9a7f73100ec96a56de3d36d55e54"
+    }
+  },
+  "failedAttempts": [
+    {
+      "exit": 1,
+      "log": "target/task-tmp/graph-geometric-notebook/region-camera-owner-original.log",
+      "scope": "Original camera-ownership regression failures"
+    },
+    {
+      "exit": 1,
+      "log": "target/task-tmp/graph-geometric-notebook/region-camera-owner-foundation.log",
+      "scope": "FINAL full foundation FAILED density context-loss guard; same mechanism independently reproduced on accepted main and parent in preserved prior receipt; cause unresolved"
+    }
+  ],
+  "fresh": {
+    "clientBuild": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" target/task-tmp/node-v22.23.4-linux-x64/bin/node js/build.mjs",
+      "exit": 0,
+      "log": "target/task-tmp/graph-geometric-notebook/region-camera-owner-build.log"
+    },
+    "coreInventory": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync pytest -q tests/test_graphforge_contract_corpus.py::test_hash_bound_core_evidence_survives_windows_checkout tests/test_graphforge_contract_corpus.py::test_rc7_artifact_provenance_and_every_generated_ipc_are_bound tests/test_graphforge_contract_corpus.py::test_notebook_camera_owner_preserves_the_complete_candidate_and_review_chain tests/test_release_inventory.py",
+      "exit": 0,
+      "log": "target/task-tmp/graph-geometric-notebook/region-camera-owner-core.log",
+      "passed": 29
+    },
+    "format": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync ruff format --check .",
+      "exit": 0,
+      "log": "target/task-tmp/graph-geometric-notebook/region-camera-owner-format.log"
+    },
+    "fullNode": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" PATH=\"$PWD/target/task-tmp/node-v22.23.4-linux-x64/bin:$PATH\" npm test --prefix packages/xy-node",
+      "exit": 0,
+      "log": "target/task-tmp/graph-geometric-notebook/region-camera-owner-full-node.log",
+      "passed": 1156,
+      "skipped": 2
+    },
+    "hooks": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync --with pre-commit pre-commit run --all-files",
+      "exit": 0,
+      "log": "target/task-tmp/graph-geometric-notebook/region-camera-owner-hooks.log"
+    },
+    "notebookDpr1": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" XYG_GRAPH_REGION_DPR=1 XYG_GRAPH_REGION_REPORT=\"$PWD/target/task-tmp/graph-geometric-notebook/region-camera-owner-dpr1.json\" XYG_GRAPH_JUPYTER=\"$PWD/target/task-tmp/vscode-jupyter-graph/server-venv/bin/jupyter-lab\" XYG_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome target/task-tmp/node-v22.23.4-linux-x64/bin/node scripts/graph_notebook_regions_smoke.mjs",
+      "exit": 0,
+      "log": "target/task-tmp/graph-geometric-notebook/region-camera-owner-dpr1.log"
+    },
+    "notebookDpr2": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" XYG_GRAPH_REGION_DPR=2 XYG_GRAPH_REGION_REPORT=\"$PWD/target/task-tmp/graph-geometric-notebook/region-camera-owner-dpr2.json\" XYG_GRAPH_JUPYTER=\"$PWD/target/task-tmp/vscode-jupyter-graph/server-venv/bin/jupyter-lab\" XYG_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome target/task-tmp/node-v22.23.4-linux-x64/bin/node scripts/graph_notebook_regions_smoke.mjs",
+      "exit": 0,
+      "log": "target/task-tmp/graph-geometric-notebook/region-camera-owner-dpr2.log"
+    },
+    "ruff": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync ruff check .",
+      "exit": 0,
+      "log": "target/task-tmp/graph-geometric-notebook/region-camera-owner-ruff.log"
+    },
+    "transportAndWire": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" target/task-tmp/node-v22.23.4-linux-x64/bin/node --test js/test/graph-host-transport.test.mjs packages/xy-node/test/graph-session-wire.test.mjs",
+      "exit": 0,
+      "log": "target/task-tmp/graph-geometric-notebook/region-camera-owner-final-node-complete.log",
+      "passed": 47
+    },
+    "typing": {
+      "command": "TMPDIR=/var/tmp UV_NO_SYNC=1 XYG_NATIVE_LIB=\"$PWD/target/release/libxyg_core.so\" uv run --no-sync ty check",
+      "exit": 0,
+      "log": "target/task-tmp/graph-geometric-notebook/region-camera-owner-ty.log"
+    }
+  },
+  "inherited": "Earlier Rust, ABI, Python and CI qualification only over verified unchanged source/artifact identities. Earlier independent reviews remain conditional on correction of their findings. No final all-green full foundation claim.",
+  "nativeAndWasmRebuilt": false,
+  "negativeControls": [
+    {
+      "exit": 1,
+      "failed": 3,
+      "log": "target/task-tmp/graph-geometric-notebook/region-camera-owner-parent-negative.log",
+      "passed": 32,
+      "scope": "Current 35 transport assertions against exact Git parent production sources"
+    }
+  ],
+  "package": {
+    "gzip6": 786379,
+    "gzip6Cap": 786432,
+    "gzip6Headroom": 53,
+    "raw": 1885379,
+    "rawCap": 1927168,
+    "sha256": "c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271"
+  },
+  "parentReceipt": {
+    "path": "spec/performance/graph-notebook-region-history-2026-11-10/checks.json",
+    "sha256": "2091e35ec23830ed9cf6b37dd1ffd4a13ed28ce00a181fa1ce2850290fbc51bb"
+  },
+  "readmeSha256": "59b33ae68383ef2409ffb700074cbd9bfccfc37459f0e6e754f4953f41c76829",
+  "remaining": [
+    "Whole1015 and milestones4-7 remain open",
+    "changed-LOD/aggregate/categorical-edge notebook regions",
+    "massive/all-host/accessibility/export/latency/competitor/global-memory qualification"
+  ],
+  "reviewR2": {
+    "disposition": "REQUEST_CHANGES; pre-frame animation and ABA camera-ownership defect reproduced and corrected; independent final review pending",
+    "record": "target/task-tmp/graph-geometric-notebook/camera-review-r2/independent-correction-review.json",
+    "sha256": "21fe49268fef812bef4d08d1edcc800aff31ebfa24c8ba12ce16e6f3157e0690"
+  },
+  "runtime": {
+    "packages/xy-client/dist/index.js": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/ff6c3e694b36f33881187d684b2c6e5a0b42d2541abdd4d6e6fbaf7cf560863e.gz",
+      "archiveBytes": 248751,
+      "archiveSha256": "2e2bd583959b7999758a12805a77fb289016664682e855d28c8c900137e70700",
+      "bytes": 867816,
+      "sha256": "ff6c3e694b36f33881187d684b2c6e5a0b42d2541abdd4d6e6fbaf7cf560863e"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/bb21bf155b56eccdf791758c824faf982715aa55436a546ac0d24a272f7e412c.gz",
+      "archiveBytes": 248820,
+      "archiveSha256": "c051e001da1790ff6b1d03b902a4e8e9966bb5fd3c34a69db737675f09c5e1d2",
+      "bytes": 867829,
+      "sha256": "bb21bf155b56eccdf791758c824faf982715aa55436a546ac0d24a272f7e412c"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz",
+      "archiveBytes": 3838,
+      "archiveSha256": "dda8e6c4cec42d91f687b660d742d79dcc1a8c0d052ca6ca189c6acf095db2b4",
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/70302dd988dd7ea4bbf25b4b2f57cac0c85d7c8d2d207499a585db0a672a29b5.gz",
+      "archiveBytes": 1043256,
+      "archiveSha256": "8208c789c89c7893c1ed21ddb8b9526c8d555b83926e0c623badd5a886318695",
+      "bytes": 2534962,
+      "sha256": "70302dd988dd7ea4bbf25b4b2f57cac0c85d7c8d2d207499a585db0a672a29b5"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/3a216a6158fa8aca0844fcdf2e3c1bafa6d3b1dc29f1734dea8da3c18609abab.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "e0c290ee70a86c99e2a250eb56162c30cb89e78a3189610e8199fd154f555765",
+      "bytes": 226,
+      "sha256": "3a216a6158fa8aca0844fcdf2e3c1bafa6d3b1dc29f1734dea8da3c18609abab"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271.gz",
+      "archiveBytes": 781160,
+      "archiveSha256": "1788dfdad46ec12eb81712329e48375306fd9a47a994b0a030f9ebab236fd142",
+      "bytes": 1885379,
+      "sha256": "c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271"
+    },
+    "python/xyg/static/index.js": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/ff6c3e694b36f33881187d684b2c6e5a0b42d2541abdd4d6e6fbaf7cf560863e.gz",
+      "archiveBytes": 248751,
+      "archiveSha256": "2e2bd583959b7999758a12805a77fb289016664682e855d28c8c900137e70700",
+      "bytes": 867816,
+      "sha256": "ff6c3e694b36f33881187d684b2c6e5a0b42d2541abdd4d6e6fbaf7cf560863e"
+    },
+    "python/xyg/static/standalone.js": {
+      "archive": "spec/performance/graph-notebook-camera-owner-2026-11-10/evidence/bb21bf155b56eccdf791758c824faf982715aa55436a546ac0d24a272f7e412c.gz",
+      "archiveBytes": 248820,
+      "archiveSha256": "c051e001da1790ff6b1d03b902a4e8e9966bb5fd3c34a69db737675f09c5e1d2",
+      "bytes": 867829,
+      "sha256": "bb21bf155b56eccdf791758c824faf982715aa55436a546ac0d24a272f7e412c"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/70302dd988dd7ea4bbf25b4b2f57cac0c85d7c8d2d207499a585db0a672a29b5.gz",
+      "archiveBytes": 1043256,
+      "archiveSha256": "8208c789c89c7893c1ed21ddb8b9526c8d555b83926e0c623badd5a886318695",
+      "bytes": 2534962,
+      "sha256": "70302dd988dd7ea4bbf25b4b2f57cac0c85d7c8d2d207499a585db0a672a29b5"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/3a216a6158fa8aca0844fcdf2e3c1bafa6d3b1dc29f1734dea8da3c18609abab.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "e0c290ee70a86c99e2a250eb56162c30cb89e78a3189610e8199fd154f555765",
+      "bytes": 226,
+      "sha256": "3a216a6158fa8aca0844fcdf2e3c1bafa6d3b1dc29f1734dea8da3c18609abab"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271.gz",
+      "archiveBytes": 781160,
+      "archiveSha256": "1788dfdad46ec12eb81712329e48375306fd9a47a994b0a030f9ebab236fd142",
+      "bytes": 1885379,
+      "sha256": "c0c2867901726d5941f010ab9fed9831f46ad67ca4171615490bf03e4e2bf271"
+    },
+    "target/release/libxyg_core.so": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/ae8dc056771abb1109381202b4143d81157ac0235555ad3d527a426a807bc4bb.gz",
+      "archiveBytes": 2905861,
+      "archiveSha256": "1e22d36c42e15f3afb52ab09cbddc6bec063217e8fa6a499569d0e4114348533",
+      "bytes": 6379944,
+      "sha256": "ae8dc056771abb1109381202b4143d81157ac0235555ad3d527a426a807bc4bb"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "archive": "spec/performance/graph-notebook-regions-2026-11-10/evidence/d8c7089327b8828b99e98c6e78510676a6703f40628a64f5c714f4edec96da4f.gz",
+      "archiveBytes": 1253247,
+      "archiveSha256": "b6f6c9bc953c17356b0da2ce132395d8e5a3e65f11b9e50aeff2cc581e51741c",
+      "bytes": 4075069,
+      "sha256": "d8c7089327b8828b99e98c6e78510676a6703f40628a64f5c714f4edec96da4f"
+    }
+  },
+  "schemaVersion": 1,
+  "scope": "Opaque camera-write ownership for deferred native history, including pre-frame animation and ABA writes"
+}

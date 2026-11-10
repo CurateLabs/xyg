@@ -113,7 +113,7 @@ Consequences:
 - Selection changes keep the shipped ordering invariant (`on_brush` before
   `on_select`) regardless of writer.
 - There is exactly one implementation of "apply a state patch" in
-  `js/src/53_interaction.ts`, and every entry point in this document is a
+  `js/src/57_viewstate.ts`, and every entry point in this document is a
   caller of it.
 
 The browser client owns the live state; the kernel and application hosts
@@ -147,6 +147,50 @@ history works in notebooks and standalone HTML export identically.
   selection per PR #117.
 - **Capacity** is 64 entries, oldest evicted. Snapshots are a handful of
   floats; memory is not a concern, predictability is.
+
+Native notebook graphs admit geometric selection asynchronously through Rust.
+Their provisional overlay is not durable state: history and linked selection
+advance only when the accepted predicate is presented. Native refusal restores
+the preceding accepted overlay/masks without pushing history or clearing redo.
+Superseded unpresented accepted results can coalesce; the bounded transport may
+present the last accepted result when a newer intent refuses. A newer explicit
+API row selection owns its facet over an older in-flight geometric reply.
+Linked range/polygon/clear applies share that ownership barrier even though
+they issue no native request. They invalidate queued predicates and cached
+selection buffers, while the actual outstanding query retains its correlation
+until its real reply releases transport backpressure. An obsolete reply cannot
+move history stacks, restore an older camera or selection, or republish masks.
+When the `select` interaction flag suppresses a clear request, API clearing
+completes locally instead of deferring forever: durable selection and brush
+become null, history follows its normal policy, and stale cached buffers are
+revoked. Internal accepted-result restoration remains non-broadcasting.
+Local linked masks also carry their compiler row-space stamp. A same-row
+publication rebuild rehydrates their coordinate predicate through the existing
+local renderer with its original eligible marks, including segments. Native
+kernel previews retain their scatter-only eligibility. A changed, missing or
+invalid stamp revokes the local mask and durable brush without history, request
+or broadcast and announces that the previous selection is unavailable. This
+does not resolve canonical UUIDs or remap across changed LOD/membership.
+An already-cleared selection retires its local claim before checking new row
+provenance; an empty selection stays available without a false failure alert.
+Back/Next move their stacks only after accepted navigation and do not start
+while another geometric selection is pending. The stored ranges also wait for
+predicate acceptance; refusal preserves the entire preceding camera/selection
+snapshot. An intervening range write or changed history target supersedes that
+navigation without rolling back the newer state. Pending navigation uses an
+opaque token from the common viewport writer to distinguish animated
+targets before their first frame and write sequences returning to the same
+coordinates. Explicit same-value axis writes also supersede pending navigation;
+an empty `ranges` merge-patch leaves camera ownership unchanged. The token is
+transient, bounded and never serialized. Opaque-row/ranges-only history
+keeps its existing synchronous, non-reselecting behavior. A combined API
+range/selection patch preserves its interaction ID through deferred acceptance,
+so the two facets create one undo entry. Targets with obsolete axis schemas
+refuse through the shared validator before querying or moving stacks.
+Cached row masks survive only
+an equal, valid compiler row-space stamp; changed membership or shipped-row
+mapping revokes those masks without guessing a replacement predicate.
+Ordinary transports retain the immediate mutation path described above.
 - **Surface.** Back and Next live at the top of the modebar zoom menu, enabled
   only when the corresponding stack side is non-empty. The menu stays open
   while either action is used. They remain subject to the existing modebar fit
