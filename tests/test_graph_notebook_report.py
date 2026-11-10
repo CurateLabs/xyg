@@ -336,3 +336,107 @@ def test_normal_ci_cannot_drop_current_routed_identity_requirement(tmp_path):
     broken = tmp_path / "ci.yml"
     broken.write_text(workflow.replace(command, command.removesuffix(" --require-routed")))
     assert any("bounded real notebook" in error for error in validate_workflow(broken))
+
+
+def frontend_journey(kind):
+    report = routed_journey()
+    if kind == "notebook7":
+        app, version, namespace, static, route = (
+            "Jupyter Notebook",
+            "7.5.8",
+            "notebook",
+            "/static/notebook",
+            "/notebooks/graph.ipynb",
+        )
+    else:
+        app, version, namespace, static, route = (
+            "JupyterLab",
+            "4.6.5",
+            "lab",
+            "/static/lab",
+            "/lab/tree/graph.ipynb",
+        )
+    report["frontend"] = {
+        "kind": kind,
+        "appName": app,
+        "version": version,
+        "namespace": namespace,
+        "staticUrl": static,
+        "route": route,
+        "staticRequests": [static + "/main.js"],
+        "kernel": {"name": "Python 3 (ipykernel)", "status": "idle"},
+    }
+    return report
+
+
+@pytest.mark.parametrize("kind", ["notebook7", "jupyterlab"])
+def test_named_frontend_requires_real_configuration_route_and_assets(kind):
+    assert not verify(frontend_journey(kind), require_routed=True, expected_frontend=kind)
+    assert verify(routed_journey(), require_routed=True, expected_frontend=kind)
+    other = "notebook7" if kind == "jupyterlab" else "jupyterlab"
+    assert verify(frontend_journey(kind), require_routed=True, expected_frontend=other)
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("kind", "jupyterlab"),
+        ("appName", "JupyterLab"),
+        ("version", "4.6.5"),
+        ("version", 7),
+        ("version", "7"),
+        ("namespace", "lab"),
+        ("staticUrl", "/static/lab"),
+        ("route", "/lab/tree/graph.ipynb"),
+        ("staticRequests", []),
+        ("staticRequests", ["/static/lab/main.js"]),
+    ],
+)
+def test_notebook7_report_cannot_relabel_another_frontend(field, value):
+    report = frontend_journey("notebook7")
+    report["frontend"][field] = value
+    assert verify(report, require_routed=True, expected_frontend="notebook7")
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        'uv venv --python .venv/bin/python "$RUNNER_TEMP/graph-notebook7-env"',
+        'uv pip install --python "$RUNNER_TEMP/graph-notebook7-env/bin/python" notebook==7.5.8 jupyterlab==4.5.11 ipykernel==7.4.0 anywidget==0.11.0 numpy==2.4.6 pillow==13.0.0 pytest==9.2.0',
+        'export XYG_GRAPH_JUPYTER="$RUNNER_TEMP/graph-notebook7-env/bin/jupyter-notebook"',
+        "node scripts/graph_notebook_progressive_smoke.mjs --frontend notebook7",
+        '.venv/bin/python scripts/verify_graph_notebook_report.py "$RUNNER_TEMP/graph-notebook7.json" --require-routed --frontend notebook7',
+    ],
+)
+def test_notebook7_gate_cannot_skip_install_execution_or_real_frontend_verifier(tmp_path, command):
+    workflow = Path(".github/workflows/ci.yml").read_text()
+    assert workflow.count(command) == 1
+    broken = tmp_path / "ci.yml"
+    broken.write_text(workflow.replace("          " + command, "          echo missing-notebook7"))
+    assert any("Notebook7" in error for error in validate_workflow(broken))
+
+
+@pytest.mark.parametrize(
+    "kernel",
+    [
+        {"name": "No Kernel", "status": "idle"},
+        {"name": "Python 3", "status": "busy"},
+        {"name": "", "status": "idle"},
+        {"name": None, "status": "idle"},
+        {},
+    ],
+)
+def test_frontend_cannot_submit_from_unselected_or_nonidle_kernel(kernel):
+    report = frontend_journey("notebook7")
+    report["frontend"]["kernel"] = kernel
+    assert verify(report, require_routed=True, expected_frontend="notebook7")
+
+
+def test_recorded_notebook764_runtime_failure_remains_unqualified():
+    path = Path("spec/performance/graph-notebook7-2026-11-10/notebook764-failed.json.gz")
+    report = json.loads(gzip.decompress(path.read_bytes()))
+    assert report["frontend"]["version"] == "7.6.4"
+    assert report["pageErrors"] == ["Cannot read properties of undefined (reading 'schema')"]
+    assert "browser runtime errors" in verify(
+        report, expected_abi=405, require_routed=True, expected_frontend="notebook7"
+    )

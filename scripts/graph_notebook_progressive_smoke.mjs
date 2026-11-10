@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Actual JupyterLab/kernel/anywidget bridge. No external servers or data APIs.
+// Actual JupyterLab/Notebook7/kernel/anywidget bridge. No external data APIs.
 import {spawn,spawnSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {mkdtemp,writeFile,cp,mkdir,readFile} from 'node:fs/promises';
@@ -7,11 +7,14 @@ import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createServer} from 'node:net';
 import {chromium} from 'playwright';
+const args=process.argv.slice(2);
+if(args.length!==0&&(args.length!==2||args[0]!=='--frontend'||!['jupyterlab','notebook7'].includes(args[1])))throw Error('usage: graph_notebook_progressive_smoke.mjs [--frontend jupyterlab|notebook7]');
+const frontendKind=args[1]??'jupyterlab';
 const root=fileURLToPath(new URL('../',import.meta.url)),temp=await mkdtemp(join(root,'target/xyg-graph-notebook-'));
 await cp(join(root,'tests/notebook_graph_progressive.ipynb'),join(temp,'graph.ipynb'));
 const allocator=createServer();await new Promise(r=>allocator.listen(0,'127.0.0.1',r));const port=allocator.address().port;await new Promise(r=>allocator.close(r));
 await mkdir(join(temp,'runtime'));await mkdir(join(temp,'config'));await mkdir(join(temp,'data'));
-const executable=process.env.XYG_GRAPH_JUPYTER??join(root,'.venv/bin/jupyter-lab');
+const executable=process.env.XYG_GRAPH_JUPYTER??join(root,frontendKind==='notebook7'?'.venv/bin/jupyter-notebook':'.venv/bin/jupyter-lab');
 const server=spawn(executable,['--no-browser','--ServerApp.ip=127.0.0.1',`--ServerApp.port=${port}`,`--ServerApp.root_dir=${temp}`,'--IdentityProvider.token=','--ServerApp.password='],{cwd:root,env:{...process.env,XYG_NATIVE_LIB:join(root,"target/release/libxyg_core.so"),JUPYTER_RUNTIME_DIR:join(temp,'runtime'),JUPYTER_CONFIG_DIR:join(temp,'config'),JUPYTER_DATA_DIR:join(temp,'data'),PYTHONPATH:`${root}/python:${root}/tests`},stdio:['ignore','pipe','pipe']});
 let logs='';server.stdout.on('data',b=>logs+=b);server.stderr.on('data',b=>logs+=b);
 let browser,page; const errors=[],pageErrors=[];
@@ -41,10 +44,26 @@ try{
    globalThis.__graphFrames.push({step,time:performance.now(),width:canvas?.width,height:canvas?.height});
   }}).observe(document,{subtree:true,attributes:true,attributeFilter:['data-graph-steps']});
  });
- await page.goto(origin+'/lab/tree/graph.ipynb');
+ await page.goto(origin+(frontendKind==='notebook7'?'/notebooks/graph.ipynb':'/lab/tree/graph.ipynb'));
+ const frontend=await page.evaluate(kind=>{
+  const config=JSON.parse(document.getElementById('jupyter-config-data')?.textContent||'{}');
+  return {kind,appName:config.appName,version:config.appVersion,namespace:config.appNamespace,
+   staticUrl:config.fullStaticUrl,route:location.pathname,
+   staticRequests:[...new Set(performance.getEntriesByType('resource').map(r=>new URL(r.name).pathname).filter(path=>path.startsWith('/static/')))].sort()};
+ },frontendKind);
+ const expectedApp=frontendKind==='notebook7'?['Jupyter Notebook','notebook','7','/static/notebook']:['JupyterLab','lab','4','/static/lab'];
+ if(frontend.appName!==expectedApp[0]||frontend.namespace!==expectedApp[1]||frontend.version?.split('.')[0]!==expectedApp[2]||frontend.staticUrl!==expectedApp[3]||!frontend.staticRequests.some(path=>path.startsWith(expectedApp[3]+'/')))throw Error('wrong actual notebook frontend: '+JSON.stringify(frontend));
  await page.locator('.jp-Notebook .jp-Cell').first().waitFor({timeout:45000});
  const select=page.getByRole('button',{name:'Select'});if(await select.count())await select.click();
- await page.waitForFunction(()=>document.querySelector('.jp-Notebook .cm-content')&&document.body.innerText.includes('Idle'),{},{timeout:45000});
+ // Notebook7's initial execution indicator can say idle while No Kernel is
+ // selected. Require both a named kernel and the idle execution indicator.
+ await page.waitForFunction(kind=>{
+  const name=document.querySelector('.jp-Toolbar-kernelName')?.getAttribute('aria-label');
+  return document.querySelector('.jp-Notebook .cm-content')&&name&&name!=='No Kernel'
+   &&document.querySelector('.jp-Notebook-ExecutionIndicator')?.getAttribute('data-status')==='idle'
+   &&(kind==='notebook7'||document.body.innerText.includes('Idle'));
+ },frontendKind,{timeout:45000});
+ frontend.kernel=await page.evaluate(()=>({name:document.querySelector('.jp-Toolbar-kernelName')?.getAttribute('aria-label'),status:document.querySelector('.jp-Notebook-ExecutionIndicator')?.getAttribute('data-status')}));
  await page.locator('.jp-Notebook .jp-Cell').first().locator('.cm-content').click();await page.keyboard.press('Shift+Enter');
  const surface=page.locator('.jp-OutputArea [data-graph-steps]').first();
  await surface.waitFor({timeout:45000});
@@ -176,7 +195,7 @@ try{
 
  const frames=await page.evaluate(()=>globalThis.__graphFrames);
  if(frames[0]?.step!=='1'||!frames[0]?.width)throw Error('missing initial one-tick native paint');
- const result={artifactDir:temp,routedIdentity,routed,layeredIdentity,layeredPointer,uuidMasks,nodeParity,presentation:title,kernel,uuidSelection,finalPointer,finalPointerVerified:finalPointer.after>finalPointer.before,expectedNativeHash,initialPicture,widgetCount,events,frames,kernelVerified:true,disposed:true,pageErrors,ok:true,journey:'actual JupyterLab/IPython/anywidget/native retained graph',firstSteps,finalSteps,dimensions,browser:browser.version(),external,errors};
+ const result={artifactDir:temp,frontend,routedIdentity,routed,layeredIdentity,layeredPointer,uuidMasks,nodeParity,presentation:title,kernel,uuidSelection,finalPointer,finalPointerVerified:finalPointer.after>finalPointer.before,expectedNativeHash,initialPicture,widgetCount,events,frames,kernelVerified:true,disposed:true,pageErrors,ok:true,journey:`actual ${frontendKind==='notebook7'?'Notebook 7':'JupyterLab'}/IPython/anywidget/native retained graph`,firstSteps,finalSteps,dimensions,browser:browser.version(),external,errors};
  if(process.env.XYG_GRAPH_NOTEBOOK_REPORT)await writeFile(process.env.XYG_GRAPH_NOTEBOOK_REPORT,JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
-}catch(error){throw Error(JSON.stringify({error:error.message,errors,frames:await page?.evaluate(()=>globalThis.__graphFrames),events:await page?.evaluate(()=>globalThis.__graphEvents),actions:await page?.evaluate(()=>globalThis.__graphActions),body:await page?.locator('body').innerText().catch(()=>''),outputs:await page?.locator('.jp-OutputArea').evaluateAll(els=>els.map(el=>el.innerHTML.slice(-6000))).catch(()=>[]),logs:logs.slice(-6000)}));}
+}catch(error){throw Error(JSON.stringify({error:error.message,errors,frames:await page?.evaluate(()=>globalThis.__graphFrames).catch(e=>({diagnosticUnavailable:e.message})),events:await page?.evaluate(()=>globalThis.__graphEvents).catch(e=>({diagnosticUnavailable:e.message})),actions:await page?.evaluate(()=>globalThis.__graphActions).catch(e=>({diagnosticUnavailable:e.message})),body:await page?.locator('body').innerText().catch(()=>''),outputs:await page?.locator('.jp-OutputArea').evaluateAll(els=>els.map(el=>el.innerHTML.slice(-6000))).catch(()=>[]),logs:logs.slice(-6000)}));}
 finally{await browser?.close();server.kill('SIGTERM');}

@@ -1509,3 +1509,8 @@ scripts/graph_notebook_identity_parity.mjs text eol=lf
 spec/performance/graph-notebook-routed-identity-2026-11-09/** text eol=lf
 spec/performance/graph-notebook-routed-identity-2026-11-09/**/*.gz -text
 spec/performance/graph-notebook-routed-identity-2026-11-09/**/*.png -text
+# Actual Notebook7 frontend qualification and immutable environment/captures.
+spec/performance/graph-notebook7-2026-11-10/** text eol=lf
+spec/performance/graph-notebook7-2026-11-10/**/*.gz -text
+spec/performance/graph-notebook7-2026-11-10/**/*.png -text
+docs/integrations/graphforge.md text eol=lf

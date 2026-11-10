@@ -7,6 +7,7 @@ import argparse
 import base64
 import hashlib
 import json
+import re
 import uuid
 from itertools import pairwise
 from pathlib import Path
@@ -133,7 +134,49 @@ def _verify_routed_identity(report):
     return errors
 
 
-def verify(report, *, expected_abi: int = ABI_VERSION, require_routed: bool = False):
+def _verify_frontend(frontend, expected):
+    try:
+        kind = expected or frontend["kind"]
+        app, namespace, major, static, route = {
+            "jupyterlab": ("JupyterLab", "lab", "4", "/static/lab", "/lab/tree/graph.ipynb"),
+            "notebook7": (
+                "Jupyter Notebook",
+                "notebook",
+                "7",
+                "/static/notebook",
+                "/notebooks/graph.ipynb",
+            ),
+        }[kind]
+        if (
+            frontend["kind"] != kind
+            or frontend["appName"] != app
+            or frontend["namespace"] != namespace
+            or not isinstance(frontend["version"], str)
+            or re.fullmatch(
+                rf"{major}\.[0-9]+\.[0-9]+(?:[-+][a-zA-Z0-9.+-]+)?", frontend["version"]
+            )
+            is None
+            or frontend["staticUrl"] != static
+            or frontend["route"] != route
+            or not isinstance(frontend["kernel"]["name"], str)
+            or not frontend["kernel"]["name"]
+            or frontend["kernel"]["name"] == "No Kernel"
+            or frontend["kernel"]["status"] != "idle"
+            or not isinstance(frontend["staticRequests"], list)
+            or not any(
+                isinstance(path, str) and path.startswith(static + "/")
+                for path in frontend["staticRequests"]
+            )
+        ):
+            return ["actual notebook frontend configuration, route and assets must agree"]
+    except (KeyError, TypeError):
+        return ["actual notebook frontend evidence required"]
+    return []
+
+
+def verify(
+    report, *, expected_abi: int = ABI_VERSION, require_routed: bool = False, expected_frontend=None
+):
     errors = []
     if report.get("ok") is not True or report.get("external"):
         errors.append("notebook journey must succeed without external data requests")
@@ -242,6 +285,8 @@ def verify(report, *, expected_abi: int = ABI_VERSION, require_routed: bool = Fa
         key in report for key in ("routedIdentity", "layeredIdentity", "nodeParity", "uuidMasks")
     ):
         errors.extend(_verify_routed_identity(report))
+    if expected_frontend is not None or "frontend" in report:
+        errors.extend(_verify_frontend(report.get("frontend"), expected_frontend))
     return errors
 
 
@@ -249,8 +294,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("report", type=Path)
     parser.add_argument("--require-routed", action="store_true")
+    parser.add_argument("--frontend", choices=("jupyterlab", "notebook7"))
     args = parser.parse_args()
-    errors = verify(json.loads(args.report.read_text()), require_routed=args.require_routed)
+    errors = verify(
+        json.loads(args.report.read_text()),
+        require_routed=args.require_routed,
+        expected_frontend=args.frontend,
+    )
     if errors:
         raise SystemExit("; ".join(errors))
     print("Bounded native graph notebook journey verified; no scale-ladder claim.")

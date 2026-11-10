@@ -413,7 +413,57 @@ retain their original explicitly admitted contract.
 
 This is bounded identity qualification, not full #1015/#35/#36 acceptance.
 Graph-specific box/lasso edge policies, derived/aggregate/compound routing,
-Notebook 7 and VS Code Jupyter, selected/annotated exports, full accessibility,
+VS Code Jupyter, selected/annotated exports, full accessibility,
 and the required 1k/10k/100k/1M notebook ladder remain open. GPU masks establish
 selection delivery, not a whole-image antialiasing or export-pixel comparison.
 See [the append-only receipt](../performance/graph-notebook-routed-identity-2026-11-09/README.md).
+
+### Notebook7 frontend qualification (2026-11-10)
+
+The same public fixture and strict routed-identity harness run in actual
+JupyterLab 4.6.5 and Notebook 7.5.8, with ipykernel 7.4.0 and anywidget
+0.11.0 in the recorded environment. `--frontend notebook7` launches the Notebook
+application and opens `/notebooks/graph.ipynb`; the existing default opens the
+Lab application and `/lab/tree/graph.ipynb`. Both retain every native progress,
+trusted input, exact callback/UUID mask, layered provenance, Node parity,
+isolation and cleanup assertion from the routed identity qualification above.
+There is no second widget, renderer, notebook adapter or layout path.
+
+The harness reads the real frontend page configuration and observed static
+resource URLs. Application name, namespace, semantic major version, route and
+static namespace must all match the requested frontend. CI invokes the receipt
+verifier with the explicit expected frontend and `--require-routed`. A Lab page
+or legacy receipt cannot satisfy the Notebook7 gate by changing only a label.
+Notebook7 lacks Lab's textual Idle status, and its initial execution indicator
+can say idle before a kernel is selected. Both applications must expose a named
+nonempty kernel and an idle execution indicator before first submission; Lab
+also retains its textual Idle check. Actual native output and subsequent kernel
+callbacks establish execution. This closes the observed premature-readiness
+gap; the earlier unexecuted-cell attempt does not establish a general startup
+reliability fix. Existing output/interaction deadlines
+remain unchanged. Each bounded invocation retains the existing four-minute
+step ceiling and runs in the existing Release surfaces `test` job.
+
+The first isolated setup lacked pytest, which the repository fixture helper
+imports; that failed execution and its diagnostic remain recorded. It is not a
+product failure or a successful Notebook7 journey. The earlier Idle-label wait
+also remains failed. The later actual applications pass without forcing clicks,
+replacing callbacks or disabling default notebook virtualization.
+
+[Qualification and immutable environment/captures](../performance/graph-notebook7-2026-11-10/README.md)
+cover the bounded source-checkout frontend path. VS Code Jupyter, the full
+notebook size ladder, graph-specific geometric edge policies, selected/annotated
+exports, complete accessibility, broader platforms and competitor acceptance
+remain open; #1015 and milestones 4–7 are not complete.
+
+Notebook 7.6.4 remains **unqualified** by this receipt. Its real widget journey
+returns the expected identities and masks, but the strict verifier rejects an
+unhandled exception in the stock notebook's bundled shortcuts settings registry.
+The captured stack/offset identifies the shortcuts plugin's own missing registry
+entry; the triggering event is document-manager loading. This matches the open
+[upstream Notebook issue 7862](https://github.com/jupyter/notebook/issues/7862).
+The actual failing report is retained, and a normal regression continues to reject
+it. No page error is filtered and no notebook asset/plugin is patched or disabled.
+The passing stock Notebook 7.5.8 uses its compatible JupyterLab 4.5.11 dependencies
+in an isolated test environment; Lab 4.6.5 remains separately qualified. Broader
+Notebook7 version coverage remains open rather than being inferred from one pin.

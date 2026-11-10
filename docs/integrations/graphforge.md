@@ -23,7 +23,8 @@ capacity from policy checks and scatter-density demonstrations.
 
 The package's `graphforge-compatibility.json` lists the exact Core releases
 qualified by real fixtures. The current declaration covers exact Core 0.5.2
-and 0.6.0-rc.5. Other releases and artifact installation pairings are not implied.
+and 0.6.0-rc.5 plus exact 0.6.0-rc.7 source-fixture qualification. Other releases
+and installed artifact pairings are not implied.
 XYG owns the result-disposition ledger, exposed by `xyg.graphforge_ledger()` / `graphforgeLedger()`.
 
 An unsupported result-schema version fails during composition with
@@ -102,6 +103,35 @@ Tables use `xyg.graphforge_table_html(composition)`; other supported chart
 intents use `xyg.graphforge_chart(composition)`. `xyg.graphforge_ledger()`
 reports the engine's schema and intent coverage. These byte-based composition
 helpers need no GraphForge import or `pyarrow` dependency in XYG.
+
+## Notebook callbacks
+
+In a kernel-backed notebook, create the public widget to receive exact typed
+GraphForge identity in Python and send UUID highlights back to that view:
+
+```python
+from IPython.display import display
+
+
+def on_pick(row):
+    print(row.get("graphforge", []), row.get("graphforge_error"))
+
+
+widget = xyg.graphforge_chart(composition, on_click=on_pick).widget()
+display(widget)
+# A later cell can highlight exact individually rendered source identities.
+widget.select(uuids=[composition.nodes.uuid[0]])
+```
+
+Source-checkout journeys exercise actual JupyterLab 4.6.5 and Notebook 7.5.8
+with IPython/anywidget: progressive native layout, concurrent cell execution,
+parallel-edge and self-loop picks, layered result rows, UUID highlights and
+two-widget isolation. These are small-fixture proofs, not notebook-scale or
+complete accessibility qualification. VS Code Jupyter qualification, exact
+graph-specific box/lasso edge policies and selected/annotated notebook exports
+remain open. If the optional identity service cannot admit a request, the
+ordinary callback carries `graphforge_error` rather than a false empty identity
+success. Static `to_html()` and HTML-mode display have no kernel callback bridge.
 
 ## Streamlit (test and documentation host)
 
@@ -351,3 +381,9 @@ layout path with byte-identical cross-host evidence. See
 [Rust engine and host parity](/docs/xy/core-concepts/rust-engine-and-host-parity/)
 and the [composition specification](https://github.com/CurateLabs/xyg/blob/main/spec/design/graphforge-compositions.md)
 for the exact contracts and bounds.
+
+The bounded Notebook 7 qualification currently uses stock **7.5.8** and its
+compatible JupyterLab 4.5.11 server dependencies. Stock **7.6.4** remains
+unqualified: an upstream notebook shortcuts-registry exception causes the strict
+browser verifier to fail, despite successful widget callbacks. The failure is
+retained; notebook assets are not patched and browser errors are not ignored.

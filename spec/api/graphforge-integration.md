@@ -339,3 +339,13 @@ result provenance, delivered node/edge GPU UUID masks and public Node
 `graphforgePick` parity. It uses a public range patch to inspect the connected
 part of the small fixture. This does not establish notebook scale, other
 frontends, graph-specific geometric edge selection, or selected export parity.
+
+The same bounded public-widget journey is also qualified in actual Notebook
+7.5.8, alongside JupyterLab 4.6.5. Both use the existing native renderer and
+channel; the required frontend receipt binds real application configuration,
+route and assets. See [frontend qualification](../design/graph-session-python-transport.md#notebook7-frontend-qualification-2026-11-10).
+VS Code Jupyter and the remaining scale/geometric-selection/export/accessibility
+requirements are still open.
+Stock Notebook 7.6.4 remains unqualified by the strict browser-error gate because
+of the retained upstream shortcuts-registry failure. The passing 7.5.8 case does
+not imply support for every Notebook7 version or waive that failure.
