@@ -1,0 +1,10 @@
+{
+  "parent": "ab625c5b68c87c25e7c59a62de63fe7e5a8a24cc",
+  "hostedRun": 42771601692,
+  "job": 129681311051,
+  "failure": "ModuleNotFoundError: No module named PIL during report test collection",
+  "repair": "Separate15 dependency-light cases from68 optional PNG controls; preserve strict standalone verifier; add explicit missing-oracle boundary regression",
+  "runtimeDependenciesChanged": false,
+  "workflowChanged": false,
+  "requiredVerifierChanged": false
+}

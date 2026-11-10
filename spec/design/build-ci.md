@@ -77,6 +77,16 @@ install exercises both shared-renderer corruption witnesses. The minimal
 Python-floor environment skips that module through `pytest.importorskip` when
 Pillow or Matplotlib is absent.
 
+The desktop notebook PNG-report controls likewise use the optional Pillow
+oracle and skip their test module in the minimal floor environment when it is
+absent. The separate desktop cohort/installer and required-CI-command controls
+remain dependency-light and execute there. `make check-ci` includes both
+modules. A missing Pillow oracle never skips the actual desktop journey or its
+required standalone report verifier: those unconditional main-job commands
+fail until their development dependencies are installed. A collection-boundary
+regression verifies these three cases separately. Runtime package dependencies
+and the Python-floor installation command remain unchanged.
+
 `scripts/verify_ci_workflow.py` is a conservative static guard, not a shell parser: it
 fails closed where it cannot analyze a step (folded or quoted `run` scalars with a pipe, a
 heredoc left open) and accepts a few false positives rather than miss a gate.

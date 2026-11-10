@@ -1554,3 +1554,8 @@ spec/performance/keyboard-exact-reply-guard-2026-11-10/**/*.gz -text
 # Final desktop and consumed-exact-reply integration evidence.
 spec/performance/desktop-exact-reply-union-2026-11-10/** text eol=lf
 spec/performance/desktop-exact-reply-union-2026-11-10/**/*.gz -text
+
+# Minimal-floor desktop collection and append-only qualification.
+tests/test_vscode_graph_notebook_cohort.py text eol=lf
+spec/performance/vscode-floor-collection-2026-11-10/** text eol=lf
+spec/performance/vscode-floor-collection-2026-11-10/**/*.gz -text
