@@ -1520,3 +1520,9 @@ tests/test_accessibility_contract.py text eol=lf
 spec/performance/embedded-keyboard-2026-11-10/** text eol=lf
 spec/performance/embedded-keyboard-2026-11-10/**/*.gz -text
 spec/performance/embedded-keyboard-2026-11-10/**/*.png -text
+
+# Named-idle kernel admission witness and append-only hosted correction evidence.
+scripts/graph_notebook_kernel_witness.mjs text eol=lf
+js/test/graph-notebook-kernel-witness.test.mjs text eol=lf
+spec/performance/notebook-kernel-witness-2026-11-10/** text eol=lf
+spec/performance/notebook-kernel-witness-2026-11-10/**/*.gz -text

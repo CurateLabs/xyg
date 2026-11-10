@@ -7,6 +7,7 @@ import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createServer} from 'node:net';
 import {chromium} from 'playwright';
+import {namedIdleKernel} from './graph_notebook_kernel_witness.mjs';
 const args=process.argv.slice(2);
 if(args.length!==0&&(args.length!==2||args[0]!=='--frontend'||!['jupyterlab','notebook7'].includes(args[1])))throw Error('usage: graph_notebook_progressive_smoke.mjs [--frontend jupyterlab|notebook7]');
 const frontendKind=args[1]??'jupyterlab';
@@ -57,13 +58,7 @@ try{
  const select=page.getByRole('button',{name:'Select'});if(await select.count())await select.click();
  // Notebook7's initial execution indicator can say idle while No Kernel is
  // selected. Require both a named kernel and the idle execution indicator.
- await page.waitForFunction(kind=>{
-  const name=document.querySelector('.jp-Toolbar-kernelName')?.getAttribute('aria-label');
-  return document.querySelector('.jp-Notebook .cm-content')&&name&&name!=='No Kernel'
-   &&document.querySelector('.jp-Notebook-ExecutionIndicator')?.getAttribute('data-status')==='idle'
-   &&(kind==='notebook7'||document.body.innerText.includes('Idle'));
- },frontendKind,{timeout:45000});
- frontend.kernel=await page.evaluate(()=>({name:document.querySelector('.jp-Toolbar-kernelName')?.getAttribute('aria-label'),status:document.querySelector('.jp-Notebook-ExecutionIndicator')?.getAttribute('data-status')}));
+ frontend.kernel=await namedIdleKernel(page,frontendKind);
  await page.locator('.jp-Notebook .jp-Cell').first().locator('.cm-content').click();await page.keyboard.press('Shift+Enter');
  const surface=page.locator('.jp-OutputArea [data-graph-steps]').first();
  await surface.waitFor({timeout:45000});
