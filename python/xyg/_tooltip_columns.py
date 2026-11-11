@@ -112,6 +112,7 @@ def encode_tooltip_rows(rows: Sequence[dict[str, Any]], pw: Any) -> dict[str, An
                 return None  # rows disagree on key order
             last = at
     kinds: list[str] = []
+    classify = _kind
     for key in keys:
         kind = "null"
         any_uuid = False
@@ -119,7 +120,7 @@ def encode_tooltip_rows(rows: Sequence[dict[str, Any]], pw: Any) -> dict[str, An
             if key not in row:
                 continue
             value = row[key]
-            k = _kind(value)
+            k = classify(value)
             if k is None:
                 return None
             if k == "null":
@@ -129,6 +130,24 @@ def encode_tooltip_rows(rows: Sequence[dict[str, Any]], pw: Any) -> dict[str, An
             kind = k
             if k == "text" and not any_uuid and _UUID.match(value):
                 any_uuid = True
+                # Only a canonical builtin UUID enables the text shortcut.
+                # Other scalar columns retain the original classifier; string
+                # subclasses and later non-text values still get full validation.
+                if type(value) is str:
+
+                    def classify_uuid_text(value):
+                        nonlocal classify
+                        if type(value) is str:
+                            return "text"
+                        # Retire the shortcut for the rest of this column when
+                        # a mixed value appears; do not tax every later fallback.
+                        classify = _kind
+                        return classify(value)
+
+                    classify = classify_uuid_text
+        # Start the next column generically and break the shortcut's local
+        # function/cell cycle before lowering or returning the encoded planes.
+        classify = _kind
         kinds.append("bool" if kind == "null" else "uuid" if any_uuid else kind)
 
     data: list[int] = []

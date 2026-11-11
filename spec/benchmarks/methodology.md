@@ -648,14 +648,15 @@ The glob collects nine modules — `test_codspeed_animation.py`,
 `test_codspeed_graph_render.py`, `test_codspeed_graph_semantic_validation.py`,
 `test_codspeed_kernels.py`, `test_codspeed_polar.py`, `test_codspeed_pyplot.py`,
 `test_codspeed_selection.py`, `test_codspeed_tooltip_columns.py`, and
-`test_codspeed_transport.py` — for **163 rows** total, counting parametrized
+`test_codspeed_transport.py` — for **219 rows** total, counting parametrized
 expansion. These are trend-tracked in CodSpeed, not gated: none of them feed
 `scripts/check_regressions.py`, whose three inputs are §7's.
-The per-module counts are respectively 3, 9, 14, 88, 6, 14, 16, 6 and 7.
+The per-module counts are respectively 3, 9, 14, 88, 6, 14, 16, 62 and 7.
 Fixture parameters expand rows too: selection has four ordinary rows and four
-tests sharing a three-size fixture, for 16 rows. This corrects the previous
-static counter's undercount; no benchmark row is deleted or renamed, and no
-dashboard archive operation or hosted benchmark run is implied.
+tests sharing a three-size fixture, for 16 rows. The earlier static-counter
+correction preserved existing rows; this catalog also includes the 56 scalar
+tooltip controls below. No prior row is deleted or renamed. Updating the
+catalog does not archive dashboard rows or dispatch a hosted workflow.
 
 That count is a hard gate, not prose:
 `tests/test_benchmark_environment.py::test_codspeed_row_count_matches_the_methodology_spec`
@@ -676,11 +677,19 @@ assertions validate the measured result. These isolate Python validation and
 conversion, not rendering or notebook
 publication.
 
-**`benchmarks/test_codspeed_tooltip_columns.py` — 6 rows.** Three graph sizes
+**`benchmarks/test_codspeed_tooltip_columns.py` — 62 rows.** Three graph sizes
 (1k, 10k and 100k nodes, each with twice as many edge rows) exercise complete
 node and edge tooltip encoding. Fixture construction and exact byte oracles
 stay outside the measured call. These are encoder measurements, not complete
 widget latency or a competitor comparison.
+The additional 56 controls pair four sizes (1, 8, 1k and 100k) with numeric,
+boolean, null, builtin-text, NumPy-text, string-subclass, sparse-text and late
+fallback inputs. Independent fixture planes, metadata and unchanged-input
+assertions stay outside the measured encoder call. NumPy/string-subclass UUID
+columns and columns mixing a builtin UUID with later subclass values are
+covered too, along with UUID columns dominated by null or absent values.
+These guard the shared
+scalar path as well as graph strings; no earlier row is renamed or removed.
 
 **`benchmarks/test_codspeed_graph_render.py` — 9 rows.** Graph rendering is
 split into attributable CPU/native stages: canonical GraphForge UUID ingest at

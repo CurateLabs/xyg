@@ -184,6 +184,22 @@ batching, not an LOD or selection decision. The encoder comparison and exact
 Python/Node byte oracles are recorded in
 `spec/performance/tooltip-uuid-packing-2026-11-11/README.md`; they do not establish
 whole-notebook performance or public 100k deadline acceptance.
+During Python schema inference, discovering a canonical UUID in an exact builtin
+`str` enables a column-local classifier that accepts later exact builtin strings
+without repeating generic scalar classification. Ordinary scalar columns keep
+the original classifier. Nulls, NumPy scalars, string subclasses and every other
+type still use the original validator, including exact-integer refusal and
+mixed-kind JSON fallback before writing any plane. Encountering a non-builtin
+string value retires the shortcut for the remainder of that column, including
+when the value is null or a compatible string subclass. UUID detection, dictionary order and
+all serialized bytes retain their contracts. This is per-call classification;
+it does not cache mutable tooltip/source state across widget publications.
+Classifier measurements and complete Python/Node byte controls are recorded in
+`spec/performance/tooltip-uuid-classification-2026-11-11/README.md`. One stock
+100k+1k notebook journey passes its bounded paint/identity/selection/cleanup
+assertions with the CodSpeed profiler disabled, while profiled attempts still
+hit the peer deadline. These observations do not establish the cause, sustained
+throughput, convergence or reliable 100k deadline acceptance.
 With the wire graph meta below, a 100k-node GraphForge webview spec goes from
 98 MiB of JSON to 1.3 MiB (strings only) plus typed buffers
 (spec/benchmarks/results.md, "GraphForge composition scale").
