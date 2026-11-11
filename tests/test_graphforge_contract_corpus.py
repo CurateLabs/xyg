@@ -12,7 +12,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 CURRENT_BINDINGS = Path(
-    "spec/performance/graph-semantic-validation-2026-11-11/current-bindings.json"
+    "spec/performance/chunked-camera-publication-2026-11-11/current-bindings.json"
 )
 
 
@@ -932,8 +932,26 @@ def test_visible_graph_region_input_preserves_complete_source_qualification():
 def test_semantic_input_validation_preserves_complete_source_qualification():
     parent_path = "spec/performance/graph-region-visible-input-2026-11-11/current-bindings.json"
     parent = json.loads((ROOT / parent_path).read_text())
-    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/graph-semantic-validation-2026-11-11/current-bindings.json"
+        ).read_text()
+    )
     assert len(current["parents"]) == 47
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_chunked_camera_publication_preserves_complete_source_qualification():
+    parent_path = "spec/performance/graph-semantic-validation-2026-11-11/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    assert len(current["parents"]) == 48
     assert {p["path"] for p in current["parents"]} == {parent_path}.union(
         p["path"] for p in parent["parents"]
     )

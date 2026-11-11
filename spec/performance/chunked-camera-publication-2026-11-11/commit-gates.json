@@ -1,0 +1,59 @@
+{
+  "scope": "Full worktree hooks/Ruff before commit, no failing command credited",
+  "commands": [
+    {
+      "name": "pre-commit",
+      "argv": [
+        "uv",
+        "run",
+        "--no-sync",
+        "--with",
+        "pre-commit",
+        "pre-commit",
+        "run",
+        "--all-files"
+      ],
+      "exit": 0,
+      "log": "target/task-tmp/pr1122-968-ci/final-pre-commit.log",
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "rawBytes": 240
+    },
+    {
+      "name": "ruff-check",
+      "argv": [
+        "uv",
+        "run",
+        "--no-sync",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exit": 0,
+      "log": "target/task-tmp/pr1122-968-ci/final-ruff-check.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "rawBytes": 19
+    },
+    {
+      "name": "ruff-format",
+      "argv": [
+        "uv",
+        "run",
+        "--no-sync",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exit": 0,
+      "log": "target/task-tmp/pr1122-968-ci/final-ruff-format.log",
+      "sha256": "4ee6c7f896d402a4742c11250c72e699ed68087652aa24fd4f083d94f3ba1c8d",
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/4ee6c7f896d402a4742c11250c72e699ed68087652aa24fd4f083d94f3ba1c8d.gz",
+      "archiveSha256": "b15ca41c72633a6df863fab93c71fe4bd36b997ede0bcda42e36ce15f1a55021",
+      "rawBytes": 29
+    }
+  ]
+}

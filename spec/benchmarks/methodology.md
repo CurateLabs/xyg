@@ -644,25 +644,43 @@ The verifier recomputes the checked-in hexbin and heatmap Scene SHA-256 goldens
 `public_heatmap_sha256`) and requires every public export-baseline route,
 including heatmap after #261.
 
-The glob collects seven modules — `test_codspeed_animation.py`,
-`test_codspeed_graph_render.py`, `test_codspeed_kernels.py`, `test_codspeed_polar.py`,
-`test_codspeed_pyplot.py`, `test_codspeed_selection.py`, and
-`test_codspeed_transport.py` — for **135 rows** total, counting parametrized
+The glob collects nine modules — `test_codspeed_animation.py`,
+`test_codspeed_graph_render.py`, `test_codspeed_graph_semantic_validation.py`,
+`test_codspeed_kernels.py`, `test_codspeed_polar.py`, `test_codspeed_pyplot.py`,
+`test_codspeed_selection.py`, `test_codspeed_tooltip_columns.py`, and
+`test_codspeed_transport.py` — for **163 rows** total, counting parametrized
 expansion. These are trend-tracked in CodSpeed, not gated: none of them feed
 `scripts/check_regressions.py`, whose three inputs are §7's.
-The per-module counts are respectively 3, 9, 88, 6, 14, 8 and 7. This corrects
-the stale aggregate count; no benchmark row is deleted or renamed, and no
+The per-module counts are respectively 3, 9, 14, 88, 6, 14, 16, 6 and 7.
+Fixture parameters expand rows too: selection has four ordinary rows and four
+tests sharing a three-size fixture, for 16 rows. This corrects the previous
+static counter's undercount; no benchmark row is deleted or renamed, and no
 dashboard archive operation or hosted benchmark run is implied.
 
 That count is a hard gate, not prose:
 `tests/test_benchmark_environment.py::test_codspeed_row_count_matches_the_methodology_spec`
-collects the modules by AST and fails when the two disagree. It exists because a
+counts literal test and fixture parameters by AST, following shared fixture
+dependencies once per test, and fails when the two disagree. Actual pytest
+collection is the authority when adding a new parametrization shape. It exists because a
 benchmark that is renamed or deleted without a note here leaves a **stale row in
 CodSpeed's stored baseline** — the dashboard keeps reporting it as "skipped, using
 the baseline result", which reads like a flaky measurement rather than a row that
 no longer exists. Removing one is allowed; removing one silently is not. Stale
 rows already in the dashboard have to be archived there by hand; this gate stops
 new ones appearing.
+
+**`benchmarks/test_codspeed_graph_semantic_validation.py` — 14 rows.** Seven
+sizes (0, 1, 8, 16, 1k, 100k and 200k) each cover contiguous and strided/endian
+semantic ingress. Fixture construction is unmeasured; complete plane-byte
+assertions validate the measured result. These isolate Python validation and
+conversion, not rendering or notebook
+publication.
+
+**`benchmarks/test_codspeed_tooltip_columns.py` — 6 rows.** Three graph sizes
+(1k, 10k and 100k nodes, each with twice as many edge rows) exercise complete
+node and edge tooltip encoding. Fixture construction and exact byte oracles
+stay outside the measured call. These are encoder measurements, not complete
+widget latency or a competitor comparison.
 
 **`benchmarks/test_codspeed_graph_render.py` — 9 rows.** Graph rendering is
 split into attributable CPU/native stages: canonical GraphForge UUID ingest at

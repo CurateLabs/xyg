@@ -135,12 +135,19 @@ export function render({ model, el }) {
   const chunkedEpoch = String(epochOwner[epochKey] = epoch + 1n);
   const chunkedMount = spec.chunked ? Array.from(crypto.getRandomValues(new Uint32Array(4))).join("-") : null;
   let chunkedIntent = 0n;
+  let chunkedRanges: Record<string, number[]> | null = null;
   let chunkedFrame = spec.chunked?.frame;
   const comm = {
     send: (msg, buffers = []) => {
       if (chunkedMount) {
         msg = {...msg, mount: chunkedMount, chunked_frame: chunkedFrame};
-        if (msg.type === "view_change") msg.chunked_intent = String(++chunkedIntent);
+        if (msg.type === "view_change") {
+          msg.chunked_intent = String(++chunkedIntent);
+          // The camera can move before its coalesced notification is sent.
+          // Keep the exact transmitted query independently of mutable view state.
+          chunkedRanges = Object.fromEntries(["x", "y"].map(axis =>
+            [axis, Array.isArray(msg.ranges?.[axis]) ? [...msg.ranges[axis]] : []]));
+        }
       }
       model.send(msg, {}, buffers);
     },
@@ -171,6 +178,10 @@ export function render({ model, el }) {
       const reject = () => model.send({type: "chunked_rejected", mount: chunkedMount,
         intent: msg.intent, frame: msg.spec?.chunked?.frame}, {}, []);
       if (model._xygChunkedActiveView !== view || msg.intent !== String(chunkedIntent)) { reject(); return; }
+      const currentRanges = view._eventView().ranges;
+      if (!chunkedRanges || !["x", "y"].every(axis => chunkedRanges[axis].length === 2
+          && chunkedRanges[axis].every((value, i) => Number.isFinite(value)
+            && value === currentRanges[axis]?.[i]))) { reject(); return; }
       if (view._applyChunkedFrame(msg, buffers)) {
         chunkedFrame = msg.spec.chunked.frame;
         model._xygChunkedPacket = {spec: view.spec, buffers};
