@@ -2184,7 +2184,7 @@ The [issued paged-source continuation](filter-tier-c.md#issued-native-paged-sour
 adds native Python/Node XYFC v2 attach for issued XYGC planes, followed by the
 unchanged shared v1 count/query/membership commands. It retains immutable file
 and metadata leases rather than copying all rows or retaining the viewport LRU.
-The browser factory still requires resident arrays: a native source handle is
+The dedicated Worker factory still requires resident arrays: a native source handle is
 not portable to a Worker, and direct WASM refuses that attach rather than
 silently materializing or treating the handle as browser authority. Browser
 file transport remains required follow-up work. Resident cooperative index
@@ -2193,6 +2193,20 @@ Worker turns, with cancellation and private-owner teardown covered by the
 [matching-package continuation](../performance/filter-paged-cooperative-2026-11-11/README.md).
 That evidence does not qualify file-backed Worker sources, real 100M/five-view
 performance, global budgets or whole-issue completion.
+
+The native asynchronous Node factory also advances the same Rust jobs through
+the existing C export. Its one-use source registration can be adopted by browser
+`createFilterSession` over application-owned binary callbacks and painted by the
+same `attachFilterDashboard`. Native handles and canonical columns do not enter
+the browser. This is explicit callback integration; Python's public convenience
+session remains synchronous, and automatic notebook filtering and portable
+Worker file sources remain open. Bounded native turns do not guarantee bounded
+positioned-I/O latency or whole-process/transport memory accounting.
+The functional 100M-row callback witness uses four materialized XYGC files,
+five dimensions, four active cells and five 100×100 passive grids. Its native
+build scans the source once; unchanged range/paint commands read no canonical
+rows. Separate bounded membership requests report their own reads. This is not
+the dossier's pixel-level active index or 50 FPS performance qualification.
 
 ## Temporal catalog candidate (#46)
 

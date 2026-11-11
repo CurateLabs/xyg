@@ -3087,7 +3087,16 @@ transport or global resource admission. The
 adds bounded Rust build/prefix, exact-fallback and membership turns with
 cancellation, private-owner teardown and normal-package qualification. Array
 ingress and configuration parsing remain synchronous; portable file-backed
-Worker building and the 100M/five-rendered-view qualification remain open.
+Worker building and the 100M/five-rendered-view performance qualification remain open.
+The explicit asynchronous native callback path additionally paints five
+different-dimensional views over a fully materialized 100M-row XYGC fixture,
+using the same renderer and independently checked counts/textures/membership.
+Its four-cell active definition and 100×100 passive grids establish bounded
+functionality, not pixel-level active indexing, ≥50 FPS, automatic widgets,
+portable file Workers, whole-process budgets or competitor leadership. Repeated
+identical dashboard authoring does not resubmit a force-build command; Rust
+continues to decide query invalidation and rebuilding. Reproduction uses
+`scripts/gen_filter_paged_fixture.py` and `scripts/filter_native_callback_browser.mjs`.
 No prefix row-mask slab or second renderer is used.
 
 ## 35. Milestone amendments (round 3)

@@ -287,7 +287,8 @@ XYFC/XYFR compatibility path; `{cooperative: true}` enables the continuation
 adapter. Resident source creation/append and packet/configuration validation
 remain synchronous. File-backed Worker source ingress is not yet implemented.
 
-The WASM filter export recognizes a separate XYFJ v1 control frame; native
+The WASM filter export and native `xyg_filter_session_execute` recognize a
+separate XYFJ v1 control frame; native
 ABI declarations, WASM function exports and XYFC v1 packets are unchanged.
 All fields are little endian. A request has a 32-byte header: magic `XYFJ`,
 u32 version1, u32 operation, zero u32, u64 token, zero u64. Begin (1) requires
@@ -299,6 +300,72 @@ rows, u64 operation row count. Membership progress is relative to the requested
 page. Completed row scanning may still have a pending cumulative-prefix phase;
 only XYFR denotes completion. These control buffers contain binary integers,
 not JSON numeric payloads.
+
+The native concurrent gate validates this same control header in Rust. Only a
+valid begin with an admitted inner XYFC header advances its newest-request
+watermark. Advance/cancel tokens name existing work and never advance that
+watermark. Malformed framing and inner headers preserve older pending work;
+a newer admitted header supersedes it even when the body subsequently refuses.
+Existing native pointer/capacity guards and the 256 MiB total input extent stay
+unchanged, including the wrapper. Raw XYFC callers retain their synchronous
+compatibility path. The wrapper's 32 live bytes are additionally charged during
+each native cooperative turn.
+
+### Native asynchronous and callback clients
+
+Node `createNativeFilterSession(columns, options)` accepts the same arrays or
+issued XYGC planes as the synchronous session. It uses the existing Rust XYFJ
+jobs and schedules subsequent bounded turns with `setImmediate`; no second
+filter engine, C signature or thread-pool policy is introduced. Individual
+native calls, local positioned reads, array ingress and validation remain
+synchronous. Bounded work does not promise a hard I/O or wall-time deadline.
+Malformed/stale requests leave older scheduled work intact. Supersession and
+close reject pending operations, cancel their scheduled callbacks and release
+the native owner. Repeated close returns the same completion promise, and
+constructor failures retire their handles before rejecting.
+
+The native adapter retains one caller-owned 2 MiB reply scratch and returns an
+independent copy of every actual reply. Incoming/wrapped request storage and
+caller/HTTP buffers are separate transport owners, not silently included in the
+Rust session limit or a claimed global process budget.
+
+A fresh asynchronous owner can issue `takeRegistration()` once. It returns
+dimension names, a budget stamp and the genuine binary Rust source-registration
+reply, without canonical arrays or native handles. Issuing it disables the
+owner's programmatic request builder; the application forwards binary requests
+through `executeTransport` and closes through the original owner. Registration
+must precede other commands. The application owns access control and one command
+stream; source IDs remain identity stamps rather than authentication.
+
+Browser `createFilterSession(execute, close, registration)` adopts that accepted
+registration through the same `FilterSessionClient`. The callback transports
+unchanged XYFC/XYFR bytes; native scheduling remains on the server. The browser
+retains names/source identity and bounded derived replies rather than fabricated
+array-shaped columns. Invalid registration is rejected before calling either
+transport callback or closing a caller-owned endpoint. The existing
+`attachFilterDashboard` and ordinary density renderer consume its exact planes.
+The shared client accepts source metadata monotonically by Rust's reply
+watermark, so a delayed successful response cannot undo newer source metadata.
+
+`activateDensity(active, views)` submits a changed authoring definition and
+returns its genuine Rust reply. After that definition succeeds, a byte-identical
+definition in the same source/epoch/revision/budget scope returns `undefined`
+without submitting another command. Definition identity includes active/view
+IDs, dimensions, cuts, grid bounds, resolutions and colors. Source/configuration
+submissions invalidate this remembered definition before transport, since Rust
+may accept them before their ACK arrives. Refused proposals are never remembered;
+a later activation may resubmit accepted authoring to Rust. Delayed acknowledgements cannot overwrite a
+newer accepted definition. This remembers accepted authoring metadata rather
+than index residency. Rust still rebuilds invalidated or evicted indexes when
+queries require them. `configureDensity` retains its explicit force-build
+semantics and wire fixtures. The dashboard uses activation for repeated
+gestures, falling back to explicit configuration for custom clients which do
+not expose activation. Skipped activations can leave gaps in the client's
+monotonic request counter; only submitted Rust commands consume wire revisions.
+
+This explicit application callback boundary does not establish automatic widget
+binding, portable Worker file registration, arbitrary-I/O responsiveness, or the
+100M/five-view performance and wider host/accessibility acceptance.
 
 An admitted job pins the immutable source through shared ownership; it never
 clones the canonical columns. Its private candidate takes ownership of newly

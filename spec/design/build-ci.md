@@ -215,6 +215,12 @@ restricted to exact-platform packages or that explicit override. Missing inputs 
 failed check must fail the target, rather than silently skip a host.
 
 The browser client retains its independent WebGL/browser smoke coverage.
+The required `Native filtering callback painter` step runs the bounded140003-row
+materialized fixture and actual five-view native/browser callback journey after
+the native/client/module prerequisites. It supplies the native library and
+Chromium explicitly and fails when the browser is absent. The workflow verifier
+requires that exact unmasked command, independently of the unchanged Node host
+suite. This functional gate does not claim the100M/50FPS performance target.
 The JS/WASM builds are prerequisites because the complete Node suite checks
 native/WASM equivalence and HTML exports as well as graph kernels.
 

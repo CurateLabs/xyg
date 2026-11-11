@@ -5,6 +5,15 @@ export {
   decodeFilterReply,
   FilterTierCError,
 } from "../../packages/xy-node/src/filter-protocol.js";
+/** Bind a genuine native registration to a caller-owned binary transport.
+ * The native endpoint advances Rust jobs; the browser retains no source arrays. */
+export function createFilterSession(
+  execute: (packet: Uint8Array) => Promise<Uint8Array>,
+  close: () => Promise<void>,
+  registration: { names: string[]; packet: Uint8Array; budgetBytes: bigint },
+) {
+  return FilterSessionClient.fromRegistration(execute, close, registration);
+}
 /** One dedicated ordinary Worker owns the source/session; close disposes it.
  * Uses the same public programmatic protocol as Chart.filter_session/Node.
  * attachFilterDashboard binds existing composed views to its count planes. */

@@ -78,7 +78,7 @@ export async function attachFilterDashboard(session: any, bindings: Binding[]) {
     }
   };
   const active = async (b: Binding) =>
-    session.configureDensity(
+    (session.activateDensity ?? session.configureDensity).call(session,
       { id: b.id, dimension: b.dimension, cuts: b.cuts },
       grids,
     );

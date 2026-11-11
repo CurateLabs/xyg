@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "issue": "https://github.com/CurateLabs/xyg/issues/112",
+  "issueStateAtRead": "open",
+  "issueBodySha256": "53357a6aa15b18cfd669ceea3a1f51aafb88266d8cdee476262401f889209c4c",
+  "scope": "Bounded native callback continuation; original #112 and milestones4-7 remain active",
+  "issueVerdict": "Not Ready for whole-issue closure",
+  "checkpointVerdict": "Focused functional gates passed; final external review and delivery still required",
+  "scenarios": [
+    {
+      "given": "one issued native canonical source",
+      "when": "bounded asynchronous jobs are cancelled,superseded,malformed or closed",
+      "then": "Rust retains admission/publication ownership and private owners retire",
+      "evidence": [
+        "packages/xy-node/test/filter-tier-c.test.mjs",
+        "crates/xyg-engine/src/filter_tier_c.rs"
+      ]
+    },
+    {
+      "given": "genuine binary registration and five ordinary composed views",
+      "when": "accepted authoring is repeated or native acknowledgements arrive late",
+      "then": "unchanged gestures avoid full rebuilds and earlier state cannot replace newer state",
+      "evidence": [
+        "scripts/filter_native_callback_browser.mjs",
+        "packages/xy-node/test/filter-tier-c.test.mjs"
+      ]
+    },
+    {
+      "given": "fully materialized deterministic100M canonical rows",
+      "when": "one active four-cell range is served to five100x100 passive grids",
+      "then": "all independent counts,textures and membership match; source scan is explicit and indexed updates read zero rows",
+      "evidence": [
+        "scripts/gen_filter_paged_fixture.py",
+        "scripts/filter_native_callback_browser.mjs"
+      ]
+    }
+  ],
+  "remaining": [
+    "Pixel-level active index and inclusive boundary extensions",
+    "Atleast50FPS five-view100M,CodSpeed and competitor measurements",
+    "Permanent distribution of largefixture beyond committed recipe/hash/provenance",
+    "Materialized masks,prefetch,portable fileWorker,automatic native widgets",
+    "Complete A/B/C routing,platform/assistive hardware and full host compatibility",
+    "Global budgets,newhead hostedCI/mergequeue and milestone acceptance"
+  ],
+  "basePolicy": "feature branch to main via required mergequeue; no direct merge",
+  "authorization": "Existing user authorization permits gh PR create/update; no issue/milestone closure asserted"
+}

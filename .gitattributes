@@ -1694,3 +1694,12 @@ spec/performance/filter-cooperative-status-2026-11-11/**/*.gz binary
 spec/performance/filter-dossier-status-2026-11-11/*.md text eol=lf
 spec/performance/filter-dossier-status-2026-11-11/*.json text eol=lf
 spec/performance/filter-dossier-status-2026-11-11/**/*.gz binary
+
+# Native asynchronous filter callbacks and reproducible materialized sources.
+packages/xy-node/src/filter-cooperative.js text eol=lf
+scripts/gen_filter_paged_fixture.py text eol=lf
+scripts/filter_native_callback_browser.mjs text eol=lf
+tests/test_filter_native_callback.py text eol=lf
+spec/performance/filter-native-callback-2026-11-11/*.md text eol=lf
+spec/performance/filter-native-callback-2026-11-11/*.json text eol=lf
+spec/performance/filter-native-callback-2026-11-11/**/*.gz binary

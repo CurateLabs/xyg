@@ -1160,6 +1160,17 @@ pub struct RequestGate {
 }
 impl RequestGate {
     pub fn enter(&self, b: &[u8]) -> u64 {
+        let b = if b.get(..4) == Some(b"XYFJ") {
+            match jobs::admitted_control(b) {
+                Ok((1, _)) => &b[32..],
+                // A private token identifies existing work; it must never
+                // consume a newer request watermark, even when it is wrong.
+                Ok((_, token)) => return token,
+                Err(_) => return 0,
+            }
+        } else {
+            b
+        };
         let seq = u64_at(b, 16).unwrap_or(0);
         // Invalid headers do not consume/cancel accepted or pending work.
         if admitted_header(b).is_ok() {
@@ -1223,6 +1234,56 @@ mod tests {
         assert!(!gate.obsolete(7));
         put(&mut input, 16, 8);
         gate.enter(&input);
+        assert!(gate.obsolete(7));
+        gate.cancel(8);
+        assert!(gate.obsolete(8));
+    }
+
+    #[test]
+    fn filter_tier_c_transport_gate_tracks_only_admitted_begin_revisions() {
+        fn control(op: u32, token: u64, inner: &[u8]) -> Vec<u8> {
+            let mut out = vec![0; 32];
+            out[..4].copy_from_slice(b"XYFJ");
+            out[4..8].copy_from_slice(&1u32.to_le_bytes());
+            out[8..12].copy_from_slice(&op.to_le_bytes());
+            put(&mut out, 16, token);
+            out.extend_from_slice(inner);
+            out
+        }
+        let gate = RequestGate::default();
+        let mut query = vec![0; HEADER];
+        query[..4].copy_from_slice(b"XYFC");
+        query[4..8].copy_from_slice(&1u32.to_le_bytes());
+        query[8..12].copy_from_slice(&5u32.to_le_bytes());
+        put(&mut query, 16, 7);
+        assert_eq!(gate.enter(&control(1, 0, &query)), 7);
+        assert!(!gate.obsolete(7));
+        for op in [2, 3] {
+            assert_eq!(gate.enter(&control(op, 99, &[])), 99);
+            assert!(!gate.obsolete(7), "control token is not a new request");
+        }
+        put(&mut query, 16, 99);
+        for invalid in [
+            control(1, 99, &query),
+            control(2, 0, &[]),
+            control(2, 99, &query),
+            control(4, 99, &query),
+        ] {
+            gate.enter(&invalid);
+            assert!(!gate.obsolete(7));
+        }
+        for offset in [4, 12, 24] {
+            let mut invalid = control(1, 0, &query);
+            invalid[offset] = 2;
+            gate.enter(&invalid);
+            assert!(!gate.obsolete(7));
+        }
+        let mut invalid_inner = query.clone();
+        invalid_inner[12] = 2;
+        gate.enter(&control(1, 0, &invalid_inner));
+        assert!(!gate.obsolete(7));
+        put(&mut query, 16, 8);
+        assert_eq!(gate.enter(&control(1, 0, &query)), 8);
         assert!(gate.obsolete(7));
         gate.cancel(8);
         assert!(gate.obsolete(8));

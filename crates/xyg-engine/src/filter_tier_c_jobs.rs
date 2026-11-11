@@ -4,6 +4,31 @@ use super::*;
 const WORK: usize = 16_384;
 const JOB_BYTES: usize = 2048;
 
+/// One framing authority serves execution and the native concurrent gate.
+pub(super) fn admitted_control(b: &[u8]) -> Result<(u32, u64)> {
+    if b.len() < 32
+        || b.len() > MAX_PACKET + 32
+        || b.get(..4) != Some(b"XYFJ")
+        || u32_at(b, 4)? != 1
+        || u32_at(b, 12)? != 0
+        || u64_at(b, 24)? != 0
+    {
+        return Err(Error::Malformed);
+    }
+    let op = u32_at(b, 8)?;
+    let token = u64_at(b, 16)?;
+    let valid = match op {
+        1 => token == 0 && b.len() > 32,
+        2 | 3 => token != 0 && b.len() == 32,
+        _ => false,
+    };
+    if valid {
+        Ok((op, token))
+    } else {
+        Err(Error::Malformed)
+    }
+}
+
 #[derive(Debug)]
 pub enum CooperativeReply {
     Complete(Vec<u8>),
@@ -199,6 +224,23 @@ fn finish_work(
     Ok(work)
 }
 impl FilterTierCSession {
+    /// Native adapters keep the raw compatibility path and share the Worker
+    /// continuation protocol. The wrapper's live32 bytes are additional to
+    /// the inner request or retained private packet admitted by the engine.
+    #[cfg(not(target_family = "wasm"))]
+    pub fn execute_transport(
+        &mut self,
+        b: &[u8],
+        capacity: usize,
+        superseded: impl Fn() -> bool,
+    ) -> std::result::Result<Vec<u8>, usize> {
+        if b.get(..4) == Some(b"XYFJ") {
+            self.execute_cooperative_with_external(b, capacity, 32, superseded)
+        } else {
+            self.execute(b, capacity, superseded)
+        }
+    }
+
     pub fn execute_cooperative_with_external(
         &mut self,
         b: &[u8],
@@ -221,24 +263,16 @@ impl FilterTierCSession {
         capacity: usize,
         superseded: impl Fn() -> bool,
     ) -> std::result::Result<Vec<u8>, usize> {
-        let token = u64_at(b, 16).unwrap_or(0);
-        if b.len() < 32
-            || b.len() > MAX_PACKET + 32
-            || b.get(..4) != Some(b"XYFJ")
-            || u32_at(b, 4) != Ok(1)
-            || u32_at(b, 12) != Ok(0)
-            || u64_at(b, 24) != Ok(0)
-        {
-            return self.error_reply(token, Error::Malformed, capacity);
-        }
-        let result = match u32_at(b, 8).unwrap() {
-            1 if token == 0 && b.len() > 32 => {
-                self.begin_cooperative(&b[32..], capacity, superseded)
+        let (op, token) = match admitted_control(b) {
+            Ok(header) => header,
+            Err(error) => {
+                return self.error_reply(u64_at(b, 16).unwrap_or(0), error, capacity);
             }
-            2 if token != 0 && b.len() == 32 => {
-                self.advance_cooperative(token, capacity, superseded)
-            }
-            3 if token != 0 && b.len() == 32 => {
+        };
+        let result = match op {
+            1 => self.begin_cooperative(&b[32..], capacity, superseded),
+            2 => self.advance_cooperative(token, capacity, superseded),
+            3 => {
                 let needed = self
                     .config
                     .as_ref()

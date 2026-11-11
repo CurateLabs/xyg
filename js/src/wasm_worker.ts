@@ -1,5 +1,6 @@
 /// <reference lib="webworker" />
 import {executeFrozenGraph} from "./wasm_frozen_graph";
+import {filterControlRequest, decodeFilterProgress, filterReplyRetires} from "../../packages/xy-node/src/filter-protocol.js";
 
 import {
   bindXygWasmExports,
@@ -923,12 +924,7 @@ function queueTicks(message: any) {
 let activeFilter: { requestId: number; token: bigint; timer: ReturnType<typeof setTimeout> } | null = null;
 function filterCall(requestId: number, op: number, token: bigint, command?: ArrayBuffer): ArrayBuffer | null {
   if (!exports || !handle) return null;
-  const packet = op === 0 ? new Uint8Array(command!) : new Uint8Array(32 + (command?.byteLength ?? 0));
-  if (op !== 0) {
-    const d = new DataView(packet.buffer);
-    packet.set([88, 89, 70, 74]); d.setUint32(4, 1, true); d.setUint32(8, op, true); d.setBigUint64(16, token, true);
-    if (command) packet.set(new Uint8Array(command), 32);
-  }
+  const packet = op === 0 ? new Uint8Array(command!) : filterControlRequest(op, token, command ? new Uint8Array(command) : undefined);
   let status = exports.xyg_wasm_arena_resize(handle, packet.byteLength);
   if (status !== XYG_WASM_STATUS.OK) {
     rustError(requestId, statusCode(status), readXygWasmError(exports, handle), status); return null;
@@ -949,10 +945,9 @@ function filterCall(requestId: number, op: number, token: bigint, command?: Arra
 }
 function receiveFilter(requestId: number, response: ArrayBuffer, continuation: boolean) {
   const d = new DataView(response);
-  if (d.getUint32(0, true) === 0x4a465958) {
-    if (response.byteLength !== 32 || d.getUint32(4, true) !== 1 || d.getBigUint64(16, true) > d.getBigUint64(24, true)) throw new Error("invalid filter progress reply");
-    const token = d.getBigUint64(8, true);
-    if (!token) throw new Error("invalid filter continuation token");
+  const packet = new Uint8Array(response), progress = decodeFilterProgress(packet);
+  if (progress) {
+    const token = progress.token;
     if (activeFilter && activeFilter.requestId !== requestId) {
       clearTimeout(activeFilter.timer);
       error(activeFilter.requestId, "XYG_WASM_CANCELLED", "filter work was superseded", XYG_WASM_STATUS.CANCELLED);
@@ -965,7 +960,7 @@ function receiveFilter(requestId: number, response: ArrayBuffer, continuation: b
   if (response.byteLength < 192 || d.getUint32(0, true) !== 0x52465958 || d.getUint32(4, true) !== 1) throw new Error("invalid filter response");
   // Rust's admitted watermark decides whether an incoming packet retired the
   // old job. Malformed/stale packets must leave that job and timer intact.
-  if (activeFilter && (continuation || (d.getBigUint64(144, true) > activeFilter.token || d.getBigUint64(24, true) >= activeFilter.token))) {
+  if (activeFilter && (continuation || filterReplyRetires(packet, activeFilter.token))) {
     clearTimeout(activeFilter.timer);
     if (activeFilter.requestId !== requestId) error(activeFilter.requestId, "XYG_WASM_CANCELLED", "filter work was superseded", XYG_WASM_STATUS.CANCELLED);
     activeFilter = null;

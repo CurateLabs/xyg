@@ -2289,6 +2289,14 @@ def validate_ci_workflow(path: Path = DEFAULT_CI_WORKFLOW) -> list[str]:
     _require_step_runs_exactly(
         errors,
         jobs.get("test", ""),
+        "Native filtering callback painter",
+        "required native filtering callback painter",
+        'export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"',
+        'XY_REQUIRE_BROWSER=1 XYG_CHROMIUM="$(node -e "console.log(require(\'playwright\').chromium.executablePath())")" .venv/bin/python -m pytest -q tests/test_filter_native_callback.py',
+    )
+    _require_step_runs_exactly(
+        errors,
+        jobs.get("test", ""),
         "Graph and chart-scale smoke gates",
         "graph/kernel ceilings, chart-scale and pyramid smoke coverage",
         'export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"',

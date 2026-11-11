@@ -476,6 +476,17 @@ same binary Rust session methods as Python/Node, including `configureDensity`,
 `range`, `paint`, `baseFilter`, `beginEdit`, `cancelEdit`, `commitEdit`, append,
 eviction/rebuild and canonical membership pages.
 
+`createFilterSession(execute, close, registration)` adopts a genuine native
+source registration returned once by Node's asynchronous
+`createNativeFilterSession(...).takeRegistration()`. The application supplies
+binary callback transport and access control; no canonical arrays or native
+handles enter the browser. See the [native callback contract](../design/filter-tier-c.md#native-asynchronous-and-callback-clients).
+Both clients expose `activateDensity(active, views)`: an identical previously
+accepted authoring definition submits no command and returns `undefined`.
+`configureDensity` continues to force a Rust build. The dashboard uses activation
+so an unchanged gesture configuration does not trigger another full source scan;
+Rust still owns invalidation, residency and rebuilding.
+
 `attachFilterDashboard(session, bindings)` attaches existing composed
 `renderStandalone` ChartViews. Every binding explicitly supplies `view`, bigint
 `id/sourceId/epoch`, `dimension/cuts/step`, and a passive `grid` containing
@@ -497,8 +508,10 @@ and [composition example](../../examples/vanilla-ts/filter-linked.ts).
 
 Real five-view Chromium pointer/keyboard/count/texture/context tests are in the
 existing Release surfaces command. This does not qualify automatic native
-widget transport, nonlinear/nonprimary/large-offset paint, active rectangles, Worker
-chunk cancellation, real assistive hardware, 100M/≥50 FPS or competitors.
+widget transport, nonlinear/nonprimary/large-offset paint, active rectangles,
+real assistive hardware, 100M/≥50 FPS or competitors. Resident Worker jobs and the
+explicit native callback path support bounded cooperative turns; portable file
+Worker attachment and arbitrary-I/O deadlines remain open.
 ## Frozen temporal graph exports (WASM38)
 
 After an accepted idle temporal publication, `await session.freeze({timezone,

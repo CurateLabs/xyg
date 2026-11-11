@@ -77,7 +77,7 @@ pub unsafe fn execute(
     let Ok(mut state) = e.state.lock() else {
         return -3;
     };
-    match state.execute(input, cap, || {
+    match state.execute_transport(input, cap, || {
         e.disposed.load(Ordering::Acquire) || e.gate.obsolete(seq)
     }) {
         Ok(reply) => {

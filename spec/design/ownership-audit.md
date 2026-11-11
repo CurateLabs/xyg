@@ -1383,6 +1383,7 @@ These additions use the existing ownership policies without adding a host policy
 | `packages/xy-node/src/filter-session.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/chunked-column-ref.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/filter-protocol.js` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/filter-cooperative.js` | Node host | `node-host` | `keep-host`; bounded-turn scheduling and owner teardown; Rust owns work, admission and publication | — |
 | `js/src/49_filter_session.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 
 | `crates/xyg-engine/src/filter_tier_c_linked.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
