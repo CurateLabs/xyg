@@ -2177,7 +2177,8 @@ composed browser views and the ordinary density painter; bounded Chromium
 five-view pointer/keyboard parity and context/append/rebuild/publication failures
 are exercised. Automatic notebook/native-host transport, assistive hardware,
 nonlinear/large-offset compatibility and massive performance remain open. The [normative subset and remaining work](filter-tier-c.md)
-include synchronous Worker cancellation limits and logical memory accounting.
+describe the bounded cooperative resident Worker path and its logical memory
+accounting; array ingress and configuration parsing remain synchronous.
 
 The [issued paged-source continuation](filter-tier-c.md#issued-native-paged-sources-continuation)
 adds native Python/Node XYFC v2 attach for issued XYGC planes, followed by the
@@ -2186,7 +2187,12 @@ and metadata leases rather than copying all rows or retaining the viewport LRU.
 The browser factory still requires resident arrays: a native source handle is
 not portable to a Worker, and direct WASM refuses that attach rather than
 silently materializing or treating the handle as browser authority. Browser
-file transport and cooperative index building remain required follow-up work.
+file transport remains required follow-up work. Resident cooperative index
+building, exact fallback and membership scans now yield between Rust-controlled
+Worker turns, with cancellation and private-owner teardown covered by the
+[matching-package continuation](../performance/filter-paged-cooperative-2026-11-11/README.md).
+That evidence does not qualify file-backed Worker sources, real 100M/five-view
+performance, global budgets or whole-issue completion.
 
 ## Temporal catalog candidate (#46)
 

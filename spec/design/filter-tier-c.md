@@ -342,9 +342,13 @@ a dedicated instance: acquisition of incompatible retained authorities and the
 reverse direction refuse before changing accepted state. This is an explicit
 coexistence restriction, not a claim of process-wide memory accounting.
 
-This development continuation is not shipping-qualified while its module
-exceeds the unchanged package caps. No 100M/five-view, browser file paging,
-process-wide budgeting or whole-issue acceptance follows from the focused tests.
+The bounded resident cooperative path passes normal-package qualification at
+1,875,741 raw / 786,020 Node22 gzip-6 bytes, leaving 412 gzip bytes under the
+unchanged caps. The matching-source controls cover build, prefix, exact fallback,
+membership, cancellation, recovery and ownership; see the
+[continuation receipt](../performance/filter-paged-cooperative-2026-11-11/README.md).
+This does not establish hosted CI/queue readiness, 100M/five-rendered-view
+performance, browser file paging, process-wide budgeting or whole-issue acceptance.
 
 ## Proof and remaining acceptance
 
@@ -361,8 +365,10 @@ Run commands and exact artifact/environment bindings live in
 The bounded linked path below adds selected-count density, canonical membership,
 range composition, live pointer previews/commit/cancel, keyboard creation/edit/
 commit/cancel/clear, source invalidation, and atomic five-view publication.
-The remaining requirements include shipping-qualified cooperative Worker cancellation,
-spill/source reopening, persistent materialized result masks, idle prefetch,
+The resident cooperative Worker path has bounded matching-package evidence;
+portable file-backed Worker source/build/cancellation qualification remains open.
+Other remaining requirements include spill/source reopening, persistent
+materialized result masks, idle prefetch,
 non-range predicates/active rectangles, log/nonlinear/nonprimary/large-offset paint
 compatibility, automatic notebook-widget/native-host transport binding, actual
 assistive-technology/hardware journeys, and all required scale qualification.
