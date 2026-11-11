@@ -1671,3 +1671,8 @@ spec/performance/graph-initial-context-recovery-2026-11-11/**/*.gz binary
 spec/performance/graph-initial-deadline-2026-11-11/*.md text eol=lf
 spec/performance/graph-initial-deadline-2026-11-11/*.json text eol=lf
 spec/performance/graph-initial-deadline-2026-11-11/**/*.gz binary
+
+# Density matrix summary and exact predecessor preservation.
+spec/performance/density-matrix-summary-2026-11-11/*.md text eol=lf
+spec/performance/density-matrix-summary-2026-11-11/*.json text eol=lf
+spec/performance/density-matrix-summary-2026-11-11/**/*.gz binary

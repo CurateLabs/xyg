@@ -1420,7 +1420,7 @@ no JavaScript aggregator fallback.
 | Kernel dispatch | `js/src/54_kernel.ts` (`wasm_density_no_refinement`) | shipped |
 | Observer phase | `js/src/60_entries.ts` (`density_no_refinement`) | shipped |
 | Standalone missing WASM | `tests/test_density_pan_no_rebin.py` | green when Chromium is present |
-| Packaged ESM/IIFE overview retention | `scripts/wasm_foundation_smoke.mjs` | three bounded generated-file cases per entry, actual packaged Rust aggregate, exact pixel/grid retention, zoom/home, no new Worker or texture upload, and disposal |
+| Packaged ESM/IIFE overview retention | `scripts/wasm_foundation_smoke.mjs` | five bounded cases per entry, actual packaged Rust aggregate, exact pixel/grid retention, zoom/home, verified texture-namespace recovery, no new Worker or non-recovery texture upload, and disposal |
 | Installed supported consumers | `scripts/consumer_apps_smoke.py` / `packaged_consumer_browser.mjs` | hosted Python HTML and Node/vanilla TypeScript secondary/polar tick admission, missing/corrupt tick modules, and one native Node split unsupported-density zoom/home/lifecycle case; bounded receipts below |
 | Bundle / contract probes | `tests/test_static_client_security.py`, `tests/test_wasm_density_chartview_contract.py`, `tests/test_wasm_full_density_source.py` | green |
 | Hosted SHA-keyed visual evidence of this boundary | nightly `hosted-density-browser-<sha>.json` | tracked by [#886: packaged ticks and density no-refinement proof](https://github.com/CurateLabs/xyg/issues/886); current artifacts prove refinement lifecycle, not no-refinement |
