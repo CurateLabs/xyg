@@ -907,6 +907,17 @@ opacity; edge color, width, opacity) all fail closed before layout output.
 Code ranges are checked on every source row even when Aggregate LOD later
 omits the paint.
 
+Python validates semantic integer representation and range before narrowing
+to the canonical u8 code and u32 flag planes. For more than eight values it
+uses complete integer minimum/maximum reductions; tiny planes keep scalar
+checks to avoid reduction setup. Empty typed planes, signed/unsigned and
+non-native-endian integers, strided views and the existing error precedence
+retain the same acceptance and bytes. No values are sampled or narrowed before
+their range check. This host-framing optimization changes no LOD decision,
+palette, metric-domain or interaction-bit policy; Rust still owns those rules.
+The crossover measurements and exact-output/refusal controls are recorded in
+`spec/performance/graph-semantic-validation-2026-11-11/README.md`.
+
 Hosts call `xyg_graph_semantic_style_resolve` once per side over **source**
 rows (nodes with the §7.1 visual-state flags from `visual_state_flags`; edges
 with `edge_visual_state_flags` / Node `edgeVisualStateFlags`, zero when unset)
