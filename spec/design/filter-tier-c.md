@@ -70,7 +70,7 @@ intent. A rebuild is deterministic for the same source/configuration. Count-prod
 clear also requires a resident index in legacy mode; after eviction/append, rebuild first. Linked mode supports
 immediate clear with a recorded rebuild. Schema
 replacement requires a new explicitly owned source session/epoch.
-Filesystem spill/reopen and arbitrary non-range predicates are not supported and must not substitute a different source identity.
+Serializing/reopening filter sessions, managed spill creation and arbitrary non-range predicates remain unsupported; none may substitute a different source identity.
 
 Request revisions are positive monotonic u64 values. A structurally valid
 request consumes its revision even if product admission/publication fails;
@@ -79,9 +79,12 @@ Cancellation preserves visible state and intent. Native cancellation has an
 independent atomic watermark and scans check it every 4,096 rows and before
 publication. A newer admitted native request likewise supersedes old work.
 The shared state mutex prevents old work from replacing an already published
-newer result. WASM commands are synchronous and serialized in the dedicated
-Worker: cancellation queued during a synchronous operation cannot interrupt
-that operation. Cooperative Worker chunking is explicitly pending, not claimed.
+newer result. The low-level synchronous WASM compatibility path remains
+serialized: cancellation queued during one synchronous operation cannot interrupt
+it. The public Worker session uses the cooperative build/count/membership
+continuation described below. Resident source ingress and configuration parsing
+remain synchronous; cooperative shipping qualification and portable file paging
+remain pending.
 
 Source/configuration/index/intent replacements publish only after all fallible
 construction, result allocation, capacity checks, and cancellation checks.
@@ -105,6 +108,14 @@ uses the owning instance’s unchanged maximum arena budget as that ceiling.
 Rust refuses a declared session budget above that ceiling or 256 MiB. The
 browser factory requires an explicit `budgetBytes` within its dedicated
 Worker limit. It cannot enlarge the Worker’s existing resource limit.
+
+Canonical C clauses keep their existing64-clause cap. Restoring the active
+clause orders at most64 `(view ID, dimension)` keys with a bounded in-place
+insertion pass; it preserves all range bits, allocates no sorting scratch,
+and retains the same pre-sort cap refusal. This replaces a general-purpose
+quicksort for this private bounded list only. Arbitrary key permutations and
+high-u64 IDs must produce the same canonical records, and begin/cancel edit
+round trips are measured through CodSpeed separately from row scans/rendering.
 
 The declared budget governs Rust session working storage plus one incoming
 packet and one Rust output. It admits old-plus-candidate canonical/config/index
@@ -175,6 +186,166 @@ return zero bin count. Membership bytes follow. Status values are 0 success,
 requests retain the prior visible identity, revision, and predicate stamp.
 Native handle/ABI failures are separate negative adapter status values.
 
+## Issued native paged sources (continuation)
+
+`Chart.filter_session` and Node `chart.filterSession` also accept a mapping of
+issued `ChunkedColumns.column("x")` / `.column("y")` references. Every dimension
+must be an issued plane; mixing arrays and issued planes refuses. Rust checks
+the handles, plane ordinals and equal canonical row counts. The caller explicitly
+declares correspondence between dimensions through the existing source ID,
+epoch and absolute first row. Equal lengths alone do not assert that unrelated
+files represent the same records. Source IDs and predicate fingerprints are
+identity stamps, not a cryptographic authentication of file contents.
+
+The native attach packet uses `XYFC` **version 2, opcode 16**, with the unchanged
+96-byte header. Its arguments are dimension count, canonical row count and
+absolute first row. Bytes 80–95 must be zero. The payload is one pair of u64s
+per dimension: issued XYGC handle, then plane ordinal (x=0, y=1). Source revision
+must be 1. There may be 1–64 dimensions; canonical row count must fit u32 and
+the absolute row interval must fit u64. Attach acquires independent immutable
+file/metadata leases, reads no data rows and publishes only after capacity and
+cancellation checks. Repeated references to the same issued backing share a
+reader within the session. Replies remain XYFR v1; subsequent operations use
+the existing XYFC v1 protocol. XYFC v1's admitted operation set and all existing
+complete fixture bytes remain unchanged. Unknown version/operation pairs fail
+closed. WASM currently refuses this native-issued-handle version as Malformed;
+it does not interpret a native handle as a browser file or fall back to arrays.
+
+Index construction, explicit exact boundary scans and membership use the same
+row kernels as resident sources, through a bounded canonical block accessor.
+The reader preserves **every** row, including nonfinite pairs, NaN payload bits
+and signed zero; public row identity remains `first_row + canonical_position`.
+The XYGC viewport/page API deliberately omits nonfinite pairs and is not a
+canonical source iterator. Numeric files must remain immutable while leased,
+as with existing XYGC navigation. A source read/validation failure publishes
+no replacement index, predicate, counts or revision. Indexed differences read
+zero source rows. Evict/rebuild preserves intent and reopens no hidden copy.
+
+The host-neutral `chunked_layout` decoder owns header, ordered metadata,
+overview and canonical-page validation. Native positioned I/O uses this decoder;
+a future Worker file reader must use it rather than reimplement XYGC policy.
+
+An immutable lease retains the file and admitted chunk metadata, **not** the
+viewport owner, its LRU/overview or generation watermark. Closing a viewport can
+retire all its cached chunks without breaking a live filter. Reader cancellation
+cannot cancel a viewport or another session. Filter close releases its leases;
+append to a paged source refuses with Source and preserves prior state. A
+changed file/schema requires a new issued source and explicit source epoch.
+
+The session charges 128 logical bytes per paged binding, 64 per reader slot,
+8 per dimension mapping, and each unique reader's immutable metadata and
+128-byte file slot. Metadata storage uses allocated vector capacities. Reads
+reserve a fixed-at-most-2-MiB logical workspace independent of source row count:
+page length is the smaller of 65,536 and
+`floor((2 MiB - 144*readers)/(32*readers))`. Each physical reader reserves
+`32*page_rows + 144` bytes, conservatively covering raw paired f64 bytes,
+decoded x/y columns, read slots and outer vector descriptors. The complete
+workspace coexists with the accepted index, replacement index, scratch and
+output under the unchanged session budget. Membership pages use their smaller
+requested extent. A failed pre-read admission performs no source I/O. Exact
+boundary fallback remains reported as a scan; this continuation does not turn
+it into a row-independent indexed operation.
+
+This continuation does **not** establish a process-wide resource budget,
+cooperative Worker building, browser File/OPFS/HTTP transport, paged append,
+materialized result masks, or the 100M/five-view performance acceptance. It is
+the native source ingress for that remaining end-to-end work; no whole-issue
+or milestone qualification follows from a native count-prefix test.
+
+### Read-ticket layout acquisition
+
+Native open now uses the transport-neutral Rust `LayoutReader`. Its first
+issued ticket requests exactly the 64-byte XYGC header. After validating the
+file length and header, Rust issues aligned metadata windows of at most
+65,520 bytes and overview windows of at most65,536 bytes. These tickets skip
+the canonical row region completely. Transport supplies the exact ticket
+serial, offset, length and bytes; it cannot choose a different acquisition
+interval. The same header/metadata/overview validators remain authoritative.
+
+The reader admits512 logical control bytes, complete metadata/overview
+capacity, and the larger of actual incoming buffer capacity and future read
+windows before reserving layout vectors. Refused admission, a stale ticket,
+a malformed late record, callback failure or cancellation leaves the current
+ticket and accepted prefix unchanged. Cancellation is checked before work,
+every64 records and immediately before committing a validated bounded window.
+The completed immutable layout retains canonical row indices and f64 bits.
+Canonical numeric-page decoding remains the separate bounded operation above.
+
+The existing native open API has no caller budget; it uses an unlimited local
+layout allowance and imposes no new default/resource policy. This allowance is
+not a process-wide budget. A portable adapter must additionally account for
+all external owners and transport copies before reading/staging tickets.
+Browser `File` registration, instance-scoped source issuance, asynchronous
+numeric-page tickets and filter attachment are still unimplemented. A tested
+Rust ticket reader does not establish browser-file or100M acceptance.
+
+## Cooperative filter transactions (development continuation)
+
+`createWasmFilterSession` uses cooperative filter commands on its dedicated
+Worker. The lower-level `worker.filterCommand(packet)` keeps the synchronous
+XYFC/XYFR compatibility path; `{cooperative: true}` enables the continuation
+adapter. Resident source creation/append and packet/configuration validation
+remain synchronous. File-backed Worker source ingress is not yet implemented.
+
+The WASM filter export recognizes a separate XYFJ v1 control frame; native
+ABI declarations, WASM function exports and XYFC v1 packets are unchanged.
+All fields are little endian. A request has a 32-byte header: magic `XYFJ`,
+u32 version1, u32 operation, zero u32, u64 token, zero u64. Begin (1) requires
+zero token and carries one complete XYFC packet. Advance (2) and cancel (3)
+require a nonzero instance-scoped token and no payload. A malformed control
+frame does not consume a revision or cancel pending work. A response is either
+ordinary XYFR or 32-byte progress: `XYFJ`, u32 version1, u64 token, u64 scanned
+rows, u64 operation row count. Membership progress is relative to the requested
+page. Completed row scanning may still have a pending cumulative-prefix phase;
+only XYFR denotes completion. These control buffers contain binary integers,
+not JSON numeric payloads.
+
+An admitted job pins the immutable source through shared ownership; it never
+clones the canonical columns. Its private candidate takes ownership of newly
+prepared configuration/predicate replacements, the input packet and intermediate
+buffers. Unchanged configuration/predicates stay in the accepted session and
+are borrowed only after the continuation's revision/source checks. Suspending
+a job does not make an extra copy of either accepted or replacement proposals. Each continuation
+checks its token, admitted request watermark, accepted revision, source identity
+and cancellation before/after work. A structurally valid newer XYFC header
+retires old work even if its body refuses. Malformed/stale headers leave that
+work intact. Only private completed work may finish a consumed revision; a
+caller replay remains stale. Wrong continuation tokens and short output
+capacity retain the candidate for retry. Cancellation, failed work and disposal
+release private owners while preserving accepted source/configuration/index/
+intent. A build followed by an exact fallback scan publishes as one transaction.
+
+Rust performs at most `floor(16384/(1+views+retained clauses+base clauses))`
+rows per turn (minimum1), then at most16384 cumulative additions. Prefix work
+uses the same count kernels. Exact fallback and membership scans use this same
+continuation discipline. TypeScript only frames control packets and schedules
+actual Worker turns; it does not implement filtering, binning, admission or
+predicate state. Optional capability-gated progress observations are evidence,
+not product-policy inputs. Indexed queries retain their zero-row serving path. The public factory waits for Worker readiness and claims a fresh, drained
+Worker before transferring ownership. A failed claim leaves foreign queued work
+or an existing filter owner intact. Ordinary product lanes cannot use a claimed
+filter Worker. Failed initialization after claiming waits for the owning
+Worker's release acknowledgement before rejecting, preserving the original
+failure if cleanup also fails.
+
+Admission includes accepted and replacement data, saved packet capacity,
+private configuration/predicate replacements, work buffers, completed intermediate index,
+2048 logical control bytes, bounded page workspace and final reply. Every
+continuation rechecks transient adapter staging slack. Peak diagnostics differ
+from synchronous work because these private captures are real owners. The job
+retains its complete admitted high-water mark across unrelated malformed/stale
+packet refusals; final linked replies include that mark even after capture
+copies have retired. WASM
+staging charges accepted and pending filter bytes. The filter adapter also
+charges all arena capacity outside the logical packet. A filter source requires
+a dedicated instance: acquisition of incompatible retained authorities and the
+reverse direction refuse before changing accepted state. This is an explicit
+coexistence restriction, not a claim of process-wide memory accounting.
+
+This development continuation is not shipping-qualified while its module
+exceeds the unchanged package caps. No 100M/five-view, browser file paging,
+process-wide budgeting or whole-issue acceptance follows from the focused tests.
+
 ## Proof and remaining acceptance
 
 `tests/fixtures/filter_tier_c/session.bin` retains complete requests/replies;
@@ -190,7 +361,7 @@ Run commands and exact artifact/environment bindings live in
 The bounded linked path below adds selected-count density, canonical membership,
 range composition, live pointer previews/commit/cancel, keyboard creation/edit/
 commit/cancel/clear, source invalidation, and atomic five-view publication.
-The remaining requirements include cooperative Worker chunk cancellation,
+The remaining requirements include shipping-qualified cooperative Worker cancellation,
 spill/source reopening, persistent materialized result masks, idle prefetch,
 non-range predicates/active rectangles, log/nonlinear/nonprimary/large-offset paint
 compatibility, automatic notebook-widget/native-host transport binding, actual

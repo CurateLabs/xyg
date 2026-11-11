@@ -2037,3 +2037,53 @@ bytes**, with **95 gzip bytes** below the unchanged cap. Its matching foundation
 run passes, but the earlier context-loss origin remains unresolved. Its actual
 100k notebook attempt still fails the existing peer wall deadline; source-owner
 isolation is not notebook reliability, global memory or milestone acceptance.
+
+
+## Cooperative filtering source sharing (development)
+
+The cooperative filtering continuation keeps existing package caps, compiler
+profile, optimizer pipeline and function exports. Its synchronous and yielded
+paths share the same row kernels and, on WASM, one bounded work dispatcher.
+Legacy and linked transactions borrow the same cancellation callback type;
+a wrapper closure must not duplicate complete transaction helpers. Index
+construction is shared before selecting synchronous execution or job capture.
+
+Typed-series default bar half-width now belongs to the safe engine kernel.
+The browser compiler delegates to that kernel. Finite-input validation,
+stable `f64::total_cmp` ordering, minimum strictly positive spacing, finite
+nonzero domain fallback and final multiplication by0.4 retain their previous
+order and results, including overflow behavior. It uses the existing shared
+stable f64 sort; native retains comparator specialization while WASM uses the
+existing erased comparator body for that record type.
+
+Polygon clipping's temporary derived node list uses directly constructed
+`[f64;2]` values so its stable sort shares the existing two-f64 array sort
+family. Endpoint ordering stays lexicographic `total_cmp`; the existing derived
+signed-zero welding, deduplication, binary searches, cycle order and resource/
+branch refusals remain unchanged. Output is converted back to the existing
+`ScreenPoint` tuple without arithmetic or reinterpretation. Canonical source
+storage and geometry are unchanged by this representation sharing.
+
+The linked filter's private canonical clause list is bounded by the existing
+64-clause guard. Its ordering uses an in-place insertion pass over those keys,
+preserving complete clause payloads and the pre-sort refusal. This removes the
+list's general quicksort specialization without changing other sorting paths,
+protocol output, validation or clause limits. Qualifying this bounded tradeoff
+requires native edit-round-trip CodSpeed comparisons and complete native/WASM
+packets. Those checks do not measure100M throughput or input-to-pixel latency.
+
+Geographic density memberships and clipping's directed temporary edge list use
+arithmetic u64 keys for two u32 ordinals. Numeric key order is exactly the
+previous lexicographic tuple order; sorting and deduplication use the existing
+u64 standard sorter. Density admission already bounds cells to2,000,000 and
+source-row ordinals are u32. Clipping's existing edge/byte admission bounds its
+nodes below2^22; checked node-index conversions refuse rather than truncate.
+The pairs stay packed through collection, sort, dedup and consumption. No extra
+canonical vector is allocated; admission estimates and caps stay unchanged.
+Canonical f64 coordinates, u64 source/feature IDs, CSR membership, cycle order
+and error categories remain unchanged. This representation shares a sorter;
+it does not change geographic LOD or establish a performance win.
+
+These are source-sharing contracts, not a package-fit, latency, performance
+or whole-issue qualification. New compiled artifacts must pass the unchanged
+package gates and the affected exact-output and lifecycle proofs.

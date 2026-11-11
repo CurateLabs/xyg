@@ -921,16 +921,23 @@ export class XygWasmWorker {
   }
 
   /** Submit one packed filter command to the shared Rust state machine. */
-  filterCommand(command: ArrayBuffer): Promise<ArrayBuffer> {
-    this.assertLive();
+  filterCommand(command: ArrayBuffer, options: { cooperative?: boolean } = {}): Promise<ArrayBuffer> {
+    this.assertLive(false,true);
     if (!(command instanceof ArrayBuffer) || command.byteLength < 1
         || command.byteLength > this.maxArenaBytes) {
       throw new TypeError("filter command must be a bounded ArrayBuffer");
     }
+    // A foreign task's reply/release must settle before claiming this lane.
+    // Filter requests have their own Rust u64 revisions and no scene sequence.
+    for (const pending of this.pending.values()) {
+      if (pending.sequence !== undefined) return Promise.reject(new XygWasmError(
+        "XYG_WASM_INVALID_ARGUMENT", "filter operations require a dedicated, drained Worker",
+      ));
+    }
     const requestId = this.allocateRequest();
     const result = this.promiseFor<ArrayBuffer>(requestId);
     try {
-      this.worker.postMessage({ type: "filter.command", requestId, command }, [command]);
+      this.worker.postMessage({ type: "filter.command", requestId, command, cooperative: options.cooperative === true }, [command]);
     } catch (cause) {
       this.pending.delete(requestId);
       throw new XygWasmError(
@@ -1138,6 +1145,9 @@ export class XygWasmWorker {
   }
 
   private onMessage(message: any) {
+    // Capability-gated filter observations are not request completions. Do
+    // not settle the same requestId before Rust's terminal XYFR arrives.
+    if (message?.type === "filter.progress") return;
     if (message?.type === "aggregate.stream_observation") {
       if (this.evidenceCapability && (message.phase === "begin" || message.phase === "push"
           || message.phase === "cancelled" || message.phase === "finish")
@@ -1196,9 +1206,10 @@ export class XygWasmWorker {
     this.pending.clear();
   }
 
-  private assertLive(retained=false) {
+  private assertLive(retained=false,filter=false) {
     if (retained) geographicOrigin(this);
     if (this.disposed) throw new XygWasmError("XYG_WASM_DISPOSED", "worker was disposed");
+    if (!filter && filterWorkerClaims.has(this)) throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT", "filter owner requires a dedicated Worker");
     if (graphWorkerAttachments.has(this)) throw new XygWasmError("GF_INTERACTION_INVALID", "Close the attached graph session before using another Worker product lane", -3);
     if(!retained&&this.geoTransportAdmission)throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT","Ordinary operations require a separate Worker from retained geographic transport");
   }
@@ -1273,12 +1284,26 @@ interface GraphWorkerAttachment {
   execute(operation: GraphSessionExport, request: Uint8Array): Promise<ArrayBuffer>;
   close(): Promise<void>;
 }
+const filterWorkerClaims = new WeakSet<XygWasmWorker>();
+/** @internal Claim before ownership transfer. Not exported by 60_entries.ts. */
+export function claimFilterWorker(worker:XygWasmWorker) {
+  if (!(worker instanceof XygWasmWorker)) throw new TypeError("A packaged WASM Worker is required");
+  geographicOrigin(worker);
+  worker["assertLive"]();
+  if (filterWorkerClaims.has(worker) || worker["pending"].size) throw new XygWasmError("XYG_WASM_INVALID_ARGUMENT", "filter operations require a dedicated, drained Worker");
+  filterWorkerClaims.add(worker);
+  let closing:Promise<void>|null=null;
+  return {
+    execute:(packet:Uint8Array)=>worker.filterCommand(packet.slice().buffer,{cooperative:true}),
+    close:()=>closing??=(async()=>{try{await worker.dispose();}finally{filterWorkerClaims.delete(worker);}})(),
+  };
+}
 const graphWorkerAttachments = new WeakMap<XygWasmWorker, GraphWorkerAttachment>();
 let nextGraphLifetime = 1;
 export function claimGraphWorker(worker: XygWasmWorker, onFailure: (error: XygWasmError) => void): GraphWorkerAttachment {
   if (!(worker instanceof XygWasmWorker)) throw new TypeError("A packaged WASM Worker is required");
   const origin = geographicOrigin(worker);
-  if (worker["inline"] || worker["disposed"] || worker["geoTransportAdmission"] || graphWorkerAttachments.has(worker)) {
+  if (worker["inline"] || worker["disposed"] || worker["geoTransportAdmission"] || filterWorkerClaims.has(worker) || graphWorkerAttachments.has(worker)) {
     throw new XygWasmError("GF_INTERACTION_INVALID", "Graph attachment requires an available packaged Worker", -3);
   }
   const lifetime = nextGraphLifetime++;

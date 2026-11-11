@@ -3395,6 +3395,32 @@ pub fn stacked_bounds_into(
     true
 }
 
+/// Infer the typed-series bar half-width without changing authored values.
+/// Uses the shared stable f64 sort; finite checks, positive-spacing selection,
+/// domain fallback and multiplication order match the browser compile contract.
+pub fn default_bar_half_width(
+    xs: &[f64],
+    domain_lo: f64,
+    domain_hi: f64,
+) -> Result<f64, crate::scene::SceneError> {
+    if xs.iter().any(|value| !value.is_finite()) {
+        return Err(crate::scene::SceneError::NonFinite);
+    }
+    let mut sorted = xs.to_vec();
+    crate::shared_sort::by(&mut sorted, f64::total_cmp);
+    let spacing = sorted
+        .windows(2)
+        .map(|pair| pair[1] - pair[0])
+        .filter(|value| *value > 0.0)
+        .min_by(f64::total_cmp);
+    let domain_span = (domain_hi - domain_lo).abs();
+    let basis =
+        spacing.or_else(|| (domain_span.is_finite() && domain_span > 0.0).then_some(domain_span));
+    basis
+        .map(|value| value * 0.4)
+        .ok_or(crate::scene::SceneError::NonFinite)
+}
+
 /// Bar/column layout modes shared by Python `_bar_like` and Node `composeBar`.
 ///
 /// `0` = grouped, `1` = stacked, `2` = normalized (non-negative values only).
@@ -13405,5 +13431,41 @@ mod fuzz {
         assert_eq!(signed_zero, vec![0, 1, 2]);
         let nans = argsort_stable_f64(&[f64::NAN, 0.0, f64::NAN]).unwrap();
         assert_eq!(nans, vec![1, 0, 2]);
+    }
+}
+
+#[cfg(test)]
+mod default_bar_width_tests {
+    use super::default_bar_half_width;
+    use crate::scene::SceneError;
+    #[test]
+    fn default_bar_width_preserves_spacing_domain_validation_and_input_bits() {
+        let xs = [10., -3., -3., 6., -0., 0.];
+        let bits = xs.map(f64::to_bits);
+        assert_eq!(
+            default_bar_half_width(&xs, -100., 100.),
+            Ok(f64::from_bits(0x3ff3_3333_3333_3334))
+        );
+        assert_eq!(xs.map(f64::to_bits), bits);
+        assert_eq!(default_bar_half_width(&[], -5., 5.), Ok(4.));
+        assert_eq!(default_bar_half_width(&[-0., 0.], 10., 0.), Ok(4.));
+        assert_eq!(
+            default_bar_half_width(&[1.], 0., 0.),
+            Err(SceneError::NonFinite)
+        );
+        assert_eq!(
+            default_bar_half_width(&[1.], -f64::MAX, f64::MAX),
+            Err(SceneError::NonFinite)
+        );
+        assert_eq!(
+            default_bar_half_width(&[-f64::MAX, f64::MAX], 0., 1.),
+            Ok(f64::INFINITY)
+        );
+        for x in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            assert_eq!(
+                default_bar_half_width(&[x], 0., 1.),
+                Err(SceneError::NonFinite)
+            );
+        }
     }
 }

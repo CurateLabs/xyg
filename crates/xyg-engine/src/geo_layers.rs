@@ -1232,22 +1232,29 @@ fn compile_density(
         rows,
         &mut counts,
     );
-    let mut members: Vec<(usize, u32)> = xs
+    // Admission limits the grid to MAX_SCENE_IMAGE_PIXELS (2,000,000).
+    // Keep only these derived ordinals packed, so both targets use the existing
+    // u64 sorter with identical lexicographic cell/row order and no extra slab.
+    const _: () = assert!(scene::MAX_SCENE_IMAGE_PIXELS <= u32::MAX as usize);
+    let mut members: Vec<u64> = xs
         .iter()
         .zip(&ys)
         .zip(&feature_rows)
         .map(|((&x, &y), &row)| {
             let cx = ((x * (columns as f64 / vp.width)) as usize).min(columns - 1);
             let cy = ((y * (rows as f64 / vp.height)) as usize).min(rows - 1);
-            (cy * columns + cx, row)
+            let cell = cy * columns + cx;
+            debug_assert!(cell <= u32::MAX as usize);
+            crate::shared_sort::pair_u32(cell as u32, row)
         })
         .collect();
     members.sort_unstable();
     members.dedup();
     let mut offsets = vec![0u32; cells + 1];
     let mut indices = Vec::with_capacity(members.len());
-    for &(cell, row) in &members {
-        offsets[cell + 1] += 1;
+    for &key in &members {
+        let (cell, row) = crate::shared_sort::unpair_u32(key);
+        offsets[cell as usize + 1] += 1;
         indices.push(row);
     }
     for i in 1..offsets.len() {

@@ -23,6 +23,7 @@ export function filterRequest(
     args = [],
     range = [0, 0],
     exact = false,
+    version = 1,
   } = {},
   payload = new Uint8Array(),
 ) {
@@ -31,8 +32,10 @@ export function filterRequest(
     throw new RangeError("XYFC packet exceeds its transport extent");
   const out = new Uint8Array(96 + payload.byteLength),
     d = new DataView(out.buffer);
+  const wireVersion = wireU64(version);
+  if (wireVersion > 0xffffffffn) throw new RangeError("version must fit u32");
   out.set([88, 89, 70, 67]);
-  d.setUint32(4, 1, true);
+  d.setUint32(4, Number(wireVersion), true);
   d.setUint32(8, op, true);
   d.setUint32(12, exact ? 1 : 0, true);
   [
@@ -254,6 +257,7 @@ export class FilterTierCError extends Error {
   }
 }
 /** Thin programmatic session client. A native handle or dedicated WASM Worker owns state. */
+const filterCloseResults = new WeakMap();
 export class FilterSessionClient {
   constructor(
     execute,
@@ -398,8 +402,10 @@ export class FilterSessionClient {
   close() {
     if (!this.closed) {
       this.closed = true;
-      return this.closeTransport();
+      const result = this.closeTransport();
+      filterCloseResults.set(this, result);
     }
+    return filterCloseResults.get(this);
   }
   call(packet) {
     const reply = this.executeTransport(packet);

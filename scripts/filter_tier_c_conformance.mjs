@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {proveFilterCooperative} from "./filter_cooperative_browser.mjs";
 // Bounded real Chromium Worker, composed density, pointer and keyboard journey.
 import {
   densityAssets,
@@ -6,11 +7,18 @@ import {
 } from "./filter_density_browser.mjs";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
+import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import { extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 const root = fileURLToPath(new URL("../", import.meta.url));
+// Explicit diagnostic artifact controls never replace the separate package gate.
+const wasmPath=process.env.XYG_FILTER_WASM
+  ? resolve(process.env.XYG_FILTER_WASM)
+  : join(root,"packages/xy-client/dist/xyg-wasm.wasm");
+const wasmSource={path:wasmPath,diagnosticOverride:!!process.env.XYG_FILTER_WASM,
+  sha256:createHash("sha256").update(await readFile(wasmPath)).digest("hex")};
 const density = await densityAssets(new URL("../", import.meta.url));
 const allowed = new Set([
   "/tests/fixtures/filter_tier_c/density.bin",
@@ -49,7 +57,7 @@ const server = createServer(async (req, res) => {
           ? "application/wasm"
           : "application/octet-stream",
     );
-    res.end(await readFile(join(root, path)));
+    res.end(await readFile(path==="/packages/xy-client/dist/xyg-wasm.wasm"?wasmPath:join(root, path)));
   } catch (error) {
     res.writeHead(500).end(String(error));
   }
@@ -249,14 +257,17 @@ try {
     await f.session.close();
     await f.tickWorker.dispose();
   });
+  const cooperative=await proveFilterCooperative(page);
   assert.deepEqual(errors, []);
   assert.equal(report.packets, 44);
   assert.equal(report.densityPackets, 56);
   console.log(
     JSON.stringify({
       schema: "xyg.filter-tier-c-browser/v1",
+      wasmSource,
       ...report,
       ...linked,
+      cooperative,
     }),
   );
 } finally {

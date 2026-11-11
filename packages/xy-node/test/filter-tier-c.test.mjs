@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import fs from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { ChunkedColumns } from "../src/chunked-columns.js";
 import {
   FilterTierCSession,
   decodeFilterReply,
@@ -16,19 +19,69 @@ const stream = fs.readFileSync(
 const manifest = JSON.parse(
   fs.readFileSync(new URL("tests/fixtures/filter_tier_c/manifest.json", root)),
 );
-function records() {
+
+test("issued XYGC planes preserve five-view native counts, source leases and canonical membership", () => {
+  const dir = fs.mkdtempSync(join(tmpdir(), "xyg-filter-paged-"));
+  const path = join(dir, "source.xygc"), n = 4099, chunkRows = 128;
+  const xs = Float64Array.from({ length: n }, (_, i) => i === 32 ? NaN : i);
+  const ys = Float64Array.from({ length: n }, (_, i) => i === 65 ? Infinity : i % 19);
+  const chunks = Math.ceil(n / chunkRows), offset = 64 + 48 * chunks;
+  const bytes = Buffer.alloc(offset + n * 16);
+  bytes.write("XYGC"); bytes.writeUInt32LE(1, 4); bytes.writeBigUInt64LE(BigInt(n), 8);
+  bytes.writeUInt32LE(chunkRows, 16); bytes.writeUInt32LE(chunks, 20); bytes.writeBigUInt64LE(BigInt(offset), 24);
+  for (let c = 0; c < chunks; c++) {
+    const start = c * chunkRows, end = Math.min(n, start + chunkRows), at = 64 + c * 48;
+    const x = Array.from(xs.subarray(start, end)).filter(Number.isFinite);
+    const y = Array.from(ys.subarray(start, end)).filter(Number.isFinite);
+    bytes.writeBigUInt64LE(BigInt(start), at); bytes.writeUInt32LE(end - start, at + 8);
+    [Math.min(...x), Math.max(...x), Math.min(...y), Math.max(...y)].forEach((v, i) => bytes.writeDoubleLE(v, at + 16 + i * 8));
+  }
+  for (let i = 0; i < n; i++) { bytes.writeDoubleLE(xs[i], offset + i * 16); bytes.writeDoubleLE(ys[i], offset + i * 16 + 8); }
+  fs.writeFileSync(path, bytes);
+  const source = new ChunkedColumns(path), chart = scatterChart([0], [0]);
+  let paged, resident;
+  const same = (a, b) => {
+    const x = Buffer.from(a.packet), y = Buffer.from(b.packet);
+    x.fill(0, 80, 96); y.fill(0, 80, 96); assert.deepEqual(x, y);
+  };
+  try {
+    const options = { sourceId: 77n, firstRow: (1n << 63n) + 17n, budgetBytes: 1n << 20n };
+    assert.throws(() => source.column("other"), /plane/);
+    assert.throws(() => chart.filterSession({ x: source.column("x"), y: ys }, options), /all arrays or all issued/);
+    paged = chart.filterSession({ x: source.column("x"), y: source.column("y") }, options);
+    resident = chart.filterSession({ x: xs, y: ys }, options);
+    source.close();
+    const active = { id: 1n, dimension: "x", cuts: [1024, 2048, 3072] };
+    const views = Array.from({ length: 5 }, (_, i) => ({ id: BigInt(i + 1), x: "x", y: "y", width: 8, height: 4, xRange: [0, 4100], yRange: [0, 20] }));
+    same(paged.configureDensity(active, views), resident.configureDensity(active, views));
+    same(paged.range(1024, 2047), resident.range(1024, 2047));
+    const paint = paged.paint();
+    assert.equal(paint.selectedCount, 1024n); assert.equal(paint.rowsRead, 0n); assert.equal(paint.tier, 3n);
+    same(paint, resident.paint());
+    const members = paged.membership(options.firstRow + 30n, 2050n);
+    same(members, resident.membership(options.firstRow + 30n, 2050n));
+    for (let i = 0; i < 2050; i++) assert.equal(!!(members.membership[i >> 3] & (1 << (i & 7))), xs[i + 30] >= 1024 && xs[i + 30] <= 2047);
+    same(paged.evict(), resident.evict()); same(paged.rebuild(), resident.rebuild());
+    same(paged.range(1100.25, 2090.5, { exact: true }), resident.range(1100.25, 2090.5, { exact: true }));
+    assert.throws(() => paged.append({ x: [4100], y: [1] }), (e) => e.status === 7);
+    assert.throws(() => chart.filterSession({ x: source.column("x") }, options), (e) => e.status === 7);
+  } finally {
+    paged?.close(); resident?.close(); source.close(); fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+function records(bytes = stream) {
   const out = [];
   let at = 0;
-  while (at < stream.length) {
-    const n = stream.readUInt32LE(at),
-      cap = stream.readUInt32LE(at + 4),
-      status = stream.readInt32LE(at + 8),
-      replyN = stream.readUInt32LE(at + 12),
-      required = stream.readBigUInt64LE(at + 16);
+  while (at < bytes.length) {
+    const n = bytes.readUInt32LE(at),
+      cap = bytes.readUInt32LE(at + 4),
+      status = bytes.readInt32LE(at + 8),
+      replyN = bytes.readUInt32LE(at + 12),
+      required = bytes.readBigUInt64LE(at + 16);
     at += 24;
-    const request = stream.subarray(at, at + n);
+    const request = bytes.subarray(at, at + n);
     at += n;
-    const reply = stream.subarray(at, at + replyN);
+    const reply = bytes.subarray(at, at + replyN);
     at += replyN;
     out.push({ request, reply, cap, status, required });
   }
@@ -389,4 +442,124 @@ test("malformed newer headers cannot poison native/WASM request watermarks", asy
     xyFilterSessionFree(native);
     x.xyg_wasm_instance_dispose(wasm);
   }
+});
+
+
+test("Filter Tier C cooperative actual WASM preserves packets, capacity, cancellation and recovery",async()=>{
+const {filterRequest,filterDensityConfig,filterColumns}=await import("../src/filter-protocol.js");
+const {instance}=await WebAssembly.instantiate(fs.readFileSync(process.env.XYG_FILTER_WASM??new URL("packages/xy-client/dist/xyg-wasm.wasm",root)));const x=instance.exports;
+const budget=16<<20, h=x.xyg_wasm_instance_new(budget), sync=x.xyg_wasm_instance_new(budget);
+function call(handle,packet,capacity=budget){assert.equal(x.xyg_wasm_arena_resize(handle,packet.length),0);
+ new Uint8Array(x.memory.buffer,x.xyg_wasm_arena_ptr(handle),packet.length).set(packet);
+ const status=x.xyg_wasm_filter_execute(handle,0,packet.length,capacity);
+ const output=new Uint8Array(x.memory.buffer,x.xyg_wasm_output_ptr(handle),x.xyg_wasm_output_len(handle)).slice();
+ assert.equal(x.xyg_wasm_arena_resize(handle,0),0);return{status,output};}
+function envelope(op,token=0n,packet=new Uint8Array()) {const b=new Uint8Array(32+packet.length),d=new DataView(b.buffer);b.set([88,89,70,74]);d.setUint32(4,1,true);d.setUint32(8,op,true);d.setBigUint64(16,token,true);b.set(packet,32);return b;}
+function control(op,token){return call(h,envelope(op,token));}
+function request(op,revision,args=[],range=[0,0],exact=false,payload=new Uint8Array()){
+ return filterRequest(op,{revision:BigInt(revision),sourceId:1n,epoch:2n,budgetBytes:BigInt(budget),args,range,exact},payload);}
+let turns=0;let semanticPackets=0;
+function finish(reply){while(String.fromCharCode(...reply.output.subarray(0,4))==='XYFJ'){
+ assert.equal(reply.status,0);const d=new DataView(reply.output.buffer);assert.equal(reply.output.length,32);
+ const token=d.getBigUint64(8,true);assert(d.getBigUint64(16,true)<=d.getBigUint64(24,true));
+ reply=control(2,token);turns++;assert(turns<3000);
+}return reply;}
+function same(packet){semanticPackets++;const a=call(sync,packet),b=finish(call(h,envelope(1,0n,packet)));assert.equal(a.status,b.status);
+ if(a.status===0){a.output.fill(0,88,96);b.output.fill(0,88,96);}assert.deepEqual(b.output,a.output);return decodeFilterReply(a.output);}
+try{
+ const n=50003,columns={x:Float64Array.from({length:n},(_,i)=>i%37),y:Float64Array.from({length:n},(_,i)=>i%41-2)};
+ same(request(1,1,[2n,BigInt(n),99n],[0,0],false,filterColumns(columns)));
+ const names=['x','y'],active={id:1n,dimension:'x',cuts:[0,18]}, views=Array.from({length:5},(_,i)=>({id:BigInt(i+1),x:i%2?'y':'x',y:i%2?'x':'y',width:4,height:4,xRange:[-6,38],yRange:[-6,38]}));
+ same(request(10,2,[1n,0n,5n],[0,0],false,filterDensityConfig(names,active,views)));
+ assert.equal(same(request(5,3,[],[4,12],true)).fallback,1n);
+ same(request(9,4,[1099n,40001n]));same(request(6,5));same(request(11,6,[],[0,0],true));
+ // A real output-capacity refusal and wrong token retain the same job.
+ same(request(6,7));const start=call(h,envelope(1,0n,request(11,8,[],[0,0],true)));
+ assert.equal(String.fromCharCode(...start.output.subarray(0,4)),'XYFJ');
+ const short=call(h,envelope(2,8n),1);assert.equal(short.status,3);assert.equal(short.output.length,8);
+ assert.equal(decodeFilterReply(control(2,999n).output).status,3);
+ assert.equal(x.xyg_wasm_arena_resize(h,budget),3);
+ const bad=request(4,999);new DataView(bad.buffer).setUint32(4,99,true);
+ assert.equal(decodeFilterReply(call(h,envelope(1,0n,bad)).output).newestRevision,8n);
+ assert.equal(decodeFilterReply(control(3,8n).output).status,4);
+ assert.equal(decodeFilterReply(control(2,8n).output).status,5);
+ // The accepted filter remains usable, while the consumed old revision stays stale.
+ assert.equal(decodeFilterReply(call(h,request(11,9,[],[0,0],true)).output).status,0);
+ // Interleaved malformed packets cannot erase this job's initial peak.
+ const wide=views.map(v=>({...v,width:32,height:32}));
+ const configuration=request(10,10,[1n,0n,5n],[0,0],false,filterDensityConfig(names,active,wide));
+ const pending=call(h,envelope(1,0n,configuration));
+ assert.equal(String.fromCharCode(...pending.output.subarray(0,4)),'XYFJ');
+ const capturePeak=decodeFilterReply(control(2,1000n).output).peakBytes;
+ const malformed=request(4,1000);new DataView(malformed.buffer).setUint32(4,99,true);
+ assert.equal(decodeFilterReply(call(h,envelope(1,0n,malformed)).output).status,1);
+ const finished=decodeFilterReply(finish(control(2,10n)).output);
+ assert.equal(finished.status,0);assert(finished.peakBytes>=capturePeak,'interleaved refusal erased captured peak');
+ assert.equal(semanticPackets,7);assert(turns>50);assert.equal(x.xyg_wasm_abi_version(),38);
+}finally{assert.equal(x.xyg_wasm_instance_dispose(h),0);assert.equal(x.xyg_wasm_instance_dispose(sync),0);}
+
+});
+
+test("cooperative actual WASM preserves complete legacy and linked edit/base-mask fixture transactions", async () => {
+  const { instance } = await WebAssembly.instantiate(fs.readFileSync(
+    process.env.XYG_FILTER_WASM ?? new URL("packages/xy-client/dist/xyg-wasm.wasm", root),
+  ));
+  const x = instance.exports;
+  let packets = 0, continuations = 0;
+  for (const file of ["session.bin", "density.bin"]) {
+    const cases = records(fs.readFileSync(new URL(`tests/fixtures/filter_tier_c/${file}`, root)));
+    const specification = JSON.parse(fs.readFileSync(new URL(
+      `tests/fixtures/filter_tier_c/${file === "session.bin" ? "manifest.json" : "density.json"}`, root,
+    )));
+    assert.equal(cases.length, specification.cases.length);
+    const native = xyFilterSessionNew(1n << 20n);
+    const wasm = x.xyg_wasm_instance_new(1 << 20);
+    assert(native && wasm);
+    const call = (op, token, payload, capacity) => {
+      const b = new Uint8Array(32 + payload.length), d = new DataView(b.buffer);
+      b.set([88, 89, 70, 74]); d.setUint32(4, 1, true);
+      d.setUint32(8, op, true); d.setBigUint64(16, token, true); b.set(payload, 32);
+      assert.equal(x.xyg_wasm_arena_resize(wasm, b.length), 0);
+      new Uint8Array(x.memory.buffer, x.xyg_wasm_arena_ptr(wasm), b.length).set(b);
+      const status = x.xyg_wasm_filter_execute(wasm, 0, b.length, capacity);
+      const output = new Uint8Array(x.memory.buffer, x.xyg_wasm_output_ptr(wasm), x.xyg_wasm_output_len(wasm)).slice();
+      assert.equal(x.xyg_wasm_arena_resize(wasm, 0), 0);
+      return { status, output };
+    };
+    try {
+      for (const [i, r] of cases.entries()) {
+        packets++;
+        let result = call(1, 0n, r.request, r.cap);
+        while (result.status === 0 && Buffer.from(result.output.subarray(0, 4)).toString() === "XYFJ") {
+          assert.equal(result.output.length, 32);
+          const d = new DataView(result.output.buffer);
+          assert(d.getBigUint64(16, true) <= d.getBigUint64(24, true));
+          continuations++;
+          assert(continuations < 10_000, "fixture transaction did not finish");
+          result = call(2, d.getBigUint64(8, true), new Uint8Array(), r.cap);
+        }
+        if (r.status === -4) {
+          assert.throws(() => executeFilterPacket(native, r.request, r.cap),
+            e => e.status === -4 && e.required === r.required);
+          assert.equal(result.status, 3, `${file}:${i}`);
+          assert.equal(result.output.length, 8);
+          assert.equal(new DataView(result.output.buffer).getBigUint64(0, true), r.required);
+        } else {
+          assert.equal(result.status, 0, `${file}:${i}`);
+          const expected = Buffer.from(executeFilterPacket(native, r.request, r.cap));
+          assert.deepEqual(expected, r.reply, `${file}:${i}: native fixture`);
+          const actual = Buffer.from(result.output);
+          // Private cooperative captures have their own admitted high water.
+          // Every semantic field, retained owner, count, mask and paint byte agrees.
+          actual.fill(0, 88, 96); expected.fill(0, 88, 96);
+          assert.deepEqual(actual, expected, `${file}:${i}: cooperative fixture`);
+        }
+      }
+    } finally {
+      xyFilterSessionFree(native);
+      assert.equal(x.xyg_wasm_instance_dispose(wasm), 0);
+    }
+  }
+  assert(packets >= 100);
+  assert(continuations > 10);
 });

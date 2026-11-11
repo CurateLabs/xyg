@@ -8,6 +8,7 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from . import _native
+from ._ooc import _ChunkedColumn
 
 
 def request(
@@ -22,6 +23,7 @@ def request(
     bounds: tuple[float, float] = (0, 0),
     exact: bool = False,
     payload: bytes = b"",
+    version: int = 1,
 ) -> bytes:
     if not isinstance(exact, bool):
         raise TypeError("exact must be boolean")
@@ -31,7 +33,7 @@ def request(
         struct.pack(
             "<4sIII8Q2d",
             b"XYFC",
-            1,
+            version,
             op,
             int(exact),
             revision,
@@ -170,7 +172,7 @@ class FilterTierCSession:
 
     def __init__(
         self,
-        columns: Mapping[str, Sequence[float]],
+        columns: Mapping[str, Sequence[float] | _ChunkedColumn],
         *,
         source_id: int,
         epoch: int = 1,
@@ -187,7 +189,20 @@ class FilterTierCSession:
         if not self._handle:
             raise RuntimeError("filter session allocation refused")
         try:
-            self._call(1, args=(len(columns), self.rows, first_row), payload=self._columns(columns))
+            issued = tuple(c for c in columns.values() if isinstance(c, _ChunkedColumn))
+            if issued:
+                if len(issued) != len(columns):
+                    raise TypeError(
+                        "filter columns must be all arrays or all issued chunked planes"
+                    )
+                payload = b"".join(struct.pack("<QQ", c.source._handle, c.plane) for c in issued)
+                self._call(
+                    16, version=2, args=(len(columns), self.rows, first_row), payload=payload
+                )
+            else:
+                self._call(
+                    1, args=(len(columns), self.rows, first_row), payload=self._columns(columns)
+                )
         except BaseException:
             self.close()
             raise

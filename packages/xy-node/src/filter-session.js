@@ -5,6 +5,7 @@ import {
   xyFilterSessionFree,
 } from "./native.js";
 import { FilterSessionClient } from "./filter-protocol.js";
+import { ChunkedColumnRef } from "./chunked-column-ref.js";
 export {
   filterRequest,
   decodeFilterReply,
@@ -44,7 +45,20 @@ export class FilterTierCSession extends FilterSessionClient {
     if (!handle) throw new Error("filter session allocation refused");
     this.handle = handle;
     try {
-      this.initialize(columns);
+      const values = Object.values(columns);
+      if (values.some((c) => c instanceof ChunkedColumnRef)) {
+        if (!values.every((c) => c instanceof ChunkedColumnRef))
+          throw new TypeError("filter columns must be all arrays or all issued chunked planes");
+        const payload = new Uint8Array(values.length * 16), d = new DataView(payload.buffer);
+        values.forEach((c, i) => {
+          d.setBigUint64(i * 16, BigInt(c.source.handle), true);
+          d.setBigUint64(i * 16 + 8, BigInt(c.plane), true);
+        });
+        this.call(this.request(16, {
+          version: 2,
+          args: [BigInt(values.length), this.rows, this.firstRow],
+        }, payload));
+      } else this.initialize(columns);
     } catch (error) {
       this.close();
       throw error;

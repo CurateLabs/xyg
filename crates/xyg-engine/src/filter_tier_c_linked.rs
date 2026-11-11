@@ -2,7 +2,7 @@
 //! slabs, canonical source, revision gate, and atomic publication as 1D sessions.
 use super::*;
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 pub(super) struct Grid {
     pub x: usize,
     pub y: usize,
@@ -30,9 +30,9 @@ impl std::ops::Deref for GridHandle {
     }
 }
 impl Grid {
-    pub fn cell(&self, source: &Source, row: usize) -> Option<usize> {
-        let x = source.columns[self.x][row];
-        let y = source.columns[self.y][row];
+    pub fn cell(&self, source: &RowBlock<'_>, row: usize) -> Option<usize> {
+        let x = source.value(self.x, row);
+        let y = source.value(self.y, row);
         let [x0, x1, y0, y1] = self.range;
         if !x.is_finite() || !y.is_finite() || x < x0 || x >= x1 || y < y0 || y >= y1 {
             return None;
@@ -49,8 +49,8 @@ pub(super) struct Clause {
     bounds: [f64; 2],
 }
 impl Clause {
-    fn matches(self, s: &Source, row: usize) -> bool {
-        let x = s.columns[self.dim][row];
+    fn matches(self, s: &RowBlock<'_>, row: usize) -> bool {
+        let x = s.value(self.dim, row);
         x.is_finite() && x >= self.bounds[0] && x <= self.bounds[1]
     }
 }
@@ -70,7 +70,7 @@ fn copy<T: Clone>(v: &[T]) -> Result<Vec<T>> {
     Ok(out)
 }
 impl Linked {
-    fn duplicate(&self) -> Result<Self> {
+    pub(super) fn duplicate(&self) -> Result<Self> {
         Ok(Self {
             clauses: copy(&self.clauses)?,
             base: copy(&self.base)?,
@@ -78,6 +78,9 @@ impl Linked {
             mask_digest: self.mask_digest,
             edit: self.edit.as_ref().map(|v| copy(v)).transpose()?,
         })
+    }
+    pub(super) fn work_per_row(&self) -> usize {
+        self.clauses.len() + self.base.len()
     }
     pub fn has_intent(&self) -> bool {
         !self.clauses.is_empty() || !self.base.is_empty() || !self.mask.is_empty()
@@ -89,7 +92,7 @@ impl Linked {
             * 32
             + self.mask.capacity()
     }
-    pub fn matches(&self, source: &Source, row: usize) -> bool {
+    pub fn matches(&self, source: &RowBlock<'_>, row: usize) -> bool {
         (self.mask.is_empty()
             || self
                 .mask
@@ -100,6 +103,16 @@ impl Linked {
                 .iter()
                 .chain(&self.clauses)
                 .all(|c| c.matches(source, row))
+    }
+    fn take_active(&mut self, cfg: &Config) -> Option<[f64; 2]> {
+        let intent = self
+            .clauses
+            .iter()
+            .find(|c| c.id == cfg.active_id && c.dim == cfg.active.dimension)
+            .map(|c| c.bounds);
+        self.clauses
+            .retain(|c| !(c.id == cfg.active_id && c.dim == cfg.active.dimension));
+        intent
     }
     fn all(&self, cfg: &Config, intent: Option<[f64; 2]>) -> Result<Vec<Clause>> {
         let mut v = Vec::new();
@@ -116,7 +129,18 @@ impl Linked {
         if v.len() > MAX_VIEWS {
             return Err(Error::Budget);
         }
-        v.sort_unstable_by_key(|c| (c.id, c.dim));
+        // C is capped at64 above. Restored clauses are already canonical;
+        // appending the active range can displace one key. A bounded in-place
+        // insertion pass preserves exact keys/payloads without a general sorter.
+        for i in 1..v.len() {
+            let clause = v[i];
+            let mut at = i;
+            while at != 0 && (v[at - 1].id, v[at - 1].dim) > (clause.id, clause.dim) {
+                v[at] = v[at - 1];
+                at -= 1;
+            }
+            v[at] = clause;
+        }
         Ok(v)
     }
     pub fn fingerprint(
@@ -176,14 +200,7 @@ impl Linked {
 }
 impl Config {
     fn read_density(b: &[u8], source: &Source) -> Result<Self> {
-        let active_id = u64_at(b, 56)?;
-        let dimension = usize_at(b, 64)?;
-        let n = usize_at(b, 72)?;
-        if active_id == 0 || n == 0 || n > MAX_VIEWS {
-            return Err(Error::Malformed);
-        }
-        let mut at = HEADER;
-        let active = Axis::read(b, &mut at, dimension, source.columns.len())?;
+        let (active_id, active, n, mut at) = Self::read_active(b, source)?;
         if add(at, mul(n, 80)?)? != b.len() {
             return Err(Error::Malformed);
         }
@@ -202,8 +219,8 @@ impl Config {
             }
             if id == 0
                 || views.iter().any(|v: &View| v.id == id)
-                || x >= source.columns.len()
-                || y >= source.columns.len()
+                || x >= source.dimensions()
+                || y >= source.dimensions()
                 || w == 0
                 || h == 0
                 || range.iter().any(|v| !v.is_finite())
@@ -264,7 +281,7 @@ impl Config {
             v.id == active_id
                 && v.grid
                     .as_ref()
-                    .is_some_and(|g| dimension == g.x || dimension == g.y)
+                    .is_some_and(|g| active.dimension == g.x || active.dimension == g.y)
         }) {
             return Err(Error::Source);
         }
@@ -292,8 +309,9 @@ impl FilterTierCSession {
         flags: u32,
         seq: u64,
         budget: usize,
+        mode: &mut BuildMode,
     ) -> std::result::Result<Vec<u8>, PrepareError> {
-        let source = self.source.as_ref().ok_or(Error::Missing)?;
+        self.source.as_ref().ok_or(Error::Missing)?;
         let modifying = matches!(op, 7 | 10 | 12..=15);
         // Old and replacement state coexist. Admission precedes even configuration
         // parsing, predicate cloning and active×passive slab allocation.
@@ -314,366 +332,438 @@ impl FilterTierCSession {
         };
         let mut intent = self.intent;
         let mut new_config = None;
-        let mut invalidate = false;
-        let mut build = matches!(op, 4 | 10);
-        if op != 10 && self.config.as_ref().is_none_or(|c| !c.linked()) {
-            return Err(Error::Missing.into());
-        }
-        match op {
-            3 => return Err(Error::Malformed.into()),
-            10 => {
-                let cfg = Config::read_density(b, source)?;
-                let st = state.as_mut().unwrap();
-                if let Some(old) = &self.config {
-                    if !old.linked() && self.intent.is_some() {
-                        return Err(Error::Source.into());
+        let result = (|| {
+            let source = self.source.as_deref().ok_or(Error::Missing)?;
+            let mut invalidate = false;
+            let mut build = matches!(op, 4 | 10);
+            if op != 10 && self.config.as_ref().is_none_or(|c| !c.linked()) {
+                return Err(Error::Missing.into());
+            }
+            match op {
+                3 => return Err(Error::Malformed.into()),
+                10 => {
+                    let cfg = Config::read_density(b, source)?;
+                    let st = state.as_mut().unwrap();
+                    if let Some(old) = &self.config {
+                        if !old.linked() && self.intent.is_some() {
+                            return Err(Error::Source.into());
+                        }
+                        st.clauses = st.all(old, self.intent)?;
                     }
-                    st.clauses = st.all(old, self.intent)?;
+                    intent = st.take_active(&cfg);
+                    new_config = Some(cfg);
                 }
-                intent = st
-                    .clauses
-                    .iter()
-                    .find(|c| c.id == cfg.active_id && c.dim == cfg.active.dimension)
-                    .map(|c| c.bounds);
-                st.clauses
-                    .retain(|c| !(c.id == cfg.active_id && c.dim == cfg.active.dimension));
-                new_config = Some(cfg);
-            }
-            7 => {
-                state.as_mut().unwrap().clauses.clear();
-                intent = None;
-                build = true;
-            }
-            12 => {
-                let n = usize_at(b, 56)?;
-                let m = usize_at(b, 64)?;
-                if n > MAX_DIMS
-                    || m != 0 && m != source.rows.div_ceil(8)
-                    || b.len() != add(HEADER, add(mul(n, 24)?, m)?)?
-                {
-                    return Err(Error::Malformed.into());
+                7 => {
+                    state.as_mut().unwrap().clauses.clear();
+                    intent = None;
+                    build = true;
                 }
-                if m > 0 && source.rows % 8 != 0 && b[b.len() - 1] >> (source.rows % 8) != 0 {
-                    return Err(Error::Malformed.into());
-                }
-                let st = state.as_mut().unwrap();
-                let mut base = Vec::new();
-                base.try_reserve_exact(n).map_err(|_| Error::Allocation)?;
-                for i in 0..n {
-                    let at = HEADER + i * 24;
-                    let dim = usize_at(b, at)?;
-                    let lo = f64_at(b, at + 8)?;
-                    let hi = f64_at(b, at + 16)?;
-                    if dim >= source.columns.len()
-                        || !lo.is_finite()
-                        || !hi.is_finite()
-                        || base.iter().any(|c: &Clause| c.dim == dim)
+                12 => {
+                    let n = usize_at(b, 56)?;
+                    let m = usize_at(b, 64)?;
+                    if n > MAX_DIMS
+                        || m != 0 && m != source.rows.div_ceil(8)
+                        || b.len() != add(HEADER, add(mul(n, 24)?, m)?)?
                     {
                         return Err(Error::Malformed.into());
                     }
-                    base.push(Clause {
-                        id: 0,
-                        dim,
-                        bounds: [lo.min(hi), lo.max(hi)],
-                    });
-                }
-                st.base = base;
-                st.mask = copy(&b[HEADER + n * 24..])?;
-                st.mask_digest = if st.mask.is_empty() {
-                    [0; 8]
-                } else {
-                    let mut digest = crate::transition::Blake2s8::domain(*b"xyfmsk01");
-                    for chunk in st.mask.chunks(4096) {
-                        if cancelled() {
-                            return Err(Error::Cancelled.into());
-                        }
-                        digest.update(chunk);
+                    if m > 0 && source.rows % 8 != 0 && b[b.len() - 1] >> (source.rows % 8) != 0 {
+                        return Err(Error::Malformed.into());
                     }
-                    digest.finish()
-                };
-                invalidate = true;
-            }
-            13 => {
-                let st = state.as_mut().unwrap();
-                if st.edit.is_some() {
-                    return Err(Error::Malformed.into());
-                }
-                st.edit = Some(st.all(self.config.as_ref().unwrap(), intent)?);
-            }
-            14 => {
-                let st = state.as_mut().unwrap();
-                let cfg = self.config.as_ref().unwrap();
-                let all = st.edit.take().ok_or(Error::Missing)?;
-                st.clauses = all;
-                intent = st
-                    .clauses
-                    .iter()
-                    .find(|c| c.id == cfg.active_id && c.dim == cfg.active.dimension)
-                    .map(|c| c.bounds);
-                st.clauses
-                    .retain(|c| !(c.id == cfg.active_id && c.dim == cfg.active.dimension));
-                invalidate = true;
-            }
-            15 => {
-                if state.as_mut().unwrap().edit.take().is_none() {
-                    return Err(Error::Missing.into());
-                }
-            }
-            4 | 5 | 11 => {}
-            _ => return Err(Error::Malformed.into()),
-        }
-        if op != 10 && op != 12 && b.len() != HEADER {
-            return Err(Error::Malformed.into());
-        }
-        let cfg = new_config
-            .as_ref()
-            .or(self.config.as_ref())
-            .ok_or(Error::Missing)?;
-        let st = state.as_ref().unwrap_or(&self.linked);
-        if op == 5 {
-            let lo = f64_at(b, 80)?;
-            let hi = f64_at(b, 88)?;
-            if !lo.is_finite() || !hi.is_finite() {
-                return Err(Error::Malformed.into());
-            }
-            intent = Some([lo.min(hi), lo.max(hi)]);
-        }
-        // The active range consumes the same C-clause budget as retained ranges.
-        // Refuse before building an index or publishing any replacement intent.
-        if st.clauses.len() + usize::from(intent.is_some()) > MAX_VIEWS {
-            return Err(Error::Budget.into());
-        }
-        let query = matches!(op, 5 | 7 | 11);
-        build |= query && self.index.is_none();
-        let output = add(
-            cfg.reply_bytes(query),
-            if op == 11 { cfg.paint_bytes()? } else { 0 },
-        )?;
-        if capacity < output {
-            return Err(PrepareError::Capacity(output));
-        }
-        let scratch = if query { mul(cfg.width, 8)? } else { 0 };
-        let paint_scratch = if op == 11 {
-            mul(cfg.views.iter().map(View::bins).max().unwrap_or(0), 8)?
-        } else {
-            0
-        };
-        let extra = add(
-            add(scratch, paint_scratch)?,
-            add(
-                if build { cfg.index_bytes()? } else { 0 },
-                add(
-                    new_config.as_ref().map_or(0, Config::bytes),
-                    state.as_ref().map_or(0, Linked::bytes),
-                )?,
-            )?,
-        )?;
-        peak = peak.max(self.admit(extra, b.len(), output, budget)?);
-        let replacement = if build {
-            Some(Index::build(source, cfg, st, cancelled)?)
-        } else {
-            None
-        };
-        let mut rows = if build { source.rows as u64 } else { 0 };
-        let mut fallback = if build { 4 } else { 0 };
-        let mut reads = 0;
-        let mut result = None;
-        if query {
-            let index = replacement
-                .as_ref()
-                .or(self.index.as_ref())
-                .ok_or(Error::Missing)?;
-            let mut counts = alloc::<u64>(cfg.width)?;
-            if let Some(bounds) = intent {
-                match index.interval(bounds) {
-                    Ok((first, end)) => {
-                        for (i, v) in counts.iter_mut().enumerate() {
-                            *v = index.prefix[end * cfg.width + i]
-                                - index.prefix[first * cfg.width + i];
+                    let st = state.as_mut().unwrap();
+                    let mut base = Vec::new();
+                    base.try_reserve_exact(n).map_err(|_| Error::Allocation)?;
+                    for i in 0..n {
+                        let at = HEADER + i * 24;
+                        let dim = usize_at(b, at)?;
+                        let lo = f64_at(b, at + 8)?;
+                        let hi = f64_at(b, at + 16)?;
+                        if dim >= source.dimensions()
+                            || !lo.is_finite()
+                            || !hi.is_finite()
+                            || base.iter().any(|c: &Clause| c.dim == dim)
+                        {
+                            return Err(Error::Malformed.into());
                         }
-                        reads = (cfg.width * 2) as u64;
+                        base.push(Clause {
+                            id: 0,
+                            dim,
+                            bounds: [lo.min(hi), lo.max(hi)],
+                        });
                     }
-                    Err(Error::Boundary) if flags == 1 => {
-                        fallback |= 1;
-                        for row in 0..source.rows {
-                            if row % 4096 == 0 && cancelled() {
+                    st.base = base;
+                    st.mask = copy(&b[HEADER + n * 24..])?;
+                    st.mask_digest = if st.mask.is_empty() {
+                        [0; 8]
+                    } else {
+                        let mut digest = crate::transition::Blake2s8::domain(*b"xyfmsk01");
+                        for chunk in st.mask.chunks(4096) {
+                            if cancelled() {
                                 return Err(Error::Cancelled.into());
                             }
-                            rows += 1;
-                            let x = source.columns[cfg.active.dimension][row];
-                            if !st.matches(source, row)
-                                || !x.is_finite()
-                                || x < bounds[0]
-                                || x > bounds[1]
-                            {
-                                continue;
-                            }
-                            counts[0] += 1;
-                            for v in &cfg.views {
-                                if let Some(cell) = v.cell(source, row) {
-                                    counts[v.offset + cell] += 1;
-                                }
-                            }
+                            digest.update(chunk);
                         }
-                    }
-                    Err(e) => return Err(e.into()),
+                        digest.finish()
+                    };
+                    invalidate = true;
                 }
-            } else {
-                counts.copy_from_slice(&index.base);
+                13 => {
+                    let st = state.as_mut().unwrap();
+                    if st.edit.is_some() {
+                        return Err(Error::Malformed.into());
+                    }
+                    st.edit = Some(st.all(self.config.as_ref().unwrap(), intent)?);
+                }
+                14 => {
+                    let st = state.as_mut().unwrap();
+                    let cfg = self.config.as_ref().unwrap();
+                    let all = st.edit.take().ok_or(Error::Missing)?;
+                    st.clauses = all;
+                    intent = st.take_active(cfg);
+                    invalidate = true;
+                }
+                15 => {
+                    if state.as_mut().unwrap().edit.take().is_none() {
+                        return Err(Error::Missing.into());
+                    }
+                }
+                4 | 5 | 11 => {}
+                _ => return Err(Error::Malformed.into()),
             }
-            result = Some(counts);
-        }
-        let mut buffer = alloc::<u8>(output)?;
-        if op == 11 {
-            let index = replacement
+            if op != 10 && op != 12 && b.len() != HEADER {
+                return Err(Error::Malformed.into());
+            }
+            let cfg = new_config
                 .as_ref()
-                .or(self.index.as_ref())
+                .or(self.config.as_ref())
                 .ok_or(Error::Missing)?;
-            let counts = result.as_ref().unwrap();
-            let mut at = cfg.reply_bytes(true);
-            buffer[at..at + 4].copy_from_slice(b"XYFP");
-            buffer[at + 4..at + 8].copy_from_slice(&1u32.to_le_bytes());
-            put(&mut buffer, at + 8, cfg.views.len() as u64);
-            at += 16;
-            let filtered = intent.is_some()
-                || !st.clauses.is_empty()
-                || !st.base.is_empty()
-                || !st.mask.is_empty();
-            for v in &cfg.views {
-                if cancelled() {
-                    return Err(Error::Cancelled.into());
-                }
-                let g = v.grid.as_ref().unwrap();
-                let n = v.bins();
-                put(&mut buffer, at, v.id);
-                buffer[at + 8..at + 12].copy_from_slice(&(g.width as u32).to_le_bytes());
-                buffer[at + 12..at + 16].copy_from_slice(&(g.height as u32).to_le_bytes());
-                for (i, x) in g.range.iter().enumerate() {
-                    put(&mut buffer, at + 16 + i * 8, x.to_bits());
-                }
-                at += 56;
-                let totals = &index.totals[v.offset..v.offset + n];
-                for (i, x) in totals.iter().enumerate() {
-                    put(&mut buffer, at + i * 8, *x);
-                }
-                at += n * 8;
-                for (i, x) in totals.iter().enumerate() {
-                    buffer[at + i * 4..at + i * 4 + 4].copy_from_slice(&(*x as f32).to_le_bytes());
-                }
-                at += n * 4;
-                let values: Vec<f64> = {
-                    let mut x = alloc(n)?;
-                    for (i, v) in totals.iter().enumerate() {
-                        x[i] = *v as f64;
-                    }
-                    x
-                };
-                let maximum = values.iter().copied().fold(0., f64::max);
-                let descriptor = at - n * 12 - 56;
-                put(&mut buffer, descriptor + 48, maximum.to_bits());
-                crate::kernels::density_rgba_linear_into(
-                    &values,
-                    g.width,
-                    g.height,
-                    maximum,
-                    &[[g.colors[0], g.colors[1], g.colors[2]]],
-                    if filtered {
-                        1.
+            let st = state.as_ref().unwrap_or(&self.linked);
+            if op == 5 {
+                intent = Some(query_bounds(b)?);
+            }
+            // The active range consumes the same C-clause budget as retained ranges.
+            // Refuse before building an index or publishing any replacement intent.
+            if st.clauses.len() + usize::from(intent.is_some()) > MAX_VIEWS {
+                return Err(Error::Budget.into());
+            }
+            let query = matches!(op, 5 | 7 | 11);
+            build |= query && self.index.is_none();
+            let output = add(
+                cfg.reply_bytes(query),
+                if op == 11 { cfg.paint_bytes()? } else { 0 },
+            )?;
+            if capacity < output {
+                return Err(PrepareError::Capacity(output));
+            }
+            let scratch = if query { mul(cfg.width, 8)? } else { 0 };
+            let paint_scratch = if op == 11 {
+                mul(cfg.views.iter().map(View::bins).max().unwrap_or(0), 8)?
+            } else {
+                0
+            };
+            let extra = add(
+                add(scratch, paint_scratch)?,
+                add(
+                    if build { cfg.index_bytes()? } else { 0 },
+                    add(
+                        new_config.as_ref().map_or(0, Config::bytes),
+                        state.as_ref().map_or(0, Linked::bytes),
+                    )?,
+                )?,
+            )?;
+            peak = peak.max(self.admit(
+                add(
+                    extra,
+                    if build {
+                        source.workspace(source.rows)?
                     } else {
-                        g.colors[3] as f64 / 255.
+                        0
                     },
-                    &mut buffer[at..at + n * 4],
-                );
-                if filtered {
-                    for (i, total) in totals.iter().enumerate() {
-                        let f = if *total == 0 {
-                            0.
+                )?,
+                b.len(),
+                output,
+                budget,
+            )?);
+            let mut replacement = if build {
+                Some(self.build_index(
+                    mode,
+                    b,
+                    capacity,
+                    output,
+                    cfg,
+                    st,
+                    add(extra, source.workspace(source.rows)?)?,
+                    cancelled,
+                )?)
+            } else {
+                None
+            };
+            let mut rows = if build { source.rows as u64 } else { 0 };
+            let mut fallback = if build { 4 } else { 0 };
+            let mut reads = 0;
+            let mut result = None;
+            if query {
+                let index = replacement
+                    .as_ref()
+                    .or(self.index.as_ref())
+                    .ok_or(Error::Missing)?;
+                let counts = if let Some(bounds) = intent {
+                    match index.range_counts(cfg, bounds) {
+                        Ok(counts) => {
+                            reads = (cfg.width * 2) as u64;
+                            counts
+                        }
+                        Err(Error::Boundary) if flags == 1 => {
+                            let scan_extra = add(extra, source.workspace(source.rows)?)?;
+                            peak = peak.max(self.admit(scan_extra, b.len(), output, budget)?);
+                            fallback |= 1;
+                            rows += source.rows as u64;
+                            self.scan_counts(
+                                mode,
+                                b,
+                                output,
+                                cfg,
+                                Some(st),
+                                bounds,
+                                &mut replacement,
+                                scan_extra,
+                                cancelled,
+                            )?
+                        }
+                        Err(e) => return Err(e.into()),
+                    }
+                } else {
+                    let mut counts = alloc::<u64>(cfg.width)?;
+                    counts.copy_from_slice(&index.base);
+                    counts
+                };
+                result = Some(counts);
+            }
+            let mut buffer = alloc::<u8>(output)?;
+            if op == 11 {
+                let index = replacement
+                    .as_ref()
+                    .or(self.index.as_ref())
+                    .ok_or(Error::Missing)?;
+                let counts = result.as_ref().unwrap();
+                let mut at = cfg.reply_bytes(true);
+                buffer[at..at + 4].copy_from_slice(b"XYFP");
+                buffer[at + 4..at + 8].copy_from_slice(&1u32.to_le_bytes());
+                put(&mut buffer, at + 8, cfg.views.len() as u64);
+                at += 16;
+                let filtered = intent.is_some()
+                    || !st.clauses.is_empty()
+                    || !st.base.is_empty()
+                    || !st.mask.is_empty();
+                for v in &cfg.views {
+                    if cancelled() {
+                        return Err(Error::Cancelled.into());
+                    }
+                    let g = v.grid.as_ref().unwrap();
+                    let n = v.bins();
+                    put(&mut buffer, at, v.id);
+                    buffer[at + 8..at + 12].copy_from_slice(&(g.width as u32).to_le_bytes());
+                    buffer[at + 12..at + 16].copy_from_slice(&(g.height as u32).to_le_bytes());
+                    for (i, x) in g.range.iter().enumerate() {
+                        put(&mut buffer, at + 16 + i * 8, x.to_bits());
+                    }
+                    at += 56;
+                    let totals = &index.totals[v.offset..v.offset + n];
+                    for (i, x) in totals.iter().enumerate() {
+                        put(&mut buffer, at + i * 8, *x);
+                    }
+                    at += n * 8;
+                    for (i, x) in totals.iter().enumerate() {
+                        buffer[at + i * 4..at + i * 4 + 4]
+                            .copy_from_slice(&(*x as f32).to_le_bytes());
+                    }
+                    at += n * 4;
+                    let values: Vec<f64> = {
+                        let mut x = alloc(n)?;
+                        for (i, v) in totals.iter().enumerate() {
+                            x[i] = *v as f64;
+                        }
+                        x
+                    };
+                    let maximum = values.iter().copied().fold(0., f64::max);
+                    let descriptor = at - n * 12 - 56;
+                    put(&mut buffer, descriptor + 48, maximum.to_bits());
+                    crate::kernels::density_rgba_linear_into(
+                        &values,
+                        g.width,
+                        g.height,
+                        maximum,
+                        &[[g.colors[0], g.colors[1], g.colors[2]]],
+                        if filtered {
+                            1.
                         } else {
-                            counts[v.offset + i] as f64 / *total as f64
-                        };
-                        let dest = ((g.height - 1 - i / g.width) * g.width + i % g.width) * 4 + at;
-                        for c in 0..3 {
-                            buffer[dest + c] = ((g.colors[c] as f64) * (1. - f)
-                                + g.colors[4 + c] as f64 * f)
+                            g.colors[3] as f64 / 255.
+                        },
+                        &mut buffer[at..at + n * 4],
+                    );
+                    if filtered {
+                        for (i, total) in totals.iter().enumerate() {
+                            let f = if *total == 0 {
+                                0.
+                            } else {
+                                counts[v.offset + i] as f64 / *total as f64
+                            };
+                            let dest =
+                                ((g.height - 1 - i / g.width) * g.width + i % g.width) * 4 + at;
+                            for c in 0..3 {
+                                buffer[dest + c] =
+                                    ((g.colors[c] as f64) * (1. - f) + g.colors[4 + c] as f64 * f)
+                                        .round() as u8;
+                            }
+                            buffer[dest + 3] = (buffer[dest + 3] as f64
+                                * ((1. - f) * 0.18 * g.colors[3] as f64 / 255.
+                                    + f * g.colors[7] as f64 / 255.))
                                 .round() as u8;
                         }
-                        buffer[dest + 3] = (buffer[dest + 3] as f64
-                            * ((1. - f) * 0.18 * g.colors[3] as f64 / 255.
-                                + f * g.colors[7] as f64 / 255.))
-                            .round() as u8;
                     }
-                }
-                // The shared image colormap kernel writes top-first. Ordinary
-                // WebGL density textures use bottom-first, like exact count bins.
-                // Lower that orientation here without a second paint path.
-                for row in 0..g.height / 2 {
-                    for byte in 0..g.width * 4 {
-                        buffer.swap(
-                            at + row * g.width * 4 + byte,
-                            at + (g.height - 1 - row) * g.width * 4 + byte,
-                        );
+                    // The shared image colormap kernel writes top-first. Ordinary
+                    // WebGL density textures use bottom-first, like exact count bins.
+                    // Lower that orientation here without a second paint path.
+                    for row in 0..g.height / 2 {
+                        for byte in 0..g.width * 4 {
+                            buffer.swap(
+                                at + row * g.width * 4 + byte,
+                                at + (g.height - 1 - row) * g.width * 4 + byte,
+                            );
+                        }
                     }
+                    at += n * 4;
                 }
-                at += n * 4;
             }
-        }
-        if cancelled() {
-            return Err(Error::Cancelled.into());
-        }
-        // Every fallible allocation, capacity check and scan precedes publication.
-        if let Some(cfg) = new_config {
-            self.config = Some(cfg);
-        }
-        if let Some(st) = state {
-            self.linked = st;
-        }
-        if invalidate {
-            self.index = None;
-        }
-        if let Some(index) = replacement {
-            self.index = Some(index);
-        }
-        self.intent = intent;
-        self.revision = seq;
-        let selected = result.as_ref().map_or(0, |c| c[0]);
-        let tier = if query {
-            if fallback == 0 {
-                3
+            if cancelled() {
+                return Err(Error::Cancelled.into());
+            }
+            // Every fallible allocation, capacity check and scan precedes publication.
+            if let Some(cfg) = new_config.take() {
+                self.config = Some(cfg);
+            }
+            if let Some(st) = state.take() {
+                self.linked = st;
+            }
+            if invalidate {
+                self.index = None;
+            }
+            if let Some(index) = replacement {
+                self.index = Some(index);
+            }
+            self.intent = intent;
+            self.revision = seq;
+            let selected = result.as_ref().map_or(0, |c| c[0]);
+            let tier = if query {
+                if fallback == 0 {
+                    3
+                } else {
+                    2
+                }
             } else {
-                2
+                0
+            };
+            let mut reply = self.reply(
+                seq,
+                0,
+                tier,
+                fallback,
+                rows,
+                reads,
+                self.peak_observed.get().max(peak),
+                selected,
+                result.as_deref(),
+                &[],
+                0,
+                Some(buffer),
+            )?;
+            if op == 11 {
+                reply[12..16].copy_from_slice(&1u32.to_le_bytes());
             }
-        } else {
-            0
-        };
-        let mut reply = self.reply(
-            seq,
-            0,
-            tier,
-            fallback,
-            rows,
-            reads,
-            peak,
-            selected,
-            result.as_deref(),
-            &[],
-            0,
-            Some(buffer),
-        )?;
-        if op == 11 {
-            reply[12..16].copy_from_slice(&1u32.to_le_bytes());
-        }
-        put(
-            &mut reply,
-            184,
-            u64::from(self.intent.is_some() || self.linked.has_intent()),
-        );
-        Ok(reply)
+            put(
+                &mut reply,
+                184,
+                u64::from(self.intent.is_some() || self.linked.has_intent()),
+            );
+            Ok(reply)
+        })();
+        self.finish_capture(result, new_config, state, b, cancelled)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn filter_tier_c_clause_canonicalization_preserves_every_payload_and_cap() {
+        let cfg = Config {
+            active_id: u64::MAX,
+            active: Axis {
+                dimension: 0,
+                cuts: Vec::new(),
+            },
+            views: Vec::new(),
+            width: 1,
+        };
+        for n in 0..=MAX_VIEWS {
+            for seed in 0..4usize {
+                // Reverse/high-u64 keys and deterministic permutations include
+                // orders outside the public near-sorted fast path.
+                let mut input: Vec<_> = (0..n)
+                    .map(|i| Clause {
+                        id: u64::MAX - (i / 2) as u64,
+                        dim: i % 2,
+                        bounds: [f64::from_bits(0x8000_0000_0000_0000 + i as u64), i as f64],
+                    })
+                    .collect();
+                for i in (1..n).rev() {
+                    input.swap(i, (i * 17 + seed * 11) % (i + 1));
+                }
+                let original: Vec<_> = input
+                    .iter()
+                    .map(|c| (c.id, c.dim, c.bounds.map(f64::to_bits)))
+                    .collect();
+                let mut expected = original.clone();
+                expected.sort_by_key(|c| (c.0, c.1));
+                let linked = Linked {
+                    clauses: input,
+                    ..Linked::default()
+                };
+                let actual = linked.all(&cfg, None).unwrap();
+                assert_eq!(
+                    actual
+                        .iter()
+                        .map(|c| (c.id, c.dim, c.bounds.map(f64::to_bits)))
+                        .collect::<Vec<_>>(),
+                    expected
+                );
+                assert_eq!(
+                    linked
+                        .clauses
+                        .iter()
+                        .map(|c| (c.id, c.dim, c.bounds.map(f64::to_bits)))
+                        .collect::<Vec<_>>(),
+                    original
+                );
+            }
+        }
+        let linked = Linked {
+            clauses: (0..MAX_VIEWS)
+                .map(|i| Clause {
+                    id: i as u64 + 1,
+                    dim: 0,
+                    bounds: [0., 1.],
+                })
+                .collect(),
+            ..Linked::default()
+        };
+        assert_eq!(linked.all(&cfg, None).unwrap().len(), 64);
+        assert!(matches!(
+            linked.all(&cfg, Some([0., 1.])),
+            Err(Error::Budget)
+        ));
+    }
+
     #[test]
     fn filter_tier_c_density_complete_shared_packets() {
         let b = include_bytes!("../../../tests/fixtures/filter_tier_c/density.bin");
@@ -741,7 +831,10 @@ mod tests {
         assert_eq!(u64_at(&before, 128), Ok(4));
         // Poison private backing arrays to detect row scans or mask rehashing.
         // The resident index and admitted mask digest remain the warm snapshot.
-        for column in &mut session.source.as_mut().unwrap().columns {
+        for column in &mut Arc::get_mut(session.source.as_mut().unwrap())
+            .unwrap()
+            .columns
+        {
             column.fill(f64::NAN);
         }
         session.linked.mask.fill(0);

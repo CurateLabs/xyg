@@ -1,5 +1,5 @@
 import { FilterSessionClient } from "../../packages/xy-node/src/filter-protocol.js";
-import type { XygWasmWorker } from "./47_wasm";
+import { claimFilterWorker, type XygWasmWorker } from "./47_wasm";
 export {
   filterRequest,
   decodeFilterReply,
@@ -18,17 +18,16 @@ export async function createWasmFilterSession(
     budgetBytes: bigint;
   },
 ) {
-  const client = new FilterSessionClient(
-    (packet: Uint8Array) => worker.filterCommand(packet.slice().buffer),
-    () => worker.dispose(),
-    columns,
-    options,
-  );
+  await worker.ready;
+  const lane=claimFilterWorker(worker);
   try {
+    const client=new FilterSessionClient(lane.execute,lane.close,columns,options);
     await client.initialize(columns);
     return client;
   } catch (error) {
-    client.close();
+    // Failure after a successful claim settles after its owned Worker drains.
+    // A cleanup failure must not replace the original initialization failure.
+    try { await lane.close(); } catch { /* owning Worker is already terminal */ }
     throw error;
   }
 }

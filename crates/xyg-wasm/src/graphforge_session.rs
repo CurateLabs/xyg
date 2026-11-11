@@ -8,7 +8,8 @@ use xyg_engine::graphforge::interaction::{
 fn external(instance: &Instance, staging: usize) -> Option<usize> {
     // Settled foreign jobs have no retained scratch. Reject active jobs rather
     // than under-accounting opaque job allocations.
-    if instance.aggregate_job.is_some()
+    if instance.filter.occupied_bytes() != 0
+        || instance.aggregate_job.is_some()
         || instance.stream_aggregate_job.is_some()
         || instance.graph_job.is_some()
         || instance.compile_job.is_some()
@@ -211,6 +212,34 @@ mod tests {
             owners.push(owner);
         }
         owners
+    }
+    #[test]
+    fn filter_owner_refuses_graph_open_without_losing_filter_authority() {
+        let budget = 16 << 20;
+        let h = xyg_wasm_instance_new(budget);
+        let fixture = include_bytes!("../../../tests/fixtures/filter_tier_c/session.bin");
+        let n = u32::from_le_bytes(fixture[..4].try_into().unwrap()) as usize;
+        let mut input = fixture[24..24 + n].to_vec();
+        input[48..56].copy_from_slice(&(budget as u64).to_le_bytes());
+        assert_eq!(xyg_wasm_arena_resize(h, input.len()), STATUS_OK);
+        with_instance_mut(h, |i| i.arena.copy_from_slice(&input)).unwrap();
+        assert_eq!(
+            super::super::xyg_wasm_filter_execute(h, 0, input.len(), budget),
+            STATUS_OK
+        );
+        let retained = with_instance_mut(h, |i| {
+            assert!(super::external(i, 0).is_none());
+            i.filter.occupied_bytes()
+        })
+        .unwrap();
+        assert!(retained > 0);
+        assert_ne!(call(h, &open(), xyg_wasm_graphforge_session_open), 0);
+        with_instance_mut(h, |i| {
+            assert!(i.graph_session.is_none());
+            assert_eq!(i.filter.occupied_bytes(), retained);
+        })
+        .unwrap();
+        assert_eq!(xyg_wasm_instance_dispose(h), STATUS_OK);
     }
     #[test]
     fn temporal_job_owners_are_charged_before_graph_open_and_transactions() {

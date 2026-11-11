@@ -2178,6 +2178,16 @@ five-view pointer/keyboard parity and context/append/rebuild/publication failure
 are exercised. Automatic notebook/native-host transport, assistive hardware,
 nonlinear/large-offset compatibility and massive performance remain open. The [normative subset and remaining work](filter-tier-c.md)
 include synchronous Worker cancellation limits and logical memory accounting.
+
+The [issued paged-source continuation](filter-tier-c.md#issued-native-paged-sources-continuation)
+adds native Python/Node XYFC v2 attach for issued XYGC planes, followed by the
+unchanged shared v1 count/query/membership commands. It retains immutable file
+and metadata leases rather than copying all rows or retaining the viewport LRU.
+The browser factory still requires resident arrays: a native source handle is
+not portable to a Worker, and direct WASM refuses that attach rather than
+silently materializing or treating the handle as browser authority. Browser
+file transport and cooperative index building remain required follow-up work.
+
 ## Temporal catalog candidate (#46)
 
 [Temporal catalog](temporal-catalog.md) specifies XYTM v1/v2, XYTL v2/v3 and

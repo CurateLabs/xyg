@@ -45,6 +45,7 @@ pub use autorange::{auto_domain, figure_autorange, rect_zero_baseline_flags};
 pub mod canonical_drill;
 #[cfg(not(target_family = "wasm"))]
 pub mod chunked_columns;
+pub mod chunked_layout;
 pub mod colormap;
 pub mod compat_layout;
 pub mod css;

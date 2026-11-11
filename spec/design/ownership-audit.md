@@ -1375,9 +1375,13 @@ These additions use the existing ownership policies without adding a host policy
 | `crates/xyg-engine/src/graphforge/interaction/tests/wire/representation.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 
 | `crates/xyg-engine/src/filter_tier_c.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/filter_tier_c_jobs.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/filter_tier_c_paged.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
+| `crates/xyg-engine/src/chunked_layout.rs` | Rust safe engine | `rust-engine` | `keep-rust` | — |
 | `crates/xyg-core/src/filter_session_ffi.rs` | Rust C ABI shell | `rust-c-abi` | `keep-rust` | — |
 | `python/xyg/filter_session.py` | Python host | `python-host` | `keep-host` | — |
 | `packages/xy-node/src/filter-session.js` | Node host | `node-host` | `keep-host` | — |
+| `packages/xy-node/src/chunked-column-ref.js` | Node host | `node-host` | `keep-host` | — |
 | `packages/xy-node/src/filter-protocol.js` | Node host | `node-host` | `keep-host` | — |
 | `js/src/49_filter_session.ts` | Shared TypeScript WASM lifecycle adapter | `browser-wasm-adapter` | `implement-rust-wasm` | #59 |
 

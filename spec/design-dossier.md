@@ -3077,7 +3077,11 @@ range/mask composition, the ordinary density painter and real five-view
 pointer/keyboard edit/commit/cancel/clear. It does not complete §34/35: source
 spill/reopen, persistent materialized result masks, Worker chunk cancellation,
 automatic native widget transport, full paint/predicate compatibility and the
-five-view 100M ≥50 FPS/CodSpeed/competitor qualification remain open. No prefix
+five-view 100M ≥50 FPS/CodSpeed/competitor qualification remain open. The
+[issued native paged-source continuation](design/filter-tier-c.md#issued-native-paged-sources-continuation)
+adds bounded XYGC source leases to the same count/membership kernels without
+materializing whole canonical columns. It does not complete browser paged
+transport, cooperative building or global resource admission. No prefix
 row-mask slab or second renderer is used.
 
 ## 35. Milestone amendments (round 3)

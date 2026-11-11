@@ -347,6 +347,9 @@ pub extern "C" fn xyg_wasm_geo_transport_acquire(handle: u32) -> i32 {
         .unwrap_or(STATUS_INVALID_HANDLE)
 }
 fn acquire_geo_transport(instance: &mut Instance, preserve_staging: bool) -> i32 {
+    if instance.filter.occupied_bytes()!=0 {
+        return fail(instance,STATUS_INVALID_ARGUMENT,"filter owner requires a dedicated instance");
+    }
     if instance.geo_transport.is_some() {
         return STATUS_OK;
     }
@@ -520,7 +523,7 @@ fn with_ordinary_instance_mut(
     operation: impl FnOnce(&mut Instance) -> i32,
 ) -> Result<i32, i32> {
     with_instance_mut(handle, |instance| {
-        if instance.geo_transport.is_some() || instance.graph_session.is_some() {
+        if instance.geo_transport.is_some() || instance.graph_session.is_some() || instance.filter.occupied_bytes()!=0 {
             instance.arena = Vec::new();
             return fail(
                 instance,
@@ -749,7 +752,7 @@ pub extern "C" fn xyg_wasm_temporal_graph_execute(
     length: usize,
 ) -> i32 {
     with_instance_mut(handle, |instance| {
-        if instance.geo_transport.is_some() {
+        if instance.geo_transport.is_some() || instance.filter.occupied_bytes()!=0 {
             instance.arena = Vec::new();
             return fail(instance, STATUS_INVALID_ARGUMENT, "retained transport rejects temporal operations");
         }
@@ -804,7 +807,8 @@ pub extern "C" fn xyg_wasm_arena_resize(handle: u32, length: usize) -> i32 {
         // XYTG keeps its existing staging/work/output contract; charging its
         // conservative session-only reserve here would strand accepted owners.
         let retained = graph_residency(instance);
-        let retained=retained.saturating_add(xyg_engine::temporal_scene::jobs::retained(&instance.temporal_jobs));
+        let retained=retained.saturating_add(xyg_engine::temporal_scene::jobs::retained(&instance.temporal_jobs))
+            .saturating_add(instance.filter.occupied_bytes());
         if length.saturating_add(retained) > instance.max_arena_bytes {
             return fail(
                 instance,
@@ -1892,6 +1896,8 @@ pub extern "C" fn xyg_wasm_last_scene_styles(handle: u32) -> usize {
     with_instance_mut(handle, |instance| instance.last_scene_styles).unwrap_or(0)
 }
 
+fn filter_not_cancelled()->bool { false }
+
 /// Execute the same XYFC v1 session protocol as the native adapter.
 #[no_mangle]
 pub extern "C" fn xyg_wasm_filter_execute(
@@ -1900,7 +1906,14 @@ pub extern "C" fn xyg_wasm_filter_execute(
     length: usize,
     capacity: usize,
 ) -> i32 {
-    with_ordinary_instance_mut(handle, |instance| {
+    with_instance_mut(handle, |instance| {
+        if instance.geo_transport.is_some() || instance.graph_session.is_some()
+            || instance.temporal_graph.is_some() || instance.temporal.is_some()
+            || instance.aggregate_job.is_some() || instance.stream_aggregate_job.is_some()
+            || instance.graph_job.is_some() || instance.compile_job.is_some()
+            || xyg_engine::temporal_scene::jobs::retained(&instance.temporal_jobs)!=0 {
+            return fail(instance,STATUS_INVALID_ARGUMENT,"filter owner requires a dedicated instance");
+        }
         instance.output = Vec::new();
         let arena = std::mem::take(&mut instance.arena);
         let Some(input) = offset
@@ -1913,10 +1926,11 @@ pub extern "C" fn xyg_wasm_filter_execute(
                 "invalid filter packet range",
             );
         };
-        match instance
-            .filter
-            .execute(input, capacity.min(instance.max_arena_bytes), || false)
-        {
+        let capacity=capacity.min(instance.max_arena_bytes);
+        let result=if input.get(..4)==Some(b"XYFJ") {
+            instance.filter.execute_cooperative_with_external(input,capacity,arena.capacity()-length+32,filter_not_cancelled)
+        } else { instance.filter.execute_with_external(input,capacity,arena.capacity()-length,filter_not_cancelled) };
+        match result {
             Ok(reply) => {
                 instance.output = reply;
                 instance.last_error.clear();
@@ -1953,7 +1967,7 @@ pub extern "C" fn xyg_wasm_temporal_scene_compile(
 #[no_mangle]
 pub extern "C" fn xyg_wasm_frozen_graph_execute(handle: u32, offset: usize, length: usize) -> i32 {
     with_instance_mut(handle, |i| {
-        if i.geo_transport.is_some() {
+        if i.geo_transport.is_some() || i.filter.occupied_bytes()!=0 {
             return STATUS_INVALID_ARGUMENT;
         }
         temporal_graph_frozen::execute(i, offset, length)
@@ -3561,6 +3575,62 @@ mod tests {
 
 #[cfg(test)]
 mod filter_tier_c_tests {
+    use super::*;
+    fn filter_packet(rows: usize, budget: usize) -> Vec<u8> {
+        let mut b=vec![0;96+rows*8]; b[..4].copy_from_slice(b"XYFC");
+        b[4..8].copy_from_slice(&1u32.to_le_bytes());b[8..12].copy_from_slice(&1u32.to_le_bytes());
+        for (at,value) in [(16,1),(24,1),(32,2),(40,1),(48,budget as u64),(56,1),(64,rows as u64)] {
+            b[at..at+8].copy_from_slice(&value.to_le_bytes());
+        }
+        b
+    }
+    fn stage(h:u32,b:&[u8]) {
+        assert_eq!(xyg_wasm_arena_resize(h,b.len()),STATUS_OK);
+        with_instance_mut(h,|i|i.arena.copy_from_slice(b)).unwrap();
+    }
+    fn output_status(h:u32)->u32 {
+        with_instance_mut(h,|i|u32::from_le_bytes(i.output[8..12].try_into().unwrap())).unwrap()
+    }
+    #[test]
+    fn filter_owner_prevents_overbudget_staging_and_incompatible_authorities() {
+        let budget=16<<20;let h=xyg_wasm_instance_new(budget);let b=filter_packet(524_288,budget);
+        stage(h,&b);assert_eq!(xyg_wasm_filter_execute(h,0,b.len(),budget),STATUS_OK);assert_eq!(output_status(h),0);
+        let retained=with_instance_mut(h,|i|i.filter.occupied_bytes()).unwrap();assert!(retained>=4<<20);
+        assert_eq!(xyg_wasm_arena_resize(h,budget),STATUS_RESOURCE_LIMIT);
+        assert_eq!(xyg_wasm_geo_transport_acquire(h),STATUS_INVALID_ARGUMENT);
+        let mut create=b"XYTG".to_vec();
+        for v in [1u32,32,1,0,1,0,0] {create.extend_from_slice(&v.to_le_bytes());}
+        create.extend_from_slice(&1u128.to_le_bytes());stage(h,&create);
+        assert_eq!(xyg_wasm_temporal_graph_execute(h,0,create.len()),STATUS_INVALID_ARGUMENT);
+        assert_eq!(xyg_wasm_frozen_graph_execute(h,0,create.len()),STATUS_INVALID_ARGUMENT);
+        assert_eq!(xyg_wasm_scene_validate(h,1,0,create.len()),STATUS_INVALID_ARGUMENT);
+        with_instance_mut(h,|i| {
+            assert_eq!(i.filter.occupied_bytes(),retained);assert!(i.geo_transport.is_none());
+            assert!(i.temporal_graph.is_none());assert!(i.graph_session.is_none());
+        }).unwrap();
+        assert_eq!(xyg_wasm_instance_dispose(h),STATUS_OK);
+        // Reverse direction preserves an already accepted temporal authority.
+        let h=xyg_wasm_instance_new(budget);stage(h,&create);
+        assert_eq!(xyg_wasm_temporal_graph_execute(h,0,create.len()),STATUS_OK);
+        let b=filter_packet(8,budget);stage(h,&b);
+        assert_eq!(xyg_wasm_filter_execute(h,0,b.len(),budget),STATUS_INVALID_ARGUMENT);
+        with_instance_mut(h,|i| {assert_eq!(i.filter.occupied_bytes(),0);assert!(i.temporal_graph.is_some());}).unwrap();
+        assert_eq!(xyg_wasm_instance_dispose(h),STATUS_OK);
+    }
+    #[test]
+    fn filter_owner_charges_full_arena_capacity_and_nonzero_packet_offset_before_open() {
+        let budget=16<<20;let h=xyg_wasm_instance_new(budget);let b=filter_packet(524_288,budget);
+        // Actual packet4MiB lies inside a16MiB allocation; another4MiB source
+        // cannot be admitted merely because only the input slice is visible.
+        assert_eq!(xyg_wasm_arena_resize(h,budget),STATUS_OK);let offset=1<<20;
+        with_instance_mut(h,|i|i.arena[offset..offset+b.len()].copy_from_slice(&b)).unwrap();
+        assert_eq!(xyg_wasm_filter_execute(h,offset,b.len(),budget),STATUS_OK);
+        assert_eq!(output_status(h),2);
+        with_instance_mut(h,|i|assert_eq!(i.filter.occupied_bytes(),0)).unwrap();
+        let mut retry=b;retry[16..24].copy_from_slice(&2u64.to_le_bytes());stage(h,&retry);
+        assert_eq!(xyg_wasm_filter_execute(h,0,retry.len(),budget),STATUS_OK);assert_eq!(output_status(h),0);
+        assert_eq!(xyg_wasm_instance_dispose(h),STATUS_OK);
+    }
     #[test]
     fn filter_tier_c_native_wasm_adapter_shared_packets() {
         let b = include_bytes!("../../../tests/fixtures/filter_tier_c/session.bin");

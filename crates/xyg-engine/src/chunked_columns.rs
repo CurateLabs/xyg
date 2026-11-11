@@ -16,23 +16,13 @@ const RESIDENT_LIMIT: u64 = 8 * 1024 * 1024;
 
 const MAGIC: &[u8; 4] = b"XYGC";
 const VERSION: u32 = 2;
+#[cfg(test)]
 const LEGACY_VERSION: u32 = 1;
 const HEADER_BYTES: u64 = 64;
 const META_BYTES: u64 = 48;
 const ROW_BYTES: u64 = 16;
-const OVERVIEW_BYTES: u64 = 24;
 const OVERVIEW_BUCKETS: u64 = 512;
-const MAX_OVERVIEW_POINTS: u64 = OVERVIEW_BUCKETS * 4;
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct ChunkMeta {
-    pub row_start: u64,
-    pub row_count: u32,
-    pub x_min: f64,
-    pub x_max: f64,
-    pub y_min: f64,
-    pub y_max: f64,
-}
+pub use crate::chunked_layout::ChunkMeta;
 
 #[derive(Debug, PartialEq)]
 pub struct ChunkAccess {
@@ -64,12 +54,7 @@ pub struct RangePage {
     pub done: bool,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct OverviewPoint {
-    pub row: u64,
-    pub x: f64,
-    pub y: f64,
-}
+pub use crate::chunked_layout::OverviewPoint;
 
 #[derive(Debug, PartialEq)]
 pub struct OverviewRead {
@@ -78,6 +63,7 @@ pub struct OverviewRead {
     pub source_rows: u64,
 }
 
+pub use crate::chunked_layout::{CanonicalRows, CANONICAL_PAGE_OVERHEAD, MAX_CANONICAL_PAGE_ROWS};
 #[derive(Default)]
 struct OverviewBucket {
     first: Option<OverviewPoint>,
@@ -164,6 +150,21 @@ impl Error {
         }
     }
 }
+impl From<crate::chunked_layout::PageError> for Error {
+    fn from(error: crate::chunked_layout::PageError) -> Self {
+        use crate::chunked_layout::PageError as P;
+        match error {
+            P::InvalidRange => Self::InvalidRange,
+            P::Corrupt(reason) => Self::Corrupt(reason),
+            P::BudgetExceeded { needed, budget } => Self::BudgetExceeded { needed, budget },
+            P::Cancelled => Self::Cancelled,
+            P::Allocation => Self::Io(io::Error::new(
+                io::ErrorKind::OutOfMemory,
+                "canonical page allocation",
+            )),
+        }
+    }
+}
 impl From<io::Error> for Error {
     fn from(value: io::Error) -> Self {
         Self::Io(value)
@@ -233,13 +234,24 @@ impl ResidentChunks {
 }
 
 pub struct ChunkedColumns {
-    file: File,
+    file: Arc<File>,
     resident: Mutex<ResidentChunks>,
     rows: u64,
     chunk_rows: u32,
-    metadata: Vec<ChunkMeta>,
+    metadata: Arc<Vec<ChunkMeta>>,
     data_offset: u64,
     overview: Vec<OverviewPoint>,
+}
+
+/// An immutable source lease deliberately excludes the viewport LRU and its
+/// cancellation watermark. Closing a viewport can retire every cached chunk
+/// while an indexed consumer still owns this descriptor and file metadata.
+#[derive(Clone)]
+pub struct CanonicalLease {
+    file: Arc<File>,
+    rows: u64,
+    metadata: Arc<Vec<ChunkMeta>>,
+    data_offset: u64,
 }
 
 pub struct Registered {
@@ -280,6 +292,21 @@ impl Registered {
     }
     pub fn rows(&self) -> u64 {
         self.store.rows()
+    }
+    pub fn canonical_lease(&self) -> CanonicalLease {
+        self.store.canonical_lease()
+    }
+    /// An independent consumer's cancellation must not advance the viewport's
+    /// shared generation watermark or discard its accepted cache entries.
+    pub fn canonical_rows<F: FnMut() -> bool>(
+        &self,
+        first: u64,
+        count: u32,
+        budget: u64,
+        is_current: F,
+    ) -> Result<CanonicalRows, Error> {
+        self.canonical_lease()
+            .canonical_rows(first, count, budget, is_current)
     }
     pub fn overview(&self, max_points: usize) -> Result<OverviewRead, Error> {
         self.store.overview(max_points)
@@ -357,7 +384,73 @@ fn finite_min_max(values: &[(f64, f64)]) -> (f64, f64, f64, f64) {
     (xmin, xmax, ymin, ymax)
 }
 
+impl CanonicalLease {
+    pub fn rows(&self) -> u64 {
+        self.rows
+    }
+    pub fn immutable_bytes(&self) -> u64 {
+        128 + self.metadata.capacity() as u64 * META_BYTES
+    }
+    pub fn same_backing(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.file, &other.file)
+    }
+    /// Read by canonical position, not x/y coordinates. A filtered viewport
+    /// page cannot implement this operation: it deliberately omits rows whose
+    /// x or y is nonfinite. This path neither borrows nor grows that cache.
+    pub fn canonical_rows<F: FnMut() -> bool>(
+        &self,
+        first: u64,
+        count: u32,
+        budget: u64,
+        mut is_current: F,
+    ) -> Result<CanonicalRows, Error> {
+        crate::chunked_layout::canonical_page_workspace(self.rows, first, count, budget)?;
+        if !is_current() {
+            return Err(Error::Cancelled);
+        }
+        let mut raw = Vec::new();
+        raw.try_reserve_exact(count as usize * ROW_BYTES as usize)
+            .map_err(|_| {
+                Error::Io(io::Error::new(
+                    io::ErrorKind::OutOfMemory,
+                    "canonical raw page",
+                ))
+            })?;
+        raw.resize(count as usize * ROW_BYTES as usize, 0);
+        crate::chunked_layout::canonical_buffer_workspace(count, raw.capacity() as u64, budget)?;
+        let offset = first
+            .checked_mul(ROW_BYTES)
+            .and_then(|n| self.data_offset.checked_add(n))
+            .ok_or(Error::InvalidRange)?;
+        if !raw.is_empty() {
+            read_exact_at(&self.file, &mut raw, offset)?;
+        }
+        if !is_current() {
+            return Err(Error::Cancelled);
+        }
+        crate::chunked_layout::decode_canonical_rows(
+            &self.metadata,
+            self.rows,
+            first,
+            &raw,
+            raw.capacity() as u64,
+            budget,
+            is_current,
+        )
+        .map_err(Into::into)
+    }
+}
+
 impl ChunkedColumns {
+    fn canonical_lease(&self) -> CanonicalLease {
+        CanonicalLease {
+            file: self.file.clone(),
+            rows: self.rows,
+            metadata: self.metadata.clone(),
+            data_offset: self.data_offset,
+        }
+    }
+
     /// Write a local/offline artifact from an iterator. Only one chunk is
     /// resident during construction; x must be nondecreasing for exact
     /// binary-search viewport pruning.
@@ -459,123 +552,48 @@ impl ChunkedColumns {
     pub fn open(path: &Path) -> Result<Self, Error> {
         let mut file = File::open(path)?;
         let file_len = file.metadata()?.len();
-        let mut header = [0u8; HEADER_BYTES as usize];
-        file.read_exact(&mut header).map_err(|e| {
-            if e.kind() == io::ErrorKind::UnexpectedEof {
-                Error::Corrupt("short header")
-            } else {
-                e.into()
+        // Rust issues every interval; the transport only seeks and fills it.
+        // This legacy open API has no caller budget, so no new limit is imposed.
+        let mut reader = crate::chunked_layout::LayoutReader::new(file_len, u64::MAX)?;
+        let mut raw = Vec::new();
+        while let Some(ticket) = reader.ticket() {
+            let length = ticket.length as usize;
+            if raw.capacity() < length {
+                raw.try_reserve_exact(length - raw.len()).map_err(|_| {
+                    Error::Io(io::Error::new(
+                        io::ErrorKind::OutOfMemory,
+                        "chunked layout read",
+                    ))
+                })?;
             }
-        })?;
-        if &header[0..4] != MAGIC {
-            return Err(Error::Corrupt("bad magic"));
+            raw.resize(length, 0);
+            file.seek(SeekFrom::Start(ticket.offset))?;
+            file.read_exact(&mut raw).map_err(|e| {
+                if ticket.offset == 0 && e.kind() == io::ErrorKind::UnexpectedEof {
+                    Error::Corrupt("short header")
+                } else {
+                    e.into()
+                }
+            })?;
+            reader.fulfil(ticket, &raw, raw.capacity() as u64, || true)?;
         }
-        let version = u32::from_le_bytes(header[4..8].try_into().unwrap());
-        if version != VERSION && version != LEGACY_VERSION {
-            return Err(Error::Corrupt("unsupported version"));
-        }
-        if (version == LEGACY_VERSION && header[32..].iter().any(|&byte| byte != 0))
-            || (version == VERSION && header[44..].iter().any(|&byte| byte != 0))
-        {
-            return Err(Error::Corrupt("nonzero reserved header bytes"));
-        }
-        let rows = u64::from_le_bytes(header[8..16].try_into().unwrap());
-        let chunk_rows = u32::from_le_bytes(header[16..20].try_into().unwrap());
-        let chunk_count = u32::from_le_bytes(header[20..24].try_into().unwrap());
-        let data_offset = u64::from_le_bytes(header[24..32].try_into().unwrap());
-        if chunk_rows == 0 || data_offset != HEADER_BYTES + META_BYTES * u64::from(chunk_count) {
-            return Err(Error::Corrupt("inconsistent header"));
-        }
-        let rows_end = data_offset
-            .checked_add(
-                rows.checked_mul(ROW_BYTES)
-                    .ok_or(Error::Corrupt("size overflow"))?,
-            )
-            .ok_or(Error::Corrupt("size overflow"))?;
-        let (overview_offset, overview_count) = if version == VERSION {
-            (
-                u64::from_le_bytes(header[32..40].try_into().unwrap()),
-                u32::from_le_bytes(header[40..44].try_into().unwrap()),
-            )
-        } else {
-            (rows_end, 0)
-        };
-        if u64::from(overview_count) > MAX_OVERVIEW_POINTS || u64::from(overview_count) > rows {
-            return Err(Error::Corrupt("invalid overview count"));
-        }
-        if overview_offset != rows_end {
-            return Err(Error::Corrupt("inconsistent overview offset"));
-        }
-        let expected = overview_offset
-            .checked_add(u64::from(overview_count) * OVERVIEW_BYTES)
-            .ok_or(Error::Corrupt("size overflow"))?;
-        if file_len != expected {
-            return Err(Error::Corrupt("file length does not match header"));
-        }
-        let mut metadata = Vec::with_capacity(chunk_count as usize);
-        let mut expected_start = 0u64;
-        let mut previous_max = f64::NEG_INFINITY;
-        for _ in 0..chunk_count {
-            let mut raw = [0u8; META_BYTES as usize];
-            file.read_exact(&mut raw)?;
-            if raw[12..16] != [0; 4] {
-                return Err(Error::Corrupt("nonzero reserved metadata bytes"));
-            }
-            let meta = ChunkMeta {
-                row_start: u64::from_le_bytes(raw[0..8].try_into().unwrap()),
-                row_count: u32::from_le_bytes(raw[8..12].try_into().unwrap()),
-                x_min: f64::from_le_bytes(raw[16..24].try_into().unwrap()),
-                x_max: f64::from_le_bytes(raw[24..32].try_into().unwrap()),
-                y_min: f64::from_le_bytes(raw[32..40].try_into().unwrap()),
-                y_max: f64::from_le_bytes(raw[40..48].try_into().unwrap()),
-            };
-            if meta.row_start != expected_start
-                || meta.row_count == 0
-                || meta.row_count > chunk_rows
-                || !meta.x_min.is_finite()
-                || !meta.x_max.is_finite()
-                || !meta.y_min.is_finite()
-                || !meta.y_max.is_finite()
-                || meta.x_min > meta.x_max
-                || meta.y_min > meta.y_max
-                || meta.x_min < previous_max
-            {
-                return Err(Error::Corrupt("invalid or unordered chunk metadata"));
-            }
-            expected_start += u64::from(meta.row_count);
-            previous_max = meta.x_max;
-            metadata.push(meta);
-        }
-        if expected_start != rows {
-            return Err(Error::Corrupt("chunk rows do not sum to row count"));
-        }
-        let mut overview = Vec::with_capacity(overview_count as usize);
-        file.seek(SeekFrom::Start(overview_offset))?;
-        let mut previous_row = None;
-        for _ in 0..overview_count {
-            let mut raw = [0u8; OVERVIEW_BYTES as usize];
-            file.read_exact(&mut raw)?;
-            let point = OverviewPoint {
-                row: u64::from_le_bytes(raw[0..8].try_into().unwrap()),
-                x: f64::from_le_bytes(raw[8..16].try_into().unwrap()),
-                y: f64::from_le_bytes(raw[16..24].try_into().unwrap()),
-            };
-            if point.row >= rows
-                || !point.x.is_finite()
-                || !point.y.is_finite()
-                || previous_row.is_some_and(|row| row >= point.row)
-            {
-                return Err(Error::Corrupt("invalid overview point"));
-            }
-            previous_row = Some(point.row);
-            overview.push(point);
-        }
+        let crate::chunked_layout::CanonicalLayout {
+            header,
+            metadata,
+            overview,
+        } = reader.finish()?;
+        let crate::chunked_layout::Header {
+            rows,
+            chunk_rows,
+            data_offset,
+            ..
+        } = header;
         Ok(Self {
-            file,
+            file: Arc::new(file),
             resident: Mutex::new(ResidentChunks::default()),
             rows,
             chunk_rows,
-            metadata,
+            metadata: Arc::new(metadata),
             data_offset,
             overview,
         })
@@ -1077,6 +1095,79 @@ mod tests {
                 .unwrap()
                 .as_nanos()
         ))
+    }
+
+    #[test]
+    fn canonical_pages_preserve_all_row_bits_and_leave_viewport_owners_alone() {
+        let p = path("canonical-bits");
+        let nan = f64::from_bits(0x7ff8_0000_0000_0123);
+        let input = vec![
+            (-0.0, nan),
+            (0.0, f64::INFINITY),
+            (1.0, f64::NEG_INFINITY),
+            (nan, 2.0),
+            (2.0, -0.0),
+            (f64::INFINITY, 3.0),
+            (3.0, 4.0),
+            (4.0, nan),
+        ];
+        ChunkedColumns::create(&p, input.iter().copied(), 4).unwrap();
+        let h = reg_open(&p).unwrap();
+        let lease = reg_get(h).unwrap();
+        lease.set_generation(9);
+        lease.read_page(-1.0, 5.0, None, 4096, 9, 0).unwrap();
+        let before = assert_accounting(&lease.store, RESIDENT_LIMIT);
+        assert!(reg_remove(h));
+        let budget = 6 * 32 + CANONICAL_PAGE_OVERHEAD;
+        let page = lease.canonical_rows(1, 6, budget, || true).unwrap();
+        assert_eq!(page.first_row, 1);
+        assert_eq!(page.bytes_read, 6 * 16);
+        assert_eq!(page.peak_bytes, budget);
+        for (i, &(x, y)) in input[1..7].iter().enumerate() {
+            assert_eq!(page.x[i].to_bits(), x.to_bits());
+            assert_eq!(page.y[i].to_bits(), y.to_bits());
+        }
+        assert!(lease.is_current(9));
+        assert_eq!(assert_accounting(&lease.store, RESIDENT_LIMIT), before);
+        assert!(matches!(
+            lease.canonical_rows(0, 1, 128, || false),
+            Err(Error::Cancelled)
+        ));
+        let mut checkpoints = 0;
+        assert!(matches!(
+            lease.canonical_rows(0, 1, 128, || {
+                checkpoints += 1;
+                checkpoints < 2
+            }),
+            Err(Error::Cancelled)
+        ));
+        assert!(lease.is_current(9));
+        let empty = lease
+            .canonical_rows(8, 0, CANONICAL_PAGE_OVERHEAD, || true)
+            .unwrap();
+        assert!(empty.x.is_empty() && empty.y.is_empty());
+        for (first, count) in [(9, 0), (8, 1), (u64::MAX, 1), (0, 65_537)] {
+            assert!(matches!(
+                lease.canonical_rows(first, count, u64::MAX, || true),
+                Err(Error::InvalidRange)
+            ));
+        }
+        // Admission precedes the read, even if the backing bytes disappeared.
+        File::options()
+            .write(true)
+            .open(&p)
+            .unwrap()
+            .set_len(0)
+            .unwrap();
+        assert!(matches!(
+            lease.canonical_rows(1, 6, budget - 1, || true),
+            Err(Error::BudgetExceeded { .. })
+        ));
+        assert!(matches!(
+            lease.canonical_rows(1, 6, budget, || true),
+            Err(Error::Io(_))
+        ));
+        std::fs::remove_file(p).unwrap();
     }
 
     #[test]

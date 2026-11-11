@@ -10,7 +10,7 @@ use xyg_engine::graph_style::{
     CompoundGraphSceneInput, MAX_SEMANTIC_GRAPH_SCENE_PRIMITIVES, SEMANTIC_GRAPH_SCENE_VERSION,
     SemanticGraphSceneInput, encode_compound_graph_scene,
 };
-use xyg_engine::kernels::default_mark_rgba8;
+use xyg_engine::kernels::{default_bar_half_width, default_mark_rgba8};
 use xyg_engine::scene::{
     self, AxisScale, BandOutline, CartesianLayoutRequest, PlotLayout, ScaleKind, SceneBatch,
     SceneChromeStyle, SceneChromeText, SceneError,
@@ -716,22 +716,6 @@ fn append_aligned_f64s(out: &mut Vec<u8>, values: &[f64]) {
     }
 }
 
-fn default_bar_half_width(xs: &[f64], domain_lo: f64, domain_hi: f64) -> Result<f64, SceneError> {
-    if xs.iter().any(|value| !value.is_finite()) {
-        return Err(SceneError::NonFinite);
-    }
-    let mut sorted = xs.to_vec();
-    sorted.sort_by(f64::total_cmp);
-    let spacing = sorted
-        .windows(2)
-        .map(|pair| pair[1] - pair[0])
-        .filter(|value| *value > 0.0)
-        .min_by(f64::total_cmp);
-    let domain_span = (domain_hi - domain_lo).abs();
-    let basis =
-        spacing.or_else(|| (domain_span.is_finite() && domain_span > 0.0).then_some(domain_span));
-    basis.map(|value| value * 0.4).ok_or(SceneError::NonFinite)
-}
 
 fn series_f64s(
     bytes: &[u8],

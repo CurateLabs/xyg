@@ -208,3 +208,36 @@ def test_filter_tier_c_density_masked_indexed_query(benchmark, linked_density_se
     assert result["rows_read"] == 0 and result["tier"] == 3 and result["fallback"] == 0
     assert result["selected_count"] == expected and result["has_intent"] == 1
     assert result["index_bytes"] == 51_632
+
+
+@pytest.fixture(params=[1, 8, 32, 64], ids=["1clause", "8clauses", "32clauses", "64clauses"])
+def linked_clause_edit_session(request):
+    """Exclude ingress/rebuild; measure canonical C-clause edit ownership at its cap."""
+    values = np.arange(8, dtype=np.float64) % 4
+    chart = xyg.scatter_chart(xyg.scatter(x=values, y=values, density=True))
+    views = [
+        dict(id=i + 1, x="x", y="y", width=1, height=1, x_range=[0, 4], y_range=[0, 4])
+        for i in range(33)
+    ]
+    with chart.filter_session(
+        {"x": values, "y": values}, source_id=113, budget_bytes=16 << 20
+    ) as s:
+        for i in range(request.param):
+            s.configure_density(
+                dict(id=i // 2 + 1, dimension="xy"[i % 2], cuts=[-0.5, 1.5, 3.5]), views
+            )
+            selected = s.range(1, 2, exact=True)
+            assert selected["selected_count"] == 4
+        yield s, selected["filter_hash"]
+
+
+def test_filter_tier_c_clause_edit_round_trip(benchmark, linked_clause_edit_session):
+    session, fingerprint = linked_clause_edit_session
+
+    def edit():
+        session.begin_edit()
+        return session.cancel_edit()
+
+    result = benchmark(edit)
+    assert result["filter_hash"] == fingerprint
+    assert result["rows_read"] == 0 and result["has_intent"] == 1
