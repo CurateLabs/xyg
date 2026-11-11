@@ -7,7 +7,7 @@ import { encodeWasmTemporalGraphCreate, encodeWasmTemporalGraphFrame, decodeWasm
  * See spec/design/graph-interaction.md “Bounded explicit S5b attachment”. */
 import { XYG_WASM_TEMPORAL_GRAPH_FRAME_CONTEXT as FRAME_CONTEXT, XYG_WASM_GRAPH_DEFAULT_CHUNK_STEPS, XYG_WASM_GRAPH_DEFAULT_MAX_WALL_MS } from "./wasm_abi_generated";
 import { claimGraphWorker, XygWasmError, type XygWasmWorker } from "./47_wasm";
-import { createGraphGpuPainter, decodeGraphGpu } from "./63_graph_gpu";
+import { createGraphGpuPainter, decodeGraphGpu, GraphGpuContextLost } from "./63_graph_gpu";
 import { decodeGraphSessionAck, decodeGraphSessionResult, encodeGraphSessionRequest,
   type GraphSessionCamera, type GraphSessionLoad, type GraphSessionResult,
   type GraphSessionRequest } from "./63_graph_session_wire";
@@ -70,6 +70,7 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
     return Object.freeze([...camera]) as unknown as XygWasmGraphCamera;
   };
   let camera = cameraCopy(options.camera);
+  const lifetime = new AbortController();
   const lane = claimGraphWorker(options.worker, report), doc = options.el.ownerDocument;
   let disposed = false, terminal = false, busy = true, needsRefresh = false, sequence = 2n, output: GraphSessionResult | null = null;
   // One user intent may replace another while Rust is advancing force. Framing
@@ -116,6 +117,7 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
     if (error instanceof XygWasmError && error.code.startsWith("XYG_WASM_")) {
       if (terminalFailure) return;
       terminal = true; terminalFailure = error;
+      lifetime.abort(error);
       intent++; pendingTime = null; unsubscribeTime?.(); unsubscribeTime = null;
       for (const resolve of idleWaiters) resolve(); idleWaiters.clear();
     }
@@ -392,6 +394,23 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   if (progressive) deadline = setTimeout(() => {
     report(new XygWasmError("XYG_WASM_TIMEOUT", "Graph continuation exceeded the scheduler wall limit"));
   }, XYG_WASM_GRAPH_DEFAULT_MAX_WALL_MS);
+  async function initialPaint<T>(render: () => Promise<T>): Promise<T> {
+    let recoveryDeadline: ReturnType<typeof setTimeout> | null = null;
+    try {
+      for (;;) {
+        if (disposed || terminal) throw lifetime.signal.reason ?? new XygWasmError("XYG_WASM_DISPOSED", "Graph attachment lifetime ended");
+        try { return await render(); }
+        catch (error) {
+          if (!(error instanceof GraphGpuContextLost)) throw error;
+          // Keep the native owner and validated intent while GLHost replaces
+          // its lost namespace. Only initial publication retries; accepted
+          // state still changes atomically inside install after a full paint.
+          recoveryDeadline ??= setTimeout(() => lifetime.abort(new XygWasmError("XYG_WASM_TIMEOUT", "Initial graph paint did not recover")), XYG_WASM_GRAPH_DEFAULT_MAX_WALL_MS);
+          await painter.whenContextRestored(lifetime.signal);
+        }
+      }
+    } finally { if (recoveryDeadline !== null) clearTimeout(recoveryDeadline); }
+  }
   const ready = (async () => {
     const ack = await lane.execute("open", opening!); opening = null; decodeGraphSessionAck(ack);
     if (disposed) throw new XygWasmError("XYG_WASM_DISPOSED", "Graph attachment was disposed");
@@ -402,13 +421,14 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
       const initialTime = await computeTime();
       const bound = await lane.execute("interact", encodeGraphSessionRequest({ instanceId, opSeq: sequence++, revision: sessionRevision, operation: 18, temporal: true }));
       sessionRevision = decodeGraphSessionAck(bound).revision;
-      const initial = await renderTime(initialTime); if (initial) return initial;
+      const initial = await initialPaint(() => renderTime(initialTime)); if (initial) return initial;
       while (pendingTime && !disposed) {
-        const value = await applyTime(); if (value) return value;
+        const nextTime = await computeTime();
+        const value = await initialPaint(() => renderTime(nextTime)); if (value) return value;
       }
       throw new XygWasmError("XYG_WASM_DISPOSED", "Temporal graph closed before initial paint");
     }
-    return await request({ operation: 21, camera, page: 0, pageSize: 50 });
+    return await initialPaint(() => request({ operation: 21, camera, page: 0, pageSize: 50 }));
   })().then(value => { if (!disposed) dispatch("render", value); return value; }).catch(async error => { report(error); await dispose(); throw error; }).finally(() => {
     initialized = true; setBusy(false);
     if (frame !== null) cancelAnimationFrame(frame);
@@ -418,7 +438,7 @@ export function attachWasmGraphSession(options: XygWasmGraphSessionOptions): Xyg
   // Do not await ready in cleanup: its failure path itself awaits disposal.
   function dispose(): Promise<void> {
     if (disposal) return disposal;
-    disposed = true; rejectPendingUi(new XygWasmError("XYG_WASM_DISPOSED", "Graph attachment was disposed")); intent++; pendingTime = null; unsubscribeTime?.(); unsubscribeTime = null; stopContinuation();
+    disposed = true; lifetime.abort(new XygWasmError("XYG_WASM_DISPOSED", "Graph attachment was disposed")); rejectPendingUi(lifetime.signal.reason); intent++; pendingTime = null; unsubscribeTime?.(); unsubscribeTime = null; stopContinuation();
     for (const resolve of idleWaiters) resolve(); idleWaiters.clear();
     painter.canvas.removeEventListener("click", primaryClick);
     surface.removeEventListener("keydown", keyDown); previous.removeEventListener("click", previousPage); next.removeEventListener("click", nextPage);

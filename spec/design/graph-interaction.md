@@ -1225,6 +1225,22 @@ canonicalScene API; the attached path never calls `prepareScene`, canonicalScene
 The returned handle exposes `ready`, `refreshRender(camera?)`, `snapshot()` and
 asynchronous idempotent `dispose()`. `ready` opens initially **Owned, unlinked**
 state and installs its first Render; snapshot is null before that installation and after disposal.
+A transient loss of the initial GPU context does not dispose the native owner.
+Before any publication is accepted, only the painter's explicit lost-context
+condition may wait for GLHost restoration/replacement and re-render the current
+Rust state. The retry uses fresh operation sequences and retains the original
+intent checks; a newer temporal intent supersedes the unpainted membership.
+No snapshot, companion update or render event is published until a complete
+paint succeeds. Admission/capacity/protocol failures remain refusals, not
+context-recovery retries. Initial recovery is bounded by the existing generated
+30-second scheduler wall-limit constant; disposal, Worker failure or expiry
+cancels the waiter and drains the owner. Later accepted publications retain
+the existing repaint/refusal contract. The normal source foundation gate runs
+real initial-loss, repeated-loss, supersession, cancellation, timeout and
+malformed-output controls through `scripts/graph_initial_context_smoke.mjs`.
+This does not establish the origin of historical unrequested losses or general
+browser/driver reliability.
+
 A snapshot contains camera/revision, exact selection refs and provenance,
 changed refs, focus/focus-action facts, operation outcome, disclosure facts,
 companion rows and aligned refs, and the Rust summary. u64 source indices, rows,

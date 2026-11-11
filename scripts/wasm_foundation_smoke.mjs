@@ -275,6 +275,14 @@ if (!only && !browserPackage) {
   });
 }
 
+// A lost first GPU namespace must not tear down the retained native owner.
+if (!only && !browserPackage) {
+  execFileSync(process.execPath, [join(root, "scripts/graph_initial_context_smoke.mjs")], {
+    cwd: root, stdio: "inherit", env: { ...process.env,
+      ...(reportPath ? { XYG_INITIAL_CONTEXT_REPORT: `${reportPath}.initial-context.json` } : {}) }, timeout: 120000,
+  });
+}
+
 // Exact aggregate/direct temporal membership and frozen rendered artifacts.
 if (!only && !browserPackage) {
   execFileSync(process.execPath, [join(root, "scripts/temporal_graph_aggregate_smoke.mjs"), ...(reportPath ? [`${reportPath}.aggregate-graph`] : [])], {

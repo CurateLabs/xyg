@@ -1441,8 +1441,9 @@ nonblank zoom pixels, exact home restoration, zero replacement uploads, no
 new Worker allocation, and no post-destruction publication. A fourth case
 explicitly loses the startup WebGL context through `WEBGL_lose_context` in
 both entries. Before reading pixels, every capture waits for a lost context's
-real restoration event under the existing 60-second foundation deadline, then
-requires a completed paint. The shared host's 250 ms initial recovery backoff
+real restoration event with a 60-second per-wait bound, then requires a
+completed paint. The existing outer 60-second guard covers the ESM foundation
+promise; IIFE execution follows it and uses the per-wait bounds. The shared host's 250 ms initial recovery backoff
 cannot be tested by eight zero-delay tasks. Texture retention is measured from
 the first completed presentation, since recovery creates a fresh GPU object
 namespace. Pixel reads remain single-shot; blank or stale images fail without
