@@ -159,6 +159,7 @@ async function densityNoRefinementEvidence(wasmModule, mount = renderStandalone,
       { name: "missing-inline-artifact", inline: null, retainSample: true, code: "XYG_WASM_UNAVAILABLE" },
       { name: "malformed-inline-artifact", inline: {}, retainSample: true, code: "XYG_WASM_UNAVAILABLE" },
       { name: "missing-retained-source", inline: {}, retainSample: false, code: "XYG_WASM_SOURCE_UNAVAILABLE" },
+      { name: "startup-context-loss", inline: null, retainSample: true, code: "XYG_WASM_UNAVAILABLE", loseContext: true },
     ]) {
       globalThis.__xygInlineWasm = scenario.inline;
       const host = document.createElement("div");
@@ -175,12 +176,22 @@ async function densityNoRefinementEvidence(wasmModule, mount = renderStandalone,
             || events[0].traceIds?.join(",") !== "0") {
           throw new Error(`${scenario.name} omitted its explicit no-refinement reason: ${JSON.stringify(events)}`);
         }
-        const trace = view.gpuTraces.find((trace) => trace.tier === "density");
-        const overview = trace.density, texture = overview.tex;
-        let replacements = 0;
-        const originalUpload = view._uploadGrid.bind(view);
-        view._uploadGrid = (...args) => { replacements++; return originalUpload(...args); };
         let lastCapture;
+        let contextRecoveries = 0;
+        const waitForContext = () => new Promise((resolve, reject) => {
+          const cleanup = () => {
+            clearTimeout(timeout);
+            view.canvas.removeEventListener("webglcontextrestored", restored);
+          };
+          const restored = () => { cleanup(); contextRecoveries++; resolve(); };
+          // Share the existing foundation deadline. Recovery deliberately backs
+          // off for 250 ms; eight zero-delay tasks do not establish failure.
+          const timeout = setTimeout(() => {
+            cleanup(); reject(new Error(`${scenario.name} context did not recover`));
+          }, 60_000);
+          view.canvas.addEventListener("webglcontextrestored", restored);
+          if (!view._glLost && !view.gl?.isContextLost()) { cleanup(); resolve(); }
+        });
         const capture = async (expected = view.view0) => {
           const requestedView = view._copyView(view.view);
           let rendered, attempts = 0;
@@ -188,6 +199,7 @@ async function densityNoRefinementEvidence(wasmModule, mount = renderStandalone,
           // read once and never retry an unexpected blank or stale image.
           while (attempts < 8) {
             attempts++;
+            await waitForContext();
             rendered = view._drawNow();
             if (rendered === true) break;
             await nextTask();
@@ -221,7 +233,20 @@ async function densityNoRefinementEvidence(wasmModule, mount = renderStandalone,
           };
           return pixels;
         };
+        const startupGl = view.gl;
+        if (scenario.loseContext) startupGl.getExtension("WEBGL_lose_context").loseContext();
         const before = await capture();
+        if (scenario.loseContext && (!contextRecoveries || !startupGl.isContextLost()
+            || view.gl === startupGl || view._glLost || view.gl.isContextLost())) {
+          throw new Error(`${scenario.name} did not replace its lost startup context`);
+        }
+        // Texture retention starts at the first completed presentation. A
+        // context replacement necessarily creates a fresh GPU object namespace.
+        const trace = view.gpuTraces.find((trace) => trace.tier === "density");
+        const overview = trace.density, texture = overview.tex;
+        let replacements = 0;
+        const originalUpload = view._uploadGrid.bind(view);
+        view._uploadGrid = (...args) => { replacements++; return originalUpload(...args); };
         const homePresentation = lastCapture;
         const beforeSha256 = await sha256(before);
         const zoom = view._viewFrom({ ranges: { x: [0.25, 0.75], y: [0.25, 0.75] } });
@@ -268,7 +293,7 @@ async function densityNoRefinementEvidence(wasmModule, mount = renderStandalone,
         }
         cases.push({
           name: scenario.name, entry, events, overviewSha256, framebufferSha256: beforeSha256,
-          zoomFramebufferSha256: await sha256(zoomPixels), replacements, allocatedWorkers,
+          zoomFramebufferSha256: await sha256(zoomPixels), replacements, allocatedWorkers, contextRecoveries,
           presentations: { home: homePresentation, zoom: zoomPresentation, restored: restoredPresentation },
           overviewRetained: true, disposed: true, pngBase64,
         });

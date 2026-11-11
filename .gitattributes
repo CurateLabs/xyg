@@ -1655,3 +1655,8 @@ tests/test_tooltip_text_validation.py text eol=lf
 spec/performance/tooltip-uuid-classification-2026-11-11/*.md text eol=lf
 spec/performance/tooltip-uuid-classification-2026-11-11/*.json text eol=lf
 spec/performance/tooltip-uuid-classification-2026-11-11/**/*.gz -text
+
+# Density startup recovery qualification: exact source and compressed evidence.
+spec/performance/density-startup-recovery-2026-11-11/*.md text eol=lf
+spec/performance/density-startup-recovery-2026-11-11/*.json text eol=lf
+spec/performance/density-startup-recovery-2026-11-11/**/*.gz binary

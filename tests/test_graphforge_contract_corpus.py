@@ -12,7 +12,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 CURRENT_BINDINGS = Path(
-    "spec/performance/tooltip-uuid-classification-2026-11-11/current-bindings.json"
+    "spec/performance/density-startup-recovery-2026-11-11/current-bindings.json"
 )
 
 
@@ -968,8 +968,26 @@ def test_chunked_camera_publication_preserves_complete_source_qualification():
 def test_uuid_tooltip_classification_preserves_complete_source_qualification():
     parent_path = "spec/performance/chunked-camera-publication-2026-11-11/current-bindings.json"
     parent = json.loads((ROOT / parent_path).read_text())
-    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/tooltip-uuid-classification-2026-11-11/current-bindings.json"
+        ).read_text()
+    )
     assert len(current["parents"]) == 49
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_density_startup_recovery_preserves_complete_source_qualification():
+    parent_path = "spec/performance/tooltip-uuid-classification-2026-11-11/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    assert len(current["parents"]) == 50
     assert {p["path"] for p in current["parents"]} == {parent_path}.union(
         p["path"] for p in parent["parents"]
     )

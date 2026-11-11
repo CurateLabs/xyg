@@ -1438,14 +1438,27 @@ bootstrap rejected before Worker allocation, or omit the retained source.
 They assert the first explicit reason, unchanged Rust grid and texture,
 byte-identical presented home pixels before/after attempted refinement,
 nonblank zoom pixels, exact home restoration, zero replacement uploads, no
-new Worker allocation, and no post-destruction publication. A missing retained
+new Worker allocation, and no post-destruction publication. A fourth case
+explicitly loses the startup WebGL context through `WEBGL_lose_context` in
+both entries. Before reading pixels, every capture waits for a lost context's
+real restoration event under the existing 60-second foundation deadline, then
+requires a completed paint. The shared host's 250 ms initial recovery backoff
+cannot be tested by eight zero-delay tasks. Texture retention is measured from
+the first completed presentation, since recovery creates a fresh GPU object
+namespace. Pixel reads remain single-shot; blank or stale images fail without
+retry. The forced-loss case requires an observed recovery and replacement
+context, then retains every existing navigation, grid, texture, pixel and
+teardown assertion. This corrects the readiness oracle; it does not establish
+the cause of historical unrequested losses or change runtime recovery policy.
+See [the bounded startup recovery proof](../performance/density-startup-recovery-2026-11-11/README.md).
+A missing retained
 source initially reports `XYG_WASM_SOURCE_UNAVAILABLE`; a subsequent viewport
 request also reports the general `XYG_WASM_UNAVAILABLE` boundary.
 
 `XYG_BROWSER_DIST` points at an unpacked staged `@curatelabs/xyg` package, whose
 asset manifest is checked before execution. `XYG_WASM_FOUNDATION_REPORT` writes
 runtime/CSP details, asset and harness SHA-256 values, each event and pixel/grid
-hash, and six PNG captures beside the JSON report. Optional
+hash, and eight PNG captures beside the JSON report. Optional
 `XYG_RELEASE_COMMIT` records the artifact source declaration; package hashes
 remain the binding to the tested bytes. The harness commit and individual
 harness hashes are separate from that artifact declaration. For a focused
@@ -1459,7 +1472,7 @@ node scripts/wasm_foundation_smoke.mjs
 ```
 
 Omitting `XYG_WASM_FOUNDATION_ONLY` preserves the complete existing foundation
-gate, including fixture parity. The focused mode proves these six cases only;
+gate, including fixture parity. The focused mode proves these eight cases only;
 it cannot establish current-source fixture parity or the complete #54 matrix.
 It does not prove the full application-consumer matrix, a validly framed corrupt
 inline WASM module, every unsupported source family, or large-scale hosted
