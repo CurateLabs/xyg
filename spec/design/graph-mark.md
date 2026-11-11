@@ -173,6 +173,17 @@ values are not one scalar kind per key, keep the JSON `tooltip_rows` form.
 Python `_tooltip_columns.py` and Node `tooltip-columns.js` are byte-identical
 (`tests/fixtures/tooltip_columns_cross_host.json`). The browser decodes one row
 per hover (`ChartView._tooltipRowSource`) and never materializes the table.
+Python packs UUID columns longer than 4,096 rows in blocks of at most 4,096
+rows. Each block converts its canonical UUID hex values together and copies
+them into the same 16-byte slots; short columns retain the scalar writer.
+The temporary hex fragments and destination indices are bounded by that block
+size, while the output plane retains its existing full-column allocation.
+Absent/null flags, dictionary encounter order, mixed dictionary strings,
+zero padding and all emitted bytes remain unchanged. This is transport copy
+batching, not an LOD or selection decision. The encoder comparison and exact
+Python/Node byte oracles are recorded in
+`spec/performance/tooltip-uuid-packing-2026-11-11/README.md`; they do not establish
+whole-notebook performance or public 100k deadline acceptance.
 With the wire graph meta below, a 100k-node GraphForge webview spec goes from
 98 MiB of JSON to 1.3 MiB (strings only) plus typed buffers
 (spec/benchmarks/results.md, "GraphForge composition scale").
