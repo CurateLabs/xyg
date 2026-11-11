@@ -1691,3 +1691,6 @@ spec/performance/filter-paged-cooperative-2026-11-11/**/*.gz binary
 spec/performance/filter-cooperative-status-2026-11-11/*.md text eol=lf
 spec/performance/filter-cooperative-status-2026-11-11/*.json text eol=lf
 spec/performance/filter-cooperative-status-2026-11-11/**/*.gz binary
+spec/performance/filter-dossier-status-2026-11-11/*.md text eol=lf
+spec/performance/filter-dossier-status-2026-11-11/*.json text eol=lf
+spec/performance/filter-dossier-status-2026-11-11/**/*.gz binary

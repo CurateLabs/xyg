@@ -1,0 +1,202 @@
+{
+  "bindings": {
+    "current": 3507,
+    "historical": 1729,
+    "parents": 56,
+    "path": "spec/performance/filter-dossier-status-2026-11-11/current-bindings.json",
+    "sha256": "55f33a7167d2c7e50c28b1617e0b43be730de4b3c349f121ce0f52b333945962"
+  },
+  "compiledEquality": {
+    "count": 327,
+    "path": "spec/performance/filter-paged-cooperative-2026-11-11/compiled-inputs.json",
+    "sha256": "4ee901ab8c8852a9b982deb263ff0cb28f50e6c219cceba06e59acc359d474e5"
+  },
+  "evidence": {
+    "check-ci-a864.log": {
+      "archive": "spec/performance/filter-dossier-status-2026-11-11/evidence/e94dd07349e417a8b93a4d89ec7ff1f46e2c70830435c06446640b8dcc0a6175.gz",
+      "archiveBytes": 476,
+      "archiveSha256": "4dcdf56742e7cc93c259423d81e9ffed4ff7b114b13c77e5fb82ceb2f8394cd9",
+      "bytes": 2390,
+      "sha256": "e94dd07349e417a8b93a4d89ec7ff1f46e2c70830435c06446640b8dcc0a6175",
+      "source": "target/task-tmp/paged-filter/check-ci-a864.log"
+    },
+    "dossier-core.log": {
+      "archive": "spec/performance/filter-dossier-status-2026-11-11/evidence/1697e0a43f4f948a83149f7b173668926e9dc383e1ac3345b64cbd20aee6d8e3.gz",
+      "archiveBytes": 64,
+      "archiveSha256": "df1fde622bc37235f5dee201c16d3f315be1ab89470397ce94fcfe2ab9c88543",
+      "bytes": 110,
+      "sha256": "1697e0a43f4f948a83149f7b173668926e9dc383e1ac3345b64cbd20aee6d8e3",
+      "source": "target/task-tmp/paged-filter/dossier-core.log"
+    },
+    "parentReview": {
+      "archive": "spec/performance/filter-dossier-status-2026-11-11/evidence/86067708e5865814fea1ae15ad06857a82642927867480e5d03a5bd67db62815.gz",
+      "archiveBytes": 5756,
+      "archiveSha256": "cb7a22e4e095b7508cc97f984060c465fa2022257177a905c35f123f96e60706",
+      "bytes": 20762,
+      "sha256": "86067708e5865814fea1ae15ad06857a82642927867480e5d03a5bd67db62815",
+      "source": "/var/tmp/xyg-status-review-5e0befa3/record.json"
+    },
+    "precommit-dossier.log": {
+      "archive": "spec/performance/filter-dossier-status-2026-11-11/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "source": "target/task-tmp/paged-filter/precommit-dossier.log"
+    },
+    "reviewLog0": {
+      "archive": "spec/performance/filter-dossier-status-2026-11-11/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "/var/tmp/xyg-status-review-5e0befa3/fresh-0.log"
+    },
+    "reviewLog1": {
+      "archive": "spec/performance/filter-dossier-status-2026-11-11/evidence/534cf6570bcc2838d968d8eca7982688f8e4300e889394c01a391084974f820a.gz",
+      "archiveBytes": 62,
+      "archiveSha256": "0ceb5075b70ebaa291518ac78f0c20123412534335c08e19ceab9f3ecca96953",
+      "bytes": 109,
+      "sha256": "534cf6570bcc2838d968d8eca7982688f8e4300e889394c01a391084974f820a",
+      "source": "/var/tmp/xyg-status-review-5e0befa3/fresh-1.log"
+    },
+    "reviewLog2": {
+      "archive": "spec/performance/filter-dossier-status-2026-11-11/evidence/1a5d7de9e681238a325f28355f7b2bff9dab89db8493d042d63ac65e8ed58ecb.gz",
+      "archiveBytes": 340,
+      "archiveSha256": "66b986ad270f7fdefbd150b21397b35430389a9fbf9e3a362acaefd346336a42",
+      "bytes": 491,
+      "sha256": "1a5d7de9e681238a325f28355f7b2bff9dab89db8493d042d63ac65e8ed58ecb",
+      "source": "/var/tmp/xyg-status-review-5e0befa3/verification-cached.log"
+    },
+    "reviewLog3": {
+      "archive": "spec/performance/filter-dossier-status-2026-11-11/evidence/70f4452952eb3ba4cba9e013297996151656a42f4fc4b251799b0b1d56cc41dc.gz",
+      "archiveBytes": 142,
+      "archiveSha256": "ae4e110a8a35fd3ecf9bd325a6a6bfb14160f36f1ff3879a0a9a416cabc04710",
+      "bytes": 150,
+      "sha256": "70f4452952eb3ba4cba9e013297996151656a42f4fc4b251799b0b1d56cc41dc",
+      "source": "/var/tmp/xyg-status-review-5e0befa3/package.log"
+    },
+    "ruff-dossier-check.log": {
+      "archive": "spec/performance/filter-dossier-status-2026-11-11/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "source": "target/task-tmp/paged-filter/ruff-dossier-check.log"
+    },
+    "ruff-dossier-format.log": {
+      "archive": "spec/performance/filter-dossier-status-2026-11-11/evidence/af310bdfef9d5b58f769fc6cac015666ee5a2d62d76d639b977b7f96e0f5fd25.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "238ce9abdc3dc8fbaae840cae739696e1dbc4e94c275280e88b680355327643e",
+      "bytes": 29,
+      "sha256": "af310bdfef9d5b58f769fc6cac015666ee5a2d62d76d639b977b7f96e0f5fd25",
+      "source": "target/task-tmp/paged-filter/ruff-dossier-format.log"
+    }
+  },
+  "fresh": {
+    "ci": {
+      "command": "explicit native/PYTHONPATH/TMPDIR/Node22 uv run --no-sync make check-ci PYTHON=checkout .venv python",
+      "exit": 0,
+      "finishedDuring": "5e0 docs/provenance correction; same CI/runtime sources; no current-head hosted or queue credit",
+      "passed": 1040,
+      "seconds": 646.77,
+      "sourceSha256": {
+        "Makefile": "0593e650734cc609548638e5dd6bf88ff3ef6a7a4251d23faac33e50500a25ff",
+        "scripts/verify_ci_workflow.py": "d6d07d5756b8088ab4ec6f023b58f23a79f3cf1f7be967f5e5fb04ed2bc6085d",
+        "scripts/verify_local.py": "7fd0e475f592ac03de40a77eb98bf93462832addd6ca26e467c70efa0e898e4a",
+        "tests/test_check_scheduled_evidence.py": "7465b8632b6ecdd95c7ad3f5060662eeaf752aa53e3f387613646dacc437298e",
+        "tests/test_graph_notebook_report.py": "d37c5a10d76a85a5dda2de73434449ca0bfa02121c6c5951b6b2af8adbd2610f",
+        "tests/test_release_surface_gate.py": "d40e5b26116dae109cfc66ca412cdcc8905ea2ac6111840eea4333ec7639765a",
+        "tests/test_verify_ci_workflow.py": "41218255c73e4a88db000de9e3ad728d368d621c363ce6733b7cbb6544e114c6",
+        "tests/test_verify_wasm_assets.py": "e528faa10f461b60ac56505dd6eac52a869dd032602feb30085361d268b887d5",
+        "tests/test_vscode_graph_notebook_cohort.py": "f3d8c45dd03f9b1edd59dbd980a97829eb39b40ae4414d877d5312f91795b68e",
+        "tests/test_vscode_graph_notebook_report.py": "354f339a9fda534e44ab629824999eb0dd1c361daf6da626719bdef5793bf5cf",
+        "tests/test_vscode_graph_regions_report.py": "86ac0fab6fdb7b1fdc88e5765eda4010cf545d321864f135f549413de2dc0bab",
+        "tests/test_wasm_feature_graph.py": "f47031208b945abc4b997753d6e6334c7f3d95ccf104fad8de32366093fcb106"
+      },
+      "startCommit": "a864e6020a084930f6779874c0859f907ca135b3",
+      "supersedes": {
+        "field": "additionalCI.status",
+        "path": "spec/performance/filter-cooperative-status-2026-11-11/checks.json",
+        "prior": "pending; not credited"
+      }
+    },
+    "core": 4,
+    "hooks": "PASS",
+    "realCRLF": true,
+    "ruff": "PASS"
+  },
+  "package": {
+    "functionExports": 68,
+    "gzip6": 786020,
+    "gzipCap": 786432,
+    "gzipHeadroom": 412,
+    "nativeABI": 405,
+    "nativeSymbols": 551,
+    "raw": 1875741,
+    "rawCap": 1927168,
+    "wasmABI": 38
+  },
+  "parent": "5e0befa3d169cb5da0bc526e95a7a821b254bbbc",
+  "parentQualification": {
+    "path": "spec/performance/filter-cooperative-status-2026-11-11/checks.json",
+    "sha256": "ff0981259b9f1cff32c9c2648f03453540e3c5271d354ba356d270e39fdd0f73"
+  },
+  "parentReview": {
+    "fresh": {
+      "attributes": "git check-attr verified LF-pinned new text and binary archives without config writes",
+      "identity": "327 compiled inputs, 10 runtime artifacts, six static copies, current/historical source bindings, all predecessor mappings, all parent review command archives, and new plus parent receipt archive records independently verified",
+      "normalPackage": {
+        "exports": 68,
+        "gzip6": 786020,
+        "imports": 0,
+        "node": "v22.23.4",
+        "raw": 1875741,
+        "sha256": "84451fa2f9008d14cbbb004c1c534ff0f992c93549e65dbf66e820a01aabcc78"
+      },
+      "qualification": "3 passed in 83.80s: current rc7 evidence binding; preserved complete 54-parent qualification; new complete 55-parent qualification"
+    },
+    "head": "5e0befa3d169cb5da0bc526e95a7a821b254bbbc",
+    "limits": [
+      "No new runtime/build repetition, environment synchronization, Git config writes, root source/branch/artifact writes, GitHub actions, PR watches or delegation. Private git archive and review records only.",
+      "LF/CRLF actual checkout not rerun: would write private Git configuration, forbidden by task. Producer result inherited; attribute rules freshly inspected.",
+      "Local check-ci root session23171 unpolled, untouched, receives no completion/pass credit. No all-green CI claim.",
+      "No whole #112/milestones, shipping readiness, hosted CI, merge queue, portable Worker File, actual100M/five-rendered>=50FPS, global budget, remaining host, accessibility or competitor certification.",
+      "Remote PR head d547f24680ba300b4b2b2184dfc82332a5cbd747 is handoff-reported, not queried. Review binds local candidate only."
+    ],
+    "reviewer": "Independent Codex gpt-6.1-sol review sub-agent, new review invocation; no children",
+    "verdict": "APPROVE"
+  },
+  "readmeSha256": "7eb136f651d5d1d04cd583107841399bb5464ccdb22e395a48af4d4ee9011e90",
+  "remaining": [
+    "Completed independent review of this exact documentation successor",
+    "Current-head hosted CI and required merge queue",
+    "Portable Worker File; real100M/five rendered>=50FPS; global budgets; broad hosts/accessibility/competitors and whole issues/milestones"
+  ],
+  "runtimeEquality": {
+    "catalogOracle": "190cbfc7f433b606fb2d2003364cd875eb027f2482329d19582d3585d849cbd1",
+    "classicWorker": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7",
+    "client": "e55852f10ee1f8be88af916e92ab63113393099d682ee35ee3f81080139592b1",
+    "inline": "5364352c68ba025b2c45f956303cd29cc3de3a8ab0bfc63a4b622c9274fd8855",
+    "manifest": "48440587ea4a9597f15b050ad65a05c5b259530ba8c29576b7b811ff6787836d",
+    "native": "e808cd07bca7c08548ff4bcc40a7fcb1065fe4630d3ea564602e8d60a8892386",
+    "standalone": "5c44ee5b94c4202122ab7e5a18d657e358bd79fe8fd71dcf244d831fd3b402ee",
+    "viewportOracle": "c81721bfdc16bee0c37ca31bdadcd7e24dc2d5f341d355256f3f3c6931f94da0",
+    "wasm": "84451fa2f9008d14cbbb004c1c534ff0f992c93549e65dbf66e820a01aabcc78",
+    "worker": "9d3f8ce6a2e912a90178c9c3d561df519f8afba45895542e99c1243595a72cda"
+  },
+  "runtimeQualification": {
+    "path": "spec/performance/filter-paged-cooperative-2026-11-11/checks.json",
+    "sha256": "0a4ccd15aae2c7fc80ed91fb5e4e021b3c045e2cb0219f65aacd02bb1b2564f3"
+  },
+  "schemaVersion": 1,
+  "scope": "Align remaining dossier cooperative-status summary; completed local CI evidence; runtime unchanged",
+  "staticEquality": {
+    "python/xyg/static/index.js": "e55852f10ee1f8be88af916e92ab63113393099d682ee35ee3f81080139592b1",
+    "python/xyg/static/standalone.js": "5c44ee5b94c4202122ab7e5a18d657e358bd79fe8fd71dcf244d831fd3b402ee",
+    "python/xyg/static/wasm-worker.js": "9d3f8ce6a2e912a90178c9c3d561df519f8afba45895542e99c1243595a72cda",
+    "python/xyg/static/xyg-wasm-inline.js": "5364352c68ba025b2c45f956303cd29cc3de3a8ab0bfc63a4b622c9274fd8855",
+    "python/xyg/static/xyg-wasm.manifest.json": "48440587ea4a9597f15b050ad65a05c5b259530ba8c29576b7b811ff6787836d",
+    "python/xyg/static/xyg-wasm.wasm": "84451fa2f9008d14cbbb004c1c534ff0f992c93549e65dbf66e820a01aabcc78"
+  }
+}
