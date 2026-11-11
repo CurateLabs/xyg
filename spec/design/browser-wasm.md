@@ -1435,7 +1435,7 @@ Worker first produces an `XYAO` overview from canonical typed coordinates; the
 fixture only frames that grid and optional source columns for the painter.
 The generated-file cases remove the inline bootstrap, supply a malformed
 bootstrap rejected before Worker allocation, or omit the retained source.
-They assert the first explicit reason, unchanged Rust grid and texture,
+They assert the first explicit reason, unchanged Rust grid and stable-generation texture,
 byte-identical presented home pixels before/after attempted refinement,
 nonblank zoom pixels, exact home restoration, zero replacement uploads, no
 new Worker allocation, and no post-destruction publication. A fourth case
@@ -1447,9 +1447,17 @@ promise; IIFE execution follows it and uses the per-wait bounds. The shared host
 cannot be tested by eight zero-delay tasks. Texture retention is measured from
 the first completed presentation, since recovery creates a fresh GPU object
 namespace. Pixel reads remain single-shot; blank or stale images fail without
-retry. The forced-loss case requires an observed recovery and replacement
-context, then retains every existing navigation, grid, texture, pixel and
-teardown assertion. This corrects the readiness oracle; it does not establish
+retry. The forced startup-loss case requires an observed recovery and replacement
+context. A fifth case loses the context after accepted home pixels. Within one
+GLHost generation, trace/density/texture identity and zero replacement uploads
+remain mandatory. Across a new generation, the old texture must be invalid,
+the replacement live, and a restoration observed. Every recovery upload must
+match the original Rust grid bytes, dimensions and normalization; its count
+must equal the observed post-baseline restorations. Non-recovery uploads remain
+forbidden. Current cache ownership is sampled before asynchronous hashing so
+facts from two generations cannot be mixed. Exact home/zoom pixels, canonical
+grid hashes, Worker counts and teardown assertions remain unchanged. This
+corrects the readiness/resource oracle; it does not establish
 the cause of historical unrequested losses or change runtime recovery policy.
 See [the bounded startup recovery proof](../performance/density-startup-recovery-2026-11-11/README.md).
 A missing retained
@@ -1459,7 +1467,7 @@ request also reports the general `XYG_WASM_UNAVAILABLE` boundary.
 `XYG_BROWSER_DIST` points at an unpacked staged `@curatelabs/xyg` package, whose
 asset manifest is checked before execution. `XYG_WASM_FOUNDATION_REPORT` writes
 runtime/CSP details, asset and harness SHA-256 values, each event and pixel/grid
-hash, and eight PNG captures beside the JSON report. Optional
+hash, and ten PNG captures beside the JSON report. Optional
 `XYG_RELEASE_COMMIT` records the artifact source declaration; package hashes
 remain the binding to the tested bytes. The harness commit and individual
 harness hashes are separate from that artifact declaration. For a focused
@@ -1473,7 +1481,7 @@ node scripts/wasm_foundation_smoke.mjs
 ```
 
 Omitting `XYG_WASM_FOUNDATION_ONLY` preserves the complete existing foundation
-gate, including fixture parity. The focused mode proves these eight cases only;
+gate, including fixture parity. The focused mode proves these ten cases only;
 it cannot establish current-source fixture parity or the complete #54 matrix.
 It does not prove the full application-consumer matrix, a validly framed corrupt
 inline WASM module, every unsupported source family, or large-scale hosted

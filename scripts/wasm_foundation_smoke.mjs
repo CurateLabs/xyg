@@ -185,7 +185,7 @@ try {
   await page.addScriptTag({ url: `http://127.0.0.1:${address.port}/packages/xy-client/dist/standalone.js` });
   if (!await page.evaluate(() => typeof globalThis.xy?.renderStandalone === "function" && typeof globalThis.xy?.decodeFrame === "function" && typeof globalThis.xy?.attachWasmTicks === "function")) throw new Error("published standalone IIFE did not expose window.xy");
   const iifeNoRefinement = await page.evaluate(async () => globalThis.__xygDensityNoRefinementIife());
-  if (!Array.isArray(iifeNoRefinement) || iifeNoRefinement.length !== 4) throw new Error("standalone IIFE omitted density no-refinement evidence");
+  if (!Array.isArray(iifeNoRefinement) || iifeNoRefinement.length !== 5) throw new Error("standalone IIFE omitted density no-refinement evidence");
   if (external.length) throw new Error(`unexpected external requests: ${external.join(", ")}`);
   const known = new Set([
     "/", "/redirect.wasm", "/delayed.wasm", "/missing.wasm",
@@ -193,7 +193,7 @@ try {
   ]);
   const unknown = requests.filter((path) => !known.has(path));
   if (unknown.length) throw new Error(`unexpected asset lookup: ${unknown.join(", ")}`);
-  if (!Array.isArray(result.densityNoRefinement) || result.densityNoRefinement.length !== 4) {
+  if (!Array.isArray(result.densityNoRefinement) || result.densityNoRefinement.length !== 5) {
     throw new Error("browser foundation smoke omitted density no-refinement evidence");
   }
   if (reportPath) {
@@ -228,7 +228,7 @@ try {
       temporalExtremeProof: result.temporalExtremeProof,
       temporalLineWindowProof: result.temporalLineWindowProof,
       limitations: [
-        "Four bounded cases through each packaged ESM/IIFE entry: absent inline bootstrap, malformed inline bootstrap rejected before Worker allocation, absent retained source, and explicit startup context loss/recovery.",
+        "Five bounded cases through each packaged ESM/IIFE entry: absent inline bootstrap, malformed inline bootstrap rejected before Worker allocation, absent retained source, explicit startup context loss/recovery, and post-paint context loss/recovery.",
         "Rust produces the overview through the packaged XYAG/XYAO Worker; fixture framing supplies the painter envelope.",
         "No actual packaged Reflex XYChart application, full candidate host matrix, large-scale timings, or validly framed corrupt inline WASM claim.",
       ],

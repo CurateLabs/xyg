@@ -1233,8 +1233,13 @@ intent checks; a newer temporal intent supersedes the unpainted membership.
 No snapshot, companion update or render event is published until a complete
 paint succeeds. Admission/capacity/protocol failures remain refusals, not
 context-recovery retries. Initial recovery is bounded by the existing generated
-30-second scheduler wall-limit constant; disposal, Worker failure or expiry
-cancels the waiter and drains the owner. Later accepted publications retain
+30-second scheduler wall-limit constant. Expiry terminates the whole initial
+transaction, including a retry whose Worker reply is already in flight. A
+newer temporal intent does not reset that deadline. The
+expired lifetime is checked before installation and after a superseded render
+returns without publication; its first error wins over later stale/disposal
+errors. Disposal, Worker failure and expiry cancel the waiter and drain the
+owner. An accepted first publication disarms expiry. Later accepted publications retain
 the existing repaint/refusal contract. The normal source foundation gate runs
 real initial-loss, repeated-loss, supersession, cancellation, timeout and
 malformed-output controls through `scripts/graph_initial_context_smoke.mjs`.
