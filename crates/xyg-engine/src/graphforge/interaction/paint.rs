@@ -457,9 +457,7 @@ pub(super) fn build(
             return Err(InteractionStatus::Invalid);
         }
     }
-    let cap = output
-        .edge_count()
-        .checked_mul(edge_route::edge_route_segments_per_edge(false))
+    let cap = edge_route::edge_route_capacity(&output.edge_source, &output.edge_target, 1)
         .ok_or(InteractionStatus::Budget)?;
     let (mut x0, mut y0, mut x1, mut y1, mut indices, mut ends) = (
         vec![0.; cap],
@@ -489,6 +487,9 @@ pub(super) fn build(
         &mut ends,
     )
     .ok_or(InteractionStatus::Invalid)? as usize;
+    // Routing's rank/group scratch has retired. Reserve once from its actual
+    // emitted count, avoiding Vec growth while keeping the complete geometry.
+    paint.pieces.reserve_exact(count);
     for i in 0..count {
         let edge = indices[i] as usize;
         let (s, t) = (

@@ -31,6 +31,18 @@ pub const ENTRY_BYTES: usize = 40;
 pub const MAX_ENTRIES: usize = 8192;
 pub const MAX_NAME_BYTES: usize = 64;
 
+/// Lowercase hex for fixed-width identities and already-admitted metadata.
+#[cfg_attr(target_arch = "wasm32", inline(never))]
+pub(crate) fn hex_bytes(bytes: &[u8]) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut text = String::with_capacity(bytes.len() * 2);
+    for &byte in bytes {
+        text.push(char::from(HEX[usize::from(byte >> 4)]));
+        text.push(char::from(HEX[usize::from(byte & 15)]));
+    }
+    text
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u32)]
 pub enum Dtype {
@@ -536,6 +548,16 @@ impl<'a> Container<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn shared_hex_preserves_every_byte_and_identity_tail() {
+        let bytes: Vec<u8> = (0..=255).collect();
+        let expected: String = bytes.iter().map(|b| format!("{b:02x}")).collect();
+        assert_eq!(hex_bytes(&bytes), expected);
+        assert_eq!(hex_bytes(&[]), "");
+        assert_eq!(hex_bytes(&[0, 1, 254, 255]), "0001feff");
+        assert_eq!(hex_bytes(&bytes[12..16]), "0c0d0e0f");
+    }
 
     #[test]
     fn round_trips_every_dtype() {

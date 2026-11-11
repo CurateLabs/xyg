@@ -223,8 +223,16 @@ fresh epoch; each publication has a monotonically increasing revision. Every
 control, generic request and reply carries these stamps. A displayed Figure and
 one pending Figure are retained at most. An event resolves against its exact
 compiled snapshot until the replacement's ACK retires that snapshot. Afterwards
-its revision is rejected. The browser rejects foreign epochs/instances/replies,
-and never applies an older reply to a newer picture. Replacing GPU traces clears
+its revision is rejected. The browser rejects foreign epochs/instances/replies
+and never applies an older reply to a newer picture.
+
+The ACK is emitted by the existing ChartView's successful presentation hook,
+after its GL/Canvas2D picture and chrome restoration complete, once per native
+revision. It is not a separate animation-frame clock tick: unrelated expensive
+sibling draws cannot postpone an already completed presentation's ACK, and a
+refused/lost-context draw cannot release native work. Recovery may acknowledge
+the still-pending revision after actual paint; disposal clears that pending ACK.
+Replacing GPU traces clears
 the old hover/neighborhood handles before drawing and rebinds the target only
 when the ordered native row space is unchanged; no freed GPU handle survives
 a refresh. Routed segment identity

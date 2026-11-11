@@ -35,7 +35,7 @@ def _border(shape: str, radius: float, ux: float, uy: float) -> float:
     return radius
 
 
-def _chart(symbol: str, *, x=(0.0, 4.0), y=(0.0, 3.0)) -> xyg.Chart:
+def _chart(symbol: str, *, x=(0.0, 4.0), y=(0.0, 3.0), directed=True) -> xyg.Chart:
     return xyg.graph_chart(
         xyg.graph(
             ["a", "b"],
@@ -47,6 +47,7 @@ def _chart(symbol: str, *, x=(0.0, 4.0), y=(0.0, 3.0)) -> xyg.Chart:
             symbol=symbol,
             color=NODE,
             edge_color=EDGE,
+            directed=directed,
         ),
         width=640,
         height=480,
@@ -264,6 +265,142 @@ def test_browser_arrow_tips_touch_node_outlines_at_every_zoom(symbol: str, tmp_p
         inside = result[view_name]["inside"]
         assert head[0] > 150 and head[1] < 100, (view_name, head)  # red arrowhead
         assert inside[1] > 120 and inside[0] < 100, (view_name, inside)  # green node
+
+
+@pytest.mark.parametrize("directed", [False, True])
+def test_empty_head_pass_preserves_complete_pixels(directed: bool, tmp_path: Path) -> None:
+    from conftest import probe_document, run_browser_probe
+    from xyg.export import find_chromium
+
+    chromium = find_chromium()
+    if chromium is None:
+        pytest.skip("Chromium unavailable")
+    script = """
+(() => {
+  try {
+    const view=window.__fcProbeView,edge=view.gpuTraces.find(g=>g.trace.kind==='segments');
+    const gl=view.gl,program=view.segmentProg,pass=gl.getUniformLocation(program,'u_edgePass');
+    let heads=0;
+    view.gl=new Proxy(gl,{get(target,key){
+      if(key==='drawArraysInstanced')return (...args)=>{
+        if(gl.getParameter(gl.CURRENT_PROGRAM)===program&&gl.getUniform(program,pass)===1)heads++;
+        return gl.drawArraysInstanced(...args);
+      };
+      return Reflect.get(target,key,target);
+    }});
+    const pixels=()=>{
+      if(view._present2d)return view._present2d.getImageData(0,0,view.canvas.width,view.canvas.height).data;
+      const data=new Uint8Array(view.canvas.width*view.canvas.height*4);
+      gl.readPixels(0,0,view.canvas.width,view.canvas.height,gl.RGBA,gl.UNSIGNED_BYTE,data);return data;
+    };
+    const fact=edge._edgeHasHeads;
+    let fast,previous,knockout,fastHeads,previousHeads;
+    try {
+      view._drawNow();fast=Uint8Array.from(pixels());fastHeads=heads;
+      heads=0;edge._edgeHasHeads=undefined;view._drawNow();previous=Uint8Array.from(pixels());previousHeads=heads;
+      edge._edgeHasHeads=false;view._drawNow();knockout=Uint8Array.from(pixels());
+    } finally {view.gl=gl;edge._edgeHasHeads=fact;}
+    document.body.setAttribute('data-xy-head-pass',JSON.stringify({
+      fact,fastHeads,previousHeads,equal:fast.every((v,i)=>v===previous[i]),
+      knockoutDiff:fast.some((v,i)=>v!==knockout[i])
+    }));
+  } catch(error) {document.body.setAttribute('data-xy-head-pass-error',String(error));}
+})();
+"""
+    result = run_browser_probe(
+        chromium,
+        probe_document(_chart("circle", directed=directed), f"<script>{script}</script>"),
+        tmp_path / f"head-pass-{directed}.html",
+        "data-xy-head-pass",
+        label="empty graph head pass",
+    )
+    assert result == {
+        "fact": directed,
+        "fastHeads": int(directed),
+        "previousHeads": 1,
+        "equal": True,
+        "knockoutDiff": directed,
+    }
+
+
+@pytest.mark.parametrize("theme", ["light", "dark"])
+def test_semantic_segment_specialization_matches_general_pixels(theme: str, tmp_path: Path) -> None:
+    from conftest import probe_document, run_browser_probe
+    from xyg.export import find_chromium
+
+    chromium = find_chromium()
+    if chromium is None:
+        pytest.skip("Chromium unavailable")
+    chart = xyg.graph_chart(
+        xyg.graph(
+            list("abcdef"),
+            [("a", "b"), ("a", "b"), ("b", "c"), ("c", "d"), ("d", "e"), ("e", "f"), ("f", "f")],
+            layout="preset",
+            x=[0, 1, 2, 3, 4, 5],
+            y=[0, 2, 1, 3, 1, 2],
+            directed=False,
+            node_class=[0, 1, 2, 3, 4, 5],
+            node_epistemic=[0, 1, 2, 3, 4, 0],
+            node_status=[0] * 6,
+            edge_class=[0, 1, 2, 3, 4, 0, 1],
+            edge_epistemic=[0, 1, 2, 3, 4, 0, 1],
+            edge_status=[0] * 7,
+            theme=theme,
+        ),
+        width=640,
+        height=480,
+    )
+    script = """
+(() => {
+  try {
+    const view=window.__fcProbeView,edge=view.gpuTraces.find(g=>g.trace.kind==='segments');
+    const choose=view._segmentProgram,checks=[];
+    const pixels=()=>{
+      if(view._present2d)return Uint8Array.from(view._present2d.getImageData(0,0,view.canvas.width,view.canvas.height).data);
+      const data=new Uint8Array(view.canvas.width*view.canvas.height*4),gl=view.gl;
+      gl.readPixels(0,0,view.canvas.width,view.canvas.height,gl.RGBA,gl.UNSIGNED_BYTE,data);return data;
+    };
+    const compare=(label,expected)=>{
+      const chosen=choose.call(view,edge,edge.endsBuf&&!view._polarGeometry());
+      const specialized=chosen!==view.segmentProg;
+      if(specialized!==expected)throw Error(label+': unexpected shader choice');
+      view._drawNow();const candidate=pixels();
+      try {view._segmentProgram=()=>view.segmentProg;view._drawNow();}
+      finally {view._segmentProgram=choose;}
+      const general=pixels();let mismatches=0;
+      for(let i=0;i<candidate.length;i++)if(candidate[i]!==general[i])mismatches++;
+      if(mismatches)throw Error(label+': '+mismatches+' differing RGBA bytes');
+      checks.push({label,specialized,bytes:candidate.length,mismatches});return candidate;
+    };
+    compare('semantic layers, six glyphs, parallel edges and loop',true);
+    view._setView({ranges:{x:[0.3,4.7],y:[0.2,2.7]}},{animate:false,source:'programmatic'});
+    const unselected=compare('zoomed',true);
+    view._applySelectionBuffers({traces:[{id:edge.trace.id,buf:0}]},[Uint32Array.from([1,5]).buffer]);
+    const selected=compare('selection activated',true);
+    if(!selected.some((v,i)=>v!==unselected[i]))throw Error('selection did not change pixels');
+    view._applySelectionBuffers({traces:[]},[]);compare('selection cleared',true);
+    const dash=edge.trace.style.dash;
+    try {edge.trace.style.dash=[4,2];compare('authored dash',false);}
+    finally {edge.trace.style.dash=dash;}
+    const heads=edge._edgeHasHeads;
+    try {edge._edgeHasHeads=undefined;compare('unknown head metadata',false);}
+    finally {edge._edgeHasHeads=heads;}
+    compare('restored',true);
+    const programs=Array.from(view._progCache.keys()).filter(k=>k.startsWith('segment'));
+    document.body.setAttribute('data-xy-segment-specialization',JSON.stringify({checks,programs}));
+  } catch(error) {document.body.setAttribute('data-xy-segment-specialization-error',String(error.stack||error));}
+})();
+"""
+    result = run_browser_probe(
+        chromium,
+        probe_document(chart, f"<script>{script}</script>"),
+        tmp_path / f"semantic-segment-specialization-{theme}.html",
+        "data-xy-segment-specialization",
+        label="semantic segment shader parity",
+    )
+    assert len(result["checks"]) == 7
+    assert all(row["mismatches"] == 0 and row["bytes"] > 0 for row in result["checks"])
+    assert set(result["programs"]) == {"segment", "segment-cartesian"}
 
 
 def test_edge_ends_ship_as_host_side_geometry_channel() -> None:

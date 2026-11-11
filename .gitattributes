@@ -1613,3 +1613,11 @@ spec/performance/graph-semantic-session-2026-11-10/**/*.gz -text
 spec/performance/graph-semantic-anchor-2026-11-10/*.md text eol=lf
 spec/performance/graph-semantic-anchor-2026-11-10/*.json text eol=lf
 spec/performance/graph-semantic-anchor-2026-11-10/**/*.gz -text
+
+# Native graph ownership/paint continuation preserves all failed qualification.
+spec/performance/graph-native-admission-paint-2026-11-11/*.md text eol=lf
+spec/performance/graph-native-admission-paint-2026-11-11/*.json text eol=lf
+spec/performance/graph-native-admission-paint-2026-11-11/**/*.gz -text
+tests/notebook_graph_native_scale.ipynb text eol=lf
+benchmarks/bench_graph_native_notebook.mjs text eol=lf
+tests/test_graph_edge_ends.py text eol=lf

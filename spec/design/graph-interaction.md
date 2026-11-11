@@ -1628,7 +1628,7 @@ The companion page contains at most 200 distinct source rows; the focused
 summary can repeat one label. This bound preserves the complete source pool
 without charging every source label as reply output. The checked reservation
 also covers builder growth and final/cached text copies. Before allocating a
-reply builder, two complete non-text serialization envelopes are reserved.
+reply builder, the packet and lowering-scratch gate described below applies.
 Label bytes remain in the general fallback's `128T` reservation. A late refusal retains the accepted
 reply, revision, state, publication and retry sequence; retrying that same
 sequence with sufficient arena capacity remains valid.
@@ -1663,14 +1663,65 @@ computes viewport membership and LOD. Aggregate avoids resolving unused source
 styles. Unused output capacities are released before retaining a publication.
 
 Before paint allocation, a second checked gate charges the already built
-publication/membership buffers, live flags, styles, canonical three-slot route
-scratch and growable paint rows. Group/routing scratch dies before pick CSR
-construction, so their capacities enter a phase maximum. CPU/GPU style columns
+publication/membership buffers, live flags, styles and structural route scratch.
+Each non-loop straight shaft needs one route slot; a loop needs three. Curved
+non-loop routing needs eight, with two additional segments only when heads are
+emitted as route segments. Route buffers use the maximum required per-edge
+width across the source: any loop raises a one-slot straight buffer to three
+slots per edge; curved widths already cover loops. The certified flat source
+excludes loops and retains one-slot straight storage. The retained paint path
+uses `with_ends`, whose heads
+are metadata, then reserves exactly the returned piece count after rank/group
+scratch retires. Parallel/reciprocal offsets, clipping, dash/head geometry and
+emission order are unchanged. The old three/ten-slot public maximum buffers
+remain sufficient. Group/routing scratch dies before pick CSR construction,
+so their capacities enter a phase maximum. CPU/GPU style columns
 share one exact writer. GPU coordinate columns lower directly into their owned
 packet buffers through the same scalar offset-f32 kernel; no extra f64/f32
 column vectors overlap them.
-Before serialization, another gate charges current publication plus two
-complete packet bounds: one planned packet arena and one lowering column.
+Before serialization, another gate charges the current publication, the
+numeric part of the preallocated packet, the largest simultaneously live lowering
+column, and metadata scratch. The column maximum includes 112 bytes per paint
+piece, 60 per rendered node/edge, 40 per frame and
+`8*(max(source nodes,source edges)+1)` for raw planes: membership is a partition,
+so each canonical row enters at most one CSR group and offsets have one terminal
+entry. GPU index/state input and byte-copy overlaps fit
+within those row widths. The packet additionally reserves twice the same
+certified companion-label bound `B = min(T,200L) + L` used by the pre-clone gate
+(escaping expands each byte at most twice), plus 80 bytes per changed position.
+`T` is the source label pool and `L` its longest label; both were validated at
+source admission, so neither is recomputed by allocating output scratch.
+Scratch additionally reserves
+1,024 bytes per output reference, 512 per decoded projection descriptor,
+320 per changed position and a 128 KiB fixed metadata allowance. Worlds with
+focus or a retained ring anchor keep the original complete second-packet
+allowance, in addition to that metadata scratch. Only worlds without either
+owner use the narrower column maximum; this does not change focus/ring output
+or query its topology during admission. The pre-clone `64B` label reservation
+also covers the packet's `2B` label capacity and escaping/join/copy scratch, so
+those bytes are charged once across the phases. Speculative state retains its
+separate pre-clone reservation.
+Coordination, selection, pick, companion and transported reference sections
+share the existing reference encoder followed by the same packet-copy step;
+record ordering, pool validation and temporary ownership remain unchanged.
+Default four-byte UUID-tail captions, full companion UUIDs and admitted frozen
+metadata use one lowercase-hex encoder; their byte inputs and string capacities
+remain unchanged.
+
+The ordinary browser segment painter has one fixed Cartesian shader variant.
+It substitutes integer uniforms in the existing shader bodies only when the
+current draw proves: linear x/y mappings, per-instance RGBA, device-space
+widths, no authored dash, retained endpoint metadata and an explicit absence
+of head flags. Unknown heads, other paint modes, CSS widths, nonlinear/polar
+axes and authored dashes use the general program. Selection remains dynamic
+in both programs. Semantic per-edge dash, layered paint, endpoint clipping,
+alpha, positions and blend order remain in the shared bodies. The client owns at most the general
+and this one specialized segment program; the existing shared host owns their
+immutable shaders and releases them through its normal context lifecycle.
+No geometry, LOD, membership, admission, cadence or deadline changes follow
+from this rendering specialization. Complete-pixel comparisons cover semantic
+layers, all six glyphs, parallel edges, loops, zoom, selection/clear and fallback.
+
 The arena receives each owned column and is prefixed in place with its named
 section table; it does not retain separate pending payloads and then allocate
 a second final packet. A complete native caller output capacity is charged as
@@ -1766,6 +1817,15 @@ adds the session's retained memory charge to its own peak admission. This is an
 export input seam, not a second publisher, renderer, layout or identity resolver.
 
 ### Current combined large-view evidence boundary
+
+The ordinary segment painter retains Rust's per-piece head flag while uploading
+the endpoint plane. If every piece has bit 6 clear, it omits the head-only draw;
+the shaft pass and both endpoint-outline clips still run. Any head flag retains
+the existing head pass, including mixed and self-loop rows. An unknown flag
+summary conservatively retains the pass. This changes no topology, style,
+selection, LOD or arrow policy. Browser regressions compare the complete pixel
+buffer with the preceding unconditional path, and verify that suppressing a
+real directed head changes the picture.
 
 The [current union receipt](../performance/current-large-graph-union-2026-11-09/README.md)
 records the normal-history integration with live temporal/geographic hosts and

@@ -3230,7 +3230,13 @@ author expects.
 - **Live re-resolution.** The client watches `matchMedia('(prefers-color-scheme: dark)')`
   and a `MutationObserver` on the container's `class`/`data-theme`/`style`, re-resolving
   tokens on any change. Because of the retained scene graph (§7), **a theme change is
-  uniform + LUT updates, never a data re-upload**. The acceptance target remains
+  uniform + LUT updates, never a data re-upload**.
+  Automatic ancestor mutations on ordinary charts reuse the resolved theme when
+  the complete computed root style (including custom properties) and resolved
+  ancestor backdrop are unchanged. Notebook layout/focus classes therefore need
+  no duplicate rasterization. Resolved Scene descendant-slot invalidation and
+  explicit `refreshTheme()` retain unconditional refresh; genuine computed paint
+  changes still redraw without uploading source geometry. The acceptance target remains
   60 fps even on a100M-point figure, with a dashboard theme flip repainting every
   linked view in one frame. The bounded CSS-color checks establish no source
   geometry uploads for their fixture; they do not qualify that massive-scale

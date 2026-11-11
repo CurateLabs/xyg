@@ -3,6 +3,7 @@ pub use super::gpu::validate as validate_gpu;
 pub use super::wire_paint::decode as decode_paint;
 use super::*;
 use crate::graph_interaction_state::HighlightPlane;
+use crate::graphforge::container::hex_bytes as uuid_text;
 pub(super) use crate::graphforge::container::{Builder, Container, Dtype, Section};
 use crate::graphforge::identity::{AggregateRef, DerivedRef, ResultRef};
 
@@ -475,7 +476,7 @@ pub fn encode_event(event: &GraphCoordinationEvent) -> Result<Vec<u8>> {
     if let Some(g) = event.generation {
         b.uuids("remote.generation.uuid", 0, &[g]);
     }
-    b.bytes("refs.bytes", 0, &encode_refs(&event.refs)?);
+    reference_section(&mut b, "refs.bytes", &event.refs)?;
     Ok(b.finish())
 }
 // Validate transport identities and canonical ordering by borrowed UTF-8 slices;
@@ -1136,7 +1137,7 @@ impl WireSession {
         let admitted = self.admit(bytes, external)?;
         let transaction_bytes = if let Some(p) = self.plain.filter(|p| p.applies(&self.session, &r))
         {
-            Some(
+            Some((
                 (|| {
                     self.physical_retained(p)?
                         .checked_add(Self::request_charge(bytes.len(), 0).ok()?)?
@@ -1145,7 +1146,8 @@ impl WireSession {
                         .and_then(|v| self.max_bytes.checked_sub(v))
                 })()
                 .ok_or(InteractionStatus::Budget)?,
-            )
+                p.reply_text().ok_or(InteractionStatus::Budget)?,
+            ))
         } else {
             None
         };
@@ -1363,18 +1365,33 @@ impl WireSession {
             next.camera
         };
         next.render(camera)?;
-        let capacity = if let Some(available) = next.transaction_bytes {
+        let capacity = if let Some((available, text)) = next.transaction_bytes {
             let p = next.published().ok_or(InteractionStatus::Stale)?;
             let refs = next
                 .read_state(|s| s.selection().len() + s.pinned_nodes().len())?
                 .checked_add(outcome.changed.len())
                 .and_then(|n| n.checked_add(next.pending_outbound().map_or(0, |e| e.refs.len())))
                 .ok_or(InteractionStatus::Budget)?;
-            let bound =
-                super::wire_memory::serialized_bound(p, refs).ok_or(InteractionStatus::Budget)?;
-            let bytes = super::wire_memory::publication_bytes(p)
-                .and_then(|n| n.checked_add(bound.checked_mul(2)?))
-                .ok_or(InteractionStatus::Budget)?;
+            // The certified transaction plan is installed only on an Owned
+            // candidate. Bound/derived worlds retain the general envelope.
+            let StateSlot::Owned(state) = &next.slot else {
+                return Err(InteractionStatus::Budget);
+            };
+            let focused = next.ring_anchor.is_some() || state.focus().is_some();
+            // A validated projection document may be absent for plain sources.
+            // Empty documents skip projection decoding altogether.
+            let sections = document.get(8..12).map_or(0, |bytes| {
+                u32::from_le_bytes(bytes.try_into().unwrap()) as usize
+            });
+            let (bound, bytes) = super::wire_memory::serialization_plan(
+                p,
+                refs,
+                text,
+                sections,
+                outcome.positions.len(),
+                focused,
+            )
+            .ok_or(InteractionStatus::Budget)?;
             if bytes > available {
                 return Err(InteractionStatus::Budget);
             }
@@ -1592,15 +1609,6 @@ fn escaped(text: &str) -> String {
         .replace('\t', "\\t")
         .replace('\n', "\\n")
 }
-fn uuid_text(id: &Uuid) -> String {
-    const HEX: &[u8; 16] = b"0123456789abcdef";
-    let mut text = String::with_capacity(32);
-    for &byte in id {
-        text.push(char::from(HEX[usize::from(byte >> 4)]));
-        text.push(char::from(HEX[usize::from(byte & 15)]));
-    }
-    text
-}
 fn transport(s: &GraphSession, refs: &[ElementRef]) -> Result<Vec<ElementRef>> {
     refs.iter()
         .map(|r| {
@@ -1611,6 +1619,20 @@ fn transport(s: &GraphSession, refs: &[ElementRef]) -> Result<Vec<ElementRef>> {
                 .ok_or(InteractionStatus::Invalid)
         })
         .collect()
+}
+#[cfg_attr(target_arch = "wasm32", inline(never))]
+fn reference_section(b: &mut Builder, name: &str, refs: &[ElementRef]) -> Result<()> {
+    b.bytes(name, 0, &encode_refs(refs)?);
+    Ok(())
+}
+#[cfg_attr(target_arch = "wasm32", inline(never))]
+fn transported_refs(
+    b: &mut Builder,
+    s: &GraphSession,
+    name: &str,
+    refs: &[ElementRef],
+) -> Result<()> {
+    reference_section(b, name, &transport(s, refs)?)
 }
 // Complete snapshot, independent of changed.refs and coordination. Work is
 // O(layers * selected), with borrowed row planes and exact u64 source rows.
@@ -1726,7 +1748,7 @@ fn selection_projection(
         .iter()
         .map(|layer| u8::from(layer.result_id.is_some()))
         .collect::<Vec<_>>();
-    b.bytes("selection.refs.bytes", 0, &encode_refs(&refs)?);
+    reference_section(b, "selection.refs.bytes", &refs)?;
     let boundary = offsets[selected] as usize;
     b.u64s("selection.indices.u64", 0, &indices[..selected]);
     b.u64s("selection.layer_offsets.u64", 0, &offsets[..=selected]);
@@ -1778,7 +1800,7 @@ fn selection_projection(
                 source_index,
             ],
         );
-        b.bytes("pick.ref.bytes", 0, &encode_refs(pick_refs)?);
+        reference_section(b, "pick.ref.bytes", pick_refs)?;
         b.u32s("pick.layers.u32", 0, &layers[boundary..]);
         b.u64s("pick.rows.u64", 0, &rows[boundary..]);
     }
@@ -1854,11 +1876,7 @@ fn serialize(
         .map(|d| d.node.clone())
         .into_iter()
         .collect::<Vec<_>>();
-    b.bytes(
-        "disclosure.ref.bytes",
-        0,
-        &encode_refs(&transport(s, &disclosure)?)?,
-    );
+    transported_refs(&mut b, s, "disclosure.ref.bytes", &disclosure)?;
     b.u8s(
         "disclosure.collapsed.u8",
         0,
@@ -1874,13 +1892,9 @@ fn serialize(
     b.u32s("clear.action.u32", 0, &[1, u32::from(state.can_clear())]);
     selection_projection(&mut b, s, &state, document, out.pick.as_ref())?;
     let focus = s.focus()?.into_iter().collect::<Vec<_>>();
-    b.bytes("focus.bytes", 0, &encode_refs(&transport(s, &focus)?)?);
+    transported_refs(&mut b, s, "focus.bytes", &focus)?;
     focus_actions(&mut b, s, &state)?;
-    b.bytes(
-        "changed.refs.bytes",
-        0,
-        &encode_refs(&transport(s, &out.changed)?)?,
-    );
+    transported_refs(&mut b, s, "changed.refs.bytes", &out.changed)?;
     let (page, size) = r.page()?;
     let start = page.checked_mul(size).ok_or(InteractionStatus::Invalid)?;
     let total = s
@@ -1941,7 +1955,7 @@ fn serialize(
         ));
         candidates.push(exact);
     }
-    b.bytes("candidates.bytes", 0, &encode_refs(&candidates)?);
+    reference_section(&mut b, "candidates.bytes", &candidates)?;
     b.u32s(
         "candidates.total.u32",
         0,
@@ -2072,11 +2086,7 @@ fn focus_actions(b: &mut Builder, s: &GraphSession, state: &GraphInteractionStat
         }
         refs.push(reference);
     }
-    b.bytes(
-        "focus.action.ref.bytes",
-        0,
-        &encode_refs(&transport(s, &refs)?)?,
-    );
+    transported_refs(b, s, "focus.action.ref.bytes", &refs)?;
     b.u32s("focus.action.u32", 0, &facts);
     Ok(())
 }

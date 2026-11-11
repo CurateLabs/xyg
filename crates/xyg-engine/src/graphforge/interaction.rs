@@ -240,7 +240,8 @@ struct Source {
 pub struct GraphSession {
     // Only set on an admitted wire transaction candidate.
     transaction_world: Option<(Vec<u8>, Vec<u8>, u64)>,
-    transaction_bytes: Option<usize>,
+    // Remaining phase arena and the already certified companion-label bound.
+    transaction_bytes: Option<(usize, usize)>,
     instance_id: u64,
     coordination: coordination::Link,
     source: Arc<Source>,

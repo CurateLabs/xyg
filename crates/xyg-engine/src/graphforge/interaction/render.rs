@@ -723,7 +723,7 @@ impl GraphSession {
             focus_node,
             edge_render,
         };
-        if self.transaction_bytes.is_some_and(|limit| {
+        if self.transaction_bytes.is_some_and(|(limit, _)| {
             super::wire_memory::paint_peak(&output, n, e).is_none_or(|bytes| bytes > limit)
         }) {
             return Err(InteractionStatus::Budget);

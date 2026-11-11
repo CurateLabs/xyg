@@ -67,7 +67,9 @@ fn request(seq: u64, rev: u32, op: u32, document: Option<&[u8]>) -> Vec<u8> {
 fn default_thousand_and_explicit_ten_thousand_allocation_ledger() {
     uuid_state_ledger();
     pick_tree_ledger();
-    semantic_notebook_ledger();
+    semantic_notebook_ledger(10_000, false);
+    semantic_notebook_ledger(100_000, false);
+    semantic_notebook_ledger(512, true);
     for sections in [1, 64, 512, 2000] {
         ledger_with_extensions(2, false, sections);
     }
@@ -76,9 +78,8 @@ fn default_thousand_and_explicit_ten_thousand_allocation_ledger() {
     ledger(10000, false);
 }
 
-fn semantic_notebook_ledger() {
+fn semantic_notebook_ledger(n: usize, metadata: bool) {
     use xyg_engine::graphforge::{compose::compose_bytes, container::Container};
-    let n = 10_000;
     let uuid = |kind: u8, i: usize| {
         let mut id = [0; 16];
         id[0] = kind;
@@ -93,11 +94,16 @@ fn semantic_notebook_ledger() {
     let mut targets = Vec::with_capacity(2 * n);
     for i in 0..n {
         let chord = (7 * i + 3) % n;
-        sources.extend([nodes[i]; 2]);
-        targets.extend([
-            nodes[(i + 1) % n],
-            nodes[if chord == i { (chord + 1) % n } else { chord }],
-        ]);
+        if metadata {
+            sources.extend([nodes[0]; 2]);
+            targets.extend([nodes[1 + i % (n - 1)]; 2]);
+        } else {
+            sources.extend([nodes[i]; 2]);
+            targets.extend([
+                nodes[(i + 1) % n],
+                nodes[if chord == i { (chord + 1) % n } else { chord }],
+            ]);
+        }
     }
     let mut b = Builder::new(b"XYGQ");
     b.uuids("base.node_uuid", 0, &nodes);
@@ -108,7 +114,18 @@ fn semantic_notebook_ledger() {
     b.u8s("base.directed", 0, &[0]);
     // Exercise the real semantic composition, including labels, style planes,
     // provenance, legend and decisions; no stripped plain-document substitute.
-    let document = compose_bytes(&b.finish()).unwrap();
+    let mut document = compose_bytes(&b.finish()).unwrap();
+    if metadata {
+        let mut c = Container::decode(&document, b"XYGF").unwrap();
+        c.sections
+            .retain(|(name, _, _)| !matches!(*name, "node.label" | "edge.label"));
+        let mut b = Builder::new(b"XYGF");
+        b.extend_from(&c);
+        let label = "\t\\\nλ".repeat(300);
+        b.texts("node.label", 0, &vec![label.as_str(); n]);
+        b.texts("edge.label", 0, &vec![label.as_str(); 2 * n]);
+        document = b.finish();
+    }
     let c = Container::decode(&document, b"XYGF").unwrap();
     assert_eq!(c.get("node.label", 0).unwrap().count, n);
     assert_eq!(c.get("edge.status", 0).unwrap().count, 2 * n);
@@ -200,7 +217,121 @@ fn semantic_notebook_ledger() {
         LIVE.load(SeqCst) - baseline,
         PEAK.load(SeqCst) - baseline
     );
+    // A subsequent publication must include the complete preceding packet and
+    // publication in its admission. The first publication alone cannot prove
+    // the serialization phase fits once the retry cache is populated.
+    let mut b = Builder::new(b"XYGI");
+    b.extend_from(
+        &Container::decode(
+            &request(3, s.session().render_revision(), 10, None),
+            b"XYGI",
+        )
+        .unwrap(),
+    );
+    b.uuids("uuids.uuid", 0, &[nodes[1], edges[2]]);
+    let next_command = b.finish();
+    let checksum = |bytes: &[u8]| {
+        bytes.iter().fold(0xcbf29ce484222325u64, |hash, &byte| {
+            (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3)
+        })
+    };
+    let old = (
+        s.reply().len(),
+        checksum(s.reply()),
+        s.session().render_revision(),
+    );
+    let limit = s
+        .preflight_bytes(&next_command, next_command.len())
+        .unwrap();
+    s.max_bytes = limit;
+    PEAK.store(LIVE.load(SeqCst), SeqCst);
+    assert_eq!(
+        s.execute(&next_command, next_command.len(), None),
+        Err(xyg_engine::graphforge::interaction::InteractionStatus::Budget)
+    );
+    assert!(PEAK.load(SeqCst) - baseline <= limit);
+    assert_eq!(
+        (
+            s.reply().len(),
+            checksum(s.reply()),
+            s.session().render_revision()
+        ),
+        old
+    );
+    assert_eq!(s.session().selection().unwrap().len(), 2);
+    s.max_bytes = arena;
+    PEAK.store(LIVE.load(SeqCst), SeqCst);
+    s.execute(&next_command, next_command.len(), None).unwrap();
+    assert!(PEAK.load(SeqCst) - baseline <= arena);
+    let selected = s.session().selection().unwrap();
+    assert_eq!(selected.len(), 2);
+    assert!(
+        selected.contains(&xyg_engine::graphforge::identity::ElementRef::Node(
+            nodes[1]
+        ))
+    );
+    assert!(
+        selected.contains(&xyg_engine::graphforge::identity::ElementRef::Edge(
+            edges[2]
+        ))
+    );
+    drop(selected);
+    let reply = (s.reply().as_ptr(), s.reply().len());
+    let revision = s.session().render_revision();
+    let cached = s.execute(&next_command, next_command.len(), None).unwrap();
+    assert_eq!((cached.as_ptr(), cached.len()), reply);
+    assert_eq!(s.session().render_revision(), revision);
+    report!(
+        "SEMANTIC_REPEAT nodes={n} arena={arena} retained={} live={} peak={} reply={}",
+        s.retained_budget(),
+        LIVE.load(SeqCst) - baseline,
+        PEAK.load(SeqCst) - baseline,
+        s.reply().len()
+    );
+    if metadata {
+        let mut b = Builder::new(b"XYGI");
+        b.extend_from(
+            &Container::decode(&request(4, s.session().render_revision(), 6, None), b"XYGI")
+                .unwrap(),
+        );
+        b.bytes(
+            "refs.bytes",
+            0,
+            &xyg_engine::graphforge::interaction::wire::encode_refs(&[s
+                .session()
+                .identity()
+                .node_ref(0)])
+            .unwrap(),
+        );
+        let focus = b.finish();
+        PEAK.store(LIVE.load(SeqCst), SeqCst);
+        s.execute(&focus, focus.len(), None).unwrap();
+        let mut b = Builder::new(b"XYGI");
+        b.extend_from(
+            &Container::decode(
+                &request(5, s.session().render_revision(), 17, None),
+                b"XYGI",
+            )
+            .unwrap(),
+        );
+        b.u32s("companion.u32", 0, &[0, 200]);
+        let page = b.finish();
+        s.execute(&page, page.len(), None).unwrap();
+        let c = Container::decode(s.reply(), b"XYGR").unwrap();
+        assert!(c.get("focus.ring.u32", 0).unwrap().count > 0);
+        assert!(c.get("companion.text.utf8", 0).unwrap().payload.len() > 131_072);
+        assert!(PEAK.load(SeqCst) - baseline <= arena);
+        report!(
+            "SEMANTIC_METADATA nodes={n} degree={} peak={}",
+            2 * n,
+            PEAK.load(SeqCst) - baseline
+        );
+        drop(c);
+        drop(focus);
+        drop(page);
+    }
     drop(s);
+    drop(next_command);
     drop(command);
     assert_eq!(LIVE.load(SeqCst), baseline);
 }

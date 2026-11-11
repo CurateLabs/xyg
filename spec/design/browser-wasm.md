@@ -1998,3 +1998,13 @@ Its official Node22 package measures **1,885,068 raw /786,429 gzip6 bytes**, wit
 this is a bounded size fit, not headroom for subsequent source changes.
 Failed package attempts establish no shipping acceptance. Matching final-source
 native/WASM qualification and the complete host/scale contract remain required.
+
+The later [native graph ownership/paint checkpoint](../performance/graph-native-admission-paint-2026-11-11/README.md)
+retains ABI405/WASM38 and all 68 function exports with zero imports. Its matched
+module measures **1,884,503 raw /786,335 Node22 gzip6 bytes**, leaving only
+**97 gzip bytes** under the unchanged caps. The preceding three-byte measurement
+describes its historical semantic-source parent. The new bounded packet and
+paint checks do not establish shipping: final full-foundation attempts include
+early context losses, and the reproducible 100k native-notebook journey still
+exceeds its unchanged layout wall limit. Neither a size fit nor passing isolated
+reruns supersede those failures or complete milestone acceptance.

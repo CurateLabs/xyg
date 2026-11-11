@@ -9,7 +9,7 @@ export function renderGraphHost({ model, el, attachTicks }) {
   const status = document.createElement("div"); status.setAttribute("aria-live", "polite");
   let layoutStatus = "Laying out graph";
   status.textContent = layoutStatus; el.append(status);
-  let revision = 0, disposed = false, view: ChartView | null = null, frame: number | null = null;
+  let revision = 0, disposed = false, view: ChartView | null = null, paintAck: number | null = null;
   let selection: { content: any; buffers: any } | null = null;
   const rowSpace = () => view?.spec?._graph_row_space ?? null;
   const sameRows = (a, b) => typeof a === "string" && /^[a-f0-9]{64}$/.test(a) && a === b;
@@ -43,6 +43,11 @@ export function renderGraphHost({ model, el, attachTicks }) {
   };
   const comm = {
     send,
+    onPainted: () => {
+      if (disposed || paintAck === null || paintAck !== revision) return;
+      paintAck = null;
+      send({ type: "graph_painted" });
+    },
     // Only this native graph host defers durable selection mutations. Other
     // chart transports retain their existing immediate mutation semantics.
     deferSelection: opts => ({ seq: ++selectionSequence, history: opts.history !== false, broadcast: opts.broadcast !== false, source: opts.source, interactionId: opts.interactionId, commitHistory: opts.commitHistory }),
@@ -221,8 +226,12 @@ export function renderGraphHost({ model, el, attachTicks }) {
     el.dataset.graphRevision = String(revision); el.dataset.graphSteps = String(content.step);
     layoutStatus = content.phase === "complete" ? "Layout complete" : "Laying out graph";
     status.textContent = selectionUnavailable ? "Graph selection is unavailable for this picture" : layoutStatus;
-    // A presented frame releases exactly one subsequent native checkpoint.
-    frame = requestAnimationFrame(() => { frame = null; if (!disposed) send({ type: "graph_painted" }); });
+    // Arm only after restoration is complete. The existing painter's success
+    // hook releases exactly one checkpoint, before unrelated expensive sibling
+    // draws can delay a separate animation-frame callback. Refused/lost draws
+    // keep the checkpoint pending until a real recovered presentation.
+    paintAck = revision;
+    view.draw();
     } catch {
       status.textContent = "XYG_GRAPH_WORKER_FAILED";
       send({ type: "graph_dispose" });
@@ -242,7 +251,7 @@ export function renderGraphHost({ model, el, attachTicks }) {
   return () => {
     if (disposed) return;
     send({ type: "graph_dispose" }); disposed = true;
-    if (frame !== null) cancelAnimationFrame(frame);
+    paintAck = null;
     model.off("msg:custom", message); listeners.clear(); picks.clear(); selectionPending = null; queuedSelection = null; pendingFrame = null; selection = null; acceptedSelection = null; view?.destroy(); status.remove();
   };
 }

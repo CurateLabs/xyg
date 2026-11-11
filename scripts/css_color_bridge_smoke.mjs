@@ -51,6 +51,45 @@ try{
   ];
   const spec=structuredClone(fixture.mark.spec),el=host();
   const view=xy.renderStandalone(el,spec,decode(fixture.mark));await settle();
+  el.style.setProperty('--test-mark','red');view.root.style.removeProperty('--test-mark');
+  // Notebook layout/focus classes are ancestor mutations, but need not change
+  // any computed chart paint. They must not queue another full data picture.
+  await settle();
+  const invalidations=[];let draws=0;const drawNow=view._drawNow;
+  view._drawNow=function(...args){draws++;return drawNow.apply(this,args);};
+  for(const [name,mutate] of [
+   ['unrelated-class',()=>el.classList.add('notebook-command-mode')],
+   ['ancestor-translation',()=>{el.style.transform='translateX(1px)';}],
+  ]){
+   const before=draws;mutate();await settle();await settle();
+   assert(draws===before,'unchanged computed paint must not redraw: '+name);
+   invalidations.push({name,draws:draws-before});
+  }
+  for(const [name,mutate] of [
+   ['canvas-token',()=>el.style.setProperty('--chart-text','#2470ab')],
+   ['custom-mark-token',()=>el.style.setProperty('--test-mark','#2468ac')],
+  ]){
+   const before=draws;mutate();await settle();await settle();
+   assert(draws>before,'changed paint must redraw: '+name);
+   invalidations.push({name,draws:draws-before});
+  }
+  assert(equal(view.gpuTraces[0].color,[0x24/255,0x68/255,0xac/255,1]),'custom CSS token must update actual mark uniform');
+  view.root.style.setProperty('--chart-bg','transparent');await settle();await settle();
+  const beforeBackdrop=draws;el.style.background='#547698';await settle();await settle();
+  assert(draws>beforeBackdrop,'changed ancestor backdrop must redraw');
+  invalidations.push({name:'ancestor-backdrop',draws:draws-beforeBackdrop});
+  view.root.style.setProperty('--chart-bg','white');el.style.background='';await settle();await settle();
+  const beforeExplicit=draws;view.refreshTheme();await settle();
+  assert(draws>beforeExplicit,'explicit refreshTheme remains unconditional');
+  view._drawNow=drawNow;
+  let presentations=0;const previousComm=view.comm,render=view._glHost.render;
+  view.comm={onPainted:()=>{presentations++;}};
+  try{
+   view._glHost.render=function(client,...args){return client===view?false:render.call(this,client,...args);};
+   view._drawNow();assert(presentations===0,'refused real painter must not acknowledge');
+   view._glHost.render=render;view._drawNow();
+   assert(presentations===1,'successful real painter must notify after presentation');
+  }finally{view._glHost.render=render;view.comm=previousComm;}
   let dataUploads=0;const bufferData=view.gl.bufferData,bufferSubData=view.gl.bufferSubData;
   view.gl.bufferData=function(...args){dataUploads++;return bufferData.apply(this,args);};
   view.gl.bufferSubData=function(...args){dataUploads++;return bufferSubData.apply(this,args);};
@@ -99,7 +138,7 @@ try{
   const dv=xy.renderStandalone(detached,ds,decode(fixture.mark));
   try{assert(dv._themeStale,'detached theme must be marked stale');document.getElementById('charts').append(detached);await settle();dv._drawNow();assert(!dv._themeStale,'connected chart did not heal stale theme');assert(equal(dv.gpuTraces[0].color,nativeColor(modern[0]).map(n=>n/255)),'detached modern color did not heal');}finally{dv.destroy();detached.remove();HTMLCanvasElement.prototype.getContext=getContext;}
   assert(nativeCanvases.size===1,'modern conversion must reuse one bounded pixel per document');
-  return {markCases,backgroundCases,dataUploads,legacyAlpha:0.55,sentinel:true,detachedHealed:true,conversionCanvases:nativeCanvases.size,remainingCharts:document.querySelectorAll('.xy').length};
+  return {presentations,invalidations,markCases,backgroundCases,dataUploads,legacyAlpha:0.55,sentinel:true,detachedHealed:true,conversionCanvases:nativeCanvases.size,remainingCharts:document.querySelectorAll('.xy').length};
  }),new Promise((_,reject)=>timer=setTimeout(()=>reject(Error('CSS color bridge browser deadline')),60000))]);
  assert.deepEqual(errors,[],'page errors');assert(warnings.some(w=>w.includes('xy-invalid-color')),'invalid literal must emit its fallback diagnostic');assert(warnings.filter(w=>w.startsWith('xy: unresolvable color')).every(w=>w.includes('xy-invalid-color')),'valid or detached CSS color emitted a false fallback diagnostic');assert.equal(report.remainingCharts,0,'chart teardown');
  report={ok:true,browser:browser.version(),asset:{path:asset,sha256:createHash('sha256').update(await readFile(asset)).digest('hex')},fixtureSha256:createHash('sha256').update(await readFile(fixture)).digest('hex'),...report,errors,warnings};

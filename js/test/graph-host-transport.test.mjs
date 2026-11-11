@@ -6,7 +6,7 @@ import vm from "node:vm";
 import test from "node:test";
 
 function fixture(saved) {
-  const source = readFileSync(new URL("../src/66_graph_host.ts", import.meta.url), "utf8")
+  const source = readFileSync(process.env.XYG_GRAPH_HOST_SOURCE ?? new URL("../src/66_graph_host.ts", import.meta.url), "utf8")
     .replace(/^import .*;$/mg, "").replace("export function", "function");
   let view, status, serial = 0;
   const frames = new Map();
@@ -16,6 +16,7 @@ function fixture(saved) {
       this.replies = []; this.swaps = 0; this.bufferSelections = [];
       this._stateSelection = null; this._historyPast = []; this._historyFuture = [];
       this.broadcasts = []; this._interactionSeq = 0; this.seq = 0;
+      this.gl = {}; this.paintAllowed = true;
       this.axes = { x: { range: [0, 10] }, y: { range: [0, 10] } };
       this.view = this._copyView({}); this.view0 = this._copyView(this.view);
       this.unsubscribe = comm.onMessage(content => {
@@ -36,8 +37,9 @@ function fixture(saved) {
     _broadcastLinkedSelection(selection) { this.broadcasts.push(selection); }
     _durableState() { return { v: 1, ranges: {}, selection: structuredClone(this._stateSelection) }; }
     _validateStatePatch() { return null; }
-    draw() {}
-    destroy() { this.unsubscribe(); this.destroyed = true; }
+    _renderGlFrame() { return this.paintAllowed; }
+    _repositionTooltip() {} _drawChrome() {}
+    destroy() { this.unsubscribe(); this.destroyed = this._destroyed = true; }
   }
   const context = { ChartView, payloadBuffers: (_, buffers) => buffers, crypto: webcrypto,
     BroadcastChannel: class { postMessage() {} close() {} },
@@ -52,7 +54,14 @@ function fixture(saved) {
   // Exercise actual range mutation, state validation and history together.
   // Only drawing/transport and unbounded linear fixture-axis clamping are stubbed.
   for (const name of ["_clearLassoOverlay", "_clearBoxOverlay", "_renderBoxSelection", "_renderLassoSelection", "_updateHistoryButtons", "_dispatchChartEvent", "_scheduleViewRequest", "_emitViewChange"]) ChartView.prototype[name] = () => {};
-  const axes = readFileSync(new URL("../src/50_chartview.ts", import.meta.url), "utf8");
+  const axes = readFileSync(process.env.XYG_CHARTVIEW_SOURCE ?? new URL("../src/50_chartview.ts", import.meta.url), "utf8");
+  // Keep the actual scheduling/presentation boundary. The fixture controls
+  // only whether its stand-in GPU successfully presents the requested frame.
+  const paintMethods = axes.slice(axes.indexOf("  draw(keepPick = false) {"), axes.indexOf("  _renderGlFrame() {"))
+    + axes.slice(axes.indexOf("  _drawNow() {"), axes.indexOf("  // Centralized clock seam"));
+  const PaintView = vm.runInContext(stripTypeScriptTypes(`(class { ${paintMethods} })`), context);
+  ChartView.prototype.draw = PaintView.prototype.draw;
+  ChartView.prototype._drawNow = PaintView.prototype._drawNow;
   const axisMethods = axes.slice(axes.indexOf("  _axisIds() {"), axes.indexOf("  _axisPolicy(name) {"))
     + axes.slice(axes.indexOf("  _axisRange(axisId, view = this.view) {"), axes.indexOf("  // Stride-thin radial tick LABELS"))
     + axes.slice(axes.indexOf("  _initLinkedCharts() {"), axes.indexOf("  _broadcastLinkedView(detail) {"));
@@ -75,6 +84,19 @@ function fixture(saved) {
     paint() { for (const [id, cb] of frames) { frames.delete(id); cb(); } },
     frame(revision, extra = {}) { deliver({ type: "graph_frame", graph_revision: revision, spec: { traces: [], _graph_row_space: "a".repeat(64) }, step: revision, phase: "running", ...extra }); } };
 }
+
+test("checkpoints wait for successful presentation and acknowledge exactly once", () => {
+  const f = fixture();
+  f.frame(1); f.view.paintAllowed = false; f.paint();
+  const acks = () => f.model.sent.filter(message => message.type === "graph_painted");
+  assert.equal(acks().length, 0, "a clock tick without a picture cannot release native work");
+  f.view.paintAllowed = true; f.view.draw(); f.paint();
+  assert.equal(acks().length, 1); assert.equal(acks()[0].graph_revision, 1);
+  f.view.draw(); f.paint();
+  assert.equal(acks().length, 1, "unrelated redraws cannot duplicate a checkpoint ACK");
+  f.frame(2); f.cleanup(); f.paint();
+  assert.equal(acks().length, 1, "disposed pending work cannot acknowledge later");
+});
 
 test("selection clear holds a checkpoint until the exact clear reply", () => {
   const f = fixture();

@@ -283,6 +283,15 @@ impl Plain {
         Some(bytes)
     }
     #[cfg_attr(target_arch = "wasm32", inline(never))]
+    pub fn reply_text(self) -> Option<usize> {
+        self.text
+            .min(
+                self.label_max
+                    .saturating_mul(super::wire::MAX_COMPANION_ROWS as usize),
+            )
+            .checked_add(self.label_max)
+    }
+    #[cfg_attr(target_arch = "wasm32", inline(never))]
     pub fn clone_peak(self, s: &GraphSession, r: &Request<'_>) -> Option<usize> {
         let state = match &s.slot {
             StateSlot::Owned(v) => super::wire::WireSession::uuid_state_charge(v)?,
@@ -314,13 +323,7 @@ impl Plain {
         // bounded label bytes; a million short labels need no million-label
         // serialization reservation. Account escaped rows, joins and copies
         // before allocating either paint or the reply builder.
-        let text = self
-            .text
-            .min(
-                self.label_max
-                    .saturating_mul(super::wire::MAX_COMPANION_ROWS as usize),
-            )
-            .checked_add(self.label_max)?;
+        let text = self.reply_text()?;
         let mut bytes = total(
             prior,
             &[
@@ -506,7 +509,10 @@ pub(super) fn paint_peak(p: &RenderOutput, n: usize, m: usize) -> Option<usize> 
     };
     let nodes = rn.checked_mul(2 * std::mem::size_of::<NodePaint>())?;
     let edges = re.checked_mul(2 * (28 + 32))?;
-    let pieces = re.checked_mul(6 * std::mem::size_of::<EdgePiece>())?;
+    let route_cap = crate::edge_route::edge_route_capacity(&p.edge_source, &p.edge_target, 1)?;
+    // with_ends emits shafts only, independent of directed head styling.
+    // Paint reserves the emitted count exactly after grouping scratch retires.
+    let pieces = route_cap.checked_mul(std::mem::size_of::<EdgePiece>())?;
     let groups = crate::index_slots::IndexSlots::capacity_bytes(re)?
         .checked_add(re.checked_mul(3 * std::mem::size_of::<usize>())?)?;
     let route = total(
@@ -514,7 +520,7 @@ pub(super) fn paint_peak(p: &RenderOutput, n: usize, m: usize) -> Option<usize> 
         &[
             (styles, 1),
             (rn, 9),
-            (re, 3 * 12 * 8),
+            (route_cap, (5 + crate::edge_route::EDGE_ENDS_STRIDE) * 8),
             (groups.max(pieces), 1),
         ],
     )?;
@@ -556,4 +562,53 @@ pub(super) fn serialized_bound(p: &RenderOutput, refs: usize) -> Option<usize> {
         ],
     )?;
     Some(bytes)
+}
+
+/// One preallocated packet, one live numeric/style column, then bounded
+/// metadata scratch. Builder::finish prefixes that same packet in place.
+/// The caller separately reserves speculative state and escaped label scratch.
+pub(super) fn serialization_plan(
+    p: &RenderOutput,
+    refs: usize,
+    text: usize,
+    sections: usize,
+    positions: usize,
+    focused: bool,
+) -> Option<(usize, usize)> {
+    let numeric = total(serialized_bound(p, refs)?, &[(positions, 80)])?;
+    // The pre-clone 64B label reserve already covers the packet's 2B label
+    // capacity as well as escaping/join/copy scratch. Do not charge it twice.
+    let bound = numeric.checked_add(text.checked_mul(2)?)?;
+    // CPU geometry is the widest paint column. GPU state/index packers can
+    // overlap their growable scalar input with a byte copy, but remain below
+    // the 60-byte style or 112-byte piece column for the same rows.
+    // Membership is a partition: each source node/edge belongs to at most one
+    // render row. All raw flags, endpoints, CSR members and offsets therefore
+    // fit eight bytes times max(source nodes, source edges)+one terminal offset.
+    let raw = p
+        .member_of
+        .len()
+        .max(p.source_edge_flags.len())
+        .checked_add(1)?
+        .checked_mul(8)?;
+    let column = raw
+        .max(p.node_count().max(p.edge_count()).checked_mul(60)?)
+        .max(p.paint.pieces.len().checked_mul(112)?)
+        .max(p.paint.frames.len().checked_mul(40)?);
+    // Focus/ring publication retains the original complete second-packet
+    // allowance. Only a world without either owner uses the narrower column
+    // maximum; no degree scan or speculative ring is needed for admission.
+    let scratch = total(
+        if focused { numeric } else { column },
+        &[
+            (refs, 1024),
+            (sections, 512),
+            (positions, 320),
+            (1, 131_072),
+        ],
+    )?;
+    let peak = publication_bytes(p)?
+        .checked_add(numeric)?
+        .checked_add(scratch)?;
+    Some((bound, peak))
 }
