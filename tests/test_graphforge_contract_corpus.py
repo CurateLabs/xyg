@@ -11,7 +11,9 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-CURRENT_BINDINGS = Path("spec/performance/tooltip-uuid-packing-2026-11-11/current-bindings.json")
+CURRENT_BINDINGS = Path(
+    "spec/performance/graph-region-visible-input-2026-11-11/current-bindings.json"
+)
 
 
 def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> None:
@@ -894,8 +896,26 @@ def test_python_session_isolation_preserves_complete_source_qualification():
 def test_tooltip_uuid_packing_preserves_complete_source_qualification():
     parent_path = "spec/performance/graph-python-session-isolation-2026-11-11/current-bindings.json"
     parent = json.loads((ROOT / parent_path).read_text())
-    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/tooltip-uuid-packing-2026-11-11/current-bindings.json"
+        ).read_text()
+    )
     assert len(current["parents"]) == 45
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_visible_graph_region_input_preserves_complete_source_qualification():
+    parent_path = "spec/performance/tooltip-uuid-packing-2026-11-11/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    assert len(current["parents"]) == 46
     assert {p["path"] for p in current["parents"]} == {parent_path}.union(
         p["path"] for p in parent["parents"]
     )

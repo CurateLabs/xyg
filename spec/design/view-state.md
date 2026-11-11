@@ -371,6 +371,15 @@ existing hover/pick messages — no new message, larger detail.
 
 ## 9. Testing contract
 
+Actual notebook/desktop region journeys choose a real, unobstructed canvas
+path before sending trusted pan input. Host sidebars may cover a fixed-width
+output without changing its DOM bounding box. The harness hit-tests all seven
+positions of the existing 20/-12 CSS-pixel path, retains the original path when
+exposed, and fails if no candidate reaches the canvas. It still requires the
+native camera end event, subsequent wheel end event and exact post-camera
+selection/mask oracles. This accommodates host clipping; it does not synthesize
+input, dismiss host UI, relax timeouts or qualify a pan that never reaches XYG.
+
 Locked in before implementation, in the PR #117 fail-first style:
 
 - **Round-trip:** for any reachable durable state, `apply(serialize(state))`

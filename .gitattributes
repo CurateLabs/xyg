@@ -1640,3 +1640,6 @@ benchmarks/test_codspeed_tooltip_columns.py text eol=lf
 spec/performance/tooltip-uuid-packing-2026-11-11/*.md text eol=lf
 spec/performance/tooltip-uuid-packing-2026-11-11/*.json text eol=lf
 spec/performance/tooltip-uuid-packing-2026-11-11/**/*.gz -text
+spec/performance/graph-region-visible-input-2026-11-11/*.md text eol=lf
+spec/performance/graph-region-visible-input-2026-11-11/*.json text eol=lf
+spec/performance/graph-region-visible-input-2026-11-11/**/*.gz -text
