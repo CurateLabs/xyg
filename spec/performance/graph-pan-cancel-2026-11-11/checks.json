@@ -1,0 +1,1367 @@
+{
+  "bindings": {
+    "current": 3479,
+    "historical": 1622,
+    "parents": 43,
+    "path": "spec/performance/graph-pan-cancel-2026-11-11/current-bindings.json",
+    "sha256": "934ce93f905683e41fc8e0eb82362f66b7d3fc5a558b61c4338b218b4d450f0d"
+  },
+  "compiledInputs": {
+    "changed": [],
+    "count": 324,
+    "path": "spec/performance/graph-native-force-owner-2026-11-11/compiled-inputs.json",
+    "sha256": "cce2b70f6ab2423d167ff33fb4fe745c7e1d03ddd8783d7c1b3e801148339e86"
+  },
+  "evidence": {
+    "artifact-source-reuse.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/bb145497b31f373c2e1ecde767bd220ced41b356f38b1dcd020a263f25d9a723.gz",
+      "archiveBytes": 360,
+      "archiveSha256": "80e493b4a3f1f1ee451b814ac8ebae2666d0f2ad9884a17be48175e8fa99d263",
+      "bytes": 528,
+      "sha256": "bb145497b31f373c2e1ecde767bd220ced41b356f38b1dcd020a263f25d9a723",
+      "source": "target/task-tmp/graph-pan-cancel/artifact-source-reuse.json"
+    },
+    "assets.log": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef.gz",
+      "archiveBytes": 104,
+      "archiveSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730",
+      "bytes": 88,
+      "sha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+      "source": "target/task-tmp/graph-pan-cancel/assets.log"
+    },
+    "core-preservation-corrected.log": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/f60f091580a012cffa7be8dd2733e90e2f2b519ea055c09e61a0c87bbe1d68e1.gz",
+      "archiveBytes": 66,
+      "archiveSha256": "f55ffeccb02d7144e425e7caed2d781765372c29ea879b2a146bf3573a4aa147",
+      "bytes": 114,
+      "sha256": "f60f091580a012cffa7be8dd2733e90e2f2b519ea055c09e61a0c87bbe1d68e1",
+      "source": "target/task-tmp/graph-pan-cancel/core-preservation-corrected.log"
+    },
+    "core-preservation.log": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/ea41cd7944ba152d01009db8b074deec401ba8ed39ef84b529df130a95f01ddc.gz",
+      "archiveBytes": 1354,
+      "archiveSha256": "5872d1301bc0a1eb5c3a2b7677b8db8a2a5ae9a901d9247dbf6ba5b99221e8ba",
+      "bytes": 3821,
+      "sha256": "ea41cd7944ba152d01009db8b074deec401ba8ed39ef84b529df130a95f01ddc",
+      "source": "target/task-tmp/graph-pan-cancel/core-preservation.log"
+    },
+    "final-capture-tests.log": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/3ea8e8d9bf0659b00b6f7648fb0a831b72fb2d30632be07098aa19f9ec21b64d.gz",
+      "archiveBytes": 65,
+      "archiveSha256": "9f99dc9c5a83067b19442b590e70c3d105f235cf592f584f232a038103805353",
+      "bytes": 113,
+      "sha256": "3ea8e8d9bf0659b00b6f7648fb0a831b72fb2d30632be07098aa19f9ec21b64d",
+      "source": "target/task-tmp/graph-pan-cancel/final-capture-tests.log"
+    },
+    "foundation.log": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/43d93c347f34fdb35faaeeee336c753914c67cda9a02de34129dab4d17bb2861.gz",
+      "archiveBytes": 4710,
+      "archiveSha256": "e414d1d54ba60f1813a37fe0d065ce00fb6fb0a56e1be4180d0e80258ae6a583",
+      "bytes": 16131,
+      "sha256": "43d93c347f34fdb35faaeeee336c753914c67cda9a02de34129dab4d17bb2861",
+      "source": "target/task-tmp/graph-pan-cancel/foundation.log"
+    },
+    "inventory.log": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/bf0f6a94e21bd4a384ebcc6ca9c48263941fb2d5d04660c16597a4d95ba92106.gz",
+      "archiveBytes": 161,
+      "archiveSha256": "5da83ee884873fb958349c0d3c27cdca14f82d27b8d0a81562957b5ac5152869",
+      "bytes": 201,
+      "sha256": "bf0f6a94e21bd4a384ebcc6ca9c48263941fb2d5d04660c16597a4d95ba92106",
+      "source": "target/task-tmp/graph-pan-cancel/inventory.log"
+    },
+    "parent-client-control.log": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/c4ba289bbeddd619737353f1ddb6802691d2c9465eb17786a236d8c320dbd10b.gz",
+      "archiveBytes": 258,
+      "archiveSha256": "56b68d7a8dac1e0904820c92fa13a1f5f5c1c57333c33a923b831b6e4ea08aca",
+      "bytes": 379,
+      "sha256": "c4ba289bbeddd619737353f1ddb6802691d2c9465eb17786a236d8c320dbd10b",
+      "source": "target/task-tmp/graph-pan-cancel/parent-client-control.log"
+    },
+    "parent-client-control.py": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/ca55dc3ee8d01b39a3aaee8122c12281bde900b6568e30bbce053be5ffc7ca47.gz",
+      "archiveBytes": 862,
+      "archiveSha256": "dd37bef21ae4e21c0bcf33a7d6d1bdc01974ca2693fa066209387863f802ffbe",
+      "bytes": 1678,
+      "sha256": "ca55dc3ee8d01b39a3aaee8122c12281bde900b6568e30bbce053be5ffc7ca47",
+      "source": "target/task-tmp/graph-pan-cancel/parent-client-control.py"
+    },
+    "parent-client-control/result.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/c4ba289bbeddd619737353f1ddb6802691d2c9465eb17786a236d8c320dbd10b.gz",
+      "archiveBytes": 258,
+      "archiveSha256": "56b68d7a8dac1e0904820c92fa13a1f5f5c1c57333c33a923b831b6e4ea08aca",
+      "bytes": 379,
+      "sha256": "c4ba289bbeddd619737353f1ddb6802691d2c9465eb17786a236d8c320dbd10b",
+      "source": "target/task-tmp/graph-pan-cancel/parent-client-control/result.json"
+    },
+    "parent-work/pan-cancel-client-build.log": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f.gz",
+      "archiveBytes": 1056,
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "bytes": 5448,
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+      "source": "target/task-tmp/graph-native-force-owner/pan-cancel-client-build.log"
+    },
+    "parent-work/pan-cancel-client-tests.log": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/f301da4b2b994f83ce24ec1bebb0c937c0e568fdbac85b95444d226b6b57fc34.gz",
+      "archiveBytes": 63,
+      "archiveSha256": "dbaf101b4cc202bb2062c9fea0d7765f4171d5a6364ba954b39c07727014e240",
+      "bytes": 110,
+      "sha256": "f301da4b2b994f83ce24ec1bebb0c937c0e568fdbac85b95444d226b6b57fc34",
+      "source": "target/task-tmp/graph-native-force-owner/pan-cancel-client-tests.log"
+    },
+    "parent-work/pan-cancel-package.log": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/d5a7ed6ddf82e93777c24d1041899e10525e1f8974db5d8c7a4ae4cdcaf8204d.gz",
+      "archiveBytes": 201,
+      "archiveSha256": "563cc9e3668fad336427bc3073208f88a4323513b29551b1c2975d6fcabc5846",
+      "bytes": 493,
+      "sha256": "d5a7ed6ddf82e93777c24d1041899e10525e1f8974db5d8c7a4ae4cdcaf8204d",
+      "source": "target/task-tmp/graph-native-force-owner/pan-cancel-package.log"
+    },
+    "parent-work/pointer-cancel-before.log": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/c1f84053a01c0adc1182f61ec91d6ebb4056a00e49ff36c41f886745a7ba92b9.gz",
+      "archiveBytes": 688,
+      "archiveSha256": "16b3596d0e290001e3d71cf35ed9a75633f4912a3529be64f3ac62a7782caf80",
+      "bytes": 1737,
+      "sha256": "c1f84053a01c0adc1182f61ec91d6ebb4056a00e49ff36c41f886745a7ba92b9",
+      "source": "target/task-tmp/graph-native-force-owner/pointer-cancel-before.log"
+    },
+    "parent-work/pr1122-failed-group.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/6886aed58d855381ba71f01a2cd73d0ead8586b7c4687c4a1a39ce912f6c2735.gz",
+      "archiveBytes": 3785,
+      "archiveSha256": "c2fc0dbc9ca2a057f4856dfeb4b4ade08ebb747ee51b94736a70136b542f4b8a",
+      "bytes": 30533,
+      "sha256": "6886aed58d855381ba71f01a2cd73d0ead8586b7c4687c4a1a39ce912f6c2735",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-failed-group.json"
+    },
+    "parent-work/pr1122-group-artifacts.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/44490150f6c0aa3de666a94ad6e5b3f9f3660e0b05ea9d9f7124865790ed3eb8.gz",
+      "archiveBytes": 904,
+      "archiveSha256": "d245e81a215d877dea7e00de03e64479a88e7caae559227bac2769ddf42dc155",
+      "bytes": 3760,
+      "sha256": "44490150f6c0aa3de666a94ad6e5b3f9f3660e0b05ea9d9f7124865790ed3eb8",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-artifacts.json"
+    },
+    "parent-work/pr1122-group-commit.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/18be95eb18100f3dc3311cf976c4d0a4898aca09f1d2a51fcdfa058b98eaecda.gz",
+      "archiveBytes": 140,
+      "archiveSha256": "b0f45cd4d57532caa85de52a842ad87de4c19397c3f0149914b996b974d311f5",
+      "bytes": 156,
+      "sha256": "18be95eb18100f3dc3311cf976c4d0a4898aca09f1d2a51fcdfa058b98eaecda",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-commit.json"
+    },
+    "parent-work/pr1122-queue-fresh-readiness.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/23ccf1be5900d946529bb2dd813b01fa22f79c58fc98f89d3b956a17eac87373.gz",
+      "archiveBytes": 178,
+      "archiveSha256": "e924b7b563891813e733c531333b767a4d1005c8ea910cab1741bf2c6a5f6dc3",
+      "bytes": 214,
+      "sha256": "23ccf1be5900d946529bb2dd813b01fa22f79c58fc98f89d3b956a17eac87373",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-queue-fresh-readiness.json"
+    },
+    "parent-work/pr1122-test-job.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/741f5b5d37bd0d381b336f24d9258ae327218d028ae929a9f93c6d4e76d7a44f.gz",
+      "archiveBytes": 2610,
+      "archiveSha256": "ed736b98fb2e1460343e9b23ded0dfe22596cedda4d95cc1d07334ad3751082b",
+      "bytes": 15595,
+      "sha256": "741f5b5d37bd0d381b336f24d9258ae327218d028ae929a9f93c6d4e76d7a44f",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-test-job.json"
+    },
+    "parent-work/pr1122-test-job.log": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/200c39e01c0de7c9a17ea6d6122180c3d2aa2235c052a90ae3203ff85e6fdd9e.gz",
+      "archiveBytes": 159570,
+      "archiveSha256": "ebd0bbb60f59f032763f823827844ade0a0606b73c07125d1bbfb9df99166a43",
+      "bytes": 814806,
+      "sha256": "200c39e01c0de7c9a17ea6d6122180c3d2aa2235c052a90ae3203ff85e6fdd9e",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-test-job.log"
+    },
+    "parent-work/pr1122-timeline-readiness.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/44d330305814b27501d0111447de7448d27eb71bb027eda34883651cafe61c0f.gz",
+      "archiveBytes": 7335,
+      "archiveSha256": "fe283d77d24e69c39b38d8dc5b2d94ef2dd1a49f6ea87461b0dc6df4dc2ab40d",
+      "bytes": 36964,
+      "sha256": "44d330305814b27501d0111447de7448d27eb71bb027eda34883651cafe61c0f",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-timeline-readiness.json"
+    },
+    "parent-work/vscode-pointer-diagnostic-v2.log": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0.gz",
+      "archiveBytes": 85,
+      "archiveSha256": "a688876b9fdeb2185a00304848bf5019b0c035fdb46e9514817fd783be391ea4",
+      "bytes": 71,
+      "sha256": "26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2.log"
+    },
+    "parent-work/vscode-pointer-diagnostic.log": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0.gz",
+      "archiveBytes": 85,
+      "archiveSha256": "a688876b9fdeb2185a00304848bf5019b0c035fdb46e9514817fd783be391ea4",
+      "bytes": 71,
+      "sha256": "26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic.log"
+    },
+    "parent-work/vscode-regions-control.log": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/648c5df8ca4c316951083d403bef422b46ca145f0e7b7ab70be73984c072d3c6.gz",
+      "archiveBytes": 239,
+      "archiveSha256": "4b8ca817afb2926e61869cf3e5262e93ed5aa05001dd92e1bf2830a306837aa6",
+      "bytes": 437,
+      "sha256": "648c5df8ca4c316951083d403bef422b46ca145f0e7b7ab70be73984c072d3c6",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-control.log"
+    },
+    "parent-work/vscode-regions-matching-control.log": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0.gz",
+      "archiveBytes": 85,
+      "archiveSha256": "a688876b9fdeb2185a00304848bf5019b0c035fdb46e9514817fd783be391ea4",
+      "bytes": 71,
+      "sha256": "26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control.log"
+    },
+    "parent-work/vscode-regions-matching-verification.log": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/910346b8769233f593afaf76cdd389deb35240d7c5a6a5c7238c9786def0df82.gz",
+      "archiveBytes": 78,
+      "archiveSha256": "4cef964625521bd0aa2ae9c735a804c679456ddb15f697eeb861de36f8786616",
+      "bytes": 59,
+      "sha256": "910346b8769233f593afaf76cdd389deb35240d7c5a6a5c7238c9786def0df82",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-verification.log"
+    },
+    "pr1122-group-vscode/before-edges-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/1e45b7b25224bc35f33c95ceb7f686e1a33291c2ced0db32c938a118a837128d.gz",
+      "archiveBytes": 11166,
+      "archiveSha256": "7f79814c8d46c88780e81205adf2aa1b7c422e0fd24981d11d5c789f3d10cbe6",
+      "bytes": 14590,
+      "sha256": "1e45b7b25224bc35f33c95ceb7f686e1a33291c2ced0db32c938a118a837128d",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/before-edges-paint.png"
+    },
+    "pr1122-group-vscode/before-edges-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/f415a9d0f1db9943a2522de1bec0d8f459d79965af2832fdc45b1413f61b6c40.gz",
+      "archiveBytes": 486,
+      "archiveSha256": "d58416e537102be9f852e02f6476bef6411016c9aed6de56d7168ef4f123cfc2",
+      "bytes": 3518,
+      "sha256": "f415a9d0f1db9943a2522de1bec0d8f459d79965af2832fdc45b1413f61b6c40",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/before-edges-pixels.json"
+    },
+    "pr1122-group-vscode/before-edges.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/d7738af9c3284767241a329aac6e1ae81b794204504c8c0e2fb0e99bb9b2447a.gz",
+      "archiveBytes": 22206,
+      "archiveSha256": "5932efdd8ba5ab333dfd4f7b903cc84fab75805482036f50c6a3503938e1655b",
+      "bytes": 23136,
+      "sha256": "d7738af9c3284767241a329aac6e1ae81b794204504c8c0e2fb0e99bb9b2447a",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/before-edges.png"
+    },
+    "pr1122-group-vscode/before-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/1e45b7b25224bc35f33c95ceb7f686e1a33291c2ced0db32c938a118a837128d.gz",
+      "archiveBytes": 11166,
+      "archiveSha256": "7f79814c8d46c88780e81205adf2aa1b7c422e0fd24981d11d5c789f3d10cbe6",
+      "bytes": 14590,
+      "sha256": "1e45b7b25224bc35f33c95ceb7f686e1a33291c2ced0db32c938a118a837128d",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/before-paint.png"
+    },
+    "pr1122-group-vscode/before-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/a9661d8d13b21d559a33f778eecce372e187e1ea4dd8e0b2df46581d990a85cf.gz",
+      "archiveBytes": 394,
+      "archiveSha256": "2a9ff4d4f8a8ad13d74966974502fc0b03e62f696de12ce90a9a2e1c84373899",
+      "bytes": 2203,
+      "sha256": "a9661d8d13b21d559a33f778eecce372e187e1ea4dd8e0b2df46581d990a85cf",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/before-pixels.json"
+    },
+    "pr1122-group-vscode/before.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/d7738af9c3284767241a329aac6e1ae81b794204504c8c0e2fb0e99bb9b2447a.gz",
+      "archiveBytes": 22206,
+      "archiveSha256": "5932efdd8ba5ab333dfd4f7b903cc84fab75805482036f50c6a3503938e1655b",
+      "bytes": 23136,
+      "sha256": "d7738af9c3284767241a329aac6e1ae81b794204504c8c0e2fb0e99bb9b2447a",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/before.png"
+    },
+    "pr1122-group-vscode/box-edges-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/a4610711e287f3a87e37b4e8b33467a362b6be490ad9017724cb6ecd43200d18.gz",
+      "archiveBytes": 10723,
+      "archiveSha256": "36bd458fcf243bc82ad14a6f862304114998b04ad775764564c9c280fd280ebe",
+      "bytes": 14451,
+      "sha256": "a4610711e287f3a87e37b4e8b33467a362b6be490ad9017724cb6ecd43200d18",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/box-edges-paint.png"
+    },
+    "pr1122-group-vscode/box-edges-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/73977670ff53ac0f32eaeb0cd1256a2d1abce6a2e4600c4070d0842daeba4a47.gz",
+      "archiveBytes": 512,
+      "archiveSha256": "d69c074cace0fa5bd053b46ac03501dcd0d581817fde921fb086b4b91c2f6e76",
+      "bytes": 3498,
+      "sha256": "73977670ff53ac0f32eaeb0cd1256a2d1abce6a2e4600c4070d0842daeba4a47",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/box-edges-pixels.json"
+    },
+    "pr1122-group-vscode/box-edges.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/7e5865a9608de230b3b5718d4b0ab7fb3342fee25a8d6e16de6a88db7d032d61.gz",
+      "archiveBytes": 21125,
+      "archiveSha256": "1df36575f720cd5e87ee61e987ba939b53134ce2982dc6c9591259be0df38732",
+      "bytes": 22034,
+      "sha256": "7e5865a9608de230b3b5718d4b0ab7fb3342fee25a8d6e16de6a88db7d032d61",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/box-edges.png"
+    },
+    "pr1122-group-vscode/box-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/a4610711e287f3a87e37b4e8b33467a362b6be490ad9017724cb6ecd43200d18.gz",
+      "archiveBytes": 10723,
+      "archiveSha256": "36bd458fcf243bc82ad14a6f862304114998b04ad775764564c9c280fd280ebe",
+      "bytes": 14451,
+      "sha256": "a4610711e287f3a87e37b4e8b33467a362b6be490ad9017724cb6ecd43200d18",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/box-paint.png"
+    },
+    "pr1122-group-vscode/box-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/fbf1e89ade91634e035aa1c685e86985467b5498c832741581384bed57991384.gz",
+      "archiveBytes": 402,
+      "archiveSha256": "c7eafdd4497ae8dc8e6618e1bad050255bc31e07716139d2c6993c125fb8386c",
+      "bytes": 2188,
+      "sha256": "fbf1e89ade91634e035aa1c685e86985467b5498c832741581384bed57991384",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/box-pixels.json"
+    },
+    "pr1122-group-vscode/box.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/6a6aed59a255249fd353964fd25296d13fbcbe6fa6c44865e81c3ba364a1e7f6.gz",
+      "archiveBytes": 25024,
+      "archiveSha256": "5f732826494a08725f650114f98bffa541a7367c66bdfef33c044fe773f5f8f2",
+      "bytes": 25781,
+      "sha256": "6a6aed59a255249fd353964fd25296d13fbcbe6fa6c44865e81c3ba364a1e7f6",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/box.png"
+    },
+    "pr1122-group-vscode/capacity-before-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d.gz",
+      "archiveBytes": 10730,
+      "archiveSha256": "a5d9045594f82408fa670d2cef79a75ab733578c14023732507fa1aa2e1d5bd6",
+      "bytes": 14478,
+      "sha256": "fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/capacity-before-paint.png"
+    },
+    "pr1122-group-vscode/capacity-before-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/8ceb8de027ed20236ce3aabc7bbccebc5c01364da20b0ea9814a907f479fe1d8.gz",
+      "archiveBytes": 397,
+      "archiveSha256": "f18751fbb5a4de4ab8d9fe1553998900ae30754b01ffbbc75b43dcc26b3e6bfa",
+      "bytes": 2188,
+      "sha256": "8ceb8de027ed20236ce3aabc7bbccebc5c01364da20b0ea9814a907f479fe1d8",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/capacity-before-pixels.json"
+    },
+    "pr1122-group-vscode/capacity-before.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/ce40b70d4d632e25b469bfb123c36301ede4d0bd9187101f9ce54cc3655b657b.gz",
+      "archiveBytes": 21092,
+      "archiveSha256": "d58de82969c284c0b5c6129397cfcf8a4e95b6b29fad8ade9ea11119b279c433",
+      "bytes": 21975,
+      "sha256": "ce40b70d4d632e25b469bfb123c36301ede4d0bd9187101f9ce54cc3655b657b",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/capacity-before.png"
+    },
+    "pr1122-group-vscode/capacity-history-refused-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d.gz",
+      "archiveBytes": 10730,
+      "archiveSha256": "a5d9045594f82408fa670d2cef79a75ab733578c14023732507fa1aa2e1d5bd6",
+      "bytes": 14478,
+      "sha256": "fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/capacity-history-refused-paint.png"
+    },
+    "pr1122-group-vscode/capacity-history-refused-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/d5f052e052a888975b2b75f1c0d5f0e155c97a65cf66f1f9db10fe0250b601af.gz",
+      "archiveBytes": 401,
+      "archiveSha256": "eb2b34ad1d877f39443cb886349e71c995ceeee32b32c93e6d4751628bcd53bd",
+      "bytes": 2188,
+      "sha256": "d5f052e052a888975b2b75f1c0d5f0e155c97a65cf66f1f9db10fe0250b601af",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/capacity-history-refused-pixels.json"
+    },
+    "pr1122-group-vscode/capacity-history-refused.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/171fb05974057ff8b16dcd45a2f92e0a4bddb02edddf247f2557133cf077e259.gz",
+      "archiveBytes": 21066,
+      "archiveSha256": "847555999cdc4956c5fb3daff5391e31d7052758cf1d7078c4e43b0a39423636",
+      "bytes": 22002,
+      "sha256": "171fb05974057ff8b16dcd45a2f92e0a4bddb02edddf247f2557133cf077e259",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/capacity-history-refused.png"
+    },
+    "pr1122-group-vscode/capacity-refused-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d.gz",
+      "archiveBytes": 10730,
+      "archiveSha256": "a5d9045594f82408fa670d2cef79a75ab733578c14023732507fa1aa2e1d5bd6",
+      "bytes": 14478,
+      "sha256": "fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/capacity-refused-paint.png"
+    },
+    "pr1122-group-vscode/capacity-refused-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/aedfb153da95bdf08db5d403d2d26899902cdc30815b7ce6ed5a681c7b197c88.gz",
+      "archiveBytes": 396,
+      "archiveSha256": "c841c18a1abc4c4395642b8b4555b4a53d55ad6299ec28662d85199a7f0eb363",
+      "bytes": 2188,
+      "sha256": "aedfb153da95bdf08db5d403d2d26899902cdc30815b7ce6ed5a681c7b197c88",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/capacity-refused-pixels.json"
+    },
+    "pr1122-group-vscode/capacity-refused.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/39a3f39996be00a44702b218215cc38037780d6fdcd0361fd08a0045f345a3a2.gz",
+      "archiveBytes": 23860,
+      "archiveSha256": "867eef2be8d6eeb74fff9e254f683c35a138d21f9775706d52e484beee2ba5a5",
+      "bytes": 24642,
+      "sha256": "39a3f39996be00a44702b218215cc38037780d6fdcd0361fd08a0045f345a3a2",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/capacity-refused.png"
+    },
+    "pr1122-group-vscode/cleanup.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/493ca9e05ad2b260323a0ea8ac496f153e0f20c13c1ade1416677bbc5e79a26b.gz",
+      "archiveBytes": 125,
+      "archiveSha256": "8ae99cd010f68d62c5be31728d0b57ba9609b3f08b354528be8748da81daa8c4",
+      "bytes": 296,
+      "sha256": "493ca9e05ad2b260323a0ea8ac496f153e0f20c13c1ade1416677bbc5e79a26b",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/cleanup.json"
+    },
+    "pr1122-group-vscode/controller-complete.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/3d2f3aced14e5721ac13dcdfcb04b2062884c75252e09f2b2387f066e86c13c9.gz",
+      "archiveBytes": 128,
+      "archiveSha256": "87bc1e38ef29c2215c872de8488400c0f786bbcf5777e8830fcf203c8774b067",
+      "bytes": 123,
+      "sha256": "3d2f3aced14e5721ac13dcdfcb04b2062884c75252e09f2b2387f066e86c13c9",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/controller-complete.json"
+    },
+    "pr1122-group-vscode/failure-owner-cleanup.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/ff69a3553cf0520848eb4f2ade8039324b708728aea2a7dd9cfbc9771869a70a.gz",
+      "archiveBytes": 92,
+      "archiveSha256": "f661229fc97df1fe011011beceb345aeb5d6d71aab13b27bcbe3a4751e12b7f7",
+      "bytes": 76,
+      "sha256": "ff69a3553cf0520848eb4f2ade8039324b708728aea2a7dd9cfbc9771869a70a",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/failure-owner-cleanup.json"
+    },
+    "pr1122-group-vscode/failure.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/e2bdc81c6ac1cdfa0a3a8a411c6c572a5203b0dd9b23f283ccb92a22d0b29ba2.gz",
+      "archiveBytes": 4482,
+      "archiveSha256": "df2b449ef5734ec2d29f3a91199581762fac02739f00eac50411dc00b5fbbb06",
+      "bytes": 100832,
+      "sha256": "e2bdc81c6ac1cdfa0a3a8a411c6c572a5203b0dd9b23f283ccb92a22d0b29ba2",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/failure.json"
+    },
+    "pr1122-group-vscode/inspector-sources.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/73e9a5a47c3f6284ab8c79f5692f2174b299e3d1efb78a6412d6dd7d58b5fe2c.gz",
+      "archiveBytes": 260,
+      "archiveSha256": "a7e5ccb54ad0812eb6681d76db027d3a613bda6f438b33ec7c4ba460fd6fd257",
+      "bytes": 538,
+      "sha256": "73e9a5a47c3f6284ab8c79f5692f2174b299e3d1efb78a6412d6dd7d58b5fe2c",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/inspector-sources.json"
+    },
+    "pr1122-group-vscode/lasso-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/1c1924f0a08e2b6ccd0c82261780bf17d38687893b1c3b36d9076a4a42a41d86.gz",
+      "archiveBytes": 11106,
+      "archiveSha256": "c63db41d757d528130eed1111c9b870addfcd7791a920c43dacef1a63ab0670d",
+      "bytes": 14738,
+      "sha256": "1c1924f0a08e2b6ccd0c82261780bf17d38687893b1c3b36d9076a4a42a41d86",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/lasso-paint.png"
+    },
+    "pr1122-group-vscode/lasso-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/746bf87be01d4ebf6233ba6fa6a5c2745c8d581c3ffd7d17876466cb57ce8516.gz",
+      "archiveBytes": 391,
+      "archiveSha256": "c2deaa1aa567becdc8150b4f020233fea3181c9c0a84b36a6ad367db84beb963",
+      "bytes": 2193,
+      "sha256": "746bf87be01d4ebf6233ba6fa6a5c2745c8d581c3ffd7d17876466cb57ce8516",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/lasso-pixels.json"
+    },
+    "pr1122-group-vscode/lasso.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/153c086f825281f88f0316770433f059c5eb8a33dda61a2764067e365d42e422.gz",
+      "archiveBytes": 27750,
+      "archiveSha256": "af9505de1a2205f28b53fe73b074adce7752da3e4b7d7ae270ee35ad339c696e",
+      "bytes": 28396,
+      "sha256": "153c086f825281f88f0316770433f059c5eb8a33dda61a2764067e365d42e422",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/lasso.png"
+    },
+    "pr1122-group-vscode/run-result.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/d0e5e21d3a407649d6f66560f8d2c54c2257c66a9ca2d522b781738d9b61f1f4.gz",
+      "archiveBytes": 575,
+      "archiveSha256": "f89c7424dd5c05346b387c8b7e8d18a2f7e4b17659d00138fdceefe43be67a5f",
+      "bytes": 1148,
+      "sha256": "d0e5e21d3a407649d6f66560f8d2c54c2257c66a9ca2d522b781738d9b61f1f4",
+      "source": "target/task-tmp/graph-native-force-owner/pr1122-group-vscode/run-result.json"
+    },
+    "source-seal.log": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/cb808cbf23f5062e808c55c9a5d33b7718c540386be1e76d5e3bb5b33dc8bad9.gz",
+      "archiveBytes": 67,
+      "archiveSha256": "d1dd0cdbfaf7bdb0e8b9feed7cea0b19a9d164aad26670ac2d1420bad888a7ba",
+      "bytes": 53,
+      "sha256": "cb808cbf23f5062e808c55c9a5d33b7718c540386be1e76d5e3bb5b33dc8bad9",
+      "source": "target/task-tmp/graph-pan-cancel/source-seal.log"
+    },
+    "vscode-pointer-diagnostic-v2/before-edges-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/1e45b7b25224bc35f33c95ceb7f686e1a33291c2ced0db32c938a118a837128d.gz",
+      "archiveBytes": 11166,
+      "archiveSha256": "7f79814c8d46c88780e81205adf2aa1b7c422e0fd24981d11d5c789f3d10cbe6",
+      "bytes": 14590,
+      "sha256": "1e45b7b25224bc35f33c95ceb7f686e1a33291c2ced0db32c938a118a837128d",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/before-edges-paint.png"
+    },
+    "vscode-pointer-diagnostic-v2/before-edges-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/2ff5fb7fea58dd6cd2f34fd9166cc2840e318bac1b45a6386ec991ab44ca1b64.gz",
+      "archiveBytes": 489,
+      "archiveSha256": "a4dcc82939060da448f34e5a8f791f245118d11cf6dfcdc05fa5f03b7a213f54",
+      "bytes": 3518,
+      "sha256": "2ff5fb7fea58dd6cd2f34fd9166cc2840e318bac1b45a6386ec991ab44ca1b64",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/before-edges-pixels.json"
+    },
+    "vscode-pointer-diagnostic-v2/before-edges.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/f6701e398f62ee46dd3c9f28d534d33754fc5beb9d7218f7e7e7aa1369b50829.gz",
+      "archiveBytes": 20656,
+      "archiveSha256": "0c6c4bdef70404c74a217d0c2a4162ec404b317f295f4eff493abe36cb9e9ec9",
+      "bytes": 21540,
+      "sha256": "f6701e398f62ee46dd3c9f28d534d33754fc5beb9d7218f7e7e7aa1369b50829",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/before-edges.png"
+    },
+    "vscode-pointer-diagnostic-v2/before-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/1e45b7b25224bc35f33c95ceb7f686e1a33291c2ced0db32c938a118a837128d.gz",
+      "archiveBytes": 11166,
+      "archiveSha256": "7f79814c8d46c88780e81205adf2aa1b7c422e0fd24981d11d5c789f3d10cbe6",
+      "bytes": 14590,
+      "sha256": "1e45b7b25224bc35f33c95ceb7f686e1a33291c2ced0db32c938a118a837128d",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/before-paint.png"
+    },
+    "vscode-pointer-diagnostic-v2/before-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/9100eefa12bb8d38592a938f5e5607d078a590797da2936da617301bbf34a2a2.gz",
+      "archiveBytes": 393,
+      "archiveSha256": "87a93149e92e7e50ef74e861e497afa9babf546f8e69455ed5211063c6064403",
+      "bytes": 2203,
+      "sha256": "9100eefa12bb8d38592a938f5e5607d078a590797da2936da617301bbf34a2a2",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/before-pixels.json"
+    },
+    "vscode-pointer-diagnostic-v2/before.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/f6701e398f62ee46dd3c9f28d534d33754fc5beb9d7218f7e7e7aa1369b50829.gz",
+      "archiveBytes": 20656,
+      "archiveSha256": "0c6c4bdef70404c74a217d0c2a4162ec404b317f295f4eff493abe36cb9e9ec9",
+      "bytes": 21540,
+      "sha256": "f6701e398f62ee46dd3c9f28d534d33754fc5beb9d7218f7e7e7aa1369b50829",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/before.png"
+    },
+    "vscode-pointer-diagnostic-v2/box-edges-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/a4610711e287f3a87e37b4e8b33467a362b6be490ad9017724cb6ecd43200d18.gz",
+      "archiveBytes": 10723,
+      "archiveSha256": "36bd458fcf243bc82ad14a6f862304114998b04ad775764564c9c280fd280ebe",
+      "bytes": 14451,
+      "sha256": "a4610711e287f3a87e37b4e8b33467a362b6be490ad9017724cb6ecd43200d18",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/box-edges-paint.png"
+    },
+    "vscode-pointer-diagnostic-v2/box-edges-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/26c723e62a3b6698be165eb937f0dde198d0407e02991e240e293c19fd74b5d6.gz",
+      "archiveBytes": 512,
+      "archiveSha256": "4ffb7363796681d1afe9a410174113bc05d30f269b6fdb38ea0bbefc3ffe2209",
+      "bytes": 3498,
+      "sha256": "26c723e62a3b6698be165eb937f0dde198d0407e02991e240e293c19fd74b5d6",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/box-edges-pixels.json"
+    },
+    "vscode-pointer-diagnostic-v2/box-edges.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/996ac81239561fc91219d1c60b58f6e55cd32e83c9785f6210c452aee877cf14.gz",
+      "archiveBytes": 19576,
+      "archiveSha256": "b4588260457e2d3d8bf8c8027aa867ff0c56c3ae64c09bd12a759af038835ffa",
+      "bytes": 20416,
+      "sha256": "996ac81239561fc91219d1c60b58f6e55cd32e83c9785f6210c452aee877cf14",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/box-edges.png"
+    },
+    "vscode-pointer-diagnostic-v2/box-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/a4610711e287f3a87e37b4e8b33467a362b6be490ad9017724cb6ecd43200d18.gz",
+      "archiveBytes": 10723,
+      "archiveSha256": "36bd458fcf243bc82ad14a6f862304114998b04ad775764564c9c280fd280ebe",
+      "bytes": 14451,
+      "sha256": "a4610711e287f3a87e37b4e8b33467a362b6be490ad9017724cb6ecd43200d18",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/box-paint.png"
+    },
+    "vscode-pointer-diagnostic-v2/box-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/88ac711938ac431f8ebed8af3e260fcd7db0266345184932cd56c3c2acaf1918.gz",
+      "archiveBytes": 402,
+      "archiveSha256": "79b30987c25375cac93619feb25d2295e603fa4229ae9f2405fd9bb64bf13a88",
+      "bytes": 2188,
+      "sha256": "88ac711938ac431f8ebed8af3e260fcd7db0266345184932cd56c3c2acaf1918",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/box-pixels.json"
+    },
+    "vscode-pointer-diagnostic-v2/box.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/3aedca9233545d3ab89812d7807cfb79bf13ca54b3e74cdac4c02ae1872b58f3.gz",
+      "archiveBytes": 23554,
+      "archiveSha256": "99cc44785da118ec4851835abfa677cb8aa9c0dc5eb7d2b07c4129d55c8ced44",
+      "bytes": 24239,
+      "sha256": "3aedca9233545d3ab89812d7807cfb79bf13ca54b3e74cdac4c02ae1872b58f3",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/box.png"
+    },
+    "vscode-pointer-diagnostic-v2/capacity-before-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d.gz",
+      "archiveBytes": 10730,
+      "archiveSha256": "a5d9045594f82408fa670d2cef79a75ab733578c14023732507fa1aa2e1d5bd6",
+      "bytes": 14478,
+      "sha256": "fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/capacity-before-paint.png"
+    },
+    "vscode-pointer-diagnostic-v2/capacity-before-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/40575dd7bd9b1ecfb9f34aaf8890474efead9127c9544f6f61b6cea9c0b53256.gz",
+      "archiveBytes": 398,
+      "archiveSha256": "b262518451ef3dba4c5b6339b4d6105b3746c046dba5d4ed98f61e4bdc467417",
+      "bytes": 2188,
+      "sha256": "40575dd7bd9b1ecfb9f34aaf8890474efead9127c9544f6f61b6cea9c0b53256",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/capacity-before-pixels.json"
+    },
+    "vscode-pointer-diagnostic-v2/capacity-before.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/0ef371fb58b4ee09325a5152bc4bd91471982e6b5e81010f3dccf4333776c097.gz",
+      "archiveBytes": 19614,
+      "archiveSha256": "44725599057e7e0b922e3cf9fcaf0d6f1b588ebad7d4b8a3a0a92d981a18d7ab",
+      "bytes": 20428,
+      "sha256": "0ef371fb58b4ee09325a5152bc4bd91471982e6b5e81010f3dccf4333776c097",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/capacity-before.png"
+    },
+    "vscode-pointer-diagnostic-v2/capacity-history-refused-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d.gz",
+      "archiveBytes": 10730,
+      "archiveSha256": "a5d9045594f82408fa670d2cef79a75ab733578c14023732507fa1aa2e1d5bd6",
+      "bytes": 14478,
+      "sha256": "fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/capacity-history-refused-paint.png"
+    },
+    "vscode-pointer-diagnostic-v2/capacity-history-refused-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/40575dd7bd9b1ecfb9f34aaf8890474efead9127c9544f6f61b6cea9c0b53256.gz",
+      "archiveBytes": 398,
+      "archiveSha256": "b262518451ef3dba4c5b6339b4d6105b3746c046dba5d4ed98f61e4bdc467417",
+      "bytes": 2188,
+      "sha256": "40575dd7bd9b1ecfb9f34aaf8890474efead9127c9544f6f61b6cea9c0b53256",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/capacity-history-refused-pixels.json"
+    },
+    "vscode-pointer-diagnostic-v2/capacity-history-refused.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/0ef371fb58b4ee09325a5152bc4bd91471982e6b5e81010f3dccf4333776c097.gz",
+      "archiveBytes": 19614,
+      "archiveSha256": "44725599057e7e0b922e3cf9fcaf0d6f1b588ebad7d4b8a3a0a92d981a18d7ab",
+      "bytes": 20428,
+      "sha256": "0ef371fb58b4ee09325a5152bc4bd91471982e6b5e81010f3dccf4333776c097",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/capacity-history-refused.png"
+    },
+    "vscode-pointer-diagnostic-v2/capacity-refused-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d.gz",
+      "archiveBytes": 10730,
+      "archiveSha256": "a5d9045594f82408fa670d2cef79a75ab733578c14023732507fa1aa2e1d5bd6",
+      "bytes": 14478,
+      "sha256": "fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/capacity-refused-paint.png"
+    },
+    "vscode-pointer-diagnostic-v2/capacity-refused-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/58c487247e413af9374d5881c55a9e06a70eabb20606e128531ec96fd3d09c1d.gz",
+      "archiveBytes": 400,
+      "archiveSha256": "fd09b184105461e5fe45604343a7c13a26c9e02f44edb61775ea4fe798acdb3f",
+      "bytes": 2188,
+      "sha256": "58c487247e413af9374d5881c55a9e06a70eabb20606e128531ec96fd3d09c1d",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/capacity-refused-pixels.json"
+    },
+    "vscode-pointer-diagnostic-v2/capacity-refused.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/077b47365c5a7fd5f21feccd3f75b75eaedc8d5cbddb837a8f3706ed3b56c3e8.gz",
+      "archiveBytes": 23103,
+      "archiveSha256": "bb5e4e80f0459f8c69985632bb12be03a8fff58cfdac93962dd9276d6374dcd3",
+      "bytes": 23800,
+      "sha256": "077b47365c5a7fd5f21feccd3f75b75eaedc8d5cbddb837a8f3706ed3b56c3e8",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/capacity-refused.png"
+    },
+    "vscode-pointer-diagnostic-v2/cleanup.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/7b6e9c223b79dbd140ac485934337749da254e0fe253ea076e1aef053987e535.gz",
+      "archiveBytes": 122,
+      "archiveSha256": "5a66508c3b2f7c0d2189aec0f68813e5c1f8e6b952074cd6004e9a96df7d4973",
+      "bytes": 296,
+      "sha256": "7b6e9c223b79dbd140ac485934337749da254e0fe253ea076e1aef053987e535",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/cleanup.json"
+    },
+    "vscode-pointer-diagnostic-v2/controller-complete.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "5f0cd0d2710d374834406e27544d4d61b63d35b39d43167cb464364dcad83e4b",
+      "bytes": 33,
+      "sha256": "b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/controller-complete.json"
+    },
+    "vscode-pointer-diagnostic-v2/inspector-sources.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/730c7a7ffca80355e2491a196b826fa1c5028235cb6fce2daf56e1a5ffb660c0.gz",
+      "archiveBytes": 260,
+      "archiveSha256": "68b6629a22935085dbf3f51f6c2fc3f399a6ced15f5b8bae9b609189afb57efb",
+      "bytes": 538,
+      "sha256": "730c7a7ffca80355e2491a196b826fa1c5028235cb6fce2daf56e1a5ffb660c0",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/inspector-sources.json"
+    },
+    "vscode-pointer-diagnostic-v2/lasso-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/1c1924f0a08e2b6ccd0c82261780bf17d38687893b1c3b36d9076a4a42a41d86.gz",
+      "archiveBytes": 11106,
+      "archiveSha256": "c63db41d757d528130eed1111c9b870addfcd7791a920c43dacef1a63ab0670d",
+      "bytes": 14738,
+      "sha256": "1c1924f0a08e2b6ccd0c82261780bf17d38687893b1c3b36d9076a4a42a41d86",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/lasso-paint.png"
+    },
+    "vscode-pointer-diagnostic-v2/lasso-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/4b65b903683c0eb1b4c84626bace5d882defa46576d2a23fcbe5a7cc9eeaaa36.gz",
+      "archiveBytes": 390,
+      "archiveSha256": "30417cf72350b9337bd5e33cf78d04078ba2d780e166943300a95ef257ba09fa",
+      "bytes": 2193,
+      "sha256": "4b65b903683c0eb1b4c84626bace5d882defa46576d2a23fcbe5a7cc9eeaaa36",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/lasso-pixels.json"
+    },
+    "vscode-pointer-diagnostic-v2/lasso.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/60bc81e09e4fd6d36f761f45241e57fb552e522c1d44947bf7296ea3795532a8.gz",
+      "archiveBytes": 25786,
+      "archiveSha256": "605675529fc39e26a2891112dc8fda096bde0f0eccd04dca86ff8475e64d50e8",
+      "bytes": 26472,
+      "sha256": "60bc81e09e4fd6d36f761f45241e57fb552e522c1d44947bf7296ea3795532a8",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/lasso.png"
+    },
+    "vscode-pointer-diagnostic-v2/pointer-diagnostics.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/09478f0464ad7f8620d65f1af19192972dce51d39093274cd5d2c234cd22ee48.gz",
+      "archiveBytes": 1715,
+      "archiveSha256": "cb6ccbda5edc5899fb5d5d67ceda1700a05645b9209cb35fbf5b61fd1f4e4141",
+      "bytes": 42635,
+      "sha256": "09478f0464ad7f8620d65f1af19192972dce51d39093274cd5d2c234cd22ee48",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/pointer-diagnostics.json"
+    },
+    "vscode-pointer-diagnostic-v2/report.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/d9517f8df4ea4dcbb10f5272018c4772c8d02c1b152573ca4dbf683d41f6cfbb.gz",
+      "archiveBytes": 10859,
+      "archiveSha256": "be8dc7217458fa6256ba63fac22af0e2f177098710b64394dd644a45f2155794",
+      "bytes": 195867,
+      "sha256": "d9517f8df4ea4dcbb10f5272018c4772c8d02c1b152573ca4dbf683d41f6cfbb",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/report.json"
+    },
+    "vscode-pointer-diagnostic-v2/run-result.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/ba6a55f29fb1c4557d0c1333ed052fb5b00833c43b994366e675839444fc4fa7.gz",
+      "archiveBytes": 639,
+      "archiveSha256": "709c70f71765677ff247b4b74d23b36bf9345dd05358a28640fbc92a87f3174b",
+      "bytes": 1463,
+      "sha256": "ba6a55f29fb1c4557d0c1333ed052fb5b00833c43b994366e675839444fc4fa7",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-pointer-diagnostic-v2/run-result.json"
+    },
+    "vscode-regions-final.log": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0.gz",
+      "archiveBytes": 85,
+      "archiveSha256": "a688876b9fdeb2185a00304848bf5019b0c035fdb46e9514817fd783be391ea4",
+      "bytes": 71,
+      "sha256": "26ee265e9b92606ea1197fed592793a9f5850d947139432d9471c8d29e75cfd0",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final.log"
+    },
+    "vscode-regions-final/before-edges-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/1e45b7b25224bc35f33c95ceb7f686e1a33291c2ced0db32c938a118a837128d.gz",
+      "archiveBytes": 11166,
+      "archiveSha256": "7f79814c8d46c88780e81205adf2aa1b7c422e0fd24981d11d5c789f3d10cbe6",
+      "bytes": 14590,
+      "sha256": "1e45b7b25224bc35f33c95ceb7f686e1a33291c2ced0db32c938a118a837128d",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/before-edges-paint.png"
+    },
+    "vscode-regions-final/before-edges-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/2ff5fb7fea58dd6cd2f34fd9166cc2840e318bac1b45a6386ec991ab44ca1b64.gz",
+      "archiveBytes": 489,
+      "archiveSha256": "a4dcc82939060da448f34e5a8f791f245118d11cf6dfcdc05fa5f03b7a213f54",
+      "bytes": 3518,
+      "sha256": "2ff5fb7fea58dd6cd2f34fd9166cc2840e318bac1b45a6386ec991ab44ca1b64",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/before-edges-pixels.json"
+    },
+    "vscode-regions-final/before-edges.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/f6701e398f62ee46dd3c9f28d534d33754fc5beb9d7218f7e7e7aa1369b50829.gz",
+      "archiveBytes": 20656,
+      "archiveSha256": "0c6c4bdef70404c74a217d0c2a4162ec404b317f295f4eff493abe36cb9e9ec9",
+      "bytes": 21540,
+      "sha256": "f6701e398f62ee46dd3c9f28d534d33754fc5beb9d7218f7e7e7aa1369b50829",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/before-edges.png"
+    },
+    "vscode-regions-final/before-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/1e45b7b25224bc35f33c95ceb7f686e1a33291c2ced0db32c938a118a837128d.gz",
+      "archiveBytes": 11166,
+      "archiveSha256": "7f79814c8d46c88780e81205adf2aa1b7c422e0fd24981d11d5c789f3d10cbe6",
+      "bytes": 14590,
+      "sha256": "1e45b7b25224bc35f33c95ceb7f686e1a33291c2ced0db32c938a118a837128d",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/before-paint.png"
+    },
+    "vscode-regions-final/before-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/9100eefa12bb8d38592a938f5e5607d078a590797da2936da617301bbf34a2a2.gz",
+      "archiveBytes": 393,
+      "archiveSha256": "87a93149e92e7e50ef74e861e497afa9babf546f8e69455ed5211063c6064403",
+      "bytes": 2203,
+      "sha256": "9100eefa12bb8d38592a938f5e5607d078a590797da2936da617301bbf34a2a2",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/before-pixels.json"
+    },
+    "vscode-regions-final/before.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/f6701e398f62ee46dd3c9f28d534d33754fc5beb9d7218f7e7e7aa1369b50829.gz",
+      "archiveBytes": 20656,
+      "archiveSha256": "0c6c4bdef70404c74a217d0c2a4162ec404b317f295f4eff493abe36cb9e9ec9",
+      "bytes": 21540,
+      "sha256": "f6701e398f62ee46dd3c9f28d534d33754fc5beb9d7218f7e7e7aa1369b50829",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/before.png"
+    },
+    "vscode-regions-final/box-edges-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/a4610711e287f3a87e37b4e8b33467a362b6be490ad9017724cb6ecd43200d18.gz",
+      "archiveBytes": 10723,
+      "archiveSha256": "36bd458fcf243bc82ad14a6f862304114998b04ad775764564c9c280fd280ebe",
+      "bytes": 14451,
+      "sha256": "a4610711e287f3a87e37b4e8b33467a362b6be490ad9017724cb6ecd43200d18",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/box-edges-paint.png"
+    },
+    "vscode-regions-final/box-edges-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/26c723e62a3b6698be165eb937f0dde198d0407e02991e240e293c19fd74b5d6.gz",
+      "archiveBytes": 512,
+      "archiveSha256": "4ffb7363796681d1afe9a410174113bc05d30f269b6fdb38ea0bbefc3ffe2209",
+      "bytes": 3498,
+      "sha256": "26c723e62a3b6698be165eb937f0dde198d0407e02991e240e293c19fd74b5d6",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/box-edges-pixels.json"
+    },
+    "vscode-regions-final/box-edges.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/996ac81239561fc91219d1c60b58f6e55cd32e83c9785f6210c452aee877cf14.gz",
+      "archiveBytes": 19576,
+      "archiveSha256": "b4588260457e2d3d8bf8c8027aa867ff0c56c3ae64c09bd12a759af038835ffa",
+      "bytes": 20416,
+      "sha256": "996ac81239561fc91219d1c60b58f6e55cd32e83c9785f6210c452aee877cf14",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/box-edges.png"
+    },
+    "vscode-regions-final/box-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/a4610711e287f3a87e37b4e8b33467a362b6be490ad9017724cb6ecd43200d18.gz",
+      "archiveBytes": 10723,
+      "archiveSha256": "36bd458fcf243bc82ad14a6f862304114998b04ad775764564c9c280fd280ebe",
+      "bytes": 14451,
+      "sha256": "a4610711e287f3a87e37b4e8b33467a362b6be490ad9017724cb6ecd43200d18",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/box-paint.png"
+    },
+    "vscode-regions-final/box-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/180d2eb78e042a0c26c029c0b14d4be5d42df9e672d412709039c38709121226.gz",
+      "archiveBytes": 401,
+      "archiveSha256": "36851a2192835c3f1b9c26bcf00926a2d27474111e41b7e17176084e41f99b04",
+      "bytes": 2188,
+      "sha256": "180d2eb78e042a0c26c029c0b14d4be5d42df9e672d412709039c38709121226",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/box-pixels.json"
+    },
+    "vscode-regions-final/box.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/1ad94b2c169df7d6a4786396d41731edfce8687504e06fb283363bcb369ed4b5.gz",
+      "archiveBytes": 21016,
+      "archiveSha256": "49ed15b34106368f5f5180537002e45830ed9e8a5b8bdb8447dcbd751d715877",
+      "bytes": 21745,
+      "sha256": "1ad94b2c169df7d6a4786396d41731edfce8687504e06fb283363bcb369ed4b5",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/box.png"
+    },
+    "vscode-regions-final/capacity-before-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d.gz",
+      "archiveBytes": 10730,
+      "archiveSha256": "a5d9045594f82408fa670d2cef79a75ab733578c14023732507fa1aa2e1d5bd6",
+      "bytes": 14478,
+      "sha256": "fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/capacity-before-paint.png"
+    },
+    "vscode-regions-final/capacity-before-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/40575dd7bd9b1ecfb9f34aaf8890474efead9127c9544f6f61b6cea9c0b53256.gz",
+      "archiveBytes": 398,
+      "archiveSha256": "b262518451ef3dba4c5b6339b4d6105b3746c046dba5d4ed98f61e4bdc467417",
+      "bytes": 2188,
+      "sha256": "40575dd7bd9b1ecfb9f34aaf8890474efead9127c9544f6f61b6cea9c0b53256",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/capacity-before-pixels.json"
+    },
+    "vscode-regions-final/capacity-before.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/0ef371fb58b4ee09325a5152bc4bd91471982e6b5e81010f3dccf4333776c097.gz",
+      "archiveBytes": 19614,
+      "archiveSha256": "44725599057e7e0b922e3cf9fcaf0d6f1b588ebad7d4b8a3a0a92d981a18d7ab",
+      "bytes": 20428,
+      "sha256": "0ef371fb58b4ee09325a5152bc4bd91471982e6b5e81010f3dccf4333776c097",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/capacity-before.png"
+    },
+    "vscode-regions-final/capacity-history-refused-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d.gz",
+      "archiveBytes": 10730,
+      "archiveSha256": "a5d9045594f82408fa670d2cef79a75ab733578c14023732507fa1aa2e1d5bd6",
+      "bytes": 14478,
+      "sha256": "fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/capacity-history-refused-paint.png"
+    },
+    "vscode-regions-final/capacity-history-refused-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/40575dd7bd9b1ecfb9f34aaf8890474efead9127c9544f6f61b6cea9c0b53256.gz",
+      "archiveBytes": 398,
+      "archiveSha256": "b262518451ef3dba4c5b6339b4d6105b3746c046dba5d4ed98f61e4bdc467417",
+      "bytes": 2188,
+      "sha256": "40575dd7bd9b1ecfb9f34aaf8890474efead9127c9544f6f61b6cea9c0b53256",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/capacity-history-refused-pixels.json"
+    },
+    "vscode-regions-final/capacity-history-refused.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/0ef371fb58b4ee09325a5152bc4bd91471982e6b5e81010f3dccf4333776c097.gz",
+      "archiveBytes": 19614,
+      "archiveSha256": "44725599057e7e0b922e3cf9fcaf0d6f1b588ebad7d4b8a3a0a92d981a18d7ab",
+      "bytes": 20428,
+      "sha256": "0ef371fb58b4ee09325a5152bc4bd91471982e6b5e81010f3dccf4333776c097",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/capacity-history-refused.png"
+    },
+    "vscode-regions-final/capacity-refused-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d.gz",
+      "archiveBytes": 10730,
+      "archiveSha256": "a5d9045594f82408fa670d2cef79a75ab733578c14023732507fa1aa2e1d5bd6",
+      "bytes": 14478,
+      "sha256": "fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/capacity-refused-paint.png"
+    },
+    "vscode-regions-final/capacity-refused-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/58c487247e413af9374d5881c55a9e06a70eabb20606e128531ec96fd3d09c1d.gz",
+      "archiveBytes": 400,
+      "archiveSha256": "fd09b184105461e5fe45604343a7c13a26c9e02f44edb61775ea4fe798acdb3f",
+      "bytes": 2188,
+      "sha256": "58c487247e413af9374d5881c55a9e06a70eabb20606e128531ec96fd3d09c1d",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/capacity-refused-pixels.json"
+    },
+    "vscode-regions-final/capacity-refused.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/077b47365c5a7fd5f21feccd3f75b75eaedc8d5cbddb837a8f3706ed3b56c3e8.gz",
+      "archiveBytes": 23103,
+      "archiveSha256": "bb5e4e80f0459f8c69985632bb12be03a8fff58cfdac93962dd9276d6374dcd3",
+      "bytes": 23800,
+      "sha256": "077b47365c5a7fd5f21feccd3f75b75eaedc8d5cbddb837a8f3706ed3b56c3e8",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/capacity-refused.png"
+    },
+    "vscode-regions-final/cleanup.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/7b6e9c223b79dbd140ac485934337749da254e0fe253ea076e1aef053987e535.gz",
+      "archiveBytes": 122,
+      "archiveSha256": "5a66508c3b2f7c0d2189aec0f68813e5c1f8e6b952074cd6004e9a96df7d4973",
+      "bytes": 296,
+      "sha256": "7b6e9c223b79dbd140ac485934337749da254e0fe253ea076e1aef053987e535",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/cleanup.json"
+    },
+    "vscode-regions-final/controller-complete.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "5f0cd0d2710d374834406e27544d4d61b63d35b39d43167cb464364dcad83e4b",
+      "bytes": 33,
+      "sha256": "b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/controller-complete.json"
+    },
+    "vscode-regions-final/inspector-sources.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/0bbb4ce76065e473be7ec6150fae15d77613a7bdfe8bcbba33ec44045bd9d253.gz",
+      "archiveBytes": 258,
+      "archiveSha256": "16e1938a9c516e2b59b06b0e6d28452d3cee66723b58fe58c5c070097311c4f5",
+      "bytes": 538,
+      "sha256": "0bbb4ce76065e473be7ec6150fae15d77613a7bdfe8bcbba33ec44045bd9d253",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/inspector-sources.json"
+    },
+    "vscode-regions-final/lasso-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/1c1924f0a08e2b6ccd0c82261780bf17d38687893b1c3b36d9076a4a42a41d86.gz",
+      "archiveBytes": 11106,
+      "archiveSha256": "c63db41d757d528130eed1111c9b870addfcd7791a920c43dacef1a63ab0670d",
+      "bytes": 14738,
+      "sha256": "1c1924f0a08e2b6ccd0c82261780bf17d38687893b1c3b36d9076a4a42a41d86",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/lasso-paint.png"
+    },
+    "vscode-regions-final/lasso-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/d99c3ffe0a20f9011a954746e14f0ecd0be5e27b0ea12ecfcb3c8ede5e844995.gz",
+      "archiveBytes": 393,
+      "archiveSha256": "03c0442b292d71c503f25cab7c9296eeee3f00f9386eb06813ae3e3d9cf2a467",
+      "bytes": 2193,
+      "sha256": "d99c3ffe0a20f9011a954746e14f0ecd0be5e27b0ea12ecfcb3c8ede5e844995",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/lasso-pixels.json"
+    },
+    "vscode-regions-final/lasso.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/c43e009242234f3c945e3203aeac146bbf2f9985ff8363b07536bf5bd553f051.gz",
+      "archiveBytes": 26406,
+      "archiveSha256": "614b79d08125bce72d88928aec5f74c2d75afe578247b259ec6ad89c47f8e128",
+      "bytes": 27119,
+      "sha256": "c43e009242234f3c945e3203aeac146bbf2f9985ff8363b07536bf5bd553f051",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/lasso.png"
+    },
+    "vscode-regions-final/report.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/64f0837b4ef82b69c9294efdb28d384863815c9b41d135588a409132dea5e4cd.gz",
+      "archiveBytes": 13067,
+      "archiveSha256": "32de34642559d4865867aaa1430c59f28f5269769c783bf6709f2cd12aa3e8e2",
+      "bytes": 205060,
+      "sha256": "64f0837b4ef82b69c9294efdb28d384863815c9b41d135588a409132dea5e4cd",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/report.json"
+    },
+    "vscode-regions-final/run-result.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/144ce91711b194276a6b5dcd2c2470aca85c4e782408d903969003bdfb22101b.gz",
+      "archiveBytes": 626,
+      "archiveSha256": "0b964c8760a76be2a9f2d4bd6e5be7517b91dcc69e95f6dbdb80e98a1e1bac30",
+      "bytes": 1388,
+      "sha256": "144ce91711b194276a6b5dcd2c2470aca85c4e782408d903969003bdfb22101b",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-final/run-result.json"
+    },
+    "vscode-regions-matching-control/before-edges-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/1e45b7b25224bc35f33c95ceb7f686e1a33291c2ced0db32c938a118a837128d.gz",
+      "archiveBytes": 11166,
+      "archiveSha256": "7f79814c8d46c88780e81205adf2aa1b7c422e0fd24981d11d5c789f3d10cbe6",
+      "bytes": 14590,
+      "sha256": "1e45b7b25224bc35f33c95ceb7f686e1a33291c2ced0db32c938a118a837128d",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/before-edges-paint.png"
+    },
+    "vscode-regions-matching-control/before-edges-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/2ff5fb7fea58dd6cd2f34fd9166cc2840e318bac1b45a6386ec991ab44ca1b64.gz",
+      "archiveBytes": 489,
+      "archiveSha256": "a4dcc82939060da448f34e5a8f791f245118d11cf6dfcdc05fa5f03b7a213f54",
+      "bytes": 3518,
+      "sha256": "2ff5fb7fea58dd6cd2f34fd9166cc2840e318bac1b45a6386ec991ab44ca1b64",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/before-edges-pixels.json"
+    },
+    "vscode-regions-matching-control/before-edges.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/f6701e398f62ee46dd3c9f28d534d33754fc5beb9d7218f7e7e7aa1369b50829.gz",
+      "archiveBytes": 20656,
+      "archiveSha256": "0c6c4bdef70404c74a217d0c2a4162ec404b317f295f4eff493abe36cb9e9ec9",
+      "bytes": 21540,
+      "sha256": "f6701e398f62ee46dd3c9f28d534d33754fc5beb9d7218f7e7e7aa1369b50829",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/before-edges.png"
+    },
+    "vscode-regions-matching-control/before-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/1e45b7b25224bc35f33c95ceb7f686e1a33291c2ced0db32c938a118a837128d.gz",
+      "archiveBytes": 11166,
+      "archiveSha256": "7f79814c8d46c88780e81205adf2aa1b7c422e0fd24981d11d5c789f3d10cbe6",
+      "bytes": 14590,
+      "sha256": "1e45b7b25224bc35f33c95ceb7f686e1a33291c2ced0db32c938a118a837128d",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/before-paint.png"
+    },
+    "vscode-regions-matching-control/before-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/9100eefa12bb8d38592a938f5e5607d078a590797da2936da617301bbf34a2a2.gz",
+      "archiveBytes": 393,
+      "archiveSha256": "87a93149e92e7e50ef74e861e497afa9babf546f8e69455ed5211063c6064403",
+      "bytes": 2203,
+      "sha256": "9100eefa12bb8d38592a938f5e5607d078a590797da2936da617301bbf34a2a2",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/before-pixels.json"
+    },
+    "vscode-regions-matching-control/before.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/f6701e398f62ee46dd3c9f28d534d33754fc5beb9d7218f7e7e7aa1369b50829.gz",
+      "archiveBytes": 20656,
+      "archiveSha256": "0c6c4bdef70404c74a217d0c2a4162ec404b317f295f4eff493abe36cb9e9ec9",
+      "bytes": 21540,
+      "sha256": "f6701e398f62ee46dd3c9f28d534d33754fc5beb9d7218f7e7e7aa1369b50829",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/before.png"
+    },
+    "vscode-regions-matching-control/box-edges-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/a4610711e287f3a87e37b4e8b33467a362b6be490ad9017724cb6ecd43200d18.gz",
+      "archiveBytes": 10723,
+      "archiveSha256": "36bd458fcf243bc82ad14a6f862304114998b04ad775764564c9c280fd280ebe",
+      "bytes": 14451,
+      "sha256": "a4610711e287f3a87e37b4e8b33467a362b6be490ad9017724cb6ecd43200d18",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/box-edges-paint.png"
+    },
+    "vscode-regions-matching-control/box-edges-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/26c723e62a3b6698be165eb937f0dde198d0407e02991e240e293c19fd74b5d6.gz",
+      "archiveBytes": 512,
+      "archiveSha256": "4ffb7363796681d1afe9a410174113bc05d30f269b6fdb38ea0bbefc3ffe2209",
+      "bytes": 3498,
+      "sha256": "26c723e62a3b6698be165eb937f0dde198d0407e02991e240e293c19fd74b5d6",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/box-edges-pixels.json"
+    },
+    "vscode-regions-matching-control/box-edges.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/996ac81239561fc91219d1c60b58f6e55cd32e83c9785f6210c452aee877cf14.gz",
+      "archiveBytes": 19576,
+      "archiveSha256": "b4588260457e2d3d8bf8c8027aa867ff0c56c3ae64c09bd12a759af038835ffa",
+      "bytes": 20416,
+      "sha256": "996ac81239561fc91219d1c60b58f6e55cd32e83c9785f6210c452aee877cf14",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/box-edges.png"
+    },
+    "vscode-regions-matching-control/box-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/a4610711e287f3a87e37b4e8b33467a362b6be490ad9017724cb6ecd43200d18.gz",
+      "archiveBytes": 10723,
+      "archiveSha256": "36bd458fcf243bc82ad14a6f862304114998b04ad775764564c9c280fd280ebe",
+      "bytes": 14451,
+      "sha256": "a4610711e287f3a87e37b4e8b33467a362b6be490ad9017724cb6ecd43200d18",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/box-paint.png"
+    },
+    "vscode-regions-matching-control/box-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/65eb72a47f891bf58bb6c031acae383977d11d26fdb621d67206b3070df7ab40.gz",
+      "archiveBytes": 402,
+      "archiveSha256": "750167d73543f0322f1862db9434c677cddce1c2c8baa0bc7db2f2c726fcede8",
+      "bytes": 2188,
+      "sha256": "65eb72a47f891bf58bb6c031acae383977d11d26fdb621d67206b3070df7ab40",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/box-pixels.json"
+    },
+    "vscode-regions-matching-control/box.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/def48ba9ab0dc321eb6693112e23f47dfb6c0a8527f5f611a13d70bcfb905ba9.gz",
+      "archiveBytes": 23033,
+      "archiveSha256": "9b0db37e3d35211ddb7a834d271a1b78f1bdddaa21e23c568eec6ed804d9d920",
+      "bytes": 23773,
+      "sha256": "def48ba9ab0dc321eb6693112e23f47dfb6c0a8527f5f611a13d70bcfb905ba9",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/box.png"
+    },
+    "vscode-regions-matching-control/capacity-before-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d.gz",
+      "archiveBytes": 10730,
+      "archiveSha256": "a5d9045594f82408fa670d2cef79a75ab733578c14023732507fa1aa2e1d5bd6",
+      "bytes": 14478,
+      "sha256": "fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/capacity-before-paint.png"
+    },
+    "vscode-regions-matching-control/capacity-before-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/40575dd7bd9b1ecfb9f34aaf8890474efead9127c9544f6f61b6cea9c0b53256.gz",
+      "archiveBytes": 398,
+      "archiveSha256": "b262518451ef3dba4c5b6339b4d6105b3746c046dba5d4ed98f61e4bdc467417",
+      "bytes": 2188,
+      "sha256": "40575dd7bd9b1ecfb9f34aaf8890474efead9127c9544f6f61b6cea9c0b53256",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/capacity-before-pixels.json"
+    },
+    "vscode-regions-matching-control/capacity-before.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/0ef371fb58b4ee09325a5152bc4bd91471982e6b5e81010f3dccf4333776c097.gz",
+      "archiveBytes": 19614,
+      "archiveSha256": "44725599057e7e0b922e3cf9fcaf0d6f1b588ebad7d4b8a3a0a92d981a18d7ab",
+      "bytes": 20428,
+      "sha256": "0ef371fb58b4ee09325a5152bc4bd91471982e6b5e81010f3dccf4333776c097",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/capacity-before.png"
+    },
+    "vscode-regions-matching-control/capacity-history-refused-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d.gz",
+      "archiveBytes": 10730,
+      "archiveSha256": "a5d9045594f82408fa670d2cef79a75ab733578c14023732507fa1aa2e1d5bd6",
+      "bytes": 14478,
+      "sha256": "fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/capacity-history-refused-paint.png"
+    },
+    "vscode-regions-matching-control/capacity-history-refused-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/40575dd7bd9b1ecfb9f34aaf8890474efead9127c9544f6f61b6cea9c0b53256.gz",
+      "archiveBytes": 398,
+      "archiveSha256": "b262518451ef3dba4c5b6339b4d6105b3746c046dba5d4ed98f61e4bdc467417",
+      "bytes": 2188,
+      "sha256": "40575dd7bd9b1ecfb9f34aaf8890474efead9127c9544f6f61b6cea9c0b53256",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/capacity-history-refused-pixels.json"
+    },
+    "vscode-regions-matching-control/capacity-history-refused.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/0ef371fb58b4ee09325a5152bc4bd91471982e6b5e81010f3dccf4333776c097.gz",
+      "archiveBytes": 19614,
+      "archiveSha256": "44725599057e7e0b922e3cf9fcaf0d6f1b588ebad7d4b8a3a0a92d981a18d7ab",
+      "bytes": 20428,
+      "sha256": "0ef371fb58b4ee09325a5152bc4bd91471982e6b5e81010f3dccf4333776c097",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/capacity-history-refused.png"
+    },
+    "vscode-regions-matching-control/capacity-refused-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d.gz",
+      "archiveBytes": 10730,
+      "archiveSha256": "a5d9045594f82408fa670d2cef79a75ab733578c14023732507fa1aa2e1d5bd6",
+      "bytes": 14478,
+      "sha256": "fcb0e8b012e733740e852bc6ba5644bd02ca36c9464f3a6dbe6207f53586ba7d",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/capacity-refused-paint.png"
+    },
+    "vscode-regions-matching-control/capacity-refused-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/ef45ffe169e0c6952515ed99eef91d9873bfdbf6450f218fb5cfac872f67e567.gz",
+      "archiveBytes": 397,
+      "archiveSha256": "8df797d93911cc84ecc8c8646bc2ac94b9754be498ebd82c3db37a838b536a5f",
+      "bytes": 2188,
+      "sha256": "ef45ffe169e0c6952515ed99eef91d9873bfdbf6450f218fb5cfac872f67e567",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/capacity-refused-pixels.json"
+    },
+    "vscode-regions-matching-control/capacity-refused.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/3e804837a66817185acdce5eae27d1fc8823eae72e5c19433ad693d598793344.gz",
+      "archiveBytes": 22462,
+      "archiveSha256": "ed0f7cad9fd3617d0c91e9155918b66b26c4f2259b8260409af4115c93a90fc3",
+      "bytes": 23167,
+      "sha256": "3e804837a66817185acdce5eae27d1fc8823eae72e5c19433ad693d598793344",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/capacity-refused.png"
+    },
+    "vscode-regions-matching-control/cleanup.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/7b6e9c223b79dbd140ac485934337749da254e0fe253ea076e1aef053987e535.gz",
+      "archiveBytes": 122,
+      "archiveSha256": "5a66508c3b2f7c0d2189aec0f68813e5c1f8e6b952074cd6004e9a96df7d4973",
+      "bytes": 296,
+      "sha256": "7b6e9c223b79dbd140ac485934337749da254e0fe253ea076e1aef053987e535",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/cleanup.json"
+    },
+    "vscode-regions-matching-control/controller-complete.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "5f0cd0d2710d374834406e27544d4d61b63d35b39d43167cb464364dcad83e4b",
+      "bytes": 33,
+      "sha256": "b24685788952d8018b29549902f4efe7b37f0bc57fa119ed35b67e40a95fea41",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/controller-complete.json"
+    },
+    "vscode-regions-matching-control/inspector-sources.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/655335b9afbb6d336137e95786ac2b903aed84011bdc0f7cb89622f8aec03388.gz",
+      "archiveBytes": 259,
+      "archiveSha256": "568338926fb116c6f8144af9c0aeb326a12e705c6e384532ccbc677c3d9d39c0",
+      "bytes": 538,
+      "sha256": "655335b9afbb6d336137e95786ac2b903aed84011bdc0f7cb89622f8aec03388",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/inspector-sources.json"
+    },
+    "vscode-regions-matching-control/lasso-paint.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/1c1924f0a08e2b6ccd0c82261780bf17d38687893b1c3b36d9076a4a42a41d86.gz",
+      "archiveBytes": 11106,
+      "archiveSha256": "c63db41d757d528130eed1111c9b870addfcd7791a920c43dacef1a63ab0670d",
+      "bytes": 14738,
+      "sha256": "1c1924f0a08e2b6ccd0c82261780bf17d38687893b1c3b36d9076a4a42a41d86",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/lasso-paint.png"
+    },
+    "vscode-regions-matching-control/lasso-pixels.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/52275d8ae1162bb0ffb00dd3829787b51984fde1d1ccb38ad7c92380b820421d.gz",
+      "archiveBytes": 393,
+      "archiveSha256": "5fe6f337db442b31c751f042cbfb856db3227159c018fe718a7ec0629c4eee96",
+      "bytes": 2193,
+      "sha256": "52275d8ae1162bb0ffb00dd3829787b51984fde1d1ccb38ad7c92380b820421d",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/lasso-pixels.json"
+    },
+    "vscode-regions-matching-control/lasso.png": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/0a29004a7d57296d77e7a3d1250272d068ce1b821ae4224ed4ffb18af9281ecf.gz",
+      "archiveBytes": 22893,
+      "archiveSha256": "7a9b552bb6eeefc7e8ff2c22a20505fa193f85296bdd95874c7c6e17c1f801e5",
+      "bytes": 23678,
+      "sha256": "0a29004a7d57296d77e7a3d1250272d068ce1b821ae4224ed4ffb18af9281ecf",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/lasso.png"
+    },
+    "vscode-regions-matching-control/report.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/b5bf8b5611ed8884a8f2d569f27d90c9d8b8da559437d029ae48eb4e33e0acea.gz",
+      "archiveBytes": 10871,
+      "archiveSha256": "6c3bf904d8f0936dcfb06fe60e4942f823ef8af214ef27bafc798509d4e24e0e",
+      "bytes": 195956,
+      "sha256": "b5bf8b5611ed8884a8f2d569f27d90c9d8b8da559437d029ae48eb4e33e0acea",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/report.json"
+    },
+    "vscode-regions-matching-control/run-result.json": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/64a7c8d2e5354d80b6efde32d83bf1ad7b625922b22a343fbeed982152f34d0d.gz",
+      "archiveBytes": 636,
+      "archiveSha256": "218bed34e53cc2d51fbc2b5b60a862eb5fb52e7aa459634f7e6272a903dd4f3f",
+      "bytes": 1426,
+      "sha256": "64a7c8d2e5354d80b6efde32d83bf1ad7b625922b22a343fbeed982152f34d0d",
+      "source": "target/task-tmp/graph-native-force-owner/vscode-regions-matching-control/run-result.json"
+    },
+    "vscode-regions-verification.log": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/910346b8769233f593afaf76cdd389deb35240d7c5a6a5c7238c9786def0df82.gz",
+      "archiveBytes": 78,
+      "archiveSha256": "4cef964625521bd0aa2ae9c735a804c679456ddb15f697eeb861de36f8786616",
+      "bytes": 59,
+      "sha256": "910346b8769233f593afaf76cdd389deb35240d7c5a6a5c7238c9786def0df82",
+      "source": "target/task-tmp/graph-pan-cancel/vscode-regions-verification.log"
+    }
+  },
+  "fresh": {
+    "actualVSCodeRegions": {
+      "exit": 0,
+      "log": "vscode-regions-final.log",
+      "pointerDiagnostics": 26,
+      "report": "vscode-regions-final/report.json",
+      "verifierExit": 0
+    },
+    "assets": 0,
+    "clientBuild": 0,
+    "clientTests": {
+      "log": "parent-work/pan-cancel-client-tests.log",
+      "passed": 69,
+      "qualification": "Complete subset before strengthening terminal-value/duplicate assertions; final capture subset covers added assertions"
+    },
+    "corePreservation": {
+      "includes": "43-parent source chain and real Git LF/CRLF conversion",
+      "log": "core-preservation-corrected.log",
+      "passed": 2
+    },
+    "finalCaptureTests": {
+      "log": "final-capture-tests.log",
+      "passed": 2
+    },
+    "foundation": {
+      "exit": 0,
+      "log": "foundation.log"
+    },
+    "inventory": {
+      "exit": 0,
+      "generationTimeStaleSourceHashes": 11
+    },
+    "normalPackaging": 0
+  },
+  "inherited": "Parent compiled/runtime/native results only after source/artifact identity; current native and WASM remain unchanged; no fresh Rust rebuild or broad suites claimed",
+  "negativeControl": {
+    "earlierRegression": {
+      "exit": 1,
+      "failed": 1,
+      "log": "parent-work/pointer-cancel-before.log",
+      "passed": 1
+    },
+    "sameFinalAssertionsOnParentStandalone": {
+      "lostpointercapture": "PASS",
+      "pointercancel": "EXPECTED ASSERTION FAILURE",
+      "result": "parent-client-control/result.json"
+    }
+  },
+  "package": {
+    "functionExports": 68,
+    "gzip6": 786337,
+    "gzipCap": 786432,
+    "gzipHeadroom": 95,
+    "imports": 0,
+    "nativeABI": 405,
+    "nativeSymbols": 551,
+    "raw": 1884503,
+    "rawCap": 1927168,
+    "wasmABI": 38
+  },
+  "preservedFailures": {
+    "crlf": {
+      "cause": "Newly source-bound tests/test_view_state_client.py lacked LF pin; corrected pin and exact test passed",
+      "exit": 1,
+      "failed": 1,
+      "passed": 1
+    },
+    "firstDiagnostic": "Passed but logger installed too early, zero input records; no pointer-cause credit",
+    "firstLocalControl": "Installed cohort mismatch rejected; no product execution",
+    "mergeGroup": {
+      "commit": "35d6d086a08dd8ade0ee24cb6da38ded980999d9",
+      "error": "Pan interaction7 emitted updates without end; 10000ms original wait timed out",
+      "failedStep": "VS Code Jupyter graph regions",
+      "ordinaryPRChecks": "PASS only on old head",
+      "queue": "REMOVED, not merged",
+      "rootCause": "UNCONFIRMED; no pointer terminal trace in hosted artifact",
+      "run": 42937750028,
+      "tree": "848a2a080a7e073e14b1b58e5cdc99a71baa983d",
+      "treeEqualsPRHead": "ad848266a6bde2971ab3d146f6c8f398e7dcc00c"
+    }
+  },
+  "readmeSha256": "c05045276b988e1f33625a6056463d53ad482602eedbd3c283587567f17cbb74",
+  "remaining": [
+    "Mandatory complete-worktree gates before commit/push",
+    "Independent final-diff review",
+    "Hosted missing pan-end mechanism remains unexplained",
+    "Reliable100k notebook, earlier GPU/context/startup failures and broader milestone acceptance",
+    "Current-main freshness, hosted required checks and merge queue"
+  ],
+  "runtime": {
+    "compilerWasm": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/9349afa7655f6ada49c41ce2b44b59ce666f40f6b9a120891b39ae543a8b1258.gz",
+      "archiveBytes": 1253948,
+      "archiveSha256": "e68531d20eaa96a3bb2f526659acc805026906c5c8a40470eeb9846ccece4b3d",
+      "bytes": 4075129,
+      "sha256": "9349afa7655f6ada49c41ce2b44b59ce666f40f6b9a120891b39ae543a8b1258",
+      "source": "target/wasm32-unknown-unknown/release/xyg_wasm.wasm"
+    },
+    "index.js": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/761b50f6b72141e3dd8db5f23efeec59a8c69564b3cbc6ebda305e3236267e6b.gz",
+      "archiveBytes": 249370,
+      "archiveSha256": "0dacfc1c587629076042aef8481300130af49e5ee392b5723754d5fc6a8efaac",
+      "bytes": 869447,
+      "sha256": "761b50f6b72141e3dd8db5f23efeec59a8c69564b3cbc6ebda305e3236267e6b",
+      "source": "packages/xy-client/dist/index.js"
+    },
+    "native": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/a47ba9de911e0d3b8d867039afc822664ba867e617b998e007933099decc541b.gz",
+      "archiveBytes": 2906042,
+      "archiveSha256": "4014ed6af6b79317ee5e599435a42bcef2134ccdc2a3868e6b9abf3614c6cc7e",
+      "bytes": 6378648,
+      "sha256": "a47ba9de911e0d3b8d867039afc822664ba867e617b998e007933099decc541b",
+      "source": "target/release/libxyg_core.so"
+    },
+    "standalone.js": {
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/5906460a4f78f4afd3874f66c5f7ee6167a3baa9579fac817247016734e89508.gz",
+      "archiveBytes": 249422,
+      "archiveSha256": "7230d479a216a1b97e0fdcf4c8cbe06564ad2eee810d0c240fbd5a5d07a1df79",
+      "bytes": 869460,
+      "sha256": "5906460a4f78f4afd3874f66c5f7ee6167a3baa9579fac817247016734e89508",
+      "source": "packages/xy-client/dist/standalone.js"
+    },
+    "wasm-inline-worker.js": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz",
+      "archiveBytes": 3838,
+      "archiveSha256": "dda8e6c4cec42d91f687b660d742d79dcc1a8c0d052ca6ca189c6acf095db2b4",
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7",
+      "source": "packages/xy-client/dist/wasm-inline-worker.js"
+    },
+    "wasm-worker.js": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7",
+      "source": "packages/xy-client/dist/wasm-worker.js"
+    },
+    "xyg-wasm-inline.js": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/efc6a1532a7556532bee867603139e4f87cdd77842dc33dc8d195302ebda3dee.gz",
+      "archiveBytes": 1042870,
+      "archiveSha256": "94f45c8cab4d091a1d3576335c9143521c04051caa78a5db3d99c49285e0284d",
+      "bytes": 2533794,
+      "sha256": "efc6a1532a7556532bee867603139e4f87cdd77842dc33dc8d195302ebda3dee",
+      "source": "packages/xy-client/dist/xyg-wasm-inline.js"
+    },
+    "xyg-wasm.manifest.json": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/6ec8678adee023b532ceda2a9e5af3e0524489763d3439dc8ab9047937c2f4ea.gz",
+      "archiveBytes": 171,
+      "archiveSha256": "eab52487c49411d8fbdce17ef619abdc4eda16e574b54881a0ad66f767f4cb85",
+      "bytes": 226,
+      "sha256": "6ec8678adee023b532ceda2a9e5af3e0524489763d3439dc8ab9047937c2f4ea",
+      "source": "packages/xy-client/dist/xyg-wasm.manifest.json"
+    },
+    "xyg-wasm.wasm": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/67be6d5add2f2ad279b721dd14484ece71e4710dcec2118cfd27df50fbaf8462.gz",
+      "archiveBytes": 781110,
+      "archiveSha256": "6116e44494db0f9237aea2dc774bc8ff047768da2011526a0e39714a91beefe6",
+      "bytes": 1884503,
+      "sha256": "67be6d5add2f2ad279b721dd14484ece71e4710dcec2118cfd27df50fbaf8462",
+      "source": "packages/xy-client/dist/xyg-wasm.wasm"
+    }
+  },
+  "schemaVersion": 1,
+  "scope": "Canvas pan cancellation contract and bounded input diagnostics; hosted timeout cause remains unconfirmed; no reliability, shipping, issue or milestone qualification",
+  "sourceParent": "8f7ef9e55819f380128cce7bd4955596352459db",
+  "staticCopies": {
+    "python/xyg/static/index.js": "761b50f6b72141e3dd8db5f23efeec59a8c69564b3cbc6ebda305e3236267e6b",
+    "python/xyg/static/standalone.js": "5906460a4f78f4afd3874f66c5f7ee6167a3baa9579fac817247016734e89508",
+    "python/xyg/static/wasm-worker.js": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7",
+    "python/xyg/static/xyg-wasm-inline.js": "efc6a1532a7556532bee867603139e4f87cdd77842dc33dc8d195302ebda3dee",
+    "python/xyg/static/xyg-wasm.manifest.json": "6ec8678adee023b532ceda2a9e5af3e0524489763d3439dc8ab9047937c2f4ea",
+    "python/xyg/static/xyg-wasm.wasm": "67be6d5add2f2ad279b721dd14484ece71e4710dcec2118cfd27df50fbaf8462"
+  }
+}

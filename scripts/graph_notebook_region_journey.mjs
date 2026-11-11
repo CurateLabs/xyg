@@ -217,15 +217,30 @@ export async function runGraphNotebookRegions({root,temp,page,input=page,surface
  assert.equal(combinedHistory.back,true);assert.deepEqual(combinedHistory.restored,combinedHistory.before);
  assert.equal(combinedHistory.forward,true);assert.deepEqual(combinedHistory.reapplied,combinedHistory.after);
  const trusted=await page.evaluate(()=>globalThis.__regionTrusted);
+ const pointerEvents=await page.evaluate(()=>globalThis.__regionPointerEvents);
  assert.ok(trusted.length>=2&&trusted.every(v=>v.trusted));assert.ok(trusted.some(v=>v.shift));assert.ok(trusted.some(v=>v.kind==='wheel'));
  await cell(3);await cleanup();
  assert.equal(errors.length,0,JSON.stringify(errors));assert.equal(external.length,0);
- const result={ok:true,artifactDir:temp,frontend,kernel,dpr,browser:browser.version(),initial,capacity:{before:capacityBefore,after:capacityAfter,refused,masks:capacityMasks,history:capacityHistory,historyPaint:capacityHistoryPaint},combinedHistory,box,boxExpected,boxMasks,lasso,lassoExpected,lassoMasks,cameraBox,cameraExpected,cameraMasks,before,beforeEdges,afterBox,afterBoxEdges,afterLasso,trusted,disposed:true};
+ const result={ok:true,artifactDir:temp,frontend,kernel,dpr,browser:browser.version(),initial,capacity:{before:capacityBefore,after:capacityAfter,refused,masks:capacityMasks,history:capacityHistory,historyPaint:capacityHistoryPaint},combinedHistory,box,boxExpected,boxMasks,lasso,lassoExpected,lassoMasks,cameraBox,cameraExpected,cameraMasks,before,beforeEdges,afterBox,afterBoxEdges,afterLasso,trusted,pointerEvents,disposed:true};
 return result;
 }
 
 export function installGraphRegionHooks(){globalThis.__regionHookCleanup?.();const cleanup=[];const listen=(name,callback,options)=>{document.addEventListener(name,callback,options);cleanup.push(()=>document.removeEventListener(name,callback,options));};
   globalThis.__regionEvents??=[];globalThis.__regionTrusted??=[];
+  // Bounded input diagnostics distinguish a missing release/cancellation from
+  // host output replacement or relocation without recording notebook content.
+  globalThis.__regionPointerEvents??=[];
+  globalThis.__regionCanvasIds??=new WeakMap();globalThis.__regionNextCanvasId??=0;
+  for(const type of ['pointerdown','pointerup','pointercancel','gotpointercapture','lostpointercapture','dragstart','dragend'])listen(type,e=>{
+   const canvas=e.target instanceof HTMLCanvasElement?e.target:null;
+   if(canvas&&!globalThis.__regionCanvasIds.has(canvas))globalThis.__regionCanvasIds.set(canvas,++globalThis.__regionNextCanvasId);
+   const rect=canvas?.getBoundingClientRect(),hit=document.elementFromPoint(e.clientX,e.clientY);
+   const events=globalThis.__regionPointerEvents;if(events.length===128)events.shift();
+   events.push({type,pointerId:e.pointerId,buttons:e.buttons,trusted:e.isTrusted,x:e.clientX,y:e.clientY,
+    target:e.target?.tagName,hit:hit?.tagName,canvasId:canvas?globalThis.__regionCanvasIds.get(canvas):null,
+    connected:canvas?.isConnected,captured:canvas?.hasPointerCapture(e.pointerId),
+    rect:rect?{x:rect.x,y:rect.y,width:rect.width,height:rect.height}:null});
+  },true);
   for(const kind of ['brush','select','view_change'])listen('xy:'+kind,e=>{
    globalThis.__regionEvents.push({kind,detail:e.detail});
   });

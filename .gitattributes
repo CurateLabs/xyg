@@ -1626,3 +1626,7 @@ tests/test_graph_edge_ends.py text eol=lf
 spec/performance/graph-native-force-owner-2026-11-11/*.md text eol=lf
 spec/performance/graph-native-force-owner-2026-11-11/*.json text eol=lf
 spec/performance/graph-native-force-owner-2026-11-11/**/*.gz -text
+spec/performance/graph-pan-cancel-2026-11-11/*.md text eol=lf
+spec/performance/graph-pan-cancel-2026-11-11/*.json text eol=lf
+spec/performance/graph-pan-cancel-2026-11-11/**/*.gz -text
+tests/test_view_state_client.py text eol=lf

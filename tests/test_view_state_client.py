@@ -177,6 +177,12 @@ _LOST_POINTER_CAPTURE_PROBE = """
     pointer(view.canvas, "lostpointercapture", 71, x + 60, y + 10, 0);
     pointer(view.canvas, "pointermove", 71, x + 120, y + 20, 0);
     flush();
+    const finalPanKeptLastView = endEvents.length === 1
+      && JSON.stringify(endEvents[0].ranges) === JSON.stringify(atBoundary);
+    pointer(view.canvas, "lostpointercapture", 71, x + 120, y + 20, 0);
+    pointer(view.canvas, "pointerup", 71, x + 120, y + 20, 0);
+    flush();
+    const laterReleaseDidNotRepeatEnd = endEvents.length === 1;
     const canvasReentryDidNotPan =
       JSON.stringify(ranges()) === JSON.stringify(atBoundary);
 
@@ -233,6 +239,8 @@ _LOST_POINTER_CAPTURE_PROBE = """
 
     document.body.setAttribute("data-xy-lost-capture-probe", JSON.stringify({
       canvasReentryDidNotPan,
+      finalPanKeptLastView,
+      laterReleaseDidNotRepeatEnd,
       finalEndEmittedForBothPans: endEvents.length === 2,
       finalEndKeptInteraction: endEvents[0]?.interaction_id != null
         && endEvents[0]?.axes?.length > 0
@@ -252,10 +260,17 @@ _LOST_POINTER_CAPTURE_PROBE = """
 """
 
 
-def test_capture_loss_policy_covers_every_capture_owning_gesture(tmp_path: Path) -> None:
+@pytest.mark.parametrize("pan_terminal_event", ["lostpointercapture", "pointercancel"])
+def test_capture_loss_policy_covers_every_capture_owning_gesture(
+    tmp_path: Path, pan_terminal_event: str
+) -> None:
+    probe = _LOST_POINTER_CAPTURE_PROBE.replace(
+        'pointer(view.canvas, "lostpointercapture", 71,',
+        f'pointer(view.canvas, "{pan_terminal_event}", 71,',
+    )
     result = _run(
         tmp_path,
-        _chart_html().replace(_RENDER_CALL, _LOST_POINTER_CAPTURE_PROBE),
+        _chart_html().replace(_RENDER_CALL, probe),
         "data-xy-lost-capture-probe",
         label="shared pointer-capture loss probe",
     )

@@ -202,9 +202,12 @@ Object.assign(ChartView.prototype, {
       }
     };
     const cancelPointerGesture = () => {
+      // Cancellation has no new release coordinate, but a pan has already
+      // committed its last valid view. Finish it before releasing capture so
+      // the terminal event and durable history cannot be lost.
+      finishPanDrag();
       this._filterDashboard?.cancelPointer();
       band?.capture.release();
-      drag?.capture.release();
       this.selRect.style.display = "none";
       this.selLasso.style.display = "none";
       if (band?.previousLasso) {

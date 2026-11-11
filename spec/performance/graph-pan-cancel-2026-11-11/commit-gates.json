@@ -1,0 +1,28 @@
+{
+  "sourceParent": "8f7ef9e55819f380128cce7bd4955596352459db",
+  "checksSha256": "da832209ffa6bf44bb962f886e9811159fc6efdd7c392cc5f04fe49c028b0cd7",
+  "gates": {
+    "commit-precommit.log": {
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "bytes": 240,
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "exit": 0
+    },
+    "ruff-check.log": {
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "bytes": 19,
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "exit": 0
+    },
+    "ruff-format.log": {
+      "sha256": "60cd6265bed52650ece7b9dabcdc5a2ef7c9afe7b9f0c5669a15e3bb8e93468c",
+      "bytes": 29,
+      "archive": "spec/performance/graph-pan-cancel-2026-11-11/evidence/60cd6265bed52650ece7b9dabcdc5a2ef7c9afe7b9f0c5669a15e3bb8e93468c.gz",
+      "archiveSha256": "5bd14c636e3cfe01cd9d67d9a3df524b516dc8222067eafe292babb70b00381f",
+      "exit": 0
+    }
+  },
+  "scope": "Full-worktree all-file hooks and Ruff; no hosted CI or merge-queue completion"
+}
