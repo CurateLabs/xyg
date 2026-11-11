@@ -1630,3 +1630,7 @@ spec/performance/graph-pan-cancel-2026-11-11/*.md text eol=lf
 spec/performance/graph-pan-cancel-2026-11-11/*.json text eol=lf
 spec/performance/graph-pan-cancel-2026-11-11/**/*.gz -text
 tests/test_view_state_client.py text eol=lf
+spec/performance/graph-python-session-isolation-2026-11-11/*.md text eol=lf
+spec/performance/graph-python-session-isolation-2026-11-11/*.json text eol=lf
+spec/performance/graph-python-session-isolation-2026-11-11/**/*.gz -text
+python/xyg/_graph_session.py text eol=lf

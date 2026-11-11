@@ -89,16 +89,23 @@ It retains no graph buffers or result cache after return (dossier §27/§29).
 
 ## Serialized lifecycle and failures
 
-One module-level lock serializes native handle creation, complete
-query/copy transactions and close calls, including calls on different Python
-wrappers. This intentionally conservative P0 boundary prevents a close or
-another operation from intervening between sizing and exact copying. It
-also covers byte-identical Open retries, which Rust may resolve to the same
-native handle. No identity or graph-state registry is maintained in Python.
-Independent native handles retain independent graph state and lifetimes;
-this foundation makes no concurrent throughput claim. Direct raw-ABI or
-other-language callers are outside the Python lock; native locking and
-validation remain authoritative.
+Each native instance has one Python lifecycle lock shared by its wrappers.
+It serializes native handle creation, complete query/copy transactions and
+close calls, preventing a close or another operation from intervening between
+sizing and exact copying. It also covers byte-identical Open retries, which
+Rust may resolve to the same native handle. The validated `instance_id` is the
+same namespace Rust already uses for active-instance Open conflict/alias checks;
+Python does not decide whether an Open is valid or aliases another wrapper.
+
+A brief module lock protects weak lock discovery only. Lock/callback allocation,
+input/scalar conversion, native work, output allocation/copy and destruction
+run outside that module lock. Weak entries disappear when no wrapper or active
+lookup retains the lock. The table stores no handles, graph state, document or
+reply cache. Independent instances can create, execute and close while another
+instance's query/copy is parked. This removes cross-owner blocking; it makes no
+general throughput or whole-notebook deadline claim. Direct raw-ABI or
+other-language callers remain outside Python lifecycle locks; native locking
+and validation remain authoritative.
 
 Native Open retry semantics are preserved: wrappers opened with identical
 active-instance bytes alias the same native lifetime. Closing either revokes
