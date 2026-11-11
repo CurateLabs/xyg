@@ -1621,3 +1621,8 @@ spec/performance/graph-native-admission-paint-2026-11-11/**/*.gz -text
 tests/notebook_graph_native_scale.ipynb text eol=lf
 benchmarks/bench_graph_native_notebook.mjs text eol=lf
 tests/test_graph_edge_ends.py text eol=lf
+
+# Native force owners retain the complete predecessor and failure records.
+spec/performance/graph-native-force-owner-2026-11-11/*.md text eol=lf
+spec/performance/graph-native-force-owner-2026-11-11/*.json text eol=lf
+spec/performance/graph-native-force-owner-2026-11-11/**/*.gz -text

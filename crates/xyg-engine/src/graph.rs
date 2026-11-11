@@ -13,7 +13,7 @@
 //! bit-identical coordinates across hosts.
 
 use std::collections::{HashMap, VecDeque};
-use std::sync::{Mutex, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock};
 
 /// Layout algorithm ids for the C ABI (`layout=` names map in the host).
 pub const LAYOUT_PRESET: u32 = 0;
@@ -1461,11 +1461,23 @@ impl Viewport {
     }
 }
 
-static FORCE_HANDLES: OnceLock<Mutex<HashMap<u64, ForceState>>> = OnceLock::new();
+// The registry owns discovery, while each handle serializes only its own ticks.
+// A retired owner is empty even if an earlier lookup still holds a claim.
+// See graph-mark.md: progressive native ownership and dossier §18.
+type ForceOwner = Arc<Mutex<Option<ForceState>>>;
+static FORCE_HANDLES: OnceLock<Mutex<HashMap<u64, ForceOwner>>> = OnceLock::new();
 static FORCE_NEXT: OnceLock<Mutex<u64>> = OnceLock::new();
 
-fn force_map() -> &'static Mutex<HashMap<u64, ForceState>> {
+fn force_map() -> &'static Mutex<HashMap<u64, ForceOwner>> {
     FORCE_HANDLES.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn force_owner(handle: u64) -> Option<ForceOwner> {
+    force_map()
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .get(&handle)
+        .cloned()
 }
 
 fn next_handle() -> u64 {
@@ -1490,7 +1502,7 @@ pub fn force_create(
     force_map()
         .lock()
         .unwrap_or_else(|e| e.into_inner())
-        .insert(id, state);
+        .insert(id, Arc::new(Mutex::new(Some(state))));
     Some(id)
 }
 
@@ -1522,7 +1534,7 @@ pub fn force_create_cose(
     force_map()
         .lock()
         .unwrap_or_else(|e| e.into_inner())
-        .insert(id, state);
+        .insert(id, Arc::new(Mutex::new(Some(state))));
     Some(id)
 }
 
@@ -1643,8 +1655,9 @@ pub fn layout_force_portable(
 }
 
 pub fn force_tick(handle: u64, steps: u32, out_x: &mut [f64], out_y: &mut [f64]) -> Option<f64> {
-    let mut map = force_map().lock().unwrap_or_else(|e| e.into_inner());
-    let state = map.get_mut(&handle)?;
+    let owner = force_owner(handle)?;
+    let mut slot = owner.lock().unwrap_or_else(|e| e.into_inner());
+    let state = slot.as_mut()?;
     if out_x.len() != state.n || out_y.len() != state.n {
         return None;
     }
@@ -1664,11 +1677,22 @@ pub fn force_tick(handle: u64, steps: u32, out_x: &mut [f64], out_y: &mut [f64])
 }
 
 pub fn force_destroy(handle: u64) -> bool {
+    let Some(owner) = force_owner(handle) else {
+        return false;
+    };
+    // Retire the state before removing discovery. Concurrent destroy calls
+    // must also wait for this owner, including the call that returns false.
+    // Queued ticks check the same empty slot and cannot revive retired state.
+    let existed = owner
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .take()
+        .is_some();
     force_map()
         .lock()
         .unwrap_or_else(|e| e.into_inner())
-        .remove(&handle)
-        .is_some()
+        .remove(&handle);
+    existed
 }
 
 /// Deterministic edge sample: keep first `budget` edges after stride.
@@ -2314,6 +2338,163 @@ pub fn layout_concentric(n: usize, degrees: &[u64], out_x: &mut [f64], out_y: &m
 
 #[cfg(test)]
 mod tests {
+    fn native_force_fixture(seed: u64) -> u64 {
+        super::force_create(
+            4,
+            &[0, 1, 2, 3],
+            &[1, 2, 3, 0],
+            None,
+            None,
+            seed,
+            super::LAYOUT_FORCE,
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn native_force_owner_does_not_block_an_independent_handle() {
+        use std::sync::mpsc;
+        use std::time::{Duration, Instant};
+
+        let busy = native_force_fixture(17);
+        let peer = native_force_fixture(29);
+        let owner = super::force_owner(busy).unwrap();
+        let held = owner.lock().unwrap();
+        let claims = std::sync::Arc::strong_count(&owner);
+        let blocked =
+            std::thread::spawn(move || super::force_tick(busy, 1, &mut [0.; 4], &mut [0.; 4]));
+        // Synchronize at the lookup/owner boundary rather than relying on a
+        // large layout being slow enough. No timing result is a benchmark.
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while std::sync::Arc::strong_count(&owner) == claims && Instant::now() < deadline {
+            std::thread::yield_now();
+        }
+        let claimed = std::sync::Arc::strong_count(&owner) > claims;
+        let (send, receive) = mpsc::channel();
+        let independent = std::thread::spawn(move || {
+            let result = super::force_tick(peer, 1, &mut [0.; 4], &mut [0.; 4]);
+            let _ = send.send(result);
+        });
+        let completed_while_busy = receive.recv_timeout(Duration::from_secs(5));
+        // Always release and join before asserting, including the deliberately
+        // serialized negative control, so a failing test leaves no owner hung.
+        drop(held);
+        let busy_result = blocked.join();
+        let peer_result = independent.join();
+        assert!(super::force_destroy(busy));
+        assert!(super::force_destroy(peer));
+        assert!(claimed, "busy tick did not reach its owned-state boundary");
+        assert!(busy_result.is_ok_and(|value| value.is_some()));
+        assert!(peer_result.is_ok());
+        assert!(
+            completed_while_busy.is_ok_and(|value| value.is_some()),
+            "an independent native force handle waited for the busy owner"
+        );
+    }
+
+    #[test]
+    fn native_force_owner_retirement_revokes_earlier_lookup_claims() {
+        let handle = native_force_fixture(7);
+        let earlier = super::force_owner(handle).unwrap();
+        let weak = std::sync::Arc::downgrade(&earlier);
+        assert!(super::force_destroy(handle));
+        assert!(super::force_owner(handle).is_none());
+        assert!(earlier.lock().unwrap().is_none());
+        let mut x = [-99.; 4];
+        let mut y = [-77.; 4];
+        assert_eq!(super::force_tick(handle, 1, &mut x, &mut y), None);
+        assert_eq!(x, [-99.; 4]);
+        assert_eq!(y, [-77.; 4]);
+        assert!(!super::force_destroy(handle));
+        drop(earlier);
+        assert!(weak.upgrade().is_none());
+    }
+
+    #[test]
+    fn native_force_owner_concurrent_destroy_waits_for_retirement() {
+        use std::sync::mpsc;
+        use std::time::{Duration, Instant};
+
+        let handle = native_force_fixture(31);
+        let owner = super::force_owner(handle).unwrap();
+        let held = owner.lock().unwrap();
+        let claims = std::sync::Arc::strong_count(&owner);
+        let (send, receive) = mpsc::channel();
+        let closers: Vec<_> = (0..2)
+            .map(|_| {
+                let send = send.clone();
+                std::thread::spawn(move || {
+                    let _ = send.send(super::force_destroy(handle));
+                })
+            })
+            .collect();
+        drop(send);
+        let deadline = Instant::now() + Duration::from_secs(5);
+        let mut premature = Vec::new();
+        while std::sync::Arc::strong_count(&owner) < claims + 2 && Instant::now() < deadline {
+            if let Ok(result) = receive.try_recv() {
+                premature.push(result);
+                break;
+            }
+            std::thread::yield_now();
+        }
+        let both_claimed = std::sync::Arc::strong_count(&owner) >= claims + 2;
+        premature.extend(receive.try_iter());
+        let returned_early = !premature.is_empty();
+        drop(held);
+        let mut results = premature;
+        while results.len() < 2 {
+            match receive.recv_timeout(Duration::from_secs(5)) {
+                Ok(result) => results.push(result),
+                Err(_) => break,
+            }
+        }
+        let joined: Vec<_> = closers.into_iter().map(|closer| closer.join()).collect();
+        assert!(owner.lock().unwrap().is_none());
+        assert!(super::force_owner(handle).is_none());
+        assert!(joined.into_iter().all(|result| result.is_ok()));
+        assert_eq!(results.len(), 2);
+        assert_eq!(results.into_iter().filter(|first| *first).count(), 1);
+        assert!(
+            both_claimed && !returned_early,
+            "concurrent force destroy returned before owner retirement"
+        );
+    }
+
+    #[test]
+    fn native_force_owner_serializes_same_handle_without_output_drift() {
+        let handle = native_force_fixture(42);
+        let expected = native_force_fixture(42);
+        let workers: Vec<_> = (0..4)
+            .map(|_| {
+                std::thread::spawn(move || {
+                    for _ in 0..3 {
+                        if super::force_tick(handle, 1, &mut [0.; 4], &mut [0.; 4]).is_none() {
+                            return false;
+                        }
+                    }
+                    true
+                })
+            })
+            .collect();
+        let joined: Vec<_> = workers.into_iter().map(|worker| worker.join()).collect();
+        let (mut x, mut y, mut want_x, mut want_y) = ([0.; 4], [0.; 4], [0.; 4], [0.; 4]);
+        for _ in 0..12 {
+            super::force_tick(expected, 1, &mut want_x, &mut want_y).unwrap();
+        }
+        let mut wrong = [-123.; 3];
+        assert_eq!(super::force_tick(handle, 1, &mut wrong, &mut y), None);
+        assert_eq!(wrong, [-123.; 3]);
+        let alpha = super::force_tick(handle, 0, &mut x, &mut y);
+        let want_alpha = super::force_tick(expected, 0, &mut want_x, &mut want_y);
+        assert!(super::force_destroy(handle));
+        assert!(super::force_destroy(expected));
+        assert!(joined.into_iter().all(|value| value.is_ok_and(|ok| ok)));
+        assert_eq!(alpha.map(f64::to_bits), want_alpha.map(f64::to_bits));
+        assert_eq!(x.map(f64::to_bits), want_x.map(f64::to_bits));
+        assert_eq!(y.map(f64::to_bits), want_y.map(f64::to_bits));
+    }
+
     #[test]
     fn overlap_ranks_preserve_prior_key_count_jitter_bits() {
         for seed in [0, 7, u64::MAX] {

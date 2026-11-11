@@ -328,6 +328,17 @@ exchange revisions or positions. `reheat` restarts Rust CoSE from the current
 drag coordinates and pin mask; Python transports those buffers but performs no
 force or position math.
 
+Native force-handle discovery and removal hold the shared registry lock only
+briefly. Each retained owner separately serializes its own ticks, so an active
+chunk does not hold unrelated handles behind the registry. Destruction waits for
+that owner's current tick, empties its state and then removes the handle.
+Concurrent destruction also waits for retirement, including the call returning
+false; only one call reports successful destruction. Lookups already queued for
+the retired owner observe the empty slot and refuse; they cannot revive it.
+Same-handle ordering, f64 results, chunk boundaries and wall limits remain
+unchanged. This ownership rule establishes no notebook deadline, throughput,
+global memory or multi-view scale qualification.
+
 Hosts must not emulate the shipped CoSE policy.
 
 **CoSE cross-host parity (#35, criterion 6).** Python native, Node native (both

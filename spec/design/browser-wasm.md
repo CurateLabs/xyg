@@ -1999,12 +1999,19 @@ this is a bounded size fit, not headroom for subsequent source changes.
 Failed package attempts establish no shipping acceptance. Matching final-source
 native/WASM qualification and the complete host/scale contract remain required.
 
-The later [native graph ownership/paint checkpoint](../performance/graph-native-admission-paint-2026-11-11/README.md)
+The historical [native graph ownership/paint checkpoint](../performance/graph-native-admission-paint-2026-11-11/README.md)
 retains ABI405/WASM38 and all 68 function exports with zero imports. Its matched
-module measures **1,884,503 raw /786,335 Node22 gzip6 bytes**, leaving only
-**97 gzip bytes** under the unchanged caps. The preceding three-byte measurement
+module measured **1,884,503 raw /786,335 Node22 gzip6 bytes**, leaving
+**97 gzip bytes** at that checkpoint. The preceding three-byte measurement
 describes its historical semantic-source parent. The new bounded packet and
 paint checks do not establish shipping: final full-foundation attempts include
 early context losses, and the reproducible 100k native-notebook journey still
 exceeds its unchanged layout wall limit. Neither a size fit nor passing isolated
 reruns supersede those failures or complete milestone acceptance.
+
+The subsequent [native force-owner isolation checkpoint](../performance/graph-native-force-owner-2026-11-11/README.md)
+rebuilds the same ABI/export surface at **1,884,503 raw /786,337 Node22 gzip6
+bytes**, with **95 gzip bytes** below the unchanged cap. Its matching foundation
+run passes, but the earlier context-loss origin remains unresolved. Its actual
+100k notebook attempt still fails the existing peer wall deadline; source-owner
+isolation is not notebook reliability, global memory or milestone acceptance.

@@ -12,7 +12,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 CURRENT_BINDINGS = Path(
-    "spec/performance/graph-native-admission-paint-2026-11-11/current-bindings.json"
+    "spec/performance/graph-native-force-owner-2026-11-11/current-bindings.json"
 )
 
 
@@ -825,8 +825,26 @@ def test_semantic_anchor_preserves_complete_source_qualification():
 def test_native_admission_paint_preserves_complete_source_qualification():
     parent_path = "spec/performance/graph-semantic-anchor-2026-11-10/current-bindings.json"
     parent = json.loads((ROOT / parent_path).read_text())
-    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/graph-native-admission-paint-2026-11-11/current-bindings.json"
+        ).read_text()
+    )
     assert len(current["parents"]) == 41
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_native_force_owner_preserves_complete_source_qualification():
+    parent_path = "spec/performance/graph-native-admission-paint-2026-11-11/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    assert len(current["parents"]) == 42
     assert {p["path"] for p in current["parents"]} == {parent_path}.union(
         p["path"] for p in parent["parents"]
     )
