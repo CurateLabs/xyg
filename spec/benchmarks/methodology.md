@@ -644,16 +644,19 @@ The verifier recomputes the checked-in hexbin and heatmap Scene SHA-256 goldens
 `public_heatmap_sha256`) and requires every public export-baseline route,
 including heatmap after #261.
 
-The glob collects nine modules — `test_codspeed_animation.py`,
+The glob collects ten modules — `test_codspeed_animation.py`,
+`test_codspeed_geo_pair_ordering.py`,
 `test_codspeed_graph_render.py`, `test_codspeed_graph_semantic_validation.py`,
 `test_codspeed_kernels.py`, `test_codspeed_polar.py`, `test_codspeed_pyplot.py`,
 `test_codspeed_selection.py`, `test_codspeed_tooltip_columns.py`, and
-`test_codspeed_transport.py` — for **219 rows** total, counting parametrized
+`test_codspeed_transport.py` — for **227 rows** total, counting parametrized
 expansion. These are trend-tracked in CodSpeed, not gated: none of them feed
 `scripts/check_regressions.py`, whose three inputs are §7's.
-The per-module counts are respectively 3, 9, 14, 88, 6, 14, 16, 62 and 7.
+The per-module counts are respectively 3, 4, 9, 14, 88, 6, 14, 20, 62 and 7.
 Fixture parameters expand rows too: selection has four ordinary rows and four
-tests sharing a three-size fixture, for 16 rows. The earlier static-counter
+tests sharing a three-size fixture, plus four clause-count edit cases, for
+20 rows. Geographic ordering contributes two density sizes and two polygon
+counts. The earlier static-counter
 correction preserved existing rows; this catalog also includes the 56 scalar
 tooltip controls below. No prior row is deleted or renamed. Updating the
 catalog does not archive dashboard rows or dispatch a hosted workflow.
@@ -669,6 +672,16 @@ the baseline result", which reads like a flaky measurement rather than a row tha
 no longer exists. Removing one is allowed; removing one silently is not. Stale
 rows already in the dashboard have to be archived there by hand; this gate stops
 new ones appearing.
+
+**`benchmarks/test_codspeed_geo_pair_ordering.py` — 4 rows.** The density
+membership cases use 1k and 10k source rows; clipping uses 64 and 256 polygons.
+Fixtures build native requests outside measurement and compare complete reply
+bytes, exact membership/feature IDs and finite output geometry. The ordinary
+capacity-query/copy calls remain measured. These protect bounded temporary
+ordering; they do not claim browser latency, massive-scale acceptance or a
+competitor win. Source-bound simulation and walltime comparisons, including
+unchanged and slower samples, are retained in the
+[paged/cooperative qualification](../performance/filter-paged-cooperative-2026-11-11/README.md).
 
 **`benchmarks/test_codspeed_graph_semantic_validation.py` — 14 rows.** Seven
 sizes (0, 1, 8, 16, 1k, 100k and 200k) each cover contiguous and strided/endian
@@ -799,7 +812,7 @@ cannot get cheaper by shipping a different chart. Browser wedge vertex counts,
 GPU buffer lifetime, and radial-zoom frame pacing are wall-clock/WebGL
 measurements and stay in `bench_interaction.py` and the polar smokes.
 
-**`benchmarks/test_codspeed_selection.py` — 4 rows.** The backend
+**`benchmarks/test_codspeed_selection.py` — 20 rows.** The first four cover backend
 interaction/selection handlers the client's gesture messages resolve to
 (design-dossier §17/§34): hover pick with a categorical channel readout;
 zone-pruned box select over a 1% window of a monotone-x 1M scatter; the full
@@ -810,6 +823,14 @@ NaN-dropped trace, so the canonical-to-shipped `searchsorted` translation is
 the path measured rather than the identity fast path. Browser input-to-pixel
 latency stays in `bench_interaction.py`; before this module a selection
 regression could only surface as browser wall-clock noise.
+The remaining rows are four linked-density operations at 1k, 10k and 100k
+(12 rows), plus clause-edit round trips at 1, 8, 32 and 64 clauses (four rows).
+Density setup/ingress is excluded; five fixed 8x8 passive grids and 17 active
+cells retain exact count, index-byte, membership and reported fallback checks.
+Clause fixtures exclude construction/rebuild and verify that begin/cancel edit
+retains the accepted filter hash without a row scan. These are native operation
+measurements, not 100M/five-rendered-view FPS evidence. No row is renamed or
+removed by this catalog correction.
 
 **`benchmarks/test_codspeed_kernels.py` — 88 rows** (78 functions; six are
 parametrized, over 2 ingest flavors, 3 `bin_2d` thread-cap regimes, and the 3

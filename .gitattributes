@@ -1703,3 +1703,6 @@ tests/test_filter_native_callback.py text eol=lf
 spec/performance/filter-native-callback-2026-11-11/*.md text eol=lf
 spec/performance/filter-native-callback-2026-11-11/*.json text eol=lf
 spec/performance/filter-native-callback-2026-11-11/**/*.gz binary
+spec/performance/filter-benchmark-catalog-2026-11-11/*.md text eol=lf
+spec/performance/filter-benchmark-catalog-2026-11-11/*.json text eol=lf
+spec/performance/filter-benchmark-catalog-2026-11-11/**/*.gz binary

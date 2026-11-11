@@ -11,7 +11,9 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-CURRENT_BINDINGS = Path("spec/performance/filter-native-callback-2026-11-11/current-bindings.json")
+CURRENT_BINDINGS = Path(
+    "spec/performance/filter-benchmark-catalog-2026-11-11/current-bindings.json"
+)
 
 
 def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> None:
@@ -1111,8 +1113,26 @@ def test_filter_dossier_status_preserves_complete_source_qualification():
 def test_native_filter_callback_preserves_complete_source_qualification():
     parent_path = "spec/performance/filter-dossier-status-2026-11-11/current-bindings.json"
     parent = json.loads((ROOT / parent_path).read_text())
-    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/filter-native-callback-2026-11-11/current-bindings.json"
+        ).read_text()
+    )
     assert len(current["parents"]) == 57
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_filter_benchmark_catalog_preserves_complete_source_qualification():
+    parent_path = "spec/performance/filter-native-callback-2026-11-11/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    assert len(current["parents"]) == 58
     assert {p["path"] for p in current["parents"]} == {parent_path}.union(
         p["path"] for p in parent["parents"]
     )
