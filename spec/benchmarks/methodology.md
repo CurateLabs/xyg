@@ -727,6 +727,14 @@ actual native artifact for provenance; no measured operation changes. Keep
 the unrelated first cached-paint improvement and the rows classified No Change
 visible; neither establishes a causal benefit from native interpolation.
 
+That single-color sequence is **A-B-A-B**, not A-B-B-A. The historical
+single-color receipt's ABBA wording is a labeling error; its listed order,
+raw results and classifications remain unchanged. A later private rounding
+experiment uses actual A-B-B-A controls and is rejected because its update
+improvement does not repeat. Preserve its No Change and cached Regression rows,
+including the unchanged final-parent control; see the
+[evaluation and order correction](../performance/filter-rounding-evaluation-2026-11-12/README.md).
+
 First generate and verify the recipe in
 `scripts/gen_filter_paged_fixture.py` with 100,000,000 materialized rows, as in
 the native callback receipt. Then run (with matching native/client builds):

@@ -11,7 +11,9 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-CURRENT_BINDINGS = Path("spec/performance/filter-compiled-inputs-2026-11-12/current-bindings.json")
+CURRENT_BINDINGS = Path(
+    "spec/performance/filter-rounding-evaluation-2026-11-12/current-bindings.json"
+)
 
 
 def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> None:
@@ -1252,7 +1254,11 @@ def test_filter_single_color_preserves_complete_source_qualification():
 def test_filter_compiled_inputs_preserve_history_and_track_every_rust_source():
     parent_path = "spec/performance/filter-single-color-2026-11-12/current-bindings.json"
     parent = json.loads((ROOT / parent_path).read_text())
-    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/filter-compiled-inputs-2026-11-12/current-bindings.json"
+        ).read_text()
+    )
     assert len(current["parents"]) == 65
     assert {p["path"] for p in current["parents"]} == {parent_path}.union(
         p["path"] for p in parent["parents"]
@@ -1271,3 +1277,17 @@ def test_filter_compiled_inputs_preserve_history_and_track_every_rust_source():
     ).splitlines()
     assert {p for p in tracked if p.endswith(".rs")} <= inputs.keys()
     assert all(hashlib.sha256((ROOT / p).read_bytes()).hexdigest() == h for p, h in inputs.items())
+
+
+def test_filter_rounding_evaluation_preserves_complete_source_qualification():
+    parent_path = "spec/performance/filter-compiled-inputs-2026-11-12/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    assert len(current["parents"]) == 66
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
