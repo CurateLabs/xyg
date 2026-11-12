@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-CURRENT_BINDINGS = Path("spec/performance/filter-single-color-2026-11-12/current-bindings.json")
+CURRENT_BINDINGS = Path("spec/performance/filter-compiled-inputs-2026-11-12/current-bindings.json")
 
 
 def test_hash_bound_core_evidence_survives_windows_checkout(tmp_path: Path) -> None:
@@ -1236,7 +1236,9 @@ def test_filter_prefix_benchmark_oracle_preserves_complete_source_qualification(
 def test_filter_single_color_preserves_complete_source_qualification():
     parent_path = "spec/performance/filter-prefix-benchmark-oracle-2026-11-12/current-bindings.json"
     parent = json.loads((ROOT / parent_path).read_text())
-    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    current = json.loads(
+        (ROOT / "spec/performance/filter-single-color-2026-11-12/current-bindings.json").read_text()
+    )
     assert len(current["parents"]) == 64
     assert {p["path"] for p in current["parents"]} == {parent_path}.union(
         p["path"] for p in parent["parents"]
@@ -1245,3 +1247,27 @@ def test_filter_single_color_preserves_complete_source_qualification():
     assert current["manifestSha256"] == parent["manifestSha256"]
     assert current["originalProducerSha256"] == parent["originalProducerSha256"]
     _assert_complete_parent_sources(current)
+
+
+def test_filter_compiled_inputs_preserve_history_and_track_every_rust_source():
+    parent_path = "spec/performance/filter-single-color-2026-11-12/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    assert len(current["parents"]) == 65
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+    inputs = json.loads(
+        (
+            ROOT / "spec/performance/filter-compiled-inputs-2026-11-12/compiled-inputs.json"
+        ).read_text()
+    )
+    tracked = subprocess.check_output(
+        ["git", "ls-files", "crates", "vendor"], cwd=ROOT, text=True
+    ).splitlines()
+    assert {p for p in tracked if p.endswith(".rs")} <= inputs.keys()
+    assert all(hashlib.sha256((ROOT / p).read_bytes()).hexdigest() == h for p, h in inputs.items())

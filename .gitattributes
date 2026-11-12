@@ -1734,3 +1734,7 @@ spec/performance/filter-prefix-benchmark-oracle-2026-11-12/**/*.gz -text
 spec/performance/filter-single-color-2026-11-12/*.md text eol=lf
 spec/performance/filter-single-color-2026-11-12/*.json text eol=lf
 spec/performance/filter-single-color-2026-11-12/**/*.gz -text
+
+spec/performance/filter-compiled-inputs-2026-11-12/*.md text eol=lf
+spec/performance/filter-compiled-inputs-2026-11-12/*.json text eol=lf
+spec/performance/filter-compiled-inputs-2026-11-12/**/*.gz -text
