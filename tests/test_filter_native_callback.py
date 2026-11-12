@@ -50,7 +50,8 @@ def test_fixture_verification_bounds_metadata_before_header_reads(tmp_path):
         AUTHOR.verify(directory)
 
 
-def test_actual_native_callback_five_rendered_views(tmp_path):
+@pytest.mark.parametrize("pixel_index", [False, True])
+def test_actual_native_callback_five_rendered_views(tmp_path, pixel_index):
     chromium = os.environ.get("XYG_CHROMIUM") or os.environ.get("XYG_TEST_CHROMIUM")
     node = shutil.which("node")
     if not chromium or not node:
@@ -71,10 +72,19 @@ def test_actual_native_callback_five_rendered_views(tmp_path):
         cwd=ROOT,
         check=True,
         timeout=120,
-        env={**os.environ, "XYG_CHROMIUM": chromium},
+        env={
+            **{key: value for key, value in os.environ.items() if key != "XYG_FILTER_ACTIVE_CELLS"},
+            "XYG_CHROMIUM": chromium,
+            **({"XYG_FILTER_ACTIVE_CELLS": "pixel"} if pixel_index else {}),
+        },
     )
     result = json.loads((output / "report.json").read_text())
     assert result["countChecks"] == 100000 and result["textureChecks"] == 400000
     assert result["membershipBits"] == 40 and result["sourceArraysInBrowser"] == 0
     assert result["pageErrors"] == [] and result["performanceQualification"] is False
+    cells = 346 if pixel_index else 4
+    assert result["activeCells"] == cells and result["pixelIndex"] is pixel_index
+    assert result["traces"][0]["indexBytes"] == str(
+        4 * (cells + 1) * 50001 + 16 * 50001 + 16 * cells
+    )
     assert [r["op"] for r in result["traces"]] == [10, 11, 5, 11, 9]

@@ -1716,3 +1716,8 @@ spec/performance/filter-emscripten-transport-2026-11-12/*.json text eol=lf
 spec/performance/filter-emscripten-transport-2026-11-12/**/*.gz binary
 scripts/pyodide_load_smoke.py text eol=lf
 tests/test_pyodide_load_smoke.py text eol=lf
+
+# Exact private count-prefix continuation and qualification, 2026-11-12.
+spec/performance/filter-prefix-storage-2026-11-12/*.md text eol=lf
+spec/performance/filter-prefix-storage-2026-11-12/*.json text eol=lf
+spec/performance/filter-prefix-storage-2026-11-12/**/*.gz -text

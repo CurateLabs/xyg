@@ -100,7 +100,7 @@ class DensityOracle:
         assert reply["affected_count"] == len(self.views)
         assert [v["id"] for v in reply["views"]] == [v[0] for v in self.views]
         width = 1 + sum(v[3] * v[4] for v in self.views)
-        expected_index = 8 * (self.active_cells + 1) * width + 16 * width + 16 * self.active_cells
+        expected_index = 4 * (self.active_cells + 1) * width + 16 * width + 16 * self.active_cells
         assert reply["index_bytes"] == (expected_index if self.index_present else 0)
         assert (
             reply["resident_bytes"]

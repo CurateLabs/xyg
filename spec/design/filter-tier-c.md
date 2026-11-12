@@ -95,8 +95,18 @@ candidate. The normal Worker uses its declared arena output capacity.
 ## Memory and work accounting
 
 For C active cells and W = 1 + sum(passive bins), index bytes are
-`8*(C+1)*W + 8*W + 16*C`: cumulative u64 slabs, unfiltered totals, and active
-extrema. This is independent of canonical row count. Cuts, view descriptors,
+`4*(C+1)*W + 8*W + 16*C`: private cumulative u32 slabs, unfiltered u64 totals,
+and active extrema. Linked mode also retains `8*W` bytes of u64 base totals.
+Both resident and issued-paged source ingress and append already refuse more
+than `u32::MAX` canonical rows. Each row contributes at most once to each
+channel, so every cumulative entry is an exact count bounded by that row limit.
+Range differences widen to u64 before entering the public reply. Absolute
+source/row identities, selected totals and all wire count planes remain u64;
+large absolute first-row values do not enlarge the canonical row count.
+Expanding the supported row-count limit requires revisiting this storage proof.
+Admission and retained diagnostics charge actual numeric vector capacities,
+including the old and candidate slabs during a rebuild. The allocation is
+independent of canonical row count. Cuts, view descriptors,
 source columns, and reply/scratch are additional budgeted storage. There is no
 C × canonical-row-word allocation. Limits are 64 dimensions, 64 passive views,
 4,096 cuts per axis, 65,536 total slab channels, and 256 MiB per protocol packet.
@@ -447,8 +457,8 @@ materialized result masks, idle prefetch,
 non-range predicates/active rectangles, log/nonlinear/nonprimary/large-offset paint
 compatibility, automatic notebook-widget/native-host transport binding, actual
 assistive-technology/hardware journeys, and all required scale qualification.
-The committed 100M fixture, five **rendered** linked views at ≥50 FPS, CodSpeed
-build/query measurements, browser traces, memory/payload qualification, and
+Distribution of the committed 100M fixture, five **rendered** linked views at
+≥50 FPS, required hardware/browser traces, broader memory/payload qualification, and
 reproducible competitors across all required scales remain open. No performance
 lead over Falcon/Mosaic, Matplotlib, Seaborn, Plotly, Bokeh, Altair, Datashader,
 HoloViews/hvPlot, or emerging libraries is claimed.
@@ -462,10 +472,22 @@ SwiftShader diagnostic, not trusted-input/RAF or ≥50 FPS qualification; see
 the [baseline receipt](../performance/filter-dashboard-baseline-2026-11-11/README.md)
 and [reproduction contract](../benchmarks/methodology.md#manual-native-callback-dashboard-walltime).
 
+The [exact private-prefix continuation](../performance/filter-prefix-storage-2026-11-12/README.md)
+qualifies the same346-cell/five100×100-grid materialized100M source at128MiB,
+with a70,206,940-byte index and exact count/texture/membership oracles. The
+private u32 storage follows the existing row bound, not a lower bin resolution.
+Its bounded CodSpeed build and full-pipeline comparisons are diagnostic evidence;
+they do not satisfy the open ≥50FPS, hardware, competitor or full-scale gates.
+Old-plus-new replacement admission remains additive; fitting the first index at
+128MiB does not guarantee a second simultaneous index fits that budget.
+
 ## Linked density extension (opcodes 10–15)
 
-Existing v1 opcodes and historical packets are unchanged. No exported ABI
-signature changes; native ABI 403 and WASM ABI 37 remain current. Older v1
+Existing v1 opcode layouts are unchanged and historical packet receipts remain
+preserved. Current index/resident/peak diagnostics reflect the private storage
+charged above. An earlier combined specification listed native ABI403/WASM37;
+the current combined module uses native ABI405/WASM38, with no signature change
+for this prefix continuation. Older v1
 implementations refuse the new opcodes. Successful paint replies set u32 flags
 at XYFR offset 12 to 1; older decoders reject the additional payload length.
 Unknown opcode/flag combinations fail before consuming request watermarks.
@@ -495,7 +517,7 @@ two source dimensions. IDs are explicit, unique, nonzero u64 values. No row
 correspondence is inferred from equal coordinates or arbitrary UUIDs.
 
 The index width W is `1 + sum(width*height)` across all views, and active C is
-`cut_count+1`. Storage is `8*(C+1)*W + 16*W + 16*C`: cumulative slabs,
+`cut_count+1`. Storage is `4*(C+1)*W + 16*W + 16*C`: exact private u32 cumulative slabs,
 unfiltered context totals, eligible-base totals (including nonfinite active
 values when there is no active range), and extrema. Grid descriptors add 96
 logical bytes per view; clause slots add 32 bytes each; base mask bytes and edit

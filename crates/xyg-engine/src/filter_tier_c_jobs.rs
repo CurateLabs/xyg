@@ -44,12 +44,6 @@ pub(super) struct Completed {
     counts: Option<Vec<u64>>,
     membership: Option<(Vec<u8>, u64)>,
 }
-impl Index {
-    fn bytes(&self) -> usize {
-        (self.prefix.capacity() + self.totals.capacity() + self.base.capacity()) * 8
-            + self.extrema.capacity() * 16
-    }
-}
 impl Completed {
     fn bytes(&self) -> usize {
         self.index.as_ref().map_or(0, Index::bytes)

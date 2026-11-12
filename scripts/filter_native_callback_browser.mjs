@@ -12,7 +12,12 @@ const out=resolve(process.argv[3]??'target/task-tmp/filter-native-bridge/browser
 await mkdir(out,{recursive:true});
 const manifest=JSON.parse(await readFile(`${directory}/manifest.json`,'utf8'));
 const names=manifest.dimensions,n=manifest.rows,first=BigInt(manifest.firstRow),domain=2**Math.ceil(Math.log2(n+1));
-const lo=Math.floor(n/4),hi=Math.floor(n/2)-1;
+// Manual pixel-resolution qualification keeps the same400x260 carriers and
+// 128MiB arena. The actual CSS plot width is asserted below, never reduced.
+assert([undefined,'pixel'].includes(process.env.XYG_FILTER_ACTIVE_CELLS),'unsupported active-cell qualification');
+const pixelIndex=process.env.XYG_FILTER_ACTIVE_CELLS==='pixel',cells=pixelIndex?346:4;
+const cuts=Array.from({length:cells-1},(_,i)=>Math.floor((pixelIndex?domain:n)*(i+1)/cells));
+const lo=cuts[0],hi=cuts[1]-1;
 const limits=names.map((_,i)=>i===0?domain:65536),multipliers=manifest.files.map(r=>r.multiplier),periods=manifest.files.map(r=>r.period);
 // Independent scalar fixture/count oracle, no product classifier or sampling.
 const total=names.map(()=>new Float64Array(10000)),selected=names.map(()=>new Float64Array(10000));
@@ -75,7 +80,7 @@ const errors=[];let report;
 {
  const page=await browser.newPage({viewport:{width:1000,height:1000}});page.on('pageerror',e=>errors.push(e.message));
  await page.goto(`http://127.0.0.1:${server.address().port}/`);
- report=await page.evaluate(async({token,n,names,limits,lo,hi,first})=>{
+ report=await page.evaluate(async({token,n,names,limits,lo,hi,first,cuts,cells,pixelIndex})=>{
   const xy=await import('/client.js'),url=path=>`${path}?token=${token}`;
   const registration=await fetch(url('/source'));
   const traces=[];
@@ -96,8 +101,9 @@ const errors=[];let report;
     const el=document.createElement('section');container.append(el);
     const spec=await(await fetch(`/view-${i}.json`)).json(),buffer=await(await fetch(`/view-${i}.bin`)).arrayBuffer();
     const view=xy.renderStandalone(el,spec,buffer);check(view.gpuTraces.length===1,`empty carrier trace ${i}`);
-    bindings.push({view,id:BigInt(i+1),sourceId:112n,epoch:7n,dimension:names[i],cuts:i===0?[Math.floor(n/4),Math.floor(n/2),Math.floor(n*3/4)]:[16384,32768,49152],step:1,grid:{x:names[i],y:names[(i+1)%5],width:100,height:100,xRange:[0,limits[i]],yRange:[0,limits[(i+1)%5]]}});
+    bindings.push({view,id:BigInt(i+1),sourceId:112n,epoch:7n,dimension:names[i],cuts:i===0?cuts:[16384,32768,49152],step:1,grid:{x:names[i],y:names[(i+1)%5],width:100,height:100,xRange:[0,limits[i]],yRange:[0,limits[(i+1)%5]]}});
    }
+   if(pixelIndex)check(Math.ceil(bindings[0].view.plot.w)===cells,'one active cell per actual CSS plot pixel');
    const oracle=new DataView(await(await fetch('/oracle')).arrayBuffer());let countChecks=0,textureChecks=0;
    dashboard=await xy.attachFilterDashboard(session,bindings);
    const verify=filtered=>{
@@ -132,10 +138,11 @@ const errors=[];let report;
    check(traces.filter(t=>t.op===5||t.op===11).every(t=>t.rowsRead==='0'),'indexed range/paint scanned canonical rows');
    const start=BigInt(first)+BigInt(lo)-10n,membership=await session.membership(start,40n);
    for(let i=0;i<40;i++)check(Boolean(membership.membership[i>>3]&(1<<(i&7)))===(i>=10),'canonical membership oracle');
-   const result={rows:n,renderedViews:5,distinctDimensions:5,countChecks,textureChecks,membershipBits:40,before,after,sourceArraysInBrowser:0,traces,performanceQualification:false};
+   const result={rows:n,activeCells:cells,pixelIndex,renderedViews:5,distinctDimensions:5,countChecks,textureChecks,membershipBits:40,before,after,sourceArraysInBrowser:0,traces,performanceQualification:false};
    window.nativeCase={bindings,dashboard,session};return result;
-  }catch(error){dashboard?.destroy();for(const b of bindings)b.view.destroy();await session.close();throw error;}
- },{token,n,names,limits,lo,hi,first:first.toString()});
+  }catch(error){dashboard?.destroy();for(const b of bindings)b.view.destroy();await session.close();return {setupFailure:String(error?.stack??error)};}
+ },{token,n,names,limits,lo,hi,first:first.toString(),cuts,cells,pixelIndex});
+ assert(report && !report.setupFailure,JSON.stringify({report,errors}));
  await page.screenshot({path:`${out}/linked.png`});
  await page.evaluate(async()=>{const s=window.nativeCase;s.dashboard.destroy();for(const b of s.bindings)b.view.destroy();const p=s.session.close();if(s.session.close()!==p)throw Error('close ACK identity');await p;});
  assert.equal(owner.closed,true);assert.equal(pending,0);assert.deepEqual(errors,[]);

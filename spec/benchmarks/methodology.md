@@ -691,8 +691,11 @@ correctness checks occur outside every measured region.
 
 The workload uses five 400×260 CSS chart carriers, five 100×100 passive grids,
 and one active cell per CSS plot pixel (346 in the pinned environment).
-The explicit native session budget is 256 MiB, within the existing maximum;
-128 MiB refuses this index. Every measured range/paint reply must report zero
+The recorded wide-prefix baseline uses an explicit native session budget of
+256 MiB, within the existing maximum; its former u64 prefix refused 128 MiB.
+The current private u32 representation follows the unchanged canonical row-count
+bound in `spec/design/filter-tier-c.md`; the benchmark retains its explicit
+256 MiB budget for comparisons. Every measured range/paint reply must report zero
 canonical rows read and tier 3; the source builds exactly once. Range endpoints
 are exact index-cut boundaries, alternated on each update. This measures neither
 arbitrary-boundary fallback nor active-view switching/rebuild. The renderer is

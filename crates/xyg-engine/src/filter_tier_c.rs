@@ -48,7 +48,7 @@ fn mul(a: usize, b: usize) -> Result<usize> {
 fn alloc<T: Default + Clone>(n: usize) -> Result<Vec<T>> {
     let mut v = Vec::new();
     v.try_reserve_exact(n).map_err(|_| Error::Allocation)?;
-    // These private buffers contain only u8/u64/f64/[f64; 2] zero defaults.
+    // These private buffers contain only u8/u32/u64/f64/[f64; 2] zero defaults.
     // Browser initialization constructs each element directly, avoiding the
     // repeated aggregate-clone fill machinery; the checked reservation stays.
     #[cfg(target_arch = "wasm32")]
@@ -380,7 +380,7 @@ impl Config {
     }
     fn index_bytes(&self) -> Result<usize> {
         add(
-            mul(mul(self.active.cuts.len() + 2, self.width)?, 8)?,
+            mul(mul(self.active.cuts.len() + 2, self.width)?, 4)?,
             add(
                 mul(self.width, if self.linked() { 16 } else { 8 })?,
                 mul(self.active.cuts.len() + 1, 16)?,
@@ -393,12 +393,20 @@ impl Config {
 }
 #[derive(Debug)]
 struct Index {
-    prefix: Vec<u64>,
+    // Source ingress and append admit at most u32::MAX canonical rows. Each
+    // channel receives a row at most once; every cumulative entry counts a
+    // subset of those rows. Absolute row identities and public counts stay u64.
+    prefix: Vec<u32>,
     totals: Vec<u64>,
     extrema: Vec<[f64; 2]>,
     base: Vec<u64>,
 }
 impl Index {
+    fn bytes(&self) -> usize {
+        self.prefix.capacity() * 4
+            + (self.totals.capacity() + self.base.capacity()) * 8
+            + self.extrema.capacity() * 16
+    }
     #[cfg_attr(target_family = "wasm", inline(always))]
     #[cfg_attr(not(target_family = "wasm"), inline)]
     fn empty(cfg: &Config) -> Result<Self> {
@@ -406,7 +414,7 @@ impl Index {
         let mut extrema = alloc::<[f64; 2]>(cells)?;
         extrema.fill([f64::INFINITY, f64::NEG_INFINITY]);
         Ok(Self {
-            prefix: alloc::<u64>((cells + 1) * cfg.width)?,
+            prefix: alloc::<u32>((cells + 1) * cfg.width)?,
             totals: alloc::<u64>(cfg.width)?,
             base: alloc::<u64>(if cfg.linked() { cfg.width } else { 0 })?,
             extrema,
@@ -485,7 +493,8 @@ impl Index {
         let (first, end) = self.interval(bounds)?;
         let mut values = alloc::<u64>(cfg.width)?;
         for (i, value) in values.iter_mut().enumerate() {
-            *value = self.prefix[end * cfg.width + i] - self.prefix[first * cfg.width + i];
+            *value =
+                u64::from(self.prefix[end * cfg.width + i] - self.prefix[first * cfg.width + i]);
         }
         Ok(values)
     }
@@ -555,11 +564,7 @@ impl FilterTierCSession {
             + self.linked.bytes()
             + self.source.as_deref().map_or(0, Source::bytes)
             + self.config.as_ref().map_or(0, Config::bytes)
-            + if self.index.is_some() {
-                self.config.as_ref().unwrap().index_bytes().unwrap()
-            } else {
-                0
-            }
+            + self.index.as_ref().map_or(0, Index::bytes)
     }
     /// Foreign adapters count physical staging slack in addition to logical
     /// packet bytes. It is transient, never reported as retained filter data.
@@ -658,14 +663,7 @@ impl FilterTierCSession {
             (48, s.map_or(0, |s| s.revision)),
             (56, self.fingerprint()),
             (64, tier),
-            (
-                72,
-                if self.index.is_some() {
-                    cfg.unwrap().index_bytes()? as u64
-                } else {
-                    0
-                },
-            ),
+            (72, self.index.as_ref().map_or(0, Index::bytes) as u64),
             (80, self.retained_bytes() as u64),
             (88, peak as u64),
             (96, rows),
@@ -1350,5 +1348,94 @@ mod budget_tests {
         assert_eq!(u32_at(&reply, 8), Ok(Error::Budget as u32));
         assert!(state.source.is_none());
         assert_eq!(state.revision, 0);
+    }
+}
+
+#[cfg(test)]
+mod prefix_storage_tests {
+    use super::*;
+
+    fn config() -> Config {
+        Config {
+            active_id: 17,
+            active: Axis {
+                dimension: 0,
+                cuts: vec![1., 2.],
+            },
+            views: vec![View {
+                id: 19,
+                axis: Axis {
+                    dimension: 1,
+                    cuts: vec![1.],
+                },
+                offset: 1,
+                grid: None,
+            }],
+            width: 3,
+        }
+    }
+
+    #[test]
+    fn filter_tier_c_prefix_exact_at_u32_row_limit() {
+        let cfg = config();
+        let mut index = Index::empty(&cfg).unwrap();
+        let max = u32::MAX;
+        // Three independent channel histograms, each representing max rows.
+        // Odd slab width and single-element turns exercise every boundary.
+        index.prefix[3..].copy_from_slice(&[max - 2, max, 0, 1, 0, max - 1, 1, 0, 1]);
+        index
+            .extrema
+            .copy_from_slice(&[[0., 0.], [1., 1.], [2., 2.]]);
+        let mut cursor = cfg.width;
+        while cursor < index.prefix.len() {
+            cursor = index.prefix_step(&cfg, cursor, 1);
+        }
+        assert_eq!(
+            index.range_counts(&cfg, [0., 2.]).unwrap(),
+            vec![u64::from(max); 3]
+        );
+        assert_eq!(
+            index.range_counts(&cfg, [1., 2.]).unwrap(),
+            vec![2, 0, u64::from(max)]
+        );
+        assert_eq!(index.range_counts(&cfg, [3., 4.]).unwrap(), vec![0; 3]);
+        assert_eq!(index.bytes(), cfg.index_bytes().unwrap());
+    }
+
+    #[test]
+    fn filter_tier_c_prefix_row_bound_is_independent_of_absolute_identity() {
+        let mut packet = [0; 8];
+        put(&mut packet, 0, u64::from(u32::MAX));
+        assert_eq!(usize_at(&packet, 0), Ok(u32::MAX as usize));
+        put(&mut packet, 0, u64::from(u32::MAX) + 1);
+        assert_eq!(usize_at(&packet, 0), Err(Error::Budget));
+        assert_eq!(add(u32::MAX as usize, 1), Err(Error::Budget));
+        put(&mut packet, 0, (1u64 << 63) + 17);
+        assert_eq!(u64_at(&packet, 0), Ok((1u64 << 63) + 17));
+    }
+
+    #[test]
+    fn filter_tier_c_prefix_replacement_admits_actual_old_plus_new_storage() {
+        let cfg = config();
+        let index = Index::empty(&cfg).unwrap();
+        assert_eq!(index.prefix.capacity() * 4, 4 * 4 * 3);
+        let replacement_bytes = cfg.index_bytes().unwrap();
+        let state = FilterTierCSession {
+            config: Some(cfg),
+            index: Some(index),
+            ..FilterTierCSession::default()
+        };
+        let before = state.retained_bytes();
+        let peak = before + replacement_bytes + HEADER + REPLY_HEADER;
+        assert_eq!(
+            state.admit(replacement_bytes, HEADER, REPLY_HEADER, peak - 1),
+            Err(Error::Budget)
+        );
+        assert_eq!(state.retained_bytes(), before);
+        assert_eq!(state.index.as_ref().unwrap().prefix, vec![0; 12]);
+        assert_eq!(
+            state.admit(replacement_bytes, HEADER, REPLY_HEADER, peak),
+            Ok(peak)
+        );
     }
 }

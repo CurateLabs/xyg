@@ -99,7 +99,7 @@ def generate(*, check_only: bool = False):
                 assert result["active_view"] == 10 + active_dimension, name
                 channels = 1 + sum(len(edges) + 1 for _, _, edges in views)
                 cells = len(cuts) + 1
-                index_bytes = 8 * (cells + 1) * channels + 8 * channels + 16 * cells
+                index_bytes = 4 * (cells + 1) * channels + 8 * channels + 16 * cells
                 if membership and name in {"intent-survives-eviction", "intent-survives-append"}:
                     index_bytes = 0
                 assert result["index_bytes"] == index_bytes, name
