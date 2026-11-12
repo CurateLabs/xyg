@@ -1140,6 +1140,23 @@ void main() {
   outColor = vec4(rgb * alpha, alpha);
 }`;
 
+// One bounded specialization of the same segment shaders, selected only when
+// every substituted integer uniform is already known at the draw boundary.
+// Geometry, varying paint, semantic dash and blending stay in the same body.
+const SEGMENT_CARTESIAN_INTS: Record<string, number> = {
+  u_coordMode: 0, u_edgePass: 0, u_edgeEnds: 1, u_instanceStyleCss: 0,
+  u_colorMode: 3, u_dashCount: 0,
+  u_x0mode: 0, u_x1mode: 0, u_y0mode: 0, u_y1mode: 0,
+};
+function cartesianSegmentShader(source: string): string {
+  return source.replace(/uniform int (u_\w+)\s*;/g, (declaration, name) =>
+    Object.hasOwn(SEGMENT_CARTESIAN_INTS, name)
+      ? `const int ${name} = ${SEGMENT_CARTESIAN_INTS[name]};`
+      : declaration);
+}
+export const SEGMENT_CARTESIAN_VS = cartesianSegmentShader(SEGMENT_VS);
+export const SEGMENT_CARTESIAN_FS = cartesianSegmentShader(SEGMENT_FS);
+
 // Filled triangle meshes: one instance per triangle, with optional scalar LUT
 // color and antialiased barycentric edge strokes.
 // Segments per ribbon edge. Must match _scene.RIBBON_STEPS: the raster

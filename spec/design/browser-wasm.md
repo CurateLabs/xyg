@@ -1420,7 +1420,7 @@ no JavaScript aggregator fallback.
 | Kernel dispatch | `js/src/54_kernel.ts` (`wasm_density_no_refinement`) | shipped |
 | Observer phase | `js/src/60_entries.ts` (`density_no_refinement`) | shipped |
 | Standalone missing WASM | `tests/test_density_pan_no_rebin.py` | green when Chromium is present |
-| Packaged ESM/IIFE overview retention | `scripts/wasm_foundation_smoke.mjs` | three bounded generated-file cases per entry, actual packaged Rust aggregate, exact pixel/grid retention, zoom/home, no new Worker or texture upload, and disposal |
+| Packaged ESM/IIFE overview retention | `scripts/wasm_foundation_smoke.mjs` | five bounded cases per entry, actual packaged Rust aggregate, exact pixel/grid retention, zoom/home, verified texture-namespace recovery, no new Worker or non-recovery texture upload, and disposal |
 | Installed supported consumers | `scripts/consumer_apps_smoke.py` / `packaged_consumer_browser.mjs` | hosted Python HTML and Node/vanilla TypeScript secondary/polar tick admission, missing/corrupt tick modules, and one native Node split unsupported-density zoom/home/lifecycle case; bounded receipts below |
 | Bundle / contract probes | `tests/test_static_client_security.py`, `tests/test_wasm_density_chartview_contract.py`, `tests/test_wasm_full_density_source.py` | green |
 | Hosted SHA-keyed visual evidence of this boundary | nightly `hosted-density-browser-<sha>.json` | tracked by [#886: packaged ticks and density no-refinement proof](https://github.com/CurateLabs/xyg/issues/886); current artifacts prove refinement lifecycle, not no-refinement |
@@ -1435,17 +1435,39 @@ Worker first produces an `XYAO` overview from canonical typed coordinates; the
 fixture only frames that grid and optional source columns for the painter.
 The generated-file cases remove the inline bootstrap, supply a malformed
 bootstrap rejected before Worker allocation, or omit the retained source.
-They assert the first explicit reason, unchanged Rust grid and texture,
+They assert the first explicit reason, unchanged Rust grid and stable-generation texture,
 byte-identical presented home pixels before/after attempted refinement,
 nonblank zoom pixels, exact home restoration, zero replacement uploads, no
-new Worker allocation, and no post-destruction publication. A missing retained
+new Worker allocation, and no post-destruction publication. A fourth case
+explicitly loses the startup WebGL context through `WEBGL_lose_context` in
+both entries. Before reading pixels, every capture waits for a lost context's
+real restoration event with a 60-second per-wait bound, then requires a
+completed paint. The existing outer 60-second guard covers the ESM foundation
+promise; IIFE execution follows it and uses the per-wait bounds. The shared host's 250 ms initial recovery backoff
+cannot be tested by eight zero-delay tasks. Texture retention is measured from
+the first completed presentation, since recovery creates a fresh GPU object
+namespace. Pixel reads remain single-shot; blank or stale images fail without
+retry. The forced startup-loss case requires an observed recovery and replacement
+context. A fifth case loses the context after accepted home pixels. Within one
+GLHost generation, trace/density/texture identity and zero replacement uploads
+remain mandatory. Across a new generation, the old texture must be invalid,
+the replacement live, and a restoration observed. Every recovery upload must
+match the original Rust grid bytes, dimensions and normalization; its count
+must equal the observed post-baseline restorations. Non-recovery uploads remain
+forbidden. Current cache ownership is sampled before asynchronous hashing so
+facts from two generations cannot be mixed. Exact home/zoom pixels, canonical
+grid hashes, Worker counts and teardown assertions remain unchanged. This
+corrects the readiness/resource oracle; it does not establish
+the cause of historical unrequested losses or change runtime recovery policy.
+See [the bounded startup recovery proof](../performance/density-startup-recovery-2026-11-11/README.md).
+A missing retained
 source initially reports `XYG_WASM_SOURCE_UNAVAILABLE`; a subsequent viewport
 request also reports the general `XYG_WASM_UNAVAILABLE` boundary.
 
 `XYG_BROWSER_DIST` points at an unpacked staged `@curatelabs/xyg` package, whose
 asset manifest is checked before execution. `XYG_WASM_FOUNDATION_REPORT` writes
 runtime/CSP details, asset and harness SHA-256 values, each event and pixel/grid
-hash, and six PNG captures beside the JSON report. Optional
+hash, and ten PNG captures beside the JSON report. Optional
 `XYG_RELEASE_COMMIT` records the artifact source declaration; package hashes
 remain the binding to the tested bytes. The harness commit and individual
 harness hashes are separate from that artifact declaration. For a focused
@@ -1459,7 +1481,7 @@ node scripts/wasm_foundation_smoke.mjs
 ```
 
 Omitting `XYG_WASM_FOUNDATION_ONLY` preserves the complete existing foundation
-gate, including fixture parity. The focused mode proves these six cases only;
+gate, including fixture parity. The focused mode proves these ten cases only;
 it cannot establish current-source fixture parity or the complete #54 matrix.
 It does not prove the full application-consumer matrix, a validly framed corrupt
 inline WASM module, every unsupported source family, or large-scale hosted
@@ -1961,14 +1983,14 @@ unchanged except the separately recorded co-owned temporal-job reservation
 correction. Complete output oracles and slower ABBA samples remain required;
 a size fit alone does not qualify final shipping or close milestones 4–7.
 
-### Current live-host and large-graph union qualification
+### Live-host and large-graph union qualification (historical checkpoint)
 
-The current [live-host/large-graph union](../performance/current-large-graph-union-2026-11-09/README.md)
+The [live-host/large-graph union checkpoint](../performance/current-large-graph-union-2026-11-09/README.md)
 combines the checked module factoring with controller-bound temporal Scenes,
 five issued geographic lanes and the hosted guard repairs. Fresh official
-native and WASM builds reproduce the factoring producer's artifacts. The
-single module is **1,886,348 raw /786,351 Node22 gzip6 bytes**, retains all 68
-functions and zero imports, and has **81 gzip bytes** under the unchanged cap.
+native and WASM builds reproduced the factoring producer's artifacts. That
+single module measured **1,886,348 raw /786,351 Node22 gzip6 bytes**, retained all 68
+functions and zero imports, and had **81 gzip bytes** under the unchanged cap.
 Earlier 47-byte and 27-byte measurements belong to their historical modules.
 The browser client is built from the complete union, not a parent client.
 
@@ -1983,3 +2005,85 @@ separate rendering from readback cost or establish a repair. No Direct/LOD
 threshold, wall deadline, work/memory cap, peer or assertion is relaxed.
 General responsiveness, reliability, shipping and milestone acceptance remain
 unproved beyond the individually recorded bounded checks.
+
+### Semantic graph source admission
+
+The [semantic session continuation](../performance/graph-semantic-session-2026-11-10/README.md)
+extends Rust's phase certificate to flat persisted semantic sources and exact
+UUID/candidate transactions. Source labels, style and metadata remain intact;
+hierarchy/layer/derived cases retain the general envelope. This does not change
+the native405/WASM38 interfaces, 68 exports, compiler/optimizer profile, renderer,
+runtime limits or 1,927,168 raw /786,432 gzip6 packaging caps. The continuation
+records its exact module separately; older checkpoint headroom is historical.
+Its official Node22 package measures **1,885,068 raw /786,429 gzip6 bytes**, with
+**3 gzip bytes** under the unchanged cap. All 68 function exports remain;
+this is a bounded size fit, not headroom for subsequent source changes.
+Failed package attempts establish no shipping acceptance. Matching final-source
+native/WASM qualification and the complete host/scale contract remain required.
+
+The historical [native graph ownership/paint checkpoint](../performance/graph-native-admission-paint-2026-11-11/README.md)
+retains ABI405/WASM38 and all 68 function exports with zero imports. Its matched
+module measured **1,884,503 raw /786,335 Node22 gzip6 bytes**, leaving
+**97 gzip bytes** at that checkpoint. The preceding three-byte measurement
+describes its historical semantic-source parent. The new bounded packet and
+paint checks do not establish shipping: final full-foundation attempts include
+early context losses, and the reproducible 100k native-notebook journey still
+exceeds its unchanged layout wall limit. Neither a size fit nor passing isolated
+reruns supersede those failures or complete milestone acceptance.
+
+The subsequent [native force-owner isolation checkpoint](../performance/graph-native-force-owner-2026-11-11/README.md)
+rebuilds the same ABI/export surface at **1,884,503 raw /786,337 Node22 gzip6
+bytes**, with **95 gzip bytes** below the unchanged cap. Its matching foundation
+run passes, but the earlier context-loss origin remains unresolved. Its actual
+100k notebook attempt still fails the existing peer wall deadline; source-owner
+isolation is not notebook reliability, global memory or milestone acceptance.
+
+
+## Cooperative filtering source sharing (development)
+
+The cooperative filtering continuation keeps existing package caps, compiler
+profile, optimizer pipeline and function exports. Its synchronous and yielded
+paths share the same row kernels and, on WASM, one bounded work dispatcher.
+Legacy and linked transactions borrow the same cancellation callback type;
+a wrapper closure must not duplicate complete transaction helpers. Index
+construction is shared before selecting synchronous execution or job capture.
+
+Typed-series default bar half-width now belongs to the safe engine kernel.
+The browser compiler delegates to that kernel. Finite-input validation,
+stable `f64::total_cmp` ordering, minimum strictly positive spacing, finite
+nonzero domain fallback and final multiplication by0.4 retain their previous
+order and results, including overflow behavior. It uses the existing shared
+stable f64 sort; native retains comparator specialization while WASM uses the
+existing erased comparator body for that record type.
+
+Polygon clipping's temporary derived node list uses directly constructed
+`[f64;2]` values so its stable sort shares the existing two-f64 array sort
+family. Endpoint ordering stays lexicographic `total_cmp`; the existing derived
+signed-zero welding, deduplication, binary searches, cycle order and resource/
+branch refusals remain unchanged. Output is converted back to the existing
+`ScreenPoint` tuple without arithmetic or reinterpretation. Canonical source
+storage and geometry are unchanged by this representation sharing.
+
+The linked filter's private canonical clause list is bounded by the existing
+64-clause guard. Its ordering uses an in-place insertion pass over those keys,
+preserving complete clause payloads and the pre-sort refusal. This removes the
+list's general quicksort specialization without changing other sorting paths,
+protocol output, validation or clause limits. Qualifying this bounded tradeoff
+requires native edit-round-trip CodSpeed comparisons and complete native/WASM
+packets. Those checks do not measure100M throughput or input-to-pixel latency.
+
+Geographic density memberships and clipping's directed temporary edge list use
+arithmetic u64 keys for two u32 ordinals. Numeric key order is exactly the
+previous lexicographic tuple order; sorting and deduplication use the existing
+u64 standard sorter. Density admission already bounds cells to2,000,000 and
+source-row ordinals are u32. Clipping's existing edge/byte admission bounds its
+nodes below2^22; checked node-index conversions refuse rather than truncate.
+The pairs stay packed through collection, sort, dedup and consumption. No extra
+canonical vector is allocated; admission estimates and caps stay unchanged.
+Canonical f64 coordinates, u64 source/feature IDs, CSR membership, cycle order
+and error categories remain unchanged. This representation shares a sorter;
+it does not change geographic LOD or establish a performance win.
+
+These are source-sharing contracts, not a package-fit, latency, performance
+or whole-issue qualification. New compiled artifacts must pass the unchanged
+package gates and the affected exact-output and lifecycle proofs.

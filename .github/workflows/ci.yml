@@ -422,6 +422,11 @@ jobs:
           npm test --prefix packages/xy-node
           XYG_CHROMIUM="$(node -e "console.log(require('playwright').chromium.executablePath())")" node scripts/filter_tier_c_conformance.mjs
 
+      - name: Native filtering callback painter
+        run: |
+          export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"
+          XY_REQUIRE_BROWSER=1 XYG_CHROMIUM="$(node -e "console.log(require('playwright').chromium.executablePath())")" .venv/bin/python -m pytest -q tests/test_filter_native_callback.py
+
       - name: Graph and chart-scale smoke gates
         run: |
           export XYG_NATIVE_LIB="$GITHUB_WORKSPACE/target/release/libxyg_core.so"

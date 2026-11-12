@@ -3075,10 +3075,29 @@ membership pages, and stable source/intent lifecycle in native and WASM hosts.
 The linked extension adds 2D passive grids with exact selected-count planes,
 range/mask composition, the ordinary density painter and real five-view
 pointer/keyboard edit/commit/cancel/clear. It does not complete §34/35: source
-spill/reopen, persistent materialized result masks, Worker chunk cancellation,
+spill/reopen, persistent materialized result masks, portable file-backed Worker
+source/cancellation qualification,
 automatic native widget transport, full paint/predicate compatibility and the
-five-view 100M ≥50 FPS/CodSpeed/competitor qualification remain open. No prefix
-row-mask slab or second renderer is used.
+five-view 100M ≥50 FPS/CodSpeed/competitor qualification remain open. The
+[issued native paged-source continuation](design/filter-tier-c.md#issued-native-paged-sources-continuation)
+adds bounded XYGC source leases to the same count/membership kernels without
+materializing whole canonical columns. It does not complete browser paged
+transport or global resource admission. The
+[resident cooperative continuation](performance/filter-paged-cooperative-2026-11-11/README.md)
+adds bounded Rust build/prefix, exact-fallback and membership turns with
+cancellation, private-owner teardown and normal-package qualification. Array
+ingress and configuration parsing remain synchronous; portable file-backed
+Worker building and the 100M/five-rendered-view performance qualification remain open.
+The explicit asynchronous native callback path additionally paints five
+different-dimensional views over a fully materialized 100M-row XYGC fixture,
+using the same renderer and independently checked counts/textures/membership.
+Its four-cell active definition and 100×100 passive grids establish bounded
+functionality, not pixel-level active indexing, ≥50 FPS, automatic widgets,
+portable file Workers, whole-process budgets or competitor leadership. Repeated
+identical dashboard authoring does not resubmit a force-build command; Rust
+continues to decide query invalidation and rebuilding. Reproduction uses
+`scripts/gen_filter_paged_fixture.py` and `scripts/filter_native_callback_browser.mjs`.
+No prefix row-mask slab or second renderer is used.
 
 ## 35. Milestone amendments (round 3)
 
@@ -3230,7 +3249,13 @@ author expects.
 - **Live re-resolution.** The client watches `matchMedia('(prefers-color-scheme: dark)')`
   and a `MutationObserver` on the container's `class`/`data-theme`/`style`, re-resolving
   tokens on any change. Because of the retained scene graph (§7), **a theme change is
-  uniform + LUT updates, never a data re-upload**. The acceptance target remains
+  uniform + LUT updates, never a data re-upload**.
+  Automatic ancestor mutations on ordinary charts reuse the resolved theme when
+  the complete computed root style (including custom properties) and resolved
+  ancestor backdrop are unchanged. Notebook layout/focus classes therefore need
+  no duplicate rasterization. Resolved Scene descendant-slot invalidation and
+  explicit `refreshTheme()` retain unconditional refresh; genuine computed paint
+  changes still redraw without uploading source geometry. The acceptance target remains
   60 fps even on a100M-point figure, with a dashboard theme flip repainting every
   linked view in one frame. The bounded CSS-color checks establish no source
   geometry uploads for their fixture; they do not qualify that massive-scale

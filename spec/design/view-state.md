@@ -371,6 +371,15 @@ existing hover/pick messages — no new message, larger detail.
 
 ## 9. Testing contract
 
+Actual notebook/desktop region journeys choose a real, unobstructed canvas
+path before sending trusted pan input. Host sidebars may cover a fixed-width
+output without changing its DOM bounding box. The harness hit-tests all seven
+positions of the existing 20/-12 CSS-pixel path, retains the original path when
+exposed, and fails if no candidate reaches the canvas. It still requires the
+native camera end event, subsequent wheel end event and exact post-camera
+selection/mask oracles. This accommodates host clipping; it does not synthesize
+input, dismiss host UI, relax timeouts or qualify a pan that never reaches XYG.
+
 Locked in before implementation, in the PR #117 fail-first style:
 
 - **Round-trip:** for any reachable durable state, `apply(serialize(state))`
@@ -387,7 +396,9 @@ Locked in before implementation, in the PR #117 fail-first style:
 - **Browsing-context release:** every capture-owning gesture follows the same
   loss detector. Pans end once at the last in-frame view; selection/box-zoom
   and lasso-handle edits restore committed state; axis and modebar drags do
-  not resume on buttonless re-entry.
+  not resume on buttonless re-entry. A canvas `pointercancel` also finishes
+  the last committed pan view with one terminal event; it cancels unfinished
+  selection geometry without inventing a release coordinate.
 - **Rows non-durability:** a rows-selection never enters the history stack,
   `view_state()` reports the `{"rows": true}` marker rather than indices,
   and Back after a rows-select restores the prior geometric state.

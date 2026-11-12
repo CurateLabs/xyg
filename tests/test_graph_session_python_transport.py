@@ -320,6 +320,76 @@ def test_close_waits_for_complete_query_copy_transaction(session, monkeypatch, a
     _decode(results[0])
 
 
+@pytest.mark.parametrize("peer_operation", ["create", "render", "close"])
+@pytest.mark.parametrize("busy_operation", ["create", "render"])
+def test_independent_owner_progresses_while_native_transaction_is_parked(
+    session, monkeypatch, peer_operation, busy_operation
+) -> None:
+    handle, instance = session
+    peer_instance = next(_INSTANCES)
+    peer = _open(peer_instance)
+    queried, release, finished = (threading.Event() for _ in range(3))
+    errors = []
+    native_render = _native._lib.xyg_graphforge_session_render
+    native_create = _native._lib.xyg_graphforge_session_create
+
+    def create(*args):
+        status = native_create(*args)
+        if args[4] == instance:
+            queried.set()
+            assert release.wait(5)
+        return status
+
+    def render(*args):
+        status = native_render(*args)
+        if args[0] == handle._handle and args[4] == 0:
+            queried.set()
+            assert release.wait(5)
+        return status
+
+    def operation():
+        try:
+            if busy_operation == "create":
+                with _open(instance) as alias:
+                    assert alias._handle == handle._handle
+            else:
+                _decode(handle.render(_request(instance, 2, 21)))
+        except BaseException as error:
+            errors.append(error)
+
+    def independent():
+        try:
+            if peer_operation == "create":
+                with _open(next(_INSTANCES)) as created:
+                    assert created._handle is not None
+            elif peer_operation == "render":
+                _decode(peer.render(_request(peer_instance, 2, 21)))
+            else:
+                peer.close()
+        except BaseException as error:
+            errors.append(error)
+        finally:
+            finished.set()
+
+    monkeypatch.setattr(_native._lib, "xyg_graphforge_session_render", render)
+    monkeypatch.setattr(_native._lib, "xyg_graphforge_session_create", create)
+    worker, peer_worker = threading.Thread(target=operation), threading.Thread(target=independent)
+    worker.start()
+    try:
+        assert queried.wait(5)
+        peer_worker.start()
+        completed_before_release = finished.wait(1)
+    finally:
+        release.set()
+        worker.join(5)
+        if peer_worker.ident is not None:
+            peer_worker.join(5)
+        peer.close()
+    assert not worker.is_alive() and not peer_worker.is_alive()
+    assert not errors
+    assert completed_before_release, "independent owner waited for an unrelated query/copy"
+
+
 def test_repeated_close_and_every_future_operation_refused_locally(session, monkeypatch) -> None:
     handle, instance = session
     handle.close()
@@ -452,7 +522,7 @@ with open_session(instance + 1) as peer:
 print('native398: constructor callback completed')
 """
     # subprocess.run kills and reaps the child on timeout, so the regression
-    # cannot strand a thread holding the module lock in the pytest process.
+    # cannot strand a thread holding a lifecycle lock in the pytest process.
     result = subprocess.run(
         [sys.executable, "-c", code, field],
         capture_output=True,

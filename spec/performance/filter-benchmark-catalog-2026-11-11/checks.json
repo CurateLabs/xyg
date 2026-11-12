@@ -1,0 +1,396 @@
+{
+  "bindings": {
+    "current": 3513,
+    "historical": 1761,
+    "parents": 58,
+    "path": "spec/performance/filter-benchmark-catalog-2026-11-11/current-bindings.json",
+    "sha256": "d51c046071ff014121a7901561402a55f2ba0deb7efee2ce4afa377588251d2b"
+  },
+  "compiledEquality": {
+    "count": 327,
+    "path": "spec/performance/filter-native-callback-2026-11-11/compiled-inputs.json",
+    "sha256": "7d6e4ecbf0b1704ee22bcd937fd42ba760bd31721083fd7cd1e6ab318a806250"
+  },
+  "evidence": {
+    "build-receipt.py": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/8c21bf8ba23d1b7732712c56a3be24a61a9c436be6d1ea9ce31c0cf43bb9eba8.gz",
+      "archiveSha256": "7d579a0220a0196e70d0cd0379ea35bacbf40e405350292a8fd248fabe4e3744",
+      "bytes": 4783,
+      "sha256": "8c21bf8ba23d1b7732712c56a3be24a61a9c436be6d1ea9ce31c0cf43bb9eba8",
+      "source": "target/task-tmp/filter-catalog-correction/build-receipt.py"
+    },
+    "collection311.log": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/b97b28580aa9b020915b4d99428696f7a65c6780b387499484420daf2e8ffdfe.gz",
+      "archiveSha256": "88023ae9747aaba625159df91d568f5a95e90e4cb555272f1c91d0f7ffb1a1a7",
+      "bytes": 18028,
+      "sha256": "b97b28580aa9b020915b4d99428696f7a65c6780b387499484420daf2e8ffdfe",
+      "source": "target/task-tmp/filter-catalog-correction/collection311.log"
+    },
+    "collection312.log": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/a38fff5dc36a1416658757ba8497c6a96f4c21006adfb84db89edc3a1a23b28a.gz",
+      "archiveSha256": "a9c5557e38eed2374b51978e70e53c246679964195a718fea6c21a1ed0564d16",
+      "bytes": 18028,
+      "sha256": "a38fff5dc36a1416658757ba8497c6a96f4c21006adfb84db89edc3a1a23b28a",
+      "source": "target/task-tmp/filter-catalog-correction/collection312.log"
+    },
+    "core-final.log": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/93d4f03eea6cde1238413a6b70815aecca3a5712ff2315031ce2e0043ecc6086.gz",
+      "archiveSha256": "3849709e1a1a6adbb99e144efba31363c11e6bbc46e6702624b50826cd474553",
+      "bytes": 125,
+      "sha256": "93d4f03eea6cde1238413a6b70815aecca3a5712ff2315031ce2e0043ecc6086",
+      "source": "target/task-tmp/filter-catalog-correction/core-final.log"
+    },
+    "core.log": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/6407b667807fa8e6c1d30b3b343df2f589f0fbcb089970ae98d4eb8ace0953d7.gz",
+      "archiveSha256": "95edffc87f198126bc927e25064d96970e34c9a36352f67257958ff1391661e7",
+      "bytes": 10326,
+      "sha256": "6407b667807fa8e6c1d30b3b343df2f589f0fbcb089970ae98d4eb8ace0953d7",
+      "source": "target/task-tmp/filter-catalog-correction/core.log"
+    },
+    "environment311.log": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/49675a6a8d90f5a69033379a43757eea5c03a277003a20e3d68c52ed44850995.gz",
+      "archiveSha256": "efe38b95ae0654613f61bff11a5c838bf94d4a5bc5af84e39fb246d0a093f73c",
+      "bytes": 99,
+      "sha256": "49675a6a8d90f5a69033379a43757eea5c03a277003a20e3d68c52ed44850995",
+      "source": "target/task-tmp/filter-catalog-correction/environment311.log"
+    },
+    "environment312.log": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/6fe4fe9af90e069d9cf71a7e9434b41ea519ec5da2824cf41ae8ae0fa9681df1.gz",
+      "archiveSha256": "9d70461bc406bab8856accec2e96d02db3ecc6c8efb18a21fb32c130974eccde",
+      "bytes": 99,
+      "sha256": "6fe4fe9af90e069d9cf71a7e9434b41ea519ec5da2824cf41ae8ae0fa9681df1",
+      "source": "target/task-tmp/filter-catalog-correction/environment312.log"
+    },
+    "hooks-final.log": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveSha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "source": "target/task-tmp/filter-catalog-correction/hooks-final.log"
+    },
+    "hooks.log": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveSha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "source": "target/task-tmp/filter-catalog-correction/hooks.log"
+    },
+    "hosted/predecessor-checks-delivery.json": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/bf12b3a7fe758b0a7794438d1e860cda437610f02acb87bb47c044880229dd2a.gz",
+      "archiveSha256": "88471d958927c39d26c5e29e3c02abcf75bc742f3fbfceec3c24a984c05f8c22",
+      "bytes": 63955,
+      "sha256": "bf12b3a7fe758b0a7794438d1e860cda437610f02acb87bb47c044880229dd2a",
+      "source": "target/task-tmp/filter-native-bridge/predecessor-checks-delivery.json"
+    },
+    "hosted/predecessor-floor-failed.log": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/4361c8c6683721cf18e1a29f6861dd777969b90f25c315a8b6e6a352ac7d416a.gz",
+      "archiveSha256": "55da78e7ee4ad5022274aa802376558e0d42de70a415bbf021597f20227865d4",
+      "bytes": 109575,
+      "sha256": "4361c8c6683721cf18e1a29f6861dd777969b90f25c315a8b6e6a352ac7d416a",
+      "source": "target/task-tmp/filter-native-bridge/predecessor-floor-failed.log"
+    },
+    "hosted/predecessor-main-failed.log": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/a2c4b3366180c5f5fca3977354310dcedeb73becf0152e4887881b0dbebade39.gz",
+      "archiveSha256": "d8b00afaeea6605b96d63b64bc55235eee6e403b815c6704e50f97960a5b1682",
+      "bytes": 1373817,
+      "sha256": "a2c4b3366180c5f5fca3977354310dcedeb73becf0152e4887881b0dbebade39",
+      "source": "target/task-tmp/filter-native-bridge/predecessor-main-failed.log"
+    },
+    "interpreter311.log": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/8e0c3a3c37bec2df660694261830df466d2673609933cf025473e357a17ebe9a.gz",
+      "archiveSha256": "7329b74dd6c1f9e3315eef346e8e4e920c184006faf5e99564ddc35c1a43b5b1",
+      "bytes": 194,
+      "sha256": "8e0c3a3c37bec2df660694261830df466d2673609933cf025473e357a17ebe9a",
+      "source": "target/task-tmp/filter-catalog-correction/interpreter311.log"
+    },
+    "interpreter312.log": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/093960d5cbbdac237510afce560687320825a391f77584941c887c9678b0f3c1.gz",
+      "archiveSha256": "13962e70b967bd5b7d27da3ca3c27bb73e452f515eb066b72f248160c549cf56",
+      "bytes": 151,
+      "sha256": "093960d5cbbdac237510afce560687320825a391f77584941c887c9678b0f3c1",
+      "source": "target/task-tmp/filter-catalog-correction/interpreter312.log"
+    },
+    "original-guard.log": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/4ed1499dec6bbdfb06e524968cf6bdec731e3e1e111e155cb18926e3546348f1.gz",
+      "archiveSha256": "6b6ed7aadde5ba429a82eadda3b652948d463a64668e45f2c930cc040c758440",
+      "bytes": 2256,
+      "sha256": "4ed1499dec6bbdfb06e524968cf6bdec731e3e1e111e155cb18926e3546348f1",
+      "source": "target/task-tmp/filter-catalog-correction/original-guard.log"
+    },
+    "parentReview": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/718cb6f74a2d5ee8969b4f38cfa2f5d49e9723d1bb734ed7555fefb7bdf1e00e.gz",
+      "archiveSha256": "e4476cf66faeb318c9f4b6c71d12df5d76f4b3cee88b33144de819d9c671a4e2",
+      "bytes": 65394,
+      "sha256": "718cb6f74a2d5ee8969b4f38cfa2f5d49e9723d1bb734ed7555fefb7bdf1e00e",
+      "source": "/var/tmp/xyg-review-90744f3/review.json"
+    },
+    "parentReviewLog0": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/83c1922f77e12bc76b1de4d0cd0d282507af1482dc283afbbd6942d2e3b57f5a.gz",
+      "archiveSha256": "55facce4ad88e5df9fbb9f5e4030e07b695ac94159f1d17c1ddacdd01cbb0af0",
+      "bytes": 58,
+      "sha256": "83c1922f77e12bc76b1de4d0cd0d282507af1482dc283afbbd6942d2e3b57f5a",
+      "source": "/var/tmp/xyg-review-90744f3/adversarial-corrected.log"
+    },
+    "parentReviewLog1": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/0f2d4137dadff41f2528d18fa797a2ddfefa62b47e71df134e469d8a65c5a128.gz",
+      "archiveSha256": "ddaa1e12bd609e2fc444adc69397af8c0bf2c296e2b3b602668f83f356d207e2",
+      "bytes": 629,
+      "sha256": "0f2d4137dadff41f2528d18fa797a2ddfefa62b47e71df134e469d8a65c5a128",
+      "source": "/var/tmp/xyg-review-90744f3/adversarial.log"
+    },
+    "parentReviewLog10": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/bd1fa0750ee4732d37e1a3ddfbe09cd33bc5dd81151dc5c06a440492ceba2506.gz",
+      "archiveSha256": "c093479e79f6f42e66b82191f48d2b264522cf620e8b0375f0f66d4d8281f577",
+      "bytes": 100,
+      "sha256": "bd1fa0750ee4732d37e1a3ddfbe09cd33bc5dd81151dc5c06a440492ceba2506",
+      "source": "/var/tmp/xyg-review-90744f3/python.log"
+    },
+    "parentReviewLog11": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/a91aaacea02822e10e31e5c0541ae407efdf48d56a9c1d4612991b6918f40b9f.gz",
+      "archiveSha256": "3e6c6bfa05916063801588fb83490e8b4f4669e3c109be9c157a61eca7f3621a",
+      "bytes": 99,
+      "sha256": "a91aaacea02822e10e31e5c0541ae407efdf48d56a9c1d4612991b6918f40b9f",
+      "source": "/var/tmp/xyg-review-90744f3/python311-corrected.log"
+    },
+    "parentReviewLog12": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/d8475ffd1c137acad42c4740c6d5726f567785cf39ddd16f806ae7f67ffa5914.gz",
+      "archiveSha256": "e6547df9cdfdbfb960dccf0dec57942c48bf3af2c8a693e8d1dbfd7d14145935",
+      "bytes": 9889,
+      "sha256": "d8475ffd1c137acad42c4740c6d5726f567785cf39ddd16f806ae7f67ffa5914",
+      "source": "/var/tmp/xyg-review-90744f3/python311.log"
+    },
+    "parentReviewLog2": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/3d29b3df27ab04aa2eff268a14a0b1d0df03e4c53b766cae333c85eb9191ae26.gz",
+      "archiveSha256": "23ce4e00dc4f4fcfca876155c8c8f9eed9b3195cbc5e9265b2a5094fc3a2c816",
+      "bytes": 567,
+      "sha256": "3d29b3df27ab04aa2eff268a14a0b1d0df03e4c53b766cae333c85eb9191ae26",
+      "source": "/var/tmp/xyg-review-90744f3/ci.log"
+    },
+    "parentReviewLog3": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/8ed322f4378cb09cbdc851e4216ebc2679215ab25c588a0a109e12e5d887d711.gz",
+      "archiveSha256": "38d2a273e50a8919ad2720b135895e275a5e7d4abeef036a578f079348e57dc1",
+      "bytes": 2227,
+      "sha256": "8ed322f4378cb09cbdc851e4216ebc2679215ab25c588a0a109e12e5d887d711",
+      "source": "/var/tmp/xyg-review-90744f3/conformance.log"
+    },
+    "parentReviewLog4": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/c3a0c15a840258789462c67d60f989f9b52897d5e571c1357c90645241d96cb6.gz",
+      "archiveSha256": "b278d59d8c67f41be77e6f42ff5a9fcfaa6310f58b63cb07f4763c8394548df5",
+      "bytes": 114,
+      "sha256": "c3a0c15a840258789462c67d60f989f9b52897d5e571c1357c90645241d96cb6",
+      "source": "/var/tmp/xyg-review-90744f3/core.log"
+    },
+    "parentReviewLog5": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/6324ac2f9c8f57a364a8ec2a64c63b1c0d2b7095c5c1083be3cd78188a96905e.gz",
+      "archiveSha256": "a123905460e716238fbe952705e5ef32cd1cc83eaa136cac768f74688cf885ee",
+      "bytes": 95,
+      "sha256": "6324ac2f9c8f57a364a8ec2a64c63b1c0d2b7095c5c1083be3cd78188a96905e",
+      "source": "/var/tmp/xyg-review-90744f3/ffi.log"
+    },
+    "parentReviewLog6": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/6f938b69ee4e713f1dbd237391b60eb37cd61cd11cd5878f083a98d28c06f680.gz",
+      "archiveSha256": "96d4ab819f90c56c4f6e39089a47a0e397c6320890e488859cd3b22a289ee490",
+      "bytes": 12,
+      "sha256": "6f938b69ee4e713f1dbd237391b60eb37cd61cd11cd5878f083a98d28c06f680",
+      "source": "/var/tmp/xyg-review-90744f3/git-final.log"
+    },
+    "parentReviewLog7": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/6434b2281e9f74ceab2a39409bfd54e2217f05a85a01f53900aeb7a47bb71a24.gz",
+      "archiveSha256": "0876771aae1af502bbc21bab6fda54020a631df49826790cc4ed255cc989d05b",
+      "bytes": 132,
+      "sha256": "6434b2281e9f74ceab2a39409bfd54e2217f05a85a01f53900aeb7a47bb71a24",
+      "source": "/var/tmp/xyg-review-90744f3/identities.log"
+    },
+    "parentReviewLog8": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/6434b2281e9f74ceab2a39409bfd54e2217f05a85a01f53900aeb7a47bb71a24.gz",
+      "archiveSha256": "0876771aae1af502bbc21bab6fda54020a631df49826790cc4ed255cc989d05b",
+      "bytes": 132,
+      "sha256": "6434b2281e9f74ceab2a39409bfd54e2217f05a85a01f53900aeb7a47bb71a24",
+      "source": "/var/tmp/xyg-review-90744f3/identity-final.log"
+    },
+    "parentReviewLog9": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/188ec1116c7a727c3a00ad3272b01a726f4b9370884e9971429169ae21ef2ee5.gz",
+      "archiveSha256": "40d48927fa0f5278454d9b82279e3e8b113411e55fcaf3f7b3890fd44d8971f2",
+      "bytes": 5647,
+      "sha256": "188ec1116c7a727c3a00ad3272b01a726f4b9370884e9971429169ae21ef2ee5",
+      "source": "/var/tmp/xyg-review-90744f3/node.log"
+    },
+    "row-catalog.json": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/d390da49796be1ddfce1b93818a78bb451c41263d0199ad2f1f07f9608c77f27.gz",
+      "archiveSha256": "1afbe4ad91c1a0510062d6bd73b84dc58e4a2055ddca4c30b6d579c44a4f5e20",
+      "bytes": 43503,
+      "sha256": "d390da49796be1ddfce1b93818a78bb451c41263d0199ad2f1f07f9608c77f27",
+      "source": "target/task-tmp/filter-catalog-correction/row-catalog.json"
+    },
+    "ruff-check-final.log": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "source": "target/task-tmp/filter-catalog-correction/ruff-check-final.log"
+    },
+    "ruff-check.log": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "source": "target/task-tmp/filter-catalog-correction/ruff-check.log"
+    },
+    "ruff-format-final.log": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/83905a09ae5cc97fdd2378c3e0c727763cd07c99d618e3ce4a229191847351a8.gz",
+      "archiveSha256": "f74cb236237cea847cfbc31ab0f8478826375121f14472bb22aadf843df58304",
+      "bytes": 29,
+      "sha256": "83905a09ae5cc97fdd2378c3e0c727763cd07c99d618e3ce4a229191847351a8",
+      "source": "target/task-tmp/filter-catalog-correction/ruff-format-final.log"
+    },
+    "ruff-format.log": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/83905a09ae5cc97fdd2378c3e0c727763cd07c99d618e3ce4a229191847351a8.gz",
+      "archiveSha256": "f74cb236237cea847cfbc31ab0f8478826375121f14472bb22aadf843df58304",
+      "bytes": 29,
+      "sha256": "83905a09ae5cc97fdd2378c3e0c727763cd07c99d618e3ce4a229191847351a8",
+      "source": "target/task-tmp/filter-catalog-correction/ruff-format.log"
+    },
+    "seal-final.log": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/70e6ed1bfa95b1e0c2d72997ad82bed3dc4c27e427e3fa0bfff93702c0bd4bb7.gz",
+      "archiveSha256": "4448d2fbaa98e4ef4e3758fa92b8c341f29dd16f0099f4fb83fde6cc5bfc8bf1",
+      "bytes": 53,
+      "sha256": "70e6ed1bfa95b1e0c2d72997ad82bed3dc4c27e427e3fa0bfff93702c0bd4bb7",
+      "source": "target/task-tmp/filter-catalog-correction/seal-final.log"
+    },
+    "seal-sources.py": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/f95c15b9738ff58c2f59ef4dc2d65152aa7727d1e05593ff8fcff085838dd640.gz",
+      "archiveSha256": "89a2610a5679d120ca9d645570f1b393ec84f85796b7bc5db9e1b2c0c35669d1",
+      "bytes": 2968,
+      "sha256": "f95c15b9738ff58c2f59ef4dc2d65152aa7727d1e05593ff8fcff085838dd640",
+      "source": "target/task-tmp/filter-catalog-correction/seal-sources.py"
+    },
+    "seal.log": {
+      "archive": "spec/performance/filter-benchmark-catalog-2026-11-11/evidence/70e6ed1bfa95b1e0c2d72997ad82bed3dc4c27e427e3fa0bfff93702c0bd4bb7.gz",
+      "archiveSha256": "4448d2fbaa98e4ef4e3758fa92b8c341f29dd16f0099f4fb83fde6cc5bfc8bf1",
+      "bytes": 53,
+      "sha256": "70e6ed1bfa95b1e0c2d72997ad82bed3dc4c27e427e3fa0bfff93702c0bd4bb7",
+      "source": "target/task-tmp/filter-catalog-correction/seal.log"
+    }
+  },
+  "fresh": {
+    "actualUniqueCollectedRowsEachInterpreter": 227,
+    "benchmarkSourcesUnchanged": 10,
+    "core": 4,
+    "deletedRows": 0,
+    "hooks": "PASS",
+    "metadataPython311": 18,
+    "metadataPython312": 18,
+    "moduleCounts": {
+      "benchmarks/test_codspeed_animation.py": 3,
+      "benchmarks/test_codspeed_geo_pair_ordering.py": 4,
+      "benchmarks/test_codspeed_graph_render.py": 9,
+      "benchmarks/test_codspeed_graph_semantic_validation.py": 14,
+      "benchmarks/test_codspeed_kernels.py": 88,
+      "benchmarks/test_codspeed_polar.py": 6,
+      "benchmarks/test_codspeed_pyplot.py": 14,
+      "benchmarks/test_codspeed_selection.py": 20,
+      "benchmarks/test_codspeed_tooltip_columns.py": 62,
+      "benchmarks/test_codspeed_transport.py": 7
+    },
+    "realCRLF": true,
+    "renamedRows": 0,
+    "ruff": "PASS"
+  },
+  "hostedFailures": {
+    "disposition": "Both original hosted jobs remain failed; no hosted rerun or full-green claim",
+    "head": "0a4449dbd926b5a32f5bcaef89a43de417b9c6b2",
+    "main": {
+      "failed": 1,
+      "job": 130808426565,
+      "passed": 9390,
+      "skipped": 178,
+      "xfailed": 85
+    },
+    "pythonFloor": {
+      "failed": 1,
+      "job": 130808426688,
+      "passed": 8870,
+      "skipped": 369,
+      "xfailed": 84
+    },
+    "run": 43103267630,
+    "sameCause": "Unchanged guard computed227 while methodology declared219",
+    "secondary": "consumer-app artifact absent after failed test step; uploader remains strict"
+  },
+  "package": {
+    "functions": 68,
+    "gzip6": 785931,
+    "gzipCap": 786432,
+    "gzipHeadroom": 501,
+    "imports": 0,
+    "nativeABI": 405,
+    "nativeSymbols": 551,
+    "raw": 1875494,
+    "rawCap": 1927168,
+    "wasmABI": 38
+  },
+  "parent": "90744f31b4b1703e2cb2d9f41511f9f1bce40871",
+  "parentReview": {
+    "fresh": {
+      "adversarialCorrected": "15 malformed/wrong-token probes preserve pending native work and eventual publication",
+      "boundedCallbackPainter": "PASS on both Python runs; no Python Playwright used",
+      "ciWorkflowVerifier": "PASS",
+      "coreProvenanceIncludingRealCRLF": 5,
+      "nativeOversizeGuards": 2,
+      "node": 23,
+      "normalPackageConformance": "PASS; 44 wire and 56 density packets, five rendered views, cooperative and lifecycle controls",
+      "python311Corrected": 20,
+      "python312": 20
+    },
+    "head": "90744f31b4b1703e2cb2d9f41511f9f1bce40871",
+    "limitations": [
+      "No whole-issue/milestone acceptance",
+      "No pixel-level active-index or >=50FPS claim",
+      "No competitor/AA/platform/global process-budget/beyond-RAM qualification",
+      "No portable file Worker or automatic widget qualification",
+      "No build/regeneration, broad suite repeat, source/receipt edits, Git config changes or GitHub mutations",
+      "Parent approval inherited only for verified unchanged bytes; no candidate hosted CI or queue certification"
+    ],
+    "recordSha256": "718cb6f74a2d5ee8969b4f38cfa2f5d49e9723d1bb734ed7555fefb7bdf1e00e",
+    "reviewer": {
+      "childrenStarted": false,
+      "identity": "Codex gpt-6.1-sol, high reasoning effort; independent read-only reviewer for this task",
+      "implementer": false
+    },
+    "verdict": "APPROVE_BOUNDED"
+  },
+  "readmeSha256": "10c4fce0dd8bf10c647a54797f6aed15f852a7b13b05264e71337dd9a37eef3c",
+  "remaining": [
+    "Independent final correction review",
+    "Current-main freshness,newhead hostedCI and required mergequeue",
+    "Original issue and milestones4-7 acceptance remain open"
+  ],
+  "runtimeEquality": {
+    "packages/xy-client/dist/index.js": "27f41b9bf67f6e38efdaf0f00cf1672c01fe15eedf3d31d394e23f00e480f6db",
+    "packages/xy-client/dist/standalone.js": "58ff6e8b90d8e54ff1d3817f9879054f4e71c2d9e6bd3de9332bf31bccd7b2cf",
+    "packages/xy-client/dist/wasm-inline-worker.js": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7",
+    "packages/xy-client/dist/wasm-worker.js": "49b43f063da891b99d400ad194260a8b7e0ac094df9a4506902e629debec69ca",
+    "packages/xy-client/dist/xyg-wasm-inline.js": "41f6ca27d1e821384d1dbb279d5dde6cac580d3d6ec70b26c435fa32747a2af0",
+    "packages/xy-client/dist/xyg-wasm.manifest.json": "aa952f28e9e22303991ee05967bb294dc32ba48fdd75c326a6b013f6c05b2e6d",
+    "packages/xy-client/dist/xyg-wasm.wasm": "d401219f7519006a5ddc222c9dd7b386d5b39fd1ff47d651764e02513cb28e5f",
+    "target/release/libxyg_core.so": "d60d567eec2c8b6ee06422d1ddc071c9418f5a7664b7193de2a87def838b801f"
+  },
+  "runtimeQualification": {
+    "path": "spec/performance/filter-native-callback-2026-11-11/checks.json",
+    "sha256": "05666a9a8a5a1ea3a19e06d3c17839a7f5ced3a6cd5df6b0ecec304667eb5e61"
+  },
+  "schemaVersion": 1,
+  "scope": "Correct benchmark methodology to unchanged actual227-row ten-module collection; preserve hosted failures and completed parent review",
+  "setupFailures": [
+    "First collection attempted before private output directory existed; shell exited1 without executing collection",
+    "First four Core checks ran before the new manifest existed; corrected dependency-ordered run passes"
+  ],
+  "staticEquality": {
+    "python/xyg/static/index.js": "27f41b9bf67f6e38efdaf0f00cf1672c01fe15eedf3d31d394e23f00e480f6db",
+    "python/xyg/static/standalone.js": "58ff6e8b90d8e54ff1d3817f9879054f4e71c2d9e6bd3de9332bf31bccd7b2cf",
+    "python/xyg/static/wasm-worker.js": "49b43f063da891b99d400ad194260a8b7e0ac094df9a4506902e629debec69ca",
+    "python/xyg/static/xyg-wasm-inline.js": "41f6ca27d1e821384d1dbb279d5dde6cac580d3d6ec70b26c435fa32747a2af0",
+    "python/xyg/static/xyg-wasm.manifest.json": "aa952f28e9e22303991ee05967bb294dc32ba48fdd75c326a6b013f6c05b2e6d",
+    "python/xyg/static/xyg-wasm.wasm": "d401219f7519006a5ddc222c9dd7b386d5b39fd1ff47d651764e02513cb28e5f"
+  }
+}

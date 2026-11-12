@@ -76,5 +76,5 @@ try{
  await writeFile(join(temp,'report.json'),JSON.stringify(result,null,2)+'\n');
  if(process.env.XYG_GRAPH_REGION_REPORT)await writeFile(process.env.XYG_GRAPH_REGION_REPORT,JSON.stringify(result,null,2)+'\n');
  console.log(JSON.stringify({ok:true,artifactDir:temp,nodes:result.lassoExpected.nodes,edges:result.lassoExpected.edges,dpr}));
-}catch(error){await writeFile(join(temp,'failure.json'),JSON.stringify({error:error.stack,logs,errors,body:await page?.locator('body').innerText().catch(()=>''),events:await page?.evaluate(()=>globalThis.__regionEvents).catch(()=>[])},null,2));throw error;}
+}catch(error){await writeFile(join(temp,'failure.json'),JSON.stringify({error:error.stack,logs,errors,pointerEvents:await page?.evaluate(()=>globalThis.__regionPointerEvents).catch(()=>[]),body:await page?.locator('body').innerText().catch(()=>''),events:await page?.evaluate(()=>globalThis.__regionEvents).catch(()=>[])},null,2));throw error;}
 finally{await browser?.close();server.kill('SIGTERM');}

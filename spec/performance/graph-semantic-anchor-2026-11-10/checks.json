@@ -1,0 +1,327 @@
+{
+  "base": "ad4645c9c5747036d21927055badec0fcf79e67c",
+  "bindings": {
+    "path": "spec/performance/graph-semantic-anchor-2026-11-10/current-bindings.json",
+    "sha256": "2863185760947ffb163542c880d38bd31da87460081cc1594b5e69105da16b35"
+  },
+  "compiledInputs": {
+    "changed": [
+      "crates/xyg-engine/src/graphforge/interaction.rs",
+      "crates/xyg-engine/src/graphforge/interaction/paint.rs",
+      "crates/xyg-engine/src/graphforge/interaction/tests/pick.rs",
+      "crates/xyg-engine/src/graphforge/interaction/wire.rs",
+      "crates/xyg-engine/src/graphforge/interaction/wire_memory.rs",
+      "crates/xyg-engine/tests/graph_session_memory.rs"
+    ],
+    "changedAgainstParent": [],
+    "count": 324,
+    "path": "spec/performance/graph-semantic-session-2026-11-10/compiled-inputs.json",
+    "sha256": "f3b3dc7aa6157671a52d8a3e87253e022f44eaa9f141c19c6ee51a43611fa2b8"
+  },
+  "deliveryGates": [
+    "Completed independent review of the complete combined candidate",
+    "Fresh final-head hosted checks",
+    "Required merge queue"
+  ],
+  "evidence": {
+    "target/task-tmp/graph-notebook-scale/semantic-admission/handoff-seal-first-bad-private-hash.log": {
+      "archive": "spec/performance/graph-semantic-anchor-2026-11-10/evidence/eb762887eb969ff5f770f8adf205bd3a65cdbcc42f5dd9f941de5724f1bd0157.gz",
+      "archiveBytes": 614,
+      "archiveSha256": "37d84566ad655b3b427c4820615434096d0e3cfd89c87f584ca8047b086fec4f",
+      "bytes": 1443,
+      "sha256": "eb762887eb969ff5f770f8adf205bd3a65cdbcc42f5dd9f941de5724f1bd0157"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/integration-disposition.json": {
+      "archive": "spec/performance/graph-semantic-anchor-2026-11-10/evidence/767fa05f365af974e9fe0dae429843cb53271e5b4c2f8db51fd76da5e0104b0f.gz",
+      "archiveBytes": 949,
+      "archiveSha256": "55d42f0ad7d2261e4e898e7821b4c6a4d7c974ee8c70b1afa03ee3dbfabb56cc",
+      "bytes": 2981,
+      "sha256": "767fa05f365af974e9fe0dae429843cb53271e5b4c2f8db51fd76da5e0104b0f"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/merge-resolution.json": {
+      "archive": "spec/performance/graph-semantic-anchor-2026-11-10/evidence/71599c06f9d855cf172fc65fc8338cf32dc7ea2b7741775b58a767ed762816ee.gz",
+      "archiveBytes": 388,
+      "archiveSha256": "3c05c5b45492a0400d2c963f926e3199ca807161df4247bece586f412f6d49e3",
+      "bytes": 624,
+      "sha256": "71599c06f9d855cf172fc65fc8338cf32dc7ea2b7741775b58a767ed762816ee"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-admission/mergeHooks-conflicted.log": {
+      "archive": "spec/performance/graph-semantic-anchor-2026-11-10/evidence/3a2b3e9494248986bfa256c9b932b9c3bb9304241b55c7a3bc991aa80448b9bf.gz",
+      "archiveBytes": 1188,
+      "archiveSha256": "9828a90001ddee1fd3cc84e3b4816860ef4b120bc5cfe2e0e06c0bc64e8d58cf",
+      "bytes": 14729,
+      "sha256": "3a2b3e9494248986bfa256c9b932b9c3bb9304241b55c7a3bc991aa80448b9bf"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-anchor/focused-core.log": {
+      "archive": "spec/performance/graph-semantic-anchor-2026-11-10/evidence/54916208b0ae96b8614fc5e48ce1b0232179f2cb511bc28825985ef382d8abb0.gz",
+      "archiveBytes": 78,
+      "archiveSha256": "c26d75fa042389126b749ca347b6ab0e8c50996e4d819bec0bfa74bfe9e98486",
+      "bytes": 124,
+      "sha256": "54916208b0ae96b8614fc5e48ce1b0232179f2cb511bc28825985ef382d8abb0"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-anchor/identity-and-link.json": {
+      "archive": "spec/performance/graph-semantic-anchor-2026-11-10/evidence/197b50f56fd831cdf475b43e28fd82847e4654ab6372d8db31594043671d6734.gz",
+      "archiveBytes": 155,
+      "archiveSha256": "431757ff4e0fa680569f4a6eea80b2e5ce1630afbe32d5cf00f10856b050598d",
+      "bytes": 176,
+      "sha256": "197b50f56fd831cdf475b43e28fd82847e4654ab6372d8db31594043671d6734"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-anchor/initial-format.log": {
+      "archive": "spec/performance/graph-semantic-anchor-2026-11-10/evidence/2305146935c9fe25db5e18851be249342eeff356e6bf3719de99de348f48588f.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "718ab5331a068b27c1f2ec5e2296f2890be15780bee47f3459d547ef88e9650d",
+      "bytes": 29,
+      "sha256": "2305146935c9fe25db5e18851be249342eeff356e6bf3719de99de348f48588f"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-anchor/initial-hooks.json": {
+      "archive": "spec/performance/graph-semantic-anchor-2026-11-10/evidence/da3e6dc3229295ca83ea4169a9536722a4abe228c613befc30765c44ecef7778.gz",
+      "archiveBytes": 216,
+      "archiveSha256": "b4a3c5592ec49744372fb69af2b197832888a0fbb85cc3e3cc6c3698470cf8e7",
+      "bytes": 743,
+      "sha256": "da3e6dc3229295ca83ea4169a9536722a4abe228c613befc30765c44ecef7778"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-anchor/initial-hooks.log": {
+      "archive": "spec/performance/graph-semantic-anchor-2026-11-10/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-anchor/initial-ruff.log": {
+      "archive": "spec/performance/graph-semantic-anchor-2026-11-10/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-anchor/module.json": {
+      "archive": "spec/performance/graph-semantic-anchor-2026-11-10/evidence/04eeed37b5c86dc2a6e3c1f2b2532ad01896635b345fdf8918d43fd689ee27ff.gz",
+      "archiveBytes": 168,
+      "archiveSha256": "f9f5e8f4d8854b733b6c9e117aec56726cac9e41ba55475dfff73814d2518089",
+      "bytes": 204,
+      "sha256": "04eeed37b5c86dc2a6e3c1f2b2532ad01896635b345fdf8918d43fd689ee27ff"
+    },
+    "target/task-tmp/graph-notebook-scale/semantic-anchor/source-seal.log": {
+      "archive": "spec/performance/graph-semantic-anchor-2026-11-10/evidence/b76448fa623a7be1400ca74006c5ef146e46710673a8d8afe63d9c1ee3fc3ade.gz",
+      "archiveBytes": 67,
+      "archiveSha256": "21012db0d32f3897ba03a91784e44df238577043abbb427e59eb97bcc654d6bd",
+      "bytes": 53,
+      "sha256": "b76448fa623a7be1400ca74006c5ef146e46710673a8d8afe63d9c1ee3fc3ade"
+    }
+  },
+  "fresh": {
+    "focusedCore": {
+      "command": "uv run --no-sync pytest -q tests/test_graphforge_contract_corpus.py -k \"hash_bound_core_evidence or rc7_artifact_provenance or semantic_graph_session_preserves or semantic_anchor\"",
+      "deselected": 33,
+      "exit": 0,
+      "log": "target/task-tmp/graph-notebook-scale/semantic-anchor/focused-core.log",
+      "passed": 4
+    },
+    "hooks": {
+      "format": {
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "ruff",
+          "format",
+          "--check",
+          "."
+        ],
+        "exit": 0,
+        "log": "target/task-tmp/graph-notebook-scale/semantic-anchor/initial-format.log"
+      },
+      "hooks": {
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "--with",
+          "pre-commit",
+          "pre-commit",
+          "run",
+          "--all-files"
+        ],
+        "exit": 0,
+        "log": "target/task-tmp/graph-notebook-scale/semantic-anchor/initial-hooks.log"
+      },
+      "ruff": {
+        "command": [
+          "uv",
+          "run",
+          "--no-sync",
+          "ruff",
+          "check",
+          "."
+        ],
+        "exit": 0,
+        "log": "target/task-tmp/graph-notebook-scale/semantic-anchor/initial-ruff.log"
+      }
+    },
+    "linkAndEquality": {
+      "exit": 0,
+      "record": "target/task-tmp/graph-notebook-scale/semantic-anchor/identity-and-link.json"
+    },
+    "moduleMeasurement": {
+      "exit": 0,
+      "node": "22.23.4",
+      "record": "target/task-tmp/graph-notebook-scale/semantic-anchor/module.json"
+    }
+  },
+  "inheritance": "All prior receipts remain byte-identical. Parent Rust/native/WASM/Node/Python/notebook/foundation/CI results are producer evidence inherited only after complete input/artifact equality; no new build or broad runtime execution claimed.",
+  "interruptedReview": {
+    "agent": "/root/semantic_session_final_review",
+    "completedDisposition": false,
+    "credit": "none; preliminary anchor observation independently confirmed by Root",
+    "id": "01a1c782-4622-7cd2-abae-fdc8bfb46377",
+    "status": "cancelled by T3 server restart per user notification; native agent listing confirms no surviving child"
+  },
+  "package": {
+    "functionExports": 68,
+    "gzip6": 786429,
+    "imports": 0,
+    "nameSections": 0,
+    "node": "v22.23.4",
+    "raw": 1885068,
+    "sha256": "38cdae1f8514efc6c0df64ff0a5fb7fc67950bc756fb0e0ba434ab558e6f2fe1"
+  },
+  "parentReceipt": {
+    "path": "spec/performance/graph-semantic-session-2026-11-10/checks.json",
+    "sha256": "070d00d599b53d5913340c9c9a2f716ac33dbaae7a6c8bc18b8847ce3190f63a"
+  },
+  "preservedSetupFailures": [
+    "Initial normal-history merge had two text conflicts; hook command mistakenly launched before conflict resolution and failed syntax checks. Resolution restored exact qualified feature tree and all three post-resolution hooks passed.",
+    "Private handoff script had a mistyped base hash: git exited128 and its Python wrapper exited1. Committed source base was correct. Corrected script reads it from the committed receipt."
+  ],
+  "readmeSha256": "5cbbaa345933c490a2e3bbc31cc8705e348d99667f40da7ef39de1d591019019",
+  "remainingAcceptance": "Whole#1015/#36 and milestones4\u20137, original ladder/frontends/exports/accessibility, global budgets and competitor/performance acceptance remain open.",
+  "runtime": {
+    "packages/xy-client/dist/index.js": {
+      "archive": "spec/performance/graph-empty-clear-status-2026-11-10/evidence/c58b8bb52e50454a195b49b5f8c6d29b7bde75bb5b375ded2c9feb28e18041c9.gz",
+      "archiveBytes": 248935,
+      "archiveSha256": "821445f77964393f3da5e51f3b096d30b4ad7bd422a689a24ff4237acc449903",
+      "bytes": 868475,
+      "parentExact": true,
+      "sha256": "c58b8bb52e50454a195b49b5f8c6d29b7bde75bb5b375ded2c9feb28e18041c9"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "archive": "spec/performance/graph-empty-clear-status-2026-11-10/evidence/7ecf33e4223414a7848c727037b212667d4a9d84d3f2a90c82faac2104fb66b7.gz",
+      "archiveBytes": 249005,
+      "archiveSha256": "022de8c0db7da674e5ecf32cd81a79e66c00179d14756d4d16d20c7ad9739526",
+      "bytes": 868488,
+      "parentExact": true,
+      "sha256": "7ecf33e4223414a7848c727037b212667d4a9d84d3f2a90c82faac2104fb66b7"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz",
+      "archiveBytes": 3838,
+      "archiveSha256": "dda8e6c4cec42d91f687b660d742d79dcc1a8c0d052ca6ca189c6acf095db2b4",
+      "bytes": 20933,
+      "parentExact": true,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "parentExact": true,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/32ece3421e512fe35335c868011a1db7aadcbd8add5b114aa1f472314edbb70d.gz",
+      "archiveBytes": 1042942,
+      "archiveSha256": "063c66b076835aee2a1e95b9c0fce8c013e79e8c9de88e578ecb20c720e9b2f9",
+      "bytes": 2534546,
+      "parentExact": false,
+      "sha256": "32ece3421e512fe35335c868011a1db7aadcbd8add5b114aa1f472314edbb70d"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/117ed8018bf3bb0a9f6cd011ca7f7a13a0b9d121a143410247cc3ee62a3b82ef.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "8611e8ce317cadd45cce28656ec582004d35aaecfbba0eaa98fc6199f1525c30",
+      "bytes": 226,
+      "parentExact": false,
+      "sha256": "117ed8018bf3bb0a9f6cd011ca7f7a13a0b9d121a143410247cc3ee62a3b82ef"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/38cdae1f8514efc6c0df64ff0a5fb7fc67950bc756fb0e0ba434ab558e6f2fe1.gz",
+      "archiveBytes": 781231,
+      "archiveSha256": "b1aec11c8153e0057dbe908497a069a476ae55bb6ddb5eba9df1439cd75b7457",
+      "bytes": 1885068,
+      "parentExact": false,
+      "sha256": "38cdae1f8514efc6c0df64ff0a5fb7fc67950bc756fb0e0ba434ab558e6f2fe1"
+    },
+    "python/xyg/static/index.js": {
+      "archive": "spec/performance/graph-empty-clear-status-2026-11-10/evidence/c58b8bb52e50454a195b49b5f8c6d29b7bde75bb5b375ded2c9feb28e18041c9.gz",
+      "archiveBytes": 248935,
+      "archiveSha256": "821445f77964393f3da5e51f3b096d30b4ad7bd422a689a24ff4237acc449903",
+      "bytes": 868475,
+      "parentExact": true,
+      "sha256": "c58b8bb52e50454a195b49b5f8c6d29b7bde75bb5b375ded2c9feb28e18041c9"
+    },
+    "python/xyg/static/standalone.js": {
+      "archive": "spec/performance/graph-empty-clear-status-2026-11-10/evidence/7ecf33e4223414a7848c727037b212667d4a9d84d3f2a90c82faac2104fb66b7.gz",
+      "archiveBytes": 249005,
+      "archiveSha256": "022de8c0db7da674e5ecf32cd81a79e66c00179d14756d4d16d20c7ad9739526",
+      "bytes": 868488,
+      "parentExact": true,
+      "sha256": "7ecf33e4223414a7848c727037b212667d4a9d84d3f2a90c82faac2104fb66b7"
+    },
+    "python/xyg/static/wasm-worker.js": {
+      "archive": "spec/performance/module-space-recovery-2026-11-08/blobs/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "parentExact": true,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7"
+    },
+    "python/xyg/static/xyg-wasm-inline.js": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/32ece3421e512fe35335c868011a1db7aadcbd8add5b114aa1f472314edbb70d.gz",
+      "archiveBytes": 1042942,
+      "archiveSha256": "063c66b076835aee2a1e95b9c0fce8c013e79e8c9de88e578ecb20c720e9b2f9",
+      "bytes": 2534546,
+      "parentExact": false,
+      "sha256": "32ece3421e512fe35335c868011a1db7aadcbd8add5b114aa1f472314edbb70d"
+    },
+    "python/xyg/static/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/117ed8018bf3bb0a9f6cd011ca7f7a13a0b9d121a143410247cc3ee62a3b82ef.gz",
+      "archiveBytes": 170,
+      "archiveSha256": "8611e8ce317cadd45cce28656ec582004d35aaecfbba0eaa98fc6199f1525c30",
+      "bytes": 226,
+      "parentExact": false,
+      "sha256": "117ed8018bf3bb0a9f6cd011ca7f7a13a0b9d121a143410247cc3ee62a3b82ef"
+    },
+    "python/xyg/static/xyg-wasm.wasm": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/38cdae1f8514efc6c0df64ff0a5fb7fc67950bc756fb0e0ba434ab558e6f2fe1.gz",
+      "archiveBytes": 781231,
+      "archiveSha256": "b1aec11c8153e0057dbe908497a069a476ae55bb6ddb5eba9df1439cd75b7457",
+      "bytes": 1885068,
+      "parentExact": false,
+      "sha256": "38cdae1f8514efc6c0df64ff0a5fb7fc67950bc756fb0e0ba434ab558e6f2fe1"
+    },
+    "target/release/libxyg_core.so": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/5b1ce0884406592cc2be758c8d218fc3a7615bbdb0db2cf2b0ab78dabad33348.gz",
+      "archiveBytes": 2906458,
+      "archiveSha256": "06b910c7cf152a7c87caa7428c76dde7bbf0df800bef6d0679b36fc19e2d391c",
+      "bytes": 6379016,
+      "parentExact": false,
+      "sha256": "5b1ce0884406592cc2be758c8d218fc3a7615bbdb0db2cf2b0ab78dabad33348"
+    },
+    "target/wasm32-unknown-unknown/release/xyg_wasm.wasm": {
+      "archive": "spec/performance/graph-semantic-session-2026-11-10/evidence/50d7226112e9011b546391efbccbdb167dfd67b9a02a11ebb3edc77b6e6f6884.gz",
+      "archiveBytes": 1253544,
+      "archiveSha256": "b9a2e9aa560bd378ace9025f374d90dedf0b0ec5f53a3326881953e30a115dc6",
+      "bytes": 4075335,
+      "parentExact": false,
+      "sha256": "50d7226112e9011b546391efbccbdb167dfd67b9a02a11ebb3edc77b6e6f6884"
+    }
+  },
+  "schemaVersion": 1,
+  "scope": "Stable semantic-admission anchor and append-only successor provenance; complete source checkpoint still needs independent final review",
+  "sourceCounts": {
+    "historicalBindings": 1586,
+    "parents": 40,
+    "sourceSha256": 3472
+  }
+}

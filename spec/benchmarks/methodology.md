@@ -644,25 +644,153 @@ The verifier recomputes the checked-in hexbin and heatmap Scene SHA-256 goldens
 `public_heatmap_sha256`) and requires every public export-baseline route,
 including heatmap after #261.
 
-The glob collects seven modules — `test_codspeed_animation.py`,
-`test_codspeed_graph_render.py`, `test_codspeed_kernels.py`, `test_codspeed_polar.py`,
-`test_codspeed_pyplot.py`, `test_codspeed_selection.py`, and
-`test_codspeed_transport.py` — for **135 rows** total, counting parametrized
-expansion. These are trend-tracked in CodSpeed, not gated: none of them feed
+The glob collects eleven modules — `test_codspeed_animation.py`,
+`test_codspeed_filter_dashboard.py`,
+`test_codspeed_geo_pair_ordering.py`,
+`test_codspeed_graph_render.py`, `test_codspeed_graph_semantic_validation.py`,
+`test_codspeed_kernels.py`, `test_codspeed_polar.py`, `test_codspeed_pyplot.py`,
+`test_codspeed_selection.py`, `test_codspeed_tooltip_columns.py`, and
+`test_codspeed_transport.py` — for **231 rows** total, counting parametrized
+expansion. These are CodSpeed rows, not regression gates: none of them feed
 `scripts/check_regressions.py`, whose three inputs are §7's.
-The per-module counts are respectively 3, 9, 88, 6, 14, 8 and 7. This corrects
-the stale aggregate count; no benchmark row is deleted or renamed, and no
-dashboard archive operation or hosted benchmark run is implied.
+The per-module counts are respectively 3, 4, 4, 9, 14, 88, 6, 14, 20, 62 and 7.
+The four filtering dashboard rows require the explicitly configured materialized
+100M fixture and walltime mode; ordinary CI discovers but skips them when that
+fixture is absent. A skip supplies no runtime or performance qualification.
+Fixture parameters expand rows too: selection has four ordinary rows and four
+tests sharing a three-size fixture, plus four clause-count edit cases, for
+20 rows. Geographic ordering contributes two density sizes and two polygon
+counts. The earlier static-counter
+correction preserved existing rows; this catalog also includes the 56 scalar
+tooltip controls below. No prior row is deleted or renamed. Updating the
+catalog does not archive dashboard rows or dispatch a hosted workflow.
 
 That count is a hard gate, not prose:
 `tests/test_benchmark_environment.py::test_codspeed_row_count_matches_the_methodology_spec`
-collects the modules by AST and fails when the two disagree. It exists because a
+counts literal test and fixture parameters by AST, following shared fixture
+dependencies once per test, and fails when the two disagree. Actual pytest
+collection is the authority when adding a new parametrization shape. It exists because a
 benchmark that is renamed or deleted without a note here leaves a **stale row in
 CodSpeed's stored baseline** — the dashboard keeps reporting it as "skipped, using
 the baseline result", which reads like a flaky measurement rather than a row that
 no longer exists. Removing one is allowed; removing one silently is not. Stale
 rows already in the dashboard have to be archived there by hand; this gate stops
 new ones appearing.
+
+### Manual native-callback dashboard walltime
+
+The ordinary correctness invocation also checks the linked-density index size
+from authored dimensions: `4*(C+1)*W + 16*W + 16*C`, where C is active cells
+and W includes the separate selected-total channel. The five 8×8/17-cell fixture
+therefore expects 28,520 bytes. Its former 51,632-byte expectation describes the
+historical u64 prefix and must fail against the current u32 representation.
+The [oracle correction](../performance/filter-prefix-benchmark-oracle-2026-11-12/README.md)
+preserves all 231 collected benchmark IDs, measured calls and non-memory
+assertions. Running those bodies without `--codspeed` is correctness evidence
+only, with no performance qualification.
+
+`benchmarks/test_codspeed_filter_dashboard.py` measures four separate paths on
+the same materialized 100M-row source: a range reply (`query`), a density reply
+without presentation (`density`), five cached synchronized paints (`cached`),
+and a public dashboard range through five synchronized paints (`update`).
+The range-and-paint continuation uses XYFC v3 opcode 5 for `update`: one Rust
+transaction emits counts and the complete density reply. Earlier captures use
+v1 opcode 5 followed by opcode 11; retain that distinction in comparisons.
+The separate `query` and `density` rows retain their v1 commands. Older native
+peers use the guarded two-command compatibility path documented in
+`spec/design/filter-tier-c.md`; do not label that path a fused update.
+Each includes Python/Node/DevTools IPC; query and density also include the
+application's loopback HTTP transport, native Rust work and browser decoding.
+These separate measurements are not additive latency components. Setup,
+source registration, Chromium launch, first index construction and initial
+correctness checks occur outside every measured region.
+
+The workload uses five 400×260 CSS chart carriers, five 100×100 passive grids,
+and one active cell per CSS plot pixel (346 in the pinned environment).
+The recorded wide-prefix baseline uses an explicit native session budget of
+256 MiB, within the existing maximum; its former u64 prefix refused 128 MiB.
+The current private u32 representation follows the unchanged canonical row-count
+bound in `spec/design/filter-tier-c.md`; the benchmark retains its explicit
+256 MiB budget for comparisons. Every measured range/paint reply must report zero
+canonical rows read and tier 3; the source builds exactly once. Range endpoints
+are exact index-cut boundaries, alternated on each update. This measures neither
+arbitrary-boundary fallback nor active-view switching/rebuild. The renderer is
+the existing density path with ANGLE SwiftShader and explicit `gl.finish()`;
+no hardware-GPU, trusted pointer, RAF cadence or ≥50 FPS acceptance follows.
+
+Paired native controls must record the actual explicit `XYG_NATIVE_LIB` path
+and artifact digest, rather than labeling a selected comparison library with
+the checkout's default binary. The single-color continuation records parent,
+candidate, parent, candidate runs with the same macro IDs, source, grids,
+budget, client and measured calls. Its setup-only private driver selects the
+actual native artifact for provenance; no measured operation changes. Keep
+the unrelated first cached-paint improvement and the rows classified No Change
+visible; neither establishes a causal benefit from native interpolation.
+
+That single-color sequence is **A-B-A-B**, not A-B-B-A. The historical
+single-color receipt's ABBA wording is a labeling error; its listed order,
+raw results and classifications remain unchanged. A later private rounding
+experiment uses actual A-B-B-A controls and is rejected because its update
+improvement does not repeat. Preserve its No Change and cached Regression rows,
+including the unchanged final-parent control; see the
+[evaluation and order correction](../performance/filter-rounding-evaluation-2026-11-12/README.md).
+
+First generate and verify the recipe in
+`scripts/gen_filter_paged_fixture.py` with 100,000,000 materialized rows, as in
+the native callback receipt. Then run (with matching native/client builds):
+
+```bash
+export XYG_FILTER_PERF_SOURCE="$PWD/target/task-tmp/filter-100m-fixture/materialized-100m"
+export XYG_FILTER_PERF_OUTPUT="$PWD/target/task-tmp/filter-dashboard-performance/reproduce"
+export XYG_NATIVE_LIB="$PWD/target/release/libxyg_core.so"
+export XYG_NODE=/path/to/node22
+export XYG_CHROMIUM=/path/to/chromium
+TMPDIR=/var/tmp codspeed run -m walltime --repository CurateLabs/xyg -- \
+  uv run --no-sync pytest benchmarks/test_codspeed_filter_dashboard.py -q \
+  --codspeed --codspeed-warmup-time=1 --codspeed-max-time=8 \
+  --codspeed-max-rounds=100
+```
+
+The fixture rejects smaller sources and requires an explicit browser. It never
+generates massive data automatically or silently reduces index/grid resolution.
+Outputs bind source-manifest, native/client hashes, browser/Node versions,
+actual plot, budget and logical index ownership; completion requires native
+close acknowledgement, no pending transport and no page errors. The fixture's
+deadline is an execution guard, not a performance measurement. The four manual
+rows are new; all 227 earlier rows remain unchanged. Earlier private probe
+URIs under `target/task-tmp/filter-dashboard-performance/` are diagnostic history,
+not renamed historical rows from the normal benchmark glob.
+
+**`benchmarks/test_codspeed_geo_pair_ordering.py` — 4 rows.** The density
+membership cases use 1k and 10k source rows; clipping uses 64 and 256 polygons.
+Fixtures build native requests outside measurement and compare complete reply
+bytes, exact membership/feature IDs and finite output geometry. The ordinary
+capacity-query/copy calls remain measured. These protect bounded temporary
+ordering; they do not claim browser latency, massive-scale acceptance or a
+competitor win. Source-bound simulation and walltime comparisons, including
+unchanged and slower samples, are retained in the
+[paged/cooperative qualification](../performance/filter-paged-cooperative-2026-11-11/README.md).
+
+**`benchmarks/test_codspeed_graph_semantic_validation.py` — 14 rows.** Seven
+sizes (0, 1, 8, 16, 1k, 100k and 200k) each cover contiguous and strided/endian
+semantic ingress. Fixture construction is unmeasured; complete plane-byte
+assertions validate the measured result. These isolate Python validation and
+conversion, not rendering or notebook
+publication.
+
+**`benchmarks/test_codspeed_tooltip_columns.py` — 62 rows.** Three graph sizes
+(1k, 10k and 100k nodes, each with twice as many edge rows) exercise complete
+node and edge tooltip encoding. Fixture construction and exact byte oracles
+stay outside the measured call. These are encoder measurements, not complete
+widget latency or a competitor comparison.
+The additional 56 controls pair four sizes (1, 8, 1k and 100k) with numeric,
+boolean, null, builtin-text, NumPy-text, string-subclass, sparse-text and late
+fallback inputs. Independent fixture planes, metadata and unchanged-input
+assertions stay outside the measured encoder call. NumPy/string-subclass UUID
+columns and columns mixing a builtin UUID with later subclass values are
+covered too, along with UUID columns dominated by null or absent values.
+These guard the shared
+scalar path as well as graph strings; no earlier row is renamed or removed.
 
 **`benchmarks/test_codspeed_graph_render.py` — 9 rows.** Graph rendering is
 split into attributable CPU/native stages: canonical GraphForge UUID ingest at
@@ -772,7 +900,7 @@ cannot get cheaper by shipping a different chart. Browser wedge vertex counts,
 GPU buffer lifetime, and radial-zoom frame pacing are wall-clock/WebGL
 measurements and stay in `bench_interaction.py` and the polar smokes.
 
-**`benchmarks/test_codspeed_selection.py` — 4 rows.** The backend
+**`benchmarks/test_codspeed_selection.py` — 20 rows.** The first four cover backend
 interaction/selection handlers the client's gesture messages resolve to
 (design-dossier §17/§34): hover pick with a categorical channel readout;
 zone-pruned box select over a 1% window of a monotone-x 1M scatter; the full
@@ -783,6 +911,14 @@ NaN-dropped trace, so the canonical-to-shipped `searchsorted` translation is
 the path measured rather than the identity fast path. Browser input-to-pixel
 latency stays in `bench_interaction.py`; before this module a selection
 regression could only surface as browser wall-clock noise.
+The remaining rows are four linked-density operations at 1k, 10k and 100k
+(12 rows), plus clause-edit round trips at 1, 8, 32 and 64 clauses (four rows).
+Density setup/ingress is excluded; five fixed 8x8 passive grids and 17 active
+cells retain exact count, index-byte, membership and reported fallback checks.
+Clause fixtures exclude construction/rebuild and verify that begin/cancel edit
+retains the accepted filter hash without a row scan. These are native operation
+measurements, not 100M/five-rendered-view FPS evidence. No row is renamed or
+removed by this catalog correction.
 
 **`benchmarks/test_codspeed_kernels.py` — 88 rows** (78 functions; six are
 parametrized, over 2 ingest flavors, 3 `bin_2d` thread-cap regimes, and the 3

@@ -11,6 +11,22 @@ const inside=(p,polygon)=>{
  }
  return hit;
 };
+export async function visibleGraphRegionPanPath(canvas){
+ return canvas.evaluate(canvas=>{
+  const box=canvas.getBoundingClientRect(),dx=20,dy=-12;
+  // Host sidebars can cover part of a fixed-width output. Keep the original
+  // path when it is exposed; otherwise choose an exposed path of equal length.
+  for(const fy of [0.75,0.5,0.25])for(const fx of [0.75,0.5,0.25]){
+   const x=box.width*fx,y=box.height*fy;
+   if(Array.from({length:7},(_,i)=>i/6).every(t=>{
+    const px=x+dx*t,py=y+dy*t;
+    return px>0&&px<box.width&&py>0&&py<box.height&&
+     document.elementFromPoint(box.left+px,box.top+py)===canvas;
+   }))return {start:[x,y],end:[x+dx,y+dy]};
+  }
+  return null;
+ });
+}
 export async function runGraphNotebookRegions({root,temp,page,input=page,surfaces,cell,report,cleanup,frontend,kernel,dpr,browser,errors,external,prepareCanvas=async()=>{},canvasBounds,screenshotCanvas=(canvas,path)=>canvas.screenshot({path}),paintCanvas=canvas=>canvas.evaluate(canvas=>canvas.toDataURL('image/png').split(',')[1]),hoverCanvas=canvas=>canvas.hover(),moveOffCanvas=()=>input.mouse.move(1195,995)}){
  const surface=surfaces.first();await surface.waitFor({timeout:45000});
  await surface.getByText('Layout complete',{exact:true}).waitFor({timeout:45000});
@@ -185,8 +201,10 @@ export async function runGraphNotebookRegions({root,temp,page,input=page,surface
  if(await canvas.getAttribute('data-xy-dragmode')!=='pan')await surface.getByRole('button',{name:'Pan',exact:true}).click();
  assert.equal(await canvas.getAttribute('data-xy-dragmode'),'pan','trusted pan requires the active public tool');
  g=await geometry();start=await page.evaluate(()=>globalThis.__regionEvents.length);
- await input.mouse.move(g.origin[0]+g.width*0.75,g.origin[1]+g.height*0.75);await input.mouse.down();
- await input.mouse.move(g.origin[0]+g.width*0.75+20,g.origin[1]+g.height*0.75-12,{steps:6});await input.mouse.up();
+ const panPath=await visibleGraphRegionPanPath(canvas);
+ assert.ok(panPath,'trusted pan requires an exposed canvas path through the host');
+ await input.mouse.move(g.origin[0]+panPath.start[0],g.origin[1]+panPath.start[1]);await input.mouse.down();
+ await input.mouse.move(g.origin[0]+panPath.end[0],g.origin[1]+panPath.end[1],{steps:6});await input.mouse.up();
  await page.waitForFunction(start=>globalThis.__regionEvents.slice(start).some(e=>e.kind==='view_change'&&e.detail.phase==='end'),start,{timeout:10000});
  start=await page.evaluate(()=>globalThis.__regionEvents.length);await input.mouse.wheel(0,-45);
  await page.waitForFunction(start=>globalThis.__regionEvents.slice(start).some(e=>e.kind==='view_change'&&e.detail.phase==='end'),start,{timeout:10000});
@@ -217,15 +235,30 @@ export async function runGraphNotebookRegions({root,temp,page,input=page,surface
  assert.equal(combinedHistory.back,true);assert.deepEqual(combinedHistory.restored,combinedHistory.before);
  assert.equal(combinedHistory.forward,true);assert.deepEqual(combinedHistory.reapplied,combinedHistory.after);
  const trusted=await page.evaluate(()=>globalThis.__regionTrusted);
+ const pointerEvents=await page.evaluate(()=>globalThis.__regionPointerEvents);
  assert.ok(trusted.length>=2&&trusted.every(v=>v.trusted));assert.ok(trusted.some(v=>v.shift));assert.ok(trusted.some(v=>v.kind==='wheel'));
  await cell(3);await cleanup();
  assert.equal(errors.length,0,JSON.stringify(errors));assert.equal(external.length,0);
- const result={ok:true,artifactDir:temp,frontend,kernel,dpr,browser:browser.version(),initial,capacity:{before:capacityBefore,after:capacityAfter,refused,masks:capacityMasks,history:capacityHistory,historyPaint:capacityHistoryPaint},combinedHistory,box,boxExpected,boxMasks,lasso,lassoExpected,lassoMasks,cameraBox,cameraExpected,cameraMasks,before,beforeEdges,afterBox,afterBoxEdges,afterLasso,trusted,disposed:true};
+ const result={ok:true,artifactDir:temp,frontend,kernel,dpr,browser:browser.version(),initial,capacity:{before:capacityBefore,after:capacityAfter,refused,masks:capacityMasks,history:capacityHistory,historyPaint:capacityHistoryPaint},combinedHistory,box,boxExpected,boxMasks,lasso,lassoExpected,lassoMasks,cameraBox,cameraExpected,cameraMasks,before,beforeEdges,afterBox,afterBoxEdges,afterLasso,panPath,trusted,pointerEvents,disposed:true};
 return result;
 }
 
 export function installGraphRegionHooks(){globalThis.__regionHookCleanup?.();const cleanup=[];const listen=(name,callback,options)=>{document.addEventListener(name,callback,options);cleanup.push(()=>document.removeEventListener(name,callback,options));};
   globalThis.__regionEvents??=[];globalThis.__regionTrusted??=[];
+  // Bounded input diagnostics distinguish a missing release/cancellation from
+  // host output replacement or relocation without recording notebook content.
+  globalThis.__regionPointerEvents??=[];
+  globalThis.__regionCanvasIds??=new WeakMap();globalThis.__regionNextCanvasId??=0;
+  for(const type of ['pointerdown','pointerup','pointercancel','gotpointercapture','lostpointercapture','dragstart','dragend'])listen(type,e=>{
+   const canvas=e.target instanceof HTMLCanvasElement?e.target:null;
+   if(canvas&&!globalThis.__regionCanvasIds.has(canvas))globalThis.__regionCanvasIds.set(canvas,++globalThis.__regionNextCanvasId);
+   const rect=canvas?.getBoundingClientRect(),hit=document.elementFromPoint(e.clientX,e.clientY);
+   const events=globalThis.__regionPointerEvents;if(events.length===128)events.shift();
+   events.push({type,pointerId:e.pointerId,buttons:e.buttons,trusted:e.isTrusted,x:e.clientX,y:e.clientY,
+    target:e.target?.tagName,hit:hit?.tagName,canvasId:canvas?globalThis.__regionCanvasIds.get(canvas):null,
+    connected:canvas?.isConnected,captured:canvas?.hasPointerCapture(e.pointerId),
+    rect:rect?{x:rect.x,y:rect.y,width:rect.width,height:rect.height}:null});
+  },true);
   for(const kind of ['brush','select','view_change'])listen('xy:'+kind,e=>{
    globalThis.__regionEvents.push({kind,detail:e.detail});
   });

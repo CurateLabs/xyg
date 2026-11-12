@@ -1,0 +1,440 @@
+{
+  "bindings": {
+    "current": 3497,
+    "historical": 1685,
+    "parents": 53,
+    "path": "spec/performance/density-matrix-summary-2026-11-11/current-bindings.json",
+    "sha256": "93af432cf427f8766a5107e8e1538de287a9ffecae515009ea9b7733ca945850"
+  },
+  "compiledInputs": {
+    "changed": [],
+    "count": 324,
+    "path": "spec/performance/graph-native-force-owner-2026-11-11/compiled-inputs.json",
+    "sha256": "cce2b70f6ab2423d167ff33fb4fe745c7e1d03ddd8783d7c1b3e801148339e86"
+  },
+  "evidence": {
+    "build-receipt.py": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/4c9b4056c84608f0de1d27df5948862c6fb96b678d4890445fd213c4672c5b99.gz",
+      "archiveBytes": 1628,
+      "archiveSha256": "ce72c24017d187ce1d03851f18b8f1e1c0e99560f30036cdedc670f6f0dcab67",
+      "bytes": 3276,
+      "sha256": "4c9b4056c84608f0de1d27df5948862c6fb96b678d4890445fd213c4672c5b99",
+      "source": "target/task-tmp/density-matrix-summary/build-receipt.py"
+    },
+    "core-final.log": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/e69b41f61a170b87bc97f95b392763903279f4f41f31579ac39778f75db06b3e.gz",
+      "archiveBytes": 66,
+      "archiveSha256": "afbb851fa4d3a9441b12b1d8e27950d92e8aa90a1a5b08d2eeb316a97c15220a",
+      "bytes": 114,
+      "sha256": "e69b41f61a170b87bc97f95b392763903279f4f41f31579ac39778f75db06b3e",
+      "source": "target/task-tmp/density-matrix-summary/core-final.log"
+    },
+    "core.log": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/6d0a2c46d3ecc8c4cbb39ddb00dc1bcd7f5c7908919ceac1191ee3a8d1ac8982.gz",
+      "archiveBytes": 555,
+      "archiveSha256": "5214fba67b03290246d4bb789acf7192b06867da78aa6c63e0ec38b47b0cdee1",
+      "bytes": 1208,
+      "sha256": "6d0a2c46d3ecc8c4cbb39ddb00dc1bcd7f5c7908919ceac1191ee3a8d1ac8982",
+      "source": "target/task-tmp/density-matrix-summary/core.log"
+    },
+    "parent-review/bounded-drain.json": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/99963428d5d3adf0a90c18deabfede4bd9d12650f55aa9e135a7a3cfd5d21711.gz",
+      "archiveBytes": 323,
+      "archiveSha256": "67a2fbcc12ed7a725a53076efbc27b8c383550f490ee58336328f5dfb20671f6",
+      "bytes": 590,
+      "sha256": "99963428d5d3adf0a90c18deabfede4bd9d12650f55aa9e135a7a3cfd5d21711",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/bounded-drain.json"
+    },
+    "parent-review/bounded-drain.log": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/ee030823f728d98967cf19565dda12aa5486ec7b83017e34c2cda6e8b033bd16.gz",
+      "archiveBytes": 155,
+      "archiveSha256": "0ed635df6b4e1dde4e3b1e1ac872661800314682eb78b5106c24048528c092ef",
+      "bytes": 154,
+      "sha256": "ee030823f728d98967cf19565dda12aa5486ec7b83017e34c2cda6e8b033bd16",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/bounded-drain.log"
+    },
+    "parent-review/bounded-drain.mjs": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/37a56ffaad53877d167029dff971a2ad9cf4d59ccaee9b77da71edcd85520217.gz",
+      "archiveBytes": 4531,
+      "archiveSha256": "6bae151b712b0adbe0a514ff429f55842304423f90127bf61a81c874273e1860",
+      "bytes": 14337,
+      "sha256": "37a56ffaad53877d167029dff971a2ad9cf4d59ccaee9b77da71edcd85520217",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/bounded-drain.mjs"
+    },
+    "parent-review/core.log": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/083be735c421fab564c97890ca2a9ed525f471fc0d9226965a760bb15a0bfc34.gz",
+      "archiveBytes": 66,
+      "archiveSha256": "08aafcc8bed175975d3f86ade24d1add43665e17f134321d55f57f8acda9f795",
+      "bytes": 114,
+      "sha256": "083be735c421fab564c97890ca2a9ed525f471fc0d9226965a760bb15a0bfc34",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/core.log"
+    },
+    "parent-review/density-negative-blank.log": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/caa15971900a67d7fec2bde71fcb678ac883103fcb38c3a5945dc0547be8e1d8.gz",
+      "archiveBytes": 266,
+      "archiveSha256": "2ba36a73c9cc57e5e933786ba451631feb65571b51a60d4470bcfd358adf5d15",
+      "bytes": 438,
+      "sha256": "caa15971900a67d7fec2bde71fcb678ac883103fcb38c3a5945dc0547be8e1d8",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/density-negative-blank.log"
+    },
+    "parent-review/density-negative-extra.log": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/fc48c7f8548c0ae57f7f126e6d465c7b1c57241d847c5f66320c3295750d599a.gz",
+      "archiveBytes": 402,
+      "archiveSha256": "91c1981033e25ab6a862907db252c41b40d7e0e0954414861678fd5153edce61",
+      "bytes": 722,
+      "sha256": "fc48c7f8548c0ae57f7f126e6d465c7b1c57241d847c5f66320c3295750d599a",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/density-negative-extra.log"
+    },
+    "parent-review/density-negative-fake-recovery.log": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/7aaf03a9cae796e60df4a7602c3fee90341899f2a885b1f69ea3c7f5c2cf6932.gz",
+      "archiveBytes": 403,
+      "archiveSha256": "960cc4f36d57fb561b749ae41c8f4e5983a34abf92dc49b82782282bf9812287",
+      "bytes": 722,
+      "sha256": "7aaf03a9cae796e60df4a7602c3fee90341899f2a885b1f69ea3c7f5c2cf6932",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/density-negative-fake-recovery.log"
+    },
+    "parent-review/density-negative-grid.log": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/82e548826aab76f75dd45c35b4f26a676ee8cf8f0feb4882635047aaeea1030c.gz",
+      "archiveBytes": 353,
+      "archiveSha256": "ff1fadcb2982ee5b2c960e8c188e2ac7df16825783f549f107b45f5831a5a215",
+      "bytes": 618,
+      "sha256": "82e548826aab76f75dd45c35b4f26a676ee8cf8f0feb4882635047aaeea1030c",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/density-negative-grid.log"
+    },
+    "parent-review/density-negative-statuses.json": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/c3accfcd35ae74a0c53e26f90709c8efb5b932b93f4c6e15273304220399c5be.gz",
+      "archiveBytes": 67,
+      "archiveSha256": "5c387c0bdaafc340d411a7a05cae378e22e6194f0891050ca692be351c9d1843",
+      "bytes": 66,
+      "sha256": "c3accfcd35ae74a0c53e26f90709c8efb5b932b93f4c6e15273304220399c5be",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/density-negative-statuses.json"
+    },
+    "parent-review/density-negatives.mjs": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/bf7b21fb28a83e4413b1c450be3adde622893d15ae5f43ddeab0a1be1dbf8e65.gz",
+      "archiveBytes": 5307,
+      "archiveSha256": "019818c273ff88e1af9f1404ff232691cefc2352e7240d57dae58a24df388941",
+      "bytes": 17030,
+      "sha256": "bf7b21fb28a83e4413b1c450be3adde622893d15ae5f43ddeab0a1be1dbf8e65",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/density-negatives.mjs"
+    },
+    "parent-review/density.json": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/c8a2b451569e58e82317319002417560cac8684b4ff9126ddb68ac392b226fb1.gz",
+      "archiveBytes": 2454,
+      "archiveSha256": "904f24225794183df16435b786605c46b28bd04510e655082b58521301f29410",
+      "bytes": 39749,
+      "sha256": "c8a2b451569e58e82317319002417560cac8684b4ff9126ddb68ac392b226fb1",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/density.json"
+    },
+    "parent-review/density.log": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/71f11f9ce0fad460f1643ee33e598515e2a15f930825c0ee95c15135c139f2c4.gz",
+      "archiveBytes": 152,
+      "archiveSha256": "4fd63fb275bf69338a697f4d4d75849db9f679f60ffb7d773941097e0fe33508",
+      "bytes": 176,
+      "sha256": "71f11f9ce0fad460f1643ee33e598515e2a15f930825c0ee95c15135c139f2c4",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/density.log"
+    },
+    "parent-review/held-reply.json": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/27d7ff954cfa3317e2f8776e79d67c68f9f29a439cc69d5f0150972e405e1dda.gz",
+      "archiveBytes": 80,
+      "archiveSha256": "b9776c3ca8c9877c6ada5d305f4f354c498ea8ed3512f4264c6167367674fdae",
+      "bytes": 70,
+      "sha256": "27d7ff954cfa3317e2f8776e79d67c68f9f29a439cc69d5f0150972e405e1dda",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/held-reply.json"
+    },
+    "parent-review/held-reply.log": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/2ae7db7dc861ddba368131c6031d943b62dda1534a83e8a18bd6baf51373e370.gz",
+      "archiveBytes": 413,
+      "archiveSha256": "783a79acb8cd2d7d51b59870164cc17fbdbbb54f8ba9facc8b02ff2a66075e4f",
+      "bytes": 578,
+      "sha256": "2ae7db7dc861ddba368131c6031d943b62dda1534a83e8a18bd6baf51373e370",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/held-reply.log"
+    },
+    "parent-review/held-reply.mjs": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/8d97ea583a775b0992410454e03c82ea2b0fb79839bd2e9c0dfae2235920ade4.gz",
+      "archiveBytes": 4478,
+      "archiveSha256": "e81d7b3b8a9fe3d8622d7034307ffd4797321ba8e6b95caea77b1361a5d98ab2",
+      "bytes": 14159,
+      "sha256": "8d97ea583a775b0992410454e03c82ea2b0fb79839bd2e9c0dfae2235920ade4",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/held-reply.mjs"
+    },
+    "parent-review/initial.json": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/222825945b5c98808926706895509485c1b6196cd6911b8402733dd5d446c23f.gz",
+      "archiveBytes": 2235,
+      "archiveSha256": "83278d82e124a2942f1f3005ce3a324ca84b9203545517d6880110518fd8a2ae",
+      "bytes": 36542,
+      "sha256": "222825945b5c98808926706895509485c1b6196cd6911b8402733dd5d446c23f",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/initial.json"
+    },
+    "parent-review/initial.log": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/b08fdfe0b32926286249730a5fbdc83d68b89eae371290e0a72596c8c00e3a65.gz",
+      "archiveBytes": 150,
+      "archiveSha256": "789cadc94f043b994d6e6d8d515c19f25fbe1bbd8f6d7917851b846e6c246c85",
+      "bytes": 421,
+      "sha256": "b08fdfe0b32926286249730a5fbdc83d68b89eae371290e0a72596c8c00e3a65",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/initial.log"
+    },
+    "parent-review/package.log": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/69b81eccd0577fd55baff07f9b4e8e548d732bc51048de8517943b5802711d88.gz",
+      "archiveBytes": 82,
+      "archiveSha256": "4dc1c8ed2c9e2f821d9a1b0663881ba63ac6a663bcb137ac513fbd19a4bb8f91",
+      "bytes": 67,
+      "sha256": "69b81eccd0577fd55baff07f9b4e8e548d732bc51048de8517943b5802711d88",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/package.log"
+    },
+    "parent-review/parent-negative.json": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/d5d89a69cde2e5b85de7536ef554592069bea546aceadb12a1834bf492003016.gz",
+      "archiveBytes": 2084,
+      "archiveSha256": "d58aca41f215249fcbdeb322a049d39ae1bddad2398c56c2c666f42df07061e0",
+      "bytes": 34493,
+      "sha256": "d5d89a69cde2e5b85de7536ef554592069bea546aceadb12a1834bf492003016",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/parent-negative.json"
+    },
+    "parent-review/parent-negative.log": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/8b94730e9795f48b3f5813532530d3b11d932063c781e77675f77d6ef4967657.gz",
+      "archiveBytes": 1241,
+      "archiveSha256": "04200d3ee5649f644403b36bac6cde7281d2076c0414ba87334fd90d561d4f97",
+      "bytes": 3473,
+      "sha256": "8b94730e9795f48b3f5813532530d3b11d932063c781e77675f77d6ef4967657",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/parent-negative.log"
+    },
+    "parent-review/pins.json": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/9cfb45388847400caf162350445e92c532f89e66921af933d7d542c47980542b.gz",
+      "archiveBytes": 258,
+      "archiveSha256": "752332dc12160624c6c56d4a62977b5494f72e3038426705a9aacc225741fe2c",
+      "bytes": 353,
+      "sha256": "9cfb45388847400caf162350445e92c532f89e66921af933d7d542c47980542b",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/pins.json"
+    },
+    "parent-review/pins.log": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/38d0bc72214e1712de6f2e92f1bb3de24c4b8315b720a73b6f0ca800c6057efa.gz",
+      "archiveBytes": 253,
+      "archiveSha256": "520dd25b54d8f41adfc822a627e735a25d43af6fc8e1657fbb1a28461ce28ba0",
+      "bytes": 331,
+      "sha256": "38d0bc72214e1712de6f2e92f1bb3de24c4b8315b720a73b6f0ca800c6057efa",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/pins.log"
+    },
+    "parent-review/python-gzip-diagnostic.log": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/f501db9f1a14a800789d03e8f9a38050fa132a4ca66ba3bc6c175e47447772e0.gz",
+      "archiveBytes": 295,
+      "archiveSha256": "2a3ba930a563016bbfccba5e6216b3385b4cae445e4fe6d9dd4317182706937f",
+      "bytes": 428,
+      "sha256": "f501db9f1a14a800789d03e8f9a38050fa132a4ca66ba3bc6c175e47447772e0",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/python-gzip-diagnostic.log"
+    },
+    "parent-review/refusal-controls-final.json": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/a1f5f839860a333a324976c4550a4ec2bd45483fc49efcb6418ddf5d5f71c22f.gz",
+      "archiveBytes": 432,
+      "archiveSha256": "58ea40c817e1b822b086d3967bb26632fffa6b7b88ae19d146a916b9005e0298",
+      "bytes": 2018,
+      "sha256": "a1f5f839860a333a324976c4550a4ec2bd45483fc49efcb6418ddf5d5f71c22f",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/refusal-controls-final.json"
+    },
+    "parent-review/refusal-controls-final.log": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/3306da569864ba5ce31a410778624fa2979771acc6af96819e4a275c927e0b70.gz",
+      "archiveBytes": 96,
+      "archiveSha256": "d224f4b43ce5d32ee30cf9fc6001a952165bc4950e61ab6de4c3d6be8fbed7dc",
+      "bytes": 151,
+      "sha256": "3306da569864ba5ce31a410778624fa2979771acc6af96819e4a275c927e0b70",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/refusal-controls-final.log"
+    },
+    "parent-review/refusal-controls-final.mjs": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/e4eb22acc40db3caa8f7092d0484895ed9fc58c61eea060bc97b66952f972a2a.gz",
+      "archiveBytes": 3874,
+      "archiveSha256": "3795bf005261880a3e959ed43d2b404c1936cff3eccd7c4910413af49e6986de",
+      "bytes": 12042,
+      "sha256": "e4eb22acc40db3caa8f7092d0484895ed9fc58c61eea060bc97b66952f972a2a",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/refusal-controls-final.mjs"
+    },
+    "parent-review/refusal-controls.json": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/27d7ff954cfa3317e2f8776e79d67c68f9f29a439cc69d5f0150972e405e1dda.gz",
+      "archiveBytes": 80,
+      "archiveSha256": "b9776c3ca8c9877c6ada5d305f4f354c498ea8ed3512f4264c6167367674fdae",
+      "bytes": 70,
+      "sha256": "27d7ff954cfa3317e2f8776e79d67c68f9f29a439cc69d5f0150972e405e1dda",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/refusal-controls.json"
+    },
+    "parent-review/refusal-controls.log": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/486af853ce79245a455f80d7a51f26569147a67fe26d1bb77a9d60acf30104d5.gz",
+      "archiveBytes": 332,
+      "archiveSha256": "b14f516952c4a69a1438e3712e24c760aa29c7f8980aadbe0672cda9ee40408c",
+      "bytes": 467,
+      "sha256": "486af853ce79245a455f80d7a51f26569147a67fe26d1bb77a9d60acf30104d5",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/refusal-controls.log"
+    },
+    "parent-review/refusal-controls.mjs": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/f9176834ee0b6879ff65b020f99ebdd488f5d7a73a8dc702d86f6a719b93e39d.gz",
+      "archiveBytes": 3839,
+      "archiveSha256": "59340a94b56753246143f2ee5c93459572ad05a8b77596114e7250cb481f52dc",
+      "bytes": 11789,
+      "sha256": "f9176834ee0b6879ff65b020f99ebdd488f5d7a73a8dc702d86f6a719b93e39d",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/refusal-controls.mjs"
+    },
+    "parent-review/review.json": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/c9ab5bd3f14f996ff4672bf95b5046c8081b6d06f3f5162f2e83e3a4fb39d714.gz",
+      "archiveBytes": 6574,
+      "archiveSha256": "153c84e1195b3b881855b2aacc509cb74e94c8429eb33009dd884ed3a203dd53",
+      "bytes": 22540,
+      "sha256": "c9ab5bd3f14f996ff4672bf95b5046c8081b6d06f3f5162f2e83e3a4fb39d714",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/review.json"
+    },
+    "seal-sources.py": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/3c41e51e1019932894b18910c2027e842f70bbf360b81e92d5df1bae9c611985.gz",
+      "archiveBytes": 1241,
+      "archiveSha256": "5b816f55c70953f6e6047e22f3126b9c8fec26799f501b47e122ec1f2d98f09a",
+      "bytes": 2930,
+      "sha256": "3c41e51e1019932894b18910c2027e842f70bbf360b81e92d5df1bae9c611985",
+      "source": "target/task-tmp/density-matrix-summary/seal-sources.py"
+    },
+    "source-seal-final.log": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/8d875a3b28cb5633769d46e294ea9d17bb75556140f3706e85dd82f613374311.gz",
+      "archiveBytes": 67,
+      "archiveSha256": "cd2bf8696caeb59b8af76fb62c06c9aaa3f04602d7eeedb700b9fbb5c4ba9821",
+      "bytes": 53,
+      "sha256": "8d875a3b28cb5633769d46e294ea9d17bb75556140f3706e85dd82f613374311",
+      "source": "target/task-tmp/density-matrix-summary/source-seal-final.log"
+    },
+    "source-seal.log": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/8d875a3b28cb5633769d46e294ea9d17bb75556140f3706e85dd82f613374311.gz",
+      "archiveBytes": 67,
+      "archiveSha256": "cd2bf8696caeb59b8af76fb62c06c9aaa3f04602d7eeedb700b9fbb5c4ba9821",
+      "bytes": 53,
+      "sha256": "8d875a3b28cb5633769d46e294ea9d17bb75556140f3706e85dd82f613374311",
+      "source": "target/task-tmp/density-matrix-summary/source-seal.log"
+    }
+  },
+  "fresh": {
+    "core": {
+      "exit": 0,
+      "log": "core-final.log",
+      "passed": 2,
+      "scope": "Complete53-parent source qualification and actual Git LF/CRLF checkout"
+    }
+  },
+  "inherited": {
+    "independent": "Parent independent12+10,held-replydrain,fourrefusal/cancellation,current52/CRLFandcorruptioncontrols; originalfailedprobe developmentkeptfailed",
+    "noFreshBrowserBuildOrTiming": true,
+    "producer": "Exact-parent complete foundation,12initial,10density,refusal/expiry/grid/upload/pixelnegatives,fullhooksRuff",
+    "productHarnessArtifactByteEquality": true
+  },
+  "package": {
+    "functionExports": 68,
+    "gzip6": 786337,
+    "gzipCap": 786432,
+    "gzipHeadroom": 95,
+    "imports": 0,
+    "nativeABI": 405,
+    "nativeSymbols": 551,
+    "raw": 1884503,
+    "rawCap": 1927168,
+    "wasmABI": 38
+  },
+  "parentReview": {
+    "disposition": "APPROVE bounded product at1ccd;P3matrixwordingresolvedhere",
+    "record": {
+      "archive": "spec/performance/density-matrix-summary-2026-11-11/evidence/c9ab5bd3f14f996ff4672bf95b5046c8081b6d06f3f5162f2e83e3a4fb39d714.gz",
+      "archiveBytes": 6574,
+      "archiveSha256": "153c84e1195b3b881855b2aacc509cb74e94c8429eb33009dd884ed3a203dd53",
+      "bytes": 22540,
+      "sha256": "c9ab5bd3f14f996ff4672bf95b5046c8081b6d06f3f5162f2e83e3a4fb39d714",
+      "source": "/var/tmp/xyg-graph-deadline-generation-review/review.json"
+    }
+  },
+  "preservedFailure": {
+    "exit": 1,
+    "failed": 1,
+    "log": "core.log",
+    "passed": 1,
+    "scope": "Initial edit did not advance single-line-formatted CURRENT_BINDINGS, so new53guard rejected52. Pointer corrected; guard unchanged."
+  },
+  "readmeSha256": "52816fa094df6bba65af063b7c40119771b544e249078af2b1d22ae6521235a6",
+  "remaining": [
+    "Independent final documentation-delta review",
+    "Hosted final-head CI, current-main freshness and required merge queue",
+    "Original unexplained failures and whole issue/milestone acceptance"
+  ],
+  "runtime": {
+    "compilerWasm": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/9349afa7655f6ada49c41ce2b44b59ce666f40f6b9a120891b39ae543a8b1258.gz",
+      "archiveBytes": 1253948,
+      "archiveSha256": "e68531d20eaa96a3bb2f526659acc805026906c5c8a40470eeb9846ccece4b3d",
+      "bytes": 4075129,
+      "sha256": "9349afa7655f6ada49c41ce2b44b59ce666f40f6b9a120891b39ae543a8b1258",
+      "source": "target/wasm32-unknown-unknown/release/xyg_wasm.wasm"
+    },
+    "index.js": {
+      "archive": "spec/performance/graph-initial-deadline-2026-11-11/evidence/c2bea7e94023d637aad0d7debdb84ddbb6429a0980b8ae9b4f38e0936a4043f8.gz",
+      "archiveBytes": 249841,
+      "archiveSha256": "9db2832ae424f0fcde041224055ba240901482173fd71459ce28d9df36c86596",
+      "bytes": 871126,
+      "sha256": "c2bea7e94023d637aad0d7debdb84ddbb6429a0980b8ae9b4f38e0936a4043f8",
+      "source": "packages/xy-client/dist/index.js"
+    },
+    "native": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/a47ba9de911e0d3b8d867039afc822664ba867e617b998e007933099decc541b.gz",
+      "archiveBytes": 2906042,
+      "archiveSha256": "4014ed6af6b79317ee5e599435a42bcef2134ccdc2a3868e6b9abf3614c6cc7e",
+      "bytes": 6378648,
+      "sha256": "a47ba9de911e0d3b8d867039afc822664ba867e617b998e007933099decc541b",
+      "source": "target/release/libxyg_core.so"
+    },
+    "standalone.js": {
+      "archive": "spec/performance/graph-initial-deadline-2026-11-11/evidence/e26b972251997f5562e3cdf60244865c98343847a3d5175f8b5f1d0278765866.gz",
+      "archiveBytes": 249925,
+      "archiveSha256": "ce3d4cab6cda8a4c8aee4d703c7fb5245dbfc0d3374c3bce3ef50ded043bce47",
+      "bytes": 871130,
+      "sha256": "e26b972251997f5562e3cdf60244865c98343847a3d5175f8b5f1d0278765866",
+      "source": "packages/xy-client/dist/standalone.js"
+    },
+    "wasm-inline-worker.js": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz",
+      "archiveBytes": 3838,
+      "archiveSha256": "dda8e6c4cec42d91f687b660d742d79dcc1a8c0d052ca6ca189c6acf095db2b4",
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7",
+      "source": "packages/xy-client/dist/wasm-inline-worker.js"
+    },
+    "wasm-worker.js": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7",
+      "source": "packages/xy-client/dist/wasm-worker.js"
+    },
+    "xyg-wasm-inline.js": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/efc6a1532a7556532bee867603139e4f87cdd77842dc33dc8d195302ebda3dee.gz",
+      "archiveBytes": 1042870,
+      "archiveSha256": "94f45c8cab4d091a1d3576335c9143521c04051caa78a5db3d99c49285e0284d",
+      "bytes": 2533794,
+      "sha256": "efc6a1532a7556532bee867603139e4f87cdd77842dc33dc8d195302ebda3dee",
+      "source": "packages/xy-client/dist/xyg-wasm-inline.js"
+    },
+    "xyg-wasm.manifest.json": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/6ec8678adee023b532ceda2a9e5af3e0524489763d3439dc8ab9047937c2f4ea.gz",
+      "archiveBytes": 171,
+      "archiveSha256": "eab52487c49411d8fbdce17ef619abdc4eda16e574b54881a0ad66f767f4cb85",
+      "bytes": 226,
+      "sha256": "6ec8678adee023b532ceda2a9e5af3e0524489763d3439dc8ab9047937c2f4ea",
+      "source": "packages/xy-client/dist/xyg-wasm.manifest.json"
+    },
+    "xyg-wasm.wasm": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/67be6d5add2f2ad279b721dd14484ece71e4710dcec2118cfd27df50fbaf8462.gz",
+      "archiveBytes": 781110,
+      "archiveSha256": "6116e44494db0f9237aea2dc774bc8ff047768da2011526a0e39714a91beefe6",
+      "bytes": 1884503,
+      "sha256": "67be6d5add2f2ad279b721dd14484ece71e4710dcec2118cfd27df50fbaf8462",
+      "source": "packages/xy-client/dist/xyg-wasm.wasm"
+    }
+  },
+  "schemaVersion": 1,
+  "scope": "Nonmaterial matrix wording correction and immutable successor provenance",
+  "sourceParent": "1ccd41e5df5d0f5947a531a66eb1824ddc205f72",
+  "staticCopies": {
+    "python/xyg/static/index.js": "c2bea7e94023d637aad0d7debdb84ddbb6429a0980b8ae9b4f38e0936a4043f8",
+    "python/xyg/static/standalone.js": "e26b972251997f5562e3cdf60244865c98343847a3d5175f8b5f1d0278765866",
+    "python/xyg/static/wasm-worker.js": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7",
+    "python/xyg/static/xyg-wasm-inline.js": "efc6a1532a7556532bee867603139e4f87cdd77842dc33dc8d195302ebda3dee",
+    "python/xyg/static/xyg-wasm.manifest.json": "6ec8678adee023b532ceda2a9e5af3e0524489763d3439dc8ab9047937c2f4ea",
+    "python/xyg/static/xyg-wasm.wasm": "67be6d5add2f2ad279b721dd14484ece71e4710dcec2118cfd27df50fbaf8462"
+  }
+}

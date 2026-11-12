@@ -10,14 +10,35 @@ import ctypes as ct
 import operator
 import sys
 import threading
+import weakref
 from enum import IntEnum
 
 from . import _native
 
-# Serializes the entire query/copy transaction with create and destroy, including
-# native OPEN retries which can return the same handle to different wrappers.
+# Discovery only: native instances identify OPEN aliases. Each instance keeps
+# its complete query/copy/create/destroy ordering without blocking other owners.
 _lifecycle_lock = threading.Lock()
+_instance_locks: dict[int, weakref.ReferenceType] = {}
 _MAX_BUFFER = min(sys.maxsize, ct.c_size_t(-1).value)
+
+
+def _instance_lock(instance: int):
+    def forget(reference):
+        with _lifecycle_lock:
+            if _instance_locks.get(instance) is reference:
+                del _instance_locks[instance]
+
+    # Allocate the lock and callback outside discovery. Allocation/GC may run
+    # Python callbacks; only integer lookup and reference publication run inside.
+    candidate = threading.Lock()
+    reference = weakref.ref(candidate, forget)
+    with _lifecycle_lock:
+        existing = _instance_locks.get(instance)
+        lock = existing() if existing is not None else None
+        if lock is not None:
+            return lock
+        _instance_locks[instance] = reference
+        return candidate
 
 
 class GraphSessionStatus(IntEnum):
@@ -93,10 +114,12 @@ class GraphSession:
         group_id: int,
     ) -> None:
         self._handle: int | None = None
+        self._lock = threading.Lock()
         # Index/buffer protocols can call user code which opens or closes sessions.
         instance, group = _u64(instance_id), _u64(group_id)
         document_input, opening_input = _input(document), _input(opening)
-        with _lifecycle_lock:
+        self._lock = _instance_lock(instance)
+        with self._lock:
             handle = ct.c_uint64()
             _check_status(
                 _native._lib.xyg_graphforge_session_create(
@@ -117,10 +140,10 @@ class GraphSession:
         return self._handle
 
     def _command(self, symbol: str, request: bytes | bytearray | memoryview) -> bytes:
-        with _lifecycle_lock:
+        with self._lock:
             self._require_handle()
         data = _input(request)
-        with _lifecycle_lock:
+        with self._lock:
             # Conversion ran outside the lock; a callback or another thread may
             # have closed this wrapper. Never carry a handle across conversion.
             handle = self._require_handle()
@@ -171,7 +194,7 @@ class GraphSession:
         return self._command("xyg_graphforge_coordinate_deliver", request)
 
     def close(self) -> None:
-        with _lifecycle_lock:
+        with self._lock:
             if self._handle is None:
                 return
             status = _native._lib.xyg_graphforge_session_destroy(self._handle)
@@ -180,7 +203,7 @@ class GraphSession:
             self._handle = None
 
     def __enter__(self) -> GraphSession:
-        with _lifecycle_lock:
+        with self._lock:
             self._require_handle()
         return self
 

@@ -163,7 +163,8 @@ def test_widget_refines_isolated_and_drains(tmp_path):
 
 
 @pytest.mark.parametrize("host", ["python", "node"])
-def test_public_widget_browser_gesture(tmp_path, host):
+@pytest.mark.parametrize("delay_old_frame", [False, True])
+def test_public_widget_browser_gesture(tmp_path, host, delay_old_frame):
     """The public widget's comm requests must causally replace the overview."""
     import base64
     import os
@@ -234,12 +235,18 @@ def test_public_widget_browser_gesture(tmp_path, host):
                     ),
                 )
                 disabled = True
+                blocked_end = None
+                held_frames = asyncio.Queue()
+                hold_frames = False
                 held_paint_acks = []
                 paint_ack_ready = asyncio.Event()
                 hold_paint_ack = True
 
                 def forward(msg):
+                    nonlocal blocked_end
                     if disabled and msg.get("type") == "view_change":
+                        if msg.get("phase") == "end":
+                            blocked_end = msg
                         return None
                     if hold_paint_ack and msg.get("type") == "chunked_painted":
                         held_paint_acks.append(msg)
@@ -258,6 +265,9 @@ def test_public_widget_browser_gesture(tmp_path, host):
                 deliveries = []
 
                 def send(msg, buffers=None):
+                    if hold_frames and msg.get("type") == "chunked_frame":
+                        held_frames.put_nowait((msg, buffers or []))
+                        return
                     deliveries.append(
                         asyncio.create_task(
                             page.evaluate(
@@ -295,11 +305,11 @@ def test_public_widget_browser_gesture(tmp_path, host):
                   const {render}=await import('https://xyg.test/client.js');
                   const listeners=new Map();window.requests=[];
                   window.deliver=(msg,buffers)=>{for(const cb of listeners.get('msg:custom')||[])cb(msg,buffers);};
-                  window.cleanup=render({el:document.querySelector('#chart'),model:{
+                  window.model={
                     get:k=>k==='spec'?spec:bufs.map(b=>new DataView(Uint8Array.from(atob(b),c=>c.charCodeAt(0)).buffer)),
                     on:(k,cb)=>{if(!listeners.has(k))listeners.set(k,new Set());listeners.get(k).add(cb)},
                     off:(k,cb)=>listeners.get(k)?.delete(cb),send:msg=>{window.requests.push(msg);return window.hostSend(msg)}
-                  }});
+                  };window.cleanup=render({el:document.querySelector('#chart'),model:window.model});
                   window.views=[];document.querySelector('#chart').addEventListener('xy:view_change',e=>window.views.push(e.detail));
                   window.exactRows=[];document.querySelector('#chart').addEventListener('xy:hover',e=>{if(e.detail.exact)window.exactRows.push(e.detail.row)});
                   window.frames=[];document.querySelector('#chart').addEventListener('xy:chunked_frame',e=>window.frames.push(e.detail));
@@ -320,8 +330,59 @@ def test_public_widget_browser_gesture(tmp_path, host):
                 else:
                     assert not hasattr(widget, "source_row_ids")
                 await page.screenshot(path=str(tmp_path / "disabled.png"))
+                if delay_old_frame:
+                    # Delay a genuine first-wheel end and its native result, then
+                    # release that result inside the second wheel's camera/event gap.
+                    await page.wait_for_function("window.views.some(v=>v.phase==='end')")
+                    assert blocked_end is not None
                 disabled = False
+                if delay_old_frame:
+                    hold_frames = True
+                    widget._on_custom_msg(widget, blocked_end, [])
+                    old_msg, old_buffers = await asyncio.wait_for(held_frames.get(), timeout=10)
+                    await page.evaluate(
+                        """([msg,bufs])=>{
+                      const v=window.model._xygChunkedActiveView, emit=v._emitViewChange;
+                      v._emitViewChange=function(...args){
+                        const out=emit.apply(this,args);
+                        if(args[0]==='wheel_zoom'&&args[1]?.phase==='update'){
+                          this._emitViewChange=emit;
+                          const canvas=this.canvas, before=canvas.toDataURL();
+                          const spec=this.spec, traces=this.gpuTraces, payload=this._payload;
+                          const start=window.requests.length;
+                          const intent=window.requests.findLast(m=>m.type==='view_change').chunked_intent;
+                          const query=msg.spec.chunked.state.ranges;
+                          const camera=this.root.xy.state().ranges;
+                          window.deliver(msg,bufs.map(b=>new DataView(Uint8Array.from(atob(b),c=>c.charCodeAt(0)).buffer)));
+                          window.race={intent,replyIntent:msg.intent,query,camera,
+                            pending:this._pendingViewEvent!==null,frames:window.frames.length,
+                            messages:window.requests.slice(start),
+                            unchanged:spec===this.spec&&traces===this.gpuTraces&&payload===this._payload,
+                            pixelsUnchanged:before===canvas.toDataURL()};
+                        }
+                        return out;
+                      };
+                    }""",
+                        [old_msg, [base64.b64encode(b).decode() for b in old_buffers]],
+                    )
                 await page.mouse.wheel(0, -250)
+                if delay_old_frame:
+                    await page.wait_for_function("window.race")
+                    race = await page.evaluate("window.race")
+                    assert race["intent"] == race["replyIntent"]
+                    assert race["query"] != race["camera"]
+                    assert race["pending"] and race["unchanged"] and race["pixelsUnchanged"]
+                    assert race["frames"] == 0
+                    assert [m["type"] for m in race["messages"]] == ["chunked_rejected"]
+                    assert not held_paint_acks
+                    if process is None:
+                        assert widget._figure is widget._chunked_binding.initial_figure
+                    else:
+                        assert not hasattr(widget, "source_row_ids")
+                    # Only actual new-camera native results can now paint and ACK.
+                    hold_frames = False
+                    while not held_frames.empty():
+                        send(*held_frames.get_nowait())
                 await page.wait_for_function("window.frames.length>0")
                 assert not errors, errors
                 await asyncio.wait_for(paint_ack_ready.wait(), timeout=10)
@@ -385,6 +446,7 @@ def test_public_widget_browser_gesture(tmp_path, host):
                             "last_provenance": widget.source_provenance,
                             "browser": browser.version,
                             "negative_control_frames": 0,
+                            "delayed_old_frame": race if delay_old_frame else None,
                             "errors": errors,
                         },
                         indent=2,

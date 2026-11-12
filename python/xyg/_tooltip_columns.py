@@ -28,6 +28,7 @@ from __future__ import annotations
 import math
 import re
 from collections.abc import Sequence
+from itertools import islice
 from typing import Any
 
 import numpy as np
@@ -37,6 +38,39 @@ __all__ = ["decode_tooltip_rows", "encode_tooltip_rows"]
 _UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 _ABSENT, _NULL, _VALUE, _TEXT = 0, 1, 2, 3
 _EXACT_INT = 2**53  # integers beyond this lose digits as f64
+_UUID_BLOCK_ROWS = 4096  # Bound temporary hex/index packing, independently of source size.
+
+
+def _uuid_plane(rows, key, n, presence, intern):
+    plane = np.zeros((n, 16), dtype=np.uint8)
+    iterator = iter(rows)
+    for start in range(0, n, _UUID_BLOCK_ROWS):
+        stop = min(start + _UUID_BLOCK_ROWS, n)
+        positions, fragments = [], []
+        for offset, row in enumerate(islice(iterator, stop - start)):
+            i = start + offset
+            if key not in row:
+                presence[i] = _ABSENT
+                continue
+            value = row[key]
+            if value is None:
+                presence[i] = _NULL
+            elif _UUID.match(value):
+                positions.append(offset)
+                fragments.append(value.replace("-", ""))
+            else:
+                presence[i] = _TEXT
+                plane[i, :4] = np.frombuffer(intern(value).to_bytes(4, "little"), dtype=np.uint8)
+        if positions:
+            packed = np.frombuffer(bytes.fromhex("".join(fragments)), dtype=np.uint8).reshape(
+                -1, 16
+            )
+            block = plane[start:stop]
+            if len(positions) == stop - start:
+                block[:] = packed
+            else:
+                block[positions] = packed
+    return plane.reshape(-1)
 
 
 def _kind(value: Any) -> str | None:
@@ -78,6 +112,7 @@ def encode_tooltip_rows(rows: Sequence[dict[str, Any]], pw: Any) -> dict[str, An
                 return None  # rows disagree on key order
             last = at
     kinds: list[str] = []
+    classify = _kind
     for key in keys:
         kind = "null"
         any_uuid = False
@@ -85,7 +120,7 @@ def encode_tooltip_rows(rows: Sequence[dict[str, Any]], pw: Any) -> dict[str, An
             if key not in row:
                 continue
             value = row[key]
-            k = _kind(value)
+            k = classify(value)
             if k is None:
                 return None
             if k == "null":
@@ -95,6 +130,24 @@ def encode_tooltip_rows(rows: Sequence[dict[str, Any]], pw: Any) -> dict[str, An
             kind = k
             if k == "text" and not any_uuid and _UUID.match(value):
                 any_uuid = True
+                # Only a canonical builtin UUID enables the text shortcut.
+                # Other scalar columns retain the original classifier; string
+                # subclasses and later non-text values still get full validation.
+                if type(value) is str:
+
+                    def classify_uuid_text(value):
+                        nonlocal classify
+                        if type(value) is str:
+                            return "text"
+                        # Retire the shortcut for the rest of this column when
+                        # a mixed value appears; do not tax every later fallback.
+                        classify = _kind
+                        return classify(value)
+
+                    classify = classify_uuid_text
+        # Start the next column generically and break the shortcut's local
+        # function/cell cycle before lowering or returning the encoded planes.
+        classify = _kind
         kinds.append("bool" if kind == "null" else "uuid" if any_uuid else kind)
 
     data: list[int] = []
@@ -111,6 +164,11 @@ def encode_tooltip_rows(rows: Sequence[dict[str, Any]], pw: Any) -> dict[str, An
 
     for key, kind in zip(keys, kinds, strict=True):
         presence = np.full(n, _VALUE, dtype=np.uint8)
+        if kind == "uuid" and n > _UUID_BLOCK_ROWS:
+            plane = _uuid_plane(rows, key, n, presence, intern)
+            present.append(None if bool(np.all(presence == _VALUE)) else pw.ship_u8(presence))
+            data.append(pw.ship_u8(plane))
+            continue
         if kind == "uuid":
             plane = np.zeros(n * 16, dtype=np.uint8)
         elif kind == "f64":

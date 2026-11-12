@@ -13259,14 +13259,24 @@ def _graph_semantic_inputs(
     inputs = [np.asarray(value) for value in (classes, epistemic, statuses)]
     if any(value.ndim != 1 or value.dtype.kind not in "iu" for value in inputs):
         raise ValueError("semantic codes must be 1-D integer arrays")
-    if any(any(int(code) < 0 or int(code) > 7 for code in value) for value in inputs):
+    # Tiny planes avoid reduction setup; both paths check before narrowing.
+    if any(
+        any(int(code) < 0 or int(code) > 7 for code in value)
+        if len(value) <= 8
+        else value.min(initial=0) < 0 or value.max(initial=0) > 7
+        for value in inputs
+    ):
         raise ValueError("semantic codes must be in the closed range 0..7")
     codes = [np.ascontiguousarray(value, dtype=np.uint8) for value in inputs]
     metric_arr = np.ascontiguousarray(metric, dtype=np.float64)
     flag_raw = np.asarray(flags)
     if flag_raw.ndim != 1 or flag_raw.dtype.kind not in "iu" or flag_raw.dtype.kind == "b":
         raise ValueError("flags must be a 1-D exact integer array")
-    if any(int(value) < 0 or int(value) > 0xFFFF_FFFF for value in flag_raw):
+    if (
+        any(int(value) < 0 or int(value) > 0xFFFF_FFFF for value in flag_raw)
+        if len(flag_raw) <= 8
+        else flag_raw.min(initial=0) < 0 or flag_raw.max(initial=0) > 0xFFFF_FFFF
+    ):
         raise ValueError("flags must contain uint32 values")
     flags_arr = np.ascontiguousarray(flag_raw, dtype=np.uint32)
     n = len(codes[0])

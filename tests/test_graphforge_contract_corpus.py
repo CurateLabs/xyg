@@ -12,7 +12,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 CURRENT_BINDINGS = Path(
-    "spec/performance/graph-notebook-ci-repair-2026-11-10/current-bindings.json"
+    "spec/performance/filter-rounding-evaluation-2026-11-12/current-bindings.json"
 )
 
 
@@ -771,8 +771,519 @@ def test_desktop_regions_preserve_the_complete_candidate_and_review_chain():
 def test_notebook_ci_repair_preserves_complete_reviewed_parent_history():
     parent_path = "spec/performance/graph-vscode-regions-2026-11-10/current-bindings.json"
     parent = json.loads((ROOT / parent_path).read_text())
-    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/graph-notebook-ci-repair-2026-11-10/current-bindings.json"
+        ).read_text()
+    )
     assert len(current["parents"]) == 38
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_semantic_graph_session_preserves_complete_reviewed_parent_history():
+    parent_path = "spec/performance/graph-notebook-ci-repair-2026-11-10/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/graph-semantic-session-2026-11-10/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 39
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_semantic_anchor_preserves_complete_source_qualification():
+    parent_path = "spec/performance/graph-semantic-session-2026-11-10/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/graph-semantic-anchor-2026-11-10/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 40
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_native_admission_paint_preserves_complete_source_qualification():
+    parent_path = "spec/performance/graph-semantic-anchor-2026-11-10/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/graph-native-admission-paint-2026-11-11/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 41
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_native_force_owner_preserves_complete_source_qualification():
+    parent_path = "spec/performance/graph-native-admission-paint-2026-11-11/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/graph-native-force-owner-2026-11-11/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 42
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_pan_cancel_preserves_complete_source_qualification():
+    parent_path = "spec/performance/graph-native-force-owner-2026-11-11/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (ROOT / "spec/performance/graph-pan-cancel-2026-11-11/current-bindings.json").read_text()
+    )
+    assert len(current["parents"]) == 43
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_python_session_isolation_preserves_complete_source_qualification():
+    parent_path = "spec/performance/graph-pan-cancel-2026-11-11/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT
+            / "spec/performance/graph-python-session-isolation-2026-11-11/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 44
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_tooltip_uuid_packing_preserves_complete_source_qualification():
+    parent_path = "spec/performance/graph-python-session-isolation-2026-11-11/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/tooltip-uuid-packing-2026-11-11/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 45
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_visible_graph_region_input_preserves_complete_source_qualification():
+    parent_path = "spec/performance/tooltip-uuid-packing-2026-11-11/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/graph-region-visible-input-2026-11-11/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 46
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_semantic_input_validation_preserves_complete_source_qualification():
+    parent_path = "spec/performance/graph-region-visible-input-2026-11-11/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/graph-semantic-validation-2026-11-11/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 47
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_chunked_camera_publication_preserves_complete_source_qualification():
+    parent_path = "spec/performance/graph-semantic-validation-2026-11-11/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/chunked-camera-publication-2026-11-11/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 48
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_uuid_tooltip_classification_preserves_complete_source_qualification():
+    parent_path = "spec/performance/chunked-camera-publication-2026-11-11/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/tooltip-uuid-classification-2026-11-11/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 49
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_density_startup_recovery_preserves_complete_source_qualification():
+    parent_path = "spec/performance/tooltip-uuid-classification-2026-11-11/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/density-startup-recovery-2026-11-11/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 50
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_graph_initial_context_recovery_preserves_complete_source_qualification():
+    parent_path = "spec/performance/density-startup-recovery-2026-11-11/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT
+            / "spec/performance/graph-initial-context-recovery-2026-11-11/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 51
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_graph_initial_deadline_preserves_complete_source_qualification():
+    parent_path = "spec/performance/graph-initial-context-recovery-2026-11-11/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/graph-initial-deadline-2026-11-11/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 52
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_density_matrix_summary_preserves_complete_source_qualification():
+    parent_path = "spec/performance/graph-initial-deadline-2026-11-11/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/density-matrix-summary-2026-11-11/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 53
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_filter_paged_cooperative_preserves_complete_source_qualification():
+    parent_path = "spec/performance/density-matrix-summary-2026-11-11/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/filter-paged-cooperative-2026-11-11/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 54
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_filter_cooperative_status_preserves_complete_source_qualification():
+    parent_path = "spec/performance/filter-paged-cooperative-2026-11-11/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/filter-cooperative-status-2026-11-11/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 55
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_filter_dossier_status_preserves_complete_source_qualification():
+    parent_path = "spec/performance/filter-cooperative-status-2026-11-11/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/filter-dossier-status-2026-11-11/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 56
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_native_filter_callback_preserves_complete_source_qualification():
+    parent_path = "spec/performance/filter-dossier-status-2026-11-11/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/filter-native-callback-2026-11-11/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 57
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_filter_benchmark_catalog_preserves_complete_source_qualification():
+    parent_path = "spec/performance/filter-native-callback-2026-11-11/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/filter-benchmark-catalog-2026-11-11/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 58
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_filter_dashboard_baseline_preserves_complete_source_qualification():
+    parent_path = "spec/performance/filter-benchmark-catalog-2026-11-11/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/filter-dashboard-baseline-2026-11-11/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 59
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_filter_emscripten_transport_preserves_complete_source_qualification():
+    parent_path = "spec/performance/filter-dashboard-baseline-2026-11-11/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/filter-emscripten-transport-2026-11-12/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 60
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_filter_prefix_storage_preserves_complete_source_qualification():
+    parent_path = "spec/performance/filter-emscripten-transport-2026-11-12/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/filter-prefix-storage-2026-11-12/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 61
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_filter_range_paint_preserves_complete_source_qualification():
+    parent_path = "spec/performance/filter-prefix-storage-2026-11-12/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (ROOT / "spec/performance/filter-range-paint-2026-11-12/current-bindings.json").read_text()
+    )
+    assert len(current["parents"]) == 62
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_filter_prefix_benchmark_oracle_preserves_complete_source_qualification():
+    parent_path = "spec/performance/filter-range-paint-2026-11-12/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT
+            / "spec/performance/filter-prefix-benchmark-oracle-2026-11-12/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 63
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_filter_single_color_preserves_complete_source_qualification():
+    parent_path = "spec/performance/filter-prefix-benchmark-oracle-2026-11-12/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (ROOT / "spec/performance/filter-single-color-2026-11-12/current-bindings.json").read_text()
+    )
+    assert len(current["parents"]) == 64
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+
+
+def test_filter_compiled_inputs_preserve_history_and_track_every_rust_source():
+    parent_path = "spec/performance/filter-single-color-2026-11-12/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads(
+        (
+            ROOT / "spec/performance/filter-compiled-inputs-2026-11-12/current-bindings.json"
+        ).read_text()
+    )
+    assert len(current["parents"]) == 65
+    assert {p["path"] for p in current["parents"]} == {parent_path}.union(
+        p["path"] for p in parent["parents"]
+    )
+    assert set(parent["sourceSha256"]) <= set(current["sourceSha256"])
+    assert current["manifestSha256"] == parent["manifestSha256"]
+    assert current["originalProducerSha256"] == parent["originalProducerSha256"]
+    _assert_complete_parent_sources(current)
+    inputs = json.loads(
+        (
+            ROOT / "spec/performance/filter-compiled-inputs-2026-11-12/compiled-inputs.json"
+        ).read_text()
+    )
+    tracked = subprocess.check_output(
+        ["git", "ls-files", "crates", "vendor"], cwd=ROOT, text=True
+    ).splitlines()
+    assert {p for p in tracked if p.endswith(".rs")} <= inputs.keys()
+    assert all(hashlib.sha256((ROOT / p).read_bytes()).hexdigest() == h for p, h in inputs.items())
+
+
+def test_filter_rounding_evaluation_preserves_complete_source_qualification():
+    parent_path = "spec/performance/filter-compiled-inputs-2026-11-12/current-bindings.json"
+    parent = json.loads((ROOT / parent_path).read_text())
+    current = json.loads((ROOT / CURRENT_BINDINGS).read_text())
+    assert len(current["parents"]) == 66
     assert {p["path"] for p in current["parents"]} == {parent_path}.union(
         p["path"] for p in parent["parents"]
     )

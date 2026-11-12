@@ -150,13 +150,7 @@ const DEFAULT_EDGE_LABEL_PRIORITY: f64 = -1.0;
 /// Caption of a node with no name-like property: the last eight hex digits of
 /// its UUID (the random tail of a UUIDv7; its leading digits are a timestamp).
 fn short_identity(id: &Uuid) -> String {
-    const HEX: &[u8; 16] = b"0123456789abcdef";
-    let mut text = String::with_capacity(8);
-    for &byte in &id[12..] {
-        text.push(char::from(HEX[usize::from(byte >> 4)]));
-        text.push(char::from(HEX[usize::from(byte & 15)]));
-    }
-    text
+    super::container::hex_bytes(&id[12..])
 }
 
 /// Group sizes → class codes by rank: the six largest groups get codes 1..=6

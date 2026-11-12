@@ -403,19 +403,43 @@ def test_triangle_mesh_resource_cleanup_deletes_every_coordinate_buffer() -> Non
     assert "this._deleteBuffers(g, TRACE_GPU_BUFFERS);" in cleanup
 
 
-def _codspeed_row_count() -> int:
+def _codspeed_row_count(root: Path = ROOT) -> int:
     """CodSpeed rows the workflow's glob collects, counting parametrized expansion.
 
     Parsed rather than imported: the benchmark modules assert a native backend at
     import time, and this only needs their shape.
     """
     total = 0
-    for path in sorted((ROOT / "benchmarks").glob("test_codspeed_*.py")):
+    for path in sorted((root / "benchmarks").glob("test_codspeed_*.py")):
         tree = ast.parse(path.read_text(encoding="utf-8"))
+        fixtures = {}
+        autouse = set()
+        for node in tree.body:
+            if not isinstance(node, ast.FunctionDef):
+                continue
+            for decorator in node.decorator_list:
+                target = decorator.func if isinstance(decorator, ast.Call) else decorator
+                if getattr(target, "attr", getattr(target, "id", "")) != "fixture":
+                    continue
+                options = (
+                    {item.arg: item.value for item in decorator.keywords}
+                    if isinstance(decorator, ast.Call)
+                    else {}
+                )
+                name = ast.literal_eval(options["name"]) if "name" in options else node.name
+                values = options.get("params")
+                assert values is None or isinstance(values, (ast.List, ast.Tuple)), (
+                    f"{path.name} fixture {name} has non-literal params; cannot count statically"
+                )
+                fixtures[name] = (node, len(values.elts) if values is not None else 1)
+                if "autouse" in options and ast.literal_eval(options["autouse"]):
+                    autouse.add(name)
         for node in tree.body:
             if not isinstance(node, ast.FunctionDef) or not node.name.startswith("test_"):
                 continue
             rows = 1
+            overrides = set()
+            indirect = set()
             for decorator in node.decorator_list:
                 if not isinstance(decorator, ast.Call) or len(decorator.args) != 2:
                     continue
@@ -425,14 +449,83 @@ def _codspeed_row_count() -> int:
                 )
                 if name != "parametrize":
                     continue
+                names = ast.literal_eval(decorator.args[0])
+                names = (
+                    [part.strip() for part in names.split(",")] if isinstance(names, str) else names
+                )
+                overrides.update(names)
+                options = {item.arg: item.value for item in decorator.keywords}
+                via_fixture = (
+                    ast.literal_eval(options["indirect"]) if "indirect" in options else False
+                )
+                indirect.update(names if via_fixture is True else via_fixture or [])
                 argvalues = decorator.args[1]
                 assert isinstance(argvalues, (ast.List, ast.Tuple)), (
                     f"{path.name}::{node.name} parametrizes with a non-literal argvalues; "
                     "the row count can no longer be counted statically"
                 )
                 rows *= len(argvalues.elts)
+            pending = [
+                *(
+                    argument.arg
+                    for argument in [*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs]
+                ),
+                *autouse,
+            ]
+            seen = set()
+            while pending:
+                name = pending.pop()
+                if name in seen or (name in overrides and name not in indirect):
+                    continue
+                seen.add(name)
+                if name not in fixtures:
+                    continue  # Pytest/plugin fixtures have no module-local params.
+                fixture, count = fixtures[name]
+                if name not in overrides:
+                    rows *= count
+                pending.extend(
+                    argument.arg
+                    for argument in [
+                        *fixture.args.posonlyargs,
+                        *fixture.args.args,
+                        *fixture.args.kwonlyargs,
+                    ]
+                )
             total += rows
     return total
+
+
+def test_codspeed_count_expands_shared_and_transitive_fixture_params(tmp_path: Path) -> None:
+    folder = tmp_path / "benchmarks"
+    folder.mkdir()
+    (folder / "test_codspeed_fixture.py").write_text(
+        """import pytest
+@pytest.fixture(params=[1, 2, 3])
+def source(request): return request.param
+@pytest.fixture
+def derived(source): return source
+@pytest.fixture(params=['a', 'b'], autouse=True)
+def mode(request): return request.param
+@pytest.mark.parametrize('value', [10, 20])
+def test_shared(source, derived, value): pass
+@pytest.mark.parametrize('source', [4, 5], indirect=True)
+def test_override(derived): pass
+"""
+    )
+    assert _codspeed_row_count(tmp_path) == 16  # 3*2*2 + 2*2; source counted once.
+
+
+def test_codspeed_count_refuses_dynamic_fixture_params(tmp_path: Path) -> None:
+    import pytest
+
+    folder = tmp_path / "benchmarks"
+    folder.mkdir()
+    (folder / "test_codspeed_fixture.py").write_text(
+        "import pytest\nVALUES=[1,2]\n@pytest.fixture(params=VALUES)\n"
+        "def source(request): return request.param\ndef test_row(source): pass\n"
+    )
+    with pytest.raises(AssertionError, match="non-literal params"):
+        _codspeed_row_count(tmp_path)
 
 
 def test_codspeed_row_count_matches_the_methodology_spec() -> None:

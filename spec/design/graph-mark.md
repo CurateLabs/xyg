@@ -173,6 +173,33 @@ values are not one scalar kind per key, keep the JSON `tooltip_rows` form.
 Python `_tooltip_columns.py` and Node `tooltip-columns.js` are byte-identical
 (`tests/fixtures/tooltip_columns_cross_host.json`). The browser decodes one row
 per hover (`ChartView._tooltipRowSource`) and never materializes the table.
+Python packs UUID columns longer than 4,096 rows in blocks of at most 4,096
+rows. Each block converts its canonical UUID hex values together and copies
+them into the same 16-byte slots; short columns retain the scalar writer.
+The temporary hex fragments and destination indices are bounded by that block
+size, while the output plane retains its existing full-column allocation.
+Absent/null flags, dictionary encounter order, mixed dictionary strings,
+zero padding and all emitted bytes remain unchanged. This is transport copy
+batching, not an LOD or selection decision. The encoder comparison and exact
+Python/Node byte oracles are recorded in
+`spec/performance/tooltip-uuid-packing-2026-11-11/README.md`; they do not establish
+whole-notebook performance or public 100k deadline acceptance.
+During Python schema inference, discovering a canonical UUID in an exact builtin
+`str` enables a column-local classifier that accepts later exact builtin strings
+without repeating generic scalar classification. Ordinary scalar columns keep
+the original classifier. Nulls, NumPy scalars, string subclasses and every other
+type still use the original validator, including exact-integer refusal and
+mixed-kind JSON fallback before writing any plane. Encountering a non-builtin
+string value retires the shortcut for the remainder of that column, including
+when the value is null or a compatible string subclass. UUID detection, dictionary order and
+all serialized bytes retain their contracts. This is per-call classification;
+it does not cache mutable tooltip/source state across widget publications.
+Classifier measurements and complete Python/Node byte controls are recorded in
+`spec/performance/tooltip-uuid-classification-2026-11-11/README.md`. One stock
+100k+1k notebook journey passes its bounded paint/identity/selection/cleanup
+assertions with the CodSpeed profiler disabled, while profiled attempts still
+hit the peer deadline. These observations do not establish the cause, sustained
+throughput, convergence or reliable 100k deadline acceptance.
 With the wire graph meta below, a 100k-node GraphForge webview spec goes from
 98 MiB of JSON to 1.3 MiB (strings only) plus typed buffers
 (spec/benchmarks/results.md, "GraphForge composition scale").
@@ -327,6 +354,17 @@ disposal terminal. Independent controllers have independent queues and cannot
 exchange revisions or positions. `reheat` restarts Rust CoSE from the current
 drag coordinates and pin mask; Python transports those buffers but performs no
 force or position math.
+
+Native force-handle discovery and removal hold the shared registry lock only
+briefly. Each retained owner separately serializes its own ticks, so an active
+chunk does not hold unrelated handles behind the registry. Destruction waits for
+that owner's current tick, empties its state and then removes the handle.
+Concurrent destruction also waits for retirement, including the call returning
+false; only one call reports successful destruction. Lookups already queued for
+the retired owner observe the empty slot and refuse; they cannot revive it.
+Same-handle ordering, f64 results, chunk boundaries and wall limits remain
+unchanged. This ownership rule establishes no notebook deadline, throughput,
+global memory or multi-view scale qualification.
 
 Hosts must not emulate the shipped CoSE policy.
 
@@ -884,6 +922,17 @@ resolved paint (node fill, opacity, stroke, stroke width, shape, fill/stroke
 opacity; edge color, width, opacity) all fail closed before layout output.
 Code ranges are checked on every source row even when Aggregate LOD later
 omits the paint.
+
+Python validates semantic integer representation and range before narrowing
+to the canonical u8 code and u32 flag planes. For more than eight values it
+uses complete integer minimum/maximum reductions; tiny planes keep scalar
+checks to avoid reduction setup. Empty typed planes, signed/unsigned and
+non-native-endian integers, strided views and the existing error precedence
+retain the same acceptance and bytes. No values are sampled or narrowed before
+their range check. This host-framing optimization changes no LOD decision,
+palette, metric-domain or interaction-bit policy; Rust still owns those rules.
+The crossover measurements and exact-output/refusal controls are recorded in
+`spec/performance/graph-semantic-validation-2026-11-11/README.md`.
 
 Hosts call `xyg_graph_semantic_style_resolve` once per side over **source**
 rows (nodes with the §7.1 visual-state flags from `visual_state_flags`; edges

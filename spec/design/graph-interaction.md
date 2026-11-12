@@ -1225,6 +1225,27 @@ canonicalScene API; the attached path never calls `prepareScene`, canonicalScene
 The returned handle exposes `ready`, `refreshRender(camera?)`, `snapshot()` and
 asynchronous idempotent `dispose()`. `ready` opens initially **Owned, unlinked**
 state and installs its first Render; snapshot is null before that installation and after disposal.
+A transient loss of the initial GPU context does not dispose the native owner.
+Before any publication is accepted, only the painter's explicit lost-context
+condition may wait for GLHost restoration/replacement and re-render the current
+Rust state. The retry uses fresh operation sequences and retains the original
+intent checks; a newer temporal intent supersedes the unpainted membership.
+No snapshot, companion update or render event is published until a complete
+paint succeeds. Admission/capacity/protocol failures remain refusals, not
+context-recovery retries. Initial recovery is bounded by the existing generated
+30-second scheduler wall-limit constant. Expiry terminates the whole initial
+transaction, including a retry whose Worker reply is already in flight. A
+newer temporal intent does not reset that deadline. The
+expired lifetime is checked before installation and after a superseded render
+returns without publication; its first error wins over later stale/disposal
+errors. Disposal, Worker failure and expiry cancel the waiter and drain the
+owner. An accepted first publication disarms expiry. Later accepted publications retain
+the existing repaint/refusal contract. The normal source foundation gate runs
+real initial-loss, repeated-loss, supersession, cancellation, timeout and
+malformed-output controls through `scripts/graph_initial_context_smoke.mjs`.
+This does not establish the origin of historical unrequested losses or general
+browser/driver reliability.
+
 A snapshot contains camera/revision, exact selection refs and provenance,
 changed refs, focus/focus-action facts, operation outcome, disclosure facts,
 companion rows and aligned refs, and the Rust summary. u64 source indices, rows,
@@ -1510,18 +1531,26 @@ has no focus/selection input. This does not close M4/#35/#36/#1015 or qualify
 100k/1M, reliable two-10k, latency, peak RAM/GPU, platforms, notebooks, exports or
 competitors. Historical pointer/camera receipts and their limitations remain.
 
-### Plain retained graph phase admission (default arena)
+<a id="plain-retained-graph-phase-admission-default-arena"></a>
+
+### Persisted graph phase admission (default arena)
 
 The browser default remains **16 MiB** and the maximum/native default remains
-**384 MiB**. A closed, borrowed certificate recognizes neutral undirected,
-non-loop persisted sources. Names, index zero, primitive dtypes, counts,
-identity sentinel planes and successful current composition headers are checked.
-Labels, semantic styles, hierarchy, layers/results, generation and unknown
-sections use the general envelope. Certification changes ownership accounting,
+**384 MiB**. A borrowed certificate recognizes flat undirected, non-loop
+persisted sources. Index zero, consumed primitive dtypes/counts, identity sentinel
+planes and successful current composition headers are checked before owned
+decoding. It includes semantic class/epistemic/status/metric/flag planes, labels,
+and a single optional generation UUID. Hierarchy, `layer.*`, derived identity,
+nonzero indices and mismatched consumed schemas retain the general envelope.
+Other raw extension sections remain borrowed and survive byte-exactly in the
+complete retry cache; they do not acquire typed source ownership.
+Certification changes ownership accounting,
 not the source graph, layout, culling, LOD, pick ordering or opacity policy.
 Direct and Aggregate use the same Rust render kernel; eligibility does not
-branch on N, camera or fixture. Unsupported collapse/bulk/bound operations keep
-the general transaction plan.
+branch on N, camera or fixture. Unsupported collapse, highlight, pin/move,
+remote and bound operations keep the general transaction plan. UUID/reference
+selection and candidate-row region selection use the certified plan with the
+bulk-intermediate reservations below.
 
 Persistent source ownership is explicit:
 
@@ -1565,11 +1594,32 @@ length, including all padding and scalar sections. The construction maximum is
 
 Add fixed 98,304 metadata bytes, 4,096 for the default reducer reserve, OPEN
 acknowledgements and retry-record metadata, and the existing 1,024 per initially
-pinned identity. Foreign staging/owner capacities are added separately. Unknown
-or mismatched schemas retain general admission. No already borrowed typed data
+pinned identity. Semantic source construction adds:
+
+- 15 bytes per row on either side with any authored semantic style field,
+  including the implicit defaults for its other fields;
+- for either label plane, `4(N+M) * sizeof(String) + (N+M) * sizeof(&str)`
+  for header growth/overlap, temporary text references and synthesized empty
+  node labels, plus the validated combined UTF-8 pool bytes `T`;
+- 1,024 bytes per initially selected identity, covering simultaneous reducer
+  trees without changing the canonical selection cap;
+- `512 * max(section_count - 64, 0)` descriptor bytes, in addition to the
+  fixed allowance for the first 64 sections, covering both live document
+  containers and temporary span/vector growth.
+
+Every consumed style/label plane must have its canonical row count, and a
+present generation must contain exactly one UUID. TextList offsets partition
+the complete UTF-8 pool before String expansion. Foreign staging/owner
+capacities are added separately. No already borrowed typed data
 gets a document multiplier; all Rust-owned copies and the whole retry byte
 cache remain charged. Source result-string slots reserve once from the validated
 layer bound, compare exact strings, and retain the general document envelope.
+
+The style reader borrows its canonical node/edge field names and reuses status
+presence when deciding whether typed style storage is needed. After validation,
+an empty flag vector identifies the default path for a nonempty source, avoiding
+a redundant stored mode flag. Empty authored sources retain status presence and
+resolve to empty output, as do empty sources without authored styles.
 
 Later admission sums actual capacities once for retained source, mutable force,
 positions, publication and CSR, packets, encoded replies, and reducer/event
@@ -1580,6 +1630,29 @@ Before cloning, admission checks the **maximum** of disjoint force/query and
 render-kernel phases, including private candidate owners, borrowed staging and
 foreign output/owner capacities. General/UPDATE keeps the preceding whole-old +
 whole-new envelope and exact 3,526,207 refusal / 3,526,208 success/retry boundary.
+
+UUID/ref commands reserve up to `min(N+M, 2C)` intermediate kind-qualified
+identities (`C=10,000`), including combination/copy/delta work. One UUID may
+name both a node and an edge; an oversized intermediate Toggle may still
+produce a legal result. Admission must preserve that behavior. Candidate-row
+regions additionally reserve 128 bytes per candidate node (bounded by `C`) and
+per published edge for the node/induced-edge trees assembled before result-cap
+refusal. Semantic paint reserves 32 bytes per source row for 28-byte resolved
+styles and masked-u32 scratch. Heads remain part of their shaft pick primitive.
+
+The transaction has successive allocation gates: source/kernel, paint/index,
+then publication/serialization. Passing the first gate does not promise the
+later phases fit. Before cloning, semantic source admission additionally reserves
+`64B` bytes for escaped companion rows, joins/copies and focused summaries, where
+`B = min(T, 200L) + L` and `L` is the longest validated source label in bytes.
+The companion page contains at most 200 distinct source rows; the focused
+summary can repeat one label. This bound preserves the complete source pool
+without charging every source label as reply output. The checked reservation
+also covers builder growth and final/cached text copies. Before allocating a
+reply builder, the packet and lowering-scratch gate described below applies.
+Label bytes remain in the general fallback's `128T` reservation. A late refusal retains the accepted
+reply, revision, state, publication and retry sequence; retrying that same
+sequence with sufficient arena capacity remains valid.
 
 The owned render-kernel variant changes allocation ownership only: source edge
 pair storage reserves its source-bounded capacity once. The ordinary kernel
@@ -1611,14 +1684,65 @@ computes viewport membership and LOD. Aggregate avoids resolving unused source
 styles. Unused output capacities are released before retaining a publication.
 
 Before paint allocation, a second checked gate charges the already built
-publication/membership buffers, live flags, styles, canonical three-slot route
-scratch and growable paint rows. Group/routing scratch dies before pick CSR
-construction, so their capacities enter a phase maximum. CPU/GPU style columns
+publication/membership buffers, live flags, styles and structural route scratch.
+Each non-loop straight shaft needs one route slot; a loop needs three. Curved
+non-loop routing needs eight, with two additional segments only when heads are
+emitted as route segments. Route buffers use the maximum required per-edge
+width across the source: any loop raises a one-slot straight buffer to three
+slots per edge; curved widths already cover loops. The certified flat source
+excludes loops and retains one-slot straight storage. The retained paint path
+uses `with_ends`, whose heads
+are metadata, then reserves exactly the returned piece count after rank/group
+scratch retires. Parallel/reciprocal offsets, clipping, dash/head geometry and
+emission order are unchanged. The old three/ten-slot public maximum buffers
+remain sufficient. Group/routing scratch dies before pick CSR construction,
+so their capacities enter a phase maximum. CPU/GPU style columns
 share one exact writer. GPU coordinate columns lower directly into their owned
 packet buffers through the same scalar offset-f32 kernel; no extra f64/f32
 column vectors overlap them.
-Before serialization, another gate charges current publication plus two
-complete packet bounds: one planned packet arena and one lowering column.
+Before serialization, another gate charges the current publication, the
+numeric part of the preallocated packet, the largest simultaneously live lowering
+column, and metadata scratch. The column maximum includes 112 bytes per paint
+piece, 60 per rendered node/edge, 40 per frame and
+`8*(max(source nodes,source edges)+1)` for raw planes: membership is a partition,
+so each canonical row enters at most one CSR group and offsets have one terminal
+entry. GPU index/state input and byte-copy overlaps fit
+within those row widths. The packet additionally reserves twice the same
+certified companion-label bound `B = min(T,200L) + L` used by the pre-clone gate
+(escaping expands each byte at most twice), plus 80 bytes per changed position.
+`T` is the source label pool and `L` its longest label; both were validated at
+source admission, so neither is recomputed by allocating output scratch.
+Scratch additionally reserves
+1,024 bytes per output reference, 512 per decoded projection descriptor,
+320 per changed position and a 128 KiB fixed metadata allowance. Worlds with
+focus or a retained ring anchor keep the original complete second-packet
+allowance, in addition to that metadata scratch. Only worlds without either
+owner use the narrower column maximum; this does not change focus/ring output
+or query its topology during admission. The pre-clone `64B` label reservation
+also covers the packet's `2B` label capacity and escaping/join/copy scratch, so
+those bytes are charged once across the phases. Speculative state retains its
+separate pre-clone reservation.
+Coordination, selection, pick, companion and transported reference sections
+share the existing reference encoder followed by the same packet-copy step;
+record ordering, pool validation and temporary ownership remain unchanged.
+Default four-byte UUID-tail captions, full companion UUIDs and admitted frozen
+metadata use one lowercase-hex encoder; their byte inputs and string capacities
+remain unchanged.
+
+The ordinary browser segment painter has one fixed Cartesian shader variant.
+It substitutes integer uniforms in the existing shader bodies only when the
+current draw proves: linear x/y mappings, per-instance RGBA, device-space
+widths, no authored dash, retained endpoint metadata and an explicit absence
+of head flags. Unknown heads, other paint modes, CSS widths, nonlinear/polar
+axes and authored dashes use the general program. Selection remains dynamic
+in both programs. Semantic per-edge dash, layered paint, endpoint clipping,
+alpha, positions and blend order remain in the shared bodies. The client owns at most the general
+and this one specialized segment program; the existing shared host owns their
+immutable shaders and releases them through its normal context lifecycle.
+No geometry, LOD, membership, admission, cadence or deadline changes follow
+from this rendering specialization. Complete-pixel comparisons cover semantic
+layers, all six glyphs, parallel edges, loops, zoom, selection/clear and fallback.
+
 The arena receives each owned column and is prefixed in place with its named
 section table; it does not retain separate pending payloads and then allocate
 a second final packet. A complete native caller output capacity is charged as
@@ -1714,6 +1838,15 @@ adds the session's retained memory charge to its own peak admission. This is an
 export input seam, not a second publisher, renderer, layout or identity resolver.
 
 ### Current combined large-view evidence boundary
+
+The ordinary segment painter retains Rust's per-piece head flag while uploading
+the endpoint plane. If every piece has bit 6 clear, it omits the head-only draw;
+the shaft pass and both endpoint-outline clips still run. Any head flag retains
+the existing head pass, including mixed and self-loop rows. An unknown flag
+summary conservatively retains the pass. This changes no topology, style,
+selection, LOD or arrow policy. Browser regressions compare the complete pixel
+buffer with the preceding unconditional path, and verify that suppressing a
+real directed head changes the picture.
 
 The [current union receipt](../performance/current-large-graph-union-2026-11-09/README.md)
 records the normal-history integration with live temporal/geographic hosts and

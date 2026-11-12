@@ -157,6 +157,13 @@ them from the one producer.
 | Artifacts | `XYG_REQUIRE_WASM=1` makes `hatch_build.py` fail without verified assets; the wheel and sdist jobs run `verify_wheel.py` / `verify_sdist.py --require-wasm`. |
 | Aggregate | A failed or skipped `wasm_assets` skips its consumers; `Release surfaces` lists it and every applicable consumer, so the aggregate fails (see [production-readiness.md](../process/production-readiness.md)). |
 
+The exact Pyodide wheel build also compiles the shared filter transport for
+`wasm32-unknown-emscripten`; it must not rely on a native-only method. The
+installed wheel replays the frozen 47-packet XYFC corpus and real XYFJ progress,
+advance, stale-token and cancellation/reuse controls. Missing or incomplete
+filter proof fails the smoke command. This adds no filesystem source support
+and does not change the required check or merge-queue topology.
+
 The resolved normal dependency graph is retained with `cargo tree --edges normal
 --prefix none --format '{p}|{f}' --color never`. `scripts/check_wasm_features.py` requires the
 local engine's exact `frozen-raster` feature and pinned vendored PNG, rejects
@@ -215,6 +222,12 @@ restricted to exact-platform packages or that explicit override. Missing inputs 
 failed check must fail the target, rather than silently skip a host.
 
 The browser client retains its independent WebGL/browser smoke coverage.
+The required `Native filtering callback painter` step runs the bounded140003-row
+materialized fixture and actual five-view native/browser callback journey after
+the native/client/module prerequisites. It supplies the native library and
+Chromium explicitly and fails when the browser is absent. The workflow verifier
+requires that exact unmasked command, independently of the unchanged Node host
+suite. This functional gate does not claim the100M/50FPS performance target.
 The JS/WASM builds are prerequisites because the complete Node suite checks
 native/WASM equivalence and HTML exports as well as graph kernels.
 

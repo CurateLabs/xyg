@@ -1,0 +1,234 @@
+{
+  "bindings": {
+    "current": 3525,
+    "historical": 1818,
+    "parents": 65,
+    "path": "spec/performance/filter-compiled-inputs-2026-11-12/current-bindings.json",
+    "sha256": "1d3b6f8b2b66d2522cbb6a68c09aa3e81d98f255deacce62d88f74db31dd0be6"
+  },
+  "compiledInputs": {
+    "added": [
+      "crates/xyg-engine/src/graphforge/interaction/wire_packet.rs",
+      "crates/xyg-engine/src/index_slots.rs"
+    ],
+    "changedExisting": [],
+    "count": 329,
+    "path": "spec/performance/filter-compiled-inputs-2026-11-12/compiled-inputs.json",
+    "sha256": "def91c74668e772a7e8e8cc82c5c12b8d8b4bfbe568cdbcae41d5005a4d88fb1"
+  },
+  "evidence": {
+    "complete-input-rebuild.json": {
+      "archive": "spec/performance/filter-compiled-inputs-2026-11-12/evidence/105922dbb6f1e30a1c19f21702302420493f0e4b32080c617695bfb7a1db9af3.gz",
+      "archiveSha256": "f0b16ad4fb3c7ca4d9fa06327537f2a476456e69bf78158249b416d793ab1c18",
+      "bytes": 729,
+      "sha256": "105922dbb6f1e30a1c19f21702302420493f0e4b32080c617695bfb7a1db9af3",
+      "source": "target/task-tmp/filter-round-channel/complete-input-rebuild.json"
+    },
+    "core-complete.log": {
+      "archive": "spec/performance/filter-compiled-inputs-2026-11-12/evidence/daaf95ed0c6e84e38e7933bc63fcada766973c860862ba9c9de116a6e7ce1c9a.gz",
+      "archiveSha256": "7f490fac8208db95196a5417f24194e330434986b7f092d466f706e089b6559f",
+      "bytes": 125,
+      "sha256": "daaf95ed0c6e84e38e7933bc63fcada766973c860862ba9c9de116a6e7ce1c9a",
+      "source": "target/task-tmp/filter-round-channel/core-complete.log"
+    },
+    "missing-input-results.json": {
+      "archive": "spec/performance/filter-compiled-inputs-2026-11-12/evidence/3709447073c9fac30d377ea25eff72bc5bc9547ae6c4286abaeee558b7b319e5.gz",
+      "archiveSha256": "8af050feedfcf701d83827d8359e1151fc6d8f1f46bf11a7587dd9a380343aa2",
+      "bytes": 814,
+      "sha256": "3709447073c9fac30d377ea25eff72bc5bc9547ae6c4286abaeee558b7b319e5",
+      "source": "target/task-tmp/filter-round-channel/missing-input-results.json"
+    },
+    "missing-slots.log": {
+      "archive": "spec/performance/filter-compiled-inputs-2026-11-12/evidence/abddb6693535407502fbf1e71beac4bc2467c2079861fa3a79050ee3a84fa061.gz",
+      "archiveSha256": "41c058dfd54b3816d0297a1b0f4b8a0fa94f97119b52e015da71c0fc1d671b24",
+      "bytes": 2860,
+      "sha256": "abddb6693535407502fbf1e71beac4bc2467c2079861fa3a79050ee3a84fa061",
+      "source": "target/task-tmp/filter-round-channel/missing-slots.log"
+    },
+    "missing-wire.log": {
+      "archive": "spec/performance/filter-compiled-inputs-2026-11-12/evidence/f6cc64ccfc9d1a3690c1b7078b8b87b6fe59ae1bb948cfc865ae1074a4231a75.gz",
+      "archiveSha256": "bf783aa83bed03451a8044fee65e3b17ff1dcbf0502131b8df8c82b30351858e",
+      "bytes": 2860,
+      "sha256": "f6cc64ccfc9d1a3690c1b7078b8b87b6fe59ae1bb948cfc865ae1074a4231a75",
+      "source": "target/task-tmp/filter-round-channel/missing-wire.log"
+    },
+    "missing_input_control.py": {
+      "archive": "spec/performance/filter-compiled-inputs-2026-11-12/evidence/340a7d9a2ebdd3adbdfef02d406006c2aa19eb5dfb47b7a67ee82b26cd1c2c06.gz",
+      "archiveSha256": "fbf0a1940cb6644cd497f2ebe97e8be17814097ed5508e0850379de3dba0de8d",
+      "bytes": 739,
+      "sha256": "340a7d9a2ebdd3adbdfef02d406006c2aa19eb5dfb47b7a67ee82b26cd1c2c06",
+      "source": "target/task-tmp/filter-round-channel/missing_input_control.py"
+    },
+    "parent-build-complete-inputs.log": {
+      "archive": "spec/performance/filter-compiled-inputs-2026-11-12/evidence/288561e3c227d277b1b1221632b1af513947326637bf5a739d3a196144e3d711.gz",
+      "archiveSha256": "2cd0d8bfb16d259f8494211b05e97caba0bcbb709e68b4b113888927465c46c8",
+      "bytes": 469,
+      "sha256": "288561e3c227d277b1b1221632b1af513947326637bf5a739d3a196144e3d711",
+      "source": "target/task-tmp/filter-round-channel/parent-build-complete-inputs.log"
+    },
+    "parent-build.log": {
+      "archive": "spec/performance/filter-compiled-inputs-2026-11-12/evidence/66a2f0d368bf52767de6cfc9daa4ff5043bef60f0ac4aec7fdc2f37919390af0.gz",
+      "archiveSha256": "a83f8ae381a3537bed1a768fc0b97451899cc9d5414f5cb6cd1247a33b8db008",
+      "bytes": 1630,
+      "sha256": "66a2f0d368bf52767de6cfc9daa4ff5043bef60f0ac4aec7fdc2f37919390af0",
+      "source": "target/task-tmp/filter-round-channel/parent-build.log"
+    },
+    "source-copy-initial-327.json": {
+      "archive": "spec/performance/filter-compiled-inputs-2026-11-12/evidence/5289a952394fcb4aae68ac22226c337c5cdf7ea87662b9fe3eb94c1a36ce2846.gz",
+      "archiveSha256": "c516df0d6edcbe872931191b95c19510158ddf39ae52f1ac80020642b8cceba9",
+      "bytes": 38451,
+      "sha256": "5289a952394fcb4aae68ac22226c337c5cdf7ea87662b9fe3eb94c1a36ce2846",
+      "source": "target/task-tmp/filter-round-channel/source-copy-initial-327.json"
+    },
+    "source-copy.json": {
+      "archive": "spec/performance/filter-compiled-inputs-2026-11-12/evidence/b64259b535e71613fc8072674ce5e168ec6a6016796129e1e819b0778c1cb219.gz",
+      "archiveSha256": "be6c36d89110681a6e31abc2f3bc7680aabd61f570a671d6f664cc081b385281",
+      "bytes": 39139,
+      "sha256": "b64259b535e71613fc8072674ce5e168ec6a6016796129e1e819b0778c1cb219",
+      "source": "target/task-tmp/filter-round-channel/source-copy.json"
+    }
+  },
+  "failures": [
+    "Original327 copied-input build exit101 with two missing modules; retained",
+    "Each deliberate omission yields exit1 at final completeness assertion; expected negative, no pass credit"
+  ],
+  "fresh": {
+    "core": 3,
+    "negativeControls": [
+      {
+        "argv": [
+          "uv",
+          "run",
+          "--no-sync",
+          "pytest",
+          "-p",
+          "missing_input_control",
+          "-q",
+          "tests/test_graphforge_contract_corpus.py",
+          "-k",
+          "filter_compiled_inputs"
+        ],
+        "exit": 1,
+        "omitted": "crates/xyg-engine/src/graphforge/interaction/wire_packet.rs",
+        "result": "expected final completeness assertion failure; no product-pass credit"
+      },
+      {
+        "argv": [
+          "uv",
+          "run",
+          "--no-sync",
+          "pytest",
+          "-p",
+          "missing_input_control",
+          "-q",
+          "tests/test_graphforge_contract_corpus.py",
+          "-k",
+          "filter_compiled_inputs"
+        ],
+        "exit": 1,
+        "omitted": "crates/xyg-engine/src/index_slots.rs",
+        "result": "expected final completeness assertion failure; no product-pass credit"
+      }
+    ],
+    "realGitCRLF": true
+  },
+  "parent": "54467773b9ed0c09c2af6efc45f779d6b8928c75",
+  "parentReceipt": {
+    "path": "spec/performance/filter-single-color-2026-11-12/checks.json",
+    "sha256": "88bbe78d20fce9cf21c15f10051ce8b58a9b90ed232bf922b6c6b58f7581c595"
+  },
+  "readmeSha256": "41ed2e956ffc51b3f21dd1ee286cba11c41ddf752b92b88102d14ee00582511c",
+  "rebuild": {
+    "argv": [
+      "cargo",
+      "build",
+      "--release",
+      "--offline"
+    ],
+    "builtArtifactAtQualification": "target/task-tmp/filter-round-channel/inputs/target/release/libxyg_core.so",
+    "byteIdenticalToQualifiedShippingNative": true,
+    "exit": 0,
+    "initial327InputBuildExit": 101,
+    "inputCount": 329,
+    "nativeBytes": 6440456,
+    "nativeSha256": "f993336596a58c693bfa9cd745b0aa6384dff50d4e786ccd66b98358dba75f76",
+    "privateArtifact": "target/task-tmp/filter-round-channel/parent-complete-inputs.so",
+    "scope": "Complete copied-input workspace build, unmodified shipping profile and sources",
+    "shippingArtifact": "target/release/libxyg_core.so",
+    "sourceCopy": "target/task-tmp/filter-round-channel/source-copy.json"
+  },
+  "remaining": [
+    "Independent final-diff review",
+    "Current-head hosted CI and merge queue",
+    "Whole #112 and milestones4-7 acceptance"
+  ],
+  "reviewDisposition": "Earlier pending 54467773 review cancelled after Root discovery; no approval credit. New independent final review must cover full e9ba-to-final union.",
+  "runtime": {
+    "packages/xy-client/dist/index.js": {
+      "archive": "spec/performance/filter-range-paint-2026-11-12/evidence/04f708d86d873a86db86c9bd5641eb9490fdc23b437d3d95bcbe1d8ca3e92853.gz",
+      "archiveSha256": "aaa6548f4ca3e729a6a231d9bba4b3b403f307e6d80360ee63bb4093d404a47f",
+      "bytes": 875274,
+      "sha256": "04f708d86d873a86db86c9bd5641eb9490fdc23b437d3d95bcbe1d8ca3e92853",
+      "source": "packages/xy-client/dist/index.js"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "archive": "spec/performance/filter-range-paint-2026-11-12/evidence/2d404d0dabfcd49efb88cd8bcbe775a296b3dcadccef45e067892721d7b9fbb3.gz",
+      "archiveSha256": "6d9236427804a81810d7251bca7b25bd0770640c50e475ac2b7caaf8e0a15d03",
+      "bytes": 875273,
+      "sha256": "2d404d0dabfcd49efb88cd8bcbe775a296b3dcadccef45e067892721d7b9fbb3",
+      "source": "packages/xy-client/dist/standalone.js"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "archive": "spec/performance/filter-range-paint-2026-11-12/evidence/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz",
+      "archiveSha256": "dda8e6c4cec42d91f687b660d742d79dcc1a8c0d052ca6ca189c6acf095db2b4",
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7",
+      "source": "packages/xy-client/dist/wasm-inline-worker.js"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "archive": "spec/performance/filter-range-paint-2026-11-12/evidence/49b43f063da891b99d400ad194260a8b7e0ac094df9a4506902e629debec69ca.gz",
+      "archiveSha256": "d57c6c1124847307ca86bcfd60005ac0a4a08a97bd6f4f49b854d08717fa7282",
+      "bytes": 65699,
+      "sha256": "49b43f063da891b99d400ad194260a8b7e0ac094df9a4506902e629debec69ca",
+      "source": "packages/xy-client/dist/wasm-worker.js"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "archive": "spec/performance/filter-single-color-2026-11-12/evidence/17cf768abb5aed3c9005d32f0cbfb1ad006e1355b1401518a13ace2c907742d4.gz",
+      "archiveSha256": "e89de98acb8bb5804d48319eeba8c93fb1340fb264fb365a4e7e9868edcc8597",
+      "bytes": 2521870,
+      "sha256": "17cf768abb5aed3c9005d32f0cbfb1ad006e1355b1401518a13ace2c907742d4",
+      "source": "packages/xy-client/dist/xyg-wasm-inline.js"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/filter-single-color-2026-11-12/evidence/5143eefb0b264c06d1172b501ffc410df8ee8c4ee6f8673c0dd280237dc08ce5.gz",
+      "archiveSha256": "6341a1afbea80ebdfe5d23e1ae371b7c6271df32241e89fa6ac6999c4df6a4a8",
+      "bytes": 226,
+      "sha256": "5143eefb0b264c06d1172b501ffc410df8ee8c4ee6f8673c0dd280237dc08ce5",
+      "source": "packages/xy-client/dist/xyg-wasm.manifest.json"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "archive": "spec/performance/filter-single-color-2026-11-12/evidence/341b35307bae72f0ad4b58f567148571d5fe6cbe00eff67b312aede2b8c83bf1.gz",
+      "archiveSha256": "fdf805a2c4e5e4352c38b6d78fa1cddff11b398585e39fc24792a33ee35ceedb",
+      "bytes": 1875559,
+      "sha256": "341b35307bae72f0ad4b58f567148571d5fe6cbe00eff67b312aede2b8c83bf1",
+      "source": "packages/xy-client/dist/xyg-wasm.wasm"
+    },
+    "target/release/libxyg_core.so": {
+      "archive": "spec/performance/filter-single-color-2026-11-12/evidence/f993336596a58c693bfa9cd745b0aa6384dff50d4e786ccd66b98358dba75f76.gz",
+      "archiveSha256": "6241c32464b54e61efa3add26189cb42e02d1dc5b65514408db201bb9ea0c5a8",
+      "bytes": 6440456,
+      "sha256": "f993336596a58c693bfa9cd745b0aa6384dff50d4e786ccd66b98358dba75f76",
+      "source": "target/release/libxyg_core.so"
+    }
+  },
+  "schemaVersion": 1,
+  "scope": "Append-only correction of incomplete recorded compiled input set; no production/runtime changes",
+  "staticCopies": {
+    "python/xyg/static/index.js": "04f708d86d873a86db86c9bd5641eb9490fdc23b437d3d95bcbe1d8ca3e92853",
+    "python/xyg/static/standalone.js": "2d404d0dabfcd49efb88cd8bcbe775a296b3dcadccef45e067892721d7b9fbb3",
+    "python/xyg/static/wasm-worker.js": "49b43f063da891b99d400ad194260a8b7e0ac094df9a4506902e629debec69ca",
+    "python/xyg/static/xyg-wasm-inline.js": "17cf768abb5aed3c9005d32f0cbfb1ad006e1355b1401518a13ace2c907742d4",
+    "python/xyg/static/xyg-wasm.manifest.json": "5143eefb0b264c06d1172b501ffc410df8ee8c4ee6f8673c0dd280237dc08ce5",
+    "python/xyg/static/xyg-wasm.wasm": "341b35307bae72f0ad4b58f567148571d5fe6cbe00eff67b312aede2b8c83bf1"
+  }
+}

@@ -159,6 +159,8 @@ async function densityNoRefinementEvidence(wasmModule, mount = renderStandalone,
       { name: "missing-inline-artifact", inline: null, retainSample: true, code: "XYG_WASM_UNAVAILABLE" },
       { name: "malformed-inline-artifact", inline: {}, retainSample: true, code: "XYG_WASM_UNAVAILABLE" },
       { name: "missing-retained-source", inline: {}, retainSample: false, code: "XYG_WASM_SOURCE_UNAVAILABLE" },
+      { name: "startup-context-loss", inline: null, retainSample: true, code: "XYG_WASM_UNAVAILABLE", loseContext: true },
+      { name: "navigation-context-loss", inline: null, retainSample: true, code: "XYG_WASM_UNAVAILABLE", loseAfterHome: true },
     ]) {
       globalThis.__xygInlineWasm = scenario.inline;
       const host = document.createElement("div");
@@ -167,7 +169,7 @@ async function densityNoRefinementEvidence(wasmModule, mount = renderStandalone,
       const events = [];
       const onEvent = (event) => { if (host.contains(event.target)) events.push(event.detail); };
       document.addEventListener("xy:wasm_density_no_refinement", onEvent);
-      let view;
+      let view, onRestore;
       try {
         view = directDensityFixture(host, null, false, false, null, { aggregate, retainSample: scenario.retainSample, mount });
         for (let attempt = 0; attempt < 100 && !events.length; attempt++) await nextTask();
@@ -175,12 +177,24 @@ async function densityNoRefinementEvidence(wasmModule, mount = renderStandalone,
             || events[0].traceIds?.join(",") !== "0") {
           throw new Error(`${scenario.name} omitted its explicit no-refinement reason: ${JSON.stringify(events)}`);
         }
-        const trace = view.gpuTraces.find((trace) => trace.tier === "density");
-        const overview = trace.density, texture = overview.tex;
-        let replacements = 0;
-        const originalUpload = view._uploadGrid.bind(view);
-        view._uploadGrid = (...args) => { replacements++; return originalUpload(...args); };
         let lastCapture;
+        let contextRecoveries = 0;
+        onRestore = () => { contextRecoveries++; };
+        view.canvas.addEventListener("webglcontextrestored", onRestore);
+        const waitForContext = () => new Promise((resolve, reject) => {
+          const cleanup = () => {
+            clearTimeout(timeout);
+            view.canvas.removeEventListener("webglcontextrestored", restored);
+          };
+          const restored = () => { cleanup(); resolve(); };
+          // Bound this individual wait; ESM additionally has an outer deadline.
+          // Recovery backs off for 250 ms, beyond eight zero-delay tasks.
+          const timeout = setTimeout(() => {
+            cleanup(); reject(new Error(`${scenario.name} context did not recover`));
+          }, 60_000);
+          view.canvas.addEventListener("webglcontextrestored", restored);
+          if (!view._glLost && !view.gl?.isContextLost()) { cleanup(); resolve(); }
+        });
         const capture = async (expected = view.view0) => {
           const requestedView = view._copyView(view.view);
           let rendered, attempts = 0;
@@ -188,6 +202,7 @@ async function densityNoRefinementEvidence(wasmModule, mount = renderStandalone,
           // read once and never retry an unexpected blank or stale image.
           while (attempts < 8) {
             attempts++;
+            await waitForContext();
             rendered = view._drawNow();
             if (rendered === true) break;
             await nextTask();
@@ -221,19 +236,74 @@ async function densityNoRefinementEvidence(wasmModule, mount = renderStandalone,
           };
           return pixels;
         };
+        const startupGl = view.gl;
+        if (scenario.loseContext) startupGl.getExtension("WEBGL_lose_context").loseContext();
         const before = await capture();
+        if (scenario.loseContext && (!contextRecoveries || !startupGl.isContextLost()
+            || view.gl === startupGl || view._glLost || view.gl.isContextLost())) {
+          throw new Error(`${scenario.name} did not replace its lost startup context`);
+        }
+        // Texture retention starts at the first completed presentation. A
+        // context replacement necessarily creates a fresh GPU object namespace.
+        let trace = view.gpuTraces.find((trace) => trace.tier === "density");
+        let overview = trace.density, texture = overview.tex, textureGl = view.gl;
+        let generation = view._glHost.generation, observedRecoveries = contextRecoveries;
+        const baselineRecoveries = contextRecoveries;
+        let replacements = 0, recoveryUploads = 0, rebuiltNamespaces = 0;
+        const canonicalGrid = new Uint8Array(aggregate.grid.buffer, aggregate.grid.byteOffset, aggregate.grid.byteLength);
+        const originalUpload = view._uploadGrid.bind(view);
+        view._uploadGrid = (...args) => {
+          if (view._glLost) {
+            const grid = args[0];
+            const raw = ArrayBuffer.isView(grid) ? new Uint8Array(grid.buffer, grid.byteOffset, grid.byteLength) : null;
+            if (!raw || raw.length !== canonicalGrid.length || raw.some((value, index) => value !== canonicalGrid[index])
+                || args[1] !== overview.w || args[2] !== overview.h || args[3] !== overview.max) {
+              throw new Error(`${scenario.name} rebuilt a noncanonical overview`);
+            }
+            recoveryUploads++;
+          } else replacements++;
+          return originalUpload(...args);
+        };
+        const assertOverview = async () => {
+          // Snapshot namespace/ownership facts synchronously. SHA-256 yields
+          // to the browser and must not mix facts from two context generations.
+          const current = view.gpuTraces.find((trace) => trace.tier === "density");
+          const nextGeneration = view._glHost.generation, recoveries = contextRecoveries, currentGl = view.gl;
+          if (!current?.density) throw new Error(`${scenario.name} omitted its overview`);
+          const grid = current.density.grid.slice(), changed = nextGeneration !== generation;
+          if (changed) {
+            if (!(nextGeneration > generation) || recoveries <= observedRecoveries
+                || (!textureGl.isContextLost() && textureGl.isTexture(texture)) || current.density.tex === texture) {
+              throw new Error(`${scenario.name} did not retire its previous texture namespace`);
+            }
+          } else if (current !== trace || current.density !== overview || current.density.tex !== texture) {
+            throw new Error(`${scenario.name} replaced a texture inside the same namespace`);
+          }
+          if (!currentGl.isTexture(current.density.tex) || replacements || recoveryUploads !== recoveries - baselineRecoveries) {
+            throw new Error(`${scenario.name} changed its overview: ${JSON.stringify({
+              generation, nextGeneration, contextRecoveries: recoveries, baselineRecoveries, recoveryUploads, replacements,
+            })}`);
+          }
+          if (await sha256(grid) !== overviewSha256) throw new Error(`${scenario.name} changed its canonical overview grid`);
+          if (changed) {
+            trace = current; overview = current.density; texture = overview.tex; textureGl = currentGl;
+            rebuiltNamespaces += nextGeneration - generation; generation = nextGeneration; observedRecoveries = recoveries;
+          }
+        };
         const homePresentation = lastCapture;
         const beforeSha256 = await sha256(before);
+        if (scenario.loseAfterHome) view.gl.getExtension("WEBGL_lose_context").loseContext();
         const zoom = view._viewFrom({ ranges: { x: [0.25, 0.75], y: [0.25, 0.75] } });
         view._scheduleViewRequest(zoom, { delay: 0 });
         view._scheduleViewRequest(view.view0, { delay: 0 });
         for (let attempt = 0; attempt < 8; attempt++) await nextTask();
         const after = await capture();
-        if (trace.density !== overview || trace.density.tex !== texture || replacements
-            || view._wasmDensity || await sha256(trace.density.grid) !== overviewSha256
-            || await sha256(after) !== beforeSha256 || !after.some((_, index) => index % 4 === 3 && after[index] > 0)) {
+        await assertOverview();
+        if (view._wasmDensity || await sha256(after) !== beforeSha256
+            || !after.some((_, index) => index % 4 === 3 && after[index] > 0)) {
           throw new Error(`${scenario.name} replaced or blanked its Rust-authored overview`);
         }
+        if (scenario.loseAfterHome && !rebuiltNamespaces) throw new Error(`${scenario.name} did not rebuild its lost texture namespace`);
         if (!view.root.xy.applyState({ ranges: zoom.ranges }, { animate: false, history: false })) {
           throw new Error(`${scenario.name} rejected public zoom state`);
         }
@@ -252,10 +322,7 @@ async function densityNoRefinementEvidence(wasmModule, mount = renderStandalone,
         const homePixels = await capture();
         const restoredPresentation = lastCapture;
         if (await sha256(homePixels) !== beforeSha256) throw new Error(`${scenario.name} did not restore exact home pixels`);
-        if (trace.density !== overview || trace.density.tex !== texture || replacements
-            || await sha256(trace.density.grid) !== overviewSha256) {
-          throw new Error(`${scenario.name} replaced its overview during public viewport navigation`);
-        }
+        await assertOverview();
         const pngBase64 = view.canvas.toDataURL("image/png").split(",")[1];
         const eventCount = events.length, gl = view.gl;
         view.destroy();
@@ -268,11 +335,12 @@ async function densityNoRefinementEvidence(wasmModule, mount = renderStandalone,
         }
         cases.push({
           name: scenario.name, entry, events, overviewSha256, framebufferSha256: beforeSha256,
-          zoomFramebufferSha256: await sha256(zoomPixels), replacements, allocatedWorkers,
+          zoomFramebufferSha256: await sha256(zoomPixels), replacements, allocatedWorkers, contextRecoveries, recoveryUploads, rebuiltNamespaces,
           presentations: { home: homePresentation, zoom: zoomPresentation, restored: restoredPresentation },
           overviewRetained: true, disposed: true, pngBase64,
         });
       } finally {
+        if (view && onRestore) view.canvas.removeEventListener("webglcontextrestored", onRestore);
         view?.destroy();
         document.removeEventListener("xy:wasm_density_no_refinement", onEvent);
         host.remove();

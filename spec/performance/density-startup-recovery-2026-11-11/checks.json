@@ -1,0 +1,676 @@
+{
+  "bindings": {
+    "current": 3493,
+    "historical": 1663,
+    "parents": 50,
+    "path": "spec/performance/density-startup-recovery-2026-11-11/current-bindings.json",
+    "sha256": "111d888228e22c4ca2327dbdb98bedec65b37017fcf95df775ce3d80a87306f7"
+  },
+  "compiledInputs": {
+    "changed": [],
+    "count": 324,
+    "path": "spec/performance/graph-native-force-owner-2026-11-11/compiled-inputs.json",
+    "sha256": "cce2b70f6ab2423d167ff33fb4fe745c7e1d03ddd8783d7c1b3e801148339e86"
+  },
+  "controls": {
+    "diagnosticDefaultFirst": {
+      "eventsSaved": false,
+      "exit": 1,
+      "log": "default.log",
+      "reason": "Private finalizer replacement missed; raw failure preserved, no event inference"
+    },
+    "diagnosticDefaultSecond": {
+      "diagnostics": "default2-diagnostics.json",
+      "exit": 0,
+      "log": "default2.log",
+      "scope": "Observed explicit loss calls are chart disposal; does not explain the prior startup loss"
+    },
+    "finalWithoutForcedLoss": {
+      "assertion": "startup-context-loss did not replace its lost startup context",
+      "diagnostics": "no-loss-diagnostics.json",
+      "exit": 1,
+      "log": "no-loss.log"
+    },
+    "finalWithoutWait": {
+      "assertion": "Presentation refusal (natural first-case loss)",
+      "diagnostics": "no-wait-diagnostics.json",
+      "exit": 1,
+      "log": "no-wait.log"
+    },
+    "injectedRestorationOnly": {
+      "assertion": "Recovered paint then obsolete pre-loss texture identity refusal",
+      "diagnostics": "injected-wait-diagnostics.json",
+      "exit": 1,
+      "log": "injected-wait.log"
+    },
+    "injectedStockReadiness": {
+      "assertion": "8-task presentation refusal before250ms recovery",
+      "diagnostics": "injected-stock-diagnostics.json",
+      "exit": 1,
+      "log": "injected-stock.log"
+    }
+  },
+  "environment": {
+    "TMPDIR": "/var/tmp",
+    "chromium": "149.0.7827.55 / explicit supplied executable",
+    "launch": "Unchanged foundation launch options; private probe adds read-only diagnostic interception, not GPU flags",
+    "node": "22.23.4",
+    "python": "3.12.15"
+  },
+  "evidence": {
+    "build-receipt.py": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/2a2eb50a80aeedca6db651f9c30992a854abbf4aca20f690daed54407d2588a5.gz",
+      "archiveBytes": 2509,
+      "archiveSha256": "f5807b20ac60c17782709209c1c5011097bf8c271d60c0a9763f2bad69e5492d",
+      "bytes": 5500,
+      "sha256": "2a2eb50a80aeedca6db651f9c30992a854abbf4aca20f690daed54407d2588a5",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/build-receipt.py"
+    },
+    "contracts.log": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/810ca1e58c25d5e0eb8205829407dd480e99f1ceea99699f6ac1a09a9b1b1010.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "3beecf78177c9d81b3305a799fc4a49b0d0bec677e05ccf21c5ca3e050f5e8c3",
+      "bytes": 99,
+      "sha256": "810ca1e58c25d5e0eb8205829407dd480e99f1ceea99699f6ac1a09a9b1b1010",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/contracts.log"
+    },
+    "core-final.log": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/ee96a4fb08ba729d36246b7b05ec34f2c7db251131edb9fb6f9d2e4f63ac2210.gz",
+      "archiveBytes": 66,
+      "archiveSha256": "d59e7ee967da5bc83cd9e6bd0016ea93c98d9ab7c1b9a09e11b3b2eed0f7dd45",
+      "bytes": 114,
+      "sha256": "ee96a4fb08ba729d36246b7b05ec34f2c7db251131edb9fb6f9d2e4f63ac2210",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/core-final.log"
+    },
+    "core.log": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/8206e491b794a45bd5b661cf53f08cf6c16774fabfe57e5cc474d524272656fc.gz",
+      "archiveBytes": 66,
+      "archiveSha256": "98d877d93f196f0a18d387ef05b76d1caacd254a61e35c913b16ee8df20a8e7c",
+      "bytes": 114,
+      "sha256": "8206e491b794a45bd5b661cf53f08cf6c16774fabfe57e5cc474d524272656fc",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/core.log"
+    },
+    "corrected-report.json": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/50af293889bb74b6bfd16667c533a5d58c666072dc5631a5f268c25a69e78b5d.gz",
+      "archiveBytes": 2334,
+      "archiveSha256": "41315f74869d4366dd6dcd29a8d19754385d2d51fd24bfbfa7fff4467be92ec0",
+      "bytes": 31863,
+      "sha256": "50af293889bb74b6bfd16667c533a5d58c666072dc5631a5f268c25a69e78b5d",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/corrected-report.json"
+    },
+    "corrected-report.json.esm-malformed-inline-artifact.png": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+      "archiveBytes": 10722,
+      "archiveSha256": "2b68d421f16b5cbcd11c2accd5539a161eed45796b17f4a384c017c80a6fe02c",
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/corrected-report.json.esm-malformed-inline-artifact.png"
+    },
+    "corrected-report.json.esm-missing-inline-artifact.png": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+      "archiveBytes": 10722,
+      "archiveSha256": "2b68d421f16b5cbcd11c2accd5539a161eed45796b17f4a384c017c80a6fe02c",
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/corrected-report.json.esm-missing-inline-artifact.png"
+    },
+    "corrected-report.json.esm-missing-retained-source.png": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66.gz",
+      "archiveBytes": 10772,
+      "archiveSha256": "ea24102adb986e7e95cd1709b3cd64110a62c56f85e68d55f2538a3f8bcf82e5",
+      "bytes": 11315,
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/corrected-report.json.esm-missing-retained-source.png"
+    },
+    "corrected-report.json.esm-startup-context-loss.png": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+      "archiveBytes": 10722,
+      "archiveSha256": "2b68d421f16b5cbcd11c2accd5539a161eed45796b17f4a384c017c80a6fe02c",
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/corrected-report.json.esm-startup-context-loss.png"
+    },
+    "corrected-report.json.iife-malformed-inline-artifact.png": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+      "archiveBytes": 10722,
+      "archiveSha256": "2b68d421f16b5cbcd11c2accd5539a161eed45796b17f4a384c017c80a6fe02c",
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/corrected-report.json.iife-malformed-inline-artifact.png"
+    },
+    "corrected-report.json.iife-missing-inline-artifact.png": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+      "archiveBytes": 10722,
+      "archiveSha256": "2b68d421f16b5cbcd11c2accd5539a161eed45796b17f4a384c017c80a6fe02c",
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/corrected-report.json.iife-missing-inline-artifact.png"
+    },
+    "corrected-report.json.iife-missing-retained-source.png": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66.gz",
+      "archiveBytes": 10772,
+      "archiveSha256": "ea24102adb986e7e95cd1709b3cd64110a62c56f85e68d55f2538a3f8bcf82e5",
+      "bytes": 11315,
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/corrected-report.json.iife-missing-retained-source.png"
+    },
+    "corrected-report.json.iife-startup-context-loss.png": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+      "archiveBytes": 10722,
+      "archiveSha256": "2b68d421f16b5cbcd11c2accd5539a161eed45796b17f4a384c017c80a6fe02c",
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/corrected-report.json.iife-startup-context-loss.png"
+    },
+    "corrected.log": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/585f5be52725364f52e40f19e073fbb464b6aac08d25a2c8f0ef08c722183ac2.gz",
+      "archiveBytes": 189,
+      "archiveSha256": "c5df526b38e42a27319749d4c174175b4515fc99acfc99150bd8cde2b6b89d9b",
+      "bytes": 220,
+      "sha256": "585f5be52725364f52e40f19e073fbb464b6aac08d25a2c8f0ef08c722183ac2",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/corrected.log"
+    },
+    "default.log": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/0f44c16c27be6a20b4992f875eff98ba627507ca6b5292a2f07134fd1456bf94.gz",
+      "archiveBytes": 366,
+      "archiveSha256": "d6d7ad8830e7530cdc0a00a597d57dac621de132a8b0d1f02ced471dec4ce7e2",
+      "bytes": 668,
+      "sha256": "0f44c16c27be6a20b4992f875eff98ba627507ca6b5292a2f07134fd1456bf94",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/default.log"
+    },
+    "default2-diagnostics.json": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/d6ca83a36754e2e59abda57daf86aac4938da0d80c73afa0f88a6000ddd352cf.gz",
+      "archiveBytes": 4643,
+      "archiveSha256": "6e39988d7c53a5d8bb4d41a3e55098c7f293323db20de76aea5ed96923e3cce7",
+      "bytes": 22535,
+      "sha256": "d6ca83a36754e2e59abda57daf86aac4938da0d80c73afa0f88a6000ddd352cf",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/default2-diagnostics.json"
+    },
+    "default2-report.json": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/94a69599093627f610c2411f57169ef047c34fb6e06bcb28581bdef7eab048bc.gz",
+      "archiveBytes": 2207,
+      "archiveSha256": "8451e1bf2b3adcae966d84413bc61ae2fa1d3311e64f3c0e1449700c5ed9cd1c",
+      "bytes": 24303,
+      "sha256": "94a69599093627f610c2411f57169ef047c34fb6e06bcb28581bdef7eab048bc",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/default2-report.json"
+    },
+    "default2-report.json.esm-malformed-inline-artifact.png": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+      "archiveBytes": 10722,
+      "archiveSha256": "2b68d421f16b5cbcd11c2accd5539a161eed45796b17f4a384c017c80a6fe02c",
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/default2-report.json.esm-malformed-inline-artifact.png"
+    },
+    "default2-report.json.esm-missing-inline-artifact.png": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+      "archiveBytes": 10722,
+      "archiveSha256": "2b68d421f16b5cbcd11c2accd5539a161eed45796b17f4a384c017c80a6fe02c",
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/default2-report.json.esm-missing-inline-artifact.png"
+    },
+    "default2-report.json.esm-missing-retained-source.png": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66.gz",
+      "archiveBytes": 10772,
+      "archiveSha256": "ea24102adb986e7e95cd1709b3cd64110a62c56f85e68d55f2538a3f8bcf82e5",
+      "bytes": 11315,
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/default2-report.json.esm-missing-retained-source.png"
+    },
+    "default2-report.json.iife-malformed-inline-artifact.png": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+      "archiveBytes": 10722,
+      "archiveSha256": "2b68d421f16b5cbcd11c2accd5539a161eed45796b17f4a384c017c80a6fe02c",
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/default2-report.json.iife-malformed-inline-artifact.png"
+    },
+    "default2-report.json.iife-missing-inline-artifact.png": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+      "archiveBytes": 10722,
+      "archiveSha256": "2b68d421f16b5cbcd11c2accd5539a161eed45796b17f4a384c017c80a6fe02c",
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/default2-report.json.iife-missing-inline-artifact.png"
+    },
+    "default2-report.json.iife-missing-retained-source.png": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66.gz",
+      "archiveBytes": 10772,
+      "archiveSha256": "ea24102adb986e7e95cd1709b3cd64110a62c56f85e68d55f2538a3f8bcf82e5",
+      "bytes": 11315,
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/default2-report.json.iife-missing-retained-source.png"
+    },
+    "default2.log": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/42a829102858be552d7eda7029b7a57a795278abad90757178e732814c065aa2.gz",
+      "archiveBytes": 190,
+      "archiveSha256": "80c7d4534ed5afab78411073490f270b05fe20ec48de36bb3c23495dc63eb3a3",
+      "bytes": 219,
+      "sha256": "42a829102858be552d7eda7029b7a57a795278abad90757178e732814c065aa2",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/default2.log"
+    },
+    "final-pre-commit.log": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/final-pre-commit.log"
+    },
+    "final-ruff-check.log": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/final-ruff-check.log"
+    },
+    "final-ruff-format.log": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/cbde80aaec09a9499ba38cca8e26a2c5e1bfabb6aea1ff60c1eac94afe880c77.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "0822b88a405167d3302fdbcacffc9956744b2a3eb8d3fa67294a0ecb3aad2bbb",
+      "bytes": 29,
+      "sha256": "cbde80aaec09a9499ba38cca8e26a2c5e1bfabb6aea1ff60c1eac94afe880c77",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/final-ruff-format.log"
+    },
+    "full-report.json": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/036e3ebc9fb1057b4739142324524ad532a1201904927a488648bb4f7e1a8c8d.gz",
+      "archiveBytes": 4734,
+      "archiveSha256": "090489e1f54c4d5c0b6dcd9d932832251325c38aa67d8a4c4f8a130204b624bb",
+      "bytes": 41584,
+      "sha256": "036e3ebc9fb1057b4739142324524ad532a1201904927a488648bb4f7e1a8c8d",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/full-report.json"
+    },
+    "full-report.json.esm-malformed-inline-artifact.png": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+      "archiveBytes": 10722,
+      "archiveSha256": "2b68d421f16b5cbcd11c2accd5539a161eed45796b17f4a384c017c80a6fe02c",
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/full-report.json.esm-malformed-inline-artifact.png"
+    },
+    "full-report.json.esm-missing-inline-artifact.png": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+      "archiveBytes": 10722,
+      "archiveSha256": "2b68d421f16b5cbcd11c2accd5539a161eed45796b17f4a384c017c80a6fe02c",
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/full-report.json.esm-missing-inline-artifact.png"
+    },
+    "full-report.json.esm-missing-retained-source.png": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66.gz",
+      "archiveBytes": 10772,
+      "archiveSha256": "ea24102adb986e7e95cd1709b3cd64110a62c56f85e68d55f2538a3f8bcf82e5",
+      "bytes": 11315,
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/full-report.json.esm-missing-retained-source.png"
+    },
+    "full-report.json.esm-startup-context-loss.png": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+      "archiveBytes": 10722,
+      "archiveSha256": "2b68d421f16b5cbcd11c2accd5539a161eed45796b17f4a384c017c80a6fe02c",
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/full-report.json.esm-startup-context-loss.png"
+    },
+    "full-report.json.iife-malformed-inline-artifact.png": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+      "archiveBytes": 10722,
+      "archiveSha256": "2b68d421f16b5cbcd11c2accd5539a161eed45796b17f4a384c017c80a6fe02c",
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/full-report.json.iife-malformed-inline-artifact.png"
+    },
+    "full-report.json.iife-missing-inline-artifact.png": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+      "archiveBytes": 10722,
+      "archiveSha256": "2b68d421f16b5cbcd11c2accd5539a161eed45796b17f4a384c017c80a6fe02c",
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/full-report.json.iife-missing-inline-artifact.png"
+    },
+    "full-report.json.iife-missing-retained-source.png": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66.gz",
+      "archiveBytes": 10772,
+      "archiveSha256": "ea24102adb986e7e95cd1709b3cd64110a62c56f85e68d55f2538a3f8bcf82e5",
+      "bytes": 11315,
+      "sha256": "0f280c207b6fa2983395cb76455410768927619ffed0b2d12a1e091c473d3d66",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/full-report.json.iife-missing-retained-source.png"
+    },
+    "full-report.json.iife-startup-context-loss.png": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf.gz",
+      "archiveBytes": 10722,
+      "archiveSha256": "2b68d421f16b5cbcd11c2accd5539a161eed45796b17f4a384c017c80a6fe02c",
+      "bytes": 11369,
+      "sha256": "1fbb8e374472a195a5dd72b58494f28e234ebafc60ae52fb8fe20da5fa19d3bf",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/full-report.json.iife-startup-context-loss.png"
+    },
+    "full-report.json.retained-temporal.json": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/142f2c2fbf74d176450a8472fea8d090b4961f4a46955425375bb1cb29314d31.gz",
+      "archiveBytes": 5452,
+      "archiveSha256": "050166be10c9f3263fb880576104d2fb60d56eb85ed6f1bd049386931c3b3305",
+      "bytes": 104433,
+      "sha256": "142f2c2fbf74d176450a8472fea8d090b4961f4a46955425375bb1cb29314d31",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/full-report.json.retained-temporal.json"
+    },
+    "full-report.json.retained-temporal.json.boundary.png": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/e47464cd85a30210f9cbe6ec12af0aee391c3aa8ec4c01afdc2b814b823a7d6d.gz",
+      "archiveBytes": 36384,
+      "archiveSha256": "cda521b881fa419cb35053414ae36afd32426e746eda51ce2662c8ec6c2f53af",
+      "bytes": 44546,
+      "sha256": "e47464cd85a30210f9cbe6ec12af0aee391c3aa8ec4c01afdc2b814b823a7d6d",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/full-report.json.retained-temporal.json.boundary.png"
+    },
+    "full-report.json.retained-temporal.json.initial.png": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/a03d81a62746e81bbc035d278d5ebc73be03be673f7fee0a4e3a9ca31fa0eceb.gz",
+      "archiveBytes": 37942,
+      "archiveSha256": "d0e16857af5b6d14352d9ee7a27dc5b46b5226c8fd288e93bfc78fd48bb1155c",
+      "bytes": 44231,
+      "sha256": "a03d81a62746e81bbc035d278d5ebc73be03be673f7fee0a4e3a9ca31fa0eceb",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/full-report.json.retained-temporal.json.initial.png"
+    },
+    "full-report.json.retained-temporal.json.wire.json": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/318c0beb04c959e0b372a203d5cb2707bbd90215ea2925e6f7a0fe3f49315816.gz",
+      "archiveBytes": 129794,
+      "archiveSha256": "13c53b4fbe3270f54e7a618b6f0e10687e2193a53324056db60a1f2e708b411f",
+      "bytes": 3639068,
+      "sha256": "318c0beb04c959e0b372a203d5cb2707bbd90215ea2925e6f7a0fe3f49315816",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/full-report.json.retained-temporal.json.wire.json"
+    },
+    "full.log": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/ebe1cc0a8c094b266b57c46bfd08aff4afdf8b40cc89838eef127a394158a108.gz",
+      "archiveBytes": 3404,
+      "archiveSha256": "5ea28d37dfa7c569587997540e54f13a9f25b8799c65a9d553d886f5301dcd7b",
+      "bytes": 13376,
+      "sha256": "ebe1cc0a8c094b266b57c46bfd08aff4afdf8b40cc89838eef127a394158a108",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/full.log"
+    },
+    "injected-stock-diagnostics.json": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/b648c43792cd4dea1263259ef81f73d8ed2b38fb0c5f1f6cd2e33da92d09eb24.gz",
+      "archiveBytes": 4295,
+      "archiveSha256": "018137e96643621e0cfed35dd9c523a57b49da378193749c8f96a43ae776dff2",
+      "bytes": 12742,
+      "sha256": "b648c43792cd4dea1263259ef81f73d8ed2b38fb0c5f1f6cd2e33da92d09eb24",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/injected-stock-diagnostics.json"
+    },
+    "injected-stock.log": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/5918892cb581103961c2a097567afcdd06a94a34eb006a045568a005464f6ed7.gz",
+      "archiveBytes": 364,
+      "archiveSha256": "9c6dd1196d9ae3b50a01b7bbf33a918e51c19566c9ef7a83b7a6d9afdaaf3896",
+      "bytes": 668,
+      "sha256": "5918892cb581103961c2a097567afcdd06a94a34eb006a045568a005464f6ed7",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/injected-stock.log"
+    },
+    "injected-wait-diagnostics.json": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/975eb5ea6a41c0c59dc7c7b30aba10dad4e20fec3d89129741f68f351b54fd6b.gz",
+      "archiveBytes": 4541,
+      "archiveSha256": "5534e50242b88b31cb36786b53d3ba41dde5de3e4fb2205aa70e55c716f86748",
+      "bytes": 14563,
+      "sha256": "975eb5ea6a41c0c59dc7c7b30aba10dad4e20fec3d89129741f68f351b54fd6b",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/injected-wait-diagnostics.json"
+    },
+    "injected-wait.log": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/1c46d75378b730cdf5a6804262af44023a1b480773e5071030ffecae3b5b066c.gz",
+      "archiveBytes": 287,
+      "archiveSha256": "6adcb0931778931e7ef8bf67de50828b02e0c9a7a982ab07a797769bb93f82b5",
+      "bytes": 484,
+      "sha256": "1c46d75378b730cdf5a6804262af44023a1b480773e5071030ffecae3b5b066c",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/injected-wait.log"
+    },
+    "intermediate-log-snapshot.json": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/a17e33b6cbf92e65f6236ed52a3b3413d5faccc8f45a60bd1b83abc03f93c96d.gz",
+      "archiveBytes": 404,
+      "archiveSha256": "fc429e5ae8e0a16d992f5f62e145eeddd8a829608e23cb6b60636a15f3488bcd",
+      "bytes": 645,
+      "sha256": "a17e33b6cbf92e65f6236ed52a3b3413d5faccc8f45a60bd1b83abc03f93c96d",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/intermediate-log-snapshot.json"
+    },
+    "milestone-audit/audit.json": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/24e612b21faba5c82233ebc60b49ba36aa815a0a9d251e9183bc9a714080736a.gz",
+      "archiveBytes": 2329,
+      "archiveSha256": "ea1b2acf2fc250e977556206246f5e02146ac0d3fc2c021eedc68b8d4a2349d5",
+      "bytes": 8363,
+      "sha256": "24e612b21faba5c82233ebc60b49ba36aa815a0a9d251e9183bc9a714080736a",
+      "source": "/tmp/xyg-m4-m7-acceptance-audit/audit.json"
+    },
+    "milestone-audit/live.json": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/dfeb3377a848306338a8ae03d43b5ec42019ed583ed3fcebc198f4968d97f5fc.gz",
+      "archiveBytes": 46919,
+      "archiveSha256": "ff6bc38f363e995d089b6adde5b6a62fb4f29e9feeb8f6b735bf979d183fbc27",
+      "bytes": 271038,
+      "sha256": "dfeb3377a848306338a8ae03d43b5ec42019ed583ed3fcebc198f4968d97f5fc",
+      "source": "/tmp/xyg-m4-m7-acceptance-audit/live.json"
+    },
+    "milestone-audit/report.md": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/07e737ebdfe9e1e9e87882aa35803a72c75be1b83a8df2ae21219e7c93848bc7.gz",
+      "archiveBytes": 6707,
+      "archiveSha256": "ceae3686fd29f88d8b321f5adb3b51f7b95d806032c0d0eba9c0bcd3dcdd9cd0",
+      "bytes": 15191,
+      "sha256": "07e737ebdfe9e1e9e87882aa35803a72c75be1b83a8df2ae21219e7c93848bc7",
+      "source": "/tmp/xyg-m4-m7-acceptance-audit/report.md"
+    },
+    "no-loss-diagnostics.json": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/e2ace4a3d37b39653e4db4c14cad601a04ba7aef3f1bc5ae4690fe66b570735c.gz",
+      "archiveBytes": 4643,
+      "archiveSha256": "657ecac4f35ffc166c7fa067471fa23878351577581ea87dc9aee6e76f370062",
+      "bytes": 19350,
+      "sha256": "e2ace4a3d37b39653e4db4c14cad601a04ba7aef3f1bc5ae4690fe66b570735c",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/no-loss-diagnostics.json"
+    },
+    "no-loss.log": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/4bbc1fc2f80ec46e28f5b930005d3c4843207927781987f2d9d5c1276f6d116b.gz",
+      "archiveBytes": 274,
+      "archiveSha256": "8930427eadabde5a133a0ea1cbd8b277f394ef9f29d96164f1b667ce0a65a83c",
+      "bytes": 475,
+      "sha256": "4bbc1fc2f80ec46e28f5b930005d3c4843207927781987f2d9d5c1276f6d116b",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/no-loss.log"
+    },
+    "no-wait-diagnostics.json": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/7ecea352606306b9d758ca0d286f2d98fa57d1b8984f3169a799e497544fbb3b.gz",
+      "archiveBytes": 4266,
+      "archiveSha256": "3a5841ad0aad937f2dddc79395e51a0a6fb5ec3f1e41a52691241fdb90e56f26",
+      "bytes": 12446,
+      "sha256": "7ecea352606306b9d758ca0d286f2d98fa57d1b8984f3169a799e497544fbb3b",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/no-wait-diagnostics.json"
+    },
+    "no-wait.log": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/9005a42876bf3290df1ef50aa21a47bd019479b530599948d1c777441dbe9d8d.gz",
+      "archiveBytes": 365,
+      "archiveSha256": "9c9065e06b00e8f264c2b58243317078127878b364fc74648cb69826cbed7615",
+      "bytes": 668,
+      "sha256": "9005a42876bf3290df1ef50aa21a47bd019479b530599948d1c777441dbe9d8d",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/no-wait.log"
+    },
+    "pre-commit.log": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/pre-commit.log"
+    },
+    "probe.mjs": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/b88e7ad839f1054d366dab9906b03b139f7dae098c4f405775f75b473fdb58b7.gz",
+      "archiveBytes": 5914,
+      "archiveSha256": "26480c118d0df99cb9493296302b197203b128bad1eac347f7c4a8de949fe279",
+      "bytes": 19026,
+      "sha256": "b88e7ad839f1054d366dab9906b03b139f7dae098c4f405775f75b473fdb58b7",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/probe.mjs"
+    },
+    "receipt-final.log": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveBytes": 20,
+      "archiveSha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/receipt-final.log"
+    },
+    "seal-sources.py": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/ebabd2219452df9d0225d3716f58ec50ac312c320b6dc1c82fa99b2cbaa5d6af.gz",
+      "archiveBytes": 1262,
+      "archiveSha256": "79a9fc1f2394921791b6134217969a2a82474b11694b28596619ee3435babf1a",
+      "bytes": 2971,
+      "sha256": "ebabd2219452df9d0225d3716f58ec50ac312c320b6dc1c82fa99b2cbaa5d6af",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/seal-sources.py"
+    },
+    "source-seal-final.log": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/a7895b5be80250aa4a4ea52fe8019bc6a114c5be8a32e128530bfdaf2193cbbc.gz",
+      "archiveBytes": 66,
+      "archiveSha256": "08d956858059f8eafcd1d33e41323ab1173e241af5ae77514ba5b05d84094923",
+      "bytes": 53,
+      "sha256": "a7895b5be80250aa4a4ea52fe8019bc6a114c5be8a32e128530bfdaf2193cbbc",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/source-seal-final.log"
+    },
+    "source-seal.log": {
+      "archive": "spec/performance/density-startup-recovery-2026-11-11/evidence/a7895b5be80250aa4a4ea52fe8019bc6a114c5be8a32e128530bfdaf2193cbbc.gz",
+      "archiveBytes": 66,
+      "archiveSha256": "08d956858059f8eafcd1d33e41323ab1173e241af5ae77514ba5b05d84094923",
+      "bytes": 53,
+      "sha256": "a7895b5be80250aa4a4ea52fe8019bc6a114c5be8a32e128530bfdaf2193cbbc",
+      "source": "/home/ubuntu/.t3/worktrees/xyg/t3-1b0dd836/target/task-tmp/gpu-context-diagnosis/source-seal.log"
+    }
+  },
+  "fresh": {
+    "contracts": {
+      "command": "uv run --no-sync pytest -q tests/test_wasm_density_chartview_contract.py",
+      "exit": 0,
+      "log": "contracts.log",
+      "passed": 10
+    },
+    "core": {
+      "command": "uv run --no-sync pytest -q tests/test_graphforge_contract_corpus.py -k 'density_startup_recovery or survives_windows_checkout'",
+      "exit": 0,
+      "log": "core-final.log",
+      "passed": 2,
+      "scope": "Complete50-parent source qualification and actual Git LF/CRLF checkout"
+    },
+    "focused": {
+      "cases": 8,
+      "command": "XYG_WASM_FOUNDATION_ONLY=density-no-refinement XYG_WASM_FOUNDATION_REPORT=<corrected-report.json> node scripts/wasm_foundation_smoke.mjs",
+      "contextRecoveries": {
+        "esmStartup": 1,
+        "iifeStartup": 1
+      },
+      "exit": 0,
+      "log": "corrected.log",
+      "report": "corrected-report.json",
+      "scope": "Complete strict-CSP local-only ESM/IIFE pixel/grid/texture/navigation/teardown oracles"
+    },
+    "fullFoundation": {
+      "command": "XYG_NATIVE_LIB=<matching native405> PYTHONPATH=<checkout/python> XYG_WASM_FOUNDATION_REPORT=<full-report.json> node scripts/wasm_foundation_smoke.mjs",
+      "exit": 1,
+      "failure": "Unchanged temporal_graph_aggregate_smoke.mjs initial attachment: xy: graph GPU context unavailable",
+      "fullGreenCredit": false,
+      "log": "full.log",
+      "pageReport": "full-report.json",
+      "pageReportDoesNotSupersedeLaterChildFailure": true,
+      "passedScopes": "Initial page including eight density captures; scheduling/camera/keyboard; retained temporal; seven frozen exports"
+    }
+  },
+  "inheritance": "324 compiled inputs,9 runtime artifacts,6 static copies parent-identical; every historical receipt preserved. No Rust/client rebuild, new benchmark or all-host qualification.",
+  "package": {
+    "functionExports": 68,
+    "gzip6": 786337,
+    "gzipCap": 786432,
+    "gzipHeadroom": 95,
+    "imports": 0,
+    "nativeABI": 405,
+    "nativeSymbols": 551,
+    "raw": 1884503,
+    "rawCap": 1927168,
+    "wasmABI": 38
+  },
+  "readmeSha256": "4bea2b08b219b2013dc48f896d8abb1f72d1f0689cbc1cb47edbb59c93caef95",
+  "remaining": [
+    "Cause and handling of unrequested early GPU loss; unchanged aggregate startup failure",
+    "Reliable100k notebook qualification, massive paged filtering/global budgets, temporal whole-user-flow requirements",
+    "Independent final-diff review and final-head hosted CI/required merge queue",
+    "Whole issues and milestones4\u20137 remain open"
+  ],
+  "runtime": {
+    "compilerWasm": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/9349afa7655f6ada49c41ce2b44b59ce666f40f6b9a120891b39ae543a8b1258.gz",
+      "archiveBytes": 1253948,
+      "archiveSha256": "e68531d20eaa96a3bb2f526659acc805026906c5c8a40470eeb9846ccece4b3d",
+      "bytes": 4075129,
+      "sha256": "9349afa7655f6ada49c41ce2b44b59ce666f40f6b9a120891b39ae543a8b1258",
+      "source": "target/wasm32-unknown-unknown/release/xyg_wasm.wasm"
+    },
+    "index.js": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/f4179e650d8bb1df875034c07c581eca5464c20fad080aeec09473c204b98135.gz",
+      "archiveBytes": 249466,
+      "archiveSha256": "c40192ee0c1c0126934fa6b221425231219891df96a7d19a34b09088781216a2",
+      "bytes": 869685,
+      "sha256": "f4179e650d8bb1df875034c07c581eca5464c20fad080aeec09473c204b98135",
+      "source": "packages/xy-client/dist/index.js"
+    },
+    "native": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/a47ba9de911e0d3b8d867039afc822664ba867e617b998e007933099decc541b.gz",
+      "archiveBytes": 2906042,
+      "archiveSha256": "4014ed6af6b79317ee5e599435a42bcef2134ccdc2a3868e6b9abf3614c6cc7e",
+      "bytes": 6378648,
+      "sha256": "a47ba9de911e0d3b8d867039afc822664ba867e617b998e007933099decc541b",
+      "source": "target/release/libxyg_core.so"
+    },
+    "standalone.js": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/52a9e5f738eeb57603aaacf2e79404c91282cfc74b3a163dbd4ac0d67ad1c1e1.gz",
+      "archiveBytes": 249521,
+      "archiveSha256": "2fd25d6e7440fe45bad02044cfd429476b3cf2b025b83e9ce155fc2ee4e8c097",
+      "bytes": 869698,
+      "sha256": "52a9e5f738eeb57603aaacf2e79404c91282cfc74b3a163dbd4ac0d67ad1c1e1",
+      "source": "packages/xy-client/dist/standalone.js"
+    },
+    "wasm-inline-worker.js": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz",
+      "archiveBytes": 3838,
+      "archiveSha256": "dda8e6c4cec42d91f687b660d742d79dcc1a8c0d052ca6ca189c6acf095db2b4",
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7",
+      "source": "packages/xy-client/dist/wasm-inline-worker.js"
+    },
+    "wasm-worker.js": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7",
+      "source": "packages/xy-client/dist/wasm-worker.js"
+    },
+    "xyg-wasm-inline.js": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/efc6a1532a7556532bee867603139e4f87cdd77842dc33dc8d195302ebda3dee.gz",
+      "archiveBytes": 1042870,
+      "archiveSha256": "94f45c8cab4d091a1d3576335c9143521c04051caa78a5db3d99c49285e0284d",
+      "bytes": 2533794,
+      "sha256": "efc6a1532a7556532bee867603139e4f87cdd77842dc33dc8d195302ebda3dee",
+      "source": "packages/xy-client/dist/xyg-wasm-inline.js"
+    },
+    "xyg-wasm.manifest.json": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/6ec8678adee023b532ceda2a9e5af3e0524489763d3439dc8ab9047937c2f4ea.gz",
+      "archiveBytes": 171,
+      "archiveSha256": "eab52487c49411d8fbdce17ef619abdc4eda16e574b54881a0ad66f767f4cb85",
+      "bytes": 226,
+      "sha256": "6ec8678adee023b532ceda2a9e5af3e0524489763d3439dc8ab9047937c2f4ea",
+      "source": "packages/xy-client/dist/xyg-wasm.manifest.json"
+    },
+    "xyg-wasm.wasm": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/67be6d5add2f2ad279b721dd14484ece71e4710dcec2118cfd27df50fbaf8462.gz",
+      "archiveBytes": 781110,
+      "archiveSha256": "6116e44494db0f9237aea2dc774bc8ff047768da2011526a0e39714a91beefe6",
+      "bytes": 1884503,
+      "sha256": "67be6d5add2f2ad279b721dd14484ece71e4710dcec2118cfd27df50fbaf8462",
+      "source": "packages/xy-client/dist/xyg-wasm.wasm"
+    }
+  },
+  "schemaVersion": 1,
+  "scope": "Foundation density startup readiness and explicit context replacement proof; no runtime recovery change or full-gate pass",
+  "sourceParent": "8affefdd9547c125d70b83771f7866e3eaeb68a2",
+  "staticCopies": {
+    "python/xyg/static/index.js": "f4179e650d8bb1df875034c07c581eca5464c20fad080aeec09473c204b98135",
+    "python/xyg/static/standalone.js": "52a9e5f738eeb57603aaacf2e79404c91282cfc74b3a163dbd4ac0d67ad1c1e1",
+    "python/xyg/static/wasm-worker.js": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7",
+    "python/xyg/static/xyg-wasm-inline.js": "efc6a1532a7556532bee867603139e4f87cdd77842dc33dc8d195302ebda3dee",
+    "python/xyg/static/xyg-wasm.manifest.json": "6ec8678adee023b532ceda2a9e5af3e0524489763d3439dc8ab9047937c2f4ea",
+    "python/xyg/static/xyg-wasm.wasm": "67be6d5add2f2ad279b721dd14484ece71e4710dcec2118cfd27df50fbaf8462"
+  }
+}

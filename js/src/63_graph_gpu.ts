@@ -222,6 +222,11 @@ void main() {
   if(outColor.a<=0.001) discard;
 }`;
 
+/** A transient lost context, distinct from admission or malformed GPU input. */
+export class GraphGpuContextLost extends Error {
+  constructor() { super("xy: graph GPU context unavailable"); this.name = "GraphGpuContextLost"; }
+}
+
 /** Existing GLHost lifecycle/presentation with only raw graph GPU-v1 uploads. */
 export function createGraphGpuPainter(surface: HTMLElement) {
   const doc = surface.ownerDocument, canvas = doc.createElement("canvas"), stage = doc.createElement("canvas");
@@ -232,6 +237,7 @@ export function createGraphGpuPainter(surface: HTMLElement) {
   let buffers: WebGLBuffer[] = [], textures: WebGLTexture[] = [], vaos: WebGLVertexArrayObject[] = [];
   let visible = true;
   let accepted: { gpu: GraphGpuSnapshot; camera: readonly number[]; focus: Float32Array } | null = null;
+  const contextWaiters = new Set<(error?: unknown) => void>();
   const client: GLHostClient = {
     _dashboardResourceState() { return { derivedBytes: host.clientResourceBytes(client), visible, interacting: false }; },
     _applyDashboardResidency(retained) {
@@ -242,7 +248,10 @@ export function createGraphGpuPainter(surface: HTMLElement) {
       } });
     },
     _onGlHostContextLost() { program = null; nodeProgram = null; buffers = []; textures = []; vaos = []; },
-    _onGlHostContextRestored() { if (!disposed && accepted) paint(accepted.gpu, accepted.camera); },
+    _onGlHostContextRestored() {
+      for (const resume of [...contextWaiters]) resume();
+      if (!disposed && accepted) paint(accepted.gpu, accepted.camera);
+    },
   };
   let host = acquireGLHost(doc, client);
   if (!host) { host = new GLHost(doc, () => {}); host._register(client); }
@@ -272,7 +281,8 @@ export function createGraphGpuPainter(surface: HTMLElement) {
     stage.width = width; stage.height = height;
     const focusToken = doc.defaultView?.getComputedStyle(surface).getPropertyValue("--chart-focus").trim();
     const focus = Float32Array.from(parseColor(surface, focusToken || "#aa99ec", [170 / 255, 153 / 255, 236 / 255, 1]));
-    const completed = host.render(client, staging, width, height, () => {
+    let completed: boolean;
+    try { completed = host.render(client, staging, width, height, () => {
       const gl = host.clientContext(client);
       releaseObjects();
       const bytes = (name: string, index = 0) => gpu.sections.get(`${name}#${index}`)!.bytes;
@@ -281,6 +291,9 @@ export function createGraphGpuPainter(surface: HTMLElement) {
       // reference binding for frames and counts beyond one GLsizei draw.
       const nodeTriangles = f === 0 && n <= Math.floor(0x7fff_ffff / 6);
       const max = gl.getParameter(gl.MAX_TEXTURE_SIZE) as number;
+      // Lost contexts return null parameters. That is not a real zero texture
+      // capacity and must not be converted into an ordinary capacity refusal.
+      if (gl.isContextLost()) throw new GraphGpuContextLost();
       function texture(data: Uint8Array, unit: number, integer: boolean) {
         const tex = gl.createTexture(); if (!tex) throw new Error("xy: graph texture allocation failed");
         textures.push(tex); gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, tex);
@@ -345,8 +358,19 @@ export function createGraphGpuPainter(surface: HTMLElement) {
       for (let unit = 0; unit < 5; unit++) { gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, null); }
       gl.activeTexture(gl.TEXTURE0);
       const error = gl.getError(); if (error !== gl.NO_ERROR) throw new Error(`xy: graph GPU paint failed (${error})`);
-    });
-    if (!completed) throw new Error("xy: graph GPU context unavailable");
+    }); } catch (error) {
+      // WebGL may disappear during allocation/compile, before render's final
+      // loss check. Never turn a capacity, protocol or admission refusal into
+      // a recovery retry merely because a context was also lost.
+      if (error instanceof Error && !(error instanceof RangeError)
+          && !(error instanceof XygWasmError) && !(error instanceof GPUAdmissionPending)
+          && host.gl.isContextLost()) throw new GraphGpuContextLost();
+      throw error;
+    }
+    if (!completed) {
+      if (host.lost || host.gl.isContextLost()) throw new GraphGpuContextLost();
+      throw new Error("xy: graph GPU context unavailable");
+    }
     // Presentation and accepted restore state change only after a complete pass.
     canvas.width = width; canvas.height = height;
     canvas.style.width = `${camera[4]}px`; canvas.style.height = `${camera[5]}px`;
@@ -355,10 +379,24 @@ export function createGraphGpuPainter(surface: HTMLElement) {
   }
   return {
     canvas, paint,
+    whenContextRestored(signal: AbortSignal): Promise<void> {
+      return new Promise((resolve, reject) => {
+        const resume = (error?: unknown) => {
+          contextWaiters.delete(resume); signal.removeEventListener("abort", abort);
+          if (error !== undefined) reject(error); else resolve();
+        };
+        const abort = () => resume(signal.reason);
+        if (disposed) { reject(new XygWasmError("XYG_WASM_DISPOSED", "Graph painter was disposed")); return; }
+        if (signal.aborted) { reject(signal.reason); return; }
+        contextWaiters.add(resume); signal.addEventListener("abort", abort, { once: true });
+        if (host.ready && !host.lost && !host.gl.isContextLost()) resume();
+      });
+    },
     focusRgba() { if (!accepted) throw new Error("xy: no accepted graph paint"); return accepted.focus.slice(); },
     dispose() {
       if (disposed) return;
       disposed = true; accepted = null; visibility?.disconnect();
+      for (const resume of [...contextWaiters]) resume(new XygWasmError("XYG_WASM_DISPOSED", "Graph painter was disposed"));
       releaseObjects();
       if (!host.gl.isContextLost()) for (const value of [program, nodeProgram]) if (value) host.clientContext(client).deleteProgram(value);
       program = null; nodeProgram = null; host.release(client); canvas.remove();

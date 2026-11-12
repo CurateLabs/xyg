@@ -11,10 +11,14 @@ from __future__ import annotations
 
 import json
 import os
+import struct
+import uuid
+from collections import deque
 from pathlib import Path
 from typing import Any
 
 import numpy as np
+import pytest
 
 from xyg._graph_wire import wire_graph_meta
 from xyg._tooltip_columns import encode_tooltip_rows
@@ -121,6 +125,67 @@ def test_python_matches_fixture() -> None:
     # Host-only identity planes are dropped; browser integer planes are columns.
     assert "ids" not in graph_meta["wire"] and "source_edge_ids" not in graph_meta["wire"]
     assert graph_meta["wire"]["csr_offsets"] == {"column": 0}
+
+
+@pytest.mark.parametrize("count", [1, 4095, 4096, 4097, 8193])
+@pytest.mark.parametrize("container", [list, tuple, deque])
+def test_uuid_planes_cross_copy_boundaries_without_changing_bytes(count, container) -> None:
+    rows = [
+        {"id": str(uuid.UUID(int=i + 1)), "value": -0.0 if i == 0 else i / 13} for i in range(count)
+    ]
+    encoded = _encode(container(rows))
+    assert encoded["tooltip_columns"] == {
+        "n": count,
+        "keys": ["id", "value"],
+        "kinds": ["uuid", "f64"],
+        "data": [0, 1],
+        "present": [None, None],
+        "dict": [],
+    }
+    assert encoded["shipped"] == [
+        {"dtype": "u8", "hex": b"".join((i + 1).to_bytes(16, "big") for i in range(count)).hex()},
+        {"dtype": "u8", "hex": b"".join(struct.pack("<d", row["value"]) for row in rows).hex()},
+    ]
+
+
+def test_sparse_uuid_blocks_keep_presence_dictionary_order_and_zero_padding() -> None:
+    n = 8195
+    rows = [{"id": U1, "other": U2, "tag": "shared"} for _ in range(n)]
+    del rows[4095]["id"]
+    for i in range(4096, 8192):
+        rows[i]["id"] = None
+    rows[4097]["id"] = "shared"
+    rows[8192]["id"] = "derived:1:4:0"
+    rows[0]["other"] = "derived:1:4:0"
+    rows[-1]["other"] = None
+    before = json.dumps(rows)
+
+    encoded = _encode(rows)
+    assert json.dumps(rows) == before
+    assert encoded["tooltip_columns"] == {
+        "n": n,
+        "keys": ["id", "other", "tag"],
+        "kinds": ["uuid", "uuid", "text"],
+        "data": [1, 3, 4],
+        "present": [0, 2, None],
+        "dict": ["shared", "derived:1:4:0"],
+    }
+    first = bytearray(uuid.UUID(U1).bytes * n)
+    first[4095 * 16 : 8192 * 16] = bytes((8192 - 4095) * 16)
+    first[8192 * 16 : 8193 * 16] = (1).to_bytes(4, "little") + bytes(12)
+    first_presence = bytearray([2] * n)
+    first_presence[4096:8192] = bytes([1] * 4096)
+    for i, value in [(4095, 0), (4097, 3), (8192, 3)]:
+        first_presence[i] = value
+    second = bytearray(uuid.UUID(U2).bytes * n)
+    second[:16] = (1).to_bytes(4, "little") + bytes(12)
+    second[-16:] = bytes(16)
+    second_presence = bytearray([2] * n)
+    second_presence[0], second_presence[-1] = 3, 1
+    expected = [first_presence, first, second_presence, second, bytes(n * 4)]
+    assert encoded["shipped"] == [
+        {"dtype": "u32" if i == 4 else "u8", "hex": raw.hex()} for i, raw in enumerate(expected)
+    ]
 
 
 def test_fixture_exercises_every_kind_and_the_json_fallback() -> None:

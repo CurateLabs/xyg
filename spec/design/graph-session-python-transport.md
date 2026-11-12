@@ -89,16 +89,23 @@ It retains no graph buffers or result cache after return (dossier §27/§29).
 
 ## Serialized lifecycle and failures
 
-One module-level lock serializes native handle creation, complete
-query/copy transactions and close calls, including calls on different Python
-wrappers. This intentionally conservative P0 boundary prevents a close or
-another operation from intervening between sizing and exact copying. It
-also covers byte-identical Open retries, which Rust may resolve to the same
-native handle. No identity or graph-state registry is maintained in Python.
-Independent native handles retain independent graph state and lifetimes;
-this foundation makes no concurrent throughput claim. Direct raw-ABI or
-other-language callers are outside the Python lock; native locking and
-validation remain authoritative.
+Each native instance has one Python lifecycle lock shared by its wrappers.
+It serializes native handle creation, complete query/copy transactions and
+close calls, preventing a close or another operation from intervening between
+sizing and exact copying. It also covers byte-identical Open retries, which
+Rust may resolve to the same native handle. The validated `instance_id` is the
+same namespace Rust already uses for active-instance Open conflict/alias checks;
+Python does not decide whether an Open is valid or aliases another wrapper.
+
+A brief module lock protects weak lock discovery only. Lock/callback allocation,
+input/scalar conversion, native work, output allocation/copy and destruction
+run outside that module lock. Weak entries disappear when no wrapper or active
+lookup retains the lock. The table stores no handles, graph state, document or
+reply cache. Independent instances can create, execute and close while another
+instance's query/copy is parked. This removes cross-owner blocking; it makes no
+general throughput or whole-notebook deadline claim. Direct raw-ABI or
+other-language callers remain outside Python lifecycle locks; native locking
+and validation remain authoritative.
 
 Native Open retry semantics are preserved: wrappers opened with identical
 active-instance bytes alias the same native lifetime. Closing either revokes
@@ -223,8 +230,16 @@ fresh epoch; each publication has a monotonically increasing revision. Every
 control, generic request and reply carries these stamps. A displayed Figure and
 one pending Figure are retained at most. An event resolves against its exact
 compiled snapshot until the replacement's ACK retires that snapshot. Afterwards
-its revision is rejected. The browser rejects foreign epochs/instances/replies,
-and never applies an older reply to a newer picture. Replacing GPU traces clears
+its revision is rejected. The browser rejects foreign epochs/instances/replies
+and never applies an older reply to a newer picture.
+
+The ACK is emitted by the existing ChartView's successful presentation hook,
+after its GL/Canvas2D picture and chrome restoration complete, once per native
+revision. It is not a separate animation-frame clock tick: unrelated expensive
+sibling draws cannot postpone an already completed presentation's ACK, and a
+refused/lost-context draw cannot release native work. Recovery may acknowledge
+the still-pending revision after actual paint; disposal clears that pending ACK.
+Replacing GPU traces clears
 the old hover/neighborhood handles before drawing and rebinds the target only
 when the ordered native row space is unchanged; no freed GPU handle survives
 a refresh. Routed segment identity

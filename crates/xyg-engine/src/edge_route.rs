@@ -22,7 +22,7 @@ pub const EDGE_ROUTE_SEGMENTS_PER_EDGE: usize = CURVE_TESSELLATION_SEGMENTS + 2;
 /// three-sided self-loop, or one shaft plus two arrow wings.
 pub const STRAIGHT_EDGE_ROUTE_SEGMENTS_PER_EDGE: usize = 3;
 
-/// Per-edge output capacity [`edge_route_segments`] requires for `curved`, so
+/// Sufficient per-edge output capacity without inspecting source topology, so
 /// straight routing does not pay the curved tessellation ceiling.
 pub const fn edge_route_segments_per_edge(curved: bool) -> usize {
     if curved {
@@ -30,6 +30,27 @@ pub const fn edge_route_segments_per_edge(curved: bool) -> usize {
     } else {
         STRAIGHT_EDGE_ROUTE_SEGMENTS_PER_EDGE
     }
+}
+
+/// Structural upper bound; mixed topology or clipping may emit fewer pieces.
+/// `non_loop` includes the caller's shaft tessellation and optional wings.
+/// Bundle offsets change positions, never the number of segments. Routing
+/// validates geometric parameters before selecting this integer width.
+#[cfg_attr(target_arch = "wasm32", inline(never))]
+pub(crate) fn edge_route_capacity(
+    sources: &[u64],
+    targets: &[u64],
+    non_loop: usize,
+) -> Option<usize> {
+    if sources.len() != targets.len() {
+        return None;
+    }
+    let width = if non_loop < 3 && sources.iter().zip(targets).any(|(s, t)| s == t) {
+        3
+    } else {
+        non_loop
+    };
+    sources.len().checked_mul(width)
 }
 
 /// Route render-graph edges into paint segments with deterministic multi-edge
@@ -49,9 +70,8 @@ pub const fn edge_route_segments_per_edge(curved: bool) -> usize {
 ///
 /// Writes `out_*` columns of equal length and returns the segment count. Each
 /// `out_edge_index[i]` is the source edge index that produced segment `i`.
-/// Caller buffers must hold at least
-/// `sources.len() * edge_route_segments_per_edge(curved)` slots (hosts may
-/// allocate the [`EDGE_ROUTE_SEGMENTS_PER_EDGE`] ceiling).
+/// Caller buffers need the shaft/wing ceiling per edge, raised to three when
+/// a self-loop needs it. Legacy per-edge ceilings remain sufficient.
 #[allow(clippy::too_many_arguments)] // mirrors the C ABI buffer list
 pub fn edge_route_segments(
     n_nodes: u64,
@@ -86,7 +106,9 @@ pub fn edge_route_segments(
         return None;
     }
     let e = sources.len();
-    let capacity = e.checked_mul(edge_route_segments_per_edge(curved))?;
+    let non_loop =
+        edge_route_segments_per_edge(curved) - 2 + usize::from(directed && arrow_size > 0.0) * 2;
+    let capacity = edge_route_capacity(sources, targets, non_loop)?;
     if out_x0.len() < capacity
         || out_y0.len() < capacity
         || out_x1.len() < capacity
@@ -507,9 +529,7 @@ pub fn edge_route_segments_with_ends(
     if !node_symbol.is_empty() && node_symbol.len() != x.len() {
         return None;
     }
-    let capacity = sources
-        .len()
-        .checked_mul(edge_route_segments_per_edge(curved))?;
+    let capacity = edge_route_capacity(sources, targets, edge_route_segments_per_edge(curved) - 2)?;
     if out_ends.len() < capacity.checked_mul(EDGE_ENDS_STRIDE)? {
         return None;
     }
@@ -574,6 +594,59 @@ pub fn edge_route_segments_with_ends(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn structural_capacity_preserves_geometry_and_refuses_one_under_before_writes() {
+        let x = [0.0, 4.0, 8.0];
+        let y = [0.0, 3.0, -2.0];
+        let sources = [0, 0, 1, 1, 2];
+        let targets = [1, 1, 0, 1, 2];
+        for directed in [false, true] {
+            for curved in [false, true] {
+                for arrow in [0.0, 0.3] {
+                    let non_loop = edge_route_segments_per_edge(curved) - 2
+                        + usize::from(directed && arrow > 0.0) * 2;
+                    let cap = edge_route_capacity(&sources, &targets, non_loop).unwrap();
+                    let old_cap = sources.len() * edge_route_segments_per_edge(curved);
+                    let route = |capacity| {
+                        let mut a = vec![-999.0; capacity];
+                        let mut b = a.clone();
+                        let mut c = a.clone();
+                        let mut d = a.clone();
+                        let mut ids = vec![u64::MAX; capacity];
+                        let result = edge_route_segments(
+                            3, &x, &y, &sources, &targets, directed, 0.2, 0.5, arrow, curved,
+                            &mut a, &mut b, &mut c, &mut d, &mut ids,
+                        );
+                        (result, a, b, c, d, ids)
+                    };
+                    let compact = route(cap);
+                    let legacy = route(old_cap);
+                    let n = compact.0.unwrap() as usize;
+                    assert_eq!(compact.0, legacy.0);
+                    assert_eq!(&compact.1[..n], &legacy.1[..n]);
+                    assert_eq!(&compact.2[..n], &legacy.2[..n]);
+                    assert_eq!(&compact.3[..n], &legacy.3[..n]);
+                    assert_eq!(&compact.4[..n], &legacy.4[..n]);
+                    assert_eq!(&compact.5[..n], &legacy.5[..n]);
+                    let refused = route(cap - 1);
+                    assert_eq!(refused.0, None);
+                    assert!(refused
+                        .1
+                        .iter()
+                        .chain(&refused.2)
+                        .chain(&refused.3)
+                        .chain(&refused.4)
+                        .all(|&x| x == -999.0));
+                    assert!(refused.5.iter().all(|&x| x == u64::MAX));
+                }
+            }
+        }
+        assert_eq!(edge_route_capacity(&[0, 1], &[1, 0], 1), Some(2));
+        assert_eq!(edge_route_capacity(&[], &[], 1), Some(0));
+        assert_eq!(edge_route_capacity(&[0], &[], 1), None);
+        assert_eq!(edge_route_capacity(&[0, 1], &[1, 0], usize::MAX), None);
+    }
 
     #[test]
     fn separates_parallels_and_emits_loop_and_arrows() {

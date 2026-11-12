@@ -124,6 +124,11 @@ as fail-closed stubs so supported in-memory kernels and Scene consumers still
 load. The Pyodide gate calls every stub and checks its documented sentinel and
 signature; it never emulates filesystem policy in Python or JavaScript. These
 stubs are Emscripten-specific, not a blanket policy for every WASM target.
+The filter-session C ABI dispatcher is available on Emscripten too: ordinary
+in-memory XYFC requests and XYFJ continuation/advance/cancel use the same Rust
+engine. The exact-wheel gate compares the complete 47-packet in-memory corpus
+and verifies cooperative cancellation preserves the accepted index. Issued
+filesystem-source registration remains unsupported there.
 The capacity-aware `xyg_tile_store_compose_color` stub takes both declared
 output capacities even though it returns `-1` without touching output.
 Tile paint capacity/paint also remain unavailable (both return zero).
@@ -2177,7 +2182,48 @@ composed browser views and the ordinary density painter; bounded Chromium
 five-view pointer/keyboard parity and context/append/rebuild/publication failures
 are exercised. Automatic notebook/native-host transport, assistive hardware,
 nonlinear/large-offset compatibility and massive performance remain open. The [normative subset and remaining work](filter-tier-c.md)
-include synchronous Worker cancellation limits and logical memory accounting.
+describe the bounded cooperative resident Worker path and its logical memory
+accounting; array ingress and configuration parsing remain synchronous.
+
+The [issued paged-source continuation](filter-tier-c.md#issued-native-paged-sources-continuation)
+adds native Python/Node XYFC v2 attach for issued XYGC planes, followed by the
+unchanged shared v1 count/query/membership commands. It retains immutable file
+and metadata leases rather than copying all rows or retaining the viewport LRU.
+The dedicated Worker factory still requires resident arrays: a native source handle is
+not portable to a Worker, and direct WASM refuses that attach rather than
+silently materializing or treating the handle as browser authority. Browser
+file transport remains required follow-up work. Resident cooperative index
+building, exact fallback and membership scans now yield between Rust-controlled
+Worker turns, with cancellation and private-owner teardown covered by the
+[matching-package continuation](../performance/filter-paged-cooperative-2026-11-11/README.md).
+That evidence does not qualify file-backed Worker sources, real 100M/five-view
+performance, global budgets or whole-issue completion.
+
+The native asynchronous Node factory also advances the same Rust jobs through
+the existing C export. Its one-use source registration can be adopted by browser
+`createFilterSession` over application-owned binary callbacks and painted by the
+same `attachFilterDashboard`. Native handles and canonical columns do not enter
+the browser. This is explicit callback integration; Python's public convenience
+session remains synchronous, and automatic notebook filtering and portable
+Worker file sources remain open. Bounded native turns do not guarantee bounded
+positioned-I/O latency or whole-process/transport memory accounting.
+The initial functional 100M-row callback witness uses four materialized XYGC files,
+five dimensions, four active cells and five 100×100 passive grids. Its native
+build scans the source once; unchanged range/paint commands read no canonical
+rows. Separate bounded membership requests report their own reads. This is not
+the dossier's pixel-level active index or 50 FPS performance qualification.
+The later [range-and-paint continuation](../performance/filter-range-paint-2026-11-12/README.md)
+also qualifies 346 active cells (one per CSS plot pixel), five 100×100 passive
+grids and the unchanged 128 MiB native logical budget. Python `range_paint` and
+Node/browser `rangePaint` request XYFC v3 opcode 5; Rust publishes range intent,
+counts and XYFP density atomically. The shared dashboard consumes this reply
+through its existing density renderer. Version1/2 packets and all exported
+signatures remain unchanged. Explicitly unadmitted unknown-version refusals
+can select legacy range-then-paint behavior; newer intents, source changes,
+disposal and admitted failures must not initiate that compatibility retry.
+This bounded evidence still does not establish 50 FPS, automatic notebook
+filtering, portable file-backed Worker sources or whole-process memory budgets.
+
 ## Temporal catalog candidate (#46)
 
 [Temporal catalog](temporal-catalog.md) specifies XYTM v1/v2, XYTL v2/v3 and

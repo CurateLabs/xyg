@@ -1430,25 +1430,33 @@ impl RingGraph {
         if self.edges.len() > max_edges {
             return Err(GeoError::ResourceLimit);
         }
-        let cmp = |a: &ScreenPoint, b: &ScreenPoint| a.0.total_cmp(&b.0).then(a.1.total_cmp(&b.1));
+        // These are temporary derived coordinates, constructed directly as
+        // arrays so the existing stable two-f64 sort body is shared. Canonical
+        // ScreenPoint values and their signed-zero welding remain unchanged.
+        let cmp = |a: &[f64; 2], b: &[f64; 2]| a[0].total_cmp(&b[0]).then(a[1].total_cmp(&b[1]));
         let mut nodes = Vec::with_capacity(self.edges.len() * 2);
         for &(a, b) in &self.edges {
-            nodes.extend([a, b]);
+            nodes.extend([[a.0, a.1], [b.0, b.1]]);
         }
         crate::shared_sort::by(&mut nodes, cmp);
         nodes.dedup();
         let mut edges = Vec::with_capacity(self.edges.len());
         for (a, b) in self.edges {
-            edges.push((
-                nodes.binary_search_by(|p| cmp(p, &a)).unwrap(),
-                nodes.binary_search_by(|p| cmp(p, &b)).unwrap(),
-            ));
+            // The product edge admission bounds nodes below 2^22. Checked
+            // conversion keeps even future callers from truncating an ordinal.
+            let a = u32::try_from(nodes.binary_search_by(|p| cmp(p, &[a.0, a.1])).unwrap())
+                .map_err(|_| GeoError::ResourceLimit)?;
+            let b = u32::try_from(nodes.binary_search_by(|p| cmp(p, &[b.0, b.1])).unwrap())
+                .map_err(|_| GeoError::ResourceLimit)?;
+            edges.push(crate::shared_sort::pair_u32(a, b));
         }
         edges.sort_unstable();
         edges.dedup();
         let mut next = vec![usize::MAX; nodes.len()];
         let mut incoming = vec![0u8; nodes.len()];
-        for (a, b) in edges {
+        for key in edges {
+            let (a, b) = crate::shared_sort::unpair_u32(key);
+            let (a, b) = (a as usize, b as usize);
             if next[a] != usize::MAX {
                 return Err(GeoError::InvalidArgument);
             }
@@ -1465,7 +1473,7 @@ impl RingGraph {
             if next[start] == usize::MAX {
                 continue;
             }
-            let mut ring = vec![nodes[start]];
+            let mut ring = vec![(nodes[start][0], nodes[start][1])];
             let mut current = start;
             loop {
                 let target = next[current];
@@ -1473,7 +1481,7 @@ impl RingGraph {
                     return Err(GeoError::InvalidArgument);
                 }
                 next[current] = usize::MAX;
-                ring.push(nodes[target]);
+                ring.push((nodes[target][0], nodes[target][1]));
                 current = target;
                 if current == start {
                     break;
@@ -2857,5 +2865,58 @@ mod tests {
             mercator.project_column(&col),
             Err(GeoError::InvalidArgument)
         );
+    }
+}
+
+#[cfg(test)]
+mod clipping_node_sort_tests {
+    use super::*;
+    #[test]
+    fn clipping_array_nodes_preserve_disjoint_cycles_order_and_positive_zero() {
+        let a = [(0., 0.), (4., 0.), (4., 3.), (0., 3.), (0., 0.)];
+        let b = [(8., 0.), (9., 1.), (8., 2.), (8., 0.)];
+        let source: Vec<_> = a
+            .windows(2)
+            .chain(b.windows(2))
+            .map(|p| (p[0], p[1]))
+            .collect();
+        for offset in 0..source.len() {
+            let mut graph = RingGraph::default();
+            for i in 0..source.len() {
+                let (mut a, mut b) = source[(i + offset) % source.len()];
+                if a.0 == 0. {
+                    a.0 = -0.;
+                }
+                if b.1 == 0. {
+                    b.1 = -0.;
+                }
+                graph.edge(a, b);
+            }
+            let rings = graph.cycles(source.len()).unwrap();
+            assert_eq!(rings, [a.to_vec(), b.to_vec()]);
+            for (x, y) in rings.into_iter().flatten() {
+                if x == 0. {
+                    assert_eq!(x.to_bits(), 0);
+                }
+                if y == 0. {
+                    assert_eq!(y.to_bits(), 0);
+                }
+            }
+        }
+        let mut short = RingGraph::default();
+        for &(a, b) in &source {
+            short.edge(a, b);
+        }
+        assert!(matches!(
+            short.cycles(source.len() - 1),
+            Err(GeoError::ResourceLimit)
+        ));
+        let mut branching = RingGraph::default();
+        branching.edge((-0., 0.), (1., 0.));
+        branching.edge((0., -0.), (0., 1.));
+        assert!(matches!(
+            branching.cycles(2),
+            Err(GeoError::InvalidArgument)
+        ));
     }
 }

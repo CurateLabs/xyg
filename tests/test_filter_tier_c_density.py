@@ -62,7 +62,7 @@ def test_public_density_exact_boundaries_nonfinite_and_screen_storage(n):
             [dict(id=1, x="a", y="b", width=4, height=4, x_range=[-2.0, 2.0], y_range=[-2.0, 2.0])],
         )
         index = s.paint()["index_bytes"]
-        assert index == (5 * 17 * 8 + 17 * 16 + 4 * 16)
+        assert index == (5 * 17 * 4 + 17 * 16 + 4 * 16)
         for lo, hi in [
             (-0.0, 0.0),
             (1.0, -1.0),

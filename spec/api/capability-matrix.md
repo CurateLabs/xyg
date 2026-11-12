@@ -131,6 +131,8 @@ one honors.
 | Exact resolvable one-dimension cumulative counts, five passive views | shared binary session; full packet/oracle parity | bounded five-view ordinary painter |
 | Arbitrary finite inclusive boundary | explicit recorded exact scan or refusal | same pointer/keyboard protocol, no snapping |
 | Canonical u64 membership pages; append, cancellation, eviction/rebuild | bounded exact pages, retained range/mask composition | exact 2D selected-count density; result masks/spill pending |
+| Issued XYGC canonical-source leases | native Python/Node; explicit async Node/browser binary callbacks | bounded source pages; portable file Worker attachment and global admission pending |
+| Native callback five-view 100M functionality | materialized files; four active cells and five 100x100 passive grids | independent exact count/texture/membership checks; no FPS or pixel-level active-index claim |
 | Pointer/keyboard edit, commit, cancel, clear | same revisioned Rust session | five painted different-dimensional views in Chromium |
 | Five rendered views at 100M / ≥50 FPS, CodSpeed and competitors | qualification open | pending under #112 |
 

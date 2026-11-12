@@ -1603,3 +1603,142 @@ tests/test_vscode_graph_regions_report.py text eol=lf
 spec/performance/graph-notebook-ci-repair-2026-11-10/*.md text eol=lf
 spec/performance/graph-notebook-ci-repair-2026-11-10/*.json text eol=lf
 spec/performance/graph-notebook-ci-repair-2026-11-10/**/*.gz -text
+
+# Semantic graph admission retains exact predecessor sources and failed builds.
+spec/performance/graph-semantic-session-2026-11-10/*.md text eol=lf
+spec/performance/graph-semantic-session-2026-11-10/*.json text eol=lf
+spec/performance/graph-semantic-session-2026-11-10/**/*.gz -text
+
+# Preserve the source-qualified semantic admission receipt and its legacy link.
+spec/performance/graph-semantic-anchor-2026-11-10/*.md text eol=lf
+spec/performance/graph-semantic-anchor-2026-11-10/*.json text eol=lf
+spec/performance/graph-semantic-anchor-2026-11-10/**/*.gz -text
+
+# Native graph ownership/paint continuation preserves all failed qualification.
+spec/performance/graph-native-admission-paint-2026-11-11/*.md text eol=lf
+spec/performance/graph-native-admission-paint-2026-11-11/*.json text eol=lf
+spec/performance/graph-native-admission-paint-2026-11-11/**/*.gz -text
+tests/notebook_graph_native_scale.ipynb text eol=lf
+benchmarks/bench_graph_native_notebook.mjs text eol=lf
+tests/test_graph_edge_ends.py text eol=lf
+
+# Native force owners retain the complete predecessor and failure records.
+spec/performance/graph-native-force-owner-2026-11-11/*.md text eol=lf
+spec/performance/graph-native-force-owner-2026-11-11/*.json text eol=lf
+spec/performance/graph-native-force-owner-2026-11-11/**/*.gz -text
+spec/performance/graph-pan-cancel-2026-11-11/*.md text eol=lf
+spec/performance/graph-pan-cancel-2026-11-11/*.json text eol=lf
+spec/performance/graph-pan-cancel-2026-11-11/**/*.gz -text
+tests/test_view_state_client.py text eol=lf
+spec/performance/graph-python-session-isolation-2026-11-11/*.md text eol=lf
+spec/performance/graph-python-session-isolation-2026-11-11/*.json text eol=lf
+spec/performance/graph-python-session-isolation-2026-11-11/**/*.gz -text
+python/xyg/_graph_session.py text eol=lf
+python/xyg/_tooltip_columns.py text eol=lf
+tests/test_tooltip_columns_cross_host.py text eol=lf
+benchmarks/test_codspeed_tooltip_columns.py text eol=lf
+spec/performance/tooltip-uuid-packing-2026-11-11/*.md text eol=lf
+spec/performance/tooltip-uuid-packing-2026-11-11/*.json text eol=lf
+spec/performance/tooltip-uuid-packing-2026-11-11/**/*.gz -text
+spec/performance/graph-region-visible-input-2026-11-11/*.md text eol=lf
+spec/performance/graph-region-visible-input-2026-11-11/*.json text eol=lf
+spec/performance/graph-region-visible-input-2026-11-11/**/*.gz -text
+tests/test_graph_semantic_ingress.py text eol=lf
+benchmarks/test_codspeed_graph_semantic_validation.py text eol=lf
+spec/performance/graph-semantic-validation-2026-11-11/*.md text eol=lf
+spec/performance/graph-semantic-validation-2026-11-11/*.json text eol=lf
+spec/performance/graph-semantic-validation-2026-11-11/**/*.gz -text
+spec/performance/chunked-camera-publication-2026-11-11/*.md text eol=lf
+spec/performance/chunked-camera-publication-2026-11-11/*.json text eol=lf
+spec/performance/chunked-camera-publication-2026-11-11/**/*.gz -text
+tests/test_tooltip_text_validation.py text eol=lf
+spec/performance/tooltip-uuid-classification-2026-11-11/*.md text eol=lf
+spec/performance/tooltip-uuid-classification-2026-11-11/*.json text eol=lf
+spec/performance/tooltip-uuid-classification-2026-11-11/**/*.gz -text
+
+# Density startup recovery qualification: exact source and compressed evidence.
+spec/performance/density-startup-recovery-2026-11-11/*.md text eol=lf
+spec/performance/density-startup-recovery-2026-11-11/*.json text eol=lf
+spec/performance/density-startup-recovery-2026-11-11/**/*.gz binary
+
+# Retained graph initial context recovery proof.
+scripts/graph_initial_context_smoke.mjs text eol=lf
+spec/performance/graph-initial-context-recovery-2026-11-11/*.md text eol=lf
+spec/performance/graph-initial-context-recovery-2026-11-11/*.json text eol=lf
+spec/performance/graph-initial-context-recovery-2026-11-11/**/*.gz binary
+
+# Initial graph recovery transaction deadline correction.
+spec/performance/graph-initial-deadline-2026-11-11/*.md text eol=lf
+spec/performance/graph-initial-deadline-2026-11-11/*.json text eol=lf
+spec/performance/graph-initial-deadline-2026-11-11/**/*.gz binary
+
+# Density matrix summary and exact predecessor preservation.
+spec/performance/density-matrix-summary-2026-11-11/*.md text eol=lf
+spec/performance/density-matrix-summary-2026-11-11/*.json text eol=lf
+spec/performance/density-matrix-summary-2026-11-11/**/*.gz binary
+
+# Native paged filtering and cooperative Worker qualification.
+crates/xyg-engine/src/chunked_layout.rs text eol=lf
+crates/xyg-engine/src/filter_tier_c_jobs.rs text eol=lf
+crates/xyg-engine/src/filter_tier_c_paged.rs text eol=lf
+packages/xy-node/src/chunked-column-ref.js text eol=lf
+tests/test_filter_paged_sources.py text eol=lf
+scripts/filter_cooperative_browser.mjs text eol=lf
+benchmarks/test_codspeed_geo_pair_ordering.py text eol=lf
+spec/performance/filter-paged-cooperative-2026-11-11/*.md text eol=lf
+spec/performance/filter-paged-cooperative-2026-11-11/*.json text eol=lf
+spec/performance/filter-paged-cooperative-2026-11-11/**/*.gz binary
+spec/performance/filter-cooperative-status-2026-11-11/*.md text eol=lf
+spec/performance/filter-cooperative-status-2026-11-11/*.json text eol=lf
+spec/performance/filter-cooperative-status-2026-11-11/**/*.gz binary
+spec/performance/filter-dossier-status-2026-11-11/*.md text eol=lf
+spec/performance/filter-dossier-status-2026-11-11/*.json text eol=lf
+spec/performance/filter-dossier-status-2026-11-11/**/*.gz binary
+
+# Native asynchronous filter callbacks and reproducible materialized sources.
+packages/xy-node/src/filter-cooperative.js text eol=lf
+scripts/gen_filter_paged_fixture.py text eol=lf
+scripts/filter_native_callback_browser.mjs text eol=lf
+tests/test_filter_native_callback.py text eol=lf
+spec/performance/filter-native-callback-2026-11-11/*.md text eol=lf
+spec/performance/filter-native-callback-2026-11-11/*.json text eol=lf
+spec/performance/filter-native-callback-2026-11-11/**/*.gz binary
+spec/performance/filter-benchmark-catalog-2026-11-11/*.md text eol=lf
+spec/performance/filter-benchmark-catalog-2026-11-11/*.json text eol=lf
+spec/performance/filter-benchmark-catalog-2026-11-11/**/*.gz binary
+benchmarks/bench_filter_dashboard.mjs text eol=lf
+benchmarks/test_codspeed_filter_dashboard.py text eol=lf
+spec/performance/filter-dashboard-baseline-2026-11-11/*.md text eol=lf
+spec/performance/filter-dashboard-baseline-2026-11-11/*.json text eol=lf
+spec/performance/filter-dashboard-baseline-2026-11-11/**/*.gz binary
+spec/performance/filter-emscripten-transport-2026-11-12/*.md text eol=lf
+spec/performance/filter-emscripten-transport-2026-11-12/*.json text eol=lf
+spec/performance/filter-emscripten-transport-2026-11-12/**/*.gz binary
+scripts/pyodide_load_smoke.py text eol=lf
+tests/test_pyodide_load_smoke.py text eol=lf
+
+# Exact private count-prefix continuation and qualification, 2026-11-12.
+spec/performance/filter-prefix-storage-2026-11-12/*.md text eol=lf
+spec/performance/filter-prefix-storage-2026-11-12/*.json text eol=lf
+spec/performance/filter-prefix-storage-2026-11-12/**/*.gz -text
+
+spec/performance/filter-range-paint-2026-11-12/*.md text eol=lf
+spec/performance/filter-range-paint-2026-11-12/*.json text eol=lf
+spec/performance/filter-range-paint-2026-11-12/**/*.gz -text
+tests/test_filter_range_paint.py text eol=lf
+
+spec/performance/filter-prefix-benchmark-oracle-2026-11-12/*.md text eol=lf
+spec/performance/filter-prefix-benchmark-oracle-2026-11-12/*.json text eol=lf
+spec/performance/filter-prefix-benchmark-oracle-2026-11-12/**/*.gz -text
+
+spec/performance/filter-single-color-2026-11-12/*.md text eol=lf
+spec/performance/filter-single-color-2026-11-12/*.json text eol=lf
+spec/performance/filter-single-color-2026-11-12/**/*.gz -text
+
+spec/performance/filter-compiled-inputs-2026-11-12/*.md text eol=lf
+spec/performance/filter-compiled-inputs-2026-11-12/*.json text eol=lf
+spec/performance/filter-compiled-inputs-2026-11-12/**/*.gz -text
+
+spec/performance/filter-rounding-evaluation-2026-11-12/*.md text eol=lf
+spec/performance/filter-rounding-evaluation-2026-11-12/*.json text eol=lf
+spec/performance/filter-rounding-evaluation-2026-11-12/**/*.gz -text

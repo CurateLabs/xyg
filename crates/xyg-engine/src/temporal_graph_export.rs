@@ -1,6 +1,9 @@
 //! Retained temporal paint -> canonical Scene. No layout, routing or style resolution.
 use crate::graph_scene::Columns;
-use crate::graphforge::{container::Container, interaction::wire::decode_paint};
+use crate::graphforge::{
+    container::{hex_bytes as hex, Container},
+    interaction::wire::decode_paint,
+};
 use crate::scene::*;
 use crate::temporal::TemporalError as E;
 use crate::temporal_graph_frozen::{FrozenTemporalGraph, MAX_PEAK};
@@ -450,15 +453,6 @@ pub fn canonical_scene(bytes: &[u8], focus: [u8; 4], budget: usize) -> Result<Ve
 
 const PREFIX: &str = "<metadata id=\"xyg-frozen-v1\">";
 const SUFFIX: &str = "</metadata>";
-fn hex(bytes: &[u8]) -> String {
-    const H: &[u8] = b"0123456789abcdef";
-    let mut s = String::with_capacity(bytes.len() * 2);
-    for &b in bytes {
-        s.push(H[(b >> 4) as usize] as char);
-        s.push(H[(b & 15) as usize] as char);
-    }
-    s
-}
 fn unhex(s: &[u8]) -> Result<Vec<u8>> {
     if s.len() % 2 != 0 {
         return Err(E::InvalidArgument);

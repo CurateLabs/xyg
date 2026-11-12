@@ -45,6 +45,13 @@ failed reads, allocation/draw failures and rejected stages retain the last accep
 paint and identity. Incorrect/late ACKs cannot publish another row map. Native
 provenance accompanies that accepted frame. A frame event follows token advancement
 and ACK, so event observers cannot send picks using the preceding frame identity.
+The browser also retains a copy of the exact x/y query ranges sent with its
+latest intent. Before staging any candidate resources, those ranges must still
+equal the current camera ranges. Camera mutation precedes the coalesced
+`view_change` notification: matching the latest transmitted intent alone cannot
+authorize a reply during that gap. A mismatching candidate receives the normal
+rejection, leaves accepted pixels and identity intact, and releases its host
+stage; the queued current-camera request proceeds normally.
 
 Picks and box/lasso selections require the accepted frame; stale picks and masks
 fail closed. Scalar `source_row_id` is an exact decimal string. Python selection

@@ -153,6 +153,18 @@ def open_f64(path: str | os.PathLike[str]) -> npt.NDArray[np.float64]:
     return np.memmap(path, dtype=np.float64, mode="r", shape=(int(n),))
 
 
+class _ChunkedColumn:
+    """An issued plane reference; numerical values stay in the Rust source."""
+
+    __slots__ = ("plane", "source")
+
+    def __init__(self, source, plane: int):
+        self.source, self.plane = source, plane
+
+    def __len__(self):
+        return self.source.rows
+
+
 class ChunkedColumns:
     """Thin local/offline host for Rust-owned XYGC viewport selection.
 
@@ -164,6 +176,16 @@ class ChunkedColumns:
         self.path = os.fspath(path)
         self._handle = _native.chunked_columns_open(self.path)
         self.rows = _native.chunked_columns_rows(self._handle)
+
+    def column(self, plane: str):
+        """Reference an issued ``x`` or ``y`` plane for ``Chart.filter_session``.
+
+        Rust acquires an independent source lease during session construction;
+        closing this viewport owner afterwards does not invalidate that lease.
+        """
+        if plane not in ("x", "y"):
+            raise ValueError("chunked column plane must be 'x' or 'y'")
+        return _ChunkedColumn(self, 0 if plane == "x" else 1)
 
     def read(
         self,

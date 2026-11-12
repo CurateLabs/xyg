@@ -142,7 +142,31 @@ def test_independent_boundary_oracle_and_index_storage_independence():
                 )
                 assert result["views"][0]["counts"] == expected
             index_bytes.append(result["index_bytes"])
+            # Four active cells, five channels: exact private u32 prefix,
+            # public u64 totals, and f64 extrema; no row-count-dependent mask.
+            assert result["index_bytes"] == 4 * 5 * 5 + 8 * 5 + 16 * 4
     assert len(set(index_bytes)) == 1  # No row words appear in the index allocation.
+
+
+@pytest.mark.parametrize("operation,version", [(1, 1), (16, 2)])
+def test_prefix_row_bound_refuses_before_source_publication(operation, version):
+    stream = (FIXTURES / "session.bin").read_bytes()
+    size = struct.unpack_from("<I", stream)[0]
+    source = stream[24 : 24 + size]
+    packet = bytearray(source)
+    struct.pack_into("<II", packet, 4, version, operation)
+    struct.pack_into("<Q", packet, 64, (1 << 32))
+    handle = _native._lib.xyg_filter_session_new(1 << 20)
+    try:
+        refused = decode_reply(execute_packet(handle, bytes(packet)))
+        assert refused["status"] == 2
+        assert refused["revision"] == 0 and refused["source_rows"] == 0
+        assert refused["index_bytes"] == 0
+        recovered = bytearray(source)
+        struct.pack_into("<Q", recovered, 16, 2)
+        assert decode_reply(execute_packet(handle, bytes(recovered)))["status"] == 0
+    finally:
+        _native._lib.xyg_filter_session_free(handle)
 
 
 def test_malformed_newer_headers_do_not_poison_native_protocol_watermark():

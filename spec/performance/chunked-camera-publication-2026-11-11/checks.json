@@ -1,0 +1,975 @@
+{
+  "bindings": {
+    "current": 3490,
+    "historical": 1650,
+    "parents": 48,
+    "path": "spec/performance/chunked-camera-publication-2026-11-11/current-bindings.json",
+    "sha256": "6eb421699b697faa301154bcd3165c26277744e6414c2c356aaa30a638d24b34"
+  },
+  "commands": [
+    {
+      "argv": [
+        "node",
+        "js/build.mjs"
+      ],
+      "exit": 0,
+      "log": "client-build.log"
+    },
+    {
+      "argv": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/test_benchmark_environment.py"
+      ],
+      "exit": 0,
+      "interpreters": [
+        "3.12",
+        "3.11"
+      ],
+      "logs": [
+        "benchmark312.log",
+        "benchmark311.log"
+      ],
+      "passed": 18
+    },
+    {
+      "argv": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "benchmarks/test_codspeed_*.py",
+        "--collect-only",
+        "-q"
+      ],
+      "collected": 163,
+      "exit": 0,
+      "log": "benchmark-collection.log",
+      "timingCredit": false
+    },
+    {
+      "argv": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/test_chunked_live.py"
+      ],
+      "exit": 0,
+      "interpreters": [
+        "3.12",
+        "3.11"
+      ],
+      "logs": [
+        "chunked-fixed.log",
+        "chunked-corrected311.log"
+      ],
+      "noSkips": true,
+      "passed": 8
+    },
+    {
+      "argv": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "target/task-tmp/pr1122-968-ci/test_chunked_parent_client.py",
+        "-k",
+        "gesture and True"
+      ],
+      "deselected": 6,
+      "exit": 1,
+      "failed": 2,
+      "log": "chunked-parent.log",
+      "scope": "Identical final assertions and current source/native, only served client is immutable parent"
+    },
+    {
+      "argv": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/test_chunked_lifecycle.py",
+        "tests/test_chunked_installed.py"
+      ],
+      "exit": 0,
+      "includes": "Fresh current wheel; actual installed Jupyter/kernel/anywidget with full-scan exact pixel, styled data and native identity oracles",
+      "log": "chunked-nearby.log",
+      "passed": 8
+    },
+    {
+      "argv": [
+        "node",
+        "--test",
+        "packages/xy-node/test/chunked-live.test.mjs",
+        "packages/xy-node/test/chunked-columns.test.mjs"
+      ],
+      "exit": 0,
+      "log": "node-chunked.log",
+      "passed": 18
+    },
+    {
+      "argv": [
+        "python3",
+        "scripts/verify_wasm_assets.py"
+      ],
+      "exit": 0,
+      "log": "assets.log"
+    },
+    {
+      "argv": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/test_graphforge_contract_corpus.py",
+        "-k",
+        "chunked_camera_publication or hash_bound_core_evidence_survives_windows_checkout"
+      ],
+      "deselected": 43,
+      "exit": 0,
+      "log": "core-final.log",
+      "passed": 2
+    },
+    {
+      "argv": [
+        "uv",
+        "run",
+        "--no-sync",
+        "pytest",
+        "-q",
+        "tests/test_chunked_required_ci.py",
+        "tests/test_view_state_client.py"
+      ],
+      "exit": 0,
+      "log": "nearby-contracts.log",
+      "passed": 27
+    },
+    {
+      "argv": [
+        "node",
+        "scripts/wasm_foundation_smoke.mjs"
+      ],
+      "exit": 1,
+      "failure": "Packaged density no-refinement missing-inline-artifact presentation failed; glLost/contextLost true before later journeys",
+      "fullPassCredit": false,
+      "log": "foundation.log"
+    }
+  ],
+  "compiledInputs": {
+    "changed": [],
+    "count": 324,
+    "path": "spec/performance/graph-native-force-owner-2026-11-11/compiled-inputs.json",
+    "sha256": "cce2b70f6ab2423d167ff33fb4fe745c7e1d03ddd8783d7c1b3e801148339e86"
+  },
+  "environment": {
+    "TMPDIR": "/var/tmp",
+    "browser": "Chromium149 / supplied executable",
+    "browserTest": "XYG_TEST_CHROMIUM=/home/ubuntu/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome; XY_REQUIRE_BROWSER=1",
+    "native": "explicit XYG_NATIVE_LIB=target/release/libxyg_core.so",
+    "node": "22.23.4",
+    "python311": "3.11.17",
+    "python312": "3.12.15",
+    "source": "explicit PYTHONPATH=checkout/python",
+    "sync": "uv --no-sync; Python3.11 browser supplemental playwright==1.61.0 in ephemeral uv overlay, no borrowed-environment synchronization"
+  },
+  "evidence": {
+    "assets.log": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef.gz",
+      "archiveBytes": 104,
+      "archiveSha256": "33aa519aeab114c0cbdbee6653025b46c7e960769b206c062ae1ad27727c2730",
+      "bytes": 88,
+      "sha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+      "source": "target/task-tmp/pr1122-968-ci/assets.log"
+    },
+    "benchmark-collection.log": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/8ea9d47fc6fb95e5399b06e774562151e7ae17b987146ab43817adc7933cc359.gz",
+      "archiveBytes": 1598,
+      "archiveSha256": "af230437d6d19e8a26ebd3ca7bb3c69cec5b50752a11a39636736eda3f3cfbff",
+      "bytes": 12031,
+      "sha256": "8ea9d47fc6fb95e5399b06e774562151e7ae17b987146ab43817adc7933cc359",
+      "source": "target/task-tmp/pr1122-968-ci/benchmark-collection.log"
+    },
+    "benchmark-counts.json": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/540203debd898d7f8633aeec12e8e3e8017ed5d5fb987d7532686cfd508a2641.gz",
+      "archiveBytes": 354,
+      "archiveSha256": "ad3fb65eacd1b4572d207cdaaceb298219e7faf3f66a2b4a8f2c5ff0007d1b3b",
+      "bytes": 810,
+      "sha256": "540203debd898d7f8633aeec12e8e3e8017ed5d5fb987d7532686cfd508a2641",
+      "source": "target/task-tmp/pr1122-968-ci/benchmark-counts.json"
+    },
+    "benchmark311.log": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/729498e5bb74791c449bd81daae53960afaea75639e4957a5f7dd233cc52234e.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "77f2d1566d67a2f2d15344a723735b38334bf0477db36a86d0f839f1b1263308",
+      "bytes": 99,
+      "sha256": "729498e5bb74791c449bd81daae53960afaea75639e4957a5f7dd233cc52234e",
+      "source": "target/task-tmp/pr1122-968-ci/benchmark311.log"
+    },
+    "benchmark312.log": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/13044bacc6307829903f6644f6acc927db932aea5040256690ae58aee2d982ed.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "057011a7fbe1c1a56d5921ff056f2a7a9408fe3b8ada1db56d0d123f67d7f36e",
+      "bytes": 99,
+      "sha256": "13044bacc6307829903f6644f6acc927db932aea5040256690ae58aee2d982ed",
+      "source": "target/task-tmp/pr1122-968-ci/benchmark312.log"
+    },
+    "build-receipt.py": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/33de6eb58d86025d2e17132c91e7b0131000b919e77c3463cb0a0aa3b06ec3c4.gz",
+      "archiveBytes": 3127,
+      "archiveSha256": "3b1b68dcc59408bd1fc0942035536238e3e0166db98037960a66ab1902086c03",
+      "bytes": 7409,
+      "sha256": "33de6eb58d86025d2e17132c91e7b0131000b919e77c3463cb0a0aa3b06ec3c4",
+      "source": "target/task-tmp/pr1122-968-ci/build-receipt.py"
+    },
+    "chunked-corrected311.log": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/e665dbfd3114f2b3f0fa742bf6db2c9639f5eca90586e1cd4d74bf388dd5f3a4.gz",
+      "archiveBytes": 78,
+      "archiveSha256": "4faaf03ed1fe3d1f19392c8e646be3140580f26f15a263eddc6ed2538f0f7c98",
+      "bytes": 129,
+      "sha256": "e665dbfd3114f2b3f0fa742bf6db2c9639f5eca90586e1cd4d74bf388dd5f3a4",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-corrected311.log"
+    },
+    "chunked-corrected311/test_public_widget_browser_ges0/disabled.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/e045e00329a5065492636c39effc7e8e7fc0929ee35e86f036bfb7d5f52ca8c7.gz",
+      "archiveBytes": 10069,
+      "archiveSha256": "06f87cffec20e920961bf338a1cb2250b7cb7eb3f513fc5c298162ff4e8cb342",
+      "bytes": 12541,
+      "sha256": "e045e00329a5065492636c39effc7e8e7fc0929ee35e86f036bfb7d5f52ca8c7",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-corrected311/test_public_widget_browser_ges0/disabled.png"
+    },
+    "chunked-corrected311/test_public_widget_browser_ges0/refined.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/42a23a76b1606965bd23a83d08256368831c404dc8e5c31a42533a1a3153b375.gz",
+      "archiveBytes": 6954,
+      "archiveSha256": "35eab42a364332bbc895dc78d65f48eae009280c6b6466b1f7d306ca33b976d4",
+      "bytes": 9581,
+      "sha256": "42a23a76b1606965bd23a83d08256368831c404dc8e5c31a42533a1a3153b375",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-corrected311/test_public_widget_browser_ges0/refined.png"
+    },
+    "chunked-corrected311/test_public_widget_browser_ges0/report.json": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/6610822930bfd493095595856ed97ceecfa789069c512b02dc27724257896e45.gz",
+      "archiveBytes": 6379,
+      "archiveSha256": "d016daffe2d6f1ab17bd97fd1ea105db5fa17ef50eb6260340b4f7dbe122a446",
+      "bytes": 53897,
+      "sha256": "6610822930bfd493095595856ed97ceecfa789069c512b02dc27724257896e45",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-corrected311/test_public_widget_browser_ges0/report.json"
+    },
+    "chunked-corrected311/test_public_widget_browser_ges1/disabled.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/412b4cdffee4d0c02342bffd91fb0996e924f7fd7b49e241b43e1b5b16324e90.gz",
+      "archiveBytes": 7969,
+      "archiveSha256": "03566d62f4b4884b21ac9a917aa7076f07b8cea3cf13b1d8b2ecaf7fcce207f8",
+      "bytes": 10692,
+      "sha256": "412b4cdffee4d0c02342bffd91fb0996e924f7fd7b49e241b43e1b5b16324e90",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-corrected311/test_public_widget_browser_ges1/disabled.png"
+    },
+    "chunked-corrected311/test_public_widget_browser_ges1/refined.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/f0a46e542e54de40802194f9553ee39066fab6c416e79f376bb09df6e1288dc4.gz",
+      "archiveBytes": 6338,
+      "archiveSha256": "fcffa290502206b7497004ab732ab9d98b0e2291872130e6385fd2c07bfbd4b3",
+      "bytes": 8949,
+      "sha256": "f0a46e542e54de40802194f9553ee39066fab6c416e79f376bb09df6e1288dc4",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-corrected311/test_public_widget_browser_ges1/refined.png"
+    },
+    "chunked-corrected311/test_public_widget_browser_ges1/report.json": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/73b710b22fb7f5feaab17b2334f3b5c2f2f03159fc1d989823ca5fa630c962b9.gz",
+      "archiveBytes": 6365,
+      "archiveSha256": "2417f23afb76fa521c22cebc67b542fca4f086e8302c44a0fa6e58cc8f145f7a",
+      "bytes": 53884,
+      "sha256": "73b710b22fb7f5feaab17b2334f3b5c2f2f03159fc1d989823ca5fa630c962b9",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-corrected311/test_public_widget_browser_ges1/report.json"
+    },
+    "chunked-corrected311/test_public_widget_browser_ges2/disabled.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/e045e00329a5065492636c39effc7e8e7fc0929ee35e86f036bfb7d5f52ca8c7.gz",
+      "archiveBytes": 10069,
+      "archiveSha256": "06f87cffec20e920961bf338a1cb2250b7cb7eb3f513fc5c298162ff4e8cb342",
+      "bytes": 12541,
+      "sha256": "e045e00329a5065492636c39effc7e8e7fc0929ee35e86f036bfb7d5f52ca8c7",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-corrected311/test_public_widget_browser_ges2/disabled.png"
+    },
+    "chunked-corrected311/test_public_widget_browser_ges2/refined.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/acb1d454cfd8c0c0699a1e6d11fc3530799958a6c3aff875d2992e68cf1f9d8a.gz",
+      "archiveBytes": 8924,
+      "archiveSha256": "3dc0fdef67866ab156b09d6b20d98e8839304222442cf80373cd38be3c81caa0",
+      "bytes": 11346,
+      "sha256": "acb1d454cfd8c0c0699a1e6d11fc3530799958a6c3aff875d2992e68cf1f9d8a",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-corrected311/test_public_widget_browser_ges2/refined.png"
+    },
+    "chunked-corrected311/test_public_widget_browser_ges2/report.json": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/35a32c6f8fc82ffb3e2c727b4e66fb52b34d0fff764e4c4f092b1df12c2076ff.gz",
+      "archiveBytes": 6731,
+      "archiveSha256": "d0b068b3462f95849f7b52921b7a69a5a9744af34ed6a97eba2f5621f3b2e8f3",
+      "bytes": 54556,
+      "sha256": "35a32c6f8fc82ffb3e2c727b4e66fb52b34d0fff764e4c4f092b1df12c2076ff",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-corrected311/test_public_widget_browser_ges2/report.json"
+    },
+    "chunked-corrected311/test_public_widget_browser_ges3/disabled.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/412b4cdffee4d0c02342bffd91fb0996e924f7fd7b49e241b43e1b5b16324e90.gz",
+      "archiveBytes": 7969,
+      "archiveSha256": "03566d62f4b4884b21ac9a917aa7076f07b8cea3cf13b1d8b2ecaf7fcce207f8",
+      "bytes": 10692,
+      "sha256": "412b4cdffee4d0c02342bffd91fb0996e924f7fd7b49e241b43e1b5b16324e90",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-corrected311/test_public_widget_browser_ges3/disabled.png"
+    },
+    "chunked-corrected311/test_public_widget_browser_ges3/refined.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/f0a46e542e54de40802194f9553ee39066fab6c416e79f376bb09df6e1288dc4.gz",
+      "archiveBytes": 6338,
+      "archiveSha256": "fcffa290502206b7497004ab732ab9d98b0e2291872130e6385fd2c07bfbd4b3",
+      "bytes": 8949,
+      "sha256": "f0a46e542e54de40802194f9553ee39066fab6c416e79f376bb09df6e1288dc4",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-corrected311/test_public_widget_browser_ges3/refined.png"
+    },
+    "chunked-corrected311/test_public_widget_browser_ges3/report.json": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/9148ab343f268138ab258dcf29a9573ea2cfeb6044c9642edce0200c69a82d48.gz",
+      "archiveBytes": 6714,
+      "archiveSha256": "1bbaddded444ba5e90a8802ac604a3d405daf09e765a368f48df7d73b1cace4d",
+      "bytes": 54544,
+      "sha256": "9148ab343f268138ab258dcf29a9573ea2cfeb6044c9642edce0200c69a82d48",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-corrected311/test_public_widget_browser_ges3/report.json"
+    },
+    "chunked-corrected311/test_public_widget_browser_gescurrent/disabled.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/412b4cdffee4d0c02342bffd91fb0996e924f7fd7b49e241b43e1b5b16324e90.gz",
+      "archiveBytes": 7969,
+      "archiveSha256": "03566d62f4b4884b21ac9a917aa7076f07b8cea3cf13b1d8b2ecaf7fcce207f8",
+      "bytes": 10692,
+      "sha256": "412b4cdffee4d0c02342bffd91fb0996e924f7fd7b49e241b43e1b5b16324e90",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-corrected311/test_public_widget_browser_gescurrent/disabled.png"
+    },
+    "chunked-corrected311/test_public_widget_browser_gescurrent/refined.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/f0a46e542e54de40802194f9553ee39066fab6c416e79f376bb09df6e1288dc4.gz",
+      "archiveBytes": 6338,
+      "archiveSha256": "fcffa290502206b7497004ab732ab9d98b0e2291872130e6385fd2c07bfbd4b3",
+      "bytes": 8949,
+      "sha256": "f0a46e542e54de40802194f9553ee39066fab6c416e79f376bb09df6e1288dc4",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-corrected311/test_public_widget_browser_gescurrent/refined.png"
+    },
+    "chunked-corrected311/test_public_widget_browser_gescurrent/report.json": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/9148ab343f268138ab258dcf29a9573ea2cfeb6044c9642edce0200c69a82d48.gz",
+      "archiveBytes": 6714,
+      "archiveSha256": "1bbaddded444ba5e90a8802ac604a3d405daf09e765a368f48df7d73b1cace4d",
+      "bytes": 54544,
+      "sha256": "9148ab343f268138ab258dcf29a9573ea2cfeb6044c9642edce0200c69a82d48",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-corrected311/test_public_widget_browser_gescurrent/report.json"
+    },
+    "chunked-fixed.log": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/500649f19cf79b7901dab63f582302ad7ca833165e538140b5ac0b331f82a850.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "ddbc5d0403d3e7422ffa91b14514f8879a2c7b692d47a0a2038deef49a247c21",
+      "bytes": 99,
+      "sha256": "500649f19cf79b7901dab63f582302ad7ca833165e538140b5ac0b331f82a850",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-fixed.log"
+    },
+    "chunked-fixed/test_public_widget_browser_ges0/disabled.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/e045e00329a5065492636c39effc7e8e7fc0929ee35e86f036bfb7d5f52ca8c7.gz",
+      "archiveBytes": 10069,
+      "archiveSha256": "06f87cffec20e920961bf338a1cb2250b7cb7eb3f513fc5c298162ff4e8cb342",
+      "bytes": 12541,
+      "sha256": "e045e00329a5065492636c39effc7e8e7fc0929ee35e86f036bfb7d5f52ca8c7",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-fixed/test_public_widget_browser_ges0/disabled.png"
+    },
+    "chunked-fixed/test_public_widget_browser_ges0/refined.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/acb1d454cfd8c0c0699a1e6d11fc3530799958a6c3aff875d2992e68cf1f9d8a.gz",
+      "archiveBytes": 8924,
+      "archiveSha256": "3dc0fdef67866ab156b09d6b20d98e8839304222442cf80373cd38be3c81caa0",
+      "bytes": 11346,
+      "sha256": "acb1d454cfd8c0c0699a1e6d11fc3530799958a6c3aff875d2992e68cf1f9d8a",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-fixed/test_public_widget_browser_ges0/refined.png"
+    },
+    "chunked-fixed/test_public_widget_browser_ges0/report.json": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/6610822930bfd493095595856ed97ceecfa789069c512b02dc27724257896e45.gz",
+      "archiveBytes": 6379,
+      "archiveSha256": "d016daffe2d6f1ab17bd97fd1ea105db5fa17ef50eb6260340b4f7dbe122a446",
+      "bytes": 53897,
+      "sha256": "6610822930bfd493095595856ed97ceecfa789069c512b02dc27724257896e45",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-fixed/test_public_widget_browser_ges0/report.json"
+    },
+    "chunked-fixed/test_public_widget_browser_ges1/disabled.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/412b4cdffee4d0c02342bffd91fb0996e924f7fd7b49e241b43e1b5b16324e90.gz",
+      "archiveBytes": 7969,
+      "archiveSha256": "03566d62f4b4884b21ac9a917aa7076f07b8cea3cf13b1d8b2ecaf7fcce207f8",
+      "bytes": 10692,
+      "sha256": "412b4cdffee4d0c02342bffd91fb0996e924f7fd7b49e241b43e1b5b16324e90",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-fixed/test_public_widget_browser_ges1/disabled.png"
+    },
+    "chunked-fixed/test_public_widget_browser_ges1/refined.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/f0a46e542e54de40802194f9553ee39066fab6c416e79f376bb09df6e1288dc4.gz",
+      "archiveBytes": 6338,
+      "archiveSha256": "fcffa290502206b7497004ab732ab9d98b0e2291872130e6385fd2c07bfbd4b3",
+      "bytes": 8949,
+      "sha256": "f0a46e542e54de40802194f9553ee39066fab6c416e79f376bb09df6e1288dc4",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-fixed/test_public_widget_browser_ges1/refined.png"
+    },
+    "chunked-fixed/test_public_widget_browser_ges1/report.json": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/73b710b22fb7f5feaab17b2334f3b5c2f2f03159fc1d989823ca5fa630c962b9.gz",
+      "archiveBytes": 6365,
+      "archiveSha256": "2417f23afb76fa521c22cebc67b542fca4f086e8302c44a0fa6e58cc8f145f7a",
+      "bytes": 53884,
+      "sha256": "73b710b22fb7f5feaab17b2334f3b5c2f2f03159fc1d989823ca5fa630c962b9",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-fixed/test_public_widget_browser_ges1/report.json"
+    },
+    "chunked-fixed/test_public_widget_browser_ges2/disabled.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/e045e00329a5065492636c39effc7e8e7fc0929ee35e86f036bfb7d5f52ca8c7.gz",
+      "archiveBytes": 10069,
+      "archiveSha256": "06f87cffec20e920961bf338a1cb2250b7cb7eb3f513fc5c298162ff4e8cb342",
+      "bytes": 12541,
+      "sha256": "e045e00329a5065492636c39effc7e8e7fc0929ee35e86f036bfb7d5f52ca8c7",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-fixed/test_public_widget_browser_ges2/disabled.png"
+    },
+    "chunked-fixed/test_public_widget_browser_ges2/refined.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/acb1d454cfd8c0c0699a1e6d11fc3530799958a6c3aff875d2992e68cf1f9d8a.gz",
+      "archiveBytes": 8924,
+      "archiveSha256": "3dc0fdef67866ab156b09d6b20d98e8839304222442cf80373cd38be3c81caa0",
+      "bytes": 11346,
+      "sha256": "acb1d454cfd8c0c0699a1e6d11fc3530799958a6c3aff875d2992e68cf1f9d8a",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-fixed/test_public_widget_browser_ges2/refined.png"
+    },
+    "chunked-fixed/test_public_widget_browser_ges2/report.json": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/204064c69d543ff2e746a3657352651b0e54f0c454120689bd6a42e6587a1114.gz",
+      "archiveBytes": 6730,
+      "archiveSha256": "5b226438d3059b20536b53f2c870982b9e525948bb724c6436d16ed3803693e3",
+      "bytes": 54555,
+      "sha256": "204064c69d543ff2e746a3657352651b0e54f0c454120689bd6a42e6587a1114",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-fixed/test_public_widget_browser_ges2/report.json"
+    },
+    "chunked-fixed/test_public_widget_browser_ges3/disabled.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/412b4cdffee4d0c02342bffd91fb0996e924f7fd7b49e241b43e1b5b16324e90.gz",
+      "archiveBytes": 7969,
+      "archiveSha256": "03566d62f4b4884b21ac9a917aa7076f07b8cea3cf13b1d8b2ecaf7fcce207f8",
+      "bytes": 10692,
+      "sha256": "412b4cdffee4d0c02342bffd91fb0996e924f7fd7b49e241b43e1b5b16324e90",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-fixed/test_public_widget_browser_ges3/disabled.png"
+    },
+    "chunked-fixed/test_public_widget_browser_ges3/refined.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/c482dcb4981b73dd9a7efe95e5b63c25c812a52891dcd369356f2f479357f2fc.gz",
+      "archiveBytes": 8448,
+      "archiveSha256": "a0505d547bea20f74c8904037a42e2f0f632eee3c11b50ccc6f8f191febc61d7",
+      "bytes": 10824,
+      "sha256": "c482dcb4981b73dd9a7efe95e5b63c25c812a52891dcd369356f2f479357f2fc",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-fixed/test_public_widget_browser_ges3/refined.png"
+    },
+    "chunked-fixed/test_public_widget_browser_ges3/report.json": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/6c45e05d850b18d31f634a1c4b7d5ea848c4712fc64afaf6d342d8ac7b5c3d2b.gz",
+      "archiveBytes": 6713,
+      "archiveSha256": "5108ca79d23599d0410f3ccf08792fe842247afec980936b3faadcb62853bee6",
+      "bytes": 54544,
+      "sha256": "6c45e05d850b18d31f634a1c4b7d5ea848c4712fc64afaf6d342d8ac7b5c3d2b",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-fixed/test_public_widget_browser_ges3/report.json"
+    },
+    "chunked-fixed/test_public_widget_browser_gescurrent/disabled.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/412b4cdffee4d0c02342bffd91fb0996e924f7fd7b49e241b43e1b5b16324e90.gz",
+      "archiveBytes": 7969,
+      "archiveSha256": "03566d62f4b4884b21ac9a917aa7076f07b8cea3cf13b1d8b2ecaf7fcce207f8",
+      "bytes": 10692,
+      "sha256": "412b4cdffee4d0c02342bffd91fb0996e924f7fd7b49e241b43e1b5b16324e90",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-fixed/test_public_widget_browser_gescurrent/disabled.png"
+    },
+    "chunked-fixed/test_public_widget_browser_gescurrent/refined.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/c482dcb4981b73dd9a7efe95e5b63c25c812a52891dcd369356f2f479357f2fc.gz",
+      "archiveBytes": 8448,
+      "archiveSha256": "a0505d547bea20f74c8904037a42e2f0f632eee3c11b50ccc6f8f191febc61d7",
+      "bytes": 10824,
+      "sha256": "c482dcb4981b73dd9a7efe95e5b63c25c812a52891dcd369356f2f479357f2fc",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-fixed/test_public_widget_browser_gescurrent/refined.png"
+    },
+    "chunked-fixed/test_public_widget_browser_gescurrent/report.json": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/6c45e05d850b18d31f634a1c4b7d5ea848c4712fc64afaf6d342d8ac7b5c3d2b.gz",
+      "archiveBytes": 6713,
+      "archiveSha256": "5108ca79d23599d0410f3ccf08792fe842247afec980936b3faadcb62853bee6",
+      "bytes": 54544,
+      "sha256": "6c45e05d850b18d31f634a1c4b7d5ea848c4712fc64afaf6d342d8ac7b5c3d2b",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-fixed/test_public_widget_browser_gescurrent/report.json"
+    },
+    "chunked-fixed311.log": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/861a4ff7effb56cc5ff628e8496d066b0aee00026a638b5b63d68d33ef6dd54e.gz",
+      "archiveBytes": 754,
+      "archiveSha256": "5c80b6391d02c3393adb910f65228b05f2960af108319f213b1fcf96478c4fe7",
+      "bytes": 4982,
+      "sha256": "861a4ff7effb56cc5ff628e8496d066b0aee00026a638b5b63d68d33ef6dd54e",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-fixed311.log"
+    },
+    "chunked-nearby.log": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/606636237bbdbfcfa357d01da81c947ea7f0bcaf04a5ab87e3d3f3106ebe0bb5.gz",
+      "archiveBytes": 52,
+      "archiveSha256": "678cd2b38f4eacb63a8238581db2694e24c3b5a4b600e5972532913b1c3d37ec",
+      "bytes": 99,
+      "sha256": "606636237bbdbfcfa357d01da81c947ea7f0bcaf04a5ab87e3d3f3106ebe0bb5",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby.log"
+    },
+    "chunked-nearby/test_installed_kernel_chunked_0/failure-oracle-paint.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4.gz",
+      "archiveBytes": 21847,
+      "archiveSha256": "52e2127026d70675d7075fce1ca7db38a8e310e296c2c49bc25c0180335d2350",
+      "bytes": 23856,
+      "sha256": "04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby/test_installed_kernel_chunked_0/failure-oracle-paint.png"
+    },
+    "chunked-nearby/test_installed_kernel_chunked_0/failure-oracle.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/d52a429dd9caae1e8306b805d85ffc76ae3eb429279029a620d8bd39fe39feb9.gz",
+      "archiveBytes": 14796,
+      "archiveSha256": "43edfc56ef22066a0c97f2dc32ad7589c2fadbda47ab9425b740748437cd995f",
+      "bytes": 16493,
+      "sha256": "d52a429dd9caae1e8306b805d85ffc76ae3eb429279029a620d8bd39fe39feb9",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby/test_installed_kernel_chunked_0/failure-oracle.png"
+    },
+    "chunked-nearby/test_installed_kernel_chunked_0/failure-retained-paint.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4.gz",
+      "archiveBytes": 21847,
+      "archiveSha256": "52e2127026d70675d7075fce1ca7db38a8e310e296c2c49bc25c0180335d2350",
+      "bytes": 23856,
+      "sha256": "04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby/test_installed_kernel_chunked_0/failure-retained-paint.png"
+    },
+    "chunked-nearby/test_installed_kernel_chunked_0/failure-retained.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/d52a429dd9caae1e8306b805d85ffc76ae3eb429279029a620d8bd39fe39feb9.gz",
+      "archiveBytes": 14796,
+      "archiveSha256": "43edfc56ef22066a0c97f2dc32ad7589c2fadbda47ab9425b740748437cd995f",
+      "bytes": 16493,
+      "sha256": "d52a429dd9caae1e8306b805d85ffc76ae3eb429279029a620d8bd39fe39feb9",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby/test_installed_kernel_chunked_0/failure-retained.png"
+    },
+    "chunked-nearby/test_installed_kernel_chunked_0/oracle-paint.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/db414bcd039f3b8121a7112ee9404905ddd15ffb7b5ed6505eada185cd9e158a.gz",
+      "archiveBytes": 51835,
+      "archiveSha256": "172988c520d00ce8962d163eeba22b483716c41bc441f9f0e3245c9b58c59627",
+      "bytes": 52425,
+      "sha256": "db414bcd039f3b8121a7112ee9404905ddd15ffb7b5ed6505eada185cd9e158a",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby/test_installed_kernel_chunked_0/oracle-paint.png"
+    },
+    "chunked-nearby/test_installed_kernel_chunked_0/oracle.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/2a3b2c7400b15c5eb7b7507c10cdfbd3bdaebc54cf0a89094c63c7f9aeaa2979.gz",
+      "archiveBytes": 34220,
+      "archiveSha256": "49eb874b0c360de0391e51e657c9acf49b737f040b08c337a7e844c9d1bd30d5",
+      "bytes": 34516,
+      "sha256": "2a3b2c7400b15c5eb7b7507c10cdfbd3bdaebc54cf0a89094c63c7f9aeaa2979",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby/test_installed_kernel_chunked_0/oracle.png"
+    },
+    "chunked-nearby/test_installed_kernel_chunked_0/overview-control-paint.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/a292278a1f1c907748ea851e8389135dc1fabc960904186c910f6eb2ef09fa53.gz",
+      "archiveBytes": 11974,
+      "archiveSha256": "71b7411c3d2166e994c12e35b160c6c83f5991e4f32ca7e85d49d9fa98ee151e",
+      "bytes": 12820,
+      "sha256": "a292278a1f1c907748ea851e8389135dc1fabc960904186c910f6eb2ef09fa53",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby/test_installed_kernel_chunked_0/overview-control-paint.png"
+    },
+    "chunked-nearby/test_installed_kernel_chunked_0/overview-control.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/490fe80aee85db28b4bec06ce9b3836bee851678ce5526fbdab22fc507d57024.gz",
+      "archiveBytes": 11141,
+      "archiveSha256": "602024c8c8b5365194fb75256033948effb30b32b848d03dac760a12383ccac5",
+      "bytes": 11276,
+      "sha256": "490fe80aee85db28b4bec06ce9b3836bee851678ce5526fbdab22fc507d57024",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby/test_installed_kernel_chunked_0/overview-control.png"
+    },
+    "chunked-nearby/test_installed_kernel_chunked_0/refined-paint.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/db414bcd039f3b8121a7112ee9404905ddd15ffb7b5ed6505eada185cd9e158a.gz",
+      "archiveBytes": 51835,
+      "archiveSha256": "172988c520d00ce8962d163eeba22b483716c41bc441f9f0e3245c9b58c59627",
+      "bytes": 52425,
+      "sha256": "db414bcd039f3b8121a7112ee9404905ddd15ffb7b5ed6505eada185cd9e158a",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby/test_installed_kernel_chunked_0/refined-paint.png"
+    },
+    "chunked-nearby/test_installed_kernel_chunked_0/refined.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/2a3b2c7400b15c5eb7b7507c10cdfbd3bdaebc54cf0a89094c63c7f9aeaa2979.gz",
+      "archiveBytes": 34220,
+      "archiveSha256": "49eb874b0c360de0391e51e657c9acf49b737f040b08c337a7e844c9d1bd30d5",
+      "bytes": 34516,
+      "sha256": "2a3b2c7400b15c5eb7b7507c10cdfbd3bdaebc54cf0a89094c63c7f9aeaa2979",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby/test_installed_kernel_chunked_0/refined.png"
+    },
+    "chunked-nearby/test_installed_kernel_chunked_0/remounted-paint.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4.gz",
+      "archiveBytes": 21847,
+      "archiveSha256": "52e2127026d70675d7075fce1ca7db38a8e310e296c2c49bc25c0180335d2350",
+      "bytes": 23856,
+      "sha256": "04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby/test_installed_kernel_chunked_0/remounted-paint.png"
+    },
+    "chunked-nearby/test_installed_kernel_chunked_0/report.json": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/57f5ad2f79308f08b51350ef8b51711037b7a85902d8c734f40e4a2410e99bf5.gz",
+      "archiveBytes": 11268,
+      "archiveSha256": "eb4f3cb94107ad69a7a9ff19d77a4df0bd0b715c86f6926146efb45693c92516",
+      "bytes": 63972,
+      "sha256": "57f5ad2f79308f08b51350ef8b51711037b7a85902d8c734f40e4a2410e99bf5",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby/test_installed_kernel_chunked_0/report.json"
+    },
+    "chunked-nearby/test_installed_kernel_chunked_current/failure-oracle-paint.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4.gz",
+      "archiveBytes": 21847,
+      "archiveSha256": "52e2127026d70675d7075fce1ca7db38a8e310e296c2c49bc25c0180335d2350",
+      "bytes": 23856,
+      "sha256": "04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby/test_installed_kernel_chunked_current/failure-oracle-paint.png"
+    },
+    "chunked-nearby/test_installed_kernel_chunked_current/failure-oracle.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/d52a429dd9caae1e8306b805d85ffc76ae3eb429279029a620d8bd39fe39feb9.gz",
+      "archiveBytes": 14796,
+      "archiveSha256": "43edfc56ef22066a0c97f2dc32ad7589c2fadbda47ab9425b740748437cd995f",
+      "bytes": 16493,
+      "sha256": "d52a429dd9caae1e8306b805d85ffc76ae3eb429279029a620d8bd39fe39feb9",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby/test_installed_kernel_chunked_current/failure-oracle.png"
+    },
+    "chunked-nearby/test_installed_kernel_chunked_current/failure-retained-paint.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4.gz",
+      "archiveBytes": 21847,
+      "archiveSha256": "52e2127026d70675d7075fce1ca7db38a8e310e296c2c49bc25c0180335d2350",
+      "bytes": 23856,
+      "sha256": "04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby/test_installed_kernel_chunked_current/failure-retained-paint.png"
+    },
+    "chunked-nearby/test_installed_kernel_chunked_current/failure-retained.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/d52a429dd9caae1e8306b805d85ffc76ae3eb429279029a620d8bd39fe39feb9.gz",
+      "archiveBytes": 14796,
+      "archiveSha256": "43edfc56ef22066a0c97f2dc32ad7589c2fadbda47ab9425b740748437cd995f",
+      "bytes": 16493,
+      "sha256": "d52a429dd9caae1e8306b805d85ffc76ae3eb429279029a620d8bd39fe39feb9",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby/test_installed_kernel_chunked_current/failure-retained.png"
+    },
+    "chunked-nearby/test_installed_kernel_chunked_current/oracle-paint.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/db414bcd039f3b8121a7112ee9404905ddd15ffb7b5ed6505eada185cd9e158a.gz",
+      "archiveBytes": 51835,
+      "archiveSha256": "172988c520d00ce8962d163eeba22b483716c41bc441f9f0e3245c9b58c59627",
+      "bytes": 52425,
+      "sha256": "db414bcd039f3b8121a7112ee9404905ddd15ffb7b5ed6505eada185cd9e158a",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby/test_installed_kernel_chunked_current/oracle-paint.png"
+    },
+    "chunked-nearby/test_installed_kernel_chunked_current/oracle.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/2a3b2c7400b15c5eb7b7507c10cdfbd3bdaebc54cf0a89094c63c7f9aeaa2979.gz",
+      "archiveBytes": 34220,
+      "archiveSha256": "49eb874b0c360de0391e51e657c9acf49b737f040b08c337a7e844c9d1bd30d5",
+      "bytes": 34516,
+      "sha256": "2a3b2c7400b15c5eb7b7507c10cdfbd3bdaebc54cf0a89094c63c7f9aeaa2979",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby/test_installed_kernel_chunked_current/oracle.png"
+    },
+    "chunked-nearby/test_installed_kernel_chunked_current/overview-control-paint.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/a292278a1f1c907748ea851e8389135dc1fabc960904186c910f6eb2ef09fa53.gz",
+      "archiveBytes": 11974,
+      "archiveSha256": "71b7411c3d2166e994c12e35b160c6c83f5991e4f32ca7e85d49d9fa98ee151e",
+      "bytes": 12820,
+      "sha256": "a292278a1f1c907748ea851e8389135dc1fabc960904186c910f6eb2ef09fa53",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby/test_installed_kernel_chunked_current/overview-control-paint.png"
+    },
+    "chunked-nearby/test_installed_kernel_chunked_current/overview-control.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/490fe80aee85db28b4bec06ce9b3836bee851678ce5526fbdab22fc507d57024.gz",
+      "archiveBytes": 11141,
+      "archiveSha256": "602024c8c8b5365194fb75256033948effb30b32b848d03dac760a12383ccac5",
+      "bytes": 11276,
+      "sha256": "490fe80aee85db28b4bec06ce9b3836bee851678ce5526fbdab22fc507d57024",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby/test_installed_kernel_chunked_current/overview-control.png"
+    },
+    "chunked-nearby/test_installed_kernel_chunked_current/refined-paint.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/db414bcd039f3b8121a7112ee9404905ddd15ffb7b5ed6505eada185cd9e158a.gz",
+      "archiveBytes": 51835,
+      "archiveSha256": "172988c520d00ce8962d163eeba22b483716c41bc441f9f0e3245c9b58c59627",
+      "bytes": 52425,
+      "sha256": "db414bcd039f3b8121a7112ee9404905ddd15ffb7b5ed6505eada185cd9e158a",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby/test_installed_kernel_chunked_current/refined-paint.png"
+    },
+    "chunked-nearby/test_installed_kernel_chunked_current/refined.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/2a3b2c7400b15c5eb7b7507c10cdfbd3bdaebc54cf0a89094c63c7f9aeaa2979.gz",
+      "archiveBytes": 34220,
+      "archiveSha256": "49eb874b0c360de0391e51e657c9acf49b737f040b08c337a7e844c9d1bd30d5",
+      "bytes": 34516,
+      "sha256": "2a3b2c7400b15c5eb7b7507c10cdfbd3bdaebc54cf0a89094c63c7f9aeaa2979",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby/test_installed_kernel_chunked_current/refined.png"
+    },
+    "chunked-nearby/test_installed_kernel_chunked_current/remounted-paint.png": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4.gz",
+      "archiveBytes": 21847,
+      "archiveSha256": "52e2127026d70675d7075fce1ca7db38a8e310e296c2c49bc25c0180335d2350",
+      "bytes": 23856,
+      "sha256": "04f5a60705588ae24a7a687cc7b8d8fe8095305901a982e81dc8c3550f7772b4",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby/test_installed_kernel_chunked_current/remounted-paint.png"
+    },
+    "chunked-nearby/test_installed_kernel_chunked_current/report.json": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/57f5ad2f79308f08b51350ef8b51711037b7a85902d8c734f40e4a2410e99bf5.gz",
+      "archiveBytes": 11268,
+      "archiveSha256": "eb4f3cb94107ad69a7a9ff19d77a4df0bd0b715c86f6926146efb45693c92516",
+      "bytes": 63972,
+      "sha256": "57f5ad2f79308f08b51350ef8b51711037b7a85902d8c734f40e4a2410e99bf5",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-nearby/test_installed_kernel_chunked_current/report.json"
+    },
+    "chunked-parent.log": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/df7ced1e5a3eed38fc26f0b7ac99fb5d8390095c8f9816231ab9077d1b7cddfd.gz",
+      "archiveBytes": 5685,
+      "archiveSha256": "e2281aea95725ee49a12b287475a6db2eca240dd21809d0b2d197ed5e4da6a63",
+      "bytes": 57508,
+      "sha256": "df7ced1e5a3eed38fc26f0b7ac99fb5d8390095c8f9816231ab9077d1b7cddfd",
+      "source": "target/task-tmp/pr1122-968-ci/chunked-parent.log"
+    },
+    "client-build.log": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f.gz",
+      "archiveBytes": 1056,
+      "archiveSha256": "cf014f33d433e6f1848a859d2cc842c062785c423688a7eb5d45bca42b37a09c",
+      "bytes": 5448,
+      "sha256": "e3596f8963834620068a32e147df8772c93a5a2da6f592b8e994cd832ad33d7f",
+      "source": "target/task-tmp/pr1122-968-ci/client-build.log"
+    },
+    "core-final.log": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/248c013f0a746eae4ad859fb8f8b9805f242ab1cc8bfc2ca5049965cce09d9e8.gz",
+      "archiveBytes": 66,
+      "archiveSha256": "d7d7eb02c019562c0162d8e854b5286f53a9e5a2184c2ebfb3b865ddd49c46e8",
+      "bytes": 114,
+      "sha256": "248c013f0a746eae4ad859fb8f8b9805f242ab1cc8bfc2ca5049965cce09d9e8",
+      "source": "target/task-tmp/pr1122-968-ci/core-final.log"
+    },
+    "diagnosis/ci-row-predicate.json": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/3f7cab06ca217e105215bed9ffac810b8cf4ef886ac5699e240a0bea2566a3f7.gz",
+      "archiveBytes": 17357,
+      "archiveSha256": "c80105361ec8fa2cefd85f14c4f3a7057252d5eac7bebeb356fcdca9b272d5b1",
+      "bytes": 103782,
+      "sha256": "3f7cab06ca217e105215bed9ffac810b8cf4ef886ac5699e240a0bea2566a3f7",
+      "source": "/var/tmp/xyg-chunked-ci-diagnosis/ci-row-predicate.json"
+    },
+    "diagnosis/controlled-old-paint.log": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/84fc0c15e6c1a08bd181b48030442678fbfec8366f37754dee9d6a050fe257cf.gz",
+      "archiveBytes": 580,
+      "archiveSha256": "930ccc3e62b961b8f704d73592fc6d47213a53f2ec39e490f3943d131d054503",
+      "bytes": 1556,
+      "sha256": "84fc0c15e6c1a08bd181b48030442678fbfec8366f37754dee9d6a050fe257cf",
+      "source": "/var/tmp/xyg-chunked-ci-diagnosis/controlled-old-paint.log"
+    },
+    "diagnosis/rejection-control.log": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/8b8ccd7b4ca0cd0bddadc352491d5dbc15aec8de0fd533cc97cd301e9ee5853c.gz",
+      "archiveBytes": 144,
+      "archiveSha256": "443ba5fc0dcb74ed5a881fd7d6e713bd0122293798c8389ea9db0da69aff539b",
+      "bytes": 139,
+      "sha256": "8b8ccd7b4ca0cd0bddadc352491d5dbc15aec8de0fd533cc97cd301e9ee5853c",
+      "source": "/var/tmp/xyg-chunked-ci-diagnosis/rejection-control.log"
+    },
+    "diagnosis/report.md": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/e31b498fce6c9f67435969ae113f429e3d7227bf9c9d3c1c51ca3dbbaf56438d.gz",
+      "archiveBytes": 3541,
+      "archiveSha256": "451b4e753a9c8393f415e88adec658019aee52838471e200f1a03ae3f65017fa",
+      "bytes": 7770,
+      "sha256": "e31b498fce6c9f67435969ae113f429e3d7227bf9c9d3c1c51ca3dbbaf56438d",
+      "source": "/var/tmp/xyg-chunked-ci-diagnosis/report.md"
+    },
+    "diagnosis/repro.sh": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/c0faae30c3ea9519b04111274392ba32505411c5a4bff321e69baaa10ab79b7a.gz",
+      "archiveBytes": 469,
+      "archiveSha256": "fdc71ae73c466c37d457559d085d4e5717abfcd7e0ea2a25a02359cee6e79967",
+      "bytes": 794,
+      "sha256": "c0faae30c3ea9519b04111274392ba32505411c5a4bff321e69baaa10ab79b7a",
+      "source": "/var/tmp/xyg-chunked-ci-diagnosis/repro.sh"
+    },
+    "diagnosis/test_chunked_live_control.py": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/c731c9620b4f7dbb572c32443dd1fee0babc0583a1893d6fc30d296ba720e38b.gz",
+      "archiveBytes": 5328,
+      "archiveSha256": "8bd5237c02f2b0e704c03322f2bb34488c4f4f7532c88587bc1639228d0cfa8b",
+      "bytes": 22328,
+      "sha256": "c731c9620b4f7dbb572c32443dd1fee0babc0583a1893d6fc30d296ba720e38b",
+      "source": "/var/tmp/xyg-chunked-ci-diagnosis/test_chunked_live_control.py"
+    },
+    "diagnosis/test_chunked_live_rejection_control.py": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/90fec68ad0e744afd79625fc2b181e50c27bc45bef7e843d0c614f78851112a5.gz",
+      "archiveBytes": 5336,
+      "archiveSha256": "6a9898e1654f2361da04463a178d585b1c9b0cca508f85734910d7fe50f433be",
+      "bytes": 22365,
+      "sha256": "90fec68ad0e744afd79625fc2b181e50c27bc45bef7e843d0c614f78851112a5",
+      "source": "/var/tmp/xyg-chunked-ci-diagnosis/test_chunked_live_rejection_control.py"
+    },
+    "floor-job.json": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/3a77fafb504f536f6316e09ad7c768426648b7394ffe0ed095ce304b10cebe3d.gz",
+      "archiveBytes": 1130,
+      "archiveSha256": "c2cd9cd70872325a09a3ebf5cd742ab80b398ef43ce86cb2c6c666506ae0c6dc",
+      "bytes": 5383,
+      "sha256": "3a77fafb504f536f6316e09ad7c768426648b7394ffe0ed095ce304b10cebe3d",
+      "source": "target/task-tmp/pr1122-968-ci/floor-job.json"
+    },
+    "floor-job.log": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/a63a8c834ffe1b6bf7284b33c736d536b20d6b5c8343d589901d8dbf412f3c8f.gz",
+      "archiveBytes": 22416,
+      "archiveSha256": "f476835650b9a1e02f7dc74ad2dc6ca39f868786eeb5f34ac68e63db8ec9e8d3",
+      "bytes": 108041,
+      "sha256": "a63a8c834ffe1b6bf7284b33c736d536b20d6b5c8343d589901d8dbf412f3c8f",
+      "source": "target/task-tmp/pr1122-968-ci/floor-job.log"
+    },
+    "foundation.log": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/0f403e868c32a313918cd4bd987f612411fbbb9cc9b9f12e7298888c94864511.gz",
+      "archiveBytes": 352,
+      "archiveSha256": "b6dc76a4818f5227f58cb707d6ba0e16a2bf08ccbd955898c99fc5ac94e16933",
+      "bytes": 640,
+      "sha256": "0f403e868c32a313918cd4bd987f612411fbbb9cc9b9f12e7298888c94864511",
+      "source": "target/task-tmp/pr1122-968-ci/foundation.log"
+    },
+    "nearby-contracts.log": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/4a48b2508c0deb038296195641506d7cb595c4c13218467df96753b2507dcc59.gz",
+      "archiveBytes": 53,
+      "archiveSha256": "386fdfa82c53fa39dedb74a36085e61955dcaa1ee777e7f7c424fbb612a374fe",
+      "bytes": 100,
+      "sha256": "4a48b2508c0deb038296195641506d7cb595c4c13218467df96753b2507dcc59",
+      "source": "target/task-tmp/pr1122-968-ci/nearby-contracts.log"
+    },
+    "node-chunked.log": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/4ec87e2cd8e8447517abb56b47d8ae00d55df1c7387779658d0c3dc42b23d31b.gz",
+      "archiveBytes": 994,
+      "archiveSha256": "dfb7482bad08a20d7ce2c2be32c7ac161be49781bf6bf5e334babc18795732b7",
+      "bytes": 3997,
+      "sha256": "4ec87e2cd8e8447517abb56b47d8ae00d55df1c7387779658d0c3dc42b23d31b",
+      "source": "target/task-tmp/pr1122-968-ci/node-chunked.log"
+    },
+    "seal-sources.py": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/47be871586d3571c911d5f8965d93769df55a57b61e550dbc182483b3001a78e.gz",
+      "archiveBytes": 1246,
+      "archiveSha256": "02eef1215cbb9e65f5d4745e7472759e61ae74abda784336c5f05bb6d6a8e15a",
+      "bytes": 2955,
+      "sha256": "47be871586d3571c911d5f8965d93769df55a57b61e550dbc182483b3001a78e",
+      "source": "target/task-tmp/pr1122-968-ci/seal-sources.py"
+    },
+    "source-seal.log": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/ebf64dd539d0f2904ee66e89c2e1c2784503a81233248f0e89d86673245ead61.gz",
+      "archiveBytes": 66,
+      "archiveSha256": "1aeff34326a203dc1c0fbef7ac8762e065a8de5c99ac7242d0f7c102a914c344",
+      "bytes": 53,
+      "sha256": "ebf64dd539d0f2904ee66e89c2e1c2784503a81233248f0e89d86673245ead61",
+      "source": "target/task-tmp/pr1122-968-ci/source-seal.log"
+    },
+    "test-job.json": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/e393e7baf6e1f2714306d630aa3ceff5929602574c145b1dd872997224a66fe8.gz",
+      "archiveBytes": 2611,
+      "archiveSha256": "5a1eb1fbb24b27d05dfd251e0a41ae37eef6a00b9baac04d09d1dccb954ad318",
+      "bytes": 15556,
+      "sha256": "e393e7baf6e1f2714306d630aa3ceff5929602574c145b1dd872997224a66fe8",
+      "source": "target/task-tmp/pr1122-968-ci/test-job.json"
+    },
+    "test-job.log": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/9d09fe7feefd6bdcc302b7f981138298c93f40a860639f17e941fe36817224f7.gz",
+      "archiveBytes": 301984,
+      "archiveSha256": "147f4f0272548b2e5d27da6018f502d823ca940d1fb5d20db69bfad6efad0a81",
+      "bytes": 1765566,
+      "sha256": "9d09fe7feefd6bdcc302b7f981138298c93f40a860639f17e941fe36817224f7",
+      "source": "target/task-tmp/pr1122-968-ci/test-job.log"
+    },
+    "test_chunked_parent_client.py": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/0985bec3f23135df4a7c1320c4e34874aa290f81570d6167d18ebcb33c40568d.gz",
+      "archiveBytes": 5493,
+      "archiveSha256": "d15b69e176ed38dd5bc6c0cb82112b958246e6e8ad8c045b66c06b8ef415bf58",
+      "bytes": 22984,
+      "sha256": "0985bec3f23135df4a7c1320c4e34874aa290f81570d6167d18ebcb33c40568d",
+      "source": "target/task-tmp/pr1122-968-ci/test_chunked_parent_client.py"
+    }
+  },
+  "inheritance": "Parent native/WASM and324 compiled inputs verified byte-identical; historical producer qualification retains its original scope. Current client freshly built; no native/WASM rebuild or complete foundation pass claimed. No new benchmark measurements.",
+  "package": {
+    "functionExports": 68,
+    "gzip6": 786337,
+    "gzipCap": 786432,
+    "gzipHeadroom": 95,
+    "imports": 0,
+    "nativeABI": 405,
+    "nativeSymbols": 551,
+    "raw": 1884503,
+    "rawCap": 1927168,
+    "wasmABI": 38
+  },
+  "preservedFailures": {
+    "foundation": "exit1 preserved, no blind green rerun; known GPU context-loss mechanism remains unresolved",
+    "hosted": "Run42990711462 Test job130423640356 chunked row mismatch; floor130423640424 catalog count",
+    "initialFocusedLint": "Eight B023 warnings on recursive closure loop captures; replaced with iterative fixture dependency traversal; failed tool output preserved in session, no claim of an archived raw log",
+    "initialPython311Browser": {
+      "cause": "Borrowed Python3.11 lacks playwright; subsequent ephemeral supplemental dependency run passed8",
+      "failed": 4,
+      "log": "chunked-fixed311.log",
+      "passCredit": false,
+      "passed": 4
+    },
+    "receiptAssembly": "Initial packaging helper incorrectly expected Ruff format log to say left unchanged; actual command succeeded with already formatted. Assertion stopped receipt creation; corrected helper completed before commit. No hook failure or commit occurred."
+  },
+  "readmeSha256": "63b67652989d8d58631c1aabc99b4b63d0b0a54d2f6c0f618fcba343f50dd33a",
+  "remaining": [
+    "Independent final correction review",
+    "Final-head hosted checks and required merge queue",
+    "GPU context loss and prior public100k notebook failure",
+    "Whole #110/milestones4\u20137/all-host/scale/memory/accessibility/competitor acceptance"
+  ],
+  "runtime": {
+    "compilerWasm": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/9349afa7655f6ada49c41ce2b44b59ce666f40f6b9a120891b39ae543a8b1258.gz",
+      "archiveBytes": 1253948,
+      "archiveSha256": "e68531d20eaa96a3bb2f526659acc805026906c5c8a40470eeb9846ccece4b3d",
+      "bytes": 4075129,
+      "sha256": "9349afa7655f6ada49c41ce2b44b59ce666f40f6b9a120891b39ae543a8b1258",
+      "source": "target/wasm32-unknown-unknown/release/xyg_wasm.wasm"
+    },
+    "index.js": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/f4179e650d8bb1df875034c07c581eca5464c20fad080aeec09473c204b98135.gz",
+      "archiveBytes": 249466,
+      "archiveSha256": "c40192ee0c1c0126934fa6b221425231219891df96a7d19a34b09088781216a2",
+      "bytes": 869685,
+      "sha256": "f4179e650d8bb1df875034c07c581eca5464c20fad080aeec09473c204b98135",
+      "source": "packages/xy-client/dist/index.js"
+    },
+    "native": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/a47ba9de911e0d3b8d867039afc822664ba867e617b998e007933099decc541b.gz",
+      "archiveBytes": 2906042,
+      "archiveSha256": "4014ed6af6b79317ee5e599435a42bcef2134ccdc2a3868e6b9abf3614c6cc7e",
+      "bytes": 6378648,
+      "sha256": "a47ba9de911e0d3b8d867039afc822664ba867e617b998e007933099decc541b",
+      "source": "target/release/libxyg_core.so"
+    },
+    "standalone.js": {
+      "archive": "spec/performance/chunked-camera-publication-2026-11-11/evidence/52a9e5f738eeb57603aaacf2e79404c91282cfc74b3a163dbd4ac0d67ad1c1e1.gz",
+      "archiveBytes": 249521,
+      "archiveSha256": "2fd25d6e7440fe45bad02044cfd429476b3cf2b025b83e9ce155fc2ee4e8c097",
+      "bytes": 869698,
+      "sha256": "52a9e5f738eeb57603aaacf2e79404c91282cfc74b3a163dbd4ac0d67ad1c1e1",
+      "source": "packages/xy-client/dist/standalone.js"
+    },
+    "wasm-inline-worker.js": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz",
+      "archiveBytes": 3838,
+      "archiveSha256": "dda8e6c4cec42d91f687b660d742d79dcc1a8c0d052ca6ca189c6acf095db2b4",
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7",
+      "source": "packages/xy-client/dist/wasm-inline-worker.js"
+    },
+    "wasm-worker.js": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7.gz",
+      "archiveBytes": 11305,
+      "archiveSha256": "0f9a1ed514206fc542c931a074de1a2f3848854eea441bf3b1ea1e4449755c56",
+      "bytes": 61650,
+      "sha256": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7",
+      "source": "packages/xy-client/dist/wasm-worker.js"
+    },
+    "xyg-wasm-inline.js": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/efc6a1532a7556532bee867603139e4f87cdd77842dc33dc8d195302ebda3dee.gz",
+      "archiveBytes": 1042870,
+      "archiveSha256": "94f45c8cab4d091a1d3576335c9143521c04051caa78a5db3d99c49285e0284d",
+      "bytes": 2533794,
+      "sha256": "efc6a1532a7556532bee867603139e4f87cdd77842dc33dc8d195302ebda3dee",
+      "source": "packages/xy-client/dist/xyg-wasm-inline.js"
+    },
+    "xyg-wasm.manifest.json": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/6ec8678adee023b532ceda2a9e5af3e0524489763d3439dc8ab9047937c2f4ea.gz",
+      "archiveBytes": 171,
+      "archiveSha256": "eab52487c49411d8fbdce17ef619abdc4eda16e574b54881a0ad66f767f4cb85",
+      "bytes": 226,
+      "sha256": "6ec8678adee023b532ceda2a9e5af3e0524489763d3439dc8ab9047937c2f4ea",
+      "source": "packages/xy-client/dist/xyg-wasm.manifest.json"
+    },
+    "xyg-wasm.wasm": {
+      "archive": "spec/performance/graph-native-force-owner-2026-11-11/evidence/67be6d5add2f2ad279b721dd14484ece71e4710dcec2118cfd27df50fbaf8462.gz",
+      "archiveBytes": 781110,
+      "archiveSha256": "6116e44494db0f9237aea2dc774bc8ff047768da2011526a0e39714a91beefe6",
+      "bytes": 1884503,
+      "sha256": "67be6d5add2f2ad279b721dd14484ece71e4710dcec2118cfd27df50fbaf8462",
+      "source": "packages/xy-client/dist/xyg-wasm.wasm"
+    }
+  },
+  "schemaVersion": 1,
+  "scope": "Copied sent-query/current-camera equality before GPU staging; fixture-expanded static catalog; bounded correction only",
+  "sourceParent": "4ed565e60c3abaf13ae814812883dcaeac20f488",
+  "staticCopies": {
+    "python/xyg/static/index.js": "f4179e650d8bb1df875034c07c581eca5464c20fad080aeec09473c204b98135",
+    "python/xyg/static/standalone.js": "52a9e5f738eeb57603aaacf2e79404c91282cfc74b3a163dbd4ac0d67ad1c1e1",
+    "python/xyg/static/wasm-worker.js": "dc962d18637d3a02afacce2dc88a97f98342176a8e0d78794c025d3a9c9f9bd7",
+    "python/xyg/static/xyg-wasm-inline.js": "efc6a1532a7556532bee867603139e4f87cdd77842dc33dc8d195302ebda3dee",
+    "python/xyg/static/xyg-wasm.manifest.json": "6ec8678adee023b532ceda2a9e5af3e0524489763d3439dc8ab9047937c2f4ea",
+    "python/xyg/static/xyg-wasm.wasm": "67be6d5add2f2ad279b721dd14484ece71e4710dcec2118cfd27df50fbaf8462"
+  }
+}

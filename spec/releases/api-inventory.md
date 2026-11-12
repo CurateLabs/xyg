@@ -6,6 +6,14 @@ for review, not an accepted API freeze or a publication decision. Its base commi
 identifies the checkout's parent; its SHA-256 source records identify the actual
 working-tree bytes read at generation, including uncommitted changes.
 
+The issued paged-source continuation intentionally adds `ChunkedColumns.column`
+to the Python and Node declarations and a version field to Node's binary
+`filterRequest` framing. Existing declarations remain present; the native-only
+XYGC attach and remaining browser/global-budget work are specified in
+[Filter Tier C](../design/filter-tier-c.md#issued-native-paged-sources-continuation).
+This preparation refresh retains the 698 explicit review gaps and does not
+accept a freeze or qualify the complete filtering milestone.
+
 ```bash
 npm ci
 uv run python scripts/check_release_inventory.py

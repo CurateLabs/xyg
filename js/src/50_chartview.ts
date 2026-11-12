@@ -3,7 +3,7 @@ import { PROTOCOL, TRACE_GPU_BUFFERS, xyByteSpan } from "./00_header";
 import { buildLutData, colormapKey, colormapStops } from "./10_colormaps";
 import { chartBackdrop, cssColor, ensureChromeStylesheet, hexColor, parseColor, readTheme, safeCssPaint } from "./20_theme";
 import { fmtValue } from "./30_ticks";
-import { AREA_FS, AREA_VS, ATTR_SLOTS, BAR_VS, DENSITY_FS, GRID_VS, HEATMAP_FS, LINE_CAP_MODES, LINE_FS, LINE_VS, MESH_FS, MESH_VS, PICK_FS, PICK_VS, POINT_FS, POINT_SIMPLE_FS, POINT_SIMPLE_VS, POINT_VS, RECT_FS, RECT_VS, RIBBON_FS, RIBBON_STEPS, RIBBON_VS, SEGMENT_FS, SEGMENT_VS, makeProgram, uniformOf, xySmoothResample } from "./40_gl";
+import { AREA_FS, AREA_VS, ATTR_SLOTS, BAR_VS, DENSITY_FS, GRID_VS, HEATMAP_FS, LINE_CAP_MODES, LINE_FS, LINE_VS, MESH_FS, MESH_VS, PICK_FS, PICK_VS, POINT_FS, POINT_SIMPLE_FS, POINT_SIMPLE_VS, POINT_VS, RECT_FS, RECT_VS, RIBBON_FS, RIBBON_STEPS, RIBBON_VS, SEGMENT_CARTESIAN_FS, SEGMENT_CARTESIAN_VS, SEGMENT_FS, SEGMENT_VS, makeProgram, uniformOf, xySmoothResample } from "./40_gl";
 import { acquireGLHost, type BorrowedGLSurface } from "./42_glhost";
 import { lodCopyGrid, lodDecodeLogU8, lodDrawDensityTier, lodDropDensityCache, lodDropPointCache, lodRememberDensity, lodSampleForView, lodWriteGridTexture } from "./45_lod";
 import { applyWasmDashboardResourceBudget, watchWasmDashboardResourceBudget } from "./49_wasm_dashboard";
@@ -690,7 +690,14 @@ export class ChartView {
     if (typeof MutationObserver !== "undefined") {
       this._themeMutationObserver = new MutationObserver((records) => {
         if (records.some(({ target }) => target === this.root || target.contains(this.root))) {
-          this.refreshTheme();
+          // Notebook focus/layout updates often change an ancestor's class or
+          // transform while every computed paint input stays identical. Reuse
+          // that resolved theme instead of queuing another complete picture.
+          // Scene slots can have descendant-only CSS, so retain their existing
+          // unconditional invalidation path.
+          const signature = this._computedThemeSignature();
+          if (this.spec._resolvedScenePlot || signature === null
+              || signature !== this._themeStyleSignature) this.refreshTheme();
           return;
         }
         // Reuse this observer for authored class/inline changes on existing
@@ -4882,10 +4889,14 @@ export class ChartView {
       const values = this._columnView(buffer, this.spec.columns[ends.buf]);
       if (values.length >= g.n * EDGE_ENDS_STRIDE) {
         g._edgeEnds = Float32Array.from(values.subarray(0, g.n * EDGE_ENDS_STRIDE));
+        g._edgeHasHeads = false;
         const source = new Float32Array(g.n * 4);
         const target = new Float32Array(g.n * 3);
         for (let i = 0; i < g.n; i++) {
           const at = i * EDGE_ENDS_STRIDE;
+          // Rust's bit 6 is the authoritative head fact. An all-absent
+          // plane needs no head-only pass; endpoint clipping still runs.
+          if ((Math.round(g._edgeEnds[at + 6]) & 64) !== 0) g._edgeHasHeads = true;
           source.set([g._edgeEnds[at], g._edgeEnds[at + 1], g._edgeEnds[at + 2], g._edgeEnds[at + 6]], i * 4);
           target.set([g._edgeEnds[at + 3], g._edgeEnds[at + 4], g._edgeEnds[at + 5]], i * 3);
         }
@@ -6433,6 +6444,7 @@ export class ChartView {
     this._drawChrome();
     this._renderLassoSelection?.();
     this._renderBoxSelection?.();
+    if (rendered !== false) this.comm?.onPainted?.();
     return rendered;
   }
 
@@ -6920,10 +6932,24 @@ export class ChartView {
     stateColor("unselected", "u_unselColor");
   }
 
+  _segmentProgram(g, edgeEnds) {
+    // These facts imply exactly the constant uniforms in the shared shader
+    // specialization. Unknown heads and every other state use the general
+    // program, including authored dash, CSS widths and polar axes. Selection
+    // remains a dynamic uniform in both programs.
+    if (edgeEnds && g._edgeHasHeads === false && !g._styleCss
+        && g.colorMode === 3 && !g.trace.style.dash?.length
+        && this._axisMode(g.xAxis) === 0 && this._axisMode(g.yAxis) === 0) {
+      return this._prog("segment-cartesian", SEGMENT_CARTESIAN_VS, SEGMENT_CARTESIAN_FS);
+    }
+    return this.segmentProg;
+  }
+
   _drawSegments(g, xm, ym) {
     if (g.n < 1) return;
     const gl = this.gl;
-    const prog = this.segmentProg;
+    const edgeEnds = g.endsBuf && !this._polarGeometry();
+    const prog = this._segmentProgram(g, edgeEnds);
     gl.useProgram(prog);
     const u = (n) => uniformOf(gl, prog, n);
     gl.uniform2f(u("u_xmap"), xm[0], xm[1]);
@@ -7005,7 +7031,6 @@ export class ChartView {
       if (!g.edgeLayoutBuf) gl.vertexAttrib4f(ATTR_SLOTS.a_edgeLayout, 0, 0, 0, 0);
       if (!layers) gl.vertexAttrib1f(ATTR_SLOTS.a_edgeLayer, 2);
     };
-    const edgeEnds = g.endsBuf && !this._polarGeometry();
     gl.uniform1i(u("u_edgeEnds"), edgeEnds ? 1 : 0);
     gl.uniform1i(u("u_edgePass"), 0);
     gl.uniform1f(u("u_edgeScale"), edgeEnds ? this._edgeEndScale(g) : 0);
@@ -7016,7 +7041,7 @@ export class ChartView {
     const count = Math.max(0, Math.min(g.n, Math.ceil(g.n * (g._transitionReveal ?? 1))));
     bindSegments(layered ? 3 : 1);
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, layered ? count * 3 : count);
-    if (edgeEnds) {
+    if (edgeEnds && g._edgeHasHeads !== false) {
       // Filled arrowheads: same instances, head-only geometry, no dash.
       if (layered) bindSegments(1);
       gl.uniform1i(u("u_edgePass"), 1);
@@ -9295,6 +9320,19 @@ export class ChartView {
       // each mark kind knows where its constant color lives in the spec.
       markOf(g.trace.kind).refreshColor?.(this, g);
     }
+    this._themeStyleSignature = this._computedThemeSignature();
+  }
+
+  _computedThemeSignature() {
+    const style = this.root.ownerDocument.defaultView?.getComputedStyle(this.root);
+    if (!style) return null;
+    // Include arbitrary custom properties used by authored mark colors, not
+    // only the named --chart-* vocabulary. An ancestor backdrop may change
+    // without changing the transparent root's own computed background.
+    return JSON.stringify([
+      Array.from(style, name => [name, style.getPropertyValue(name)]),
+      chartBackdrop(this.root, null),
+    ]);
   }
 
   refreshTheme() {

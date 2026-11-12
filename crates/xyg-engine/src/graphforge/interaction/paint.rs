@@ -7,7 +7,6 @@ use crate::graph_style::{self, ResolvedGraphStyle, SemanticPaintLayers, Semantic
 #[derive(Clone)]
 pub(super) struct SourceStyle {
     len: usize,
-    neutral: bool,
     class: Vec<u8>,
     epistemic: Vec<u8>,
     status: Vec<u8>,
@@ -19,16 +18,37 @@ pub(super) struct SourceStyle {
 impl SourceStyle {
     pub fn read(
         doc: &ComposedDocument<'_>,
-        side: &str,
+        edge: bool,
         n: usize,
     ) -> Result<Self, InteractionStatus> {
-        if ["class", "epistemic", "status", "metric", "flags"]
-            .iter()
-            .all(|key| !doc.has_section(&format!("{side}.{key}")))
+        // These are the only two internal source kinds. Borrow their canonical
+        // field names instead of allocating the same five names during each
+        // presence check and typed read.
+        let fields = if edge {
+            [
+                "edge.class",
+                "edge.epistemic",
+                "edge.status",
+                "edge.metric",
+                "edge.flags",
+            ]
+        } else {
+            [
+                "node.class",
+                "node.epistemic",
+                "node.status",
+                "node.metric",
+                "node.flags",
+            ]
+        };
+        let semantic = doc.has_section(fields[2]);
+        if !semantic
+            && [fields[0], fields[1], fields[3], fields[4]]
+                .iter()
+                .all(|key| !doc.has_section(key))
         {
             return Ok(Self {
                 len: n,
-                neutral: true,
                 class: Vec::new(),
                 epistemic: Vec::new(),
                 status: Vec::new(),
@@ -39,7 +59,7 @@ impl SourceStyle {
         }
         let read = |key: &str| -> Result<Vec<u8>, InteractionStatus> {
             let values = doc
-                .optional_u8s(&format!("{side}.{key}"))
+                .optional_u8s(key)
                 .map_err(|_| InteractionStatus::Invalid)?
                 .map_or_else(|| vec![0; n], <[u8]>::to_vec);
             if values.len() != n || values.iter().any(|&v| v > graph_style::MAX_SEMANTIC_CODE) {
@@ -48,11 +68,11 @@ impl SourceStyle {
             Ok(values)
         };
         let metric = doc
-            .optional_f64s(&format!("{side}.metric"))
+            .optional_f64s(fields[3])
             .map_err(|_| InteractionStatus::Invalid)?
             .unwrap_or_else(|| vec![f64::NAN; n]);
         let flags = doc
-            .optional_u32s(&format!("{side}.flags"))
+            .optional_u32s(fields[4])
             .map_err(|_| InteractionStatus::Invalid)?
             .unwrap_or_else(|| vec![0; n]);
         if metric.len() != n
@@ -65,16 +85,14 @@ impl SourceStyle {
         }
         Ok(Self {
             len: n,
-            neutral: false,
-            class: read("class")?,
-            epistemic: read("epistemic")?,
-            status: read("status")?,
+            class: read(fields[0])?,
+            epistemic: read(fields[1])?,
+            status: read(fields[2])?,
             metric,
             flags,
-            semantic: doc
-                .optional_u8s(&format!("{side}.status"))
-                .map_err(|_| InteractionStatus::Invalid)?
-                .is_some(),
+            // read("status") above already validates dtype, row count and
+            // semantic codes. Presence alone selects the resolved paint mode.
+            semantic,
         })
     }
 
@@ -87,7 +105,7 @@ impl SourceStyle {
             .checked_add(self.flags.capacity().checked_mul(4)?)
     }
     pub fn initial_flags(&self) -> Vec<u32> {
-        if self.neutral {
+        if self.flags.is_empty() {
             vec![0; self.len]
         } else {
             self.flags.clone()
@@ -103,7 +121,7 @@ impl SourceStyle {
             return invalid();
         }
         let mut out = vec![neutral(); self.len];
-        if self.neutral {
+        if self.flags.is_empty() {
             let mut previous = None;
             let mut row = [neutral()];
             for (target, &flag) in out.iter_mut().zip(flags) {
@@ -161,6 +179,33 @@ fn neutral() -> ResolvedGraphStyle {
         dash: 0,
         arrow: 0,
         state: 0,
+    }
+}
+
+#[cfg(test)]
+mod source_defaults {
+    use super::*;
+    use crate::graphforge::container::{Builder, DOCUMENT_MAGIC};
+
+    #[test]
+    fn absent_and_authored_empty_styles_keep_valid_empty_output_and_presence() {
+        for edge in [false, true] {
+            for authored in [false, true] {
+                let mut b = Builder::new(DOCUMENT_MAGIC);
+                b.u32s("status", 0, &[0]);
+                b.utf8("kind", 0, "graph");
+                b.u32s("composition.version", 0, &[2]);
+                if authored {
+                    b.u8s(if edge { "edge.status" } else { "node.status" }, 0, &[]);
+                }
+                let bytes = b.finish();
+                let doc = ComposedDocument::decode(&bytes).unwrap();
+                let style = SourceStyle::read(&doc, edge, 0).unwrap();
+                assert_eq!(style.semantic, authored);
+                assert!(style.initial_flags().is_empty());
+                assert!(style.resolve(&[], edge).unwrap().is_empty());
+            }
+        }
     }
 }
 
@@ -412,9 +457,7 @@ pub(super) fn build(
             return Err(InteractionStatus::Invalid);
         }
     }
-    let cap = output
-        .edge_count()
-        .checked_mul(edge_route::edge_route_segments_per_edge(false))
+    let cap = edge_route::edge_route_capacity(&output.edge_source, &output.edge_target, 1)
         .ok_or(InteractionStatus::Budget)?;
     let (mut x0, mut y0, mut x1, mut y1, mut indices, mut ends) = (
         vec![0.; cap],
@@ -444,6 +487,9 @@ pub(super) fn build(
         &mut ends,
     )
     .ok_or(InteractionStatus::Invalid)? as usize;
+    // Routing's rank/group scratch has retired. Reserve once from its actual
+    // emitted count, avoiding Vec growth while keeping the complete geometry.
+    paint.pieces.reserve_exact(count);
     for i in 0..count {
         let edge = indices[i] as usize;
         let (s, t) = (

@@ -23,6 +23,7 @@ import { loadPyodide } from "pyodide";
 import fs from "node:fs";
 const wheelPath = process.argv[2];
 const fixturePath = process.argv[3];
+const filterFixturePath = process.argv[4];
 const isUrl = wheelPath.startsWith("https://") || wheelPath.startsWith("http://");
 const name = isUrl
   ? new URL(wheelPath).pathname.split("/").pop()
@@ -41,6 +42,7 @@ try {
   }
   py.FS.mkdirTree("/fixtures");
   py.FS.writeFile("/fixtures/xyts_cross_host.json", fs.readFileSync(fixturePath));
+  py.FS.writeFile("/fixtures/filter_session.bin", fs.readFileSync(filterFixturePath));
   // Dependency provisioning is complete. The conformance operation itself is
   // strictly offline: any accidental host lookup now fails immediately.
   globalThis.fetch = async (url) => { throw new Error(`offline XYTS fixture attempted fetch: ${url}`); };
@@ -60,6 +62,72 @@ for case in fixture["successful"]:
     assert _native.scene_svg(scene).startswith('<svg xmlns="http://www.w3.org/2000/svg"')
     assert _native.scene_browser_painter(scene) == bytes.fromhex(case["painter_hex"])
 lib = _native._lib
+# The C ABI transport must exist on Emscripten as well as native targets.
+# Replay unchanged complete packets, including capacity/error responses.
+from xyg.filter_session import decode_reply, execute_packet, request
+filter_stream = open("/fixtures/filter_session.bin", "rb").read()
+handle = lib.xyg_filter_session_new(1 << 20)
+assert handle
+at = filter_packets = 0
+try:
+    while at < len(filter_stream):
+        size, capacity, code, output_size, required = struct.unpack_from("<IIiIQ", filter_stream, at)
+        at += 24
+        packet = filter_stream[at:at + size]
+        at += size
+        expected = filter_stream[at:at + output_size]
+        at += output_size
+        try:
+            reply = execute_packet(handle, packet, capacity)
+        except RuntimeError as error:
+            assert code == -4 and f"required capacity {required}" in str(error)
+        else:
+            assert code == 0 and reply == expected
+        filter_packets += 1
+    assert at == len(filter_stream) and filter_packets == 47
+finally:
+    lib.xyg_filter_session_free(handle)
+
+# Exercise actual XYFJ progress/advance/cancel through that same C ABI.
+# Filesystem sources remain unavailable; this is an admitted in-memory source.
+from xyg import scatter, scatter_chart
+def filter_control(operation, token=0, payload=b""):
+    return struct.pack("<4sIIIQQ", b"XYFJ", 1, operation, 0, token, 0) + payload
+
+with scatter_chart(scatter(x=[0], y=[0])).filter_session(
+    {"a": list(range(70000))}, source_id=113, budget_bytes=8 << 20
+) as session:
+    handle = session._handle
+    configure = request(3, revision=2, source_id=113, budget_bytes=8 << 20,
+        args=(1, 0, 1), payload=struct.pack("<QdQQQd", 1, 32768., 2, 0, 1, 32768.))
+    reply = execute_packet(handle, filter_control(1, payload=configure))
+    filter_progress = 0
+    for _ in range(1024):
+        if reply[:4] != b"XYFJ":
+            break
+        assert len(reply) == 32 and struct.unpack_from("<I", reply, 4)[0] == 1
+        token, visited, total = struct.unpack_from("<QQQ", reply, 8)
+        assert token and visited <= total == 70000
+        filter_progress += 1
+        reply = execute_packet(handle, filter_control(2, token))
+    else:
+        raise AssertionError("filter cooperative completion deadline")
+    assert filter_progress > 0 and decode_reply(reply)["status"] == 0
+    assert decode_reply(execute_packet(handle, filter_control(2, token)))["status"] == 5
+    query = request(5, revision=3, source_id=113, budget_bytes=8 << 20, bounds=(0., 32767.))
+    before = decode_reply(execute_packet(handle, query))
+    assert before["selected_count"] == 32768 and before["views"][0]["counts"] == (32768, 0)
+    assert before["rows_read"] == 0 and before["tier"] == 3
+    rebuild = request(4, revision=4, source_id=113, budget_bytes=8 << 20)
+    pending = execute_packet(handle, filter_control(1, payload=rebuild))
+    assert pending[:4] == b"XYFJ" and len(pending) == 32
+    pending_token = struct.unpack_from("<Q", pending, 8)[0]
+    assert decode_reply(execute_packet(handle, filter_control(3, pending_token)))["status"] == 4
+    after = decode_reply(execute_packet(handle,
+        request(5, revision=5, source_id=113, budget_bytes=8 << 20, bounds=(0., 32767.))))
+    assert after["selected_count"] == before["selected_count"]
+    assert after["filter_hash"] == before["filter_hash"] and after["rows_read"] == 0
+filter_cooperative = True
 # ABI 396: all five additions must operate on the actual Emscripten library.
 # Validation is store-independent, not an unavailable-filesystem stub.
 control = struct.pack("<4sIQdiI", b"XYDC", 1, 7, 0.5, 2, 1) + struct.pack("<III", 2, 1, 3)
@@ -108,10 +176,10 @@ assert lib.xyg_chunked_columns_overview(0, 0, None, None, None, None) == usize_m
 assert lib.xyg_chunked_columns_read(0, 0, 1, 0, 1, 0, 0, 0, None, None, 0, None) == usize_max
 assert lib.xyg_chunked_columns_read_page(0, 0, 1, 0, 1, 0, 0, 0, 0, None, None, 0, None) == usize_max
 assert lib.xyg_chunked_columns_free(0) == 0
-f"{k.BACKEND}|{abi}|{mn}|{mx}|{len(fixture['successful'])}|{fixture['scene_version']}|{fixture['painter_version']}|17"
+f"{k.BACKEND}|{abi}|{mn}|{mx}|{len(fixture['successful'])}|{fixture['scene_version']}|{fixture['painter_version']}|17|{filter_packets}|{int(filter_cooperative)}"
 `);
-  const [backend, abi, mn, mx, cases, sceneVersion, painterVersion, filesystemStubs] = r.split("|");
-  out({ ok: true, backend, abi: Number(abi), min: Number(mn), max: Number(mx), cases: Number(cases), sceneVersion: Number(sceneVersion), painterVersion: Number(painterVersion), filesystemStubs: Number(filesystemStubs) });
+  const [backend, abi, mn, mx, cases, sceneVersion, painterVersion, filesystemStubs, filterPackets, filterCooperative] = r.split("|");
+  out({ ok: true, backend, abi: Number(abi), min: Number(mn), max: Number(mx), cases: Number(cases), sceneVersion: Number(sceneVersion), painterVersion: Number(painterVersion), filesystemStubs: Number(filesystemStubs), filterPackets: Number(filterPackets), filterCooperative: filterCooperative === "1" });
 } catch (e) {
   out({ ok: false, error: String(e.message || e).split("\n").slice(-4).join(" ") });
 }
@@ -144,6 +212,9 @@ def main() -> int:
                 str(driver),
                 wheel_source,
                 str(Path(__file__).resolve().parents[1] / "tests/fixtures/xyts_cross_host.json"),
+                str(
+                    Path(__file__).resolve().parents[1] / "tests/fixtures/filter_tier_c/session.bin"
+                ),
             ],
             capture_output=True,
             text=True,
@@ -163,12 +234,16 @@ def main() -> int:
         return 1
 
     if result.get("ok"):
+        if result.get("filterPackets") != 47 or result.get("filterCooperative") is not True:
+            print("FAIL: Pyodide filter transport proof missing or incomplete")
+            return 1
         print(
             f"PASS: Pyodide loaded xyg, backend={result['backend']} "
             f"abi={result['abi']} min_max=({result['min']},{result['max']}) "
             f"xyts_cases={result['cases']} Scene=v{result['sceneVersion']} "
             f"painter=v{result['painterVersion']}"
             f" filesystem_stubs={result['filesystemStubs']}"
+            f" filter_packets={result['filterPackets']} cooperative={result['filterCooperative']}"
         )
         return 0
     print(f"FAIL: pyodide could not load/run the wheel: {result.get('error')}")

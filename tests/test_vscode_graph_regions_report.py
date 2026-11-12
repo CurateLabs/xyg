@@ -21,6 +21,39 @@ ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "spec/performance/graph-vscode-regions-2026-11-10/qualification-fixtures.json"
 
 
+def test_trusted_pan_path_refuses_host_obstruction_including_between_endpoints():
+    script = r"""
+import assert from 'node:assert/strict';
+import {visibleGraphRegionPanPath} from './scripts/graph_notebook_region_journey.mjs';
+const box={left:378,top:361.75,width:824,height:338};
+const canvas={getBoundingClientRect:()=>box,evaluate:fn=>fn(canvas)};
+const blocker={tagName:'DIV'};
+let hit=()=>canvas;
+globalThis.document={elementFromPoint:(x,y)=>hit(x-box.left,y-box.top)};
+const original={start:[618,253.5],end:[638,241.5]};
+assert.deepEqual(await visibleGraphRegionPanPath(canvas),original);
+// Match the hosted sidebar boundary: the former 75% path misses the canvas.
+hit=(x,y)=>x<526?canvas:blocker;
+const exposed=await visibleGraphRegionPanPath(canvas);
+assert.ok(exposed&&exposed.start[0]<526&&exposed.end[0]<526);
+assert.equal(exposed.end[0]-exposed.start[0],20);
+assert.equal(exposed.end[1]-exposed.start[1],-12);
+// Clear endpoints do not qualify a path whose middle is intercepted.
+hit=(x,y)=>x>624&&x<632?blocker:canvas;
+assert.notDeepEqual(await visibleGraphRegionPanPath(canvas),original);
+hit=()=>blocker;
+assert.equal(await visibleGraphRegionPanPath(canvas),null);
+"""
+    result = subprocess.run(
+        ["node", "--input-type=module", "-e", script],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 @pytest.fixture(scope="module")
 def recorded():
     records = json.loads(FIXTURES.read_text())

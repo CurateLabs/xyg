@@ -59,6 +59,10 @@ def test_ci_workflow_accepts_current_gates() -> None:
     [
         ("npm test --prefix packages/xy-node", "complete Node host suite"),
         (
+            'XY_REQUIRE_BROWSER=1 XYG_CHROMIUM="$(node -e "console.log(require(\'playwright\').chromium.executablePath())")" .venv/bin/python -m pytest -q tests/test_filter_native_callback.py',
+            "required native filtering callback painter",
+        ),
+        (
             'XYG_CHROMIUM="$(node -e "console.log(require(\'playwright\').chromium.executablePath())")" node scripts/filter_tier_c_conformance.mjs',
             "complete Node host suite",
         ),

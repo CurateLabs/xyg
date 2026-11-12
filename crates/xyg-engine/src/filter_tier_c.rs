@@ -1,10 +1,18 @@
 //! Programmatic Filter Tier C session (§34). XYFC/XYFR v1 is shared by all hosts.
 //! Prefix slabs contain counts only, never active-cells × canonical-row masks.
+#[path = "filter_tier_c_jobs.rs"]
+mod jobs;
+use jobs::BuildMode;
+pub use jobs::CooperativeReply;
 #[path = "filter_tier_c_linked.rs"]
 mod linked;
+#[cfg(not(target_family = "wasm"))]
+#[path = "filter_tier_c_paged.rs"]
+mod paged;
 use linked::{GridHandle, Linked};
 use std::cell::Cell;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 
 pub const HEADER: usize = 96;
 pub const REPLY_HEADER: usize = 192;
@@ -40,7 +48,7 @@ fn mul(a: usize, b: usize) -> Result<usize> {
 fn alloc<T: Default + Clone>(n: usize) -> Result<Vec<T>> {
     let mut v = Vec::new();
     v.try_reserve_exact(n).map_err(|_| Error::Allocation)?;
-    // These private buffers contain only u8/u64/f64/[f64; 2] zero defaults.
+    // These private buffers contain only u8/u32/u64/f64/[f64; 2] zero defaults.
     // Browser initialization constructs each element directly, avoiding the
     // repeated aggregate-clone fill machinery; the checked reservation stays.
     #[cfg(target_arch = "wasm32")]
@@ -85,10 +93,170 @@ struct Source {
     first: u64,
     rows: usize,
     columns: Vec<Vec<f64>>,
+    #[cfg(not(target_family = "wasm"))]
+    paged: Option<paged::PagedSource>,
+}
+
+/// Borrowed numeric columns for one canonical interval. `origin` is relative to
+/// the source, whereas public identity is source.first + row. Every selection
+/// and count kernel uses this accessor so a page cannot renumber its rows.
+#[cfg(not(target_family = "wasm"))]
+struct RowBlock<'a> {
+    origin: usize,
+    columns: &'a [Vec<f64>],
+    mapping: Option<&'a [usize]>,
+}
+#[cfg(target_family = "wasm")]
+type RowBlock<'a> = Source;
+#[cfg(not(target_family = "wasm"))]
+impl RowBlock<'_> {
+    #[inline]
+    fn value(&self, dimension: usize, row: usize) -> f64 {
+        let column = self.mapping.map_or(dimension, |m| m[dimension]);
+        self.columns[column][row - self.origin]
+    }
+}
+// Closed, private row operations let the paged and resident paths share exact
+// kernels. Named methods permit adapter fusion under the fixed WASM compiler
+// profile; anonymous FnMut bodies otherwise remain separately outlined.
+trait RowKernel {
+    fn row(&mut self, block: &RowBlock<'_>, row: usize) -> Result<()>;
+}
+struct BuildRows<'a> {
+    index: &'a mut Index,
+    cfg: &'a Config,
+    linked: &'a Linked,
+}
+impl RowKernel for BuildRows<'_> {
+    #[inline(always)]
+    fn row(&mut self, block: &RowBlock<'_>, row: usize) -> Result<()> {
+        self.index.add_row(self.cfg, self.linked, block, row);
+        Ok(())
+    }
+}
+struct CountRows<'a> {
+    cfg: &'a Config,
+    linked: Option<&'a Linked>,
+    bounds: [f64; 2],
+    counts: &'a mut [u64],
+    visited: &'a mut u64,
+}
+impl RowKernel for CountRows<'_> {
+    #[cfg_attr(target_family = "wasm", inline(always))]
+    #[cfg_attr(not(target_family = "wasm"), inline)]
+    fn row(&mut self, block: &RowBlock<'_>, row: usize) -> Result<()> {
+        *self.visited += 1;
+        let x = block.value(self.cfg.active.dimension, row);
+        let eligible = match self.linked {
+            Some(st) => st.matches(block, row),
+            None => true,
+        };
+        if !eligible || !x.is_finite() || x < self.bounds[0] || x > self.bounds[1] {
+            return Ok(());
+        }
+        self.counts[0] += 1;
+        for view in &self.cfg.views {
+            if let Some(cell) = view.cell(block, row) {
+                self.counts[view.offset + cell] += 1;
+            }
+        }
+        Ok(())
+    }
+}
+struct MembershipRows<'a> {
+    cfg: Option<&'a Config>,
+    linked: &'a Linked,
+    bounds: Option<[f64; 2]>,
+    first: usize,
+    bits: &'a mut [u8],
+    selected: &'a mut u64,
+}
+impl RowKernel for MembershipRows<'_> {
+    #[cfg_attr(target_family = "wasm", inline(always))]
+    #[cfg_attr(not(target_family = "wasm"), inline)]
+    fn row(&mut self, block: &RowBlock<'_>, row: usize) -> Result<()> {
+        let yes = self.linked.matches(block, row)
+            && if let Some([lo, hi]) = self.bounds {
+                let cfg = self.cfg.ok_or(Error::Missing)?;
+                let x = block.value(cfg.active.dimension, row);
+                x.is_finite() && x >= lo && x <= hi
+            } else {
+                true
+            };
+        if yes {
+            let i = row - self.first;
+            self.bits[i / 8] |= 1 << (i % 8);
+            *self.selected += 1;
+        }
+        Ok(())
+    }
 }
 impl Source {
+    #[cfg(target_family = "wasm")]
+    #[inline(always)]
+    fn value(&self, dimension: usize, row: usize) -> f64 {
+        self.columns[dimension][row]
+    }
     fn bytes(&self) -> usize {
-        self.columns.iter().map(|c| c.capacity() * 8).sum::<usize>() + self.columns.capacity() * 24
+        let bytes = self.columns.iter().map(|c| c.capacity() * 8).sum::<usize>()
+            + self.columns.capacity() * 24;
+        #[cfg(not(target_family = "wasm"))]
+        if let Some(paged) = &self.paged {
+            return bytes + paged.bytes();
+        }
+        bytes
+    }
+    fn dimensions(&self) -> usize {
+        #[cfg(not(target_family = "wasm"))]
+        if let Some(paged) = &self.paged {
+            return paged.dimensions();
+        }
+        self.columns.len()
+    }
+    fn workspace(&self, rows: usize) -> Result<usize> {
+        #[cfg(not(target_family = "wasm"))]
+        if let Some(paged) = &self.paged {
+            return paged.workspace(rows);
+        }
+        let _ = rows;
+        Ok(0)
+    }
+    #[cfg_attr(target_family = "wasm", inline(always))]
+    #[cfg_attr(not(target_family = "wasm"), inline)]
+    fn visit(
+        &self,
+        start: usize,
+        end: usize,
+        cancelled: &(impl Fn() -> bool + ?Sized),
+        work: &mut impl RowKernel,
+    ) -> Result<()> {
+        if start > end || end > self.rows {
+            return Err(Error::Source);
+        }
+        #[cfg(not(target_family = "wasm"))]
+        if let Some(paged) = &self.paged {
+            return paged.visit(start, end, cancelled, work);
+        }
+        #[cfg(not(target_family = "wasm"))]
+        let block = RowBlock {
+            origin: 0,
+            columns: &self.columns,
+            mapping: None,
+        };
+        #[cfg(not(target_family = "wasm"))]
+        let block = &block;
+        #[cfg(target_family = "wasm")]
+        let block = self;
+        for row in start..end {
+            if (row - start) % 4096 == 0 && cancelled() {
+                return Err(Error::Cancelled);
+            }
+            work.row(block, row)?;
+        }
+        if cancelled() {
+            return Err(Error::Cancelled);
+        }
+        Ok(())
     }
 }
 #[derive(Debug)]
@@ -141,11 +309,11 @@ impl View {
             .as_ref()
             .map_or(self.axis.cuts.len() + 1, |g| g.width * g.height)
     }
-    fn cell(&self, s: &Source, row: usize) -> Option<usize> {
+    fn cell(&self, s: &RowBlock<'_>, row: usize) -> Option<usize> {
         if let Some(g) = &self.grid {
             g.cell(s, row)
         } else {
-            let x = s.columns[self.axis.dimension][row];
+            let x = s.value(self.axis.dimension, row);
             x.is_finite().then(|| self.axis.cell(x))
         }
     }
@@ -154,7 +322,7 @@ impl Config {
     fn linked(&self) -> bool {
         self.views.first().is_some_and(|v| v.grid.is_some())
     }
-    fn read(b: &[u8], source: &Source) -> Result<Self> {
+    fn read_active(b: &[u8], source: &Source) -> Result<(u64, Axis, usize, usize)> {
         let active_id = u64_at(b, 56)?;
         let dimension = usize_at(b, 64)?;
         let n = usize_at(b, 72)?;
@@ -162,7 +330,11 @@ impl Config {
             return Err(Error::Malformed);
         }
         let mut cursor = HEADER;
-        let active = Axis::read(b, &mut cursor, dimension, source.columns.len())?;
+        let active = Axis::read(b, &mut cursor, dimension, source.dimensions())?;
+        Ok((active_id, active, n, cursor))
+    }
+    fn read(b: &[u8], source: &Source) -> Result<Self> {
+        let (active_id, active, n, mut cursor) = Self::read_active(b, source)?;
         let mut views = Vec::<View>::new();
         views.try_reserve_exact(n).map_err(|_| Error::Allocation)?;
         let mut width = 1; // separate exact selected total; passive nonfinite values are excluded
@@ -173,7 +345,7 @@ impl Config {
             if id == 0 || views.iter().any(|v| v.id == id) {
                 return Err(Error::Malformed);
             }
-            let axis = Axis::read(b, &mut cursor, dimension, source.columns.len())?;
+            let axis = Axis::read(b, &mut cursor, dimension, source.dimensions())?;
             let offset = width;
             width = add(width, axis.cuts.len() + 1)?;
             if width > MAX_BINS {
@@ -208,7 +380,7 @@ impl Config {
     }
     fn index_bytes(&self) -> Result<usize> {
         add(
-            mul(mul(self.active.cuts.len() + 2, self.width)?, 8)?,
+            mul(mul(self.active.cuts.len() + 2, self.width)?, 4)?,
             add(
                 mul(self.width, if self.linked() { 16 } else { 8 })?,
                 mul(self.active.cuts.len() + 1, 16)?,
@@ -221,71 +393,110 @@ impl Config {
 }
 #[derive(Debug)]
 struct Index {
-    prefix: Vec<u64>,
+    // Source ingress and append admit at most u32::MAX canonical rows. Each
+    // channel receives a row at most once; every cumulative entry counts a
+    // subset of those rows. Absolute row identities and public counts stay u64.
+    prefix: Vec<u32>,
     totals: Vec<u64>,
     extrema: Vec<[f64; 2]>,
     base: Vec<u64>,
 }
 impl Index {
+    fn bytes(&self) -> usize {
+        self.prefix.capacity() * 4
+            + (self.totals.capacity() + self.base.capacity()) * 8
+            + self.extrema.capacity() * 16
+    }
+    #[cfg_attr(target_family = "wasm", inline(always))]
+    #[cfg_attr(not(target_family = "wasm"), inline)]
+    fn empty(cfg: &Config) -> Result<Self> {
+        let cells = cfg.active.cuts.len() + 1;
+        let mut extrema = alloc::<[f64; 2]>(cells)?;
+        extrema.fill([f64::INFINITY, f64::NEG_INFINITY]);
+        Ok(Self {
+            prefix: alloc::<u32>((cells + 1) * cfg.width)?,
+            totals: alloc::<u64>(cfg.width)?,
+            base: alloc::<u64>(if cfg.linked() { cfg.width } else { 0 })?,
+            extrema,
+        })
+    }
+    #[inline(always)]
+    fn add_row(&mut self, cfg: &Config, linked: &Linked, block: &RowBlock<'_>, row: usize) {
+        self.totals[0] += 1;
+        let eligible = !cfg.linked() || linked.matches(block, row);
+        if eligible && cfg.linked() {
+            self.base[0] += 1;
+        }
+        let x = block.value(cfg.active.dimension, row);
+        let cell = if eligible && x.is_finite() {
+            Some(cfg.active.cell(x))
+        } else {
+            None
+        };
+        if let Some(c) = cell {
+            self.extrema[c][0] = self.extrema[c][0].min(x);
+            self.extrema[c][1] = self.extrema[c][1].max(x);
+            self.prefix[(c + 1) * cfg.width] += 1;
+        }
+        for v in &cfg.views {
+            if let Some(cbin) = v.cell(block, row) {
+                let bin = v.offset + cbin;
+                self.totals[bin] += 1;
+                if eligible && cfg.linked() {
+                    self.base[bin] += 1;
+                }
+                if let Some(c) = cell {
+                    self.prefix[(c + 1) * cfg.width + bin] += 1;
+                }
+            }
+        }
+    }
+    /// The same cumulative pass can be advanced between Worker turns. Cursor is
+    /// private Rust state; the initial zero slab is excluded from accumulation.
+    #[cfg_attr(target_family = "wasm", inline(always))]
+    fn prefix_step(&mut self, cfg: &Config, cursor: usize, work: usize) -> usize {
+        debug_assert!(cursor >= cfg.width && cursor <= self.prefix.len());
+        let end = cursor.saturating_add(work).min(self.prefix.len());
+        for at in cursor..end {
+            self.prefix[at] += self.prefix[at - cfg.width];
+        }
+        end
+    }
+    #[cfg(not(target_family = "wasm"))]
     fn build(
         source: &Source,
         cfg: &Config,
         linked: &Linked,
-        cancelled: &impl Fn() -> bool,
+        cancelled: &(impl Fn() -> bool + ?Sized),
     ) -> Result<Self> {
-        let cells = cfg.active.cuts.len() + 1;
-        let mut prefix = alloc::<u64>((cells + 1) * cfg.width)?;
-        let mut totals = alloc::<u64>(cfg.width)?;
-        let mut base = alloc::<u64>(if cfg.linked() { cfg.width } else { 0 })?;
-        let mut extrema = alloc::<[f64; 2]>(cells)?;
-        extrema.fill([f64::INFINITY, f64::NEG_INFINITY]);
-        for row in 0..source.rows {
-            if row % 4096 == 0 && cancelled() {
-                return Err(Error::Cancelled);
-            }
-            totals[0] += 1;
-            let eligible = !cfg.linked() || linked.matches(source, row);
-            if eligible && cfg.linked() {
-                base[0] += 1;
-            }
-            let x = source.columns[cfg.active.dimension][row];
-            let cell = if eligible && x.is_finite() {
-                Some(cfg.active.cell(x))
-            } else {
-                None
-            };
-            if let Some(c) = cell {
-                extrema[c][0] = extrema[c][0].min(x);
-                extrema[c][1] = extrema[c][1].max(x);
-                prefix[(c + 1) * cfg.width] += 1;
-            }
-            for v in &cfg.views {
-                if let Some(cbin) = v.cell(source, row) {
-                    let bin = v.offset + cbin;
-                    totals[bin] += 1;
-                    if eligible && cfg.linked() {
-                        base[bin] += 1;
-                    }
-                    if let Some(c) = cell {
-                        prefix[(c + 1) * cfg.width + bin] += 1;
-                    }
-                }
-            }
-        }
-        for cell in 1..=cells {
+        let mut index = Self::empty(cfg)?;
+        source.visit(
+            0,
+            source.rows,
+            cancelled,
+            &mut BuildRows {
+                index: &mut index,
+                cfg,
+                linked,
+            },
+        )?;
+        let mut cursor = cfg.width;
+        while cursor < index.prefix.len() {
             if cancelled() {
                 return Err(Error::Cancelled);
             }
-            for b in 0..cfg.width {
-                prefix[cell * cfg.width + b] += prefix[(cell - 1) * cfg.width + b];
-            }
+            cursor = index.prefix_step(cfg, cursor, cfg.width);
         }
-        Ok(Self {
-            prefix,
-            totals,
-            extrema,
-            base,
-        })
+        Ok(index)
+    }
+    fn range_counts(&self, cfg: &Config, bounds: [f64; 2]) -> Result<Vec<u64>> {
+        let (first, end) = self.interval(bounds)?;
+        let mut values = alloc::<u64>(cfg.width)?;
+        for (i, value) in values.iter_mut().enumerate() {
+            *value =
+                u64::from(self.prefix[end * cfg.width + i] - self.prefix[first * cfg.width + i]);
+        }
+        Ok(values)
     }
     fn interval(&self, bounds: [f64; 2]) -> Result<(usize, usize)> {
         let mut first = None;
@@ -308,7 +519,7 @@ impl Index {
 /// No materialized row-mask prefix or cached result is retained.
 #[derive(Debug)]
 pub struct FilterTierCSession {
-    source: Option<Source>,
+    source: Option<Arc<Source>>,
     config: Option<Config>,
     index: Option<Index>,
     intent: Option<[f64; 2]>,
@@ -317,8 +528,10 @@ pub struct FilterTierCSession {
     cancelled: u64,
     budget: usize,
     peak_observed: Cell<usize>,
+    external_bytes: usize,
     limit: usize,
     linked: Linked,
+    pending: Option<jobs::PendingWork>,
 }
 impl Default for FilterTierCSession {
     fn default() -> Self {
@@ -332,8 +545,10 @@ impl Default for FilterTierCSession {
             cancelled: 0,
             budget: 0,
             peak_observed: Cell::new(0),
+            external_bytes: 0,
             limit: MAX_PACKET,
             linked: Linked::default(),
+            pending: None,
         }
     }
 }
@@ -345,17 +560,38 @@ impl FilterTierCSession {
         }
     }
     pub fn retained_bytes(&self) -> usize {
-        512 + self.linked.bytes()
-            + self.source.as_ref().map_or(0, Source::bytes)
+        512 + self.pending.as_ref().map_or(0, |p| p.bytes())
+            + self.linked.bytes()
+            + self.source.as_deref().map_or(0, Source::bytes)
             + self.config.as_ref().map_or(0, Config::bytes)
-            + if self.index.is_some() {
-                self.config.as_ref().unwrap().index_bytes().unwrap()
-            } else {
-                0
-            }
+            + self.index.as_ref().map_or(0, Index::bytes)
+    }
+    /// Foreign adapters count physical staging slack in addition to logical
+    /// packet bytes. It is transient, never reported as retained filter data.
+    pub fn execute_with_external(
+        &mut self,
+        b: &[u8],
+        capacity: usize,
+        external: usize,
+        superseded: impl Fn() -> bool,
+    ) -> std::result::Result<Vec<u8>, usize> {
+        self.external_bytes = external;
+        let result = self.execute(b, capacity, superseded);
+        self.external_bytes = 0;
+        result
+    }
+    pub fn occupied_bytes(&self) -> usize {
+        if self.source.is_some() {
+            self.retained_bytes()
+        } else {
+            0
+        }
     }
     fn admit(&self, extra: usize, input: usize, output: usize, budget: usize) -> Result<usize> {
-        let peak = add(add(self.retained_bytes(), extra)?, add(input, output)?)?;
+        let peak = add(
+            add(add(self.retained_bytes(), self.external_bytes)?, extra)?,
+            add(input, output)?,
+        )?;
         if peak > budget {
             return Err(Error::Budget);
         }
@@ -365,7 +601,7 @@ impl FilterTierCSession {
     fn fingerprint(&self) -> u64 {
         if self.config.as_ref().is_some_and(Config::linked) {
             return self.linked.fingerprint(
-                self.source.as_ref(),
+                self.source.as_deref(),
                 self.config.as_ref(),
                 self.intent,
             );
@@ -418,7 +654,7 @@ impl FilterTierCSession {
         b[..4].copy_from_slice(b"XYFR");
         b[4..8].copy_from_slice(&1u32.to_le_bytes());
         b[8..12].copy_from_slice(&status.to_le_bytes());
-        let s = self.source.as_ref();
+        let s = self.source.as_deref();
         for (at, v) in [
             (16, requested),
             (24, self.revision),
@@ -427,14 +663,7 @@ impl FilterTierCSession {
             (48, s.map_or(0, |s| s.revision)),
             (56, self.fingerprint()),
             (64, tier),
-            (
-                72,
-                if self.index.is_some() {
-                    cfg.unwrap().index_bytes()? as u64
-                } else {
-                    0
-                },
-            ),
+            (72, self.index.as_ref().map_or(0, Index::bytes) as u64),
             (80, self.retained_bytes() as u64),
             (88, peak as u64),
             (96, rows),
@@ -485,13 +714,24 @@ impl FilterTierCSession {
         capacity: usize,
         superseded: impl Fn() -> bool,
     ) -> std::result::Result<Vec<u8>, usize> {
-        self.peak_observed.set(self.retained_bytes());
+        self.cancel_pending_for(b);
+        self.peak_observed
+            .set(self.retained_bytes().saturating_add(self.external_bytes));
         let requested = u64_at(b, 16).unwrap_or(0);
-        let error = match self.prepare(b, capacity, &superseded) {
+        let error = match self.prepare(b, capacity, &superseded, &mut BuildMode::Sync) {
             Ok(reply) => return Ok(reply),
             Err(PrepareError::Capacity(n)) => return Err(n),
             Err(PrepareError::Policy(e)) => e,
+            Err(PrepareError::Deferred(_)) => unreachable!("synchronous execution cannot defer"),
         };
+        self.error_reply(requested, error, capacity)
+    }
+    fn error_reply(
+        &self,
+        requested: u64,
+        error: Error,
+        capacity: usize,
+    ) -> std::result::Result<Vec<u8>, usize> {
         let reply = self
             .reply(
                 requested,
@@ -519,24 +759,19 @@ impl FilterTierCSession {
         b: &[u8],
         capacity: usize,
         superseded: &impl Fn() -> bool,
+        mode: &mut BuildMode,
     ) -> std::result::Result<Vec<u8>, PrepareError> {
-        if b.len() < HEADER || b.len() > MAX_PACKET || &b[..4] != b"XYFC" || u32_at(b, 4)? != 1 {
-            return Err(Error::Malformed.into());
-        }
-        let op = u32_at(b, 8)?;
-        let flags = u32_at(b, 12)?;
-        let seq = u64_at(b, 16)?;
-        if !(1..=15).contains(&op) || flags > 1 || (flags != 0 && op != 5 && op != 11) || seq == 0 {
-            return Err(Error::Malformed.into());
-        }
+        let (op, flags, seq) = admitted_header(b)?;
+        let issued_open = op == 16;
         if seq <= self.cancelled {
             return Err(Error::Cancelled.into());
         }
-        if seq <= self.newest {
+        if seq <= self.newest && !(mode.is_completion() && seq == self.newest) {
             return Err(Error::Stale.into());
         }
         self.newest = seq;
-        let budget = if op == 1 {
+        let opening = op == 1 || issued_open;
+        let budget = if opening {
             usize_at(b, 48)?
         } else {
             self.budget
@@ -544,8 +779,8 @@ impl FilterTierCSession {
         if budget > self.limit {
             return Err(Error::Budget.into());
         }
-        if op != 1 {
-            let s = self.source.as_ref().ok_or(Error::Missing)?;
+        if !opening {
+            let s = self.source.as_deref().ok_or(Error::Missing)?;
             if u64_at(b, 24)? != s.id
                 || u64_at(b, 32)? != s.epoch
                 || u64_at(b, 40)? != s.revision
@@ -554,297 +789,368 @@ impl FilterTierCSession {
                 return Err(Error::Source.into());
             }
         }
-        let cancelled = || superseded();
+        let cancelled = superseded;
         if cancelled() {
             return Err(Error::Cancelled.into());
         }
-        if op >= 10 || self.config.as_ref().is_some_and(Config::linked) && matches!(op, 3..=5 | 7) {
-            return self.prepare_linked(b, capacity, superseded, op, flags, seq, budget);
+        if u32_at(b, 4)? == 3 && !self.config.as_ref().is_some_and(Config::linked) {
+            return Err(Error::Missing.into());
         }
-        let mut new_source = None;
+        if (10..=15).contains(&op)
+            || self.config.as_ref().is_some_and(Config::linked) && matches!(op, 3..=5 | 7)
+        {
+            return self.prepare_linked(b, capacity, superseded, op, flags, seq, budget, mode);
+        }
         let mut new_config = None;
-        let mut new_index = None;
-        let mut evict = false;
-        let mut cancel = false;
-        let mut intent = None;
-        let mut counts = None;
-        let mut membership = Vec::new();
-        let mut rows = 0;
-        let mut reads = 0;
-        let mut selected = 0;
-        let mut tier = 0;
-        let mut fallback = 0;
-        let mut page_first = 0;
-        let mut peak = self.admit(0, b.len(), REPLY_HEADER + MAX_VIEWS * 16, budget)?;
-        match op {
-            1 | 2 => {
-                if op == 1 && self.source.is_some() {
-                    return Err(Error::Source.into());
-                }
-                let dims = usize_at(b, 56)?;
-                let n = usize_at(b, 64)?;
-                let first = u64_at(b, 72)?;
-                if dims == 0
-                    || dims > MAX_DIMS
-                    || u64_at(b, 24)? == 0
-                    || u64_at(b, 32)? == 0
-                    || (op == 1 && u64_at(b, 40)? != 1)
-                    || b.len() != add(HEADER, mul(mul(dims, n)?, 8)?)?
-                {
-                    return Err(Error::Malformed.into());
-                }
-                let old = if op == 2 { self.source.as_ref() } else { None };
-                let old_rows = old.map_or(0, |s| s.rows);
-                if let Some(s) = old {
-                    if dims != s.columns.len()
-                        || first != s.first.checked_add(s.rows as u64).ok_or(Error::Malformed)?
-                    {
+        let result = (|| {
+            let mut new_source = None;
+            let mut new_index = None;
+            let mut evict = false;
+            let mut cancel = false;
+            let mut intent = None;
+            let mut counts = None;
+            let mut membership = Vec::new();
+            let mut rows = 0;
+            let mut reads = 0;
+            let mut selected = 0;
+            let mut tier = 0;
+            let mut fallback = 0;
+            let mut page_first = 0;
+            let mut peak = self.admit(0, b.len(), REPLY_HEADER + MAX_VIEWS * 16, budget)?;
+            match op {
+                #[cfg(not(target_family = "wasm"))]
+                16 => {
+                    if self.source.is_some() {
                         return Err(Error::Source.into());
                     }
-                }
-                let total = add(old_rows, n)?;
-                let source_first = old.map_or(first, |s| s.first);
-                source_first
-                    .checked_add(total as u64)
-                    .ok_or(Error::Malformed)?;
-                let rev = if let Some(s) = old {
-                    s.revision.checked_add(1).ok_or(Error::Malformed)?
-                } else {
-                    1
-                };
-                let bytes = add(mul(mul(dims, total)?, 8)?, mul(dims, 24)?)?;
-                peak = self.admit(bytes, b.len(), REPLY_HEADER + MAX_VIEWS * 16, budget)?;
-                let mut columns = Vec::new();
-                columns
-                    .try_reserve_exact(dims)
-                    .map_err(|_| Error::Allocation)?;
-                for d in 0..dims {
-                    let mut column = alloc::<f64>(total)?;
-                    if let Some(s) = old {
-                        column[..old_rows].copy_from_slice(&s.columns[d]);
+                    let dims = usize_at(b, 56)?;
+                    if dims == 0 || dims > MAX_DIMS {
+                        return Err(Error::Malformed.into());
                     }
-                    for row in 0..n {
-                        if row % 4096 == 0 && cancelled() {
-                            return Err(Error::Cancelled.into());
-                        }
-                        column[old_rows + row] = f64_at(b, HEADER + (d * n + row) * 8)?;
-                    }
-                    columns.push(column);
+                    self.admit(add(128, mul(dims, 72)?)?, b.len(), REPLY_HEADER, budget)?;
+                    let source = paged::PagedSource::read(b)?;
+                    peak = self.admit(source.bytes(), b.len(), REPLY_HEADER, budget)?;
+                    new_source = Some(source);
                 }
-                rows = n as u64;
-                new_source = Some(Source {
-                    id: u64_at(b, 24)?,
-                    epoch: u64_at(b, 32)?,
-                    revision: rev,
-                    first: source_first,
-                    rows: total,
-                    columns,
-                });
-                evict = true;
-            }
-            3 | 4 => {
-                let source = self.source.as_ref().ok_or(Error::Missing)?;
-                if op == 3 {
-                    self.admit(
-                        add(b.len(), mul(usize_at(b, 72)?.min(MAX_VIEWS), 64)?)?,
-                        b.len(),
-                        REPLY_HEADER + MAX_VIEWS * 16,
-                        budget,
-                    )?;
-                    new_config = Some(Config::read(b, source)?);
-                    if self.intent.is_some()
-                        && self.config.as_ref().is_some_and(|c| {
-                            c.active.dimension != new_config.as_ref().unwrap().active.dimension
-                        })
+                1 | 2 => {
+                    if op == 1 && self.source.is_some() {
+                        return Err(Error::Source.into());
+                    }
+                    let dims = usize_at(b, 56)?;
+                    let n = usize_at(b, 64)?;
+                    let first = u64_at(b, 72)?;
+                    if dims == 0
+                        || dims > MAX_DIMS
+                        || u64_at(b, 24)? == 0
+                        || u64_at(b, 32)? == 0
+                        || (op == 1 && u64_at(b, 40)? != 1)
+                        || b.len() != add(HEADER, mul(mul(dims, n)?, 8)?)?
                     {
                         return Err(Error::Malformed.into());
                     }
-                } else if b.len() != HEADER {
-                    return Err(Error::Malformed.into());
+                    let old = if op == 2 {
+                        self.source.as_deref()
+                    } else {
+                        None
+                    };
+                    let old_rows = old.map_or(0, |s| s.rows);
+                    if let Some(s) = old {
+                        if dims != s.columns.len()
+                            || first
+                                != s.first.checked_add(s.rows as u64).ok_or(Error::Malformed)?
+                        {
+                            return Err(Error::Source.into());
+                        }
+                    }
+                    let total = add(old_rows, n)?;
+                    let source_first = old.map_or(first, |s| s.first);
+                    source_first
+                        .checked_add(total as u64)
+                        .ok_or(Error::Malformed)?;
+                    let rev = if let Some(s) = old {
+                        s.revision.checked_add(1).ok_or(Error::Malformed)?
+                    } else {
+                        1
+                    };
+                    let bytes = add(mul(mul(dims, total)?, 8)?, mul(dims, 24)?)?;
+                    peak = self.admit(bytes, b.len(), REPLY_HEADER + MAX_VIEWS * 16, budget)?;
+                    let mut columns = Vec::new();
+                    columns
+                        .try_reserve_exact(dims)
+                        .map_err(|_| Error::Allocation)?;
+                    for d in 0..dims {
+                        let mut column = alloc::<f64>(total)?;
+                        if let Some(s) = old {
+                            column[..old_rows].copy_from_slice(&s.columns[d]);
+                        }
+                        for row in 0..n {
+                            if row % 4096 == 0 && cancelled() {
+                                return Err(Error::Cancelled.into());
+                            }
+                            column[old_rows + row] = f64_at(b, HEADER + (d * n + row) * 8)?;
+                        }
+                        columns.push(column);
+                    }
+                    rows = n as u64;
+                    new_source = Some(Source {
+                        id: u64_at(b, 24)?,
+                        epoch: u64_at(b, 32)?,
+                        revision: rev,
+                        first: source_first,
+                        rows: total,
+                        columns,
+                        #[cfg(not(target_family = "wasm"))]
+                        paged: None,
+                    });
+                    evict = true;
                 }
-                let cfg = new_config
-                    .as_ref()
-                    .or(self.config.as_ref())
-                    .ok_or(Error::Missing)?;
-                let extra = add(
-                    cfg.index_bytes()?,
-                    new_config.as_ref().map_or(0, Config::bytes),
-                )?;
-                peak = self.admit(extra, b.len(), cfg.reply_bytes(false), budget)?;
-                new_index = Some(Index::build(source, cfg, &self.linked, &cancelled)?);
-                rows = source.rows as u64;
-            }
-            5 | 7 => {
-                if b.len() != HEADER {
-                    return Err(Error::Malformed.into());
-                }
-                let source = self.source.as_ref().ok_or(Error::Missing)?;
-                let cfg = self.config.as_ref().ok_or(Error::Missing)?;
-                let index = self.index.as_ref().ok_or(Error::Missing)?;
-                peak = self.admit(mul(cfg.width, 8)?, b.len(), cfg.reply_bytes(true), budget)?;
-                let mut result = alloc::<u64>(cfg.width)?;
-                tier = 3;
-                if op == 7 {
-                    result.copy_from_slice(&index.totals);
-                    intent = Some(None);
-                } else {
-                    let lo = f64_at(b, 80)?;
-                    let hi = f64_at(b, 88)?;
-                    if !lo.is_finite() || !hi.is_finite() {
+                3 | 4 => {
+                    let source = self.source.as_deref().ok_or(Error::Missing)?;
+                    if op == 3 {
+                        self.admit(
+                            add(b.len(), mul(usize_at(b, 72)?.min(MAX_VIEWS), 64)?)?,
+                            b.len(),
+                            REPLY_HEADER + MAX_VIEWS * 16,
+                            budget,
+                        )?;
+                        new_config = Some(Config::read(b, source)?);
+                        if self.intent.is_some()
+                            && self.config.as_ref().is_some_and(|c| {
+                                c.active.dimension != new_config.as_ref().unwrap().active.dimension
+                            })
+                        {
+                            return Err(Error::Malformed.into());
+                        }
+                    } else if b.len() != HEADER {
                         return Err(Error::Malformed.into());
                     }
-                    let bounds = [lo.min(hi), lo.max(hi)];
-                    match index.interval(bounds) {
-                        Ok((first, end)) => {
-                            for (i, v) in result.iter_mut().enumerate() {
-                                *v = index.prefix[end * cfg.width + i]
-                                    - index.prefix[first * cfg.width + i];
-                            }
-                            reads = (2 * cfg.width) as u64;
-                        }
-                        Err(Error::Boundary) if flags == 1 => {
-                            tier = 2;
-                            fallback = 1;
-                            for row in 0..source.rows {
-                                if row % 4096 == 0 && cancelled() {
-                                    return Err(Error::Cancelled.into());
-                                }
-                                let x = source.columns[cfg.active.dimension][row];
-                                rows += 1;
-                                if !x.is_finite() || x < bounds[0] || x > bounds[1] {
-                                    continue;
-                                }
-                                result[0] += 1;
-                                for v in &cfg.views {
-                                    let x = source.columns[v.axis.dimension][row];
-                                    if x.is_finite() {
-                                        result[v.offset + v.axis.cell(x)] += 1;
-                                    }
-                                }
-                            }
-                        }
-                        Err(e) => return Err(e.into()),
+                    let cfg = new_config
+                        .as_ref()
+                        .or(self.config.as_ref())
+                        .ok_or(Error::Missing)?;
+                    let extra = add(
+                        cfg.index_bytes()?,
+                        new_config.as_ref().map_or(0, Config::bytes),
+                    )?;
+                    peak = self.admit(
+                        add(extra, source.workspace(source.rows)?)?,
+                        b.len(),
+                        cfg.reply_bytes(false),
+                        budget,
+                    )?;
+                    new_index = Some(self.build_index(
+                        mode,
+                        b,
+                        capacity,
+                        cfg.reply_bytes(false),
+                        cfg,
+                        &self.linked,
+                        add(extra, source.workspace(source.rows)?)?,
+                        cancelled,
+                    )?);
+                    rows = source.rows as u64;
+                }
+                5 | 7 => {
+                    if b.len() != HEADER {
+                        return Err(Error::Malformed.into());
                     }
-                    intent = Some(Some(bounds));
+                    let source = self.source.as_deref().ok_or(Error::Missing)?;
+                    let cfg = self.config.as_ref().ok_or(Error::Missing)?;
+                    let index = self.index.as_ref().ok_or(Error::Missing)?;
+                    peak =
+                        self.admit(mul(cfg.width, 8)?, b.len(), cfg.reply_bytes(true), budget)?;
+                    tier = 3;
+                    let result = if op == 7 {
+                        let mut values = alloc::<u64>(cfg.width)?;
+                        values.copy_from_slice(&index.totals);
+                        intent = Some(None);
+                        values
+                    } else {
+                        let bounds = query_bounds(b)?;
+                        let values = match index.range_counts(cfg, bounds) {
+                            Ok(values) => {
+                                reads = (2 * cfg.width) as u64;
+                                values
+                            }
+                            Err(Error::Boundary) if flags == 1 => {
+                                let extra =
+                                    add(mul(cfg.width, 8)?, source.workspace(source.rows)?)?;
+                                peak = peak.max(self.admit(
+                                    extra,
+                                    b.len(),
+                                    cfg.reply_bytes(true),
+                                    budget,
+                                )?);
+                                tier = 2;
+                                fallback = 1;
+                                rows = source.rows as u64;
+                                self.scan_counts(
+                                    mode,
+                                    b,
+                                    cfg.reply_bytes(true),
+                                    cfg,
+                                    None,
+                                    bounds,
+                                    &mut None,
+                                    extra,
+                                    cancelled,
+                                )?
+                            }
+                            Err(e) => return Err(e.into()),
+                        };
+                        intent = Some(Some(bounds));
+                        values
+                    };
+                    selected = result[0];
+                    counts = Some(result);
                 }
-                selected = result[0];
-                counts = Some(result);
-            }
-            6 => {
-                if b.len() != HEADER {
-                    return Err(Error::Malformed.into());
+                6 => {
+                    if b.len() != HEADER {
+                        return Err(Error::Malformed.into());
+                    }
+                    evict = true;
                 }
-                evict = true;
-            }
-            8 => {
-                if b.len() != HEADER {
-                    return Err(Error::Malformed.into());
+                8 => {
+                    if b.len() != HEADER {
+                        return Err(Error::Malformed.into());
+                    }
+                    cancel = true;
                 }
-                cancel = true;
-            }
-            9 => {
-                if b.len() != HEADER {
-                    return Err(Error::Malformed.into());
-                }
-                let s = self.source.as_ref().ok_or(Error::Missing)?;
-                let start = u64_at(b, 56)?;
-                let n = usize_at(b, 64)?;
-                let offset = u32::try_from(start.checked_sub(s.first).ok_or(Error::Source)?)
-                    .map_err(|_| Error::Source)? as usize;
-                if n > 65536 || add(offset, n)? > s.rows {
-                    return Err(Error::Malformed.into());
-                }
-                page_first = start;
-                let membership_len = n.div_ceil(8);
-                rows = n as u64;
-                tier = 2;
-                fallback = 2;
-                peak = self.admit(
-                    membership_len,
-                    b.len(),
-                    self.config
+                9 => {
+                    if b.len() != HEADER {
+                        return Err(Error::Malformed.into());
+                    }
+                    let s = self.source.as_deref().ok_or(Error::Missing)?;
+                    let start = u64_at(b, 56)?;
+                    let n = usize_at(b, 64)?;
+                    let offset = u32::try_from(start.checked_sub(s.first).ok_or(Error::Source)?)
+                        .map_err(|_| Error::Source)? as usize;
+                    if n > 65536 || add(offset, n)? > s.rows {
+                        return Err(Error::Malformed.into());
+                    }
+                    page_first = start;
+                    let membership_len = n.div_ceil(8);
+                    rows = n as u64;
+                    tier = 2;
+                    fallback = 2;
+                    peak = self.admit(
+                        add(membership_len, s.workspace(n)?)?,
+                        b.len(),
+                        self.config
+                            .as_ref()
+                            .map_or(REPLY_HEADER, |c| c.reply_bytes(false))
+                            + membership_len,
+                        budget,
+                    )?;
+                    let output = self
+                        .config
                         .as_ref()
                         .map_or(REPLY_HEADER, |c| c.reply_bytes(false))
-                        + membership_len,
-                    budget,
-                )?;
-                membership = alloc::<u8>(membership_len)?;
-                for i in 0..n {
-                    if i % 4096 == 0 && cancelled() {
-                        return Err(Error::Cancelled.into());
+                        + membership_len;
+                    if capacity < output {
+                        return Err(PrepareError::Capacity(output));
                     }
-                    let yes = self.linked.matches(s, offset + i)
-                        && if let Some([lo, hi]) = self.intent {
-                            let cfg = self.config.as_ref().ok_or(Error::Missing)?;
-                            let x = s.columns[cfg.active.dimension][offset + i];
-                            x.is_finite() && x >= lo && x <= hi
-                        } else {
-                            true
-                        };
-                    if yes {
-                        membership[i / 8] |= 1 << (i % 8);
-                        selected += 1;
-                    }
+                    (membership, selected) = self.scan_membership(
+                        mode,
+                        b,
+                        output,
+                        offset,
+                        n,
+                        add(membership_len, s.workspace(n)?)?,
+                        cancelled,
+                    )?;
                 }
+                _ => unreachable!(),
             }
-            _ => unreachable!(),
-        }
-        // Capacity is checked before any source/config/index/intent publication.
-        let cfg = new_config.as_ref().or(self.config.as_ref());
-        let len = cfg.map_or(REPLY_HEADER, |c| c.reply_bytes(counts.is_some())) + membership.len();
-        if capacity < len {
-            return Err(PrepareError::Capacity(len));
-        }
-        let buffer = alloc::<u8>(len)?;
-        if cancelled() {
-            return Err(Error::Cancelled.into());
-        }
-        if cancel {
-            self.cancelled = seq;
-        }
-        if let Some(s) = new_source {
-            self.source = Some(s);
-            self.budget = budget;
-        }
-        if let Some(c) = new_config {
-            self.config = Some(c);
-        }
-        if evict {
-            self.index = None;
-        }
-        if let Some(i) = new_index {
-            self.index = Some(i);
-        }
-        if let Some(i) = intent {
-            self.intent = i;
-        }
-        self.revision = seq;
-        self.reply(
-            seq,
-            0,
-            tier,
-            fallback,
-            rows,
-            reads,
-            self.peak_observed.get().max(peak),
-            selected,
-            counts.as_deref(),
-            &membership,
-            page_first,
-            Some(buffer),
-        )
-        .map_err(PrepareError::Policy)
+            // Capacity is checked before any source/config/index/intent publication.
+            let cfg = new_config.as_ref().or(self.config.as_ref());
+            let len =
+                cfg.map_or(REPLY_HEADER, |c| c.reply_bytes(counts.is_some())) + membership.len();
+            if capacity < len {
+                return Err(PrepareError::Capacity(len));
+            }
+            let buffer = alloc::<u8>(len)?;
+            if cancelled() {
+                return Err(Error::Cancelled.into());
+            }
+            if cancel {
+                self.cancelled = seq;
+            }
+            if let Some(s) = new_source {
+                self.source = Some(Arc::new(s));
+                self.budget = budget;
+            }
+            if let Some(c) = new_config.take() {
+                self.config = Some(c);
+            }
+            if evict {
+                self.index = None;
+            }
+            if let Some(i) = new_index {
+                self.index = Some(i);
+            }
+            if let Some(i) = intent {
+                self.intent = i;
+            }
+            self.revision = seq;
+            self.reply(
+                seq,
+                0,
+                tier,
+                fallback,
+                rows,
+                reads,
+                self.peak_observed.get().max(peak),
+                selected,
+                counts.as_deref(),
+                &membership,
+                page_first,
+                Some(buffer),
+            )
+            .map_err(PrepareError::Policy)
+        })();
+        self.finish_capture(result, new_config, None, b, cancelled)
     }
 }
 #[derive(Debug)]
 enum PrepareError {
     Policy(Error),
     Capacity(usize),
+    Deferred(jobs::PendingWork),
 }
 impl From<Error> for PrepareError {
     fn from(e: Error) -> Self {
         Self::Policy(e)
     }
+}
+
+fn query_bounds(b: &[u8]) -> Result<[f64; 2]> {
+    let lo = f64_at(b, 80)?;
+    let hi = f64_at(b, 88)?;
+    if !lo.is_finite() || !hi.is_finite() {
+        return Err(Error::Malformed);
+    }
+    Ok([lo.min(hi), lo.max(hi)])
+}
+
+fn admitted_header(b: &[u8]) -> Result<(u32, u32, u64)> {
+    if !(HEADER..=MAX_PACKET).contains(&b.len()) || b.get(..4) != Some(b"XYFC") {
+        return Err(Error::Malformed);
+    }
+    let op = u32_at(b, 8)?;
+    let version = u32_at(b, 4)?;
+    let flags = u32_at(b, 12)?;
+    let seq = u64_at(b, 16)?;
+    let issued = cfg!(not(target_family = "wasm")) && version == 2 && op == 16;
+    let range_paint = version == 3 && op == 5;
+    if !((version == 1 && (1..=15).contains(&op)) || issued || range_paint)
+        || flags > 1
+        || (flags != 0 && op != 5 && op != 11)
+        || seq == 0
+    {
+        return Err(Error::Malformed);
+    }
+    Ok((op, flags, seq))
 }
 
 /// Adapter-owned concurrent request/cancellation watermarks. Newer native work
@@ -856,19 +1162,20 @@ pub struct RequestGate {
 }
 impl RequestGate {
     pub fn enter(&self, b: &[u8]) -> u64 {
+        let b = if b.get(..4) == Some(b"XYFJ") {
+            match jobs::admitted_control(b) {
+                Ok((1, _)) => &b[32..],
+                // A private token identifies existing work; it must never
+                // consume a newer request watermark, even when it is wrong.
+                Ok((_, token)) => return token,
+                Err(_) => return 0,
+            }
+        } else {
+            b
+        };
         let seq = u64_at(b, 16).unwrap_or(0);
-        let op = u32_at(b, 8).unwrap_or(0);
-        let flags = u32_at(b, 12).unwrap_or(u32::MAX);
-        // Match prepare's structural admission before consuming a watermark.
-        // Body refusals consume revisions; invalid headers do not.
-        if (HEADER..=MAX_PACKET).contains(&b.len())
-            && b.get(..4) == Some(b"XYFC")
-            && u32_at(b, 4) == Ok(1)
-            && (1..=15).contains(&op)
-            && flags <= 1
-            && (flags == 0 || op == 5 || op == 11)
-            && seq != 0
-        {
+        // Invalid headers do not consume/cancel accepted or pending work.
+        if admitted_header(b).is_ok() {
             self.newest.fetch_max(seq, Ordering::AcqRel);
         }
         seq
@@ -929,6 +1236,56 @@ mod tests {
         assert!(!gate.obsolete(7));
         put(&mut input, 16, 8);
         gate.enter(&input);
+        assert!(gate.obsolete(7));
+        gate.cancel(8);
+        assert!(gate.obsolete(8));
+    }
+
+    #[test]
+    fn filter_tier_c_transport_gate_tracks_only_admitted_begin_revisions() {
+        fn control(op: u32, token: u64, inner: &[u8]) -> Vec<u8> {
+            let mut out = vec![0; 32];
+            out[..4].copy_from_slice(b"XYFJ");
+            out[4..8].copy_from_slice(&1u32.to_le_bytes());
+            out[8..12].copy_from_slice(&op.to_le_bytes());
+            put(&mut out, 16, token);
+            out.extend_from_slice(inner);
+            out
+        }
+        let gate = RequestGate::default();
+        let mut query = vec![0; HEADER];
+        query[..4].copy_from_slice(b"XYFC");
+        query[4..8].copy_from_slice(&1u32.to_le_bytes());
+        query[8..12].copy_from_slice(&5u32.to_le_bytes());
+        put(&mut query, 16, 7);
+        assert_eq!(gate.enter(&control(1, 0, &query)), 7);
+        assert!(!gate.obsolete(7));
+        for op in [2, 3] {
+            assert_eq!(gate.enter(&control(op, 99, &[])), 99);
+            assert!(!gate.obsolete(7), "control token is not a new request");
+        }
+        put(&mut query, 16, 99);
+        for invalid in [
+            control(1, 99, &query),
+            control(2, 0, &[]),
+            control(2, 99, &query),
+            control(4, 99, &query),
+        ] {
+            gate.enter(&invalid);
+            assert!(!gate.obsolete(7));
+        }
+        for offset in [4, 12, 24] {
+            let mut invalid = control(1, 0, &query);
+            invalid[offset] = 2;
+            gate.enter(&invalid);
+            assert!(!gate.obsolete(7));
+        }
+        let mut invalid_inner = query.clone();
+        invalid_inner[12] = 2;
+        gate.enter(&control(1, 0, &invalid_inner));
+        assert!(!gate.obsolete(7));
+        put(&mut query, 16, 8);
+        assert_eq!(gate.enter(&control(1, 0, &query)), 8);
         assert!(gate.obsolete(7));
         gate.cancel(8);
         assert!(gate.obsolete(8));
@@ -995,5 +1352,94 @@ mod budget_tests {
         assert_eq!(u32_at(&reply, 8), Ok(Error::Budget as u32));
         assert!(state.source.is_none());
         assert_eq!(state.revision, 0);
+    }
+}
+
+#[cfg(test)]
+mod prefix_storage_tests {
+    use super::*;
+
+    fn config() -> Config {
+        Config {
+            active_id: 17,
+            active: Axis {
+                dimension: 0,
+                cuts: vec![1., 2.],
+            },
+            views: vec![View {
+                id: 19,
+                axis: Axis {
+                    dimension: 1,
+                    cuts: vec![1.],
+                },
+                offset: 1,
+                grid: None,
+            }],
+            width: 3,
+        }
+    }
+
+    #[test]
+    fn filter_tier_c_prefix_exact_at_u32_row_limit() {
+        let cfg = config();
+        let mut index = Index::empty(&cfg).unwrap();
+        let max = u32::MAX;
+        // Three independent channel histograms, each representing max rows.
+        // Odd slab width and single-element turns exercise every boundary.
+        index.prefix[3..].copy_from_slice(&[max - 2, max, 0, 1, 0, max - 1, 1, 0, 1]);
+        index
+            .extrema
+            .copy_from_slice(&[[0., 0.], [1., 1.], [2., 2.]]);
+        let mut cursor = cfg.width;
+        while cursor < index.prefix.len() {
+            cursor = index.prefix_step(&cfg, cursor, 1);
+        }
+        assert_eq!(
+            index.range_counts(&cfg, [0., 2.]).unwrap(),
+            vec![u64::from(max); 3]
+        );
+        assert_eq!(
+            index.range_counts(&cfg, [1., 2.]).unwrap(),
+            vec![2, 0, u64::from(max)]
+        );
+        assert_eq!(index.range_counts(&cfg, [3., 4.]).unwrap(), vec![0; 3]);
+        assert_eq!(index.bytes(), cfg.index_bytes().unwrap());
+    }
+
+    #[test]
+    fn filter_tier_c_prefix_row_bound_is_independent_of_absolute_identity() {
+        let mut packet = [0; 8];
+        put(&mut packet, 0, u64::from(u32::MAX));
+        assert_eq!(usize_at(&packet, 0), Ok(u32::MAX as usize));
+        put(&mut packet, 0, u64::from(u32::MAX) + 1);
+        assert_eq!(usize_at(&packet, 0), Err(Error::Budget));
+        assert_eq!(add(u32::MAX as usize, 1), Err(Error::Budget));
+        put(&mut packet, 0, (1u64 << 63) + 17);
+        assert_eq!(u64_at(&packet, 0), Ok((1u64 << 63) + 17));
+    }
+
+    #[test]
+    fn filter_tier_c_prefix_replacement_admits_actual_old_plus_new_storage() {
+        let cfg = config();
+        let index = Index::empty(&cfg).unwrap();
+        assert_eq!(index.prefix.capacity() * 4, 4 * 4 * 3);
+        let replacement_bytes = cfg.index_bytes().unwrap();
+        let state = FilterTierCSession {
+            config: Some(cfg),
+            index: Some(index),
+            ..FilterTierCSession::default()
+        };
+        let before = state.retained_bytes();
+        let peak = before + replacement_bytes + HEADER + REPLY_HEADER;
+        assert_eq!(
+            state.admit(replacement_bytes, HEADER, REPLY_HEADER, peak - 1),
+            Err(Error::Budget)
+        );
+        assert_eq!(state.retained_bytes(), before);
+        assert_eq!(state.index.as_ref().unwrap().prefix, vec![0; 12]);
+        assert_eq!(
+            state.admit(replacement_bytes, HEADER, REPLY_HEADER, peak),
+            Ok(peak)
+        );
     }
 }

@@ -564,6 +564,14 @@ and request bounded membership pages. Default partial-cell boundaries fail
 closed; `exact=True` / `{exact:true}` explicitly permits a reported canonical
 scan. Native/WASM use the same binary packets and authoritative diagnostics.
 The [session contract](../design/filter-tier-c.md) defines the exact subset.
+Node additionally exposes `await createNativeFilterSession(columns, options)`
+with bounded native turns. A fresh owner can transfer its genuine registration
+once to browser `createFilterSession(execute, close, registration)`; applications
+own the binary transport and one command stream. Python convenience sessions
+remain synchronous. The shared client/dashboard's `activateDensity` remembers
+accepted authoring bytes and skips only unchanged configuration submissions;
+explicit `configureDensity` still rebuilds. This does not cache index residency
+or move tier/admission decisions out of Rust.
 `configure_density` / `configureDensity` declares passive 2D grids; `paint` returns
 exact total/selected count planes and Rust-resolved density color buffers.
 `base_filter` / `baseFilter` and begin/cancel/commit edit compose persistent
@@ -573,5 +581,5 @@ canvases use B, Home/End, arrows, Enter, Escape and Delete to create/edit/commit
 cancel/clear. It paints aggregate selected density through the ordinary renderer,
 with canonical source identity and exact count metadata across dimensions.
 The bounded five-view journey is covered; automatic native widget transport,
-nonlinear/large-offset compatibility, Worker chunk cancellation and the full
+nonlinear/large-offset compatibility, portable file Worker attachment and the full
 100M/≥50 FPS/competitor qualification remain open under #112.

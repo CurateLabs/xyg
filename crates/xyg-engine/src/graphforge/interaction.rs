@@ -240,7 +240,8 @@ struct Source {
 pub struct GraphSession {
     // Only set on an admitted wire transaction candidate.
     transaction_world: Option<(Vec<u8>, Vec<u8>, u64)>,
-    transaction_bytes: Option<usize>,
+    // Remaining phase arena and the already certified companion-label bound.
+    transaction_bytes: Option<(usize, usize)>,
     instance_id: u64,
     coordination: coordination::Link,
     source: Arc<Source>,
@@ -323,8 +324,8 @@ impl GraphSession {
             .u64s("edge.target")
             .map_err(|_| InteractionStatus::Invalid)?;
         let edges = identity.edge_count();
-        let mut node_style = paint::SourceStyle::read(&doc, "node", n)?;
-        let mut edge_style = paint::SourceStyle::read(&doc, "edge", edges)?;
+        let mut node_style = paint::SourceStyle::read(&doc, false, n)?;
+        let mut edge_style = paint::SourceStyle::read(&doc, true, edges)?;
         let directed = match doc
             .optional_u8s("graph.directed")
             .map_err(|_| InteractionStatus::Invalid)?

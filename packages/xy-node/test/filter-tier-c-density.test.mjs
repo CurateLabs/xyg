@@ -7,7 +7,115 @@ import {
 } from "../src/filter-session.js";
 import { xyFilterSessionNew, xyFilterSessionFree } from "../src/native.js";
 import { scatterChart } from "../src/index.js";
+import {createNativeFilterSession} from "../src/filter-session.js";
 const root = new URL("../../../", import.meta.url);
+const rangePaintColumns = {a: [0, 1, 2, 3], b: [3, 2, 1, 0]};
+async function rangePaintSession(asyncMode = false) {
+  const chart = scatterChart(rangePaintColumns.a, rangePaintColumns.b);
+  try {
+    const s = asyncMode
+      ? await createNativeFilterSession(rangePaintColumns, {sourceId: 112n})
+      : chart.filterSession(rangePaintColumns, {sourceId: 112n});
+    await s.configureDensity({id: 1n, dimension: 'a', cuts: [2]},
+      [{id: 1n, x: 'a', y: 'b', width: 2, height: 2, xRange: [0, 4], yRange: [0, 4]}]);
+    return s;
+  } finally { chart.dispose(); }
+}
+
+for (const asyncMode of [false, true]) test(`rangePaint single native transaction, async=${asyncMode}`, async () => {
+  const s = await rangePaintSession(asyncMode);
+  try {
+    const execute = s.executeTransport.bind(s), calls = [];
+    s.executeTransport = b => {
+      const d = new DataView(b.buffer, b.byteOffset, b.length);
+      calls.push([d.getUint32(4, true), d.getUint32(8, true)]);
+      return execute(b);
+    };
+    await assert.rejects(async () => s.rangePaint(NaN, 1, {exact: true}), e =>
+      e.status === 1 && e.reply.newestRevision === e.reply.requestedRevision);
+    assert.deepEqual(calls, [[3, 5]]);
+    assert.equal(s._rangePaintSupport, undefined);
+    calls.length = 0;
+    const result = s.rangePaint(0, 1, {exact: true});
+    assert.equal(result instanceof Promise, asyncMode);
+    const r = await result;
+    assert.equal(r.selectedCount, 2n);
+    assert.equal(r.rowsRead, 0n);
+    assert.equal(r.density.length, 1);
+    assert.equal(r.density[0].selected.reduce((a, b) => a + b, 0n), 2n);
+    assert.deepEqual(calls, [[3, 5]]);
+    assert.equal(s._rangePaintSupport, true);
+  } finally { await s.close(); }
+});
+
+for (const interrupt of [null, 'newer', 'close', 'after-range'])
+test(`rangePaint guarded old-version compatibility: ${interrupt}`, async () => {
+  const s = await rangePaintSession();
+  try {
+    const execute = s.executeTransport.bind(s), calls = [];
+    let release, hold = interrupt !== null;
+    s.executeTransport = b => {
+      const d = new DataView(b.buffer, b.byteOffset, b.length);
+      const version = d.getUint32(4, true), op = d.getUint32(8, true);
+      calls.push([version, op]);
+      // A real unadmitted Rust header refusal, not a fabricated status reply.
+      let input = b;
+      if (version === 3) {
+        input = b.slice(); new DataView(input.buffer).setUint32(4, 0xffffffff, true);
+      }
+      const raw = execute(input);
+      if (hold && (interrupt !== 'after-range' || version === 1 && op === 5)) {
+        hold = false;
+        return new Promise(resolve => { release = () => resolve(raw); });
+      }
+      return raw;
+    };
+    if (interrupt) {
+      const pending = s.rangePaint(0, 1, {exact: true});
+      const settled = assert.rejects(pending, e => interrupt === 'after-range'
+        ? e.code === 'XYG_FILTER_CANCELLED' : e.status === 1);
+      if (interrupt === 'close') s.close();
+      else s.range(2, 3, {exact: true});
+      release(); await settled;
+      assert.equal(calls.filter(([v, op]) => v === 1 && op === 11).length, 0);
+      if (interrupt !== 'close') assert.equal(s.paint().selectedCount, 2n);
+    } else {
+      assert.equal(s.rangePaint(0, 1, {exact: true}).selectedCount, 2n);
+      assert.deepEqual(calls, [[3, 5], [1, 5], [1, 11]]);
+      calls.length = 0;
+      assert.equal(s.rangePaint(2, 3, {exact: true}).selectedCount, 2n);
+      assert.deepEqual(calls, [[1, 5], [1, 11]]);
+    }
+  } finally { await s.close(); }
+});
+
+for (const failure of ['capacity', 'transport', 'truncated', 'source', 'boundary'])
+test(`rangePaint does not negotiate after ${failure} refusal`, async () => {
+  const s = await rangePaintSession();
+  try {
+    const execute = s.executeTransport.bind(s); let calls = 0;
+    const sentinel = new Error('transport sentinel');
+    s.executeTransport = b => {
+      calls++;
+      if (failure === 'transport') throw sentinel;
+      if (failure === 'capacity') return executeFilterPacket(s.handle, b, 0);
+      if (failure === 'truncated') return new Uint8Array();
+      if (failure === 'source') {
+        b = b.slice(); new DataView(b.buffer).setBigUint64(24, 113n, true);
+      }
+      return execute(b);
+    };
+    assert.throws(() => s.rangePaint(0.25, 1.5), e => {
+      if (failure === 'transport') return e === sentinel;
+      if (failure === 'source') return e.status === 7;
+      if (failure === 'boundary') return e.status === 6;
+      if (failure === 'capacity') return e.status === -4;
+      return /XYFR/.test(e.message);
+    });
+    assert.equal(calls, 1);
+    assert.equal(s._rangePaintSupport, undefined);
+  } finally { await s.close(); }
+});
 const bytes = fs.readFileSync(
   new URL("tests/fixtures/filter_tier_c/density.bin", root),
 );
@@ -171,6 +279,39 @@ function wasmTransport(x, h) {
     ).slice();
   };
 }
+test("v3 range and paint complete native/WASM packets preserve old range and paint semantics", async () => {
+  const {instance} = await WebAssembly.instantiate(
+    fs.readFileSync(new URL("packages/xy-client/dist/xyg-wasm.wasm", root)), {});
+  const x = instance.exports, native = xyFilterSessionNew(1n << 20n);
+  const h = x.xyg_wasm_instance_new(1 << 20), wasm = wasmTransport(x, h);
+  const execute = b => {
+    const a = executeFilterPacket(native, b, 1 << 20), w = wasm(b);
+    assert.deepEqual(w, a);
+    return a;
+  };
+  const s = new FilterSessionClient(execute, () => {
+    xyFilterSessionFree(native); x.xyg_wasm_instance_dispose(h);
+  }, rangePaintColumns, {sourceId: 112n, firstRow: (1n << 63n) + 17n, budgetBytes: 1n << 20n});
+  try {
+    s.initialize(rangePaintColumns);
+    s.configureDensity({id: 1n, dimension: 'a', cuts: [2]},
+      [{id: 1n, x: 'a', y: 'b', width: 2, height: 2, xRange: [0, 4], yRange: [0, 4]}]);
+    for (const [lo, hi] of [[0, 1], [3, 2], [0.25, 2.5], [-1, 4], [9, 10], [-0, 0]]) {
+      const fused = s.rangePaint(lo, hi, {exact: true});
+      const expected = rangePaintColumns.a.filter(v => v >= Math.min(lo, hi) && v <= Math.max(lo, hi)).length;
+      assert.equal(fused.selectedCount, BigInt(expected));
+      s.range(lo, hi, {exact: true});
+      const legacy = s.paint({exact: true});
+      assert.equal(fused.filterHash, legacy.filterHash);
+      assert.deepEqual(fused.views, legacy.views);
+      assert.deepEqual(fused.density, legacy.density);
+      s.membership(s.firstRow, 4n);
+    }
+    for (const value of [NaN, Infinity, -Infinity])
+      assert.throws(() => s.rangePaint(value, 1, {exact: true}), e =>
+        e.status === 1 && e.reply.newestRevision === e.reply.requestedRevision);
+  } finally { s.close(); }
+});
 test("empty/nonfinite/arbitrary f64 independent density oracles and active×passive admission in both public clients", async () => {
   const { instance } = await WebAssembly.instantiate(
       fs.readFileSync(new URL("packages/xy-client/dist/xyg-wasm.wasm", root)),

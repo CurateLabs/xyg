@@ -1,0 +1,51 @@
+{
+  "command": "make check-ci PYTHON=\"uv run --no-sync python\"",
+  "exit": 0,
+  "pytest": {
+    "passed": 1039,
+    "seconds": 657.96
+  },
+  "records": {
+    "checkpoint-check-ci.log": {
+      "archive": "spec/performance/graph-native-admission-paint-2026-11-11/evidence/528adaa2631c7e33b9308c2a6e49e4149bcbcde9b970dadffc5f2ad1c9ccb391.gz",
+      "archiveBytes": 477,
+      "archiveSha256": "2fe08b7cfa8f8831bd324327ecdc1663f637a8e9fea21400a01fb8da8b51f83d",
+      "bytes": 2318,
+      "exit": 0,
+      "sha256": "528adaa2631c7e33b9308c2a6e49e4149bcbcde9b970dadffc5f2ad1c9ccb391",
+      "source": "target/task-tmp/graph-notebook-scale/semantic-100k/checkpoint-check-ci.log"
+    },
+    "checkpoint-final-precommit.log": {
+      "archive": "spec/performance/graph-native-admission-paint-2026-11-11/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveBytes": 72,
+      "archiveSha256": "8733961c5a8dea185089a03c37ab872b552d8b16572baf90f5064b2ef3828139",
+      "bytes": 240,
+      "exit": 0,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "source": "target/task-tmp/graph-notebook-scale/semantic-100k/checkpoint-final-precommit.log"
+    },
+    "checkpoint-final-ruff-check.log": {
+      "archive": "spec/performance/graph-native-admission-paint-2026-11-11/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveBytes": 39,
+      "archiveSha256": "f3af4d142827f5aad2eb0c72d556d325488a57fb6219aac10afeb51085667d53",
+      "bytes": 19,
+      "exit": 0,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "source": "target/task-tmp/graph-notebook-scale/semantic-100k/checkpoint-final-ruff-check.log"
+    },
+    "checkpoint-final-ruff-format.log": {
+      "archive": "spec/performance/graph-native-admission-paint-2026-11-11/evidence/60cd6265bed52650ece7b9dabcdc5a2ef7c9afe7b9f0c5669a15e3bb8e93468c.gz",
+      "archiveBytes": 49,
+      "archiveSha256": "5bd14c636e3cfe01cd9d67d9a3df524b516dc8222067eafe292babb70b00381f",
+      "bytes": 29,
+      "exit": 0,
+      "sha256": "60cd6265bed52650ece7b9dabcdc5a2ef7c9afe7b9f0c5669a15e3bb8e93468c",
+      "source": "target/task-tmp/graph-notebook-scale/semantic-100k/checkpoint-final-ruff-format.log"
+    }
+  },
+  "schemaVersion": 1,
+  "scope": "CI invariant contracts only; does not supersede failed final foundation or public100k notebook acceptance. No shipping, hosted checks, queue, issue or milestone approval.",
+  "sourceCheckpoint": "544d8b10f9d31f4c3dc51ca5445933bb869bb48b",
+  "supersedes": "Only finalLocalGates.ciContracts RUNNING in checks.json; original receipt unchanged",
+  "workflowValidator": "PASS"
+}

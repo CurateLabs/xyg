@@ -1,5 +1,6 @@
 /// <reference lib="webworker" />
 import {executeFrozenGraph} from "./wasm_frozen_graph";
+import {filterControlRequest, decodeFilterProgress, filterReplyRetires} from "../../packages/xy-node/src/filter-protocol.js";
 
 import {
   bindXygWasmExports,
@@ -82,6 +83,11 @@ function statusCode(status: number): string {
 }
 
 function disposeRust() {
+  if (activeFilter) {
+    clearTimeout(activeFilter.timer);
+    if (lifecycle === "failed") error(activeFilter.requestId,"XYG_WASM_TRAP","WASM instance failed while filter work was pending");
+    activeFilter = null;
+  }
   if(activeTemporal)clearTimeout(activeTemporal.timer);activeTemporal=null;temporalSources.clear();
   try {
     if (exports && handle) exports.xyg_wasm_instance_dispose(handle);
@@ -913,6 +919,87 @@ function queueTicks(message: any) {
   startNextTick();
 }
 
+// Filter work stays in Rust. A timer provides actual Worker turns between its
+// bounded continuations; TypeScript only frames, transfers and checks ranges.
+let activeFilter: { requestId: number; token: bigint; timer: ReturnType<typeof setTimeout> } | null = null;
+function filterCall(requestId: number, op: number, token: bigint, command?: ArrayBuffer): ArrayBuffer | null {
+  if (!exports || !handle) return null;
+  const packet = op === 0 ? new Uint8Array(command!) : filterControlRequest(op, token, command ? new Uint8Array(command) : undefined);
+  let status = exports.xyg_wasm_arena_resize(handle, packet.byteLength);
+  if (status !== XYG_WASM_STATUS.OK) {
+    rustError(requestId, statusCode(status), readXygWasmError(exports, handle), status); return null;
+  }
+  const ptr = exports.xyg_wasm_arena_ptr(handle) >>> 0;
+  if (!ptr || ptr + packet.byteLength > exports.memory.buffer.byteLength) throw new Error("invalid filter staging range");
+  new Uint8Array(exports.memory.buffer, ptr, packet.byteLength).set(packet);
+  status = exports.xyg_wasm_filter_execute(handle, 0, packet.byteLength, operationBudgetBytes);
+  if (status !== XYG_WASM_STATUS.OK) {
+    const detail = readXygWasmError(exports, handle); exports.xyg_wasm_arena_resize(handle, 0);
+    rustError(requestId, statusCode(status), detail, status); return null;
+  }
+  const out = exports.xyg_wasm_output_ptr(handle) >>> 0, length = exports.xyg_wasm_output_len(handle) >>> 0;
+  if (!out || length < 32 || length > operationBudgetBytes || out + length > exports.memory.buffer.byteLength) throw new Error("invalid filter output range");
+  const result = new Uint8Array(exports.memory.buffer, out, length).slice().buffer;
+  exports.xyg_wasm_arena_resize(handle, 0);
+  return result;
+}
+function receiveFilter(requestId: number, response: ArrayBuffer, continuation: boolean) {
+  const d = new DataView(response);
+  const packet = new Uint8Array(response), progress = decodeFilterProgress(packet);
+  if (progress) {
+    const token = progress.token;
+    if (activeFilter && activeFilter.requestId !== requestId) {
+      clearTimeout(activeFilter.timer);
+      error(activeFilter.requestId, "XYG_WASM_CANCELLED", "filter work was superseded", XYG_WASM_STATUS.CANCELLED);
+    }
+    if (evidenceCapability) scope.postMessage({ type: "filter.progress", requestId, token,
+      rows: d.getBigUint64(16,true), totalRows: d.getBigUint64(24,true) });
+    activeFilter = { requestId, token, timer: setTimeout(() => continueFilter(requestId, token), 0) };
+    return;
+  }
+  if (response.byteLength < 192 || d.getUint32(0, true) !== 0x52465958 || d.getUint32(4, true) !== 1) throw new Error("invalid filter response");
+  // Rust's admitted watermark decides whether an incoming packet retired the
+  // old job. Malformed/stale packets must leave that job and timer intact.
+  if (activeFilter && (continuation || filterReplyRetires(packet, activeFilter.token))) {
+    clearTimeout(activeFilter.timer);
+    if (activeFilter.requestId !== requestId) error(activeFilter.requestId, "XYG_WASM_CANCELLED", "filter work was superseded", XYG_WASM_STATUS.CANCELLED);
+    activeFilter = null;
+  }
+  reply(requestId, response, [response]);
+}
+function continueFilter(requestId: number, token: bigint) {
+  if (!activeFilter || activeFilter.requestId !== requestId || activeFilter.token !== token || lifecycle !== "initialized") return;
+  try {
+    const response = filterCall(requestId, 2, token);
+    if (response) receiveFilter(requestId, response, true);
+    else activeFilter = null;
+  } catch (cause) { failFilter(requestId, cause); }
+}
+function failFilter(requestId: number, cause: unknown) {
+  if (activeFilter?.requestId === requestId) { clearTimeout(activeFilter.timer); activeFilter = null; }
+  lifecycle = "failed"; disposeRust();
+  error(requestId, "XYG_WASM_TRAP", cause instanceof Error ? cause.message : "WASM filter command trapped");
+}
+function runFilterCommand(message: any) {
+  if (!exports || !handle || lifecycle !== "initialized") {
+    error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized"); return;
+  }
+  // Refuse before staging: arena_resize retires an ordinary compile job.
+  // A different product's accepted/pending transport must drain first.
+  if (activeCompile || activeGraph || activeAggregate || activeAggregateStream || activeTemporal
+      || activeTick || tickQueue.length || queued.size) {
+    error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "filter operations require a dedicated, drained Worker", XYG_WASM_STATUS.INVALID_ARGUMENT);
+    return;
+  }
+  if (!(message.command instanceof ArrayBuffer) || message.command.byteLength < 1 || message.command.byteLength + (message.cooperative === true ? 32 : 0) > operationBudgetBytes) {
+    error(message.requestId, "XYG_WASM_INVALID_ARGUMENT", "filter command is malformed"); return;
+  }
+  try {
+    const response = filterCall(message.requestId, message.cooperative === true ? 1 : 0, 0n, message.command);
+    if (response) receiveFilter(message.requestId, response, false);
+  } catch (cause) { failFilter(message.requestId, cause); }
+}
+
 function runTemporalCommand(message: any, filter = false) {
   if (!exports || !handle || lifecycle !== "initialized") {
     error(message.requestId, "XYG_WASM_NOT_READY", "worker is not initialized");
@@ -1421,7 +1508,7 @@ scope.onmessage = (event: MessageEvent<any>) => {
     queued.set(message.requestId, timer as unknown as number);
     return;
   }
-  if (message?.type === "filter.command") { runTemporalCommand(message, true); return; }
+  if (message?.type === "filter.command") { runFilterCommand(message); return; }
   if (message?.type === "temporal.command") {
     runTemporalCommand(message);
     return;
@@ -1448,6 +1535,11 @@ scope.onmessage = (event: MessageEvent<any>) => {
     const owner=temporalSources.get(message.lifetime);if(owner){try{temporalCall(5,owner,operationSequenceWatermark||1);}catch{}temporalSources.delete(message.lifetime);}reply(message.requestId,undefined);return;
   }
   if (message?.type === "cancel") {
+    if (activeFilter?.requestId === message.requestId) {
+      const active = activeFilter; clearTimeout(active.timer); activeFilter = null;
+      try { filterCall(message.requestId, 3, active.token); } catch(cause) { failFilter(message.requestId, cause); }
+      return;
+    }
     if(activeTemporal?.message.requestId===message.requestId){abortTemporal("temporal scan cancelled");return;}
     const timer = queued.get(message.requestId);
     if (timer !== undefined) {

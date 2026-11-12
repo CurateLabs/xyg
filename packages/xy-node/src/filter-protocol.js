@@ -12,6 +12,38 @@ function wireU64(value) {
     throw new RangeError("u64 field is out of range");
   return result;
 }
+// Host-neutral framing only. Rust admits revisions, work and cancellation.
+export function filterControlRequest(operation, token, payload = new Uint8Array()) {
+  token = wireU64(token);
+  if (!(payload instanceof Uint8Array) || payload.byteLength > MAX_FILTER_PACKET_BYTES - 32)
+    throw new RangeError("invalid filter control payload extent");
+  if (!(operation === 1 ? token === 0n && payload.length > 0
+    : (operation === 2 || operation === 3) && token !== 0n && payload.length === 0))
+    throw new TypeError("invalid filter control framing");
+  const packet = new Uint8Array(32 + payload.byteLength), d = new DataView(packet.buffer);
+  packet.set([88, 89, 70, 74]); d.setUint32(4, 1, true);
+  d.setUint32(8, operation, true); d.setBigUint64(16, token, true); packet.set(payload, 32);
+  return packet;
+}
+export function decodeFilterProgress(packet) {
+  if (!(packet instanceof Uint8Array) || packet.length < 4)
+    throw new Error("invalid filter response");
+  const d = new DataView(packet.buffer, packet.byteOffset, packet.byteLength);
+  if (d.getUint32(0, true) !== 0x4a465958) return null;
+  if (packet.length !== 32 || d.getUint32(4, true) !== 1)
+    throw new Error("invalid filter progress reply");
+  const token = d.getBigUint64(8, true), rows = d.getBigUint64(16, true), totalRows = d.getBigUint64(24, true);
+  if (!token || rows > totalRows) throw new Error("invalid filter progress reply");
+  return {token, rows, totalRows};
+}
+export function filterReplyRetires(packet, token) {
+  if (!(packet instanceof Uint8Array) || packet.length < 192)
+    throw new Error("invalid filter response");
+  const d = new DataView(packet.buffer, packet.byteOffset, packet.byteLength);
+  if (d.getUint32(0, true) !== 0x52465958 || d.getUint32(4, true) !== 1)
+    throw new Error("invalid filter response");
+  return d.getBigUint64(144, true) > token || d.getBigUint64(24, true) >= token;
+}
 export function filterRequest(
   op,
   {
@@ -23,6 +55,7 @@ export function filterRequest(
     args = [],
     range = [0, 0],
     exact = false,
+    version = 1,
   } = {},
   payload = new Uint8Array(),
 ) {
@@ -31,8 +64,10 @@ export function filterRequest(
     throw new RangeError("XYFC packet exceeds its transport extent");
   const out = new Uint8Array(96 + payload.byteLength),
     d = new DataView(out.buffer);
+  const wireVersion = wireU64(version);
+  if (wireVersion > 0xffffffffn) throw new RangeError("version must fit u32");
   out.set([88, 89, 70, 67]);
-  d.setUint32(4, 1, true);
+  d.setUint32(4, Number(wireVersion), true);
   d.setUint32(8, op, true);
   d.setUint32(12, exact ? 1 : 0, true);
   [
@@ -254,6 +289,24 @@ export class FilterTierCError extends Error {
   }
 }
 /** Thin programmatic session client. A native handle or dedicated WASM Worker owns state. */
+const filterCloseResults = new WeakMap();
+function initializeClient(client, execute, close, names, rows,
+  {sourceId, epoch = 1n, firstRow = 0n, budgetBytes = 64n << 20n} = {}) {
+  client.executeTransport = execute;
+  client.closeTransport = close;
+  client.names = names;
+  client.sourceId = wireU64(sourceId);
+  client.epoch = wireU64(epoch);
+  client.sourceRevision = 1n;
+  client.budgetBytes = wireU64(budgetBytes);
+  client.revision = 0n;
+  client.firstRow = wireU64(firstRow);
+  client.rows = wireU64(rows);
+  client.closed = false;
+  client._metadataWatermark = 0n;
+  client._configurationSequence = 0n;
+  client._densityDefinition = null;
+}
 export class FilterSessionClient {
   constructor(
     execute,
@@ -261,17 +314,32 @@ export class FilterSessionClient {
     columns,
     { sourceId, epoch = 1n, firstRow = 0n, budgetBytes = 64n << 20n } = {},
   ) {
-    this.executeTransport = execute;
-    this.closeTransport = close;
-    this.names = Object.keys(columns);
-    this.sourceId = wireU64(sourceId);
-    this.epoch = wireU64(epoch);
-    this.sourceRevision = 1n;
-    this.budgetBytes = wireU64(budgetBytes);
-    this.revision = 0n;
-    this.firstRow = wireU64(firstRow);
-    this.rows = BigInt(Object.values(columns)[0]?.length ?? 0);
-    this.closed = false;
+    initializeClient(this, execute, close, Object.keys(columns),
+      Object.values(columns)[0]?.length ?? 0, {sourceId, epoch, firstRow, budgetBytes});
+  }
+  /** Adopt an actual source-registration reply; no array-shaped stand-ins. */
+  static fromRegistration(execute, close, registration) {
+    const {names, packet, budgetBytes} = registration ?? {};
+    if (typeof execute !== "function" || typeof close !== "function"
+      || !Array.isArray(names) || names.length < 1 || names.length > 64
+      || names.some(name => typeof name !== "string") || new Set(names).size !== names.length
+      || !(packet instanceof Uint8Array) || packet.length !== 192)
+      throw new TypeError("invalid filter source registration");
+    const result = decodeFilterReply(packet);
+    if (result.status || result.sourceId === 0n || result.epoch === 0n
+      || result.sourceRevision !== 1n || result.revision === 0n
+      || result.requestedRevision !== result.revision || result.newestRevision !== result.revision
+      || result.affectedCount !== 0n || result.tier !== 0n || result.indexBytes !== 0n
+      || result.activeView !== 0n || result.hasIntent !== 0n)
+      throw new TypeError("invalid filter source registration");
+    const client = Object.create(FilterSessionClient.prototype);
+    initializeClient(client, execute, close, [...names], result.sourceRows, {
+      sourceId: result.sourceId, epoch: result.epoch, firstRow: result.firstRow, budgetBytes,
+    });
+    client.revision = result.newestRevision;
+    client._metadataWatermark = result.newestRevision;
+    client._configurationSequence = result.newestRevision;
+    return client;
   }
   request(op, options = {}, payload = new Uint8Array()) {
     if (this.closed) throw new Error("filter session is closed");
@@ -291,8 +359,12 @@ export class FilterSessionClient {
   accept(packet) {
     const result = decodeFilterReply(packet);
     if (result.status) throw new FilterTierCError(result);
-    this.sourceRevision = result.sourceRevision;
-    this.rows = result.sourceRows;
+    // Transport completion order need not be Rust publication order.
+    if (result.newestRevision >= this._metadataWatermark) {
+      this._metadataWatermark = result.newestRevision;
+      this.sourceRevision = result.sourceRevision;
+      this.rows = result.sourceRows;
+    }
     return result;
   }
   initialize(columns) {
@@ -319,9 +391,8 @@ export class FilterSessionClient {
       ),
     );
   }
-  configureDensity(active, views) {
-    return this.call(
-      this.request(
+  _densityRequest(active, views) {
+    return this.request(
         10,
         {
           args: [
@@ -331,8 +402,31 @@ export class FilterSessionClient {
           ],
         },
         filterDensityConfig(this.names, active, views),
-      ),
-    );
+      );
+  }
+  configureDensity(active, views) {
+    return this.call(this._densityRequest(active, views));
+  }
+  /** Submit changed authoring metadata; explicit configureDensity always rebuilds.
+   * Rust still decides whether subsequent queries need an index rebuild. */
+  activateDensity(active, views) {
+    const packet = this._densityRequest(active, views);
+    const previous = this._densityDefinition;
+    // Ignore only the request sequence (bytes 16..24). Everything else,
+    // including source revision, budget, active identity and paint, must match.
+    if (previous && previous.sequence === this._configurationSequence
+      && previous.packet.length === packet.length
+      && packet.every((byte, i) => i >= 16 && i < 24 || byte === previous.packet[i])) {
+      return undefined;
+    }
+    const definition = packet.slice();
+    const remember = result => {
+      if (!this.closed && this._configurationSequence === result.requestedRevision)
+        this._densityDefinition = {packet: definition, sequence: result.requestedRevision};
+      return result;
+    };
+    const result = this.call(packet);
+    return result instanceof Promise ? result.then(remember) : remember(result);
   }
   paint({ exact = false } = {}) {
     return this.call(this.request(11, { exact }));
@@ -366,6 +460,50 @@ export class FilterSessionClient {
   range(lo, hi, { exact = false } = {}) {
     return this.call(this.request(5, { range: [lo, hi], exact }));
   }
+  rangePaint(lo, hi, { exact = false } = {}) {
+    const legacy = () => {
+      const finish = (reply) => {
+        if (this.closed || this.revision !== reply.requestedRevision
+          || this.sourceRevision !== reply.sourceRevision) {
+          const error = new Error("filter range-and-paint was superseded before compatibility paint");
+          error.code = "XYG_FILTER_CANCELLED";
+          throw error;
+        }
+        return this.paint({ exact });
+      };
+      const reply = this.range(lo, hi, { exact });
+      return reply instanceof Promise ? reply.then(finish) : finish(reply);
+    };
+    if (this._rangePaintSupport === false) return legacy();
+    const sourceRevision = this.sourceRevision;
+    const packet = this.request(5, { version: 3, range: [lo, hi], exact });
+    const sequence = new DataView(packet.buffer, packet.byteOffset).getBigUint64(16, true);
+    const accepted = (reply) => {
+      if (!reply.density.length) throw new Error("range-and-paint response omitted density");
+      if (!this.closed) this._rangePaintSupport = true;
+      return reply;
+    };
+    const refused = (error) => {
+      const r = error?.reply;
+      if (this._rangePaintSupport === undefined && error instanceof FilterTierCError
+        && error.status === 1 && !this.closed && this.revision === sequence
+        && r.requestedRevision === sequence && r.newestRevision < sequence
+        && r.sourceId === this.sourceId && r.epoch === this.epoch
+        && r.sourceRevision === sourceRevision && this.sourceRevision === sourceRevision) {
+        // Old peers reject the unknown version before admission. A malformed
+        // v3 payload instead consumes its watermark and must never be retried.
+        this._rangePaintSupport = false;
+        return legacy();
+      }
+      throw error;
+    };
+    try {
+      const reply = this.call(packet);
+      return reply instanceof Promise ? reply.then(accepted, refused) : accepted(reply);
+    } catch (error) {
+      return refused(error);
+    }
+  }
   clear() {
     return this.call(this.request(7));
   }
@@ -398,13 +536,27 @@ export class FilterSessionClient {
   close() {
     if (!this.closed) {
       this.closed = true;
-      return this.closeTransport();
+      this._densityDefinition = null;
+      const result = this.closeTransport();
+      filterCloseResults.set(this, result);
     }
+    return filterCloseResults.get(this);
   }
   call(packet) {
+    // Rust may accept a configuration while its ACK is held by the transport.
+    // Never skip authoring against an earlier accepted ACK during that interval.
+    if (packet.length >= 96) {
+      const d = new DataView(packet.buffer, packet.byteOffset, packet.byteLength);
+      const sequence = d.getBigUint64(16, true);
+      if ([1, 3, 10, 16].includes(d.getUint32(8, true))
+        && sequence > this._configurationSequence) {
+        this._configurationSequence = sequence;
+        this._densityDefinition = null;
+      }
+    }
     const reply = this.executeTransport(packet);
-    return reply instanceof Promise
-      ? reply.then((b) => this.accept(b))
+    return typeof reply?.then === "function"
+      ? Promise.resolve(reply).then((b) => this.accept(b))
       : this.accept(reply);
   }
 }

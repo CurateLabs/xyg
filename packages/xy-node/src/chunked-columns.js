@@ -1,4 +1,5 @@
 import { ChunkedLiveHost } from "./chunked-live.js";
+import { ChunkedColumnRef } from "./chunked-column-ref.js";
 import { scatterChart } from "./charts.js";
 /** Thin Node host for Rust-owned ordered Tier-3 XYGC range reads. */
 import {
@@ -24,6 +25,10 @@ function readOverview(columns,maxPoints,generation=null) {
 }
 
 export class ChunkedColumns {
+  column(plane) {
+    if (plane !== "x" && plane !== "y") throw new TypeError("chunked column plane must be 'x' or 'y'");
+    return new ChunkedColumnRef(this, plane === "x" ? 0 : 1);
+  }
   constructor(path) {
     const bytes = Buffer.from(String(path), "utf8");
     this.handle = xyChunkedColumnsOpen(pointer(bytes, "uint8_t *"), bytes.length);
