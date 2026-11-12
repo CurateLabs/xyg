@@ -1,0 +1,534 @@
+{
+  "bindings": {
+    "current": 3519,
+    "historical": 1773,
+    "parents": 60,
+    "path": "spec/performance/filter-emscripten-transport-2026-11-12/current-bindings.json",
+    "sha256": "aa8d3e02c092bd7eee6f8ac4a2109367554533494138f876b70cda19578e92f3"
+  },
+  "compiledInputs": {
+    "changed": [
+      "crates/xyg-engine/src/filter_tier_c_jobs.rs"
+    ],
+    "count": 327,
+    "path": "spec/performance/filter-emscripten-transport-2026-11-12/compiled-inputs.json",
+    "sha256": "53b1986806af0cd59b9bbc3d0b614c02adb2f6822da7139bad5138b0b05592f9"
+  },
+  "evidence": {
+    "abi-generation.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/eb8c840abbbfbbcc7b2fc02f6c1c2909f93ea1a5c8d5ab31aed178cc9a757485.gz",
+      "archiveSha256": "6b122b899451b0ab6c58d466a84b6cd6390ee050b4f5aa113c6b0d9afeba9beb",
+      "bytes": 42,
+      "sha256": "eb8c840abbbfbbcc7b2fc02f6c1c2909f93ea1a5c8d5ab31aed178cc9a757485",
+      "source": "target/task-tmp/filter-emscripten-repair/abi-generation.log"
+    },
+    "abi-smoke.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306.gz",
+      "archiveSha256": "aa3af828689b39e5cb48e96ed8fa99ca3d3a9326510eb29838bb24208e32deba",
+      "bytes": 52,
+      "sha256": "671ca12b9e3751751525ec45868e2ad11a09897b58a64e2450ad11f141b5b306",
+      "source": "target/task-tmp/filter-emscripten-repair/abi-smoke.log"
+    },
+    "build-receipt.py": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/0dd6ceadc1c56264e47813be23f91d2c7bd0b0e28fdc22efad5bf83b3b2ec07e.gz",
+      "archiveSha256": "251ae02713e9e51b37f443c08d810253564a59966120dbd4b7e13ceed57972a1",
+      "bytes": 8044,
+      "sha256": "0dd6ceadc1c56264e47813be23f91d2c7bd0b0e28fdc22efad5bf83b3b2ec07e",
+      "source": "target/task-tmp/filter-emscripten-repair/build-receipt.py"
+    },
+    "check-ci.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/8e2f0f020a81ddc9caeb2098aa2a6fcd7c0fd0dd0a6ef442b2a314728922f36a.gz",
+      "archiveSha256": "e5aaf97e98f6faaae9f3bfea62fd24cf2491213871816cb25ca927dcc0067b64",
+      "bytes": 2304,
+      "sha256": "8e2f0f020a81ddc9caeb2098aa2a6fcd7c0fd0dd0a6ef442b2a314728922f36a",
+      "source": "target/task-tmp/filter-emscripten-repair/check-ci.log"
+    },
+    "core-final.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/b57ab85774f530b7e30be259afdaf052069a4635ae96b891307eda75eab93bc9.gz",
+      "archiveSha256": "2e7c3f2468e30bb24af71dd7a538a4a4b2376e94cc02ae356279038d08d085a4",
+      "bytes": 125,
+      "sha256": "b57ab85774f530b7e30be259afdaf052069a4635ae96b891307eda75eab93bc9",
+      "source": "target/task-tmp/filter-emscripten-repair/core-final.log"
+    },
+    "core-missing-lf-pins.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/84a3300e64550ed98022efd601d9567cd8e94a6d3e7870d9bc6db35c6b728d16.gz",
+      "archiveSha256": "0811570d410b147538b1e3ec1e8b3692f0e29549ed8f7463567eb72941b4e8ad",
+      "bytes": 3881,
+      "sha256": "84a3300e64550ed98022efd601d9567cd8e94a6d3e7870d9bc6db35c6b728d16",
+      "source": "target/task-tmp/filter-emscripten-repair/core-missing-lf-pins.log"
+    },
+    "core.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/84a3300e64550ed98022efd601d9567cd8e94a6d3e7870d9bc6db35c6b728d16.gz",
+      "archiveSha256": "0811570d410b147538b1e3ec1e8b3692f0e29549ed8f7463567eb72941b4e8ad",
+      "bytes": 3881,
+      "sha256": "84a3300e64550ed98022efd601d9567cd8e94a6d3e7870d9bc6db35c6b728d16",
+      "source": "target/task-tmp/filter-emscripten-repair/core.log"
+    },
+    "corrected-check.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/b0c0f9dd3a006eb9b52cc608020aa28a43da3764ed518170d151a6c6a7319915.gz",
+      "archiveSha256": "605607a7921be91e7b731796f91f9237716c15f7aa0bdb8dcd8bae604d0cee32",
+      "bytes": 1612,
+      "sha256": "b0c0f9dd3a006eb9b52cc608020aa28a43da3764ed518170d151a6c6a7319915",
+      "source": "target/task-tmp/filter-emscripten-repair/corrected-check.log"
+    },
+    "discardedExperiment/candidate.mjs": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/def0e72164a1a79427ba06cbe60eda8fce56d55104f143663c827e8258c6d103.gz",
+      "archiveSha256": "27ca3d651d4367d48dab8763c2bcc2f544b6e9b8f0d3be62a8e7a1fc6bb3ff2f",
+      "bytes": 18272,
+      "sha256": "def0e72164a1a79427ba06cbe60eda8fce56d55104f143663c827e8258c6d103",
+      "source": "target/task-tmp/filter-decode-bulk/candidate.mjs"
+    },
+    "discardedExperiment/check.json": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/650f414be346eacdf3eb823d99802e7c229af59d21534ba2dc1673026960d02f.gz",
+      "archiveSha256": "a13f87ee7fdc52023e2c23c56033751b173ce9e09604ebb70f6e83b7bb65be39",
+      "bytes": 275,
+      "sha256": "650f414be346eacdf3eb823d99802e7c229af59d21534ba2dc1673026960d02f",
+      "source": "target/task-tmp/filter-decode-bulk/check.json"
+    },
+    "discardedExperiment/codspeed-baseline.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/90f3f096e4c9aee6018c028a0ec2a7ddbac0af490d0cf833b695d3734f57956c.gz",
+      "archiveSha256": "c423d54ba259f6d20576f5892eeb2a0779ca57c2b82c09f872998ecac5c16c6a",
+      "bytes": 1572,
+      "sha256": "90f3f096e4c9aee6018c028a0ec2a7ddbac0af490d0cf833b695d3734f57956c",
+      "source": "target/task-tmp/filter-decode-bulk/codspeed-baseline.log"
+    },
+    "discardedExperiment/codspeed-candidate.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/1acbf179a825b5f6ed07c7b53bb8edede4736b53b75ee688a40659f8ffadbd66.gz",
+      "archiveSha256": "2d2895d4b78dac536e268ee1403c9c35bf433bd43948754d16200ecdb69020ef",
+      "bytes": 2708,
+      "sha256": "1acbf179a825b5f6ed07c7b53bb8edede4736b53b75ee688a40659f8ffadbd66",
+      "source": "target/task-tmp/filter-decode-bulk/codspeed-candidate.log"
+    },
+    "discardedExperiment/codspeed-macro-candidate.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/aad3db81e2ce5ecbffe50471c93f1734478696d654bc712c24473289069d377b.gz",
+      "archiveSha256": "cf6ec9c589a797c4d40b8fc5974aa4a495b64315266d881579541404b2f35234",
+      "bytes": 3771,
+      "sha256": "aad3db81e2ce5ecbffe50471c93f1734478696d654bc712c24473289069d377b",
+      "source": "target/task-tmp/filter-decode-bulk/codspeed-macro-candidate.log"
+    },
+    "discardedExperiment/experimental-assets.json": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/82f325ea0fb4c1772d9d0473ac2b0e312f42475f6581ddccf362f60b63aba117.gz",
+      "archiveSha256": "a1fabb195b6024588eb6585c80a54b80b507a6a1248c7ee176fe9759329c9bb2",
+      "bytes": 2804,
+      "sha256": "82f325ea0fb4c1772d9d0473ac2b0e312f42475f6581ddccf362f60b63aba117",
+      "source": "target/task-tmp/filter-decode-bulk/experimental-assets.json"
+    },
+    "format.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/f9d40d485988691c7d47aa976fb27548d64803d20a8194fa43bc128345e60b82.gz",
+      "archiveSha256": "dcff581a6ea5e2008d33c76df64425fffb91940e1519b0e760ffbe306818758e",
+      "bytes": 29,
+      "sha256": "f9d40d485988691c7d47aa976fb27548d64803d20a8194fa43bc128345e60b82",
+      "source": "target/task-tmp/filter-emscripten-repair/format.log"
+    },
+    "hooks.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b.gz",
+      "archiveSha256": "c44e96190b028c41e8b8d23d2c8d4b150948168d6263ddd26ea988fce6da6c89",
+      "bytes": 240,
+      "sha256": "d976fdd0e21225a5618f52e1a0d2b6162a3c244a6155078230da032f886ca57b",
+      "source": "target/task-tmp/filter-emscripten-repair/hooks.log"
+    },
+    "hosted/hosted-foundation-failed.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/5f49160f128c54c17ad486866239596b84f99c675b7b86b990902f722371b987.gz",
+      "archiveSha256": "678c3001843a06c983981251c46e4080cca739bdf4b9d5f9e5e927af26f9da0b",
+      "bytes": 302308,
+      "sha256": "5f49160f128c54c17ad486866239596b84f99c675b7b86b990902f722371b987",
+      "source": "target/task-tmp/filter-dashboard-performance/hosted-foundation-failed.log"
+    },
+    "hosted/hosted-foundation-job.json": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/a4213815705cc7c0b13696018a4be08125ca0f3b663d58ae5cef8e397af413c7.gz",
+      "archiveSha256": "449a208ef9aeeb1b28a79f1fa167b5bace1e6629eab63dca1d409da5588f7670",
+      "bytes": 6342,
+      "sha256": "a4213815705cc7c0b13696018a4be08125ca0f3b663d58ae5cef8e397af413c7",
+      "source": "target/task-tmp/filter-dashboard-performance/hosted-foundation-job.json"
+    },
+    "hosted/pr-before-delivery.json": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/79affc1e78274626ec2cc7d9a4d420e6ae7615d8bdb2706e23e82c6bee81d1a5.gz",
+      "archiveSha256": "5cdc66fa1fcc0e4b2b3caa08db7d0be9263934859d57a19effeb9ac4f208b4e5",
+      "bytes": 28578,
+      "sha256": "79affc1e78274626ec2cc7d9a4d420e6ae7615d8bdb2706e23e82c6bee81d1a5",
+      "source": "target/task-tmp/filter-dashboard-performance/pr-before-delivery.json"
+    },
+    "hosted/prepush-reviews-checks.json": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/59e00f43d8b920bf42d3989aad923b0f15b2fb381f0e776c6c50a47d3ab3893e.gz",
+      "archiveSha256": "51a894f3abaa9f06a5dd5fecdc713f0f0be9bec1fe1c21c9cff2c5cc05674a33",
+      "bytes": 4213,
+      "sha256": "59e00f43d8b920bf42d3989aad923b0f15b2fb381f0e776c6c50a47d3ab3893e",
+      "source": "target/task-tmp/filter-dashboard-performance/prepush-reviews-checks.json"
+    },
+    "hosted/remotes-before-delivery.txt": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/34b477b771804072cc8cd14f02b8e0d6efac3bfa8899fe7668c43bf375752db6.gz",
+      "archiveSha256": "96c48d51ff69a0ae569ec1902e5dad6fb047c2fff0d62bc17f6f3c3b52813d44",
+      "bytes": 142,
+      "sha256": "34b477b771804072cc8cd14f02b8e0d6efac3bfa8899fe7668c43bf375752db6",
+      "source": "target/task-tmp/filter-dashboard-performance/remotes-before-delivery.txt"
+    },
+    "module-identity.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/1d8262b230cc4e5e898408af6f5d053ea40d5709e0331821fd2465cdfccd1940.gz",
+      "archiveSha256": "d14e48c480b18170187d60f7ecd84e931db574988fafeb91793543340c9df081",
+      "bytes": 65,
+      "sha256": "1d8262b230cc4e5e898408af6f5d053ea40d5709e0331821fd2465cdfccd1940",
+      "source": "target/task-tmp/filter-emscripten-repair/module-identity.log"
+    },
+    "native-build.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/1ffa570030c9d94dbf752c2adeea4fe569c3bcf3072e7c632e6986f1187cb476.gz",
+      "archiveSha256": "03c218f374eb5cecf99f8e06cfcfd48830900ac6f1ff78d4ce503d0d9f40e5a6",
+      "bytes": 337,
+      "sha256": "1ffa570030c9d94dbf752c2adeea4fe569c3bcf3072e7c632e6986f1187cb476",
+      "source": "target/task-tmp/filter-emscripten-repair/native-build.log"
+    },
+    "node.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/6a335a2cc6656d6e26497c70bc2dc3a5af743bca4b84467181c8083562c6135f.gz",
+      "archiveSha256": "8e323f9d6b61e385f3c0ca051df6bd419d44e618fd407906980b33e2a77301b1",
+      "bytes": 5663,
+      "sha256": "6a335a2cc6656d6e26497c70bc2dc3a5af743bca4b84467181c8083562c6135f",
+      "source": "target/task-tmp/filter-emscripten-repair/node.log"
+    },
+    "packaged-assets.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef.gz",
+      "archiveSha256": "a9024230f03cfab4b76058c9f343d5ede416ef53be37bda0ca0cf926621cec18",
+      "bytes": 88,
+      "sha256": "986e77f6c7ff88c87154ee3b31f1f8d7d0032da7a572c35ab943aca29e444bef",
+      "source": "target/task-tmp/filter-emscripten-repair/packaged-assets.log"
+    },
+    "parentReview": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/62c0b93b6a35be5b6628159fb58a21be531f71b694e75f1d78fd030912ded8f7.gz",
+      "archiveSha256": "7c96ff5e2aba4caff7a70607a315d86ba5baaa0c6c88290cf2178908e7b0b475",
+      "bytes": 80921,
+      "sha256": "62c0b93b6a35be5b6628159fb58a21be531f71b694e75f1d78fd030912ded8f7",
+      "source": "/var/tmp/xyg-final-review-fh8euhzm/review-62c0b93b6a35be5b6628159fb58a21be531f71b694e75f1d78fd030912ded8f7.json"
+    },
+    "parentReview/bindings-inventory": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/98823594fa6853fcc5a6606e58241f8995ff7c091f401cd9bbc8cd6162afd5a5.gz",
+      "archiveSha256": "329d096335e70ae0ace8f4a0616b848d94fbf9a7b4ef0210085f1fddcf366089",
+      "bytes": 111,
+      "sha256": "98823594fa6853fcc5a6606e58241f8995ff7c091f401cd9bbc8cd6162afd5a5",
+      "source": "/var/tmp/xyg-final-review-fh8euhzm/bindings-inventory.log"
+    },
+    "parentReview/collection311": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/bf8b0c825be39582a0e29cf840012e6c25267fb1eebbf7d8ba0d6ee670443435.gz",
+      "archiveSha256": "dac3e3f03ad67f313ad32275aeb67ded669f9a711db1eda43b5d5d52daad83fa",
+      "bytes": 18364,
+      "sha256": "bf8b0c825be39582a0e29cf840012e6c25267fb1eebbf7d8ba0d6ee670443435",
+      "source": "/var/tmp/xyg-final-review-fh8euhzm/collection311.log"
+    },
+    "parentReview/collection312": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/4448122e8cd68e41816e4807469d6f0ce69a0f0e7b2f1bba4d3ac0448d98f8fa.gz",
+      "archiveSha256": "50b382425d273c149cb5bfc938bfc0135125b6bdff2d00f29433d73456d7a632",
+      "bytes": 18364,
+      "sha256": "4448122e8cd68e41816e4807469d6f0ce69a0f0e7b2f1bba4d3ac0448d98f8fa",
+      "source": "/var/tmp/xyg-final-review-fh8euhzm/collection312.log"
+    },
+    "parentReview/correctness100m": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/d8de05338b4fffe52a882a4b19e6f0beb242adef69e859024d32b38885090e94.gz",
+      "archiveSha256": "0eb3cfe5a02f1690c0be6d78b3418322642ce57f0ccb81453be68743664f58b1",
+      "bytes": 99,
+      "sha256": "d8de05338b4fffe52a882a4b19e6f0beb242adef69e859024d32b38885090e94",
+      "source": "/var/tmp/xyg-final-review-fh8euhzm/correctness100m.log"
+    },
+    "parentReview/metadata311": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/ede7e97b5def4462bf5ddc9648bfe0cf8e3fb3fb410b7a3d3cc89cc187404993.gz",
+      "archiveSha256": "b901c16ef35267fa5f8e84084d3a02ad609b9445c6c813e67d2786c1c09c306c",
+      "bytes": 110,
+      "sha256": "ede7e97b5def4462bf5ddc9648bfe0cf8e3fb3fb410b7a3d3cc89cc187404993",
+      "source": "/var/tmp/xyg-final-review-fh8euhzm/metadata311.log"
+    },
+    "parentReview/metadata312": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/33b698867e581cc2c32dad5840ad9a5ea1439398f0481aecc824c281611e9241.gz",
+      "archiveSha256": "ae32a203ee72a583b88eed50649f6d2c0a6a8386a08731ae58514cf4d92ab9ff",
+      "bytes": 110,
+      "sha256": "33b698867e581cc2c32dad5840ad9a5ea1439398f0481aecc824c281611e9241",
+      "source": "/var/tmp/xyg-final-review-fh8euhzm/metadata312.log"
+    },
+    "predecessor-check.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/7b94ce88d81f773f97689a996bac522fa864912124ba5e9c0539e2d92b8466b0.gz",
+      "archiveSha256": "4f3a9ae113e336a0ad51e1bc5ef6536bc2e2c4319852d6c6aae1d1f40e56956a",
+      "bytes": 2411,
+      "sha256": "7b94ce88d81f773f97689a996bac522fa864912124ba5e9c0539e2d92b8466b0",
+      "source": "target/task-tmp/filter-emscripten-repair/predecessor-check.log"
+    },
+    "pyodide-load.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/16b7dfef2b3a2a7b5f27c3ea19fa63032e2a5dcf7c45f4734254823ba3d45e9c.gz",
+      "archiveSha256": "91f9bc909e1d415f1dc0180829bf08f8f8d3549808c78fe8584bdae787d06a83",
+      "bytes": 153,
+      "sha256": "16b7dfef2b3a2a7b5f27c3ea19fa63032e2a5dcf7c45f4734254823ba3d45e9c",
+      "source": "target/task-tmp/filter-emscripten-repair/pyodide-load.log"
+    },
+    "pyodide-runtime-install.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/4aa58ccb0519e77c156ff4277fda981d4476eafad8c6bc594bd8fff0abd053ee.gz",
+      "archiveSha256": "fe856c54586bee7e3f2a1c1d988a25834665fe905109fb058f4ce7c1be115510",
+      "bytes": 24,
+      "sha256": "4aa58ccb0519e77c156ff4277fda981d4476eafad8c6bc594bd8fff0abd053ee",
+      "source": "target/task-tmp/filter-emscripten-repair/pyodide-runtime-install.log"
+    },
+    "pyodide-wheel-build.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/ab94b091b4aef5e5a8033b2c0408df152ec9818f0731b9e52b679d8a033d06d9.gz",
+      "archiveSha256": "93b99b467ff77036851a95bee481131d529db6356a4b2d2f53976fc6d036223b",
+      "bytes": 15379,
+      "sha256": "ab94b091b4aef5e5a8033b2c0408df152ec9818f0731b9e52b679d8a033d06d9",
+      "source": "target/task-tmp/filter-emscripten-repair/pyodide-wheel-build.log"
+    },
+    "python311.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/6f1dfea165d5a8fc6fa777b66ac7e5b9b96b6a48ae6c5100fd735a31eee54f39.gz",
+      "archiveSha256": "f9797b3480b299ca85100840f644d6afda01cbf6caa005f11cfc2a40945f25c9",
+      "bytes": 100,
+      "sha256": "6f1dfea165d5a8fc6fa777b66ac7e5b9b96b6a48ae6c5100fd735a31eee54f39",
+      "source": "target/task-tmp/filter-emscripten-repair/python311.log"
+    },
+    "python312.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/f96aa788c9073ed8e35d5309c3154b7eb50b851565f6fb2e55337afd8b2d970b.gz",
+      "archiveSha256": "627ee3cd8b2b5f86b48cd9bf63978f089f682a8b8d31bb9aa51db8f0e805d304",
+      "bytes": 100,
+      "sha256": "f96aa788c9073ed8e35d5309c3154b7eb50b851565f6fb2e55337afd8b2d970b",
+      "source": "target/task-tmp/filter-emscripten-repair/python312.log"
+    },
+    "ruff.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18.gz",
+      "archiveSha256": "47f394a1497b1873bc6e6d6f9bb92aa51b990821f1ddd7770a933ffd29c456cd",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "source": "target/task-tmp/filter-emscripten-repair/ruff.log"
+    },
+    "rust-filter.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/10accda894d0298b729c4e3996778413847a1dd2ada11d42e7389cd4371360b3.gz",
+      "archiveSha256": "242a49c5cefb0412f14e1263f2c30565ab6c5db760bfc029dc632fccbf14a089",
+      "bytes": 2694,
+      "sha256": "10accda894d0298b729c4e3996778413847a1dd2ada11d42e7389cd4371360b3",
+      "source": "target/task-tmp/filter-emscripten-repair/rust-filter.log"
+    },
+    "rust-wasm-filter.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/f46d8819a3c2c4b31eddbae51df3bce297fca79c06cb82aab211c1deafae01d6.gz",
+      "archiveSha256": "0bc61d2dae5519f2a87d774d020598b02f324fb8f6dd748df7fe6d7ef89d8b85",
+      "bytes": 2804,
+      "sha256": "f46d8819a3c2c4b31eddbae51df3bce297fca79c06cb82aab211c1deafae01d6",
+      "source": "target/task-tmp/filter-emscripten-repair/rust-wasm-filter.log"
+    },
+    "rustfmt.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.gz",
+      "archiveSha256": "f61f27bd17de546264aa58f40f3aafaac7021e0ef69c17f6b1b4cd7664a037ec",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "target/task-tmp/filter-emscripten-repair/rustfmt.log"
+    },
+    "seal-final.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/5e43cf8d54d88da996ec4ae222d006c8c975c3fe95bcfd06618f71b8d587fc23.gz",
+      "archiveSha256": "0e724314b70115dccb57a4d65cdb6bb7c0f78196372daef1e284a705b2aedb35",
+      "bytes": 53,
+      "sha256": "5e43cf8d54d88da996ec4ae222d006c8c975c3fe95bcfd06618f71b8d587fc23",
+      "source": "target/task-tmp/filter-emscripten-repair/seal-final.log"
+    },
+    "seal-sources.py": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/649715ed0704364c82fd8842ee64c6dfa74dfa3ac51c94c5ce8651cd001a78ff.gz",
+      "archiveSha256": "64b700f2b5545b450a2d002b5b09dd05ca781ef686b6340829c1f3a2929d8dc8",
+      "bytes": 3022,
+      "sha256": "649715ed0704364c82fd8842ee64c6dfa74dfa3ac51c94c5ce8651cd001a78ff",
+      "source": "target/task-tmp/filter-emscripten-repair/seal-sources.py"
+    },
+    "seal.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/5e43cf8d54d88da996ec4ae222d006c8c975c3fe95bcfd06618f71b8d587fc23.gz",
+      "archiveSha256": "0e724314b70115dccb57a4d65cdb6bb7c0f78196372daef1e284a705b2aedb35",
+      "bytes": 53,
+      "sha256": "5e43cf8d54d88da996ec4ae222d006c8c975c3fe95bcfd06618f71b8d587fc23",
+      "source": "target/task-tmp/filter-emscripten-repair/seal.log"
+    },
+    "shipping-wasm-build.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/7dd584e747c0103a4ff56c96d94fdd69f1f98b9cdbeddf280aa5098607f03bf5.gz",
+      "archiveSha256": "7f96128335a760f2687ff38f2c9a294ff18704190786800bbb96dc1a19f32776",
+      "bytes": 4390,
+      "sha256": "7dd584e747c0103a4ff56c96d94fdd69f1f98b9cdbeddf280aa5098607f03bf5",
+      "source": "target/task-tmp/filter-emscripten-repair/shipping-wasm-build.log"
+    },
+    "transport-probe-tests.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/16b3b5475bf1ca9682b1a1628f28d4a9cbae84b2a547a4ef4a54a056c10e8a54.gz",
+      "archiveSha256": "1124313c64a45d18eaf4008b9424c32df7026eb8cc87175fc7121f3803ebc8a0",
+      "bytes": 98,
+      "sha256": "16b3b5475bf1ca9682b1a1628f28d4a9cbae84b2a547a4ef4a54a056c10e8a54",
+      "source": "target/task-tmp/filter-emscripten-repair/transport-probe-tests.log"
+    },
+    "wheel-and-shipping.json": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/05edeff13fcfc41a6d88d5d6db988ec3fddfbe5e9b345a422d2619dbda05ee65.gz",
+      "archiveSha256": "25ba458fadae2d403983cc5d9e3a4bedef4f5785cdeb43986052244a0000bc0c",
+      "bytes": 403,
+      "sha256": "05edeff13fcfc41a6d88d5d6db988ec3fddfbe5e9b345a422d2619dbda05ee65",
+      "source": "target/task-tmp/filter-emscripten-repair/wheel-and-shipping.json"
+    },
+    "workflow-controls.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/a3170ab7424023fb7a06001f2590be8861be0d894cb2016e1a760620022f2085.gz",
+      "archiveSha256": "75d744f62e0d16a2c4e42925e2b39abf0b629f33175e556b5a74278960133e1f",
+      "bytes": 832,
+      "sha256": "a3170ab7424023fb7a06001f2590be8861be0d894cb2016e1a760620022f2085",
+      "source": "target/task-tmp/filter-emscripten-repair/workflow-controls.log"
+    },
+    "workflow-verifier.log": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/3d29b3df27ab04aa2eff268a14a0b1d0df03e4c53b766cae333c85eb9191ae26.gz",
+      "archiveSha256": "23ce4e00dc4f4fcfca876155c8c8f9eed9b3195cbc5e9265b2a5094fc3a2c816",
+      "bytes": 567,
+      "sha256": "3d29b3df27ab04aa2eff268a14a0b1d0df03e4c53b766cae333c85eb9191ae26",
+      "source": "target/task-tmp/filter-emscripten-repair/workflow-verifier.log"
+    }
+  },
+  "failures": [
+    "Initial six transport-probe tests ran predecessor native before the rebuild; final17 each use rebuilt native",
+    "Initial realCRLF4-case run failed one missing-LF control; new explicit pins resolve it; original log retained",
+    "Discarded decoder experiment showed micro improvement but NoChange in full update and cached-paint Regression; no decoder production edit retained"
+  ],
+  "fresh": {
+    "abi": 673,
+    "actualPyodideLoad": "PASS",
+    "actualPyodideWheelBuild": "PASS",
+    "checkCI": 1043,
+    "cooperativeProgressCancelReuse": true,
+    "core": 4,
+    "emscriptenCorrectedCheck": "PASS",
+    "emscriptenPredecessorCheckExit": 101,
+    "filesystemStubControls": 17,
+    "frozenPackets": 47,
+    "hooks": "PASS",
+    "nativeBuild": "PASS",
+    "node": 23,
+    "pythonEachActualInterpreter": 17,
+    "realCRLF": true,
+    "ruff": "PASS",
+    "rustAdapter": 5,
+    "rustEngine": 16,
+    "sceneCases": 4,
+    "workflowControls": 699,
+    "workflowVerifier": "PASS"
+  },
+  "hosted": {
+    "cause": "E0599: execute_transport excluded from all WASM targets",
+    "conclusion": "FAILURE",
+    "disposition": "Original failure preserved; local corrected build/load does not certify new-head hosted gates",
+    "failedStep": "Build and run exact Pyodide wheel (non-publishing)",
+    "head": "53bc3215a00044e93c28722ce8a4b48720e52ab2",
+    "job": 130864507861,
+    "run": 43121658534
+  },
+  "inherited": [
+    "Parent production behavior only where bodies/identities match",
+    "Full browser foundation and broad Rust/Node results remain previous receipts/review; no new full-suite claim",
+    "Historical100M timings not remeasured with new native; no speed win or50FPS claim"
+  ],
+  "package": {
+    "abi": 38,
+    "exports": 68,
+    "gzipCap": 786432,
+    "gzipHeadroom": 501,
+    "imports": 0,
+    "node22Gzip6": 785931,
+    "raw": 1875494,
+    "rawCap": 1927168,
+    "sha256": "d401219f7519006a5ddc222c9dd7b386d5b39fd1ff47d651764e02513cb28e5f"
+  },
+  "parent": "8e88dceb870640bc52c83b19b908a244ee953e66",
+  "parentReview": {
+    "head": "8e88dceb870640bc52c83b19b908a244ee953e66",
+    "reviewer": {
+      "delegatedChildren": 0,
+      "identity": "Independent Codex review sub-agent, gpt-6.1-sol, high reasoning effort",
+      "role": "read-only final reviewer; not implementing agent"
+    },
+    "scope": "Exact unchanged parent benchmark delta; not the correction",
+    "sha256": "62c0b93b6a35be5b6628159fb58a21be531f71b694e75f1d78fd030912ded8f7",
+    "verdict": "APPROVE_BOUNDED"
+  },
+  "readmeSha256": "5e1d5a85939c6a6b992f269f39b88965e0595bf05622aab1852437d10b580a65",
+  "remaining": [
+    "Independent final correction review",
+    "Current-main/newhead hostedCI and required mergequeue",
+    "Original issues/milestones4-7 scale/resources/hosts/accessibility/performance/competitor acceptance"
+  ],
+  "runtime": {
+    "packages/xy-client/dist/index.js": {
+      "archive": "spec/performance/filter-native-callback-2026-11-11/evidence/27f41b9bf67f6e38efdaf0f00cf1672c01fe15eedf3d31d394e23f00e480f6db.gz",
+      "archiveSha256": "9af5e265baa470d2cbb7bac74646d1c5b9155bfb4f71429b995a49d4eb4f1728",
+      "bytes": 874087,
+      "sha256": "27f41b9bf67f6e38efdaf0f00cf1672c01fe15eedf3d31d394e23f00e480f6db",
+      "source": "packages/xy-client/dist/index.js"
+    },
+    "packages/xy-client/dist/standalone.js": {
+      "archive": "spec/performance/filter-native-callback-2026-11-11/evidence/58ff6e8b90d8e54ff1d3817f9879054f4e71c2d9e6bd3de9332bf31bccd7b2cf.gz",
+      "archiveSha256": "0436957853a103f425264d4c70c395941edbc18f65a54104d8d9d03aa4cca2ca",
+      "bytes": 874086,
+      "sha256": "58ff6e8b90d8e54ff1d3817f9879054f4e71c2d9e6bd3de9332bf31bccd7b2cf",
+      "source": "packages/xy-client/dist/standalone.js"
+    },
+    "packages/xy-client/dist/wasm-inline-worker.js": {
+      "archive": "spec/performance/filter-native-callback-2026-11-11/evidence/dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7.gz",
+      "archiveSha256": "e5ea47b4e518e321f2c424e3595250906f84c9fd5cfb301b83049c74bf34d987",
+      "bytes": 20933,
+      "sha256": "dff1acfb7ae46849a2b2600ffce38b5af92b98b4e8a506599197695369d9c4d7",
+      "source": "packages/xy-client/dist/wasm-inline-worker.js"
+    },
+    "packages/xy-client/dist/wasm-worker.js": {
+      "archive": "spec/performance/filter-native-callback-2026-11-11/evidence/49b43f063da891b99d400ad194260a8b7e0ac094df9a4506902e629debec69ca.gz",
+      "archiveSha256": "9a782bd8b4d4845d9c52052d261a0182e17740b66d51b426e5c5e557350b6eac",
+      "bytes": 65699,
+      "sha256": "49b43f063da891b99d400ad194260a8b7e0ac094df9a4506902e629debec69ca",
+      "source": "packages/xy-client/dist/wasm-worker.js"
+    },
+    "packages/xy-client/dist/xyg-wasm-inline.js": {
+      "archive": "spec/performance/filter-native-callback-2026-11-11/evidence/41f6ca27d1e821384d1dbb279d5dde6cac580d3d6ec70b26c435fa32747a2af0.gz",
+      "archiveSha256": "886df994d2d8243e895f8d625c2f15998acf8ba2dfa257280b54acebbc4a9ef1",
+      "bytes": 2521782,
+      "sha256": "41f6ca27d1e821384d1dbb279d5dde6cac580d3d6ec70b26c435fa32747a2af0",
+      "source": "packages/xy-client/dist/xyg-wasm-inline.js"
+    },
+    "packages/xy-client/dist/xyg-wasm.manifest.json": {
+      "archive": "spec/performance/filter-native-callback-2026-11-11/evidence/aa952f28e9e22303991ee05967bb294dc32ba48fdd75c326a6b013f6c05b2e6d.gz",
+      "archiveSha256": "c6077221b3bb6114e2360bc53610728d5212017fa0e04bde4dbca0278b7ab58d",
+      "bytes": 226,
+      "sha256": "aa952f28e9e22303991ee05967bb294dc32ba48fdd75c326a6b013f6c05b2e6d",
+      "source": "packages/xy-client/dist/xyg-wasm.manifest.json"
+    },
+    "packages/xy-client/dist/xyg-wasm.wasm": {
+      "archive": "spec/performance/filter-native-callback-2026-11-11/evidence/d401219f7519006a5ddc222c9dd7b386d5b39fd1ff47d651764e02513cb28e5f.gz",
+      "archiveSha256": "71943dddedebae93ce4b2e9ef0d0d5559125d749f4b9cb70256370e7e4accdff",
+      "bytes": 1875494,
+      "sha256": "d401219f7519006a5ddc222c9dd7b386d5b39fd1ff47d651764e02513cb28e5f",
+      "source": "packages/xy-client/dist/xyg-wasm.wasm"
+    },
+    "target/release/libxyg_core.so": {
+      "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/83014b03cc33ae8058097ba87e460f494c9ec9eb24fc1f74471b9341ecf66025.gz",
+      "archiveSha256": "47abac5bba22332f656dbdfd0344ec8e93a26d8d8187d090a4dfc987dd3dafd3",
+      "bytes": 6440728,
+      "sha256": "83014b03cc33ae8058097ba87e460f494c9ec9eb24fc1f74471b9341ecf66025",
+      "source": "target/release/libxyg_core.so"
+    }
+  },
+  "schemaVersion": 1,
+  "scope": "C ABI filter transport availability on Emscripten and exact-wheel47packet/cooperative proof; no ABI/signature/policy changes",
+  "staticCopies": {
+    "python/xyg/static/index.js": "27f41b9bf67f6e38efdaf0f00cf1672c01fe15eedf3d31d394e23f00e480f6db",
+    "python/xyg/static/standalone.js": "58ff6e8b90d8e54ff1d3817f9879054f4e71c2d9e6bd3de9332bf31bccd7b2cf",
+    "python/xyg/static/wasm-worker.js": "49b43f063da891b99d400ad194260a8b7e0ac094df9a4506902e629debec69ca",
+    "python/xyg/static/xyg-wasm-inline.js": "41f6ca27d1e821384d1dbb279d5dde6cac580d3d6ec70b26c435fa32747a2af0",
+    "python/xyg/static/xyg-wasm.manifest.json": "aa952f28e9e22303991ee05967bb294dc32ba48fdd75c326a6b013f6c05b2e6d",
+    "python/xyg/static/xyg-wasm.wasm": "d401219f7519006a5ddc222c9dd7b386d5b39fd1ff47d651764e02513cb28e5f"
+  },
+  "unchangedRuntime": [
+    "packages/xy-client/dist/index.js",
+    "packages/xy-client/dist/standalone.js",
+    "packages/xy-client/dist/wasm-inline-worker.js",
+    "packages/xy-client/dist/wasm-worker.js",
+    "packages/xy-client/dist/xyg-wasm-inline.js",
+    "packages/xy-client/dist/xyg-wasm.manifest.json",
+    "packages/xy-client/dist/xyg-wasm.wasm"
+  ],
+  "wheel": {
+    "archive": "spec/performance/filter-emscripten-transport-2026-11-12/evidence/af240595c88a3165f8102d442fe708553cb69a4038660a88aa5fda8501c828e9.gz",
+    "archiveSha256": "27e3f7a9ebf43a8d7944c8f5beff3a6ea9d3a27bb744bc51753995d6deee1127",
+    "bytes": 4995688,
+    "emscriptenLibrarySha256": "ba0c8e19ed2fcc9feff65c4752ba6101f88a11b4969e1ccbd5d5060bfaa9722f",
+    "sha256": "af240595c88a3165f8102d442fe708553cb69a4038660a88aa5fda8501c828e9",
+    "source": "target/task-tmp/filter-emscripten-repair/wheelhouse/xyg-0.0.1.dev2967+8e88dceb8-py3-none-pyemscripten_2026_0_wasm32.whl",
+    "staticEquality": {
+      "xyg/static/index.js": "27f41b9bf67f6e38efdaf0f00cf1672c01fe15eedf3d31d394e23f00e480f6db",
+      "xyg/static/standalone.js": "58ff6e8b90d8e54ff1d3817f9879054f4e71c2d9e6bd3de9332bf31bccd7b2cf",
+      "xyg/static/wasm-worker.js": "49b43f063da891b99d400ad194260a8b7e0ac094df9a4506902e629debec69ca",
+      "xyg/static/xyg-wasm-inline.js": "41f6ca27d1e821384d1dbb279d5dde6cac580d3d6ec70b26c435fa32747a2af0",
+      "xyg/static/xyg-wasm.manifest.json": "aa952f28e9e22303991ee05967bb294dc32ba48fdd75c326a6b013f6c05b2e6d",
+      "xyg/static/xyg-wasm.wasm": "d401219f7519006a5ddc222c9dd7b386d5b39fd1ff47d651764e02513cb28e5f"
+    },
+    "versionDisposition": "Nonpublishing local build on reviewed parent with uncommitted correction, exact source-input pins supplied"
+  }
+}

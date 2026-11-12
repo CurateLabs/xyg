@@ -124,6 +124,11 @@ as fail-closed stubs so supported in-memory kernels and Scene consumers still
 load. The Pyodide gate calls every stub and checks its documented sentinel and
 signature; it never emulates filesystem policy in Python or JavaScript. These
 stubs are Emscripten-specific, not a blanket policy for every WASM target.
+The filter-session C ABI dispatcher is available on Emscripten too: ordinary
+in-memory XYFC requests and XYFJ continuation/advance/cancel use the same Rust
+engine. The exact-wheel gate compares the complete 47-packet in-memory corpus
+and verifies cooperative cancellation preserves the accepted index. Issued
+filesystem-source registration remains unsupported there.
 The capacity-aware `xyg_tile_store_compose_color` stub takes both declared
 output capacities even though it returns `-1` without touching output.
 Tile paint capacity/paint also remain unavailable (both return zero).

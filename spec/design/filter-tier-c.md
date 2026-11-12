@@ -313,6 +313,14 @@ each native cooperative turn.
 
 ### Native asynchronous and callback clients
 
+The shared C ABI transport dispatcher is also compiled for Emscripten. Pyodide
+retains raw XYFC compatibility and can advance/cancel in-memory XYFJ work through
+the same export; this does not enable filesystem-backed XYGC sources there.
+The exact-wheel Pyodide gate replays all 47 frozen raw packets, exercises real
+cooperative progress, stale-token refusal and cancellation, and verifies that
+the accepted index remains usable. ABI signatures, limits and source policy
+are unchanged.
+
 Node `createNativeFilterSession(columns, options)` accepts the same arrays or
 issued XYGC planes as the synchronous session. It uses the existing Rust XYFJ
 jobs and schedules subsequent bounded turns with `setImmediate`; no second

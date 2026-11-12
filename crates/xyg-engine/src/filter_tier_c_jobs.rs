@@ -224,10 +224,10 @@ fn finish_work(
     Ok(work)
 }
 impl FilterTierCSession {
-    /// Native adapters keep the raw compatibility path and share the Worker
+    /// C ABI adapters, including Emscripten, keep the raw compatibility path
+    /// and share the Worker
     /// continuation protocol. The wrapper's live32 bytes are additional to
     /// the inner request or retained private packet admitted by the engine.
-    #[cfg(not(target_family = "wasm"))]
     pub fn execute_transport(
         &mut self,
         b: &[u8],
