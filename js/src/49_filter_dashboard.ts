@@ -104,9 +104,12 @@ export async function attachFilterDashboard(session: any, bindings: Binding[]) {
       savedRanges = null;
     }
   };
-  const editRange = async (b: Binding, bounds: number[]) => {
-    await session.range(bounds[0], bounds[1], { exact: true });
+  const editRange = async (b: Binding, bounds: number[], paint = false) => {
+    const reply = await (paint && typeof session.rangePaint === "function"
+      ? session.rangePaint(bounds[0], bounds[1], { exact: true })
+      : session.range(bounds[0], bounds[1], { exact: true }));
     ranges.set(b.id, bounds);
+    return reply;
   };
   const apply = (reply: any, token: number) => {
     if (closed || token !== generation) return false;
@@ -244,9 +247,10 @@ export async function attachFilterDashboard(session: any, bindings: Binding[]) {
         throw new Error(
           "filter dashboard source is unavailable; bind a new canonical session",
         );
-      await work();
+      const result = await work();
       if (!paint) return null;
-      const reply = await session.paint({ exact: true });
+      const reply = result?.density?.length
+        ? result : await session.paint({ exact: true });
       apply(reply, token);
       return reply;
     });
@@ -294,7 +298,7 @@ export async function attachFilterDashboard(session: any, bindings: Binding[]) {
         if (!b) throw new TypeError("unknown linked view");
         await commitEdit();
         await active(b);
-        await editRange(b, [lo, hi]);
+        return editRange(b, [lo, hi], true);
       }),
     clear: () => {
       editing = null;
@@ -332,7 +336,7 @@ export async function attachFilterDashboard(session: any, bindings: Binding[]) {
       if (!b || b.view !== view) return;
       const i = b.axis === "y" ? 1 : 0;
       void enqueue(async () => {
-        await editRange(b, [d0[i], d1[i]]);
+        return editRange(b, [d0[i], d1[i]], true);
       });
     },
     cancelPointer: () => {
@@ -435,7 +439,7 @@ export async function attachFilterDashboard(session: any, bindings: Binding[]) {
         const bounds = [...editing.bounds];
         void enqueue(async () => {
           await beginEdit(b);
-          await editRange(b, bounds);
+          return editRange(b, bounds, true);
         });
       } else if (e.key === "Escape") {
         editing = null;
@@ -460,7 +464,7 @@ export async function attachFilterDashboard(session: any, bindings: Binding[]) {
           : -editing.binding.step;
         const bounds = [...editing.bounds];
         void enqueue(async () => {
-          await editRange(b, bounds);
+          return editRange(b, bounds, true);
         });
       }
       return true;

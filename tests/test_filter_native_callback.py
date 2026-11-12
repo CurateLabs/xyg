@@ -87,4 +87,5 @@ def test_actual_native_callback_five_rendered_views(tmp_path, pixel_index):
     assert result["traces"][0]["indexBytes"] == str(
         4 * (cells + 1) * 50001 + 16 * 50001 + 16 * cells
     )
-    assert [r["op"] for r in result["traces"]] == [10, 11, 5, 11, 9]
+    assert [(r["version"], r["op"]) for r in result["traces"]] == [(1, 10), (1, 11), (3, 5), (1, 9)]
+    assert result["traces"][2]["replyBytes"] == 1200568

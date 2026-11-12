@@ -473,7 +473,7 @@ the [baseline receipt](../performance/filter-dashboard-baseline-2026-11-11/READM
 and [reproduction contract](../benchmarks/methodology.md#manual-native-callback-dashboard-walltime).
 
 The [exact private-prefix continuation](../performance/filter-prefix-storage-2026-11-12/README.md)
-qualifies the same346-cell/five100×100-grid materialized100M source at128MiB,
+qualifies the same346-cell/five 100×100-grid materialized100M source at128MiB,
 with a70,206,940-byte index and exact count/texture/membership oracles. The
 private u32 storage follows the existing row bound, not a lower bin resolution.
 Its bounded CodSpeed build and full-pipeline comparisons are diagnostic evidence;
@@ -482,6 +482,38 @@ Old-plus-new replacement admission remains additive; fitting the first index at
 128MiB does not guarantee a second simultaneous index fits that budget.
 
 ## Linked density extension (opcodes 10–15)
+
+### Range and paint in one transaction (XYFC v3)
+
+Request version 3 accepts only opcode 5, with the existing 96-byte range header
+and exact-boundary flag 0/1. It requires an already configured linked density
+session. Rust computes the new range counts and the existing XYFP density
+extension together, admits the complete output/scratch, and publishes the
+intent only after all fallible work and cancellation checks. XYFR/XYFP reply
+layouts and every v1/v2 request keep their previous meaning. The existing C ABI
+and WASM entry points frame this additive version; no exported signature changes.
+
+Python `range_paint` and shared Node/browser `rangePaint` preserve each host's
+existing synchronous/asynchronous transport shape. They negotiate older peers
+only from a genuine Malformed reply whose
+watermark proves the known v3 header was never admitted, with matching source
+stamps and no newer local request. A payload/capacity/cancellation/source error
+or a superseded operation is never reissued. Legacy mode retains the existing
+range-then-paint semantics; it must not send its follow-up paint after a newer
+request. Modern success must contain the density extension. Pointer previews,
+keyboard edits and programmatic ranges use this operation when painting is the
+last step; transaction commit/cancel barriers keep their subsequent matching
+paint. All five replacement textures still precede publication.
+
+The [bounded continuation](../performance/filter-range-paint-2026-11-12/README.md)
+records native/WASM packet parity, compatibility/race controls, actual Worker
+input and the 100M-row native callback witness. Its CodSpeed full update row
+improves from 35.66 to 30.63 ms best in the disclosed fixed SwiftShader setup.
+The query, density and cached rows classify as No Change. The update now sends
+one 1,200,568-byte reply instead of 400,272 plus 1,200,568 bytes. This does not
+establish 50 FPS, hardware-GPU performance, arbitrary-boundary speed, competitor
+leadership or whole #112/milestone acceptance. Independent final-diff review
+and hosted checks remain required before delivery.
 
 Existing v1 opcode layouts are unchanged and historical packet receipts remain
 preserved. Current index/resident/peak diagnostics reflect the private storage

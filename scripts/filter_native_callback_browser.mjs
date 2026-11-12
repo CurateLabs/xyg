@@ -89,7 +89,7 @@ const errors=[];let report;
    if(!response.ok)throw Error(`native HTTP ${response.status}: ${await response.text()}`);
    const bytes=new Uint8Array(await response.arrayBuffer()),reply=xy.decodeFilterReply(bytes);
    if(reply.peakBytes>(128n<<20n))throw Error('Rust session budget exceeded');
-   traces.push({op:new DataView(packet.buffer,packet.byteOffset).getUint32(8,true),rowsRead:reply.rowsRead.toString(),tier:reply.tier.toString(),sourceRows:reply.sourceRows.toString(),indexBytes:reply.indexBytes.toString(),residentBytes:reply.residentBytes.toString(),peakBytes:reply.peakBytes.toString(),fallback:reply.fallback.toString(),status:reply.status});
+   traces.push({version:new DataView(packet.buffer,packet.byteOffset).getUint32(4,true),op:new DataView(packet.buffer,packet.byteOffset).getUint32(8,true),replyBytes:bytes.length,rowsRead:reply.rowsRead.toString(),tier:reply.tier.toString(),sourceRows:reply.sourceRows.toString(),indexBytes:reply.indexBytes.toString(),residentBytes:reply.residentBytes.toString(),peakBytes:reply.peakBytes.toString(),fallback:reply.fallback.toString(),status:reply.status});
    return bytes;
   },async()=>{const r=await fetch(url('/close'),{method:'POST'});if(!r.ok)throw Error('close failed');},
   {names:JSON.parse(registration.headers.get('X-Filter-Names')),budgetBytes:BigInt(registration.headers.get('X-Filter-Budget')),packet:new Uint8Array(await registration.arrayBuffer())});

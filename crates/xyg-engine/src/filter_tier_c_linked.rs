@@ -447,16 +447,17 @@ impl FilterTierCSession {
                 return Err(Error::Budget.into());
             }
             let query = matches!(op, 5 | 7 | 11);
+            let paint = op == 11 || u32_at(b, 4)? == 3;
             build |= query && self.index.is_none();
             let output = add(
                 cfg.reply_bytes(query),
-                if op == 11 { cfg.paint_bytes()? } else { 0 },
+                if paint { cfg.paint_bytes()? } else { 0 },
             )?;
             if capacity < output {
                 return Err(PrepareError::Capacity(output));
             }
             let scratch = if query { mul(cfg.width, 8)? } else { 0 };
-            let paint_scratch = if op == 11 {
+            let paint_scratch = if paint {
                 mul(cfg.views.iter().map(View::bins).max().unwrap_or(0), 8)?
             } else {
                 0
@@ -540,7 +541,7 @@ impl FilterTierCSession {
                 result = Some(counts);
             }
             let mut buffer = alloc::<u8>(output)?;
-            if op == 11 {
+            if paint {
                 let index = replacement
                     .as_ref()
                     .or(self.index.as_ref())
@@ -677,7 +678,7 @@ impl FilterTierCSession {
                 0,
                 Some(buffer),
             )?;
-            if op == 11 {
+            if paint {
                 reply[12..16].copy_from_slice(&1u32.to_le_bytes());
             }
             put(
@@ -794,6 +795,69 @@ mod tests {
             ncases += 1;
         }
         assert_eq!(ncases, 57);
+    }
+    #[test]
+    fn filter_tier_c_range_paint_is_one_capacity_atomic_transaction() {
+        let fixture = include_bytes!("../../../tests/fixtures/filter_tier_c/density.bin");
+        let mut packets = Vec::new();
+        let mut at = 0;
+        for _ in 0..5 {
+            let n = u32_at(fixture, at).unwrap() as usize;
+            let output = u32_at(fixture, at + 12).unwrap() as usize;
+            packets.push(fixture[at + 24..at + 24 + n].to_vec());
+            at += 24 + n + output;
+        }
+        let initialized = || {
+            let mut state = FilterTierCSession::default();
+            for packet in &packets[..2] {
+                let reply = state.execute(packet, 1 << 20, || false).unwrap();
+                assert_eq!(u32_at(&reply, 8), Ok(0));
+            }
+            state
+        };
+        let mut range = packets[3].clone();
+        put(&mut range, 16, 3);
+        let mut paint = packets[4].clone();
+        put(&mut paint, 16, 5);
+        let mut combined = range.clone();
+        combined[4..8].copy_from_slice(&3u32.to_le_bytes());
+        let mut legacy = initialized();
+        legacy.execute(&range, 1 << 20, || false).unwrap();
+        let mut expected = legacy.execute(&paint, 1 << 20, || false).unwrap();
+        let mut state = initialized();
+        let before = state.fingerprint();
+        let required = state.execute(&combined, 0, || false).unwrap_err();
+        assert_eq!(state.revision, 2);
+        assert_eq!(state.intent, None);
+        assert_eq!(state.fingerprint(), before);
+        // Capacity refusal consumes admission but leaves accepted state intact.
+        // Each follow-up therefore uses a strictly newer request sequence.
+        put(&mut combined, 16, 4);
+        assert_eq!(
+            state.execute(&combined, required - 1, || false),
+            Err(required)
+        );
+        assert_eq!(state.revision, 2);
+        assert_eq!(state.intent, None);
+        assert_eq!(state.fingerprint(), before);
+        put(&mut combined, 16, 5);
+        let actual = state.execute(&combined, required, || false).unwrap();
+        assert_eq!(u32_at(&actual, 8), Ok(0));
+        assert_eq!(u32_at(&actual, 12), Ok(1));
+        // The legacy two-call path can retain a larger observed peak; every
+        // other byte, including geometry, colors, counts and identity, agrees.
+        expected[88..96].copy_from_slice(&actual[88..96]);
+        assert_eq!(actual, expected);
+        assert_eq!(state.revision, 5);
+        assert_eq!(state.intent, legacy.intent);
+
+        put(&mut combined, 16, 6);
+        put(&mut combined, 80, f64::NAN.to_bits());
+        let refused = state.execute(&combined, required, || false).unwrap();
+        assert_eq!(u32_at(&refused, 8), Ok(Error::Malformed as u32));
+        assert_eq!(u64_at(&refused, 144), Ok(6));
+        assert_eq!(state.revision, 5);
+        assert_eq!(state.intent, legacy.intent);
     }
     #[test]
     fn filter_tier_c_indexed_queries_do_not_read_canonical_or_mask_rows() {

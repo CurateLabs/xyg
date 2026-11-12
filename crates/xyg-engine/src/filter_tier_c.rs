@@ -793,6 +793,9 @@ impl FilterTierCSession {
         if cancelled() {
             return Err(Error::Cancelled.into());
         }
+        if u32_at(b, 4)? == 3 && !self.config.as_ref().is_some_and(Config::linked) {
+            return Err(Error::Missing.into());
+        }
         if (10..=15).contains(&op)
             || self.config.as_ref().is_some_and(Config::linked) && matches!(op, 3..=5 | 7)
         {
@@ -1139,7 +1142,8 @@ fn admitted_header(b: &[u8]) -> Result<(u32, u32, u64)> {
     let flags = u32_at(b, 12)?;
     let seq = u64_at(b, 16)?;
     let issued = cfg!(not(target_family = "wasm")) && version == 2 && op == 16;
-    if !((version == 1 && (1..=15).contains(&op)) || issued)
+    let range_paint = version == 3 && op == 5;
+    if !((version == 1 && (1..=15).contains(&op)) || issued || range_paint)
         || flags > 1
         || (flags != 0 && op != 5 && op != 11)
         || seq == 0

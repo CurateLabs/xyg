@@ -2207,11 +2207,22 @@ the browser. This is explicit callback integration; Python's public convenience
 session remains synchronous, and automatic notebook filtering and portable
 Worker file sources remain open. Bounded native turns do not guarantee bounded
 positioned-I/O latency or whole-process/transport memory accounting.
-The functional 100M-row callback witness uses four materialized XYGC files,
+The initial functional 100M-row callback witness uses four materialized XYGC files,
 five dimensions, four active cells and five 100×100 passive grids. Its native
 build scans the source once; unchanged range/paint commands read no canonical
 rows. Separate bounded membership requests report their own reads. This is not
 the dossier's pixel-level active index or 50 FPS performance qualification.
+The later [range-and-paint continuation](../performance/filter-range-paint-2026-11-12/README.md)
+also qualifies 346 active cells (one per CSS plot pixel), five 100×100 passive
+grids and the unchanged 128 MiB native logical budget. Python `range_paint` and
+Node/browser `rangePaint` request XYFC v3 opcode 5; Rust publishes range intent,
+counts and XYFP density atomically. The shared dashboard consumes this reply
+through its existing density renderer. Version1/2 packets and all exported
+signatures remain unchanged. Explicitly unadmitted unknown-version refusals
+can select legacy range-then-paint behavior; newer intents, source changes,
+disposal and admitted failures must not initiate that compatibility retry.
+This bounded evidence still does not establish 50 FPS, automatic notebook
+filtering, portable file-backed Worker sources or whole-process memory budgets.
 
 ## Temporal catalog candidate (#46)
 

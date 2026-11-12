@@ -683,6 +683,12 @@ new ones appearing.
 the same materialized 100M-row source: a range reply (`query`), a density reply
 without presentation (`density`), five cached synchronized paints (`cached`),
 and a public dashboard range through five synchronized paints (`update`).
+The range-and-paint continuation uses XYFC v3 opcode 5 for `update`: one Rust
+transaction emits counts and the complete density reply. Earlier captures use
+v1 opcode 5 followed by opcode 11; retain that distinction in comparisons.
+The separate `query` and `density` rows retain their v1 commands. Older native
+peers use the guarded two-command compatibility path documented in
+`spec/design/filter-tier-c.md`; do not label that path a fused update.
 Each includes Python/Node/DevTools IPC; query and density also include the
 application's loopback HTTP transport, native Rust work and browser decoding.
 These separate measurements are not additive latency components. Setup,

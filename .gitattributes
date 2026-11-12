@@ -1721,3 +1721,8 @@ tests/test_pyodide_load_smoke.py text eol=lf
 spec/performance/filter-prefix-storage-2026-11-12/*.md text eol=lf
 spec/performance/filter-prefix-storage-2026-11-12/*.json text eol=lf
 spec/performance/filter-prefix-storage-2026-11-12/**/*.gz -text
+
+spec/performance/filter-range-paint-2026-11-12/*.md text eol=lf
+spec/performance/filter-range-paint-2026-11-12/*.json text eol=lf
+spec/performance/filter-range-paint-2026-11-12/**/*.gz -text
+tests/test_filter_range_paint.py text eol=lf

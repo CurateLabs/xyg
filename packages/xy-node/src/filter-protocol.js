@@ -460,6 +460,50 @@ export class FilterSessionClient {
   range(lo, hi, { exact = false } = {}) {
     return this.call(this.request(5, { range: [lo, hi], exact }));
   }
+  rangePaint(lo, hi, { exact = false } = {}) {
+    const legacy = () => {
+      const finish = (reply) => {
+        if (this.closed || this.revision !== reply.requestedRevision
+          || this.sourceRevision !== reply.sourceRevision) {
+          const error = new Error("filter range-and-paint was superseded before compatibility paint");
+          error.code = "XYG_FILTER_CANCELLED";
+          throw error;
+        }
+        return this.paint({ exact });
+      };
+      const reply = this.range(lo, hi, { exact });
+      return reply instanceof Promise ? reply.then(finish) : finish(reply);
+    };
+    if (this._rangePaintSupport === false) return legacy();
+    const sourceRevision = this.sourceRevision;
+    const packet = this.request(5, { version: 3, range: [lo, hi], exact });
+    const sequence = new DataView(packet.buffer, packet.byteOffset).getBigUint64(16, true);
+    const accepted = (reply) => {
+      if (!reply.density.length) throw new Error("range-and-paint response omitted density");
+      if (!this.closed) this._rangePaintSupport = true;
+      return reply;
+    };
+    const refused = (error) => {
+      const r = error?.reply;
+      if (this._rangePaintSupport === undefined && error instanceof FilterTierCError
+        && error.status === 1 && !this.closed && this.revision === sequence
+        && r.requestedRevision === sequence && r.newestRevision < sequence
+        && r.sourceId === this.sourceId && r.epoch === this.epoch
+        && r.sourceRevision === sourceRevision && this.sourceRevision === sourceRevision) {
+        // Old peers reject the unknown version before admission. A malformed
+        // v3 payload instead consumes its watermark and must never be retried.
+        this._rangePaintSupport = false;
+        return legacy();
+      }
+      throw error;
+    };
+    try {
+      const reply = this.call(packet);
+      return reply instanceof Promise ? reply.then(accepted, refused) : accepted(reply);
+    } catch (error) {
+      return refused(error);
+    }
+  }
   clear() {
     return this.call(this.request(7));
   }

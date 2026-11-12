@@ -301,6 +301,53 @@ class FilterTierCSession:
     def range(self, lo: float, hi: float, *, exact: bool = False):
         return self._call(5, bounds=(lo, hi), exact=exact)
 
+    def range_paint(self, lo: float, hi: float, *, exact: bool = False):
+        """Return range counts and density from one admitted Rust transaction.
+
+        Older peers retain their two-request behavior after an unadmitted
+        version refusal. A newer request prevents compatibility follow-up.
+        """
+
+        def legacy():
+            reply = self.range(lo, hi, exact=exact)
+            if (
+                not self._handle
+                or self.revision != reply["requested_revision"]
+                or self.source_revision != reply["source_revision"]
+            ):
+                raise RuntimeError(
+                    "filter range-and-paint was superseded before compatibility paint"
+                )
+            return self.paint(exact=exact)
+
+        if getattr(self, "_range_paint_support", None) is False:
+            return legacy()
+        sequence = self.revision + 1
+        source_revision = self.source_revision
+        try:
+            reply = self._call(5, version=3, bounds=(lo, hi), exact=exact)
+        except FilterTierCError as error:
+            r = error.reply
+            if (
+                getattr(self, "_range_paint_support", None) is None
+                and error.status == 1
+                and self._handle
+                and self.revision == sequence
+                and r["requested_revision"] == sequence
+                and r["newest_revision"] < sequence
+                and r["source_id"] == self.source_id
+                and r["epoch"] == self.epoch
+                and r["source_revision"] == source_revision == self.source_revision
+            ):
+                self._range_paint_support = False
+                return legacy()
+            raise
+        if not reply["density"]:
+            raise ValueError("range-and-paint response omitted density")
+        if self._handle:
+            self._range_paint_support = True
+        return reply
+
     def clear(self):
         return self._call(7)
 

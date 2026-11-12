@@ -86,6 +86,16 @@ export async function proveFilterCooperative(page,moduleURL='/packages/xy-client
    }
    check(exact.selectedCount===BigInt(selected),'canonical selected count mismatch');
    exact.views.forEach((v,j)=>check(v.counts.every((x,i)=>x===counts[j][i]),'exact count plane mismatch'));
+   before=observed.length;
+   const fusedScan=session.rangePaint(5,11,{exact:true}).then(value=>({value}),error=>({error}));
+   await until(()=>observed.slice(before).some(x=>x.rows>0n));
+   await session.cancel();
+   check((await fusedScan).error?.code==='XYG_WASM_CANCELLED','range/paint scan cancellation did not reject');
+   check((await session.paint({exact:true})).filterHash===exact.filterHash,'cancelled range/paint published intent');
+   const fused=await session.rangePaint(4,12,{exact:true});
+   check(session._rangePaintSupport===true&&fused.density.length===5,'Worker did not accept fused v3 density');
+   check(fused.filterHash===exact.filterHash&&fused.selectedCount===BigInt(selected),'fused exact predicate changed');
+   fused.density.forEach((v,j)=>check(v.selected.every((x,i)=>x===counts[j][i]),'fused density count plane mismatch'));
    before=observed.length;const membership=session.membership(1099n,40001);
    await until(()=>observed.length>before);check(observed[before].rows===0n&&observed[before].totalRows===40001n,'membership progress was not relative');
    const page=await membership;
@@ -104,7 +114,7 @@ export async function proveFilterCooperative(page,moduleURL='/packages/xy-client
    firstClose.then(()=>{closed=true;});check(firstClose===secondClose,'repeated close lost the shared release ACK');
    await Promise.resolve();check(!closed,'close settled before owner release');await release();await secondClose;
    check(window.cooperativeWorkerErrors.length===0,'Worker errors escaped the cooperative lifetime');
-   return {rendered:false,readinessAdmission:1,constructorReleaseAck:2,repeatedCloseAck:1,foreignCompilePainterComparisons:1,duplicateWorkerClaims:1,progressReplies:observed.length,selected,membershipBits:40001,views:5,sourceRows:n,checks:['yield-before-rows','malformed-header-preservation','configure-cancellation','scan-cancellation','exact-count-oracle','relative-membership-progress','membership-bit-oracle','rebuild-cancellation','rebuild-scan-recovery','pending-disposal','fresh-worker-reuse']};
+   return {rendered:false,readinessAdmission:1,constructorReleaseAck:2,repeatedCloseAck:1,foreignCompilePainterComparisons:1,duplicateWorkerClaims:1,progressReplies:observed.length,selected,membershipBits:40001,views:5,sourceRows:n,rangePaint:true,checks:['yield-before-rows','malformed-header-preservation','configure-cancellation','scan-cancellation','exact-count-oracle','range-paint-cancellation','range-paint-exact-density','relative-membership-progress','membership-bit-oracle','rebuild-cancellation','rebuild-scan-recovery','pending-disposal','fresh-worker-reuse']};
   }finally{if(session)await session.close();else if(worker)await worker.dispose();globalThis.Worker=Original;delete window.cooperativeWorkerErrors;}
  },moduleURL);
 }
