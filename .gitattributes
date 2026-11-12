@@ -1706,3 +1706,8 @@ spec/performance/filter-native-callback-2026-11-11/**/*.gz binary
 spec/performance/filter-benchmark-catalog-2026-11-11/*.md text eol=lf
 spec/performance/filter-benchmark-catalog-2026-11-11/*.json text eol=lf
 spec/performance/filter-benchmark-catalog-2026-11-11/**/*.gz binary
+benchmarks/bench_filter_dashboard.mjs text eol=lf
+benchmarks/test_codspeed_filter_dashboard.py text eol=lf
+spec/performance/filter-dashboard-baseline-2026-11-11/*.md text eol=lf
+spec/performance/filter-dashboard-baseline-2026-11-11/*.json text eol=lf
+spec/performance/filter-dashboard-baseline-2026-11-11/**/*.gz binary

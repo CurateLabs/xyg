@@ -445,6 +445,15 @@ reproducible competitors across all required scales remain open. No performance
 lead over Falcon/Mosaic, Matplotlib, Seaborn, Plotly, Bokeh, Altair, Datashader,
 HoloViews/hvPlot, or emerging libraries is claimed.
 
+The manual native-callback walltime harness in
+`benchmarks/test_codspeed_filter_dashboard.py` now separates indexed range
+replies, density replies, cached painting and complete five-view updates on the
+materialized 100M fixture. It uses 100×100 passive grids and one active cell per
+CSS plot pixel at an explicit 256 MiB session budget. This is a bounded local
+SwiftShader diagnostic, not trusted-input/RAF or ≥50 FPS qualification; see
+the [baseline receipt](../performance/filter-dashboard-baseline-2026-11-11/README.md)
+and [reproduction contract](../benchmarks/methodology.md#manual-native-callback-dashboard-walltime).
+
 ## Linked density extension (opcodes 10–15)
 
 Existing v1 opcodes and historical packets are unchanged. No exported ABI

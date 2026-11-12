@@ -644,15 +644,19 @@ The verifier recomputes the checked-in hexbin and heatmap Scene SHA-256 goldens
 `public_heatmap_sha256`) and requires every public export-baseline route,
 including heatmap after #261.
 
-The glob collects ten modules — `test_codspeed_animation.py`,
+The glob collects eleven modules — `test_codspeed_animation.py`,
+`test_codspeed_filter_dashboard.py`,
 `test_codspeed_geo_pair_ordering.py`,
 `test_codspeed_graph_render.py`, `test_codspeed_graph_semantic_validation.py`,
 `test_codspeed_kernels.py`, `test_codspeed_polar.py`, `test_codspeed_pyplot.py`,
 `test_codspeed_selection.py`, `test_codspeed_tooltip_columns.py`, and
-`test_codspeed_transport.py` — for **227 rows** total, counting parametrized
-expansion. These are trend-tracked in CodSpeed, not gated: none of them feed
+`test_codspeed_transport.py` — for **231 rows** total, counting parametrized
+expansion. These are CodSpeed rows, not regression gates: none of them feed
 `scripts/check_regressions.py`, whose three inputs are §7's.
-The per-module counts are respectively 3, 4, 9, 14, 88, 6, 14, 20, 62 and 7.
+The per-module counts are respectively 3, 4, 4, 9, 14, 88, 6, 14, 20, 62 and 7.
+The four filtering dashboard rows require the explicitly configured materialized
+100M fixture and walltime mode; ordinary CI discovers but skips them when that
+fixture is absent. A skip supplies no runtime or performance qualification.
 Fixture parameters expand rows too: selection has four ordinary rows and four
 tests sharing a three-size fixture, plus four clause-count edit cases, for
 20 rows. Geographic ordering contributes two density sizes and two polygon
@@ -672,6 +676,54 @@ the baseline result", which reads like a flaky measurement rather than a row tha
 no longer exists. Removing one is allowed; removing one silently is not. Stale
 rows already in the dashboard have to be archived there by hand; this gate stops
 new ones appearing.
+
+### Manual native-callback dashboard walltime
+
+`benchmarks/test_codspeed_filter_dashboard.py` measures four separate paths on
+the same materialized 100M-row source: a range reply (`query`), a density reply
+without presentation (`density`), five cached synchronized paints (`cached`),
+and a public dashboard range through five synchronized paints (`update`).
+Each includes Python/Node/DevTools IPC; query and density also include the
+application's loopback HTTP transport, native Rust work and browser decoding.
+These separate measurements are not additive latency components. Setup,
+source registration, Chromium launch, first index construction and initial
+correctness checks occur outside every measured region.
+
+The workload uses five 400×260 CSS chart carriers, five 100×100 passive grids,
+and one active cell per CSS plot pixel (346 in the pinned environment).
+The explicit native session budget is 256 MiB, within the existing maximum;
+128 MiB refuses this index. Every measured range/paint reply must report zero
+canonical rows read and tier 3; the source builds exactly once. Range endpoints
+are exact index-cut boundaries, alternated on each update. This measures neither
+arbitrary-boundary fallback nor active-view switching/rebuild. The renderer is
+the existing density path with ANGLE SwiftShader and explicit `gl.finish()`;
+no hardware-GPU, trusted pointer, RAF cadence or ≥50 FPS acceptance follows.
+
+First generate and verify the recipe in
+`scripts/gen_filter_paged_fixture.py` with 100,000,000 materialized rows, as in
+the native callback receipt. Then run (with matching native/client builds):
+
+```bash
+export XYG_FILTER_PERF_SOURCE="$PWD/target/task-tmp/filter-100m-fixture/materialized-100m"
+export XYG_FILTER_PERF_OUTPUT="$PWD/target/task-tmp/filter-dashboard-performance/reproduce"
+export XYG_NATIVE_LIB="$PWD/target/release/libxyg_core.so"
+export XYG_NODE=/path/to/node22
+export XYG_CHROMIUM=/path/to/chromium
+TMPDIR=/var/tmp codspeed run -m walltime --repository CurateLabs/xyg -- \
+  uv run --no-sync pytest benchmarks/test_codspeed_filter_dashboard.py -q \
+  --codspeed --codspeed-warmup-time=1 --codspeed-max-time=8 \
+  --codspeed-max-rounds=100
+```
+
+The fixture rejects smaller sources and requires an explicit browser. It never
+generates massive data automatically or silently reduces index/grid resolution.
+Outputs bind source-manifest, native/client hashes, browser/Node versions,
+actual plot, budget and logical index ownership; completion requires native
+close acknowledgement, no pending transport and no page errors. The fixture's
+deadline is an execution guard, not a performance measurement. The four manual
+rows are new; all 227 earlier rows remain unchanged. Earlier private probe
+URIs under `target/task-tmp/filter-dashboard-performance/` are diagnostic history,
+not renamed historical rows from the normal benchmark glob.
 
 **`benchmarks/test_codspeed_geo_pair_ordering.py` — 4 rows.** The density
 membership cases use 1k and 10k source rows; clipping uses 64 and 256 polygons.
