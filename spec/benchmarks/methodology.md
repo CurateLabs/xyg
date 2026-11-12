@@ -679,6 +679,16 @@ new ones appearing.
 
 ### Manual native-callback dashboard walltime
 
+The ordinary correctness invocation also checks the linked-density index size
+from authored dimensions: `4*(C+1)*W + 16*W + 16*C`, where C is active cells
+and W includes the separate selected-total channel. The five 8×8/17-cell fixture
+therefore expects 28,520 bytes. Its former 51,632-byte expectation describes the
+historical u64 prefix and must fail against the current u32 representation.
+The [oracle correction](../performance/filter-prefix-benchmark-oracle-2026-11-12/README.md)
+preserves all 231 collected benchmark IDs, measured calls and non-memory
+assertions. Running those bodies without `--codspeed` is correctness evidence
+only, with no performance qualification.
+
 `benchmarks/test_codspeed_filter_dashboard.py` measures four separate paths on
 the same materialized 100M-row source: a range reply (`query`), a density reply
 without presentation (`density`), five cached synchronized paints (`cached`),

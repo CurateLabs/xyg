@@ -174,19 +174,31 @@ def linked_density_session(request):
         yield session, active, views, n, int(np.sum((columns["a"] >= 4) & (columns["a"] <= 7)))
 
 
+def _linked_density_index_bytes(active, views):
+    """Independent authored-shape oracle (filter-tier-c.md, memory accounting).
+
+    Each prefix count is u32 under the canonical row limit; context/base totals
+    remain u64. These are index bytes, excluding source/configuration/scratch.
+    """
+    cells = len(active["cuts"]) + 1
+    width = 1 + sum(view["width"] * view["height"] for view in views)
+    return 4 * (cells + 1) * width + 16 * width + 16 * cells
+
+
 def test_filter_tier_c_density_build(benchmark, linked_density_session):
     session, active, views, n, _ = linked_density_session
     result = benchmark(session.configure_density, active, views)
     assert result["rows_read"] == n and result["tier"] == 0
-    assert result["index_bytes"] == 51_632
+    assert result["index_bytes"] == _linked_density_index_bytes(active, views)
 
 
 def test_filter_tier_c_density_indexed_query(benchmark, linked_density_session):
-    session, _, _, _, expected = linked_density_session
+    session, active, views, _, expected = linked_density_session
     result = benchmark(session.range, 4.0, 7.0)
     assert result["rows_read"] == 0 and result["tier"] == 3 and result["fallback"] == 0
     assert result["selected_count"] == expected
-    assert result["prefix_cells_read"] == 642 and result["index_bytes"] == 51_632
+    assert result["prefix_cells_read"] == 642
+    assert result["index_bytes"] == _linked_density_index_bytes(active, views)
     assert len(result["views"]) == 5
     assert all(sum(v["counts"]) == expected for v in result["views"])
 
@@ -201,13 +213,13 @@ def test_filter_tier_c_density_paint_packet(benchmark, linked_density_session):
 
 
 def test_filter_tier_c_density_masked_indexed_query(benchmark, linked_density_session):
-    session, _, _, n, expected = linked_density_session
+    session, active, views, n, expected = linked_density_session
     session.base_filter(mask=b"\xff" * (n // 8))
     session.rebuild()
     result = benchmark(session.range, 4.0, 7.0)
     assert result["rows_read"] == 0 and result["tier"] == 3 and result["fallback"] == 0
     assert result["selected_count"] == expected and result["has_intent"] == 1
-    assert result["index_bytes"] == 51_632
+    assert result["index_bytes"] == _linked_density_index_bytes(active, views)
 
 
 @pytest.fixture(params=[1, 8, 32, 64], ids=["1clause", "8clauses", "32clauses", "64clauses"])
