@@ -718,6 +718,15 @@ arbitrary-boundary fallback nor active-view switching/rebuild. The renderer is
 the existing density path with ANGLE SwiftShader and explicit `gl.finish()`;
 no hardware-GPU, trusted pointer, RAF cadence or ≥50 FPS acceptance follows.
 
+Paired native controls must record the actual explicit `XYG_NATIVE_LIB` path
+and artifact digest, rather than labeling a selected comparison library with
+the checkout's default binary. The single-color continuation records parent,
+candidate, parent, candidate runs with the same macro IDs, source, grids,
+budget, client and measured calls. Its setup-only private driver selects the
+actual native artifact for provenance; no measured operation changes. Keep
+the unrelated first cached-paint improvement and the rows classified No Change
+visible; neither establishes a causal benefit from native interpolation.
+
 First generate and verify the recipe in
 `scripts/gen_filter_paged_fixture.py` with 100,000,000 materialized rows, as in
 the native callback receipt. Then run (with matching native/client builds):

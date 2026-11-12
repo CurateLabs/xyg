@@ -5945,6 +5945,11 @@ pub(crate) fn heatmap_color(value: f64, stops: &[[u8; 3]], alpha: u8) -> [u8; 4]
 #[allow(clippy::needless_range_loop)] // channel indexes stops and color together
 pub fn colormap_color(value: f64, stops: &[[u8; 3]], alpha: u8) -> [u8; 4] {
     debug_assert!(!stops.is_empty());
+    // A single stop is constant even for clamped infinities. Preserve the
+    // existing NaN interpolation/cast behavior through the general path.
+    if stops.len() == 1 && !value.is_nan() {
+        return [stops[0][0], stops[0][1], stops[0][2], alpha];
+    }
     let last = stops.len() - 1;
     let t = value.clamp(0.0, 1.0);
     let position = t * last as f64;
@@ -10694,6 +10699,38 @@ mod tests {
         assert_eq!(&out[3..6], &colormap_color(0.5, &stops, 255)[..3]);
         assert_eq!(&out[6..9], &colormap_color(1.0, &stops, 255)[..3]);
         assert_eq!(&out[9..12], &[0, 0, 0]);
+    }
+
+    #[test]
+    fn colormap_single_stop_keeps_exact_colors_alpha_and_nonfinite_semantics() {
+        let values = [
+            f64::NEG_INFINITY,
+            f64::MIN,
+            -1.0,
+            -f64::from_bits(1),
+            -0.0,
+            0.0,
+            f64::from_bits(1),
+            0.25,
+            0.5,
+            1.0,
+            f64::MAX,
+            f64::INFINITY,
+        ];
+        for red in 0..=u8::MAX {
+            let rgb = [red, u8::MAX - red, red.wrapping_mul(37)];
+            for alpha in [0, 1, 127, 128, 254, 255] {
+                for value in values {
+                    assert_eq!(
+                        colormap_color(value, &[rgb], alpha),
+                        [rgb[0], rgb[1], rgb[2], alpha]
+                    );
+                }
+                for value in [f64::NAN, f64::from_bits(0x7ff0_0000_0000_0001), -f64::NAN] {
+                    assert_eq!(colormap_color(value, &[rgb], alpha), [0, 0, 0, alpha]);
+                }
+            }
+        }
     }
 
     #[test]

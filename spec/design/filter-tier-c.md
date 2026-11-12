@@ -427,9 +427,12 @@ a dedicated instance: acquisition of incompatible retained authorities and the
 reverse direction refuse before changing accepted state. This is an explicit
 coexistence restriction, not a claim of process-wide memory accounting.
 
-The bounded resident cooperative path passes normal-package qualification at
+At the resident cooperative checkpoint, normal-package qualification measured
 1,875,741 raw / 786,020 Node22 gzip-6 bytes, leaving 412 gzip bytes under the
-unchanged caps. The matching-source controls cover build, prefix, exact fallback,
+unchanged caps. That historical measurement is superseded by the
+[single-color continuation](../performance/filter-single-color-2026-11-12/README.md),
+at 1,875,559 raw / 785,836 gzip-6 bytes, leaving 596 gzip bytes.
+The matching-source cooperative controls cover build, prefix, exact fallback,
 membership, cancellation, recovery and ownership; see the
 [continuation receipt](../performance/filter-paged-cooperative-2026-11-11/README.md).
 This does not establish hosted CI/queue readiness, 100M/five-rendered-view
@@ -600,6 +603,17 @@ aggregate plane; point-marker color/opacity is not applied a second time. The or
 premultiplies resolved coverage once and uploads its existing RGBA texture.
 There is no drilled-point-mask substitute. Output is bounded by total slab
 channels (65,536) and admitted before allocation.
+
+The shared Rust colormap kernel bypasses general interpolation for exactly one
+stop and a non-NaN scalar: the result is that stop's exact RGB bytes and the
+unchanged supplied alpha. This includes clamped infinities, signed zero and
+subnormal values. NaN keeps the existing general interpolation/cast result
+(zero RGB with the supplied alpha); other palette cardinalities keep their
+existing path. Density normalization, alpha shaping, selected/context blending,
+orientation, rounding, wire planes and admission remain unchanged. The
+[single-color continuation](../performance/filter-single-color-2026-11-12/README.md)
+records exact native/WASM preservation and bounded paired CodSpeed evidence;
+it does not qualify 50 FPS or broader #112 acceptance.
 
 Opcode 12 replaces base predicates and invalidates the index. Arguments are
 base range count and mask byte count. Payload contains 24 bytes per range

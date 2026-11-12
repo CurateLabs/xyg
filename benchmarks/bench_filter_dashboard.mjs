@@ -27,7 +27,7 @@ const cleanup=()=>cleanupResult??=(async()=>{
 })();
 process.once('SIGTERM',()=>{void cleanup().finally(()=>process.exit(1));});
 const errors=[],traces=[],wire=[],artifacts={};
-for(const path of ['target/release/libxyg_core.so','packages/xy-client/dist/index.js']){
+for(const path of [process.env.XYG_NATIVE_LIB||'target/release/libxyg_core.so','packages/xy-client/dist/index.js']){
  const b=await readFile(path);artifacts[path]={sha256:createHash('sha256').update(b).digest('hex'),bytes:b.length};
 }
 const send=value=>process.stdout.write(JSON.stringify(value)+'\n');
